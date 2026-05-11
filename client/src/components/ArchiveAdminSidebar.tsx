@@ -88,6 +88,19 @@ import {
   BarChart2,
   ScanEye,
   ScanFace,
+  Server,
+  ToggleRight,
+  Paintbrush,
+  Rocket,
+  MessageCircle,
+  Factory,
+
+
+
+  BarChart3 as BarChartIcon,
+  Webhook,
+  CheckCircle,
+  Store,
 } from "lucide-react";
 
 const menuItems = [
@@ -314,6 +327,20 @@ const menuItems = [
   { path: "/kyc-event-rules", label: "KYC/KYB Event Rules", icon: Zap },
   { path: "/kyc-service-gates", label: "KYC Service Gates", icon: ShieldCheck },
   { path: "/kyc-overrides", label: "KYC Overrides", icon: ShieldAlert },
+  // Multi-Tenant Platform
+  { path: "/tenant-isolation", label: "Tenant Isolation", icon: Server },
+  { path: "/feature-flag-engine", label: "Feature Flag Engine", icon: ToggleRight },
+  { path: "/white-label-engine", label: "White Label Engine", icon: Paintbrush },
+  { path: "/tenant-provisioning", label: "Tenant Provisioning", icon: Rocket },
+  { path: "/branded-comms", label: "Branded Comms", icon: MessageCircle },
+  { path: "/product-factory", label: "Product Factory", icon: Factory },
+  { path: "/event-streaming", label: "Event Streaming", icon: Radio },
+  { path: "/graduated-rollout", label: "Graduated Rollout", icon: Gauge },
+  { path: "/custom-domains", label: "Custom Domains", icon: Globe },
+  { path: "/tenant-metering", label: "Tenant Metering", icon: BarChartIcon },
+  { path: "/webhook-engine", label: "Webhook Engine", icon: Webhook },
+  { path: "/approval-workflows", label: "Approval Workflows", icon: CheckCircle },
+  { path: "/plugin-marketplace", label: "Plugin Marketplace", icon: Store },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

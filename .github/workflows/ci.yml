@@ -190,6 +190,22 @@ jobs:
         run: cd services/cif-management-go && go build -o cif-management .
       - name: Build KYB Engine
         run: cd services/kyb-engine-go && go build -o kyb-engine .
+      - name: Build Tenant Isolation Service
+        run: cd services/tenant-isolation-go && go build -o tenant-isolation .
+      - name: Build White Label Engine
+        run: cd services/white-label-engine-go && go build -o white-label-engine .
+      - name: Build Tenant Provisioning Service
+        run: cd services/tenant-provisioning-go && go build -o tenant-provisioning .
+      - name: Build Event Streaming Service
+        run: cd services/event-streaming-go && go build -o event-streaming .
+      - name: Build Custom Domain Service
+        run: cd services/custom-domain-go && go build -o custom-domain .
+      - name: Build Tenant Metering Service
+        run: cd services/tenant-metering-go && go build -o tenant-metering .
+      - name: Build Webhook Engine
+        run: cd services/webhook-engine-go && go build -o webhook-engine .
+      - name: Build Approval Workflow Service
+        run: cd services/approval-workflow-go && go build -o approval-workflow .
 
   rust-services:
     name: Rust Services
@@ -241,6 +257,8 @@ jobs:
             services/relationship-pricing-rs
             services/liveness-detection-rs
             services/face-match-rs
+            services/feature-flag-engine-rs
+            services/graduated-rollout-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -325,6 +343,10 @@ jobs:
         run: cd services/liveness-detection-rs && cargo build --release
       - name: Build Face Match Engine
         run: cd services/face-match-rs && cargo build --release
+      - name: Build Feature Flag Engine
+        run: cd services/feature-flag-engine-rs && cargo build --release
+      - name: Build Graduated Rollout Service
+        run: cd services/graduated-rollout-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -340,9 +362,13 @@ jobs:
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
-          for svc in opensearch-indexer-py lakehouse-etl-py cbn-returns-py statement-generator-py exam-management-py kyc-engine-py; do
+          for svc in opensearch-indexer-py lakehouse-etl-py cbn-returns-py statement-generator-py exam-management-py kyc-engine-py ab-testing-py; do
             echo "Checking services/$svc/main.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
+          done
+          for svc in branded-comms-py plugin-marketplace-py; do
+            echo "Checking services/$svc/service.py..."
+            python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
 
   docker:

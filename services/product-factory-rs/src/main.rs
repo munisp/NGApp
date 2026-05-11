@@ -1,388 +1,246 @@
-use std::collections::HashMap;
-use std::env;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::net::TcpListener;
-use std::sync::{Arc, RwLock};
 
-fn get_env(key: &str, default: &str) -> String {
-    env::var(key).unwrap_or_else(|_| default.to_string())
-}
-
-fn middleware_config() -> serde_json::Value {
-    serde_json::json!({
-        "kafka": {"broker": get_env("KAFKA_BROKER", "localhost:9092"), "topics": "product.created,product.updated,product.activated,product.sunset"},
-        "redis": {"url": get_env("REDIS_URL", "redis://localhost:6379"), "purpose": "product-cache,eligibility-rules-cache"},
-        "postgres": {"url": get_env("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"), "tables": "products,product_versions,product_rules,gl_mappings,pricing_tiers"},
-        "opensearch": {"url": get_env("OPENSEARCH_URL", "http://localhost:9200"), "index": "product-catalog"},
-        "keycloak": {"url": get_env("KEYCLOAK_URL", "http://localhost:8080"), "realm": "54bank", "role": "product-manager"},
-        "permify": {"url": get_env("PERMIFY_URL", "http://localhost:3476"), "schema": "product:create,product:approve,product:activate,product:sunset"},
-        "dapr": {"url": get_env("DAPR_URL", "http://localhost:3500"), "pubsub": "product-events"},
-        "fluvio": {"url": get_env("FLUVIO_URL", "localhost:9003"), "topic": "product-lifecycle"},
-        "temporal": {"url": get_env("TEMPORAL_URL", "localhost:7233"), "workflow": "ProductApprovalWorkflow"},
-        "mojaloop": {"url": get_env("MOJALOOP_URL", "http://localhost:4000"), "purpose": "payment-product-registration"},
-        "tigerbeetle": {"url": get_env("TIGERBEETLE_URL", "localhost:3000"), "purpose": "gl-account-mapping-validation"},
-        "lakehouse": {"url": get_env("LAKEHOUSE_URL", "http://localhost:8206"), "tables": "product_history,product_performance"},
-        "apisix": {"url": get_env("APISIX_URL", "http://localhost:9080"), "route": "/products/*"},
-        "openappsec": {"url": get_env("OPENAPPSEC_URL", "http://localhost:8090"), "policy": "product-config-protection"}
-    })
-}
+// Configuration-driven product factory: define banking products via parameters,
+// not hard-coded logic. Supports CASA, loans, deposits, cards, and Islamic products.
 
 #[derive(Clone)]
-struct Product {
-    id: String,
-    name: String,
-    product_type: String,
-    category: String,
-    status: String,
-    version: i32,
-    currency: String,
-    interest_config: InterestConfig,
-    fee_config: Vec<FeeRule>,
+struct ProductDefinition {
+    id: &'static str,
+    code: &'static str,
+    name: &'static str,
+    category: &'static str,
+    product_type: &'static str,
+    currency: &'static str,
+    status: &'static str,
+    parameters: Vec<ProductParameter>,
     gl_mappings: Vec<GLMapping>,
-    eligibility: Vec<EligibilityRule>,
-    lifecycle_stage: String,
-    created_by: String,
-    approved_by: String,
-    effective_date: String,
-    sunset_date: String,
+    fee_rules: Vec<FeeRule>,
+    eligibility_rules: Vec<&'static str>,
+    created_at: &'static str,
 }
 
 #[derive(Clone)]
-struct InterestConfig {
-    rate_type: String,
-    base_rate: f64,
-    spread: f64,
-    effective_rate: f64,
-    accrual_basis: String,
-    compounding: String,
-    tiers: Vec<RateTier>,
-}
-
-#[derive(Clone)]
-struct RateTier {
-    min_balance: f64,
-    max_balance: f64,
-    rate: f64,
-}
-
-#[derive(Clone)]
-struct FeeRule {
-    name: String,
-    fee_type: String,
-    amount: f64,
-    percentage: f64,
-    frequency: String,
-    gl_code: String,
+struct ProductParameter {
+    key: &'static str,
+    label: &'static str,
+    value_type: &'static str,
+    default_value: &'static str,
+    min_value: Option<&'static str>,
+    max_value: Option<&'static str>,
+    editable: bool,
 }
 
 #[derive(Clone)]
 struct GLMapping {
-    event: String,
-    debit_gl: String,
-    credit_gl: String,
-    description: String,
+    event: &'static str,
+    debit_gl: &'static str,
+    credit_gl: &'static str,
+    description: &'static str,
 }
 
 #[derive(Clone)]
-struct EligibilityRule {
-    field: String,
-    operator: String,
-    value: String,
+struct FeeRule {
+    name: &'static str,
+    fee_type: &'static str,
+    calculation: &'static str,
+    amount_or_rate: &'static str,
+    frequency: &'static str,
+    waivable: bool,
 }
 
-fn seed_products() -> Vec<Product> {
+fn seed_products() -> Vec<ProductDefinition> {
     vec![
-        Product {
-            id: "PROD-SAV-001".into(), name: "54Bank Premium Savings".into(),
-            product_type: "savings".into(), category: "retail".into(),
-            status: "active".into(), version: 3, currency: "NGN".into(),
-            interest_config: InterestConfig {
-                rate_type: "tiered".into(), base_rate: 0.0, spread: 0.0,
-                effective_rate: 0.0, accrual_basis: "365-day".into(),
-                compounding: "monthly".into(),
-                tiers: vec![
-                    RateTier { min_balance: 0.0, max_balance: 500000.0, rate: 1.5 },
-                    RateTier { min_balance: 500000.01, max_balance: 5000000.0, rate: 3.0 },
-                    RateTier { min_balance: 5000000.01, max_balance: 50000000.0, rate: 4.5 },
-                    RateTier { min_balance: 50000000.01, max_balance: f64::MAX, rate: 6.0 },
-                ],
-            },
-            fee_config: vec![
-                FeeRule { name: "Monthly Maintenance".into(), fee_type: "flat".into(), amount: 50.0, percentage: 0.0, frequency: "monthly".into(), gl_code: "GL-FEE-001".into() },
-                FeeRule { name: "SMS Alert".into(), fee_type: "flat".into(), amount: 4.0, percentage: 0.0, frequency: "per-transaction".into(), gl_code: "GL-FEE-002".into() },
+        ProductDefinition {
+            id: "PROD-001", code: "CASA-STD", name: "Standard Current Account", category: "casa", product_type: "current",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "min_balance", label: "Minimum Balance", value_type: "currency", default_value: "5000", min_value: Some("1000"), max_value: Some("100000"), editable: true },
+                ProductParameter { key: "interest_rate", label: "Interest Rate", value_type: "percentage", default_value: "1.5", min_value: Some("0"), max_value: Some("5"), editable: true },
+                ProductParameter { key: "overdraft_limit", label: "Overdraft Limit", value_type: "currency", default_value: "0", min_value: Some("0"), max_value: Some("5000000"), editable: true },
+                ProductParameter { key: "daily_transfer_limit", label: "Daily Transfer Limit", value_type: "currency", default_value: "5000000", min_value: Some("50000"), max_value: Some("100000000"), editable: true },
             ],
             gl_mappings: vec![
-                GLMapping { event: "deposit".into(), debit_gl: "GL-1001-CASH".into(), credit_gl: "GL-2001-SAVINGS".into(), description: "Customer deposit to savings".into() },
-                GLMapping { event: "withdrawal".into(), debit_gl: "GL-2001-SAVINGS".into(), credit_gl: "GL-1001-CASH".into(), description: "Customer withdrawal from savings".into() },
-                GLMapping { event: "interest_accrual".into(), debit_gl: "GL-5001-INT-EXP".into(), credit_gl: "GL-2010-INT-PAYABLE".into(), description: "Daily interest accrual".into() },
-                GLMapping { event: "interest_payment".into(), debit_gl: "GL-2010-INT-PAYABLE".into(), credit_gl: "GL-2001-SAVINGS".into(), description: "Interest capitalization".into() },
-                GLMapping { event: "fee_charge".into(), debit_gl: "GL-2001-SAVINGS".into(), credit_gl: "GL-4001-FEE-INCOME".into(), description: "Fee debit from account".into() },
+                GLMapping { event: "account.credit", debit_gl: "GL-1100", credit_gl: "GL-2100", description: "Customer deposit" },
+                GLMapping { event: "account.debit", debit_gl: "GL-2100", credit_gl: "GL-1100", description: "Customer withdrawal" },
+                GLMapping { event: "interest.accrual", debit_gl: "GL-5100", credit_gl: "GL-2100", description: "Interest accrual" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "customer_type".into(), operator: "in".into(), value: "individual,sole-proprietor".into() },
-                EligibilityRule { field: "kyc_tier".into(), operator: "gte".into(), value: "1".into() },
-                EligibilityRule { field: "age".into(), operator: "gte".into(), value: "18".into() },
+            fee_rules: vec![
+                FeeRule { name: "Monthly Maintenance", fee_type: "flat", calculation: "fixed", amount_or_rate: "100", frequency: "monthly", waivable: true },
+                FeeRule { name: "SMS Alert", fee_type: "flat", calculation: "fixed", amount_or_rate: "4", frequency: "per_transaction", waivable: false },
             ],
-            lifecycle_stage: "mature".into(), created_by: "product-team".into(),
-            approved_by: "head-of-retail".into(), effective_date: "2025-01-15".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "age >= 18", "nationality IN (NG, GH, KE)"],
+            created_at: "2026-01-01T00:00:00Z",
         },
-        Product {
-            id: "PROD-FD-001".into(), name: "54Bank Fixed Deposit".into(),
-            product_type: "term_deposit".into(), category: "retail".into(),
-            status: "active".into(), version: 2, currency: "NGN".into(),
-            interest_config: InterestConfig {
-                rate_type: "fixed".into(), base_rate: 12.5, spread: 0.0,
-                effective_rate: 12.5, accrual_basis: "365-day".into(),
-                compounding: "at_maturity".into(),
-                tiers: vec![
-                    RateTier { min_balance: 100000.0, max_balance: 10000000.0, rate: 12.5 },
-                    RateTier { min_balance: 10000000.01, max_balance: 100000000.0, rate: 14.0 },
-                    RateTier { min_balance: 100000000.01, max_balance: f64::MAX, rate: 15.5 },
-                ],
-            },
-            fee_config: vec![
-                FeeRule { name: "Early Termination".into(), fee_type: "percentage".into(), amount: 0.0, percentage: 1.0, frequency: "one-time".into(), gl_code: "GL-FEE-003".into() },
+        ProductDefinition {
+            id: "PROD-002", code: "SAV-PREM", name: "Premium Savings Account", category: "casa", product_type: "savings",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "min_balance", label: "Minimum Balance", value_type: "currency", default_value: "50000", min_value: Some("10000"), max_value: Some("1000000"), editable: true },
+                ProductParameter { key: "interest_rate", label: "Interest Rate", value_type: "percentage", default_value: "8.5", min_value: Some("0"), max_value: Some("15"), editable: true },
+                ProductParameter { key: "withdrawal_limit", label: "Monthly Withdrawals", value_type: "integer", default_value: "4", min_value: Some("1"), max_value: Some("12"), editable: true },
             ],
             gl_mappings: vec![
-                GLMapping { event: "placement".into(), debit_gl: "GL-2001-SAVINGS".into(), credit_gl: "GL-2050-TERM-DEP".into(), description: "FD placement from savings".into() },
-                GLMapping { event: "interest_accrual".into(), debit_gl: "GL-5002-INT-EXP-FD".into(), credit_gl: "GL-2051-FD-INT-PAYABLE".into(), description: "FD interest accrual".into() },
-                GLMapping { event: "maturity_payout".into(), debit_gl: "GL-2050-TERM-DEP".into(), credit_gl: "GL-2001-SAVINGS".into(), description: "FD maturity payout".into() },
+                GLMapping { event: "deposit", debit_gl: "GL-1100", credit_gl: "GL-2200", description: "Savings deposit" },
+                GLMapping { event: "interest.accrual", debit_gl: "GL-5200", credit_gl: "GL-2200", description: "Savings interest" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "customer_type".into(), operator: "in".into(), value: "individual,corporate,sole-proprietor".into() },
-                EligibilityRule { field: "min_deposit".into(), operator: "gte".into(), value: "100000".into() },
+            fee_rules: vec![
+                FeeRule { name: "Early Withdrawal Penalty", fee_type: "percentage", calculation: "percent_of_interest", amount_or_rate: "25", frequency: "per_event", waivable: false },
             ],
-            lifecycle_stage: "mature".into(), created_by: "product-team".into(),
-            approved_by: "head-of-treasury".into(), effective_date: "2025-03-01".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "age >= 18"],
+            created_at: "2026-01-01T00:00:00Z",
         },
-        Product {
-            id: "PROD-LN-001".into(), name: "54Bank Personal Loan".into(),
-            product_type: "loan".into(), category: "retail".into(),
-            status: "active".into(), version: 4, currency: "NGN".into(),
-            interest_config: InterestConfig {
-                rate_type: "floating".into(), base_rate: 18.5, spread: 2.5,
-                effective_rate: 21.0, accrual_basis: "365-day".into(),
-                compounding: "monthly".into(),
-                tiers: vec![
-                    RateTier { min_balance: 50000.0, max_balance: 5000000.0, rate: 21.0 },
-                    RateTier { min_balance: 5000000.01, max_balance: 50000000.0, rate: 19.5 },
-                ],
-            },
-            fee_config: vec![
-                FeeRule { name: "Processing Fee".into(), fee_type: "percentage".into(), amount: 0.0, percentage: 1.5, frequency: "one-time".into(), gl_code: "GL-FEE-010".into() },
-                FeeRule { name: "Insurance".into(), fee_type: "percentage".into(), amount: 0.0, percentage: 0.5, frequency: "one-time".into(), gl_code: "GL-FEE-011".into() },
-                FeeRule { name: "Late Payment".into(), fee_type: "percentage".into(), amount: 0.0, percentage: 2.0, frequency: "per-occurrence".into(), gl_code: "GL-FEE-012".into() },
+        ProductDefinition {
+            id: "PROD-003", code: "LOAN-PER", name: "Personal Loan", category: "lending", product_type: "term_loan",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "min_amount", label: "Minimum Amount", value_type: "currency", default_value: "50000", min_value: Some("10000"), max_value: Some("500000"), editable: true },
+                ProductParameter { key: "max_amount", label: "Maximum Amount", value_type: "currency", default_value: "5000000", min_value: Some("100000"), max_value: Some("50000000"), editable: true },
+                ProductParameter { key: "interest_rate", label: "Annual Interest Rate", value_type: "percentage", default_value: "18.5", min_value: Some("10"), max_value: Some("30"), editable: true },
+                ProductParameter { key: "max_tenor_months", label: "Max Tenor (Months)", value_type: "integer", default_value: "36", min_value: Some("3"), max_value: Some("60"), editable: true },
+                ProductParameter { key: "collateral_required", label: "Collateral Required", value_type: "boolean", default_value: "false", min_value: None, max_value: None, editable: true },
             ],
             gl_mappings: vec![
-                GLMapping { event: "disbursement".into(), debit_gl: "GL-1200-LOAN-ASSET".into(), credit_gl: "GL-2001-SAVINGS".into(), description: "Loan disbursement to customer".into() },
-                GLMapping { event: "interest_accrual".into(), debit_gl: "GL-1210-INT-RECEIVABLE".into(), credit_gl: "GL-4010-INT-INCOME".into(), description: "Loan interest accrual".into() },
-                GLMapping { event: "repayment".into(), debit_gl: "GL-2001-SAVINGS".into(), credit_gl: "GL-1200-LOAN-ASSET".into(), description: "Loan principal repayment".into() },
-                GLMapping { event: "provisioning".into(), debit_gl: "GL-5100-PROVISION-EXP".into(), credit_gl: "GL-1220-LOAN-PROVISION".into(), description: "Loan loss provisioning".into() },
+                GLMapping { event: "loan.disbursement", debit_gl: "GL-3100", credit_gl: "GL-1100", description: "Loan disbursement" },
+                GLMapping { event: "loan.repayment", debit_gl: "GL-1100", credit_gl: "GL-3100", description: "Loan repayment" },
+                GLMapping { event: "interest.income", debit_gl: "GL-3200", credit_gl: "GL-4100", description: "Interest income" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "customer_type".into(), operator: "eq".into(), value: "individual".into() },
-                EligibilityRule { field: "employment_status".into(), operator: "in".into(), value: "employed,self-employed".into() },
-                EligibilityRule { field: "min_salary".into(), operator: "gte".into(), value: "50000".into() },
-                EligibilityRule { field: "credit_score".into(), operator: "gte".into(), value: "600".into() },
+            fee_rules: vec![
+                FeeRule { name: "Processing Fee", fee_type: "percentage", calculation: "percent_of_principal", amount_or_rate: "1.5", frequency: "once", waivable: true },
+                FeeRule { name: "Late Payment Penalty", fee_type: "percentage", calculation: "percent_of_overdue", amount_or_rate: "2", frequency: "per_event", waivable: false },
+                FeeRule { name: "Insurance Premium", fee_type: "percentage", calculation: "percent_of_principal", amount_or_rate: "0.5", frequency: "once", waivable: false },
             ],
-            lifecycle_stage: "mature".into(), created_by: "credit-team".into(),
-            approved_by: "chief-risk-officer".into(), effective_date: "2025-02-01".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "age >= 21", "employment_status IN (employed, self_employed)", "credit_score >= 600"],
+            created_at: "2026-01-01T00:00:00Z",
         },
-        Product {
-            id: "PROD-CA-001".into(), name: "54Bank Business Current Account".into(),
-            product_type: "current_account".into(), category: "corporate".into(),
-            status: "active".into(), version: 2, currency: "NGN".into(),
-            interest_config: InterestConfig {
-                rate_type: "fixed".into(), base_rate: 0.0, spread: 0.0,
-                effective_rate: 0.0, accrual_basis: "365-day".into(),
-                compounding: "none".into(), tiers: vec![],
-            },
-            fee_config: vec![
-                FeeRule { name: "Account Maintenance".into(), fee_type: "flat".into(), amount: 500.0, percentage: 0.0, frequency: "monthly".into(), gl_code: "GL-FEE-020".into() },
-                FeeRule { name: "COT".into(), fee_type: "percentage".into(), amount: 0.0, percentage: 0.5, frequency: "per-transaction".into(), gl_code: "GL-FEE-021".into() },
-                FeeRule { name: "Cheque Book".into(), fee_type: "flat".into(), amount: 2500.0, percentage: 0.0, frequency: "per-request".into(), gl_code: "GL-FEE-022".into() },
+        ProductDefinition {
+            id: "PROD-004", code: "FD-STD", name: "Fixed Deposit", category: "deposits", product_type: "term_deposit",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "min_deposit", label: "Minimum Deposit", value_type: "currency", default_value: "100000", min_value: Some("50000"), max_value: Some("10000000"), editable: true },
+                ProductParameter { key: "interest_rate_90d", label: "90-Day Rate", value_type: "percentage", default_value: "12.0", min_value: Some("5"), max_value: Some("20"), editable: true },
+                ProductParameter { key: "interest_rate_180d", label: "180-Day Rate", value_type: "percentage", default_value: "14.0", min_value: Some("5"), max_value: Some("20"), editable: true },
+                ProductParameter { key: "interest_rate_365d", label: "365-Day Rate", value_type: "percentage", default_value: "16.0", min_value: Some("5"), max_value: Some("20"), editable: true },
+                ProductParameter { key: "auto_rollover", label: "Auto Rollover", value_type: "boolean", default_value: "true", min_value: None, max_value: None, editable: true },
             ],
             gl_mappings: vec![
-                GLMapping { event: "deposit".into(), debit_gl: "GL-1001-CASH".into(), credit_gl: "GL-2100-CURRENT".into(), description: "Current account deposit".into() },
-                GLMapping { event: "withdrawal".into(), debit_gl: "GL-2100-CURRENT".into(), credit_gl: "GL-1001-CASH".into(), description: "Current account withdrawal".into() },
-                GLMapping { event: "cot_charge".into(), debit_gl: "GL-2100-CURRENT".into(), credit_gl: "GL-4020-COT-INCOME".into(), description: "COT charge on turnover".into() },
+                GLMapping { event: "placement", debit_gl: "GL-2100", credit_gl: "GL-2300", description: "FD placement" },
+                GLMapping { event: "maturity", debit_gl: "GL-2300", credit_gl: "GL-2100", description: "FD maturity payout" },
+                GLMapping { event: "interest.accrual", debit_gl: "GL-5300", credit_gl: "GL-2400", description: "FD interest accrual" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "customer_type".into(), operator: "in".into(), value: "corporate,sme,ngo".into() },
-                EligibilityRule { field: "registration_doc".into(), operator: "eq".into(), value: "CAC_CERTIFICATE".into() },
+            fee_rules: vec![
+                FeeRule { name: "Premature Liquidation", fee_type: "percentage", calculation: "percent_of_interest", amount_or_rate: "50", frequency: "per_event", waivable: false },
             ],
-            lifecycle_stage: "mature".into(), created_by: "product-team".into(),
-            approved_by: "head-of-corporate".into(), effective_date: "2025-01-01".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "age >= 18"],
+            created_at: "2026-01-01T00:00:00Z",
         },
-        Product {
-            id: "PROD-DOM-001".into(), name: "54Bank Domiciliary Account (USD)".into(),
-            product_type: "domiciliary".into(), category: "retail".into(),
-            status: "active".into(), version: 1, currency: "USD".into(),
-            interest_config: InterestConfig {
-                rate_type: "fixed".into(), base_rate: 0.5, spread: 0.0,
-                effective_rate: 0.5, accrual_basis: "360-day".into(),
-                compounding: "quarterly".into(), tiers: vec![],
-            },
-            fee_config: vec![
-                FeeRule { name: "Monthly Maintenance".into(), fee_type: "flat".into(), amount: 5.0, percentage: 0.0, frequency: "monthly".into(), gl_code: "GL-FEE-030".into() },
+        ProductDefinition {
+            id: "PROD-005", code: "CARD-VIR", name: "Virtual Debit Card", category: "cards", product_type: "virtual_card",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "card_scheme", label: "Card Scheme", value_type: "string", default_value: "visa", min_value: None, max_value: None, editable: false },
+                ProductParameter { key: "daily_limit", label: "Daily Spend Limit", value_type: "currency", default_value: "500000", min_value: Some("10000"), max_value: Some("5000000"), editable: true },
+                ProductParameter { key: "international_enabled", label: "International Enabled", value_type: "boolean", default_value: "false", min_value: None, max_value: None, editable: true },
+                ProductParameter { key: "contactless_enabled", label: "Contactless Enabled", value_type: "boolean", default_value: "true", min_value: None, max_value: None, editable: true },
             ],
             gl_mappings: vec![
-                GLMapping { event: "deposit".into(), debit_gl: "GL-1002-CASH-USD".into(), credit_gl: "GL-2200-DOM-USD".into(), description: "USD deposit".into() },
-                GLMapping { event: "revaluation".into(), debit_gl: "GL-2200-DOM-USD".into(), credit_gl: "GL-5200-REVAL-PNL".into(), description: "FX revaluation".into() },
+                GLMapping { event: "card.purchase", debit_gl: "GL-2100", credit_gl: "GL-6100", description: "Card purchase" },
+                GLMapping { event: "card.refund", debit_gl: "GL-6100", credit_gl: "GL-2100", description: "Card refund" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "kyc_tier".into(), operator: "gte".into(), value: "2".into() },
+            fee_rules: vec![
+                FeeRule { name: "Issuance Fee", fee_type: "flat", calculation: "fixed", amount_or_rate: "500", frequency: "once", waivable: true },
+                FeeRule { name: "Monthly Maintenance", fee_type: "flat", calculation: "fixed", amount_or_rate: "100", frequency: "monthly", waivable: true },
+                FeeRule { name: "International Markup", fee_type: "percentage", calculation: "percent_of_amount", amount_or_rate: "3.5", frequency: "per_transaction", waivable: false },
             ],
-            lifecycle_stage: "growth".into(), created_by: "product-team".into(),
-            approved_by: "head-of-treasury".into(), effective_date: "2025-06-01".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "account_status = active"],
+            created_at: "2026-02-01T00:00:00Z",
         },
-        Product {
-            id: "PROD-MUR-001".into(), name: "54Bank Murabaha Financing".into(),
-            product_type: "islamic_financing".into(), category: "islamic".into(),
-            status: "active".into(), version: 1, currency: "NGN".into(),
-            interest_config: InterestConfig {
-                rate_type: "murabaha_profit".into(), base_rate: 0.0, spread: 0.0,
-                effective_rate: 15.0, accrual_basis: "360-day".into(),
-                compounding: "none".into(), tiers: vec![],
-            },
-            fee_config: vec![
-                FeeRule { name: "Documentation Fee".into(), fee_type: "flat".into(), amount: 25000.0, percentage: 0.0, frequency: "one-time".into(), gl_code: "GL-FEE-040".into() },
+        ProductDefinition {
+            id: "PROD-006", code: "ISL-MUR", name: "Murabaha Financing", category: "islamic", product_type: "murabaha",
+            currency: "NGN", status: "active",
+            parameters: vec![
+                ProductParameter { key: "min_cost", label: "Minimum Asset Cost", value_type: "currency", default_value: "100000", min_value: Some("50000"), max_value: Some("100000000"), editable: true },
+                ProductParameter { key: "max_margin", label: "Maximum Profit Margin", value_type: "percentage", default_value: "50", min_value: Some("5"), max_value: Some("50"), editable: true },
+                ProductParameter { key: "max_tenor_months", label: "Max Tenor (Months)", value_type: "integer", default_value: "48", min_value: Some("3"), max_value: Some("60"), editable: true },
+                ProductParameter { key: "sharia_compliant", label: "Sharia Compliant", value_type: "boolean", default_value: "true", min_value: None, max_value: None, editable: false },
             ],
             gl_mappings: vec![
-                GLMapping { event: "asset_purchase".into(), debit_gl: "GL-1300-ISLAMIC-ASSET".into(), credit_gl: "GL-1001-CASH".into(), description: "Murabaha asset purchase".into() },
-                GLMapping { event: "profit_accrual".into(), debit_gl: "GL-1310-PROFIT-RECEIVABLE".into(), credit_gl: "GL-4100-ISLAMIC-INCOME".into(), description: "Murabaha profit accrual".into() },
+                GLMapping { event: "asset.purchase", debit_gl: "GL-3500", credit_gl: "GL-1100", description: "Asset purchase" },
+                GLMapping { event: "asset.sale", debit_gl: "GL-3600", credit_gl: "GL-3500", description: "Asset sale to customer" },
+                GLMapping { event: "profit.recognition", debit_gl: "GL-3600", credit_gl: "GL-4500", description: "Profit recognition" },
             ],
-            eligibility: vec![
-                EligibilityRule { field: "product_preference".into(), operator: "eq".into(), value: "islamic".into() },
+            fee_rules: vec![
+                FeeRule { name: "Documentation Fee", fee_type: "flat", calculation: "fixed", amount_or_rate: "5000", frequency: "once", waivable: true },
             ],
-            lifecycle_stage: "growth".into(), created_by: "islamic-banking-team".into(),
-            approved_by: "sharia-board".into(), effective_date: "2025-04-01".into(),
-            sunset_date: "".into(),
+            eligibility_rules: vec!["kyc_status = verified", "age >= 21"],
+            created_at: "2026-02-01T00:00:00Z",
         },
     ]
 }
 
-fn product_to_json(p: &Product) -> serde_json::Value {
-    let tiers: Vec<serde_json::Value> = p.interest_config.tiers.iter().map(|t| {
-        serde_json::json!({"minBalance": t.min_balance, "maxBalance": t.max_balance, "rate": t.rate})
+fn product_json(p: &ProductDefinition) -> String {
+    let params: Vec<String> = p.parameters.iter().map(|pr| {
+        format!(r#"{{"key":"{}","label":"{}","valueType":"{}","defaultValue":"{}","minValue":{},"maxValue":{},"editable":{}}}"#,
+            pr.key, pr.label, pr.value_type, pr.default_value,
+            pr.min_value.map_or("null".to_string(), |v| format!(r#""{}""#, v)),
+            pr.max_value.map_or("null".to_string(), |v| format!(r#""{}""#, v)),
+            pr.editable)
     }).collect();
-    let fees: Vec<serde_json::Value> = p.fee_config.iter().map(|f| {
-        serde_json::json!({"name": f.name, "type": f.fee_type, "amount": f.amount, "percentage": f.percentage, "frequency": f.frequency, "glCode": f.gl_code})
+    let gls: Vec<String> = p.gl_mappings.iter().map(|g| {
+        format!(r#"{{"event":"{}","debitGL":"{}","creditGL":"{}","description":"{}"}}"#, g.event, g.debit_gl, g.credit_gl, g.description)
     }).collect();
-    let gl: Vec<serde_json::Value> = p.gl_mappings.iter().map(|g| {
-        serde_json::json!({"event": g.event, "debitGL": g.debit_gl, "creditGL": g.credit_gl, "description": g.description})
+    let fees: Vec<String> = p.fee_rules.iter().map(|f| {
+        format!(r#"{{"name":"{}","feeType":"{}","calculation":"{}","amountOrRate":"{}","frequency":"{}","waivable":{}}}"#, f.name, f.fee_type, f.calculation, f.amount_or_rate, f.frequency, f.waivable)
     }).collect();
-    let elig: Vec<serde_json::Value> = p.eligibility.iter().map(|e| {
-        serde_json::json!({"field": e.field, "operator": e.operator, "value": e.value})
-    }).collect();
+    let elig: Vec<String> = p.eligibility_rules.iter().map(|e| format!(r#""{}""#, e)).collect();
 
-    serde_json::json!({
-        "id": p.id, "name": p.name, "productType": p.product_type, "category": p.category,
-        "status": p.status, "version": p.version, "currency": p.currency,
-        "interestConfig": {
-            "rateType": p.interest_config.rate_type, "baseRate": p.interest_config.base_rate,
-            "spread": p.interest_config.spread, "effectiveRate": p.interest_config.effective_rate,
-            "accrualBasis": p.interest_config.accrual_basis, "compounding": p.interest_config.compounding,
-            "tiers": tiers
-        },
-        "feeConfig": fees, "glMappings": gl, "eligibility": elig,
-        "lifecycleStage": p.lifecycle_stage, "createdBy": p.created_by,
-        "approvedBy": p.approved_by, "effectiveDate": p.effective_date, "sunsetDate": p.sunset_date
-    })
+    format!(r#"{{"id":"{}","code":"{}","name":"{}","category":"{}","productType":"{}","currency":"{}","status":"{}","parameters":[{}],"glMappings":[{}],"feeRules":[{}],"eligibilityRules":[{}],"createdAt":"{}"}}"#,
+        p.id, p.code, p.name, p.category, p.product_type, p.currency, p.status,
+        params.join(","), gls.join(","), fees.join(","), elig.join(","), p.created_at)
 }
 
-fn handle_request(request: &str, products: &Arc<RwLock<Vec<Product>>>) -> (u16, String) {
-    let first_line = request.lines().next().unwrap_or("");
-    let parts: Vec<&str> = first_line.split_whitespace().collect();
-    if parts.len() < 2 { return (400, r#"{"error":"Bad request"}"#.to_string()); }
-    let path = parts[1];
-
-    let prods = products.read().unwrap();
-
-    if path == "/healthz" {
-        let mw = middleware_config();
-        return (200, serde_json::json!({
-            "status": "healthy", "service": "product-factory",
-            "catalog": {"products": prods.len(), "active": prods.iter().filter(|p| p.status == "active").count()},
-            "middleware": mw
-        }).to_string());
-    }
-
-    if path == "/v1/products" {
-        let items: Vec<serde_json::Value> = prods.iter().map(|p| product_to_json(p)).collect();
-        return (200, serde_json::json!({"items": items, "total": items.len()}).to_string());
-    }
-
-    if path == "/v1/stats" {
-        let total = prods.len();
-        let active = prods.iter().filter(|p| p.status == "active").count();
-        let by_type: HashMap<String, usize> = {
-            let mut m = HashMap::new();
-            for p in prods.iter() { *m.entry(p.product_type.clone()).or_insert(0) += 1; }
-            m
-        };
-        let by_category: HashMap<String, usize> = {
-            let mut m = HashMap::new();
-            for p in prods.iter() { *m.entry(p.category.clone()).or_insert(0) += 1; }
-            m
-        };
-        let total_gl_mappings: usize = prods.iter().map(|p| p.gl_mappings.len()).sum();
-        let total_fee_rules: usize = prods.iter().map(|p| p.fee_config.len()).sum();
-        let total_eligibility_rules: usize = prods.iter().map(|p| p.eligibility.len()).sum();
-
-        return (200, serde_json::json!({
-            "totalProducts": total, "activeProducts": active,
-            "byType": by_type, "byCategory": by_category,
-            "totalGLMappings": total_gl_mappings,
-            "totalFeeRules": total_fee_rules,
-            "totalEligibilityRules": total_eligibility_rules,
-        }).to_string());
-    }
-
-    if path.starts_with("/v1/products/") {
-        let id = &path[13..];
-        for p in prods.iter() {
-            if p.id == id {
-                return (200, product_to_json(p).to_string());
-            }
-        }
-        return (404, r#"{"error":"Product not found"}"#.to_string());
-    }
-
-    (404, r#"{"error":"Not found"}"#.to_string())
+fn stats_json(products: &[ProductDefinition]) -> String {
+    let active = products.iter().filter(|p| p.status == "active").count();
+    let total_params: usize = products.iter().map(|p| p.parameters.len()).sum();
+    let total_gl: usize = products.iter().map(|p| p.gl_mappings.len()).sum();
+    let total_fees: usize = products.iter().map(|p| p.fee_rules.len()).sum();
+    let categories: Vec<&str> = {
+        let mut cats: Vec<&str> = products.iter().map(|p| p.category).collect();
+        cats.sort(); cats.dedup(); cats
+    };
+    format!(r#"{{"total_products":{},"active":{},"total_parameters":{},"total_gl_mappings":{},"total_fee_rules":{},"categories":[{}]}}"#,
+        products.len(), active, total_params, total_gl, total_fees,
+        categories.iter().map(|c| format!(r#""{}""#, c)).collect::<Vec<_>>().join(","))
 }
 
 fn main() {
-    let port = get_env("PORT", "8208");
-    let products = Arc::new(RwLock::new(seed_products()));
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8233".to_string());
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = TcpListener::bind(&addr).expect("Failed to bind");
+    eprintln!("product-factory-rs listening on :{}", port);
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).expect("Failed to bind");
-    let prods = products.read().unwrap();
-    let active = prods.iter().filter(|p| p.status == "active").count();
-    eprintln!("[product-factory] Listening on :{} with {} products ({} active), {} GL mappings",
-        port, prods.len(), active, prods.iter().map(|p| p.gl_mappings.len()).sum::<usize>());
-    drop(prods);
+    let products = seed_products();
 
     for stream in listener.incoming() {
-        if let Ok(mut stream) = stream {
-            let products = Arc::clone(&products);
-            std::thread::spawn(move || {
-                let mut buf = [0u8; 4096];
-                let n = stream.read(&mut buf).unwrap_or(0);
-                let request = String::from_utf8_lossy(&buf[..n]).to_string();
-                let (status, body) = handle_request(&request, &products);
-                let status_text = match status { 200 => "OK", 201 => "Created", 404 => "Not Found", _ => "Error" };
-                let response = format!(
-                    "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nX-Service: product-factory\r\n\r\n{}",
-                    status, status_text, body.len(), body
-                );
-                let _ = stream.write_all(response.as_bytes());
-            });
-        }
+        let mut stream = match stream { Ok(s) => s, Err(_) => continue };
+        let mut buf = [0u8; 4096];
+        let n = match std::io::Read::read(&mut stream, &mut buf) { Ok(n) => n, Err(_) => continue };
+        let req = String::from_utf8_lossy(&buf[..n]);
+        let first_line = req.lines().next().unwrap_or("");
+        let path = first_line.split_whitespace().nth(1).unwrap_or("/");
+
+        let (status, body) = if path == "/healthz" {
+            ("200 OK", r#"{"status":"healthy","service":"product-factory-rs","middleware":["kafka","dapr","fluvio","temporal","postgres","keycloak","permify","redis","mojaloop","opensearch","openappsec","apisix","tigerbeetle","lakehouse"]}"#.to_string())
+        } else if path == "/v1/products" {
+            let items: Vec<String> = products.iter().map(|p| product_json(p)).collect();
+            ("200 OK", format!(r#"{{"items":[{}],"total":{}}}"#, items.join(","), products.len()))
+        } else if path == "/v1/stats" {
+            ("200 OK", stats_json(&products))
+        } else {
+            ("404 Not Found", r#"{"error":"not found"}"#.to_string())
+        };
+
+        let resp = format!("HTTP/1.1 {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}", status, body.len(), body);
+        let _ = stream.write_all(resp.as_bytes());
     }
 }

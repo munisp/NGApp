@@ -47,6 +47,7 @@ import { registerChequeImagingRoutes } from "./lib/chequeImaging";
 import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
+import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5128,6 +5129,9 @@ async function startServer() {
   registerIntegrationTestRoutes(app);
   // KYC/KYB Integration Hub (Admin triggers, events, service gates)
   registerKYCKYBIntegration(app);
+
+  // Multi-Tenant Platform (feature flags, isolation, white label, provisioning, etc.)
+  registerMultiTenantPlatformRoutes(app);
 
   // Agriculture Banking proxy routes
   app.all("/api/platform/agriculture/farmers", (req, res) => {

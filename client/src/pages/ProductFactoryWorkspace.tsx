@@ -1,32 +1,27 @@
-import { Layers } from "lucide-react";
 import CrudWorkspace from "@/components/CrudWorkspace";
 import type { CrudConfig } from "@/components/CrudWorkspace";
+import { Factory } from "lucide-react";
 
 const config: CrudConfig = {
   domainKey: "product-factory",
   title: "Product Factory",
-  subtitle: "Parameterized product configuration — create new products without code changes",
-  icon: Layers,
-  accentColor: "violet",
-  fields: [
-    { key: "id", label: "Product ID", type: "readonly" },
-    { key: "name", label: "Product Name", type: "text", required: true },
-    { key: "productType", label: "Type", type: "select", options: ["savings", "fixed-deposit", "loan", "current", "domiciliary", "islamic"] },
-    { key: "category", label: "Category", type: "text" },
-    { key: "currency", label: "Currency", type: "select", options: ["NGN", "USD", "GBP", "EUR"] },
-  ],
+  subtitle: "Configuration-driven banking product definitions with parameters, GL mappings, fee rules",
+  icon: Factory,
+  accentColor: "blue",
+  fields: [],
   columns: [
-    { key: "id", label: "Product ID" },
-    { key: "name", label: "Product Name" },
-    { key: "productType", label: "Type" },
-    { key: "category", label: "Category" },
-    { key: "currency", label: "Currency" },
-    { key: "status", label: "Status" },
-    { key: "version", label: "Version" },
+    { key: "id", label: "Product ID", sortable: true },
+    { key: "code", label: "Code", sortable: true },
+    { key: "name", label: "Product Name", sortable: true },
+    { key: "category", label: "Category", sortable: true },
+    { key: "productType", label: "Type", sortable: true },
+    { key: "currency", label: "Currency", sortable: true },
+    { key: "status", label: "Status", sortable: true },
   ],
   idField: "id",
-  searchFields: ["id", "name", "productType"],
-  apiBase: "/api/platform/products/catalog",
+  searchFields: ["id", "code", "name", "category"],
+  apiBase: "/api/platform/product-factory/v1/products",
+  pageSize: 25,
 };
 
 export default function ProductFactoryWorkspace() {

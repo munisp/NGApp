@@ -249,6 +249,18 @@ const KYBTriggersWorkspace = lazy(() => import("@/pages/KYBTriggersWorkspace"));
 const KYCEventRulesWorkspace = lazy(() => import("@/pages/KYCEventRulesWorkspace"));
 const KYCServiceGatesWorkspace = lazy(() => import("@/pages/KYCServiceGatesWorkspace"));
 const KYCOverridesWorkspace = lazy(() => import("@/pages/KYCOverridesWorkspace"));
+const TenantIsolationWorkspace = lazy(() => import("@/pages/TenantIsolationWorkspace"));
+const FeatureFlagEngineWorkspace = lazy(() => import("@/pages/FeatureFlagEngineWorkspace"));
+const WhiteLabelEngineWorkspace = lazy(() => import("@/pages/WhiteLabelEngineWorkspace"));
+const TenantProvisioningWorkspace = lazy(() => import("@/pages/TenantProvisioningWorkspace"));
+const BrandedCommsWorkspace = lazy(() => import("@/pages/BrandedCommsWorkspace"));
+const EventStreamingWorkspace = lazy(() => import("@/pages/EventStreamingWorkspace"));
+const GraduatedRolloutWorkspace = lazy(() => import("@/pages/GraduatedRolloutWorkspace"));
+const CustomDomainWorkspace = lazy(() => import("@/pages/CustomDomainWorkspace"));
+const TenantMeteringWorkspace = lazy(() => import("@/pages/TenantMeteringWorkspace"));
+const WebhookEngineWorkspace = lazy(() => import("@/pages/WebhookEngineWorkspace"));
+const ApprovalWorkflowWorkspace = lazy(() => import("@/pages/ApprovalWorkflowWorkspace"));
+const PluginMarketplaceWorkspace = lazy(() => import("@/pages/PluginMarketplaceWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -553,6 +565,19 @@ export default function App() {
         <Route path="/kyc-event-rules" component={renderInAdminShell(KYCEventRulesWorkspace)} />
         <Route path="/kyc-service-gates" component={renderInAdminShell(KYCServiceGatesWorkspace)} />
         <Route path="/kyc-overrides" component={renderInAdminShell(KYCOverridesWorkspace)} />
+        {/* Multi-Tenant Platform */}
+        <Route path="/tenant-isolation" component={renderInAdminShell(TenantIsolationWorkspace)} />
+        <Route path="/feature-flag-engine" component={renderInAdminShell(FeatureFlagEngineWorkspace)} />
+        <Route path="/white-label-engine" component={renderInAdminShell(WhiteLabelEngineWorkspace)} />
+        <Route path="/tenant-provisioning" component={renderInAdminShell(TenantProvisioningWorkspace)} />
+        <Route path="/branded-comms" component={renderInAdminShell(BrandedCommsWorkspace)} />
+        <Route path="/event-streaming" component={renderInAdminShell(EventStreamingWorkspace)} />
+        <Route path="/graduated-rollout" component={renderInAdminShell(GraduatedRolloutWorkspace)} />
+        <Route path="/custom-domains" component={renderInAdminShell(CustomDomainWorkspace)} />
+        <Route path="/tenant-metering" component={renderInAdminShell(TenantMeteringWorkspace)} />
+        <Route path="/webhook-engine" component={renderInAdminShell(WebhookEngineWorkspace)} />
+        <Route path="/approval-workflows" component={renderInAdminShell(ApprovalWorkflowWorkspace)} />
+        <Route path="/plugin-marketplace" component={renderInAdminShell(PluginMarketplaceWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
