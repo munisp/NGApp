@@ -49,7 +49,7 @@ impl PaginationParams {
 }
 
 /// Paginate a slice, returning the sub-slice and total pages.
-pub fn paginate_slice<T>(items: &[T], params: &PaginationParams) -> (&[T], usize) {
+pub fn paginate_slice<'a, T>(items: &'a [T], params: &PaginationParams) -> (&'a [T], usize) {
     let total = items.len();
     let start = params.offset().min(total);
     let end = (start + params.page_size).min(total);
