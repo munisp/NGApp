@@ -261,6 +261,9 @@ const TenantMeteringWorkspace = lazy(() => import("@/pages/TenantMeteringWorkspa
 const WebhookEngineWorkspace = lazy(() => import("@/pages/WebhookEngineWorkspace"));
 const ApprovalWorkflowWorkspace = lazy(() => import("@/pages/ApprovalWorkflowWorkspace"));
 const PluginMarketplaceWorkspace = lazy(() => import("@/pages/PluginMarketplaceWorkspace"));
+const BillingOrchestratorWorkspace = lazy(() => import("@/pages/BillingOrchestratorWorkspace"));
+const BillingRbacWorkspace = lazy(() => import("@/pages/BillingRbacWorkspace"));
+const BillingEventProcessorWorkspace = lazy(() => import("@/pages/BillingEventProcessorWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -578,6 +581,9 @@ export default function App() {
         <Route path="/webhook-engine" component={renderInAdminShell(WebhookEngineWorkspace)} />
         <Route path="/approval-workflows" component={renderInAdminShell(ApprovalWorkflowWorkspace)} />
         <Route path="/plugin-marketplace" component={renderInAdminShell(PluginMarketplaceWorkspace)} />
+        <Route path="/billing-orchestrator" component={renderInAdminShell(BillingOrchestratorWorkspace)} />
+        <Route path="/billing-rbac" component={renderInAdminShell(BillingRbacWorkspace)} />
+        <Route path="/billing-event-processor" component={renderInAdminShell(BillingEventProcessorWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

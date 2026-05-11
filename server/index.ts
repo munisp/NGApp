@@ -7850,6 +7850,43 @@ async function startServer() {
   app.get("/api/platform/face-match/v1/matches/:id", (req, res) => { void proxyToService(FACE_MATCH_URL, `/v1/matches/${req.params.id}`, req, res); });
   app.get("/api/platform/face-match/v1/stats", (req, res) => { void proxyToService(FACE_MATCH_URL, "/v1/stats", req, res); });
 
+  // ─── Billing Orchestrator (Go :8242) ───────────────────────────────
+  const BILLING_ORCH_URL = process.env.BILLING_ORCH_URL || "http://localhost:8242";
+  app.get("/api/platform/billing-orchestrator/health", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/healthz", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/profiles", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/profiles", req, res); });
+  app.post("/api/platform/billing-orchestrator/v1/billing/profiles", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/profiles", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/audit", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/audit", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/realtime-metrics", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/realtime-metrics", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/onboarding", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/onboarding", req, res); });
+  app.post("/api/platform/billing-orchestrator/v1/billing/onboarding", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/onboarding", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/roles", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/roles", req, res); });
+  app.post("/api/platform/billing-orchestrator/v1/billing/check-permission", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/check-permission", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/transaction-splits", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/transaction-splits", req, res); });
+  app.post("/api/platform/billing-orchestrator/v1/billing/transaction-splits", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/transaction-splits", req, res); });
+  app.get("/api/platform/billing-orchestrator/v1/billing/orchestrator/stats", (req, res) => { void proxyToService(BILLING_ORCH_URL, "/v1/billing/orchestrator/stats", req, res); });
+
+  // ─── Billing RBAC Gateway (Rust :8243) ─────────────────────────────
+  const BILLING_RBAC_URL = process.env.BILLING_RBAC_URL || "http://localhost:8243";
+  app.get("/api/platform/billing-rbac/health", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/healthz", req, res); });
+  app.get("/api/platform/billing-rbac/v1/billing/rbac/policies", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/policies", req, res); });
+  app.get("/api/platform/billing-rbac/v1/billing/rbac/decisions", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/decisions", req, res); });
+  app.get("/api/platform/billing-rbac/v1/billing/rbac/notifications", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/notifications", req, res); });
+  app.get("/api/platform/billing-rbac/v1/billing/rbac/sessions", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/sessions", req, res); });
+  app.post("/api/platform/billing-rbac/v1/billing/rbac/enforce", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/enforce", req, res); });
+  app.get("/api/platform/billing-rbac/v1/billing/rbac/stats", (req, res) => { void proxyToService(BILLING_RBAC_URL, "/v1/billing/rbac/stats", req, res); });
+
+  // ─── Billing Event Processor (Python :8244) ────────────────────────
+  const BILLING_EVT_URL = process.env.BILLING_EVT_URL || "http://localhost:8244";
+  app.get("/api/platform/billing-events/health", (req, res) => { void proxyToService(BILLING_EVT_URL, "/healthz", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/metering", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/metering", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/revenue-captures", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/revenue-captures", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/overhead-allocations", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/overhead-allocations", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/alerts", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/alerts", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/pipelines", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/pipelines", req, res); });
+  app.get("/api/platform/billing-events/v1/billing/events/stats", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/stats", req, res); });
+  app.post("/api/platform/billing-events/v1/billing/events/ingest", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/ingest", req, res); });
+  app.post("/api/platform/billing-events/v1/billing/events/adjust-overhead", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/adjust-overhead", req, res); });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");

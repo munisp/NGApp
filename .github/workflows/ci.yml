@@ -206,6 +206,8 @@ jobs:
         run: cd services/webhook-engine-go && go build -o webhook-engine .
       - name: Build Approval Workflow Service
         run: cd services/approval-workflow-go && go build -o approval-workflow .
+      - name: Build Billing Orchestrator Service
+        run: cd services/billing-orchestrator-go && go build -o billing-orchestrator .
 
   rust-services:
     name: Rust Services
@@ -347,6 +349,8 @@ jobs:
         run: cd services/feature-flag-engine-rs && cargo build --release
       - name: Build Graduated Rollout Service
         run: cd services/graduated-rollout-rs && cargo build --release
+      - name: Build Billing RBAC Service
+        run: cd services/billing-rbac-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -366,7 +370,7 @@ jobs:
             echo "Checking services/$svc/main.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
           done
-          for svc in branded-comms-py plugin-marketplace-py; do
+          for svc in branded-comms-py plugin-marketplace-py billing-analytics-py billing-event-processor-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

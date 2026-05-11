@@ -101,6 +101,9 @@ import {
   Webhook,
   CheckCircle,
   Store,
+  CircuitBoard,
+  ShieldPlus,
+  Cpu,
 } from "lucide-react";
 
 const menuItems = [
@@ -341,6 +344,9 @@ const menuItems = [
   { path: "/webhook-engine", label: "Webhook Engine", icon: Webhook },
   { path: "/approval-workflows", label: "Approval Workflows", icon: CheckCircle },
   { path: "/plugin-marketplace", label: "Plugin Marketplace", icon: Store },
+  { path: "/billing-orchestrator", label: "Billing Orchestrator", icon: CircuitBoard },
+  { path: "/billing-rbac", label: "Billing RBAC", icon: ShieldPlus },
+  { path: "/billing-event-processor", label: "Billing Events", icon: Cpu },
 ] as const;
 
 export default function ArchiveAdminSidebar() {
