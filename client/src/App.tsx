@@ -280,6 +280,22 @@ const OfflineResilienceWorkspace = lazy(() => import("@/pages/OfflineResilienceW
 const RegulatoryAutomationWorkspace = lazy(() => import("@/pages/RegulatoryAutomationWorkspace"));
 const ServiceCatalogWorkspace = lazy(() => import("@/pages/ServiceCatalogWorkspace"));
 const WhiteLabelConfigWorkspace = lazy(() => import("@/pages/WhiteLabelConfigWorkspace"));
+const DatabasePersistenceWorkspace = lazy(() => import("@/pages/DatabasePersistenceWorkspace"));
+const KafkaEventBusWorkspace = lazy(() => import("@/pages/KafkaEventBusWorkspace"));
+const JWTAuthWorkspace = lazy(() => import("@/pages/JWTAuthWorkspace"));
+const E2ETestSuiteWorkspace = lazy(() => import("@/pages/E2ETestSuiteWorkspace"));
+const TigerBeetleLedgerWorkspace = lazy(() => import("@/pages/TigerBeetleLedgerWorkspace"));
+const NotificationsWorkspace = lazy(() => import("@/pages/NotificationsWorkspace"));
+const ReportGenerationWorkspace = lazy(() => import("@/pages/ReportGenerationWorkspace"));
+const BatchEodWorkspace = lazy(() => import("@/pages/BatchEodWorkspace"));
+const RateLimitingWorkspace = lazy(() => import("@/pages/RateLimitingWorkspace"));
+const MultiCurrencyFxWorkspace = lazy(() => import("@/pages/MultiCurrencyFxWorkspace"));
+const DisasterRecoveryWorkspace = lazy(() => import("@/pages/DisasterRecoveryWorkspace"));
+const LoadTestingWorkspace = lazy(() => import("@/pages/LoadTestingWorkspace"));
+const AIFraudDetectionWorkspace = lazy(() => import("@/pages/AIFraudDetectionWorkspace"));
+const ENairaWorkspace = lazy(() => import("@/pages/ENairaWorkspace"));
+const ESGBankingWorkspace = lazy(() => import("@/pages/ESGBankingWorkspace"));
+const EmbeddedFinanceWorkspace = lazy(() => import("@/pages/EmbeddedFinanceWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -606,6 +622,22 @@ export default function App() {
         <Route path="/gl-engine" component={renderInAdminShell(GLEngineWorkspace)} />
         <Route path="/offline-resilience" component={renderInAdminShell(OfflineResilienceWorkspace)} />
         <Route path="/regulatory-automation" component={renderInAdminShell(RegulatoryAutomationWorkspace)} />
+        <Route path="/database-persistence" component={renderInAdminShell(DatabasePersistenceWorkspace)} />
+        <Route path="/kafka-event-bus" component={renderInAdminShell(KafkaEventBusWorkspace)} />
+        <Route path="/jwt-auth" component={renderInAdminShell(JWTAuthWorkspace)} />
+        <Route path="/e2e-tests" component={renderInAdminShell(E2ETestSuiteWorkspace)} />
+        <Route path="/tigerbeetle-ledger" component={renderInAdminShell(TigerBeetleLedgerWorkspace)} />
+        <Route path="/notifications-engine" component={renderInAdminShell(NotificationsWorkspace)} />
+        <Route path="/report-generation" component={renderInAdminShell(ReportGenerationWorkspace)} />
+        <Route path="/batch-eod" component={renderInAdminShell(BatchEodWorkspace)} />
+        <Route path="/rate-limiting" component={renderInAdminShell(RateLimitingWorkspace)} />
+        <Route path="/multi-currency-fx" component={renderInAdminShell(MultiCurrencyFxWorkspace)} />
+        <Route path="/disaster-recovery" component={renderInAdminShell(DisasterRecoveryWorkspace)} />
+        <Route path="/load-testing" component={renderInAdminShell(LoadTestingWorkspace)} />
+        <Route path="/ai-fraud-detection" component={renderInAdminShell(AIFraudDetectionWorkspace)} />
+        <Route path="/enaira-cbdc" component={renderInAdminShell(ENairaWorkspace)} />
+        <Route path="/esg-banking" component={renderInAdminShell(ESGBankingWorkspace)} />
+        <Route path="/embedded-finance" component={renderInAdminShell(EmbeddedFinanceWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

@@ -50,6 +50,26 @@ import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
+import { registerDatabasePersistence } from "./lib/databasePersistence";
+import { registerKafkaEventBus } from "./lib/kafkaEventBus";
+import { registerJWTAuthEnforcement } from "./lib/jwtAuthEnforcement";
+import { registerE2ETestSuite } from "./lib/e2eTestSuite";
+import { registerTigerBeetleLedger } from "./lib/tigerbeetleLedger";
+import { registerRealtimeNotifications } from "./lib/realtimeNotifications";
+import { registerMakerCheckerEngine } from "./lib/makerCheckerEngine";
+import { registerReportGeneration } from "./lib/reportGeneration";
+import { registerBatchEodEngine } from "./lib/batchEodEngine";
+import { registerRedisRateLimiting } from "./lib/redisRateLimiting";
+import { registerMultiCurrencyFx } from "./lib/multiCurrencyFx";
+import { registerDocumentManagement } from "./lib/documentManagement";
+import { registerImmutableAuditTrail } from "./lib/immutableAuditTrail";
+import { registerDisasterRecovery } from "./lib/disasterRecovery";
+import { registerLoadTesting } from "./lib/loadTesting";
+import { registerAIFraudDetection } from "./lib/aiFraudDetection";
+import { registerOpenBankingApi } from "./lib/openBankingApi";
+import { registerENairaCbdc } from "./lib/enairaCbdc";
+import { registerEsgBanking } from "./lib/esgBanking";
+import { registerEmbeddedFinanceSdk } from "./lib/embeddedFinanceSdk";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5166,6 +5186,28 @@ async function startServer() {
   registerIntegrationTestRoutes(app);
   // KYC/KYB Integration Hub (Admin triggers, events, service gates)
   registerKYCKYBIntegration(app);
+
+  // === Production Infrastructure Modules ===
+  registerDatabasePersistence(app);
+  registerKafkaEventBus(app);
+  registerJWTAuthEnforcement(app);
+  registerE2ETestSuite(app);
+  registerTigerBeetleLedger(app);
+  registerRealtimeNotifications(app);
+  registerMakerCheckerEngine(app);
+  registerReportGeneration(app);
+  registerBatchEodEngine(app);
+  registerRedisRateLimiting(app);
+  registerMultiCurrencyFx(app);
+  registerDocumentManagement(app);
+  registerImmutableAuditTrail(app);
+  registerDisasterRecovery(app);
+  registerLoadTesting(app);
+  registerAIFraudDetection(app);
+  registerOpenBankingApi(app);
+  registerENairaCbdc(app);
+  registerEsgBanking(app);
+  registerEmbeddedFinanceSdk(app);
 
   // Feature Flag Engine — tenant-aware service catalog and API gating
   registerFeatureFlagEngine(app);

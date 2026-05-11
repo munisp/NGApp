@@ -103,6 +103,9 @@ import {
   ChevronDown,
   ChevronRight,
   WifiOff,
+  Sparkles,
+  Leaf,
+  Code,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -464,6 +467,38 @@ const categorizedMenu: MenuCategory[] = [
     items: [
       { path: "/integration-tests", label: "Integration Tests", icon: Activity },
       { path: "/seed-registry", label: "Seed Registry", icon: Database },
+      { path: "/e2e-tests", label: "E2E Test Suite", icon: Activity },
+      { path: "/load-testing", label: "Load Testing", icon: Gauge },
+    ],
+  },
+  {
+    category: "Production Infrastructure",
+    icon: Server,
+    items: [
+      { path: "/database-persistence", label: "Database Persistence", icon: Database },
+      { path: "/kafka-event-bus", label: "Kafka Event Bus", icon: Radio },
+      { path: "/jwt-auth", label: "JWT Auth Enforcement", icon: Key },
+      { path: "/tigerbeetle-ledger", label: "TigerBeetle Ledger", icon: Shield },
+      { path: "/rate-limiting", label: "API Rate Limiting", icon: Gauge },
+      { path: "/disaster-recovery", label: "Disaster Recovery", icon: ShieldCheck },
+      { path: "/batch-eod", label: "Batch / EOD Engine", icon: Clock },
+      { path: "/notifications-engine", label: "Notifications Engine", icon: Bell },
+      { path: "/maker-checker", label: "Maker-Checker Engine", icon: CheckSquare },
+      { path: "/report-generation", label: "Report Generation", icon: FileBarChart },
+      { path: "/audit-trail", label: "Immutable Audit Trail", icon: FileText },
+      { path: "/document-management", label: "Document Mgmt / OCR", icon: FolderOpen },
+    ],
+  },
+  {
+    category: "Innovation & Open Banking",
+    icon: Sparkles,
+    items: [
+      { path: "/multi-currency-fx", label: "Multi-Currency FX", icon: DollarSign },
+      { path: "/ai-fraud-detection", label: "AI Fraud Detection", icon: Brain },
+      { path: "/open-banking", label: "Open Banking API", icon: Globe },
+      { path: "/enaira-cbdc", label: "eNaira CBDC", icon: Banknote },
+      { path: "/esg-banking", label: "ESG / Carbon Credits", icon: Leaf },
+      { path: "/embedded-finance", label: "Embedded Finance SDK", icon: Code },
     ],
   },
 ];

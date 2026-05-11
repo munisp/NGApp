@@ -2,23 +2,23 @@ import { useState, useEffect } from "react";
 
 interface Column { key: string; label: string; }
 
-export default function DocumentManagementWorkspace() {
+export default function RateLimitingWorkspace() {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/documents/v1/files")
+    fetch("/api/rate-limits/v1/tiers")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/documents/v1/stats")
+    fetch("/api/rate-limits/v1/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});
   }, []);
 
-  const columns: Column[] = [{key:"id",label:"ID"},{key:"type",label:"Type"},{key:"subType",label:"Sub-Type"},{key:"fileName",label:"File"},{key:"verificationStatus",label:"Status"},{key:"tamperScore",label:"Tamper Score"},{key:"uploadedAt",label:"Uploaded"}];
+  const columns: Column[] = [{key:"name",label:"Tier"},{key:"requestsPerMinute",label:"Req/Min"},{key:"requestsPerHour",label:"Req/Hour"},{key:"burstLimit",label:"Burst"},{key:"concurrentRequests",label:"Concurrent"},{key:"tenants",label:"Tenants"}];
 
   const filtered = (() => {
     const q = search.toLowerCase();
@@ -30,7 +30,7 @@ export default function DocumentManagementWorkspace() {
 
   return (
     <div style={{padding:"1.5rem"}}>
-      <h1 style={{fontSize:"1.5rem",fontWeight:700,marginBottom:"1rem"}}>Document Management</h1>
+      <h1 style={{fontSize:"1.5rem",fontWeight:700,marginBottom:"1rem"}}>API Rate Limiting</h1>
       {stats && (
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:"0.75rem",marginBottom:"1.5rem"}}>
           {Object.entries(stats).map(([k, v]: [string, any]) => (
