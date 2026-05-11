@@ -73,6 +73,7 @@ import { registerEmbeddedFinanceSdk } from "./lib/embeddedFinanceSdk";
 import { registerRansomwareProtection } from "./lib/ransomwareProtection";
 import { registerOfflineBandwidthResilience } from "./lib/offlineBandwidthResilience";
 import { registerCircuitBreakerGateway } from "./lib/circuitBreakerGateway";
+import { registerLakehouseIntegration } from "./lib/lakehouseIntegration";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -5217,6 +5218,7 @@ async function startServer() {
   registerRansomwareProtection(app);
   registerOfflineBandwidthResilience(app);
   registerCircuitBreakerGateway(app);
+  registerLakehouseIntegration(app);
   registerPerformanceTuning(app);
   registerKedaAutoscaling(app);
   registerHighAvailability(app);

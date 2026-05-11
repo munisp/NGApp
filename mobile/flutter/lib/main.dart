@@ -157,6 +157,13 @@ import 'screens/kyc_event_rules_screen.dart';
 import 'screens/kyc_overrides_screen.dart';
 import 'screens/kyc_service_gates_screen.dart';
 import 'screens/kyc_triggers_screen.dart';
+import 'screens/lakehouse_cdc_events_screen.dart';
+import 'screens/lakehouse_clients_screen.dart';
+import 'screens/lakehouse_domain_cdc_screen.dart';
+import 'screens/lakehouse_lineage_edges_screen.dart';
+import 'screens/lakehouse_lineage_nodes_screen.dart';
+import 'screens/lakehouse_materialized_views_screen.dart';
+import 'screens/lakehouse_query_federation_screen.dart';
 import 'screens/lakehouse_screen.dart';
 import 'screens/lc_amendments_screen.dart';
 import 'screens/lcr_nsfr_screen.dart';
@@ -453,6 +460,13 @@ class FiftyFourBankApp extends StatelessWidget {
         '/kyc-overrides': (context) => const KycOverridesScreen(),
         '/kyc-service-gates': (context) => const KycServiceGatesScreen(),
         '/kyc-triggers': (context) => const KycTriggersScreen(),
+        '/lakehouse-cdc-events': (context) => const LakehouseCDCEventsScreen(),
+        '/lakehouse-clients': (context) => const LakehouseClientsScreen(),
+        '/lakehouse-domain-cdc': (context) => const LakehouseDomainCDCScreen(),
+        '/lakehouse-lineage-edges': (context) => const LakehouseLineageEdgesScreen(),
+        '/lakehouse-lineage-nodes': (context) => const LakehouseLineageNodesScreen(),
+        '/lakehouse-materialized-views': (context) => const LakehouseMaterializedViewsScreen(),
+        '/lakehouse-query-federation': (context) => const LakehouseQueryFederationScreen(),
         '/lakehouse': (context) => const LakehouseScreen(),
         '/lc-amendments': (context) => const LcAmendmentsScreen(),
         '/lcr-nsfr': (context) => const LcrNsfrScreen(),
@@ -746,6 +760,13 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('Kyc Overrides'), onTap: () => Navigator.pushNamed(context, '/kyc-overrides')),
             ListTile(title: const Text('Kyc Service Gates'), onTap: () => Navigator.pushNamed(context, '/kyc-service-gates')),
             ListTile(title: const Text('Kyc Triggers'), onTap: () => Navigator.pushNamed(context, '/kyc-triggers')),
+            ListTile(title: const Text('Lakehouse C D C Events'), onTap: () => Navigator.pushNamed(context, '/lakehouse-cdc-events')),
+            ListTile(title: const Text('Lakehouse Clients'), onTap: () => Navigator.pushNamed(context, '/lakehouse-clients')),
+            ListTile(title: const Text('Lakehouse Domain C D C'), onTap: () => Navigator.pushNamed(context, '/lakehouse-domain-cdc')),
+            ListTile(title: const Text('Lakehouse Lineage Edges'), onTap: () => Navigator.pushNamed(context, '/lakehouse-lineage-edges')),
+            ListTile(title: const Text('Lakehouse Lineage Nodes'), onTap: () => Navigator.pushNamed(context, '/lakehouse-lineage-nodes')),
+            ListTile(title: const Text('Lakehouse Materialized Views'), onTap: () => Navigator.pushNamed(context, '/lakehouse-materialized-views')),
+            ListTile(title: const Text('Lakehouse Query Federation'), onTap: () => Navigator.pushNamed(context, '/lakehouse-query-federation')),
             ListTile(title: const Text('Lakehouse'), onTap: () => Navigator.pushNamed(context, '/lakehouse')),
             ListTile(title: const Text('Lc Amendments'), onTap: () => Navigator.pushNamed(context, '/lc-amendments')),
             ListTile(title: const Text('Lcr Nsfr'), onTap: () => Navigator.pushNamed(context, '/lcr-nsfr')),

@@ -314,6 +314,13 @@ const KedaPoliciesWorkspace = lazy(() => import("@/pages/KedaPoliciesWorkspace")
 const HAServicesWorkspace = lazy(() => import("@/pages/HAServicesWorkspace"));
 const HAMiddlewareWorkspace = lazy(() => import("@/pages/HAMiddlewareWorkspace"));
 const HAZonesWorkspace = lazy(() => import("@/pages/HAZonesWorkspace"));
+const LakehouseDomainCDCWorkspace = lazy(() => import("@/pages/LakehouseDomainCDCWorkspace"));
+const LakehouseCDCEventsWorkspace = lazy(() => import("@/pages/LakehouseCDCEventsWorkspace"));
+const LakehouseClientsWorkspace = lazy(() => import("@/pages/LakehouseClientsWorkspace"));
+const LakehouseQueryFederationWorkspace = lazy(() => import("@/pages/LakehouseQueryFederationWorkspace"));
+const LakehouseMaterializedViewsWorkspace = lazy(() => import("@/pages/LakehouseMaterializedViewsWorkspace"));
+const LakehouseLineageNodesWorkspace = lazy(() => import("@/pages/LakehouseLineageNodesWorkspace"));
+const LakehouseLineageEdgesWorkspace = lazy(() => import("@/pages/LakehouseLineageEdgesWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -674,6 +681,13 @@ export default function App() {
         <Route path="/ha-services" component={renderInAdminShell(HAServicesWorkspace)} />
         <Route path="/ha-middleware" component={renderInAdminShell(HAMiddlewareWorkspace)} />
         <Route path="/ha-zones" component={renderInAdminShell(HAZonesWorkspace)} />
+        <Route path="/lakehouse-domain-cdc" component={renderInAdminShell(LakehouseDomainCDCWorkspace)} />
+        <Route path="/lakehouse-cdc-events" component={renderInAdminShell(LakehouseCDCEventsWorkspace)} />
+        <Route path="/lakehouse-clients" component={renderInAdminShell(LakehouseClientsWorkspace)} />
+        <Route path="/lakehouse-query-federation" component={renderInAdminShell(LakehouseQueryFederationWorkspace)} />
+        <Route path="/lakehouse-materialized-views" component={renderInAdminShell(LakehouseMaterializedViewsWorkspace)} />
+        <Route path="/lakehouse-lineage-nodes" component={renderInAdminShell(LakehouseLineageNodesWorkspace)} />
+        <Route path="/lakehouse-lineage-edges" component={renderInAdminShell(LakehouseLineageEdgesWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

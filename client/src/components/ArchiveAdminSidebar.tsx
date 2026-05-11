@@ -548,6 +548,19 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/ha-zones", label: "HA Zones", icon: Globe },
     ],
   },
+  {
+    category: "Lakehouse & Data Platform",
+    icon: Database,
+    items: [
+      { path: "/lakehouse-domain-cdc", label: "Domain CDC Events", icon: Activity },
+      { path: "/lakehouse-cdc-events", label: "CDC Event Stream", icon: Radio },
+      { path: "/lakehouse-clients", label: "Shared Clients", icon: Code },
+      { path: "/lakehouse-query-federation", label: "Query Federation", icon: Search },
+      { path: "/lakehouse-materialized-views", label: "Materialized Views", icon: Layers },
+      { path: "/lakehouse-lineage-nodes", label: "Lineage Nodes", icon: GitBranch },
+      { path: "/lakehouse-lineage-edges", label: "Lineage Edges", icon: ArrowRightLeft },
+    ],
+  },
 ];
 
 function CategorySection({
