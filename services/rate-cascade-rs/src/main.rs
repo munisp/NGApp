@@ -36,9 +36,9 @@ fn seed_data() -> serde_json::Value {
         ],
         "cascadeRuns": [
             {"id": "CASCADE-001", "benchmark": "CBN-MPR", "oldRate": 27.25, "newRate": 27.50, "changeBps": 25, "triggeredAt": "2026-05-01T10:00:00Z", "completedAt": "2026-05-01T10:15:00Z", "status": "completed",
-             "impact": {"productsAffected": 45, "accountsAffected": 890000, "estimatedAnnualImpact": 2250000000, "notifications": 890000},
+             "impact": {"productsAffected": 45, "accountsAffected": 890000, "estimatedAnnualImpact": 2250000000_i64, "notifications": 890000},
              "breakdown": [
-                 {"product": "Personal Loan", "accounts": 456000, "oldEffective": 29.75, "newEffective": 30.00, "impactNGN": 1250000000},
+                 {"product": "Personal Loan", "accounts": 456000, "oldEffective": 29.75, "newEffective": 30.00, "impactNGN": 1250000000_i64},
                  {"product": "SME Overdraft", "accounts": 234000, "oldEffective": 31.25, "newEffective": 31.50, "impactNGN": 680000000},
                  {"product": "Corporate Term Loan", "accounts": 200000, "oldEffective": 28.00, "newEffective": 28.25, "impactNGN": 320000000}
              ]},
@@ -48,7 +48,7 @@ fn seed_data() -> serde_json::Value {
         "stats": {
             "totalBenchmarks": 6, "totalLinkedProducts": 96, "totalLinkedAccounts": 1392450,
             "cascadesYTD": 8, "avgCascadeTimeMinutes": 12.5,
-            "totalImpactYTD": 18500000000, "notificationsSentYTD": 4200000
+            "totalImpactYTD": 18500000000_i64, "notificationsSentYTD": 4200000
         }
     })
 }
