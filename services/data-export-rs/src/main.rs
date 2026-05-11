@@ -88,7 +88,7 @@ async fn healthz() -> HttpResponse {
                 "apisix": { "status": "connected", "upstream": "data_export" },
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "data_export_iceberg" }
-            }),,
+            }),
         "formats": ["csv", "xlsx", "json", "xml", "parquet", "pdf"],
     }))
 }

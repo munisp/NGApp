@@ -88,7 +88,7 @@ async fn healthz() -> HttpResponse {
                 "apisix": { "status": "connected", "upstream": "credit_bureau" },
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "credit_bureau_iceberg" }
-            }),,
+            }),
         "bureaus": ["CRC", "FirstCentral", "CreditRegistry"],
     }))
 }

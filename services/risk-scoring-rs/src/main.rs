@@ -111,7 +111,7 @@ async fn healthz() -> HttpResponse {
                 "apisix": { "status": "connected", "upstream": "risk_scoring" },
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "risk_scoring_iceberg" }
-            }),,
+            }),
         "models": ["PD/LGD/EAD", "Basel III SA", "IFRS 9 ECL"]
     }))
 }

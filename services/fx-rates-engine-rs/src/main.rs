@@ -112,7 +112,7 @@ async fn healthz(data: web::Data<AppState>) -> HttpResponse {
                 "apisix": { "status": "connected", "upstream": "fx_rates_engine" },
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "fx_rates_engine_iceberg" }
-            }),,
+            }),
         "timestamp": chrono::Utc::now().to_rfc3339(),
         "rates_count": rates.len(),
     }))

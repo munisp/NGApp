@@ -66,7 +66,7 @@ async fn healthz() -> HttpResponse {
                 "apisix": { "status": "connected", "upstream": "collateral_valuation" },
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "collateral_valuation_iceberg" }
-            }),,
+            }),
         "types": ["property", "vehicle", "equipment", "securities", "cash_deposit", "guarantee"],
     }))
 }
