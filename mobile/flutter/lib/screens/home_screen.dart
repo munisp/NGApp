@@ -1,3 +1,4 @@
+import '../main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/connectivity_service.dart';
@@ -11,6 +12,7 @@ class HomeScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      drawer: const BankDrawer(),
       appBar: AppBar(
         title: const Text('54Bank'),
         centerTitle: false,
