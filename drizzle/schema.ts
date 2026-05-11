@@ -1401,3 +1401,401 @@ export type ErpnextSyncJob = typeof erpnextSyncJobs.$inferSelect;
 export type InsertErpnextSyncJob = typeof erpnextSyncJobs.$inferInsert;
 export type RegulatoryReport = typeof regulatoryReports.$inferSelect;
 export type InsertRegulatoryReport = typeof regulatoryReports.$inferInsert;
+
+// ────────────────────────────────────────────────────────────────
+// Core Banking Tables — accounts, transactions, GL, loans, etc.
+// ────────────────────────────────────────────────────────────────
+
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  accountId: varchar("accountId", { length: 64 }).notNull().unique(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  accountName: varchar("accountName", { length: 191 }).notNull(),
+  accountType: text("accountType").notNull(), // savings, current, fixed_deposit, loan, gl
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  balance: doublePrecision("balance").default(0).notNull(),
+  availableBalance: doublePrecision("availableBalance").default(0).notNull(),
+  ledgerBalance: doublePrecision("ledgerBalance").default(0).notNull(),
+  status: text("status").notNull().default("active"), // active, dormant, frozen, closed
+  branchCode: varchar("branchCode", { length: 16 }).notNull(),
+  openedAt: timestamp("openedAt").defaultNow().notNull(),
+  lastTransactionAt: timestamp("lastTransactionAt"),
+  version: integer("version").default(1).notNull(),
+  tigerbeetleAccountId: varchar("tigerbeetleAccountId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  accountCustomerIdx: index("account_customer_idx").on(table.customerId, table.status),
+  accountTenantIdx: index("account_tenant_idx").on(table.tenantId, table.accountType, table.status),
+  accountBranchIdx: index("account_branch_idx").on(table.branchCode, table.status),
+}));
+
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  transactionId: varchar("transactionId", { length: 64 }).notNull().unique(),
+  accountId: varchar("accountId", { length: 64 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  type: text("type").notNull(), // credit, debit
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  narration: text("narration").notNull(),
+  reference: varchar("reference", { length: 128 }).notNull().unique(),
+  channel: text("channel").notNull(), // mobile, web, ussd, pos, atm, branch
+  counterpartyAccountId: varchar("counterpartyAccountId", { length: 64 }),
+  counterpartyName: varchar("counterpartyName", { length: 191 }),
+  balanceAfter: doublePrecision("balanceAfter").notNull(),
+  status: text("status").notNull().default("completed"), // pending, completed, failed, reversed
+  valueDate: timestamp("valueDate").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  txnAccountDateIdx: index("txn_account_date_idx").on(table.accountId, table.createdAt),
+  txnReferenceIdx: uniqueIndex("txn_reference_idx").on(table.reference),
+  txnTenantDateIdx: index("txn_tenant_date_idx").on(table.tenantId, table.createdAt),
+}));
+
+export const journalEntries = pgTable("journalEntries", {
+  id: serial("id").primaryKey(),
+  entryId: varchar("entryId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  accountId: varchar("accountId", { length: 64 }).notNull(),
+  glAccountCode: varchar("glAccountCode", { length: 32 }).notNull(),
+  type: text("type").notNull(), // debit, credit
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  narration: text("narration").notNull(),
+  transactionRef: varchar("transactionRef", { length: 128 }).notNull(),
+  batchId: varchar("batchId", { length: 64 }),
+  reversalOf: varchar("reversalOf", { length: 64 }),
+  postingDate: timestamp("postingDate").defaultNow().notNull(),
+  valueDate: timestamp("valueDate").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  jeAccountIdx: index("je_account_idx").on(table.accountId, table.createdAt),
+  jeGlCodeIdx: index("je_gl_code_idx").on(table.glAccountCode, table.postingDate),
+  jeBatchIdx: index("je_batch_idx").on(table.batchId),
+}));
+
+export const glAccounts = pgTable("glAccounts", {
+  id: serial("id").primaryKey(),
+  glAccountCode: varchar("glAccountCode", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  name: varchar("name", { length: 191 }).notNull(),
+  category: text("category").notNull(), // asset, liability, equity, income, expense
+  subcategory: text("subcategory").notNull(),
+  parentCode: varchar("parentCode", { length: 32 }),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  balance: doublePrecision("balance").default(0).notNull(),
+  status: text("status").notNull().default("active"),
+  isControlAccount: integer("isControlAccount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  glCategoryIdx: index("gl_category_idx").on(table.tenantId, table.category),
+}));
+
+export const loans = pgTable("loans", {
+  id: serial("id").primaryKey(),
+  loanId: varchar("loanId", { length: 64 }).notNull().unique(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  loanType: text("loanType").notNull(), // term, overdraft, mortgage, agri, sme
+  principalAmount: doublePrecision("principalAmount").notNull(),
+  outstandingBalance: doublePrecision("outstandingBalance").notNull(),
+  interestRate: doublePrecision("interestRate").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  tenor: integer("tenor").notNull(),
+  tenorUnit: text("tenorUnit").notNull().default("months"),
+  disbursementDate: timestamp("disbursementDate"),
+  maturityDate: timestamp("maturityDate"),
+  nextPaymentDate: timestamp("nextPaymentDate"),
+  nextPaymentAmount: doublePrecision("nextPaymentAmount"),
+  status: text("status").notNull().default("pending"), // pending, active, overdue, default, closed, written_off
+  classificationIFRS9: text("classificationIFRS9").default("stage1"), // stage1, stage2, stage3
+  collateralValue: doublePrecision("collateralValue"),
+  approvedBy: varchar("approvedBy", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  loanCustomerIdx: index("loan_customer_idx").on(table.customerId, table.status),
+  loanPaymentIdx: index("loan_payment_idx").on(table.nextPaymentDate, table.status),
+  loanTenantIdx: index("loan_tenant_idx").on(table.tenantId, table.loanType, table.status),
+}));
+
+export const loanRepayments = pgTable("loanRepayments", {
+  id: serial("id").primaryKey(),
+  repaymentId: varchar("repaymentId", { length: 64 }).notNull().unique(),
+  loanId: varchar("loanId", { length: 64 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  principalPortion: doublePrecision("principalPortion").notNull(),
+  interestPortion: doublePrecision("interestPortion").notNull(),
+  penaltyPortion: doublePrecision("penaltyPortion").default(0).notNull(),
+  totalAmount: doublePrecision("totalAmount").notNull(),
+  dueDate: timestamp("dueDate").notNull(),
+  paidDate: timestamp("paidDate"),
+  status: text("status").notNull().default("scheduled"), // scheduled, paid, overdue, partial, waived
+  transactionRef: varchar("transactionRef", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  repaymentLoanIdx: index("repayment_loan_idx").on(table.loanId, table.dueDate),
+}));
+
+export const transfers = pgTable("transfers", {
+  id: serial("id").primaryKey(),
+  transferId: varchar("transferId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  sourceAccountId: varchar("sourceAccountId", { length: 64 }).notNull(),
+  destinationAccountId: varchar("destinationAccountId", { length: 64 }),
+  destinationBank: varchar("destinationBank", { length: 64 }),
+  destinationAccountNumber: varchar("destinationAccountNumber", { length: 32 }),
+  beneficiaryName: varchar("beneficiaryName", { length: 191 }),
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  channel: text("channel").notNull(), // nip, rtgs, internal, mojaloop, swift
+  narration: text("narration").notNull(),
+  nipSessionId: varchar("nipSessionId", { length: 64 }),
+  mojaloopTransferId: varchar("mojaloopTransferId", { length: 64 }),
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed, reversed
+  failureReason: text("failureReason"),
+  idempotencyKey: varchar("idempotencyKey", { length: 128 }).unique(),
+  transferDate: timestamp("transferDate").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  transferDateIdx: index("transfer_date_idx").on(table.transferDate, table.status),
+  transferSourceIdx: index("transfer_source_idx").on(table.sourceAccountId, table.createdAt),
+  transferIdempotencyIdx: uniqueIndex("transfer_idempotency_idx").on(table.idempotencyKey),
+}));
+
+export const settlements = pgTable("settlements", {
+  id: serial("id").primaryKey(),
+  settlementId: varchar("settlementId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  windowId: varchar("windowId", { length: 64 }).notNull(),
+  model: text("model").notNull(), // dns, rtgs, cross_border
+  corridor: varchar("corridor", { length: 64 }),
+  totalDebits: doublePrecision("totalDebits").notNull(),
+  totalCredits: doublePrecision("totalCredits").notNull(),
+  netPosition: doublePrecision("netPosition").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  participantCount: integer("participantCount").notNull(),
+  transferCount: integer("transferCount").notNull(),
+  status: text("status").notNull().default("open"), // open, closed, settling, settled, disputed
+  openedAt: timestamp("openedAt").defaultNow().notNull(),
+  closedAt: timestamp("closedAt"),
+  settledAt: timestamp("settledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  settlementDateIdx: index("settlement_date_idx").on(table.openedAt, table.status),
+}));
+
+export const amlAlerts = pgTable("amlAlerts", {
+  id: serial("id").primaryKey(),
+  alertId: varchar("alertId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  entityType: text("entityType").notNull(), // customer, account, transaction
+  entityId: varchar("entityId", { length: 64 }).notNull(),
+  ruleId: varchar("ruleId", { length: 64 }).notNull(),
+  ruleName: varchar("ruleName", { length: 191 }).notNull(),
+  riskScore: doublePrecision("riskScore").notNull(),
+  severity: text("severity").notNull(), // low, medium, high, critical
+  status: text("status").notNull().default("pending"), // pending, investigating, escalated, closed_false_positive, closed_str_filed
+  assignedTo: varchar("assignedTo", { length: 128 }),
+  notes: text("notes"),
+  detectedAt: timestamp("detectedAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  amlPendingRiskIdx: index("aml_pending_risk_idx").on(table.status, table.riskScore),
+  amlCustomerIdx: index("aml_customer_idx").on(table.customerId, table.detectedAt),
+}));
+
+export const kycVerifications = pgTable("kycVerifications", {
+  id: serial("id").primaryKey(),
+  verificationId: varchar("verificationId", { length: 64 }).notNull().unique(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  verificationType: text("verificationType").notNull(), // bvn, nin, passport, utility_bill, cac
+  documentReference: varchar("documentReference", { length: 128 }),
+  provider: varchar("provider", { length: 64 }).notNull(), // nibss, nimc, smile_id, youverify
+  providerResponse: jsonb("providerResponse"),
+  matchScore: doublePrecision("matchScore"),
+  status: text("status").notNull().default("pending"), // pending, verified, failed, expired
+  verifiedAt: timestamp("verifiedAt"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  kycCustomerIdx: index("kyc_customer_idx").on(table.customerId, table.verifiedAt),
+}));
+
+export const fxTrades = pgTable("fxTrades", {
+  id: serial("id").primaryKey(),
+  tradeId: varchar("tradeId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  buyCurrency: varchar("buyCurrency", { length: 3 }).notNull(),
+  sellCurrency: varchar("sellCurrency", { length: 3 }).notNull(),
+  buyAmount: doublePrecision("buyAmount").notNull(),
+  sellAmount: doublePrecision("sellAmount").notNull(),
+  exchangeRate: doublePrecision("exchangeRate").notNull(),
+  tradeType: text("tradeType").notNull(), // spot, forward, swap
+  counterparty: varchar("counterparty", { length: 128 }),
+  valueDate: timestamp("valueDate").notNull(),
+  status: text("status").notNull().default("pending"), // pending, confirmed, settled, cancelled
+  traderId: varchar("traderId", { length: 128 }),
+  approvedBy: varchar("approvedBy", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  fxValueDateIdx: index("fx_value_date_idx").on(table.valueDate, table.status),
+}));
+
+export const nostroAccounts = pgTable("nostroAccounts", {
+  id: serial("id").primaryKey(),
+  nostroId: varchar("nostroId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  correspondentBank: varchar("correspondentBank", { length: 191 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
+  accountNumber: varchar("accountNumber", { length: 64 }).notNull(),
+  swiftCode: varchar("swiftCode", { length: 11 }).notNull(),
+  balance: doublePrecision("balance").default(0).notNull(),
+  lastReconciledAt: timestamp("lastReconciledAt"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const auditTrail = pgTable("auditTrail", {
+  id: serial("id").primaryKey(),
+  auditId: varchar("auditId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  entityType: text("entityType").notNull(),
+  entityId: varchar("entityId", { length: 64 }).notNull(),
+  action: text("action").notNull(), // create, update, delete, approve, reject, login, logout
+  actorId: varchar("actorId", { length: 128 }).notNull(),
+  actorRole: varchar("actorRole", { length: 64 }).notNull(),
+  changes: jsonb("changes"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  auditEntityIdx: index("audit_entity_idx").on(table.entityType, table.entityId, table.createdAt),
+  auditActorIdx: index("audit_actor_idx").on(table.actorId, table.createdAt),
+  auditTenantIdx: index("audit_tenant_idx").on(table.tenantId, table.createdAt),
+}));
+
+export const swiftMessages = pgTable("swiftMessages", {
+  id: serial("id").primaryKey(),
+  messageId: varchar("messageId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  messageType: varchar("messageType", { length: 8 }).notNull(), // MT103, MT202, MT940, MT950
+  direction: text("direction").notNull(), // inbound, outbound
+  senderBic: varchar("senderBic", { length: 11 }).notNull(),
+  receiverBic: varchar("receiverBic", { length: 11 }).notNull(),
+  amount: doublePrecision("amount"),
+  currency: varchar("currency", { length: 3 }),
+  valueDate: timestamp("valueDate"),
+  rawMessage: text("rawMessage").notNull(),
+  status: text("status").notNull().default("received"), // received, parsed, processed, failed, acknowledged
+  relatedTransferId: varchar("relatedTransferId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  swiftTypeIdx: index("swift_type_idx").on(table.messageType, table.createdAt),
+}));
+
+export const nipTransactions = pgTable("nipTransactions", {
+  id: serial("id").primaryKey(),
+  nipId: varchar("nipId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  direction: text("direction").notNull(), // inbound, outbound
+  sourceBank: varchar("sourceBank", { length: 8 }).notNull(),
+  destinationBank: varchar("destinationBank", { length: 8 }).notNull(),
+  sourceAccount: varchar("sourceAccount", { length: 20 }).notNull(),
+  destinationAccount: varchar("destinationAccount", { length: 20 }).notNull(),
+  amount: doublePrecision("amount").notNull(),
+  narration: text("narration").notNull(),
+  responseCode: varchar("responseCode", { length: 4 }),
+  status: text("status").notNull().default("pending"), // pending, successful, failed, reversed
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  nipSessionIdx: uniqueIndex("nip_session_idx").on(table.sessionId),
+  nipDateIdx: index("nip_date_idx").on(table.createdAt, table.status),
+}));
+
+export const cardTransactions = pgTable("cardTransactions", {
+  id: serial("id").primaryKey(),
+  cardTxnId: varchar("cardTxnId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  cardId: varchar("cardId", { length: 64 }).notNull(),
+  accountId: varchar("accountId", { length: 64 }).notNull(),
+  merchantName: varchar("merchantName", { length: 191 }),
+  merchantCategory: varchar("merchantCategory", { length: 8 }),
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  type: text("type").notNull(), // purchase, withdrawal, refund, reversal
+  channel: text("channel").notNull(), // pos, atm, ecommerce, contactless
+  authorizationCode: varchar("authorizationCode", { length: 12 }),
+  stan: varchar("stan", { length: 12 }),
+  rrn: varchar("rrn", { length: 24 }),
+  status: text("status").notNull().default("approved"), // approved, declined, reversed, disputed
+  declineReason: text("declineReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  cardTxnCardIdx: index("card_txn_card_idx").on(table.cardId, table.createdAt),
+  cardTxnAccountIdx: index("card_txn_account_idx").on(table.accountId, table.createdAt),
+}));
+
+export const trialBalances = pgTable("trialBalances", {
+  id: serial("id").primaryKey(),
+  trialBalanceId: varchar("trialBalanceId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  glAccountCode: varchar("glAccountCode", { length: 32 }).notNull(),
+  periodStart: timestamp("periodStart").notNull(),
+  periodEnd: timestamp("periodEnd").notNull(),
+  openingBalance: doublePrecision("openingBalance").notNull(),
+  totalDebits: doublePrecision("totalDebits").notNull(),
+  totalCredits: doublePrecision("totalCredits").notNull(),
+  closingBalance: doublePrecision("closingBalance").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  status: text("status").notNull().default("draft"), // draft, finalized, audited
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tbPeriodIdx: index("tb_period_idx").on(table.tenantId, table.periodEnd, table.glAccountCode),
+}));
+
+// Type exports for new tables
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = typeof accounts.$inferInsert;
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = typeof journalEntries.$inferInsert;
+export type GLAccount = typeof glAccounts.$inferSelect;
+export type InsertGLAccount = typeof glAccounts.$inferInsert;
+export type Loan = typeof loans.$inferSelect;
+export type InsertLoan = typeof loans.$inferInsert;
+export type LoanRepayment = typeof loanRepayments.$inferSelect;
+export type InsertLoanRepayment = typeof loanRepayments.$inferInsert;
+export type Transfer = typeof transfers.$inferSelect;
+export type InsertTransfer = typeof transfers.$inferInsert;
+export type Settlement = typeof settlements.$inferSelect;
+export type InsertSettlement = typeof settlements.$inferInsert;
+export type AMLAlert = typeof amlAlerts.$inferSelect;
+export type InsertAMLAlert = typeof amlAlerts.$inferInsert;
+export type KYCVerification = typeof kycVerifications.$inferSelect;
+export type InsertKYCVerification = typeof kycVerifications.$inferInsert;
+export type FXTrade = typeof fxTrades.$inferSelect;
+export type InsertFXTrade = typeof fxTrades.$inferInsert;
+export type NostroAccount = typeof nostroAccounts.$inferSelect;
+export type InsertNostroAccount = typeof nostroAccounts.$inferInsert;
+export type AuditTrailEntry = typeof auditTrail.$inferSelect;
+export type InsertAuditTrailEntry = typeof auditTrail.$inferInsert;
+export type SwiftMessage = typeof swiftMessages.$inferSelect;
+export type InsertSwiftMessage = typeof swiftMessages.$inferInsert;
+export type NIPTransaction = typeof nipTransactions.$inferSelect;
+export type InsertNIPTransaction = typeof nipTransactions.$inferInsert;
+export type CardTransaction = typeof cardTransactions.$inferSelect;
+export type InsertCardTransaction = typeof cardTransactions.$inferInsert;
+export type TrialBalance = typeof trialBalances.$inferSelect;
+export type InsertTrialBalance = typeof trialBalances.$inferInsert;

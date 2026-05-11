@@ -78,6 +78,8 @@ import { registerTigerbeetlePostgresSync } from "./lib/tigerbeetlePostgresSync";
 import { registerMojaloopDeepIntegration } from "./lib/mojaloopDeepIntegration";
 import { registerPostgresQueryOptimization } from "./lib/postgresQueryOptimization";
 import { registerApisixOpenappsecIntegration } from "./lib/apisixOpenappsecIntegration";
+import { registerServiceMesh } from "./lib/serviceMesh";
+import { registerObservability } from "./lib/observability";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -5227,6 +5229,8 @@ async function startServer() {
   registerMojaloopDeepIntegration(app);
   registerPostgresQueryOptimization(app);
   registerApisixOpenappsecIntegration(app);
+  registerServiceMesh(app);
+  registerObservability(app);
   registerPerformanceTuning(app);
   registerKedaAutoscaling(app);
   registerHighAvailability(app);

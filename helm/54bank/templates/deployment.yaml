@@ -1,0 +1,70 @@
+{{- range $name, $svc := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: 54bank
+    app.kubernetes.io/managed-by: helm
+spec:
+  replicas: {{ $svc.replicaCount | default $.Values.serviceDefaults.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ $svc.port }}"
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.global.imageRegistry }}/{{ $name }}:{{ $svc.image.tag | default \"latest\" }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ $svc.port }}
+          env:
+            - name: PORT
+              value: "{{ $svc.port }}"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: 54bank-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: 54bank-secrets
+                  key: REDIS_URL
+            - name: KAFKA_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: 54bank-secrets
+                  key: KAFKA_BROKER
+            - name: KEYCLOAK_URL
+              value: "http://{{ $.Values.keycloak.host }}:{{ $.Values.keycloak.port }}"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "{{ $.Values.observability.otelCollector.endpoint }}"
+            - name: OTEL_SERVICE_NAME
+              value: {{ $name }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ $svc.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ $svc.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml ($svc.resources | default $.Values.serviceDefaults.resources) | nindent 12 }}
+      restartPolicy: Always
+{{- end }}

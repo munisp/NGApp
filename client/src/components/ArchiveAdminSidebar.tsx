@@ -604,6 +604,24 @@ const categorizedMenu: MenuCategory[] = [
     ],
   },
   {
+    category: "Service Mesh",
+    icon: Satellite,
+    items: [
+      { path: "/service-registry", label: "Service Registry", icon: Satellite },
+      { path: "/proxy-routes", label: "Proxy Routes", icon: ArrowRightLeft },
+    ],
+  },
+  {
+    category: "Observability",
+    icon: Activity,
+    items: [
+      { path: "/otel-configs", label: "OpenTelemetry", icon: Activity },
+      { path: "/prometheus-metrics", label: "Prometheus Metrics", icon: BarChart3 },
+      { path: "/grafana-dashboards", label: "Grafana Dashboards", icon: LayoutDashboard },
+      { path: "/alert-rules", label: "Alert Rules", icon: Bell },
+    ],
+  },
+  {
     category: "Mojaloop Interoperability",
     icon: Globe,
     items: [

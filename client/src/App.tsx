@@ -336,6 +336,12 @@ const KeycloakRealmsWorkspace = lazy(() => import("@/pages/KeycloakRealmsWorkspa
 const KeycloakClientsWorkspace = lazy(() => import("@/pages/KeycloakClientsWorkspace"));
 const KeycloakRolesWorkspace = lazy(() => import("@/pages/KeycloakRolesWorkspace"));
 const KeycloakIdPsWorkspace = lazy(() => import("@/pages/KeycloakIdPsWorkspace"));
+const ServiceRegistryWorkspace = lazy(() => import("@/pages/ServiceRegistryWorkspace"));
+const ProxyRoutesWorkspace = lazy(() => import("@/pages/ProxyRoutesWorkspace"));
+const OtelConfigsWorkspace = lazy(() => import("@/pages/OtelConfigsWorkspace"));
+const PrometheusMetricsWorkspace = lazy(() => import("@/pages/PrometheusMetricsWorkspace"));
+const GrafanaDashboardsWorkspace = lazy(() => import("@/pages/GrafanaDashboardsWorkspace"));
+const AlertRulesWorkspace = lazy(() => import("@/pages/AlertRulesWorkspace"));
 const MojaloopCallbacksWorkspace = lazy(() => import("@/pages/MojaloopCallbacksWorkspace"));
 const MojaloopCallbackEndpointsWorkspace = lazy(() => import("@/pages/MojaloopCallbackEndpointsWorkspace"));
 const MojaloopILPPacketsWorkspace = lazy(() => import("@/pages/MojaloopILPPacketsWorkspace"));
@@ -736,6 +742,12 @@ export default function App() {
         <Route path="/keycloak-clients" component={renderInAdminShell(KeycloakClientsWorkspace)} />
         <Route path="/keycloak-roles" component={renderInAdminShell(KeycloakRolesWorkspace)} />
         <Route path="/keycloak-identity-providers" component={renderInAdminShell(KeycloakIdPsWorkspace)} />
+        <Route path="/service-registry" component={renderInAdminShell(ServiceRegistryWorkspace)} />
+        <Route path="/proxy-routes" component={renderInAdminShell(ProxyRoutesWorkspace)} />
+        <Route path="/otel-configs" component={renderInAdminShell(OtelConfigsWorkspace)} />
+        <Route path="/prometheus-metrics" component={renderInAdminShell(PrometheusMetricsWorkspace)} />
+        <Route path="/grafana-dashboards" component={renderInAdminShell(GrafanaDashboardsWorkspace)} />
+        <Route path="/alert-rules" component={renderInAdminShell(AlertRulesWorkspace)} />
         <Route path="/mojaloop-callbacks" component={renderInAdminShell(MojaloopCallbacksWorkspace)} />
         <Route path="/mojaloop-callback-endpoints" component={renderInAdminShell(MojaloopCallbackEndpointsWorkspace)} />
         <Route path="/mojaloop-ilp-packets" component={renderInAdminShell(MojaloopILPPacketsWorkspace)} />

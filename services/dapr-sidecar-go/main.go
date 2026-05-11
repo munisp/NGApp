@@ -143,7 +143,7 @@ func main() {
 func healthz(w http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"service": "dapr-sidecar", "status": "healthy", "port": 8128,
-		"middleware": []string{"dapr", "redis", "kafka", "postgres"},
+		"middleware": []string{"dapr", "redis", "kafka", "postgres", "keycloak", "apisix", "openappsec", "lakehouse"},
 	})
 }
 

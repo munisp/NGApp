@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     let state = web::Data::new(AppState::new());
     let enh_state = web::Data::new(enhancements::AgriEnhState::new());
     println!("agriculture-banking-rs listening on {addr}");
-    println!("middleware integrations: Kafka, Redis, Postgres, Temporal, Fluvio, APISIX");
+    println!("middleware integrations: Kafka, Redis, Postgres, Temporal, Fluvio, APISIX, Keycloak, OpenAppSec, Lakehouse");
 
     HttpServer::new(move || {
         App::new()

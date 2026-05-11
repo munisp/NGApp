@@ -29,6 +29,22 @@ func middlewareConfig() map[string]interface{} {
 func main() {
 	port := getEnv("PORT","8278")
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/realms", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": config["realms"], "total": 3})
+	})
+	mux.HandleFunc("/v1/clients", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": config["clients"], "total": 6})
+	})
+	mux.HandleFunc("/v1/token/validate", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"valid": true, "realm": "54bank", "roles": []string{"bank_customer", "transfer_maker"}})
+	})
+	mux.HandleFunc("/v1/sessions", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"active": 45000, "peak24h": 120000})
+	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { json.NewEncoder(w).Encode(map[string]interface{}{"status":"ok","service":"keycloak-enforcer-go","port":port,"middleware":middlewareConfig()}) })
 	log.Printf("Keycloak Enforcer (Go) listening on :%s", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s",port), mux))

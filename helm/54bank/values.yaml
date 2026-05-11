@@ -1,0 +1,158 @@
+# 54Bank Platform Helm Values
+global:
+  imagePullPolicy: Always
+  imageRegistry: ghcr.io/54bank
+  environment: production
+  region: ng-lagos-1
+
+# Infrastructure
+postgres:
+  enabled: true
+  host: postgres-primary.54bank.internal
+  port: 5432
+  database: ndsep_db
+  poolMode: transaction
+  maxConnections: 200
+  replicaCount: 3
+
+redis:
+  enabled: true
+  host: redis.54bank.internal
+  port: 6379
+  maxMemory: "4gb"
+  replicaCount: 3
+
+kafka:
+  enabled: true
+  brokers: "kafka-0.54bank.internal:9092,kafka-1.54bank.internal:9092,kafka-2.54bank.internal:9092"
+  replicationFactor: 3
+
+tigerbeetle:
+  enabled: true
+  host: tigerbeetle.54bank.internal
+  port: 3000
+  replicaCount: 3
+
+# APISIX Gateway
+apisix:
+  enabled: true
+  adminKey: "${APISIX_ADMIN_KEY}"
+  nodePort: 9080
+  adminPort: 9180
+  replicaCount: 3
+
+# Keycloak IAM
+keycloak:
+  enabled: true
+  host: keycloak.54bank.internal
+  port: 8080
+  realm: 54bank
+  adminUser: admin
+
+# OpenAppSec WAF
+openappsec:
+  enabled: true
+  mode: prevent
+  confidenceLevel: high
+
+# Observability
+observability:
+  otelCollector:
+    enabled: true
+    endpoint: "http://otel-collector:4317"
+    samplingRate: 0.1
+  prometheus:
+    enabled: true
+    scrapeInterval: 15s
+  grafana:
+    enabled: true
+    adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
+  alertmanager:
+    enabled: true
+    pagerdutyKey: "${PAGERDUTY_KEY}"
+    slackWebhook: "${SLACK_WEBHOOK_URL}"
+
+# Service defaults
+serviceDefaults:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# Go services (86)
+goServices:
+  replicaCount: 2
+  image:
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# Rust services (57)
+rustServices:
+  replicaCount: 2
+  image:
+    tag: latest
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+# Python services (42)
+pythonServices:
+  replicaCount: 2
+  image:
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Express BFF
+expressBff:
+  replicaCount: 3
+  port: 5000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Secrets (via external-secrets or sealed-secrets)
+secrets:
+  provider: external-secrets # or sealed-secrets, vault
+  externalSecretsStore: aws-secrets-manager
+  secretKeys:
+    - DATABASE_URL
+    - REDIS_URL
+    - KAFKA_BROKER
+    - TIGERBEETLE_URL
+    - KEYCLOAK_ADMIN_PASSWORD
+    - APISIX_ADMIN_KEY
+    - NIBSS_API_KEY
+    - NIBSS_SECRET_KEY
+    - SMTP_PASSWORD
+    - PAGERDUTY_KEY
+    - SLACK_WEBHOOK_URL
+    - GRAFANA_ADMIN_PASSWORD

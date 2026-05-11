@@ -35,6 +35,18 @@ func middlewareConfig() map[string]interface{} {
 func main() {
 	port := getEnv("PORT", "8275")
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/routes", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": config["routes"], "total": 8})
+	})
+	mux.HandleFunc("/v1/upstreams", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": config["upstreams"], "total": 4})
+	})
+	mux.HandleFunc("/v1/plugins", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": config["plugins"], "total": 8})
+	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"status":"ok","service":"apisix-gateway-go","port":port,"middleware":middlewareConfig()})
 	})
