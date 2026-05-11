@@ -101,6 +101,7 @@ import {
   Cpu,
   ChevronDown,
   ChevronRight,
+  WifiOff,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -178,6 +179,7 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/iso20022-hub", label: "ISO 20022 Hub", icon: FileText },
       { path: "/batch-processing", label: "Batch Processing", icon: Layers },
       { path: "/mojaloop", label: "Mojaloop", icon: Globe },
+      { path: "/swift-messaging", label: "SWIFT Messaging", icon: Send },
     ],
   },
   {
@@ -290,6 +292,7 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/account-statements", label: "Account Statements", icon: FileText },
       { path: "/statement-history", label: "Statement History", icon: FileBarChart },
       { path: "/statement-generator", label: "Statement Generator", icon: FileText },
+      { path: "/gl-engine", label: "GL Engine", icon: BookOpen },
     ],
   },
   {
@@ -318,6 +321,10 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/disputes", label: "Disputes", icon: AlertTriangle },
       { path: "/complaints", label: "Complaints", icon: MessageSquare },
       { path: "/limit-management", label: "Limits", icon: Gauge },
+      { path: "/security-hardening", label: "Security Hardening", icon: Shield },
+      { path: "/ddos-protection", label: "DDoS Protection", icon: Shield },
+      { path: "/pbac-engine", label: "PBAC Engine", icon: Shield },
+      { path: "/regulatory-automation", label: "Regulatory Automation", icon: FileText },
     ],
   },
   {
@@ -350,6 +357,8 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/takaful-management", label: "Takaful Insurance", icon: Heart },
       { path: "/wakala-investments", label: "Wakala Investments", icon: TrendingUp },
       { path: "/multi-entity", label: "Multi-Entity", icon: GitBranch },
+      { path: "/branch-operations-2", label: "Branch Operations", icon: Building },
+      { path: "/microfinance-engine", label: "Microfinance Engine", icon: Users },
     ],
   },
   {
@@ -423,6 +432,7 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/keycloak", label: "Identity (Keycloak)", icon: Key },
       { path: "/db-admin", label: "Database Admin", icon: Database },
       { path: "/etl-pipelines", label: "ETL Pipelines", icon: Database },
+      { path: "/offline-resilience", label: "Offline Resilience", icon: WifiOff },
     ],
   },
   {

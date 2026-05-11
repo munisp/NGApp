@@ -2,23 +2,23 @@ import { useState, useEffect } from "react";
 
 interface Column { key: string; label: string; }
 
-export default function BranchOperationsWorkspace() {
+export default function PBACEngineWorkspace() {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/branch-operations/v1/branch/branches")
+    fetch("/api/pbac-engine/v1/pbac/policies")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/branch-operations/v1/branch/branches/stats")
+    fetch("/api/pbac-engine/v1/pbac/policies/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});
   }, []);
 
-  const columns: Column[] = [{key:"id",label:"ID"},{key:"name",label:"Branch Name"},{key:"code",label:"Code"},{key:"region",label:"Region"},{key:"state",label:"State"},{key:"manager",label:"Manager"},{key:"tellerCount",label:"Tellers"},{key:"status",label:"Status"}];
+  const columns: Column[] = [{key:"id",label:"ID"},{key:"name",label:"Policy Name"},{key:"resource",label:"Resource"},{key:"action",label:"Action"},{key:"effect",label:"Effect"},{key:"priority",label:"Priority"},{key:"enforced",label:"Enforced"}];
 
   const filtered = (() => {
     const q = search.toLowerCase();
@@ -30,7 +30,7 @@ export default function BranchOperationsWorkspace() {
 
   return (
     <div style={{ padding: "24px" }}>
-      <h2 style={{ marginBottom: "16px" }}>Branch Operations</h2>
+      <h2 style={{ marginBottom: "16px" }}>PBAC Engine</h2>
       <input
         type="text"
         placeholder="Search..."

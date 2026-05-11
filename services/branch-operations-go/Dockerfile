@@ -1,14 +1,11 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.21-alpine AS builder
 WORKDIR /app
 COPY go.mod ./
-RUN go mod download 2>/dev/null || true
+RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o service .
+RUN CGO_ENABLED=0 go build -o /branch-operations-go .
 
 FROM alpine:3.19
-RUN adduser -D appuser
-WORKDIR /app
-COPY --from=builder /app/service .
-USER appuser
-HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:${PORT:-8080}/healthz || exit 1
-ENTRYPOINT ["./service"]
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /branch-operations-go /branch-operations-go
+ENTRYPOINT ["/branch-operations-go"]

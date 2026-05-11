@@ -36,7 +36,7 @@ func TestHealthz(t *testing.T) {
 func TestListEscrowAccounts(t *testing.T) {
 	req := httptest.NewRequest("GET", "/v1/escrow/accounts", nil)
 	w := httptest.NewRecorder()
-	listItems(w, req)
+	handleAccounts(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
@@ -53,11 +53,11 @@ func TestListEscrowAccounts(t *testing.T) {
 }
 
 func TestCreateEscrowAccount(t *testing.T) {
-	body := `{"buyer":"TestBuyer","seller":"TestSeller","amount":5000000,"currency":"NGN","purpose":"unit test"}`
+	body := `{"buyer":"TestBuyer","seller":"TestSeller","amount":5000000,"currency":"NGN","condition":"unit test"}`
 	req := httptest.NewRequest("POST", "/v1/escrow/accounts", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	listItems(w, req)
+	handleAccounts(w, req)
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", w.Code)
@@ -67,15 +67,15 @@ func TestCreateEscrowAccount(t *testing.T) {
 	if resp["buyer"] != "TestBuyer" {
 		t.Errorf("expected buyer TestBuyer, got %v", resp["buyer"])
 	}
-	if resp["status"] != "pending" {
-		t.Errorf("expected status pending, got %v", resp["status"])
+	if resp["status"] != "draft" {
+		t.Errorf("expected status draft, got %v", resp["status"])
 	}
 }
 
 func TestEscrowStats(t *testing.T) {
 	req := httptest.NewRequest("GET", "/v1/escrow/stats", nil)
 	w := httptest.NewRecorder()
-	getStats(w, req)
+	handleStats(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
@@ -85,7 +85,7 @@ func TestEscrowStats(t *testing.T) {
 	if _, ok := resp["totalAccounts"]; !ok {
 		t.Error("expected totalAccounts in stats")
 	}
-	if _, ok := resp["totalValue"]; !ok {
-		t.Error("expected totalValue in stats")
+	if _, ok := resp["totalHeldValue"]; !ok {
+		t.Error("expected totalHeldValue in stats")
 	}
 }

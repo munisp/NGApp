@@ -7887,6 +7887,54 @@ async function startServer() {
   app.post("/api/platform/billing-events/v1/billing/events/ingest", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/ingest", req, res); });
   app.post("/api/platform/billing-events/v1/billing/events/adjust-overhead", (req, res) => { void proxyToService(BILLING_EVT_URL, "/v1/billing/events/adjust-overhead", req, res); });
 
+  // ── Security & Protection proxy routes ──
+  const SECURITY_HARDENING_URL = process.env.SECURITY_HARDENING_URL || "http://localhost:8246";
+  const DDOS_PROTECTION_URL = process.env.DDOS_PROTECTION_URL || "http://localhost:8247";
+  const SWIFT_MESSAGING_URL = process.env.SWIFT_MESSAGING_URL || "http://localhost:8248";
+  const PBAC_ENGINE_URL = process.env.PBAC_ENGINE_URL || "http://localhost:8249";
+  const BRANCH_OPERATIONS_V2_URL = process.env.BRANCH_OPERATIONS_V2_URL || "http://localhost:8250";
+  const GL_ENGINE_URL = process.env.GL_ENGINE_URL || "http://localhost:8251";
+  const MICROFINANCE_ENGINE_URL = process.env.MICROFINANCE_ENGINE_URL || "http://localhost:8252";
+  const OFFLINE_RESILIENCE_URL = process.env.OFFLINE_RESILIENCE_URL || "http://localhost:8253";
+  const SECURITIES_TRADING_URL2 = process.env.SECURITIES_TRADING_URL2 || "http://localhost:8254";
+  const REGULATORY_AUTOMATION_URL = process.env.REGULATORY_AUTOMATION_URL || "http://localhost:8255";
+
+  app.get("/api/security-hardening/v1/security/scans", (req, res) => { void proxyToService(SECURITY_HARDENING_URL, "/v1/security/scans", req, res); });
+  app.get("/api/security-hardening/v1/security/policies", (req, res) => { void proxyToService(SECURITY_HARDENING_URL, "/v1/security/policies", req, res); });
+  app.get("/api/security-hardening/v1/security/threats", (req, res) => { void proxyToService(SECURITY_HARDENING_URL, "/v1/security/threats", req, res); });
+  app.get("/api/security-hardening/v1/security/compliance", (req, res) => { void proxyToService(SECURITY_HARDENING_URL, "/v1/security/compliance", req, res); });
+  app.get("/api/security-hardening/v1/security/stats", (req, res) => { void proxyToService(SECURITY_HARDENING_URL, "/v1/security/stats", req, res); });
+  app.get("/api/ddos-protection/v1/ddos/rules", (req, res) => { void proxyToService(DDOS_PROTECTION_URL, "/v1/ddos/rules", req, res); });
+  app.get("/api/ddos-protection/v1/ddos/attacks", (req, res) => { void proxyToService(DDOS_PROTECTION_URL, "/v1/ddos/attacks", req, res); });
+  app.get("/api/ddos-protection/v1/ddos/geo-blocks", (req, res) => { void proxyToService(DDOS_PROTECTION_URL, "/v1/ddos/geo-blocks", req, res); });
+  app.get("/api/ddos-protection/v1/ddos/stats", (req, res) => { void proxyToService(DDOS_PROTECTION_URL, "/v1/ddos/stats", req, res); });
+  app.get("/api/swift-messaging/v1/swift/messages", (req, res) => { void proxyToService(SWIFT_MESSAGING_URL, "/v1/swift/messages", req, res); });
+  app.get("/api/swift-messaging/v1/swift/stats", (req, res) => { void proxyToService(SWIFT_MESSAGING_URL, "/v1/swift/stats", req, res); });
+  app.get("/api/pbac-engine/v1/pbac/policies", (req, res) => { void proxyToService(PBAC_ENGINE_URL, "/v1/pbac/policies", req, res); });
+  app.get("/api/pbac-engine/v1/pbac/decisions", (req, res) => { void proxyToService(PBAC_ENGINE_URL, "/v1/pbac/decisions", req, res); });
+  app.get("/api/pbac-engine/v1/pbac/roles", (req, res) => { void proxyToService(PBAC_ENGINE_URL, "/v1/pbac/roles", req, res); });
+  app.get("/api/pbac-engine/v1/pbac/stats", (req, res) => { void proxyToService(PBAC_ENGINE_URL, "/v1/pbac/stats", req, res); });
+  app.get("/api/branch-operations/v1/branch/branches", (req, res) => { void proxyToService(BRANCH_OPERATIONS_V2_URL, "/v1/branch/branches", req, res); });
+  app.get("/api/branch-operations/v1/branch/vault", (req, res) => { void proxyToService(BRANCH_OPERATIONS_V2_URL, "/v1/branch/vault", req, res); });
+  app.get("/api/branch-operations/v1/branch/tellers", (req, res) => { void proxyToService(BRANCH_OPERATIONS_V2_URL, "/v1/branch/tellers", req, res); });
+  app.get("/api/branch-operations/v1/branch/stats", (req, res) => { void proxyToService(BRANCH_OPERATIONS_V2_URL, "/v1/branch/stats", req, res); });
+  app.get("/api/gl-engine/v1/gl/accounts", (req, res) => { void proxyToService(GL_ENGINE_URL, "/v1/gl/accounts", req, res); });
+  app.get("/api/gl-engine/v1/gl/journals", (req, res) => { void proxyToService(GL_ENGINE_URL, "/v1/gl/journals", req, res); });
+  app.get("/api/gl-engine/v1/gl/trial-balance", (req, res) => { void proxyToService(GL_ENGINE_URL, "/v1/gl/trial-balance", req, res); });
+  app.get("/api/gl-engine/v1/gl/stats", (req, res) => { void proxyToService(GL_ENGINE_URL, "/v1/gl/stats", req, res); });
+  app.get("/api/microfinance-engine/v1/microfinance/groups", (req, res) => { void proxyToService(MICROFINANCE_ENGINE_URL, "/v1/microfinance/groups", req, res); });
+  app.get("/api/microfinance-engine/v1/microfinance/loans", (req, res) => { void proxyToService(MICROFINANCE_ENGINE_URL, "/v1/microfinance/loans", req, res); });
+  app.get("/api/microfinance-engine/v1/microfinance/cycles", (req, res) => { void proxyToService(MICROFINANCE_ENGINE_URL, "/v1/microfinance/cycles", req, res); });
+  app.get("/api/microfinance-engine/v1/microfinance/stats", (req, res) => { void proxyToService(MICROFINANCE_ENGINE_URL, "/v1/microfinance/stats", req, res); });
+  app.get("/api/offline-resilience/v1/offline/queue", (req, res) => { void proxyToService(OFFLINE_RESILIENCE_URL, "/v1/offline/queue", req, res); });
+  app.get("/api/offline-resilience/v1/offline/profiles", (req, res) => { void proxyToService(OFFLINE_RESILIENCE_URL, "/v1/offline/profiles", req, res); });
+  app.get("/api/offline-resilience/v1/offline/capabilities", (req, res) => { void proxyToService(OFFLINE_RESILIENCE_URL, "/v1/offline/capabilities", req, res); });
+  app.get("/api/offline-resilience/v1/offline/stats", (req, res) => { void proxyToService(OFFLINE_RESILIENCE_URL, "/v1/offline/stats", req, res); });
+  app.get("/api/regulatory-automation/v1/regulatory/returns", (req, res) => { void proxyToService(REGULATORY_AUTOMATION_URL, "/v1/regulatory/returns", req, res); });
+  app.get("/api/regulatory-automation/v1/regulatory/schedules", (req, res) => { void proxyToService(REGULATORY_AUTOMATION_URL, "/v1/regulatory/schedules", req, res); });
+  app.get("/api/regulatory-automation/v1/regulatory/data-sources", (req, res) => { void proxyToService(REGULATORY_AUTOMATION_URL, "/v1/regulatory/data-sources", req, res); });
+  app.get("/api/regulatory-automation/v1/regulatory/stats", (req, res) => { void proxyToService(REGULATORY_AUTOMATION_URL, "/v1/regulatory/stats", req, res); });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");

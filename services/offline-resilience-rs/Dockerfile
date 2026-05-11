@@ -6,5 +6,5 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/securities_trading_rs /usr/local/bin/app
+COPY --from=builder /app/target/release/offline_resilience_rs /usr/local/bin/app
 ENTRYPOINT ["app"]

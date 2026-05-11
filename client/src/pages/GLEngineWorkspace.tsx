@@ -2,23 +2,23 @@ import { useState, useEffect } from "react";
 
 interface Column { key: string; label: string; }
 
-export default function BranchOperationsWorkspace() {
+export default function GLEngineWorkspace() {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/branch-operations/v1/branch/branches")
+    fetch("/api/gl-engine/v1/gl/accounts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/branch-operations/v1/branch/branches/stats")
+    fetch("/api/gl-engine/v1/gl/accounts/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});
   }, []);
 
-  const columns: Column[] = [{key:"id",label:"ID"},{key:"name",label:"Branch Name"},{key:"code",label:"Code"},{key:"region",label:"Region"},{key:"state",label:"State"},{key:"manager",label:"Manager"},{key:"tellerCount",label:"Tellers"},{key:"status",label:"Status"}];
+  const columns: Column[] = [{key:"id",label:"ID"},{key:"code",label:"Code"},{key:"name",label:"Account Name"},{key:"account_type",label:"Type"},{key:"currency",label:"Currency"},{key:"balance",label:"Balance"},{key:"level",label:"Level"}];
 
   const filtered = (() => {
     const q = search.toLowerCase();
@@ -30,7 +30,7 @@ export default function BranchOperationsWorkspace() {
 
   return (
     <div style={{ padding: "24px" }}>
-      <h2 style={{ marginBottom: "16px" }}>Branch Operations</h2>
+      <h2 style={{ marginBottom: "16px" }}>General Ledger Engine</h2>
       <input
         type="text"
         placeholder="Search..."

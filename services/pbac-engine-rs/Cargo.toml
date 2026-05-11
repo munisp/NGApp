@@ -1,5 +1,5 @@
 [package]
-name = "securities_trading_rs"
+name = "pbac_engine_rs"
 version = "0.1.0"
 edition = "2021"
 

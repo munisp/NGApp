@@ -208,6 +208,14 @@ jobs:
         run: cd services/approval-workflow-go && go build -o approval-workflow .
       - name: Build Billing Orchestrator Service
         run: cd services/billing-orchestrator-go && go build -o billing-orchestrator .
+      - name: Build Security Hardening Service
+        run: cd services/security-hardening-go && go build -o security-hardening .
+      - name: Build DDoS Protection Service
+        run: cd services/ddos-protection-go && go build -o ddos-protection .
+      - name: Build SWIFT Messaging Service
+        run: cd services/swift-messaging-go && go build -o swift-messaging .
+      - name: Build Microfinance Engine
+        run: cd services/microfinance-engine-go && go build -o microfinance-engine .
 
   rust-services:
     name: Rust Services
@@ -261,6 +269,9 @@ jobs:
             services/face-match-rs
             services/feature-flag-engine-rs
             services/graduated-rollout-rs
+            services/pbac-engine-rs
+            services/gl-engine-rs
+            services/offline-resilience-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -351,6 +362,14 @@ jobs:
         run: cd services/graduated-rollout-rs && cargo build --release
       - name: Build Billing RBAC Service
         run: cd services/billing-rbac-rs && cargo build --release
+      - name: Build PBAC Engine
+        run: cd services/pbac-engine-rs && cargo build --release
+      - name: Build GL Engine
+        run: cd services/gl-engine-rs && cargo build --release
+      - name: Build Offline Resilience Engine
+        run: cd services/offline-resilience-rs && cargo build --release
+      - name: Build Securities Trading Engine
+        run: cd services/securities-trading-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -370,7 +389,7 @@ jobs:
             echo "Checking services/$svc/main.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
           done
-          for svc in branded-comms-py plugin-marketplace-py billing-analytics-py billing-event-processor-py; do
+          for svc in branded-comms-py plugin-marketplace-py billing-analytics-py billing-event-processor-py regulatory-automation-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

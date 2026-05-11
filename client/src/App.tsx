@@ -269,6 +269,15 @@ const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
 const AdminSecurityPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminSecurityPage })));
 const AdminUsersPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminUsersPage })));
+const SecurityHardeningWorkspace = lazy(() => import("@/pages/SecurityHardeningWorkspace"));
+const DDoSProtectionWorkspace = lazy(() => import("@/pages/DDoSProtectionWorkspace"));
+const SwiftMessagingWorkspace = lazy(() => import("@/pages/SwiftMessagingWorkspace"));
+const BranchOperationsWorkspace2 = lazy(() => import("@/pages/BranchOperationsWorkspace"));
+const MicrofinanceEngineWorkspace = lazy(() => import("@/pages/MicrofinanceEngineWorkspace"));
+const PBACEngineWorkspace = lazy(() => import("@/pages/PBACEngineWorkspace"));
+const GLEngineWorkspace = lazy(() => import("@/pages/GLEngineWorkspace"));
+const OfflineResilienceWorkspace = lazy(() => import("@/pages/OfflineResilienceWorkspace"));
+const RegulatoryAutomationWorkspace = lazy(() => import("@/pages/RegulatoryAutomationWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -584,6 +593,15 @@ export default function App() {
         <Route path="/billing-orchestrator" component={renderInAdminShell(BillingOrchestratorWorkspace)} />
         <Route path="/billing-rbac" component={renderInAdminShell(BillingRbacWorkspace)} />
         <Route path="/billing-event-processor" component={renderInAdminShell(BillingEventProcessorWorkspace)} />
+        <Route path="/security-hardening" component={renderInAdminShell(SecurityHardeningWorkspace)} />
+        <Route path="/ddos-protection" component={renderInAdminShell(DDoSProtectionWorkspace)} />
+        <Route path="/swift-messaging" component={renderInAdminShell(SwiftMessagingWorkspace)} />
+        <Route path="/branch-operations-2" component={renderInAdminShell(BranchOperationsWorkspace2)} />
+        <Route path="/microfinance-engine" component={renderInAdminShell(MicrofinanceEngineWorkspace)} />
+        <Route path="/pbac-engine" component={renderInAdminShell(PBACEngineWorkspace)} />
+        <Route path="/gl-engine" component={renderInAdminShell(GLEngineWorkspace)} />
+        <Route path="/offline-resilience" component={renderInAdminShell(OfflineResilienceWorkspace)} />
+        <Route path="/regulatory-automation" component={renderInAdminShell(RegulatoryAutomationWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
