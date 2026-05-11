@@ -505,6 +505,7 @@ const categorizedMenu: MenuCategory[] = [
   },
   {
     category: "Security & Resilience",
+    icon: ShieldAlert,
     items: [
       { path: "/ransomware-protection", label: "Ransomware Protection", icon: ShieldAlert },
       { path: "/resilience-dashboard", label: "Resilience Dashboard", icon: Activity },
