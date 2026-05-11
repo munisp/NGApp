@@ -80,6 +80,8 @@ import { registerPostgresQueryOptimization } from "./lib/postgresQueryOptimizati
 import { registerApisixOpenappsecIntegration } from "./lib/apisixOpenappsecIntegration";
 import { registerServiceMesh } from "./lib/serviceMesh";
 import { registerObservability } from "./lib/observability";
+import { registerDrizzleRoutes } from "./lib/drizzleRoutes";
+import { seedDatabaseIfEmpty } from "./lib/seedDatabase";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -5231,7 +5233,11 @@ async function startServer() {
   registerApisixOpenappsecIntegration(app);
   registerServiceMesh(app);
   registerObservability(app);
+  registerDrizzleRoutes(app);
   registerPerformanceTuning(app);
+
+  // Seed database on startup (no-op if tables already have data or no DB)
+  seedDatabaseIfEmpty().catch(() => {});
   registerKedaAutoscaling(app);
   registerHighAvailability(app);
 
