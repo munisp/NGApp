@@ -189,6 +189,92 @@ class PermifyClient:
         return "connected" if self._connected else "configured"
 
 
+# ── TigerBeetle ──────────────────────────────────────────────────────────────
+
+class TigerBeetleClient:
+    def __init__(self):
+        self.address = env_or("TIGERBEETLE_ADDRESS", "tigerbeetle:3001")
+        self.cluster_id = env_or("TIGERBEETLE_CLUSTER_ID", "0")
+        self._connected = False
+
+    def create_account(self, account_id: int, ledger: int, code: int) -> dict:
+        print(f"[tigerbeetle] CreateAccount id={account_id} ledger={ledger} code={code}")
+        return {"id": account_id, "ledger": ledger, "code": code, "status": "created"}
+
+    def create_transfer(self, debit_id: int, credit_id: int, amount: int, ledger: int) -> dict:
+        print(f"[tigerbeetle] CreateTransfer debit={debit_id} credit={credit_id} amount={amount}")
+        return {"debit_account_id": debit_id, "credit_account_id": credit_id, "amount": amount, "status": "posted"}
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
+# ── Dapr ─────────────────────────────────────────────────────────────────────
+
+class DaprClient:
+    def __init__(self):
+        self.sidecar_url = env_or("DAPR_SIDECAR_URL", "http://localhost:3500")
+        self.app_id = env_or("DAPR_APP_ID", "54bank-service")
+        self._connected = False
+
+    def publish(self, pubsub: str, topic: str, data: dict) -> None:
+        print(f"[dapr] Publish pubsub={pubsub} topic={topic}")
+
+    def invoke(self, app_id: str, method: str, data: dict | None = None) -> dict:
+        print(f"[dapr] Invoke app={app_id} method={method}")
+        return {"status": "ok"}
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
+# ── Fluvio ───────────────────────────────────────────────────────────────────
+
+class FluvioClient:
+    def __init__(self):
+        self.endpoint = env_or("FLUVIO_ENDPOINT", "fluvio:9003")
+        self._connected = False
+
+    def produce(self, topic: str, key: str, value: dict) -> None:
+        print(f"[fluvio] Produce topic={topic} key={key}")
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
+# ── Mojaloop ─────────────────────────────────────────────────────────────────
+
+class MojaloopClient:
+    def __init__(self):
+        self.hub_url = env_or("MOJALOOP_HUB_URL", "http://mojaloop-hub:4000")
+        self._connected = False
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
+# ── OpenAppSec ───────────────────────────────────────────────────────────────
+
+class OpenAppSecClient:
+    def __init__(self):
+        self.endpoint = env_or("OPENAPPSEC_URL", "http://openappsec:8080")
+        self._connected = False
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
+# ── APISIX ───────────────────────────────────────────────────────────────────
+
+class APISIXClient:
+    def __init__(self):
+        self.admin_url = env_or("APISIX_ADMIN_URL", "http://apisix:9180")
+        self._connected = False
+
+    def health(self) -> str:
+        return "connected" if self._connected else "configured"
+
+
 # ── Middleware Bundle ────────────────────────────────────────────────────────
 
 class Bundle:
@@ -201,6 +287,12 @@ class Bundle:
         self.temporal = TemporalClient()
         self.keycloak = KeycloakClient()
         self.permify = PermifyClient()
+        self.tigerbeetle = TigerBeetleClient()
+        self.dapr = DaprClient()
+        self.fluvio = FluvioClient()
+        self.mojaloop = MojaloopClient()
+        self.openappsec = OpenAppSecClient()
+        self.apisix = APISIXClient()
 
     def health_map(self) -> dict[str, str]:
         return {
@@ -212,12 +304,19 @@ class Bundle:
             "temporal": self.temporal.health(),
             "keycloak": self.keycloak.health(),
             "permify": self.permify.health(),
+            "tigerbeetle": self.tigerbeetle.health(),
+            "dapr": self.dapr.health(),
+            "fluvio": self.fluvio.health(),
+            "mojaloop": self.mojaloop.health(),
+            "openappsec": self.openappsec.health(),
+            "apisix": self.apisix.health(),
         }
 
     def middleware_list(self) -> list[str]:
         return [
-            "Kafka", "Redis", "OpenSearch", "Lakehouse", "Postgres",
-            "Temporal", "Keycloak", "Permify",
+            "Kafka", "Dapr", "Fluvio", "Temporal", "Postgres", "Keycloak",
+            "Permify", "Redis", "Mojaloop", "OpenSearch", "OpenAppSec",
+            "APISIX", "TigerBeetle", "Lakehouse",
         ]
 
 

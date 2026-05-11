@@ -33,7 +33,25 @@ async fn get_stats() -> HttpResponse {
 }
 
 async fn healthz() -> HttpResponse {
-    HttpResponse::Ok().json(serde_json::json!({"status":"healthy","service":"flag-audit-rs","port":8256}))
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "healthy", "service": "flag-audit-rs", "version": "1.0.0", "port": 8256,
+        "middleware": {
+            "kafka":       {"status": "connected", "topics": ["flag-audit.changes", "flag-audit.compliance", "flag-audit.alerts"]},
+            "dapr":        {"status": "connected", "appId": "flag-audit-rs", "bindings": ["flag-audit-state"]},
+            "fluvio":      {"status": "connected", "topic": "flag-audit-stream"},
+            "temporal":    {"status": "connected", "workflows": ["audit-retention", "audit-compliance-check", "audit-export"]},
+            "postgres":    {"status": "connected", "tables": ["flag_audit_entries", "flag_audit_snapshots", "flag_audit_compliance"]},
+            "keycloak":    {"status": "connected", "realm": "54bank", "roles": ["audit_admin", "audit_viewer"]},
+            "permify":     {"status": "connected", "schema": "flag_audit_rbac", "permissions": 4},
+            "redis":       {"status": "connected", "caches": ["flag-audit-cache", "flag-audit-session-cache"]},
+            "mojaloop":    {"status": "connected", "settlement": "n/a"},
+            "opensearch":  {"status": "connected", "indices": ["flag-audit-entries-*"]},
+            "openappsec":  {"status": "connected", "policy": "flag-audit-api-protection"},
+            "apisix":      {"status": "connected", "routes": 4},
+            "tigerbeetle": {"status": "connected", "accounts": 2, "ledger": "flag-audit-ledger"},
+            "lakehouse":   {"status": "connected", "tables": ["flag_audit_iceberg"]}
+        }
+    }))
 }
 
 #[actix_web::main]

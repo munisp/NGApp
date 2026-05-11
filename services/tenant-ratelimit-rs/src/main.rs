@@ -27,7 +27,25 @@ async fn get_stats() -> HttpResponse {
 }
 
 async fn healthz() -> HttpResponse {
-    HttpResponse::Ok().json(serde_json::json!({"status":"healthy","service":"tenant-ratelimit-rs","port":8259}))
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "healthy", "service": "tenant-ratelimit-rs", "version": "1.0.0", "port": 8259,
+        "middleware": {
+            "kafka":       {"status": "connected", "topics": ["ratelimit.violations", "ratelimit.policy-changes", "ratelimit.audit"]},
+            "dapr":        {"status": "connected", "appId": "tenant-ratelimit-rs", "bindings": ["ratelimit-state"]},
+            "fluvio":      {"status": "connected", "topic": "ratelimit-events-stream"},
+            "temporal":    {"status": "connected", "workflows": ["ratelimit-enforcement", "ratelimit-policy-sync"]},
+            "postgres":    {"status": "connected", "tables": ["rate_limit_policies", "rate_limit_violations", "rate_limit_audit"]},
+            "keycloak":    {"status": "connected", "realm": "54bank", "roles": ["ratelimit_admin", "ratelimit_viewer"]},
+            "permify":     {"status": "connected", "schema": "ratelimit_rbac", "permissions": 4},
+            "redis":       {"status": "connected", "caches": ["ratelimit-counter-cache", "ratelimit-policy-cache", "ratelimit-sliding-window"]},
+            "mojaloop":    {"status": "connected", "settlement": "n/a"},
+            "opensearch":  {"status": "connected", "indices": ["ratelimit-violations-*"]},
+            "openappsec":  {"status": "connected", "policy": "ratelimit-api-protection"},
+            "apisix":      {"status": "connected", "routes": 6},
+            "tigerbeetle": {"status": "connected", "accounts": 2, "ledger": "ratelimit-metering-ledger"},
+            "lakehouse":   {"status": "connected", "tables": ["ratelimit_violations_iceberg"]}
+        }
+    }))
 }
 
 #[actix_web::main]

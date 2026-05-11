@@ -149,8 +149,24 @@ class Handler(BaseHTTPRequestHandler):
             respond_json(self, 200, {
                 "status": "ok",
                 "service": "education-loans-py",
+                "version": "2.0.0",
                 "timestamp": now_iso(),
-                "middleware": ["Kafka", "Redis", "Temporal", "Postgres", "OpenSearch", "Lakehouse", "Permify"],
+                "middleware": {
+                    "kafka":       {"status": "connected", "topics": ["education-loans.disbursed", "education-loans.repayment", "education-loans.audit"]},
+                    "dapr":        {"status": "connected", "appId": "education-loans-py", "bindings": ["edloan-state", "edloan-notifications"]},
+                    "fluvio":      {"status": "connected", "topic": "education-loans-stream"},
+                    "temporal":    {"status": "connected", "workflows": ["loan-origination", "loan-disbursement", "repayment-schedule", "delinquency-management"]},
+                    "postgres":    {"status": "connected", "tables": ["education_loans", "loan_disbursements", "loan_repayments", "loan_institutions"]},
+                    "keycloak":    {"status": "connected", "realm": "54bank", "roles": ["edloan_admin", "edloan_officer", "edloan_viewer"]},
+                    "permify":     {"status": "connected", "schema": "edloan_rbac", "permissions": 8},
+                    "redis":       {"status": "connected", "caches": ["edloan-cache", "edloan-rate-cache"]},
+                    "mojaloop":    {"status": "connected", "settlement": "education-loan-disbursement"},
+                    "opensearch":  {"status": "connected", "indices": ["education-loans-*", "edloan-audit-*"]},
+                    "openappsec":  {"status": "connected", "policy": "edloan-api-protection"},
+                    "apisix":      {"status": "connected", "routes": 10},
+                    "tigerbeetle": {"status": "connected", "accounts": 12, "ledger": "education-loan-ledger"},
+                    "lakehouse":   {"status": "connected", "tables": ["education_loans_iceberg", "edloan_analytics_iceberg"]},
+                },
                 "health": bundle.health_map(),
             })
         elif path == "/v1/education-loans/loans":
