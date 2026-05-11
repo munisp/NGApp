@@ -90,7 +90,6 @@ async fn healthz() -> HttpResponse {
                 "lakehouse": { "status": "connected", "table": "credit_bureau_iceberg" }
             }),,
         "bureaus": ["CRC", "FirstCentral", "CreditRegistry"],
-        "middleware": ["Postgres", "Redis", "Kafka"]
     }))
 }
 

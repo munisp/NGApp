@@ -82,8 +82,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "beneficiary_management"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "beneficiary_management_iceberg"},
-			},, "timestamp": time.Now(),
-			"middleware": []string{"Kafka", "Redis", "Postgres"},
+			},
 			"banks": len(bankDirectory),
 		})
 	})

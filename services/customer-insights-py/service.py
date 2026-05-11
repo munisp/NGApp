@@ -123,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "customer_insights"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "customer_insights_iceberg"}
-            },,
+            },
                              "models": ["churn-v3.2", "cross-sell-v2.1", "anomaly-v1.5", "clv-v1.0"],
                              "middleware": ["Postgres", "Redis", "Kafka", "MLflow"]})
         elif self.path == "/v1/insights/churn":

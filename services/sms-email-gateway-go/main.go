@@ -97,9 +97,8 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "sms_email_gateway"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "sms_email_gateway_iceberg"},
-			},,
+			},
 			"channels": []string{"sms", "email", "whatsapp", "push"},
-			"middleware": []string{"Twilio", "SendGrid", "Firebase", "Redis"},
 		})
 	})
 

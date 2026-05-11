@@ -96,8 +96,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "standing_orders"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "standing_orders_iceberg"},
-			},, "timestamp": time.Now(),
-			"middleware": []string{"Kafka", "Redis", "Temporal", "Postgres"},
+			},
 		})
 	})
 	mux.HandleFunc("/v1/standing-orders", handleStandingOrders)

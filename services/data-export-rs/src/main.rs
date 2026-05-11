@@ -90,7 +90,6 @@ async fn healthz() -> HttpResponse {
                 "lakehouse": { "status": "connected", "table": "data_export_iceberg" }
             }),,
         "formats": ["csv", "xlsx", "json", "xml", "parquet", "pdf"],
-        "middleware": ["Postgres", "S3", "Redis", "Kafka"]
     }))
 }
 

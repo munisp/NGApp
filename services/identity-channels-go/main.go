@@ -114,8 +114,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "identity_channels"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "identity_channels_iceberg"},
-			},, "timestamp": mw.NowISO(),
-			"middleware": []string{"Kafka", "Redis", "Keycloak", "Permify", "Postgres", "APISIX"},
+			},
 			"health": bundle.HealthMap(),
 		})
 	})

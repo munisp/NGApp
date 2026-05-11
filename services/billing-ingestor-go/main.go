@@ -68,8 +68,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "billing_ingestor"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "billing_ingestor_iceberg"},
-			},,
-			"middleware": []string{"Kafka", "Dapr", "Redis", "APISIX", "OpenAppSec"},
+			},
 			"timestamp":  time.Now().UTC().Format(time.RFC3339),
 		})
 	})

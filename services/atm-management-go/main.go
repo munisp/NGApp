@@ -95,8 +95,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "atm_management"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "atm_management_iceberg"},
-			},,
-			"middleware": []string{"Wincor-Nixdorf", "NCR", "Redis", "Kafka"},
+			},
 		})
 	})
 

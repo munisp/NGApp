@@ -112,7 +112,6 @@ async fn healthz() -> HttpResponse {
                 "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
                 "lakehouse": { "status": "connected", "table": "risk_scoring_iceberg" }
             }),,
-        "middleware": ["Postgres", "Redis", "Kafka"],
         "models": ["PD/LGD/EAD", "Basel III SA", "IFRS 9 ECL"]
     }))
 }

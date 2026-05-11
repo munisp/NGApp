@@ -300,7 +300,7 @@ class KYCAMLHandler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "kyc_aml_screening"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "kyc_aml_screening_iceberg"}
-            },, "port": "8136",
+            }, "port": "8136",
                                 "middleware": ["Kafka", "Redis", "Postgres", "OpenSearch", "NIBSS BVN"]})
         elif path == "/v1/kyc/records":
             self._respond(200, {"items": [asdict(r) for r in kyc_records], "total": len(kyc_records)})

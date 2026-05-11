@@ -103,7 +103,7 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "billing_analytics"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "billing_analytics_iceberg"}
-            },, "middleware": ["Lakehouse", "OpenSearch", "Kafka", "Redis"]})
+            }, "middleware": ["Lakehouse", "OpenSearch", "Kafka", "Redis"]})
         elif self.path == "/v1/billing/accruals":
             self._json(200, {"items": [asdict(a) for a in ACCRUALS], "total": len(ACCRUALS)})
         elif self.path == "/v1/billing/revenue-reports":

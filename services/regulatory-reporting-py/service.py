@@ -119,7 +119,7 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "regulatory_reporting"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "regulatory_reporting_iceberg"}
-            },,
+            },
                              "regulators": ["CBN", "NDIC", "FIRS", "NFIU"],
                              "middleware": ["Postgres", "Redis", "Kafka", "S3"]})
         elif self.path == "/v1/regulatory/reports":

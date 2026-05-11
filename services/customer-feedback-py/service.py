@@ -89,7 +89,7 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "customer_feedback"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "customer_feedback_iceberg"}
-            },,
+            },
                              "middleware": ["Postgres", "Redis", "Kafka", "OpenSearch"]})
         elif self.path == "/v1/feedback/entries":
             self._json(200, {"items": [asdict(f) for f in FEEDBACK], "total": len(FEEDBACK)})

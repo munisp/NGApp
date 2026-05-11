@@ -114,7 +114,6 @@ async fn healthz(data: web::Data<AppState>) -> HttpResponse {
                 "lakehouse": { "status": "connected", "table": "fx_rates_engine_iceberg" }
             }),,
         "timestamp": chrono::Utc::now().to_rfc3339(),
-        "middleware": ["Redis", "Kafka", "Postgres", "TigerBeetle"],
         "rates_count": rates.len(),
     }))
 }

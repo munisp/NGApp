@@ -93,8 +93,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "pos_terminal"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "pos_terminal_iceberg"},
-			},,
-			"middleware": []string{"NIBSS", "Interswitch", "Postgres", "Kafka"},
+			},
 		})
 	})
 

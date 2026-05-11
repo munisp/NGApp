@@ -292,9 +292,8 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "batch_processing"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "batch_processing_iceberg"}
-            },,
+            },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "middleware": ["Kafka", "Redis", "Temporal", "Postgres", "OpenSearch"],
                 "stats": {"jobs": len(batch_jobs), "accruals": len(accruals), "statements": len(statements)},
             }).encode())
             return

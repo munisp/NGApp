@@ -55,9 +55,8 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "erpnext_sync"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "erpnext_sync_iceberg"}
-            },,
+            },
                 "timestamp": now_iso(),
-                "middleware": ["Kafka", "Redis", "Temporal", "Postgres", "OpenSearch", "Lakehouse"],
                 "health": bundle.health_map(),
             })
         elif path == "/v1/erpnext/sync-jobs":

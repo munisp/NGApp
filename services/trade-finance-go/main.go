@@ -209,9 +209,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "trade_finance"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "trade_finance_iceberg"},
-			},,
-			"timestamp":  nowISO(),
-			"middleware": []string{"TigerBeetle", "Kafka", "Temporal", "Permify", "APISIX", "SWIFT-gateway"},
+			},
 		})
 	})
 

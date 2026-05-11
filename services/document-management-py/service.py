@@ -74,7 +74,7 @@ class Handler(BaseHTTPRequestHandler):
                 "apisix": {"status": "connected", "upstream": "document_management"},
                 "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
                 "lakehouse": {"status": "connected", "table": "document_management_iceberg"}
-            },,
+            },
                              "storage": "S3-compatible",
                              "middleware": ["Postgres", "S3", "Redis", "Kafka"]})
         elif self.path == "/v1/documents":

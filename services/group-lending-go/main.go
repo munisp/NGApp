@@ -112,8 +112,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "group_lending"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "group_lending_iceberg"},
-			},, "timestamp": mw.NowISO(),
-			"middleware": []string{"Kafka", "Redis", "Temporal", "TigerBeetle", "Postgres", "Permify"},
+			},
 			"health": bundle.HealthMap(),
 		})
 	})

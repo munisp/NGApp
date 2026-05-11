@@ -68,7 +68,6 @@ async fn healthz() -> HttpResponse {
                 "lakehouse": { "status": "connected", "table": "collateral_valuation_iceberg" }
             }),,
         "types": ["property", "vehicle", "equipment", "securities", "cash_deposit", "guarantee"],
-        "middleware": ["Postgres", "Redis", "S3"]
     }))
 }
 

@@ -109,7 +109,6 @@ async fn healthz() -> HttpResponse {
                 "lakehouse": { "status": "connected", "table": "bulk_payments_iceberg" }
             }),,
         "port": "8139",
-        "middleware": ["Kafka", "Redis", "Postgres", "NIBSS", "TigerBeetle"]
     }))
 }
 

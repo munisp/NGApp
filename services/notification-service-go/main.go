@@ -116,8 +116,7 @@ func main() {
 				"apisix":      map[string]interface{}{"status": "connected", "upstream": "notification_service"},
 				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
 				"lakehouse":   map[string]interface{}{"status": "connected", "table": "notification_service_iceberg"},
-			},, "timestamp": time.Now(),
-			"middleware": []string{"Kafka", "Redis", "Dapr", "Postgres"},
+			},
 			"stats": map[string]int{"templates": len(templates), "queued": countByStatus("queued"), "sent": countByStatus("sent"), "failed": countByStatus("failed")},
 		})
 	})

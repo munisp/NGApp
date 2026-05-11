@@ -197,7 +197,6 @@ async fn stats(data: web::Data<AppState>) -> HttpResponse {
             "permissive": policies.iter().filter(|p| p.enforcement_mode == "permissive").count(),
             "auditOnly": policies.iter().filter(|p| p.enforcement_mode == "audit_only").count()
         },
-        "middleware": {
             "kafka": "connected", "dapr": "connected", "fluvio": "connected",
             "temporal": "connected", "postgres": "connected", "keycloak": "connected",
             "permify": "connected", "redis": "connected", "mojaloop": "connected",
