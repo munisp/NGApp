@@ -1,5 +1,7 @@
 //! 54Bank shared middleware for Rust microservices.
-//! Provides PostgreSQL persistence with in-memory fallback.
+//! Provides PostgreSQL persistence with in-memory fallback, pagination utilities.
+
+pub mod pagination;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
