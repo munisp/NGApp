@@ -139,3 +139,21 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// Types referenced by enhancements.go
+type BankGuarantee struct {
+	ID              string  `json:"id"`
+	ApplicantName   string  `json:"applicantName"`
+	BeneficiaryName string  `json:"beneficiaryName"`
+	Amount          float64 `json:"amount"`
+	Currency        string  `json:"currency"`
+	GuaranteeType   string  `json:"guaranteeType"`
+	Status          string  `json:"status"`
+	CreatedAt       string  `json:"createdAt"`
+	UpdatedAt       string  `json:"updatedAt"`
+	ExpiryDate      string  `json:"expiryDate"`
+}
+
+func nowISO() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
