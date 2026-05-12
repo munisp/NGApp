@@ -97,6 +97,8 @@ import { registerInputValidation } from "./lib/inputValidation";
 import { registerSecretsManagement } from "./lib/secretsManager";
 import { registerMonitoring } from "./lib/monitoring";
 import { registerSwaggerDocs } from "./lib/swaggerDocs";
+import { registerMiddlewareIntegration } from "./lib/middlewareIntegration";
+import { registerSecurityHardening } from "./lib/securityHardening";
 import { seedDatabaseIfEmpty } from "./lib/seedDatabase";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
@@ -2857,6 +2859,12 @@ async function startServer() {
 
   // Swagger/OpenAPI documentation
   registerSwaggerDocs(app);
+
+  // Full 14-middleware integration (Kafka, Redis, Temporal, OpenSearch, etc.)
+  registerMiddlewareIntegration(app);
+
+  // Security hardening (OWASP headers, NDPR, WAF, brute force protection)
+  registerSecurityHardening(app);
 
   // Auth configuration endpoint
   app.get("/api/platform/auth/config", (_req: any, res: any) => { res.json(getAuthConfig()); });
