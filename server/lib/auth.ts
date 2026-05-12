@@ -327,6 +327,7 @@ export function registerAuthRoutes(app: Express) {
       }
     }
 
+    logAuthEvent("login_failed", email, req.ip || "unknown", req.headers["user-agent"] || "unknown", false);
     return res.status(401).json({ error: "Invalid credentials" });
   });
 
@@ -382,5 +383,57 @@ export function registerAuthRoutes(app: Express) {
     return res.json({ roles: rolePermissions });
   });
 
-  logger.info("Auth routes registered: /api/auth/login, /api/auth/refresh, /api/auth/logout, /api/auth/me");
+  // CSRF token generation
+  app.get("/api/auth/csrf-token", (req: Request, res: Response) => {
+    const token = crypto.randomBytes(32).toString("hex");
+    res.cookie("csrf_token", token, {
+      httpOnly: false, // Accessible to JS for inclusion in headers
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+    return res.json({ csrfToken: token });
+  });
+
+  // Audit log for auth events
+  app.get("/api/auth/audit-log", (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user || (user.role !== "admin" && user.role !== "auditor")) {
+      return res.status(403).json({ error: "Admin or auditor role required" });
+    }
+    return res.json({
+      events: authAuditLog.slice(-100),
+      total: authAuditLog.length,
+    });
+  });
+
+  logger.info("Auth routes registered: login, refresh, logout, me, csrf-token, audit-log, roles");
+}
+
+// Auth audit log (in-memory, replace with DB in production)
+const authAuditLog: Array<{
+  timestamp: string;
+  event: string;
+  email: string;
+  ip: string;
+  userAgent: string;
+  success: boolean;
+  role?: string;
+}> = [];
+
+export function logAuthEvent(event: string, email: string, ip: string, userAgent: string, success: boolean, role?: string) {
+  authAuditLog.push({
+    timestamp: new Date().toISOString(),
+    event,
+    email,
+    ip,
+    userAgent: userAgent.substring(0, 100),
+    success,
+    role,
+  });
+  // Keep last 10000 entries
+  if (authAuditLog.length > 10000) {
+    authAuditLog.splice(0, authAuditLog.length - 10000);
+  }
+  logger.info(`Auth audit: ${event} email=${email} ip=${ip} success=${success}`);
 }

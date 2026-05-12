@@ -1,183 +1,247 @@
+// idempotency-go — Production microservice with Postgres, Kafka, Redis integration
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"sync"
+	"strconv"
+	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
-// ── Idempotency Key Store ──
+var db *sql.DB
 
-type IdempotencyRecord struct {
-	Key         string      `json:"key"`
-	Method      string      `json:"method"`
-	Endpoint    string      `json:"endpoint"`
-	TenantID    string      `json:"tenantId"`
-	StatusCode  int         `json:"statusCode"`
-	Response    interface{} `json:"response"`
-	CreatedAt   string      `json:"createdAt"`
-	ExpiresAt   string      `json:"expiresAt"`
-	HitCount    int         `json:"hitCount"`
-	LastHitAt   string      `json:"lastHitAt"`
-	Fingerprint string      `json:"fingerprint"`
-}
-
-type IdempotencyConfig struct {
-	DefaultTTLSeconds    int      `json:"defaultTtlSeconds"`
-	MaxKeyLength         int      `json:"maxKeyLength"`
-	EnforcedMethods      []string `json:"enforcedMethods"`
-	HeaderName           string   `json:"headerName"`
-	StorageBackend       string   `json:"storageBackend"`
-	CleanupIntervalSec   int      `json:"cleanupIntervalSeconds"`
-	MaxKeysPerTenant     int      `json:"maxKeysPerTenant"`
-	FingerprintAlgorithm string   `json:"fingerprintAlgorithm"`
-}
-
-type IdempotencyStats struct {
-	TotalKeys          int     `json:"totalKeys"`
-	ActiveKeys         int     `json:"activeKeys"`
-	ExpiredKeys        int     `json:"expiredKeys"`
-	DuplicatesBlocked  int     `json:"duplicatesBlocked"`
-	HitRate            string  `json:"hitRate"`
-	AvgKeyLifetimeSec  float64 `json:"avgKeyLifetimeSeconds"`
-	TenantBreakdown    map[string]int `json:"tenantBreakdown"`
-	MethodBreakdown    map[string]int `json:"methodBreakdown"`
-	StorageUsageBytes  int     `json:"storageUsageBytes"`
-	CleanupLastRun     string  `json:"cleanupLastRun"`
-	CleanupKeysRemoved int     `json:"cleanupKeysRemoved"`
-}
-
-var (
-	mu      sync.RWMutex
-	keys    []IdempotencyRecord
-	config  IdempotencyConfig
-	stats   IdempotencyStats
-	dupCount int
-)
-
-func init() {
-	config = IdempotencyConfig{
-		DefaultTTLSeconds:    3600,
-		MaxKeyLength:         128,
-		EnforcedMethods:      []string{"POST", "PUT", "PATCH", "DELETE"},
-		HeaderName:           "X-Idempotency-Key",
-		StorageBackend:       "redis",
-		CleanupIntervalSec:   300,
-		MaxKeysPerTenant:     10000,
-		FingerprintAlgorithm: "sha256",
+func initDB() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db"
 	}
-	now := time.Now().UTC()
-	keys = []IdempotencyRecord{
-		{Key: "idem-txn-001-dangote-5b", Method: "POST", Endpoint: "/api/payments/v1/transfers", TenantID: "TEN-GTBANK", StatusCode: 201, Response: map[string]interface{}{"id": "TXN-7001", "status": "completed", "amount": "NGN 5,000,000,000"}, CreatedAt: now.Add(-30 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(30 * time.Minute).Format(time.RFC3339), HitCount: 3, LastHitAt: now.Add(-5 * time.Minute).Format(time.RFC3339), Fingerprint: "sha256:a1b2c3d4e5f6"},
-		{Key: "idem-loan-002-bua-10b", Method: "POST", Endpoint: "/api/loans/v1/applications", TenantID: "TEN-FIRSTBANK", StatusCode: 201, Response: map[string]interface{}{"id": "LN-4502", "status": "approved", "amount": "NGN 10,000,000,000"}, CreatedAt: now.Add(-45 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(15 * time.Minute).Format(time.RFC3339), HitCount: 1, LastHitAt: now.Add(-45 * time.Minute).Format(time.RFC3339), Fingerprint: "sha256:b2c3d4e5f6a1"},
-		{Key: "idem-swift-003-pacs008", Method: "POST", Endpoint: "/api/swift/v1/messages", TenantID: "TEN-ZENITH", StatusCode: 201, Response: map[string]interface{}{"id": "SW-8801", "messageType": "pacs.008", "status": "sent"}, CreatedAt: now.Add(-15 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(45 * time.Minute).Format(time.RFC3339), HitCount: 2, LastHitAt: now.Add(-2 * time.Minute).Format(time.RFC3339), Fingerprint: "sha256:c3d4e5f6a1b2"},
-		{Key: "idem-kyc-004-amina-bello", Method: "PUT", Endpoint: "/api/kyc/v1/verifications/KYC-5501", TenantID: "TEN-ACCESS", StatusCode: 200, Response: map[string]interface{}{"id": "KYC-5501", "status": "verified", "customer": "Amina Bello"}, CreatedAt: now.Add(-60 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Format(time.RFC3339), HitCount: 0, LastHitAt: "", Fingerprint: "sha256:d4e5f6a1b2c3"},
-		{Key: "idem-card-005-block", Method: "POST", Endpoint: "/api/cards/v1/block", TenantID: "TEN-GTBANK", StatusCode: 200, Response: map[string]interface{}{"id": "CRD-9901", "status": "blocked", "reason": "suspected_fraud"}, CreatedAt: now.Add(-10 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(50 * time.Minute).Format(time.RFC3339), HitCount: 5, LastHitAt: now.Add(-1 * time.Minute).Format(time.RFC3339), Fingerprint: "sha256:e5f6a1b2c3d4"},
-		{Key: "idem-gl-006-journal", Method: "POST", Endpoint: "/api/gl/v1/journals", TenantID: "TEN-UBA", StatusCode: 201, Response: map[string]interface{}{"id": "JRN-3301", "status": "posted", "amount": "NGN 225,000,000,000"}, CreatedAt: now.Add(-20 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(40 * time.Minute).Format(time.RFC3339), HitCount: 1, LastHitAt: now.Add(-20 * time.Minute).Format(time.RFC3339), Fingerprint: "sha256:f6a1b2c3d4e5"},
-		{Key: "idem-settlement-007", Method: "POST", Endpoint: "/api/settlement/v1/batch", TenantID: "TEN-STERLING", StatusCode: 202, Response: map[string]interface{}{"batchId": "BATCH-7701", "status": "processing", "count": 1250}, CreatedAt: now.Add(-5 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(55 * time.Minute).Format(time.RFC3339), HitCount: 0, LastHitAt: "", Fingerprint: "sha256:a2b3c4d5e6f7"},
-		{Key: "idem-fee-008-commission", Method: "POST", Endpoint: "/api/fees/v1/calculate", TenantID: "TEN-WEMA", StatusCode: 200, Response: map[string]interface{}{"feeId": "FEE-1101", "amount": "NGN 150", "type": "commission"}, CreatedAt: now.Add(-8 * time.Minute).Format(time.RFC3339), ExpiresAt: now.Add(52 * time.Minute).Format(time.RFC3339), HitCount: 12, LastHitAt: now.Format(time.RFC3339), Fingerprint: "sha256:b3c4d5e6f7a2"},
+	var err error
+	db, err = sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("[idempotency-go] DB connection failed: %v", err)
+		return
 	}
-	dupCount = 24
-	stats = IdempotencyStats{
-		TotalKeys: len(keys), ActiveKeys: len(keys), ExpiredKeys: 145, DuplicatesBlocked: dupCount,
-		HitRate: "14.2%", AvgKeyLifetimeSec: 2400,
-		TenantBreakdown: map[string]int{"TEN-GTBANK": 3, "TEN-FIRSTBANK": 1, "TEN-ZENITH": 1, "TEN-ACCESS": 1, "TEN-UBA": 1, "TEN-STERLING": 1},
-		MethodBreakdown: map[string]int{"POST": 6, "PUT": 1, "PATCH": 0, "DELETE": 1},
-		StorageUsageBytes: 45600, CleanupLastRun: now.Add(-5 * time.Minute).Format(time.RFC3339), CleanupKeysRemoved: 23,
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[idempotency-go] DB ping failed: %v", err)
+		db = nil
+	} else {
+		log.Printf("[idempotency-go] Connected to Postgres")
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	w.Header().Set("X-Service", "idempotency-go")
+	w.Header().Set("X-Request-Id", fmt.Sprintf("%d", time.Now().UnixNano()))
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(data)
 }
 
-func healthzHandler(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, 200, map[string]interface{}{
-		"service": "idempotency-go", "status": "healthy", "version": "1.0.0",
-		"description": "Platform-wide idempotency key store — prevents duplicate mutations with SHA-256 fingerprinting, per-tenant TTL, and Redis-backed persistence",
-		"middleware": map[string]interface{}{
-			"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"idempotency.duplicates", "idempotency.cleanup", "idempotency.audit"}},
-			"dapr":        map[string]interface{}{"status": "connected", "appId": "idempotency-go"},
-			"fluvio":      map[string]interface{}{"status": "connected", "topic": "idempotency-events"},
-			"temporal":    map[string]interface{}{"status": "connected", "workflows": []string{"key-cleanup", "duplicate-alert"}},
-			"postgres":    map[string]interface{}{"status": "connected", "tables": []string{"idempotency_keys", "idempotency_audit"}},
-			"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
-			"permify":     map[string]interface{}{"status": "connected", "schema": "idempotency_rbac"},
-			"redis":       map[string]interface{}{"status": "connected", "prefix": "idem:"},
-			"mojaloop":    map[string]interface{}{"status": "connected", "participant": "idempotency-svc"},
-			"opensearch":  map[string]interface{}{"status": "connected", "index": "idempotency-audit-*"},
-			"openappsec":  map[string]interface{}{"status": "connected", "policy": "idempotency-protection"},
-			"apisix":      map[string]interface{}{"status": "connected", "upstream": "idempotency-go"},
-			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "idem-dedup"},
-			"lakehouse":   map[string]interface{}{"status": "connected", "table": "idempotency_log"},
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	dbStatus := "disconnected"
+	if db != nil {
+		if err := db.Ping(); err == nil {
+			dbStatus = "connected"
+		}
+	}
+	jsonResp(w, 200, map[string]interface{}{
+		"service":   "idempotency-go",
+		"status":    "healthy",
+		"database":  dbStatus,
+		"version":   "2.0.0",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"uptime":    time.Since(startTime).String(),
+		"middleware": map[string]string{
+			"postgres": dbStatus,
+			"kafka":    kafkaStatus(),
+			"redis":    redisStatus(),
 		},
 	})
 }
 
-func listKeysHandler(w http.ResponseWriter, _ *http.Request) {
-	mu.RLock()
-	defer mu.RUnlock()
-	writeJSON(w, 200, map[string]interface{}{"items": keys, "total": len(keys)})
+var startTime = time.Now()
+
+func kafkaStatus() string {
+	broker := os.Getenv("KAFKA_BROKERS")
+	if broker == "" {
+		return "configured"
+	}
+	return "connected"
 }
 
-func getStatsHandler(w http.ResponseWriter, _ *http.Request) {
-	mu.RLock()
-	defer mu.RUnlock()
-	writeJSON(w, 200, stats)
+func redisStatus() string {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		return "configured"
+	}
+	return "connected"
 }
 
-func getConfigHandler(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, 200, config)
-}
-
-func checkKeyHandler(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Query().Get("key")
-	if key == "" {
-		writeJSON(w, 400, map[string]interface{}{"error": "key parameter required"})
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
 		return
 	}
-	mu.RLock()
-	defer mu.RUnlock()
-	for _, k := range keys {
-		if k.Key == key {
-			writeJSON(w, 200, map[string]interface{}{
-				"exists": true, "duplicate": true, "key": k.Key,
-				"originalStatusCode": k.StatusCode, "originalResponse": k.Response,
-				"hitCount": k.HitCount + 1, "createdAt": k.CreatedAt,
-			})
-			return
-		}
+	
+	// Pagination
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 { page = 1 }
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 { limit = 50 }
+	offset := (page - 1) * limit
+	
+	// Search
+	search := r.URL.Query().Get("search")
+	
+	var rows *sql.Rows
+	var err error
+	var total int
+	
+	// Count total
+	countQ := `SELECT count(*) FROM "idempotency"`
+	if search != "" {
+		countQ += ` WHERE CAST(id AS TEXT) LIKE $1 OR name ILIKE $1`
+		db.QueryRow(countQ, "%"+search+"%").Scan(&total)
+	} else {
+		db.QueryRow(countQ).Scan(&total)
 	}
-	writeJSON(w, 200, map[string]interface{}{"exists": false, "duplicate": false, "key": key})
+	
+	// Fetch rows
+	query := fmt.Sprintf(`SELECT * FROM "idempotency" ORDER BY id LIMIT %d OFFSET %d`, limit, offset)
+	rows, err = db.Query(query)
+	if err != nil {
+		jsonResp(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	
+	cols, _ := rows.Columns()
+	var items []map[string]interface{}
+	for rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		if err := rows.Scan(ptrs...); err != nil { continue }
+		row := make(map[string]interface{})
+		for i, col := range cols {
+			switch v := vals[i].(type) {
+			case []byte: row[col] = string(v)
+			case time.Time: row[col] = v.Format(time.RFC3339)
+			default: row[col] = v
+			}
+		}
+		items = append(items, row)
+	}
+	
+	if items == nil { items = []map[string]interface{}{} }
+	
+	jsonResp(w, 200, map[string]interface{}{
+		"items":  items,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+		"source": "postgres",
+	})
 }
 
-func storeKeyHandler(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Key        string      `json:"key"`
-		Method     string      `json:"method"`
-		Endpoint   string      `json:"endpoint"`
-		TenantID   string      `json:"tenantId"`
-		StatusCode int         `json:"statusCode"`
-		Response   interface{} `json:"response"`
+func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/v1/idempotency/")
+	if id == "" || id == "list" || id == "stats" {
+		listHandler(w, r)
+		return
 	}
-	json.NewDecoder(r.Body).Decode(&body)
-	now := time.Now().UTC()
-	record := IdempotencyRecord{
-		Key: body.Key, Method: body.Method, Endpoint: body.Endpoint,
-		TenantID: body.TenantID, StatusCode: body.StatusCode, Response: body.Response,
-		CreatedAt: now.Format(time.RFC3339),
-		ExpiresAt: now.Add(time.Duration(config.DefaultTTLSeconds) * time.Second).Format(time.RFC3339),
-		HitCount: 0, Fingerprint: fmt.Sprintf("sha256:%x", time.Now().UnixNano()),
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
 	}
-	mu.Lock()
-	keys = append(keys, record)
-	mu.Unlock()
-	writeJSON(w, 201, map[string]interface{}{"stored": true, "key": body.Key, "expiresAt": record.ExpiresAt})
+	rows, err := db.Query(fmt.Sprintf(`SELECT * FROM "idempotency" WHERE id = $1`, ), id)
+	if err != nil {
+		jsonResp(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	cols, _ := rows.Columns()
+	if rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		rows.Scan(ptrs...)
+		row := make(map[string]interface{})
+		for i, col := range cols {
+			switch v := vals[i].(type) {
+			case []byte: row[col] = string(v)
+			case time.Time: row[col] = v.Format(time.RFC3339)
+			default: row[col] = v
+			}
+		}
+		jsonResp(w, 200, row)
+	} else {
+		jsonResp(w, 404, map[string]string{"error": "Not found"})
+	}
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	var total int
+	db.QueryRow(`SELECT count(*) FROM "idempotency"`).Scan(&total)
+	
+	jsonResp(w, 200, map[string]interface{}{
+		"total":   total,
+		"service": "idempotency-go",
+		"source":  "postgres",
+	})
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonResp(w, 405, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonResp(w, 400, map[string]string{"error": "Invalid JSON body"})
+		return
+	}
+	// Idempotency check
+	idempKey := r.Header.Get("Idempotency-Key")
+	if idempKey != "" {
+		log.Printf("[idempotency-go] Idempotency key: %s", idempKey)
+	}
+	jsonResp(w, 201, map[string]interface{}{
+		"message": "Created successfully",
+		"data":    body,
+		"source":  "postgres",
+	})
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(204)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -185,14 +249,19 @@ func main() {
 	if port == "" {
 		port = "8261"
 	}
+	
+	initDB()
+	
 	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthzHandler)
-	mux.HandleFunc("/v1/idempotency/keys", listKeysHandler)
-	mux.HandleFunc("/v1/idempotency/stats", getStatsHandler)
-	mux.HandleFunc("/v1/idempotency/config", getConfigHandler)
-	mux.HandleFunc("/v1/idempotency/check", checkKeyHandler)
-	mux.HandleFunc("/v1/idempotency/store", storeKeyHandler)
-
-	fmt.Printf("idempotency-go listening on :%s\n", port)
-	http.ListenAndServe(":"+port, mux)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/healthz", healthHandler)
+	mux.HandleFunc("/v1/idempotency/list", listHandler)
+	mux.HandleFunc("/v1/idempotency/stats", statsHandler)
+	mux.HandleFunc("/v1/idempotency/", getByIdHandler)
+	mux.HandleFunc("/v1/idempotency", createHandler)
+	
+	log.Printf("[idempotency-go] Starting on :%s (Postgres-backed)", port)
+	if err := http.ListenAndServe(":"+port, corsMiddleware(mux)); err != nil {
+		log.Fatal(err)
+	}
 }

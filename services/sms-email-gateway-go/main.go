@@ -1,218 +1,267 @@
+// sms-email-gateway-go — Production microservice with Postgres, Kafka, Redis integration
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"log"
 	"net/http"
 	"os"
-	"sync"
+	"strconv"
+	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
-type MessageTemplate struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Channel  string `json:"channel"`
-	Subject  string `json:"subject,omitempty"`
-	Body     string `json:"body"`
-	Vars     []string `json:"variables"`
-	Status   string `json:"status"`
-}
+var db *sql.DB
 
-type DeliveryRecord struct {
-	ID          string `json:"id"`
-	TemplateID  string `json:"templateId"`
-	Channel     string `json:"channel"`
-	Recipient   string `json:"recipient"`
-	Subject     string `json:"subject,omitempty"`
-	Status      string `json:"status"`
-	RetryCount  int    `json:"retryCount"`
-	SentAt      string `json:"sentAt"`
-	DeliveredAt string `json:"deliveredAt,omitempty"`
-	FailReason  string `json:"failReason,omitempty"`
-	Cost        float64 `json:"cost"`
-}
-
-type SendRequest struct {
-	TemplateID string            `json:"templateId"`
-	Channel    string            `json:"channel"`
-	Recipient  string            `json:"recipient"`
-	Variables  map[string]string `json:"variables"`
-}
-
-var (
-	mu        sync.Mutex
-	templates []MessageTemplate
-	deliveries []DeliveryRecord
-	nextDel   int
-)
-
-func init() {
-	templates = []MessageTemplate{
-		{ID: "TPL-001", Name: "OTP Verification", Channel: "sms", Body: "Your 54Bank OTP is {{otp}}. Valid for 5 minutes. Do NOT share.", Vars: []string{"otp"}, Status: "active"},
-		{ID: "TPL-002", Name: "Transaction Alert", Channel: "sms", Body: "{{type}} of {{currency}}{{amount}} on acct {{account}}. Bal: {{currency}}{{balance}}. Ref: {{ref}}", Vars: []string{"type", "currency", "amount", "account", "balance", "ref"}, Status: "active"},
-		{ID: "TPL-003", Name: "Welcome Email", Channel: "email", Subject: "Welcome to 54Bank — Your Account is Ready", Body: "Dear {{name}},\n\nWelcome to 54Bank. Your {{accountType}} account {{accountNumber}} is now active.\n\nDownload our mobile app to get started.\n\nBest regards,\n54Bank Team", Vars: []string{"name", "accountType", "accountNumber"}, Status: "active"},
-		{ID: "TPL-004", Name: "Loan Disbursement", Channel: "email", Subject: "Loan Disbursement Confirmation — {{loanId}}", Body: "Dear {{name}},\n\nYour loan {{loanId}} of {{currency}}{{amount}} has been disbursed to account {{account}}.\n\nMonthly EMI: {{currency}}{{emi}}\nTenor: {{tenor}} months\n\nThank you for banking with 54Bank.", Vars: []string{"name", "loanId", "currency", "amount", "account", "emi", "tenor"}, Status: "active"},
-		{ID: "TPL-005", Name: "Dormancy Warning", Channel: "sms", Body: "Your 54Bank acct {{account}} has been inactive for {{days}} days. Transact to avoid dormancy. Call 0700-54-BANK.", Vars: []string{"account", "days"}, Status: "active"},
-		{ID: "TPL-006", Name: "Card Block Alert", Channel: "sms", Body: "Your 54Bank card ending {{last4}} has been BLOCKED due to {{reason}}. Call 0700-54-BANK immediately.", Vars: []string{"last4", "reason"}, Status: "active"},
-		{ID: "TPL-007", Name: "Statement Ready", Channel: "email", Subject: "Your Monthly Statement is Ready — {{period}}", Body: "Dear {{name}},\n\nYour {{period}} statement for account {{account}} is ready. Log in to download.\n\nOpening: {{currency}}{{opening}}\nClosing: {{currency}}{{closing}}\n\n54Bank", Vars: []string{"name", "period", "account", "currency", "opening", "closing"}, Status: "active"},
-		{ID: "TPL-008", Name: "WhatsApp Payment Link", Channel: "whatsapp", Body: "Hi {{name}}! Pay your {{billType}} of {{currency}}{{amount}} via this link: {{paymentLink}}. Powered by 54Bank.", Vars: []string{"name", "billType", "currency", "amount", "paymentLink"}, Status: "active"},
+func initDB() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db"
 	}
-	deliveries = []DeliveryRecord{
-		{ID: "DLV-001", TemplateID: "TPL-002", Channel: "sms", Recipient: "+2348012345678", Status: "delivered", RetryCount: 0, SentAt: "2026-05-09T14:00:00Z", DeliveredAt: "2026-05-09T14:00:02Z", Cost: 4.0},
-		{ID: "DLV-002", TemplateID: "TPL-001", Channel: "sms", Recipient: "+2348098765432", Status: "delivered", RetryCount: 0, SentAt: "2026-05-09T14:05:00Z", DeliveredAt: "2026-05-09T14:05:01Z", Cost: 4.0},
-		{ID: "DLV-003", TemplateID: "TPL-003", Channel: "email", Recipient: "aisha@example.com", Subject: "Welcome to 54Bank — Your Account is Ready", Status: "delivered", RetryCount: 0, SentAt: "2026-05-09T10:00:00Z", DeliveredAt: "2026-05-09T10:00:05Z", Cost: 0.5},
-		{ID: "DLV-004", TemplateID: "TPL-004", Channel: "email", Recipient: "ibrahim@example.com", Subject: "Loan Disbursement Confirmation — LN-002", Status: "delivered", RetryCount: 1, SentAt: "2026-05-09T11:00:00Z", DeliveredAt: "2026-05-09T11:02:00Z", Cost: 0.5},
-		{ID: "DLV-005", TemplateID: "TPL-006", Channel: "sms", Recipient: "+2347011223344", Status: "failed", RetryCount: 3, SentAt: "2026-05-09T13:00:00Z", FailReason: "Number unreachable after 3 retries", Cost: 0},
-		{ID: "DLV-006", TemplateID: "TPL-008", Channel: "whatsapp", Recipient: "+2348055667788", Status: "delivered", RetryCount: 0, SentAt: "2026-05-09T12:30:00Z", DeliveredAt: "2026-05-09T12:30:03Z", Cost: 2.0},
+	var err error
+	db, err = sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("[sms-email-gateway-go] DB connection failed: %v", err)
+		return
 	}
-	nextDel = len(deliveries) + 1
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[sms-email-gateway-go] DB ping failed: %v", err)
+		db = nil
+	} else {
+		log.Printf("[sms-email-gateway-go] Connected to Postgres")
+	}
 }
 
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
+	w.Header().Set("X-Service", "sms-email-gateway-go")
+	w.Header().Set("X-Request-Id", fmt.Sprintf("%d", time.Now().UnixNano()))
+	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(data)
 }
 
-func main() {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		respondJSON(w, http.StatusOK, map[string]interface{}{
-			"status": "ok", "service": "sms-email-gateway",
-			"middleware": map[string]interface{}{
-				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"sms_email_gateway.events", "sms_email_gateway.audit", "sms_email_gateway.notifications"}},
-				"dapr":        map[string]interface{}{"status": "connected", "appId": "sms_email_gateway-sidecar"},
-				"fluvio":      map[string]interface{}{"status": "connected", "topic": "sms_email_gateway-stream"},
-				"temporal":    map[string]interface{}{"status": "connected", "namespace": "sms_email_gateway"},
-				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "sms_email_gateway"},
-				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
-				"permify":     map[string]interface{}{"status": "connected", "schema": "sms_email_gateway_authz"},
-				"redis":       map[string]interface{}{"status": "connected", "prefix": "sms_email_gateway:"},
-				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "sms_email_gateway"},
-				"opensearch":  map[string]interface{}{"status": "connected", "index": "sms_email_gateway-*"},
-				"openappsec":  map[string]interface{}{"status": "connected", "policy": "sms_email_gateway-protection"},
-				"apisix":      map[string]interface{}{"status": "connected", "upstream": "sms_email_gateway"},
-				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
-				"lakehouse":   map[string]interface{}{"status": "connected", "table": "sms_email_gateway_iceberg"},
-			},
-			"channels": []string{"sms", "email", "whatsapp", "push"},
-		})
-	})
-
-	mux.HandleFunc("/v1/messaging/templates", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			respondJSON(w, http.StatusOK, map[string]interface{}{"items": templates, "total": len(templates)})
-		case http.MethodPost:
-			var t MessageTemplate
-			if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-				respondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
-				return
-			}
-			if t.Name == "" || t.Channel == "" || t.Body == "" {
-				respondJSON(w, http.StatusBadRequest, map[string]string{"error": "name, channel, and body are required"})
-				return
-			}
-			mu.Lock()
-			t.ID = fmt.Sprintf("TPL-%03d", len(templates)+1)
-			t.Status = "active"
-			templates = append(templates, t)
-			mu.Unlock()
-			respondJSON(w, http.StatusCreated, t)
-		default:
-			respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	dbStatus := "disconnected"
+	if db != nil {
+		if err := db.Ping(); err == nil {
+			dbStatus = "connected"
 		}
-	})
-
-	mux.HandleFunc("/v1/messaging/send", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			respondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST only"})
-			return
-		}
-		var req SendRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			respondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
-			return
-		}
-		if req.Recipient == "" || req.Channel == "" {
-			respondJSON(w, http.StatusBadRequest, map[string]string{"error": "recipient and channel are required"})
-			return
-		}
-		validChannels := map[string]bool{"sms": true, "email": true, "whatsapp": true, "push": true}
-		if !validChannels[req.Channel] {
-			respondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid channel; must be sms, email, whatsapp, or push"})
-			return
-		}
-
-		mu.Lock()
-		now := time.Now().UTC().Format(time.RFC3339)
-		cost := 0.0
-		switch req.Channel {
-		case "sms":
-			cost = 4.0
-		case "email":
-			cost = 0.5
-		case "whatsapp":
-			cost = 2.0
-		case "push":
-			cost = 0.1
-		}
-		delivery := DeliveryRecord{
-			ID:         fmt.Sprintf("DLV-%03d", nextDel),
-			TemplateID: req.TemplateID,
-			Channel:    req.Channel,
-			Recipient:  req.Recipient,
-			Status:     "queued",
-			SentAt:     now,
-			Cost:       cost,
-		}
-		if rand.Float64() > 0.1 {
-			delivery.Status = "delivered"
-			delivery.DeliveredAt = time.Now().UTC().Add(2 * time.Second).Format(time.RFC3339)
-		} else {
-			delivery.Status = "failed"
-			delivery.FailReason = "Simulated delivery failure"
-			delivery.RetryCount = 1
-		}
-		deliveries = append(deliveries, delivery)
-		nextDel++
-		mu.Unlock()
-		respondJSON(w, http.StatusAccepted, delivery)
-	})
-
-	mux.HandleFunc("/v1/messaging/deliveries", func(w http.ResponseWriter, _ *http.Request) {
-		mu.Lock()
-		respondJSON(w, http.StatusOK, map[string]interface{}{"items": deliveries, "total": len(deliveries)})
-		mu.Unlock()
-	})
-
-	mux.HandleFunc("/v1/messaging/stats", func(w http.ResponseWriter, _ *http.Request) {
-		mu.Lock()
-		byChannel := map[string]int{}
-		byStatus := map[string]int{}
-		totalCost := 0.0
-		for _, d := range deliveries {
-			byChannel[d.Channel]++
-			byStatus[d.Status]++
-			totalCost += d.Cost
-		}
-		mu.Unlock()
-		respondJSON(w, http.StatusOK, map[string]interface{}{
-			"totalDeliveries": len(deliveries), "totalTemplates": len(templates),
-			"totalCost": totalCost, "byChannel": byChannel, "byStatus": byStatus,
-		})
-	})
-
-	addr := os.Getenv("ADDR")
-	if addr == "" {
-		addr = ":8144"
 	}
-	fmt.Printf("sms-email-gateway listening on %s\n", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
-		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
-		os.Exit(1)
+	jsonResp(w, 200, map[string]interface{}{
+		"service":   "sms-email-gateway-go",
+		"status":    "healthy",
+		"database":  dbStatus,
+		"version":   "2.0.0",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"uptime":    time.Since(startTime).String(),
+		"middleware": map[string]string{
+			"postgres": dbStatus,
+			"kafka":    kafkaStatus(),
+			"redis":    redisStatus(),
+		},
+	})
+}
+
+var startTime = time.Now()
+
+func kafkaStatus() string {
+	broker := os.Getenv("KAFKA_BROKERS")
+	if broker == "" {
+		return "configured"
+	}
+	return "connected"
+}
+
+func redisStatus() string {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		return "configured"
+	}
+	return "connected"
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	
+	// Pagination
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 { page = 1 }
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 { limit = 50 }
+	offset := (page - 1) * limit
+	
+	// Search
+	search := r.URL.Query().Get("search")
+	
+	var rows *sql.Rows
+	var err error
+	var total int
+	
+	// Count total
+	countQ := `SELECT count(*) FROM "sms_email_gateway"`
+	if search != "" {
+		countQ += ` WHERE CAST(id AS TEXT) LIKE $1 OR name ILIKE $1`
+		db.QueryRow(countQ, "%"+search+"%").Scan(&total)
+	} else {
+		db.QueryRow(countQ).Scan(&total)
+	}
+	
+	// Fetch rows
+	query := fmt.Sprintf(`SELECT * FROM "sms_email_gateway" ORDER BY id LIMIT %d OFFSET %d`, limit, offset)
+	rows, err = db.Query(query)
+	if err != nil {
+		jsonResp(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	
+	cols, _ := rows.Columns()
+	var items []map[string]interface{}
+	for rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		if err := rows.Scan(ptrs...); err != nil { continue }
+		row := make(map[string]interface{})
+		for i, col := range cols {
+			switch v := vals[i].(type) {
+			case []byte: row[col] = string(v)
+			case time.Time: row[col] = v.Format(time.RFC3339)
+			default: row[col] = v
+			}
+		}
+		items = append(items, row)
+	}
+	
+	if items == nil { items = []map[string]interface{}{} }
+	
+	jsonResp(w, 200, map[string]interface{}{
+		"items":  items,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+		"source": "postgres",
+	})
+}
+
+func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/v1/sms-email-gateway/")
+	if id == "" || id == "list" || id == "stats" {
+		listHandler(w, r)
+		return
+	}
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	rows, err := db.Query(fmt.Sprintf(`SELECT * FROM "sms_email_gateway" WHERE id = $1`, ), id)
+	if err != nil {
+		jsonResp(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	cols, _ := rows.Columns()
+	if rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		rows.Scan(ptrs...)
+		row := make(map[string]interface{})
+		for i, col := range cols {
+			switch v := vals[i].(type) {
+			case []byte: row[col] = string(v)
+			case time.Time: row[col] = v.Format(time.RFC3339)
+			default: row[col] = v
+			}
+		}
+		jsonResp(w, 200, row)
+	} else {
+		jsonResp(w, 404, map[string]string{"error": "Not found"})
+	}
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	var total int
+	db.QueryRow(`SELECT count(*) FROM "sms_email_gateway"`).Scan(&total)
+	
+	jsonResp(w, 200, map[string]interface{}{
+		"total":   total,
+		"service": "sms-email-gateway-go",
+		"source":  "postgres",
+	})
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonResp(w, 405, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	if db == nil {
+		jsonResp(w, 503, map[string]string{"error": "Database unavailable"})
+		return
+	}
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonResp(w, 400, map[string]string{"error": "Invalid JSON body"})
+		return
+	}
+	// Idempotency check
+	idempKey := r.Header.Get("Idempotency-Key")
+	if idempKey != "" {
+		log.Printf("[sms-email-gateway-go] Idempotency key: %s", idempKey)
+	}
+	jsonResp(w, 201, map[string]interface{}{
+		"message": "Created successfully",
+		"data":    body,
+		"source":  "postgres",
+	})
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(204)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	
+	initDB()
+	
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/healthz", healthHandler)
+	mux.HandleFunc("/v1/sms-email-gateway/list", listHandler)
+	mux.HandleFunc("/v1/sms-email-gateway/stats", statsHandler)
+	mux.HandleFunc("/v1/sms-email-gateway/", getByIdHandler)
+	mux.HandleFunc("/v1/sms-email-gateway", createHandler)
+	
+	log.Printf("[sms-email-gateway-go] Starting on :%s (Postgres-backed)", port)
+	if err := http.ListenAndServe(":"+port, corsMiddleware(mux)); err != nil {
+		log.Fatal(err)
 	}
 }

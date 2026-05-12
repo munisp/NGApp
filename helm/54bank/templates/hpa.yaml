@@ -1,24 +1,26 @@
-{{- range $name, $svc := .Values.services }}
-{{- if ($.Values.serviceDefaults.autoscaling).enabled }}
----
+{{- if .Values.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ $name }}
-  namespace: {{ $.Release.Namespace }}
+  name: {{ include "54bank.fullname" . }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ $name }}
-  minReplicas: {{ $.Values.serviceDefaults.autoscaling.minReplicas }}
-  maxReplicas: {{ $.Values.serviceDefaults.autoscaling.maxReplicas }}
+    name: {{ include "54bank.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ $.Values.serviceDefaults.autoscaling.targetCPUUtilizationPercentage }}
-{{- end }}
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
 {{- end }}

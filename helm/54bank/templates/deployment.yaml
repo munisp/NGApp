@@ -1,70 +1,64 @@
-{{- range $name, $svc := .Values.services }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $name }}
-  namespace: {{ $.Release.Namespace }}
+  name: {{ include "54bank.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ $name }}
-    app.kubernetes.io/part-of: 54bank
-    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/name: {{ include "54bank.name" . }}
 spec:
-  replicas: {{ $svc.replicaCount | default $.Values.serviceDefaults.replicaCount }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: {{ $name }}
+      app.kubernetes.io/name: {{ include "54bank.name" . }}
   template:
     metadata:
-      labels:
-        app: {{ $name }}
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "{{ $svc.port }}"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/metrics/prometheus"
+      labels:
+        app.kubernetes.io/name: {{ include "54bank.name" . }}
     spec:
+      serviceAccountName: {{ include "54bank.serviceAccountName" . }}
       containers:
-        - name: {{ $name }}
-          image: "{{ $.Values.global.imageRegistry }}/{{ $name }}:{{ $svc.image.tag | default \"latest\" }}"
-          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
-            - containerPort: {{ $svc.port }}
+            - containerPort: 3000
+              protocol: TCP
           env:
-            - name: PORT
-              value: "{{ $svc.port }}"
+            - name: NODE_ENV
+              value: {{ .Values.env.NODE_ENV | quote }}
+            - name: ENABLE_AUTH
+              value: {{ .Values.env.ENABLE_AUTH | quote }}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: 54bank-secrets
-                  key: DATABASE_URL
+                  name: {{ .Values.postgresql.existingSecret }}
+                  key: url
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
-                  name: 54bank-secrets
-                  key: REDIS_URL
-            - name: KAFKA_BROKER
-              valueFrom:
-                secretKeyRef:
-                  name: 54bank-secrets
-                  key: KAFKA_BROKER
+                  name: {{ .Values.redis.existingSecret }}
+                  key: url
+            - name: KAFKA_BROKERS
+              value: {{ .Values.kafka.brokers | quote }}
             - name: KEYCLOAK_URL
-              value: "http://{{ $.Values.keycloak.host }}:{{ $.Values.keycloak.port }}"
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "{{ $.Values.observability.otelCollector.endpoint }}"
-            - name: OTEL_SERVICE_NAME
-              value: {{ $name }}
+              value: {{ .Values.keycloak.url | quote }}
           livenessProbe:
             httpGet:
-              path: /healthz
-              port: {{ $svc.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 15
+              path: /api/live
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
-              path: /healthz
-              port: {{ $svc.port }}
+              path: /api/ready
+              port: 3000
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
           resources:
-            {{- toYaml ($svc.resources | default $.Values.serviceDefaults.resources) | nindent 12 }}
-      restartPolicy: Always
-{{- end }}
+            {{- toYaml .Values.resources | nindent 12 }}

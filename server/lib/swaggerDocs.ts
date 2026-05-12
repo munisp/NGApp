@@ -19,7 +19,7 @@ function generateOpenAPISpec(): object {
     openapi: "3.0.3",
     info: PLATFORM_INFO,
     servers: [
-      { url: "http://localhost:5000", description: "Development" },
+      { url: "http://localhost:3000", description: "Development" },
       { url: "https://api.54bank.ng", description: "Production" },
     ],
     tags: [
