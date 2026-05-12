@@ -476,6 +476,46 @@ const SRIValidatorWorkspace = lazy(() => import("@/pages/SRIValidatorWorkspace")
 const CSPNonceEngineWorkspace = lazy(() => import("@/pages/CSPNonceEngineWorkspace"));
 const ClickjackDefenderWorkspace = lazy(() => import("@/pages/ClickjackDefenderWorkspace"));
 const BrowserFingerprintWorkspace = lazy(() => import("@/pages/BrowserFingerprintWorkspace"));
+const RedisCacheMiddlewareWorkspace = lazy(() => import("@/pages/RedisCacheMiddlewareWorkspace"));
+const RedisSessionStoreWorkspace = lazy(() => import("@/pages/RedisSessionStoreWorkspace"));
+const CacheInvalidationWorkspace = lazy(() => import("@/pages/CacheInvalidationWorkspace"));
+const BloomFilterCacheWorkspace = lazy(() => import("@/pages/BloomFilterCacheWorkspace"));
+const SortedSetRankingWorkspace = lazy(() => import("@/pages/SortedSetRankingWorkspace"));
+const PgBouncerManagerWorkspace = lazy(() => import("@/pages/PgBouncerManagerWorkspace"));
+const QueryCacheEngineWorkspace = lazy(() => import("@/pages/QueryCacheEngineWorkspace"));
+const PreparedStmtCacheWorkspace = lazy(() => import("@/pages/PreparedStmtCacheWorkspace"));
+const TablePartitionerWorkspace = lazy(() => import("@/pages/TablePartitionerWorkspace"));
+const MaterializedViewEngineWorkspace = lazy(() => import("@/pages/MaterializedViewEngineWorkspace"));
+const HotDataCacheWorkspace = lazy(() => import("@/pages/HotDataCacheWorkspace"));
+const BatchAggregatorWorkspace = lazy(() => import("@/pages/BatchAggregatorWorkspace"));
+const KeepaliveTunerWorkspace = lazy(() => import("@/pages/KeepaliveTunerWorkspace"));
+const ResponseCompressorWorkspace = lazy(() => import("@/pages/ResponseCompressorWorkspace"));
+const GRPCHotPathWorkspace = lazy(() => import("@/pages/GRPCHotPathWorkspace"));
+const RouteTrieOptimizerWorkspace = lazy(() => import("@/pages/RouteTrieOptimizerWorkspace"));
+const StreamResponseWorkspace = lazy(() => import("@/pages/StreamResponseWorkspace"));
+const HTTP2MultiplexerWorkspace = lazy(() => import("@/pages/HTTP2MultiplexerWorkspace"));
+const RequestCoalescerWorkspace = lazy(() => import("@/pages/RequestCoalescerWorkspace"));
+const FastJSONSerializerWorkspace = lazy(() => import("@/pages/FastJSONSerializerWorkspace"));
+const SWAPICacheWorkspace = lazy(() => import("@/pages/SWAPICacheWorkspace"));
+const VirtualScrollEngineWorkspace = lazy(() => import("@/pages/VirtualScrollEngineWorkspace"));
+const ComponentMemoizerWorkspace = lazy(() => import("@/pages/ComponentMemoizerWorkspace"));
+const BundleSplitterWorkspace = lazy(() => import("@/pages/BundleSplitterWorkspace"));
+const OptimisticUIEngineWorkspace = lazy(() => import("@/pages/OptimisticUIEngineWorkspace"));
+const KafkaConsumerOptimizerWorkspace = lazy(() => import("@/pages/KafkaConsumerOptimizerWorkspace"));
+const KafkaBatchProducerWorkspace = lazy(() => import("@/pages/KafkaBatchProducerWorkspace"));
+const AvroSchemaRegistryWorkspace = lazy(() => import("@/pages/AvroSchemaRegistryWorkspace"));
+const FluvioWASMTransformWorkspace = lazy(() => import("@/pages/FluvioWASMTransformWorkspace"));
+const EventDedupEngineWorkspace = lazy(() => import("@/pages/EventDedupEngineWorkspace"));
+const DistrolessBuilderWorkspace = lazy(() => import("@/pages/DistrolessBuilderWorkspace"));
+const TigerBeetleBatchWorkspace = lazy(() => import("@/pages/TigerBeetleBatchWorkspace"));
+const HPAAutoscalerWorkspace = lazy(() => import("@/pages/HPAAutoscalerWorkspace"));
+const CDNEdgeCacheWorkspace = lazy(() => import("@/pages/CDNEdgeCacheWorkspace"));
+const ReadReplicaRouterWorkspace = lazy(() => import("@/pages/ReadReplicaRouterWorkspace"));
+const KEDAScalerWorkspace = lazy(() => import("@/pages/KEDAScalerWorkspace"));
+const PrometheusDashboardWorkspace = lazy(() => import("@/pages/PrometheusDashboardWorkspace"));
+const OpenSearchOptimizerWorkspace = lazy(() => import("@/pages/OpenSearchOptimizerWorkspace"));
+const TemporalMemoizerWorkspace = lazy(() => import("@/pages/TemporalMemoizerWorkspace"));
+const APISIXPluginOptimizerWorkspace = lazy(() => import("@/pages/APISIXPluginOptimizerWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -1004,6 +1044,46 @@ export default function App() {
         <Route path="/csp-nonce-engine" component={renderInAdminShell(CSPNonceEngineWorkspace)} />
         <Route path="/clickjack-defender" component={renderInAdminShell(ClickjackDefenderWorkspace)} />
         <Route path="/browser-fingerprint" component={renderInAdminShell(BrowserFingerprintWorkspace)} />
+        <Route path="/redis-cache-middleware" component={renderInAdminShell(RedisCacheMiddlewareWorkspace)} />
+        <Route path="/redis-session-store" component={renderInAdminShell(RedisSessionStoreWorkspace)} />
+        <Route path="/cache-invalidation" component={renderInAdminShell(CacheInvalidationWorkspace)} />
+        <Route path="/bloom-filter-cache" component={renderInAdminShell(BloomFilterCacheWorkspace)} />
+        <Route path="/sorted-set-ranking" component={renderInAdminShell(SortedSetRankingWorkspace)} />
+        <Route path="/pgbouncer-manager" component={renderInAdminShell(PgBouncerManagerWorkspace)} />
+        <Route path="/query-cache-engine" component={renderInAdminShell(QueryCacheEngineWorkspace)} />
+        <Route path="/prepared-stmt-cache" component={renderInAdminShell(PreparedStmtCacheWorkspace)} />
+        <Route path="/table-partitioner" component={renderInAdminShell(TablePartitionerWorkspace)} />
+        <Route path="/materialized-view-engine" component={renderInAdminShell(MaterializedViewEngineWorkspace)} />
+        <Route path="/hot-data-cache" component={renderInAdminShell(HotDataCacheWorkspace)} />
+        <Route path="/batch-aggregator" component={renderInAdminShell(BatchAggregatorWorkspace)} />
+        <Route path="/keepalive-tuner" component={renderInAdminShell(KeepaliveTunerWorkspace)} />
+        <Route path="/response-compressor" component={renderInAdminShell(ResponseCompressorWorkspace)} />
+        <Route path="/grpc-hot-path" component={renderInAdminShell(GRPCHotPathWorkspace)} />
+        <Route path="/route-trie-optimizer" component={renderInAdminShell(RouteTrieOptimizerWorkspace)} />
+        <Route path="/stream-response" component={renderInAdminShell(StreamResponseWorkspace)} />
+        <Route path="/http2-multiplexer" component={renderInAdminShell(HTTP2MultiplexerWorkspace)} />
+        <Route path="/request-coalescer" component={renderInAdminShell(RequestCoalescerWorkspace)} />
+        <Route path="/fast-json-serializer" component={renderInAdminShell(FastJSONSerializerWorkspace)} />
+        <Route path="/sw-api-cache" component={renderInAdminShell(SWAPICacheWorkspace)} />
+        <Route path="/virtual-scroll-engine" component={renderInAdminShell(VirtualScrollEngineWorkspace)} />
+        <Route path="/component-memoizer" component={renderInAdminShell(ComponentMemoizerWorkspace)} />
+        <Route path="/bundle-splitter" component={renderInAdminShell(BundleSplitterWorkspace)} />
+        <Route path="/optimistic-ui-engine" component={renderInAdminShell(OptimisticUIEngineWorkspace)} />
+        <Route path="/kafka-consumer-optimizer" component={renderInAdminShell(KafkaConsumerOptimizerWorkspace)} />
+        <Route path="/kafka-batch-producer" component={renderInAdminShell(KafkaBatchProducerWorkspace)} />
+        <Route path="/avro-schema-registry" component={renderInAdminShell(AvroSchemaRegistryWorkspace)} />
+        <Route path="/fluvio-wasm-transform" component={renderInAdminShell(FluvioWASMTransformWorkspace)} />
+        <Route path="/event-dedup-engine" component={renderInAdminShell(EventDedupEngineWorkspace)} />
+        <Route path="/distroless-builder" component={renderInAdminShell(DistrolessBuilderWorkspace)} />
+        <Route path="/tigerbeetle-batch" component={renderInAdminShell(TigerBeetleBatchWorkspace)} />
+        <Route path="/hpa-autoscaler" component={renderInAdminShell(HPAAutoscalerWorkspace)} />
+        <Route path="/cdn-edge-cache" component={renderInAdminShell(CDNEdgeCacheWorkspace)} />
+        <Route path="/read-replica-router" component={renderInAdminShell(ReadReplicaRouterWorkspace)} />
+        <Route path="/keda-scaler" component={renderInAdminShell(KEDAScalerWorkspace)} />
+        <Route path="/prometheus-dashboard" component={renderInAdminShell(PrometheusDashboardWorkspace)} />
+        <Route path="/opensearch-optimizer" component={renderInAdminShell(OpenSearchOptimizerWorkspace)} />
+        <Route path="/temporal-memoizer" component={renderInAdminShell(TemporalMemoizerWorkspace)} />
+        <Route path="/apisix-plugin-optimizer" component={renderInAdminShell(APISIXPluginOptimizerWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

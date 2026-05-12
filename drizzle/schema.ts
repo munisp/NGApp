@@ -3081,3 +3081,410 @@ export type FramePolicy = typeof framePolicies.$inferSelect;
 export type InsertFramePolicy = typeof framePolicies.$inferInsert;
 export type DeviceProfile = typeof deviceProfiles.$inferSelect;
 export type InsertDeviceProfile = typeof deviceProfiles.$inferInsert;
+
+// ─── Performance Optimization Tables (40) ───────────────────────
+export const redisCacheEntries = pgTable("redis_cache_entries", {
+  id: serial("id").primaryKey(),
+  route: varchar("route", { length: 100 }).notNull(),
+  ttlSeconds: integer("ttlSeconds").default(0),
+  hitCount: bigint("hitCount", { mode: "number" }).default(0),
+  missCount: integer("missCount").default(0),
+  hitRate: varchar("hitRate", { length: 20 }).notNull(),
+  avgLatencyMs: real("avgLatencyMs").default(0),
+  memoryMB: real("memoryMB").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("redis_cache_entries_status_idx").on(table.status)]);
+export const redisSessions = pgTable("redis_sessions", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("sessionId", { length: 100 }).notNull(),
+  userId: varchar("userId", { length: 50 }).notNull(),
+  deviceType: varchar("deviceType", { length: 30 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 45 }).notNull(),
+  expiresIn: varchar("expiresIn", { length: 20 }).notNull(),
+  slidingTTL: boolean("slidingTTL").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("redis_sessions_status_idx").on(table.status)]);
+export const cacheInvalidations = pgTable("cache_invalidations", {
+  id: serial("id").primaryKey(),
+  channel: varchar("channel", { length: 100 }).notNull(),
+  subscribers: integer("subscribers").default(0),
+  invalidations24h: integer("invalidations24h").default(0),
+  avgPropagationMs: real("avgPropagationMs").default(0),
+  pattern: varchar("pattern", { length: 30 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("cache_invalidations_status_idx").on(table.status)]);
+export const bloomFilters = pgTable("bloom_filters", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  capacity: bigint("capacity", { mode: "number" }).default(0),
+  falsePositiveRate: varchar("falsePositiveRate", { length: 20 }).notNull(),
+  hashFunctions: integer("hashFunctions").default(0),
+  memoryMB: real("memoryMB").default(0),
+  lookups24h: bigint("lookups24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("bloom_filters_status_idx").on(table.status)]);
+export const sortedSetRankings = pgTable("sorted_set_rankings", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  members: integer("members").default(0),
+  topScore: real("topScore").default(0),
+  updateFrequency: varchar("updateFrequency", { length: 30 }).notNull(),
+  queryLatencyMs: real("queryLatencyMs").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sorted_set_rankings_status_idx").on(table.status)]);
+export const pgbouncerPools = pgTable("pgbouncer_pools", {
+  id: serial("id").primaryKey(),
+  database: varchar("database", { length: 100 }).notNull(),
+  poolMode: varchar("poolMode", { length: 30 }).notNull(),
+  activeConnections: integer("activeConnections").default(0),
+  idleConnections: integer("idleConnections").default(0),
+  maxClientConn: integer("maxClientConn").default(0),
+  avgQueryMs: real("avgQueryMs").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("pgbouncer_pools_status_idx").on(table.status)]);
+export const queryCacheEntries = pgTable("query_cache_entries", {
+  id: serial("id").primaryKey(),
+  queryHash: varchar("queryHash", { length: 64 }).notNull(),
+  tableName: varchar("tableName", { length: 100 }).notNull(),
+  resultCount: integer("resultCount").default(0),
+  ttlSeconds: integer("ttlSeconds").default(0),
+  hitCount: bigint("hitCount", { mode: "number" }).default(0),
+  hitRate: varchar("hitRate", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("query_cache_entries_status_idx").on(table.status)]);
+export const preparedStatements = pgTable("prepared_statements", {
+  id: serial("id").primaryKey(),
+  queryPattern: text("queryPattern").notNull(),
+  executions24h: bigint("executions24h", { mode: "number" }).default(0),
+  avgExecMs: real("avgExecMs").default(0),
+  planCacheHits: varchar("planCacheHits", { length: 20 }).notNull(),
+  paramTypes: varchar("paramTypes", { length: 200 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("prepared_statements_status_idx").on(table.status)]);
+export const tablePartitions = pgTable("table_partitions", {
+  id: serial("id").primaryKey(),
+  tableName: varchar("tableName", { length: 100 }).notNull(),
+  partitionKey: varchar("partitionKey", { length: 50 }).notNull(),
+  partitionType: varchar("partitionType", { length: 30 }).notNull(),
+  activePartitions: integer("activePartitions").default(0),
+  rowsPerPartition: varchar("rowsPerPartition", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("table_partitions_status_idx").on(table.status)]);
+export const materializedViews = pgTable("materialized_views_perf", {
+  id: serial("id").primaryKey(),
+  viewName: varchar("viewName", { length: 100 }).notNull(),
+  refreshIntervalSec: integer("refreshIntervalSec").default(0),
+  lastRefreshMs: integer("lastRefreshMs").default(0),
+  rowCount: integer("rowCount").default(0),
+  autoRefresh: boolean("autoRefresh").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("materialized_views_perf_status_idx").on(table.status)]);
+export const hotDataCaches = pgTable("hot_data_caches", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 100 }).notNull(),
+  cacheType: varchar("cacheType", { length: 20 }).notNull(),
+  maxEntries: integer("maxEntries").default(0),
+  currentEntries: integer("currentEntries").default(0),
+  hitRate: varchar("hitRate", { length: 20 }).notNull(),
+  memoryMB: real("memoryMB").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("hot_data_caches_status_idx").on(table.status)]);
+export const batchAggregatorConfigs = pgTable("batch_aggregator_configs", {
+  id: serial("id").primaryKey(),
+  endpoint: varchar("endpoint", { length: 200 }).notNull(),
+  maxRequests: integer("maxRequests").default(0),
+  timeoutMs: integer("timeoutMs").default(0),
+  avgBatchSize: real("avgBatchSize").default(0),
+  requestsSaved24h: bigint("requestsSaved24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("batch_aggregator_configs_status_idx").on(table.status)]);
+export const keepaliveConfigs = pgTable("keepalive_configs", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 100 }).notNull(),
+  keepAliveTimeout: integer("keepAliveTimeout").default(0),
+  maxIdlePerHost: integer("maxIdlePerHost").default(0),
+  activeConnections: integer("activeConnections").default(0),
+  reuseRate: varchar("reuseRate", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("keepalive_configs_status_idx").on(table.status)]);
+export const compressionConfigs = pgTable("compression_configs", {
+  id: serial("id").primaryKey(),
+  algorithm: varchar("algorithm", { length: 20 }).notNull(),
+  level: integer("level").default(0),
+  minBytes: integer("minBytes").default(0),
+  compressionRatio: varchar("compressionRatio", { length: 20 }).notNull(),
+  bandwidthSaved24h: varchar("bandwidthSaved24h", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("compression_configs_status_idx").on(table.status)]);
+export const grpcServices = pgTable("grpc_services", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 100 }).notNull(),
+  proto: varchar("proto", { length: 100 }).notNull(),
+  avgLatencyMs: real("avgLatencyMs").default(0),
+  throughputRps: integer("throughputRps").default(0),
+  compressionRatio: varchar("compressionRatio", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("grpc_services_status_idx").on(table.status)]);
+export const routeTrieStats = pgTable("route_trie_stats", {
+  id: serial("id").primaryKey(),
+  routePrefix: varchar("routePrefix", { length: 200 }).notNull(),
+  totalRoutes: integer("totalRoutes").default(0),
+  trieDepth: integer("trieDepth").default(0),
+  avgLookupNs: integer("avgLookupNs").default(0),
+  cacheHitRate: varchar("cacheHitRate", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("route_trie_stats_status_idx").on(table.status)]);
+export const streamResponseConfigs = pgTable("stream_response_configs", {
+  id: serial("id").primaryKey(),
+  endpoint: varchar("endpoint", { length: 200 }).notNull(),
+  thresholdBytes: integer("thresholdBytes").default(0),
+  chunksizeKB: integer("chunksizeKB").default(0),
+  bytesStreamed24h: varchar("bytesStreamed24h", { length: 20 }).notNull(),
+  memoryReductionPct: varchar("memoryReductionPct", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("stream_response_configs_status_idx").on(table.status)]);
+export const http2Connections = pgTable("http2_connections", {
+  id: serial("id").primaryKey(),
+  clientIp: varchar("clientIp", { length: 45 }).notNull(),
+  streams: integer("streams").default(0),
+  maxConcurrentStreams: integer("maxConcurrentStreams").default(0),
+  windowSize: varchar("windowSize", { length: 20 }).notNull(),
+  serverPushEnabled: boolean("serverPushEnabled").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("http2_connections_status_idx").on(table.status)]);
+export const coalescingRules = pgTable("coalescing_rules", {
+  id: serial("id").primaryKey(),
+  route: varchar("route", { length: 200 }).notNull(),
+  windowMs: integer("windowMs").default(0),
+  coalescedRequests24h: bigint("coalescedRequests24h", { mode: "number" }).default(0),
+  uniqueRequests24h: bigint("uniqueRequests24h", { mode: "number" }).default(0),
+  savingsRatio: varchar("savingsRatio", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("coalescing_rules_status_idx").on(table.status)]);
+export const fastJsonSchemas = pgTable("fast_json_schemas", {
+  id: serial("id").primaryKey(),
+  schemaName: varchar("schemaName", { length: 100 }).notNull(),
+  compiledSizeBytes: integer("compiledSizeBytes").default(0),
+  serializationsPerSec: integer("serializationsPerSec").default(0),
+  avgSerializeNs: integer("avgSerializeNs").default(0),
+  speedup: varchar("speedup", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("fast_json_schemas_status_idx").on(table.status)]);
+export const swCacheStrategies = pgTable("sw_cache_strategies", {
+  id: serial("id").primaryKey(),
+  pattern: varchar("pattern", { length: 200 }).notNull(),
+  strategy: varchar("strategy", { length: 50 }).notNull(),
+  maxAge: integer("maxAge").default(0),
+  cacheHitRate: varchar("cacheHitRate", { length: 20 }).notNull(),
+  offlineCapable: boolean("offlineCapable").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sw_cache_strategies_status_idx").on(table.status)]);
+export const virtualScrollConfigs = pgTable("virtual_scroll_configs", {
+  id: serial("id").primaryKey(),
+  tableName: varchar("tableName", { length: 100 }).notNull(),
+  totalRows: bigint("totalRows", { mode: "number" }).default(0),
+  viewportRows: integer("viewportRows").default(0),
+  renderTimeMs: real("renderTimeMs").default(0),
+  scrollFps: integer("scrollFps").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("virtual_scroll_configs_status_idx").on(table.status)]);
+export const memoizationTargets = pgTable("memoization_targets", {
+  id: serial("id").primaryKey(),
+  component: varchar("component", { length: 100 }).notNull(),
+  rerendersPer60s: integer("rerendersPer60s").default(0),
+  estimatedSavingPct: varchar("estimatedSavingPct", { length: 10 }).notNull(),
+  recommendation: varchar("recommendation", { length: 200 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("memoization_targets_status_idx").on(table.status)]);
+export const bundleSplitConfigs = pgTable("bundle_split_configs", {
+  id: serial("id").primaryKey(),
+  chunk: varchar("chunk", { length: 100 }).notNull(),
+  routes: integer("routes").default(0),
+  sizeKB: integer("sizeKB").default(0),
+  loadTimeMs: integer("loadTimeMs").default(0),
+  preloadHint: varchar("preloadHint", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("bundle_split_configs_status_idx").on(table.status)]);
+export const optimisticUIConfigs = pgTable("optimistic_ui_configs", {
+  id: serial("id").primaryKey(),
+  action: varchar("action", { length: 50 }).notNull(),
+  endpoint: varchar("endpoint", { length: 200 }).notNull(),
+  rollbackOnError: boolean("rollbackOnError").default(false),
+  successRate: varchar("successRate", { length: 10 }).notNull(),
+  perceivedLatencyMs: integer("perceivedLatencyMs").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("optimistic_ui_configs_status_idx").on(table.status)]);
+export const kafkaConsumerGroups = pgTable("kafka_consumer_groups", {
+  id: serial("id").primaryKey(),
+  groupId: varchar("groupId", { length: 100 }).notNull(),
+  topic: varchar("topic", { length: 100 }).notNull(),
+  partitions: integer("partitions").default(0),
+  consumers: integer("consumers").default(0),
+  lag: bigint("lag", { mode: "number" }).default(0),
+  throughputMps: integer("throughputMps").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("kafka_consumer_groups_status_idx").on(table.status)]);
+export const kafkaBatchProducers = pgTable("kafka_batch_producers", {
+  id: serial("id").primaryKey(),
+  topic: varchar("topic", { length: 100 }).notNull(),
+  lingerMs: integer("lingerMs").default(0),
+  batchSizeKB: integer("batchSizeKB").default(0),
+  compressionType: varchar("compressionType", { length: 20 }).notNull(),
+  throughputMps: integer("throughputMps").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("kafka_batch_producers_status_idx").on(table.status)]);
+export const avroSchemas = pgTable("avro_schemas", {
+  id: serial("id").primaryKey(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  version: integer("version").default(0),
+  compatibilityMode: varchar("compatibilityMode", { length: 20 }).notNull(),
+  serializedSizeBytes: integer("serializedSizeBytes").default(0),
+  compressionRatio: varchar("compressionRatio", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("avro_schemas_status_idx").on(table.status)]);
+export const fluvioSmartModules = pgTable("fluvio_smart_modules", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  moduleType: varchar("moduleType", { length: 20 }).notNull(),
+  wasmSizeKB: integer("wasmSizeKB").default(0),
+  avgLatencyUs: integer("avgLatencyUs").default(0),
+  throughputEps: integer("throughputEps").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("fluvio_smart_modules_status_idx").on(table.status)]);
+export const eventDedupConfigs = pgTable("event_dedup_configs", {
+  id: serial("id").primaryKey(),
+  topic: varchar("topic", { length: 100 }).notNull(),
+  windowMs: integer("windowMs").default(0),
+  strategy: varchar("strategy", { length: 30 }).notNull(),
+  duplicatesBlocked24h: bigint("duplicatesBlocked24h", { mode: "number" }).default(0),
+  totalEvents24h: bigint("totalEvents24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("event_dedup_configs_status_idx").on(table.status)]);
+export const distrolessImages = pgTable("distroless_images", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 100 }).notNull(),
+  baseImage: varchar("baseImage", { length: 200 }).notNull(),
+  imageSizeMB: real("imageSizeMB").default(0),
+  previousSizeMB: real("previousSizeMB").default(0),
+  reductionPct: varchar("reductionPct", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("distroless_images_status_idx").on(table.status)]);
+export const tbBatchConfigs = pgTable("tb_batch_configs", {
+  id: serial("id").primaryKey(),
+  batchSize: integer("batchSize").default(0),
+  avgBatchLatencyMs: real("avgBatchLatencyMs").default(0),
+  throughputTps: integer("throughputTps").default(0),
+  transfersProcessed24h: bigint("transfersProcessed24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("tb_batch_configs_status_idx").on(table.status)]);
+export const hpaConfigs = pgTable("hpa_configs", {
+  id: serial("id").primaryKey(),
+  deployment: varchar("deployment", { length: 100 }).notNull(),
+  minReplicas: integer("minReplicas").default(0),
+  maxReplicas: integer("maxReplicas").default(0),
+  currentReplicas: integer("currentReplicas").default(0),
+  cpuTargetPct: integer("cpuTargetPct").default(0),
+  customMetric: varchar("customMetric", { length: 200 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("hpa_configs_status_idx").on(table.status)]);
+export const cdnEdgeConfigs = pgTable("cdn_edge_configs", {
+  id: serial("id").primaryKey(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  origin: varchar("origin", { length: 200 }).notNull(),
+  ttlStatic: integer("ttlStatic").default(0),
+  ttlApi: integer("ttlApi").default(0),
+  brotliEnabled: boolean("brotliEnabled").default(false),
+  bandwidthSaved24h: varchar("bandwidthSaved24h", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("cdn_edge_configs_status_idx").on(table.status)]);
+export const readReplicaConfigs = pgTable("read_replica_configs", {
+  id: serial("id").primaryKey(),
+  replicaHost: varchar("replicaHost", { length: 100 }).notNull(),
+  lagMs: integer("lagMs").default(0),
+  queriesRouted24h: bigint("queriesRouted24h", { mode: "number" }).default(0),
+  loadPct: integer("loadPct").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("read_replica_configs_status_idx").on(table.status)]);
+export const kedaScaleTriggers = pgTable("keda_scale_triggers", {
+  id: serial("id").primaryKey(),
+  scaleObject: varchar("scaleObject", { length: 100 }).notNull(),
+  trigger: varchar("trigger", { length: 30 }).notNull(),
+  metric: varchar("metric", { length: 50 }).notNull(),
+  threshold: integer("threshold").default(0),
+  currentReplicas: integer("currentReplicas").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("keda_scale_triggers_status_idx").on(table.status)]);
+export const prometheusDashboards = pgTable("prometheus_dashboards", {
+  id: serial("id").primaryKey(),
+  dashboard: varchar("dashboard", { length: 100 }).notNull(),
+  panels: integer("panels").default(0),
+  refreshInterval: varchar("refreshInterval", { length: 10 }).notNull(),
+  alertRules: integer("alertRules").default(0),
+  dataSourceRetention: varchar("dataSourceRetention", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("prometheus_dashboards_status_idx").on(table.status)]);
+export const opensearchIndexConfigs = pgTable("opensearch_index_configs", {
+  id: serial("id").primaryKey(),
+  indexName: varchar("indexName", { length: 100 }).notNull(),
+  shards: integer("shards").default(0),
+  replicas: integer("replicas").default(0),
+  avgQueryMs: real("avgQueryMs").default(0),
+  resultCacheEnabled: boolean("resultCacheEnabled").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("opensearch_index_configs_status_idx").on(table.status)]);
+export const temporalMemoizedActivities = pgTable("temporal_memoized_activities", {
+  id: serial("id").primaryKey(),
+  workflow: varchar("workflow", { length: 100 }).notNull(),
+  activity: varchar("activity", { length: 100 }).notNull(),
+  replaySpeedup: varchar("replaySpeedup", { length: 10 }).notNull(),
+  cacheTTL: varchar("cacheTTL", { length: 20 }).notNull(),
+  cacheHitRate: varchar("cacheHitRate", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("temporal_memoized_activities_status_idx").on(table.status)]);
+export const apisixPluginChains = pgTable("apisix_plugin_chains", {
+  id: serial("id").primaryKey(),
+  route: varchar("route", { length: 200 }).notNull(),
+  avgLatencyMs: real("avgLatencyMs").default(0),
+  latencySaving: varchar("latencySaving", { length: 10 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("apisix_plugin_chains_status_idx").on(table.status)]);

@@ -1,0 +1,137 @@
+// Platform Performance Optimization — Express proxy routes for 40 performance services
+// Auto-generated: ports 8534-8573
+import type { Express, Request, Response } from "express";
+
+const proxyOrSeed = async (serviceUrl: string, path: string, seed: unknown, _req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${serviceUrl}${path}`);
+    if (resp.ok) { res.json(await resp.json()); return; }
+    throw new Error(`Service returned ${resp.status}`);
+  } catch {
+    res.json(seed);
+  }
+};
+
+export function registerPerformanceOptimizationRoutes(app: Express) {
+  const REDIS_CACHE_URL = process.env.REDIS_CACHE_URL || "http://localhost:8534";
+  const REDIS_SESSION_URL = process.env.REDIS_SESSION_URL || "http://localhost:8535";
+  const CACHE_INVALIDATION_URL = process.env.CACHE_INVALIDATION_URL || "http://localhost:8536";
+  const BLOOM_FILTER_URL = process.env.BLOOM_FILTER_URL || "http://localhost:8537";
+  const SORTED_SET_RANKING_URL = process.env.SORTED_SET_RANKING_URL || "http://localhost:8538";
+  const PGBOUNCER_URL = process.env.PGBOUNCER_URL || "http://localhost:8539";
+  const QUERY_CACHE_URL = process.env.QUERY_CACHE_URL || "http://localhost:8540";
+  const PREPARED_STMT_URL = process.env.PREPARED_STMT_URL || "http://localhost:8541";
+  const TABLE_PARTITIONER_URL = process.env.TABLE_PARTITIONER_URL || "http://localhost:8542";
+  const MATERIALIZED_VIEWS_URL = process.env.MATERIALIZED_VIEWS_URL || "http://localhost:8543";
+  const HOT_DATA_CACHE_URL = process.env.HOT_DATA_CACHE_URL || "http://localhost:8544";
+  const BATCH_AGGREGATOR_URL = process.env.BATCH_AGGREGATOR_URL || "http://localhost:8545";
+  const KEEPALIVE_TUNER_URL = process.env.KEEPALIVE_TUNER_URL || "http://localhost:8546";
+  const RESPONSE_COMPRESSOR_URL = process.env.RESPONSE_COMPRESSOR_URL || "http://localhost:8547";
+  const GRPC_HOT_PATH_URL = process.env.GRPC_HOT_PATH_URL || "http://localhost:8548";
+  const ROUTE_TRIE_URL = process.env.ROUTE_TRIE_URL || "http://localhost:8549";
+  const STREAM_RESPONSE_URL = process.env.STREAM_RESPONSE_URL || "http://localhost:8550";
+  const HTTP2_MULTIPLEXER_URL = process.env.HTTP2_MULTIPLEXER_URL || "http://localhost:8551";
+  const REQUEST_COALESCER_URL = process.env.REQUEST_COALESCER_URL || "http://localhost:8552";
+  const FAST_JSON_URL = process.env.FAST_JSON_URL || "http://localhost:8553";
+  const SW_API_CACHE_URL = process.env.SW_API_CACHE_URL || "http://localhost:8554";
+  const VIRTUAL_SCROLL_URL = process.env.VIRTUAL_SCROLL_URL || "http://localhost:8555";
+  const COMPONENT_MEMOIZER_URL = process.env.COMPONENT_MEMOIZER_URL || "http://localhost:8556";
+  const BUNDLE_SPLITTER_URL = process.env.BUNDLE_SPLITTER_URL || "http://localhost:8557";
+  const OPTIMISTIC_UI_URL = process.env.OPTIMISTIC_UI_URL || "http://localhost:8558";
+  const KAFKA_CONSUMER_URL = process.env.KAFKA_CONSUMER_URL || "http://localhost:8559";
+  const KAFKA_BATCH_PRODUCER_URL = process.env.KAFKA_BATCH_PRODUCER_URL || "http://localhost:8560";
+  const AVRO_SCHEMA_URL = process.env.AVRO_SCHEMA_URL || "http://localhost:8561";
+  const FLUVIO_WASM_URL = process.env.FLUVIO_WASM_URL || "http://localhost:8562";
+  const EVENT_DEDUP_URL = process.env.EVENT_DEDUP_URL || "http://localhost:8563";
+  const DISTROLESS_BUILDER_URL = process.env.DISTROLESS_BUILDER_URL || "http://localhost:8564";
+  const TB_BATCH_URL = process.env.TB_BATCH_URL || "http://localhost:8565";
+  const HPA_AUTOSCALER_URL = process.env.HPA_AUTOSCALER_URL || "http://localhost:8566";
+  const CDN_EDGE_CACHE_URL = process.env.CDN_EDGE_CACHE_URL || "http://localhost:8567";
+  const READ_REPLICA_URL = process.env.READ_REPLICA_URL || "http://localhost:8568";
+  const KEDA_SCALER_URL = process.env.KEDA_SCALER_URL || "http://localhost:8569";
+  const PROMETHEUS_DASHBOARD_URL = process.env.PROMETHEUS_DASHBOARD_URL || "http://localhost:8570";
+  const OPENSEARCH_OPTIMIZER_URL = process.env.OPENSEARCH_OPTIMIZER_URL || "http://localhost:8571";
+  const TEMPORAL_MEMOIZER_URL = process.env.TEMPORAL_MEMOIZER_URL || "http://localhost:8572";
+  const APISIX_PLUGIN_URL = process.env.APISIX_PLUGIN_URL || "http://localhost:8573";
+
+  app.get("/api/performance/redis-cache/list", (req, res) => { void proxyOrSeed(REDIS_CACHE_URL, "/v1/redis-cache/list", { total: 0, cache_entries: [] }, req, res); });
+  app.get("/api/performance/redis-cache/stats", (req, res) => { void proxyOrSeed(REDIS_CACHE_URL, "/v1/redis-cache/stats", { total: 0, service: "redis-cache" }, req, res); });
+  app.get("/api/performance/redis-session/list", (req, res) => { void proxyOrSeed(REDIS_SESSION_URL, "/v1/redis-session/list", { total: 0, sessions: [] }, req, res); });
+  app.get("/api/performance/redis-session/stats", (req, res) => { void proxyOrSeed(REDIS_SESSION_URL, "/v1/redis-session/stats", { total: 0, service: "redis-session" }, req, res); });
+  app.get("/api/performance/cache-invalidation/list", (req, res) => { void proxyOrSeed(CACHE_INVALIDATION_URL, "/v1/cache-invalidation/list", { total: 0, invalidation_channels: [] }, req, res); });
+  app.get("/api/performance/cache-invalidation/stats", (req, res) => { void proxyOrSeed(CACHE_INVALIDATION_URL, "/v1/cache-invalidation/stats", { total: 0, service: "cache-invalidation" }, req, res); });
+  app.get("/api/performance/bloom-filter/list", (req, res) => { void proxyOrSeed(BLOOM_FILTER_URL, "/v1/bloom-filter/list", { total: 0, bloom_filters: [] }, req, res); });
+  app.get("/api/performance/bloom-filter/stats", (req, res) => { void proxyOrSeed(BLOOM_FILTER_URL, "/v1/bloom-filter/stats", { total: 0, service: "bloom-filter" }, req, res); });
+  app.get("/api/performance/sorted-set-ranking/list", (req, res) => { void proxyOrSeed(SORTED_SET_RANKING_URL, "/v1/sorted-set-ranking/list", { total: 0, rankings: [] }, req, res); });
+  app.get("/api/performance/sorted-set-ranking/stats", (req, res) => { void proxyOrSeed(SORTED_SET_RANKING_URL, "/v1/sorted-set-ranking/stats", { total: 0, service: "sorted-set-ranking" }, req, res); });
+  app.get("/api/performance/pgbouncer/list", (req, res) => { void proxyOrSeed(PGBOUNCER_URL, "/v1/pgbouncer/list", { total: 0, pool_stats: [] }, req, res); });
+  app.get("/api/performance/pgbouncer/stats", (req, res) => { void proxyOrSeed(PGBOUNCER_URL, "/v1/pgbouncer/stats", { total: 0, service: "pgbouncer" }, req, res); });
+  app.get("/api/performance/query-cache/list", (req, res) => { void proxyOrSeed(QUERY_CACHE_URL, "/v1/query-cache/list", { total: 0, cached_queries: [] }, req, res); });
+  app.get("/api/performance/query-cache/stats", (req, res) => { void proxyOrSeed(QUERY_CACHE_URL, "/v1/query-cache/stats", { total: 0, service: "query-cache" }, req, res); });
+  app.get("/api/performance/prepared-stmt/list", (req, res) => { void proxyOrSeed(PREPARED_STMT_URL, "/v1/prepared-stmt/list", { total: 0, cached_statements: [] }, req, res); });
+  app.get("/api/performance/prepared-stmt/stats", (req, res) => { void proxyOrSeed(PREPARED_STMT_URL, "/v1/prepared-stmt/stats", { total: 0, service: "prepared-stmt" }, req, res); });
+  app.get("/api/performance/table-partitioner/list", (req, res) => { void proxyOrSeed(TABLE_PARTITIONER_URL, "/v1/table-partitioner/list", { total: 0, partition_configs: [] }, req, res); });
+  app.get("/api/performance/table-partitioner/stats", (req, res) => { void proxyOrSeed(TABLE_PARTITIONER_URL, "/v1/table-partitioner/stats", { total: 0, service: "table-partitioner" }, req, res); });
+  app.get("/api/performance/materialized-views/list", (req, res) => { void proxyOrSeed(MATERIALIZED_VIEWS_URL, "/v1/materialized-views/list", { total: 0, materialized_views: [] }, req, res); });
+  app.get("/api/performance/materialized-views/stats", (req, res) => { void proxyOrSeed(MATERIALIZED_VIEWS_URL, "/v1/materialized-views/stats", { total: 0, service: "materialized-views" }, req, res); });
+  app.get("/api/performance/hot-data-cache/list", (req, res) => { void proxyOrSeed(HOT_DATA_CACHE_URL, "/v1/hot-data-cache/list", { total: 0, hot_caches: [] }, req, res); });
+  app.get("/api/performance/hot-data-cache/stats", (req, res) => { void proxyOrSeed(HOT_DATA_CACHE_URL, "/v1/hot-data-cache/stats", { total: 0, service: "hot-data-cache" }, req, res); });
+  app.get("/api/performance/batch-aggregator/list", (req, res) => { void proxyOrSeed(BATCH_AGGREGATOR_URL, "/v1/batch-aggregator/list", { total: 0, batch_configs: [] }, req, res); });
+  app.get("/api/performance/batch-aggregator/stats", (req, res) => { void proxyOrSeed(BATCH_AGGREGATOR_URL, "/v1/batch-aggregator/stats", { total: 0, service: "batch-aggregator" }, req, res); });
+  app.get("/api/performance/keepalive-tuner/list", (req, res) => { void proxyOrSeed(KEEPALIVE_TUNER_URL, "/v1/keepalive-tuner/list", { total: 0, connection_pools: [] }, req, res); });
+  app.get("/api/performance/keepalive-tuner/stats", (req, res) => { void proxyOrSeed(KEEPALIVE_TUNER_URL, "/v1/keepalive-tuner/stats", { total: 0, service: "keepalive-tuner" }, req, res); });
+  app.get("/api/performance/response-compressor/list", (req, res) => { void proxyOrSeed(RESPONSE_COMPRESSOR_URL, "/v1/response-compressor/list", { total: 0, compression_configs: [] }, req, res); });
+  app.get("/api/performance/response-compressor/stats", (req, res) => { void proxyOrSeed(RESPONSE_COMPRESSOR_URL, "/v1/response-compressor/stats", { total: 0, service: "response-compressor" }, req, res); });
+  app.get("/api/performance/grpc-hot-path/list", (req, res) => { void proxyOrSeed(GRPC_HOT_PATH_URL, "/v1/grpc-hot-path/list", { total: 0, grpc_services: [] }, req, res); });
+  app.get("/api/performance/grpc-hot-path/stats", (req, res) => { void proxyOrSeed(GRPC_HOT_PATH_URL, "/v1/grpc-hot-path/stats", { total: 0, service: "grpc-hot-path" }, req, res); });
+  app.get("/api/performance/route-trie/list", (req, res) => { void proxyOrSeed(ROUTE_TRIE_URL, "/v1/route-trie/list", { total: 0, route_stats: [] }, req, res); });
+  app.get("/api/performance/route-trie/stats", (req, res) => { void proxyOrSeed(ROUTE_TRIE_URL, "/v1/route-trie/stats", { total: 0, service: "route-trie" }, req, res); });
+  app.get("/api/performance/stream-response/list", (req, res) => { void proxyOrSeed(STREAM_RESPONSE_URL, "/v1/stream-response/list", { total: 0, stream_configs: [] }, req, res); });
+  app.get("/api/performance/stream-response/stats", (req, res) => { void proxyOrSeed(STREAM_RESPONSE_URL, "/v1/stream-response/stats", { total: 0, service: "stream-response" }, req, res); });
+  app.get("/api/performance/http2-multiplexer/list", (req, res) => { void proxyOrSeed(HTTP2_MULTIPLEXER_URL, "/v1/http2-multiplexer/list", { total: 0, h2_connections: [] }, req, res); });
+  app.get("/api/performance/http2-multiplexer/stats", (req, res) => { void proxyOrSeed(HTTP2_MULTIPLEXER_URL, "/v1/http2-multiplexer/stats", { total: 0, service: "http2-multiplexer" }, req, res); });
+  app.get("/api/performance/request-coalescer/list", (req, res) => { void proxyOrSeed(REQUEST_COALESCER_URL, "/v1/request-coalescer/list", { total: 0, coalescing_rules: [] }, req, res); });
+  app.get("/api/performance/request-coalescer/stats", (req, res) => { void proxyOrSeed(REQUEST_COALESCER_URL, "/v1/request-coalescer/stats", { total: 0, service: "request-coalescer" }, req, res); });
+  app.get("/api/performance/fast-json/list", (req, res) => { void proxyOrSeed(FAST_JSON_URL, "/v1/fast-json/list", { total: 0, schema_configs: [] }, req, res); });
+  app.get("/api/performance/fast-json/stats", (req, res) => { void proxyOrSeed(FAST_JSON_URL, "/v1/fast-json/stats", { total: 0, service: "fast-json" }, req, res); });
+  app.get("/api/performance/sw-api-cache/list", (req, res) => { void proxyOrSeed(SW_API_CACHE_URL, "/v1/sw-api-cache/list", { total: 0, cache_strategies: [] }, req, res); });
+  app.get("/api/performance/sw-api-cache/stats", (req, res) => { void proxyOrSeed(SW_API_CACHE_URL, "/v1/sw-api-cache/stats", { total: 0, service: "sw-api-cache" }, req, res); });
+  app.get("/api/performance/virtual-scroll/list", (req, res) => { void proxyOrSeed(VIRTUAL_SCROLL_URL, "/v1/virtual-scroll/list", { total: 0, scroll_configs: [] }, req, res); });
+  app.get("/api/performance/virtual-scroll/stats", (req, res) => { void proxyOrSeed(VIRTUAL_SCROLL_URL, "/v1/virtual-scroll/stats", { total: 0, service: "virtual-scroll" }, req, res); });
+  app.get("/api/performance/component-memoizer/list", (req, res) => { void proxyOrSeed(COMPONENT_MEMOIZER_URL, "/v1/component-memoizer/list", { total: 0, memoization_targets: [] }, req, res); });
+  app.get("/api/performance/component-memoizer/stats", (req, res) => { void proxyOrSeed(COMPONENT_MEMOIZER_URL, "/v1/component-memoizer/stats", { total: 0, service: "component-memoizer" }, req, res); });
+  app.get("/api/performance/bundle-splitter/list", (req, res) => { void proxyOrSeed(BUNDLE_SPLITTER_URL, "/v1/bundle-splitter/list", { total: 0, split_configs: [] }, req, res); });
+  app.get("/api/performance/bundle-splitter/stats", (req, res) => { void proxyOrSeed(BUNDLE_SPLITTER_URL, "/v1/bundle-splitter/stats", { total: 0, service: "bundle-splitter" }, req, res); });
+  app.get("/api/performance/optimistic-ui/list", (req, res) => { void proxyOrSeed(OPTIMISTIC_UI_URL, "/v1/optimistic-ui/list", { total: 0, optimistic_configs: [] }, req, res); });
+  app.get("/api/performance/optimistic-ui/stats", (req, res) => { void proxyOrSeed(OPTIMISTIC_UI_URL, "/v1/optimistic-ui/stats", { total: 0, service: "optimistic-ui" }, req, res); });
+  app.get("/api/performance/kafka-consumer/list", (req, res) => { void proxyOrSeed(KAFKA_CONSUMER_URL, "/v1/kafka-consumer/list", { total: 0, consumer_groups: [] }, req, res); });
+  app.get("/api/performance/kafka-consumer/stats", (req, res) => { void proxyOrSeed(KAFKA_CONSUMER_URL, "/v1/kafka-consumer/stats", { total: 0, service: "kafka-consumer" }, req, res); });
+  app.get("/api/performance/kafka-batch-producer/list", (req, res) => { void proxyOrSeed(KAFKA_BATCH_PRODUCER_URL, "/v1/kafka-batch-producer/list", { total: 0, producer_configs: [] }, req, res); });
+  app.get("/api/performance/kafka-batch-producer/stats", (req, res) => { void proxyOrSeed(KAFKA_BATCH_PRODUCER_URL, "/v1/kafka-batch-producer/stats", { total: 0, service: "kafka-batch-producer" }, req, res); });
+  app.get("/api/performance/avro-schema/list", (req, res) => { void proxyOrSeed(AVRO_SCHEMA_URL, "/v1/avro-schema/list", { total: 0, schema_registry: [] }, req, res); });
+  app.get("/api/performance/avro-schema/stats", (req, res) => { void proxyOrSeed(AVRO_SCHEMA_URL, "/v1/avro-schema/stats", { total: 0, service: "avro-schema" }, req, res); });
+  app.get("/api/performance/fluvio-wasm/list", (req, res) => { void proxyOrSeed(FLUVIO_WASM_URL, "/v1/fluvio-wasm/list", { total: 0, smart_modules: [] }, req, res); });
+  app.get("/api/performance/fluvio-wasm/stats", (req, res) => { void proxyOrSeed(FLUVIO_WASM_URL, "/v1/fluvio-wasm/stats", { total: 0, service: "fluvio-wasm" }, req, res); });
+  app.get("/api/performance/event-dedup/list", (req, res) => { void proxyOrSeed(EVENT_DEDUP_URL, "/v1/event-dedup/list", { total: 0, dedup_configs: [] }, req, res); });
+  app.get("/api/performance/event-dedup/stats", (req, res) => { void proxyOrSeed(EVENT_DEDUP_URL, "/v1/event-dedup/stats", { total: 0, service: "event-dedup" }, req, res); });
+  app.get("/api/performance/distroless-builder/list", (req, res) => { void proxyOrSeed(DISTROLESS_BUILDER_URL, "/v1/distroless-builder/list", { total: 0, image_configs: [] }, req, res); });
+  app.get("/api/performance/distroless-builder/stats", (req, res) => { void proxyOrSeed(DISTROLESS_BUILDER_URL, "/v1/distroless-builder/stats", { total: 0, service: "distroless-builder" }, req, res); });
+  app.get("/api/performance/tb-batch/list", (req, res) => { void proxyOrSeed(TB_BATCH_URL, "/v1/tb-batch/list", { total: 0, batch_configs: [] }, req, res); });
+  app.get("/api/performance/tb-batch/stats", (req, res) => { void proxyOrSeed(TB_BATCH_URL, "/v1/tb-batch/stats", { total: 0, service: "tb-batch" }, req, res); });
+  app.get("/api/performance/hpa-autoscaler/list", (req, res) => { void proxyOrSeed(HPA_AUTOSCALER_URL, "/v1/hpa-autoscaler/list", { total: 0, hpa_configs: [] }, req, res); });
+  app.get("/api/performance/hpa-autoscaler/stats", (req, res) => { void proxyOrSeed(HPA_AUTOSCALER_URL, "/v1/hpa-autoscaler/stats", { total: 0, service: "hpa-autoscaler" }, req, res); });
+  app.get("/api/performance/cdn-edge-cache/list", (req, res) => { void proxyOrSeed(CDN_EDGE_CACHE_URL, "/v1/cdn-edge-cache/list", { total: 0, cdn_configs: [] }, req, res); });
+  app.get("/api/performance/cdn-edge-cache/stats", (req, res) => { void proxyOrSeed(CDN_EDGE_CACHE_URL, "/v1/cdn-edge-cache/stats", { total: 0, service: "cdn-edge-cache" }, req, res); });
+  app.get("/api/performance/read-replica/list", (req, res) => { void proxyOrSeed(READ_REPLICA_URL, "/v1/read-replica/list", { total: 0, replica_configs: [] }, req, res); });
+  app.get("/api/performance/read-replica/stats", (req, res) => { void proxyOrSeed(READ_REPLICA_URL, "/v1/read-replica/stats", { total: 0, service: "read-replica" }, req, res); });
+  app.get("/api/performance/keda-scaler/list", (req, res) => { void proxyOrSeed(KEDA_SCALER_URL, "/v1/keda-scaler/list", { total: 0, scale_triggers: [] }, req, res); });
+  app.get("/api/performance/keda-scaler/stats", (req, res) => { void proxyOrSeed(KEDA_SCALER_URL, "/v1/keda-scaler/stats", { total: 0, service: "keda-scaler" }, req, res); });
+  app.get("/api/performance/prometheus-dashboard/list", (req, res) => { void proxyOrSeed(PROMETHEUS_DASHBOARD_URL, "/v1/prometheus-dashboard/list", { total: 0, dashboard_panels: [] }, req, res); });
+  app.get("/api/performance/prometheus-dashboard/stats", (req, res) => { void proxyOrSeed(PROMETHEUS_DASHBOARD_URL, "/v1/prometheus-dashboard/stats", { total: 0, service: "prometheus-dashboard" }, req, res); });
+  app.get("/api/performance/opensearch-optimizer/list", (req, res) => { void proxyOrSeed(OPENSEARCH_OPTIMIZER_URL, "/v1/opensearch-optimizer/list", { total: 0, index_configs: [] }, req, res); });
+  app.get("/api/performance/opensearch-optimizer/stats", (req, res) => { void proxyOrSeed(OPENSEARCH_OPTIMIZER_URL, "/v1/opensearch-optimizer/stats", { total: 0, service: "opensearch-optimizer" }, req, res); });
+  app.get("/api/performance/temporal-memoizer/list", (req, res) => { void proxyOrSeed(TEMPORAL_MEMOIZER_URL, "/v1/temporal-memoizer/list", { total: 0, memoized_activities: [] }, req, res); });
+  app.get("/api/performance/temporal-memoizer/stats", (req, res) => { void proxyOrSeed(TEMPORAL_MEMOIZER_URL, "/v1/temporal-memoizer/stats", { total: 0, service: "temporal-memoizer" }, req, res); });
+  app.get("/api/performance/apisix-plugin/list", (req, res) => { void proxyOrSeed(APISIX_PLUGIN_URL, "/v1/apisix-plugin/list", { total: 0, plugin_chains: [] }, req, res); });
+  app.get("/api/performance/apisix-plugin/stats", (req, res) => { void proxyOrSeed(APISIX_PLUGIN_URL, "/v1/apisix-plugin/stats", { total: 0, service: "apisix-plugin" }, req, res); });
+}
