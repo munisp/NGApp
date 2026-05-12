@@ -136,7 +136,7 @@ export function registerPlatformSecurityHardeningRoutes(app: Express) {
 
   for (const [key, svc] of Object.entries(services)) {
     app.get(`/api/security-hardening/${key}/list`, (req, res) => {
-      void proxyOrSeed(svc.url, `/v1/${svc.routePrefix}/list`, { total: svc.seed.length, [svc.listKey]: svc.seed }, req, res);
+      void proxyOrSeed(svc.url, `/v1/${svc.routePrefix}/list`, { total: svc.seed.length, items: svc.seed }, req, res);
     });
     app.get(`/api/security-hardening/${key}/stats`, (req, res) => {
       void proxyOrSeed(svc.url, `/v1/${svc.routePrefix}/stats`, { total: svc.seed.length, byStatus: {} }, req, res);

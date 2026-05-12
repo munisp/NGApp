@@ -262,12 +262,11 @@ export function registerKYCKYBEnhancedSuite(app: Express) {
   ], total: 3 }));
 
   // Phase 3: KYC Analytics
-  app.get("/api/kyc-enhanced/analytics-dashboard", (_: Request, res: Response) => res.json({
-    onboardingFunnel: { started: 5200, documentUpload: 4800, liveness: 4600, faceMatch: 4550, approved: 4400, dropOffRate: 15.4 },
-    avgOnboardingTime: { tier1: "2.5 minutes", tier2: "8 minutes", tier3: "2.5 days" },
-    channelBreakdown: { pwa: 2100, flutter: 1800, agent: 500 },
-    rejectionReasons: { expiredDocument: 320, livenessFailure: 180, faceMatchFailure: 120, sanctionsHit: 12 },
-  }));
+  app.get("/api/kyc-enhanced/analytics-dashboard", (_: Request, res: Response) => res.json({ items: [
+    { id: "KYC-DASH-001", name: "Onboarding Funnel", started: 5200, approved: 4400, dropOffRate: "15.4%", status: "active" },
+    { id: "KYC-DASH-002", name: "Avg Onboarding Time", tier1: "2.5 min", tier2: "8 min", tier3: "2.5 days", status: "active" },
+    { id: "KYC-DASH-003", name: "Channel Breakdown", pwa: 2100, flutter: 1800, agent: 500, status: "active" },
+  ], total: 3 }));
 
   // Phase 4: Video KYC
   app.get("/api/kyc-enhanced/video-kyc-sessions", (_: Request, res: Response) => res.json({ items: videoKYCSessions, total: videoKYCSessions.length }));
@@ -293,13 +292,16 @@ export function registerKYCKYBEnhancedSuite(app: Express) {
   ], total: 2 }));
 
   // Phase 5: Data Quality
-  app.get("/api/kyc-enhanced/data-quality", (_: Request, res: Response) => res.json(dataQualityMetrics));
+  app.get("/api/kyc-enhanced/data-quality", (_: Request, res: Response) => {
+    const dqItems = Array.isArray(dataQualityMetrics) ? dataQualityMetrics : [dataQualityMetrics];
+    res.json({ items: dqItems, total: dqItems.length });
+  });
 
   // Phase 5: eFASS Returns
   app.get("/api/kyc-enhanced/efass-returns", (_: Request, res: Response) => res.json({ items: efassReturns, total: efassReturns.length }));
 
   // Summary dashboard
-  app.get("/api/kyc-enhanced/summary", (_: Request, res: Response) => res.json({
+  app.get("/api/kyc-enhanced/summary", (_: Request, res: Response) => res.json({ items: [{
     services: {
       phase1: ["cbn-tiered-kyc-rs:8280", "bvn-nin-verification-go:8281", "nfiu-ctr-str-filing-py:8282", "sanctions-screening-rs:8283", "cac-realtime-api-go:8284"],
       phase2: ["txn-monitoring-rules-rs:8285", "risk-based-approach-py:8286", "pep-enhanced-dd-py:8287", "ubo-ownership-graph-rs:8288"],
@@ -314,5 +316,6 @@ export function registerKYCKYBEnhancedSuite(app: Express) {
     monitoringRules: monitoringRules.length,
     sanctionsLists: sanctionsLists.length,
     uboEntities: uboEntities.length,
-  }));
+    id: "KYC-SUMMARY-001", name: "KYC/KYB Platform Summary", status: "active",
+  }], total: 1 }));
 }

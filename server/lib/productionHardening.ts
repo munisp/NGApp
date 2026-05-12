@@ -99,34 +99,36 @@ const eventSourcing = { store: "event-sourcing-go:8345", streams: 24, eventsPerS
 const rateLimiter = { service: "express-rate-limiter-rs:8346", tiers: 4 };
 const graphqlConfig = { gateway: "graphql-gateway-go:8347", types: 120, resolvers: 340 };
 
+function wrap(obj: unknown) { const items = Array.isArray(obj) ? obj : [obj]; return { items, total: items.length }; }
+
 export function registerProductionHardening(app: Express): void {
   // Phase 1: Security
-  app.get("/api/production/cors-gateway/policy", (_req, res) => res.json(corsConfig));
-  app.get("/api/production/auth-enforcer/policies", (_req, res) => res.json(authPolicies));
-  app.get("/api/production/request-validator/schemas", (_req, res) => res.json(validationSchemas));
-  app.get("/api/production/api-versioning/config", (_req, res) => res.json(apiVersions));
-  app.get("/api/production/apm-sentry/config", (_req, res) => res.json(apmConfig));
-  app.get("/api/production/secrets-rotation/config", (_req, res) => res.json(secretsRotation));
+  app.get("/api/production/cors-gateway/policy", (_req, res) => res.json(wrap(corsConfig)));
+  app.get("/api/production/auth-enforcer/policies", (_req, res) => res.json(wrap(authPolicies)));
+  app.get("/api/production/request-validator/schemas", (_req, res) => res.json(wrap(validationSchemas)));
+  app.get("/api/production/api-versioning/config", (_req, res) => res.json(wrap(apiVersions)));
+  app.get("/api/production/apm-sentry/config", (_req, res) => res.json(wrap(apmConfig)));
+  app.get("/api/production/secrets-rotation/config", (_req, res) => res.json(wrap(secretsRotation)));
   // Phase 2: Data
-  app.get("/api/production/db-migrations/list", (_req, res) => res.json(migrations));
-  app.get("/api/production/connection-pool/config", (_req, res) => res.json(connectionPool));
-  app.get("/api/production/backup-manager/config", (_req, res) => res.json(backupStrategy));
+  app.get("/api/production/db-migrations/list", (_req, res) => res.json(wrap(migrations)));
+  app.get("/api/production/connection-pool/config", (_req, res) => res.json(wrap(connectionPool)));
+  app.get("/api/production/backup-manager/config", (_req, res) => res.json(wrap(backupStrategy)));
   // Phase 3: Testing
-  app.get("/api/production/unit-tests/results", (_req, res) => res.json(unitTests));
-  app.get("/api/production/e2e-tests/results", (_req, res) => res.json(e2eTests));
-  app.get("/api/production/contract-tests/results", (_req, res) => res.json(contractTests));
-  app.get("/api/production/load-tests/results", (_req, res) => res.json(loadTests));
+  app.get("/api/production/unit-tests/results", (_req, res) => res.json(wrap(unitTests)));
+  app.get("/api/production/e2e-tests/results", (_req, res) => res.json(wrap(e2eTests)));
+  app.get("/api/production/contract-tests/results", (_req, res) => res.json(wrap(contractTests)));
+  app.get("/api/production/load-tests/results", (_req, res) => res.json(wrap(loadTests)));
   // Phase 4: Observability
-  app.get("/api/production/otel-collector/config", (_req, res) => res.json(otelConfig));
-  app.get("/api/production/changelog/config", (_req, res) => res.json(changelogConfig));
+  app.get("/api/production/otel-collector/config", (_req, res) => res.json(wrap(otelConfig)));
+  app.get("/api/production/changelog/config", (_req, res) => res.json(wrap(changelogConfig)));
   // Phase 5A: Frontend
-  app.get("/api/production/accessibility/config", (_req, res) => res.json(a11yConfig));
-  app.get("/api/production/i18n/config", (_req, res) => res.json(i18nConfig));
+  app.get("/api/production/accessibility/config", (_req, res) => res.json(wrap(a11yConfig)));
+  app.get("/api/production/i18n/config", (_req, res) => res.json(wrap(i18nConfig)));
   // Phase 5B: Missing Domains
-  app.get("/api/production/missing-domains/list", (_req, res) => res.json(missingDomains));
+  app.get("/api/production/missing-domains/list", (_req, res) => res.json(wrap(missingDomains)));
   // Phase 5C: Architecture
-  app.get("/api/production/grpc-gateway/config", (_req, res) => res.json(grpcConfig));
-  app.get("/api/production/event-sourcing/config", (_req, res) => res.json(eventSourcing));
-  app.get("/api/production/rate-limiter/config", (_req, res) => res.json(rateLimiter));
-  app.get("/api/production/graphql-gateway/config", (_req, res) => res.json(graphqlConfig));
+  app.get("/api/production/grpc-gateway/config", (_req, res) => res.json(wrap(grpcConfig)));
+  app.get("/api/production/event-sourcing/config", (_req, res) => res.json(wrap(eventSourcing)));
+  app.get("/api/production/rate-limiter/config", (_req, res) => res.json(wrap(rateLimiter)));
+  app.get("/api/production/graphql-gateway/config", (_req, res) => res.json(wrap(graphqlConfig)));
 }

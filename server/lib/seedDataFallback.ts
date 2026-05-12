@@ -1013,7 +1013,7 @@ export function featureFlagMiddleware(app: Express) {
 //  PROXY FALLBACK — returns seeded data when upstream is unavailable
 // ═══════════════════════════════════════════════════════════════════
 
-const fallbackRegistry = new Map<string, unknown[]>();
+export const fallbackRegistry = new Map<string, unknown[]>();
 
 // Populate from the same data used above, keyed by the service-level path
 // (the path parameter passed to proxyToService, e.g. "/v1/agriculture/farmers")

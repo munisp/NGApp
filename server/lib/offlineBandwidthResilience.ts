@@ -235,34 +235,18 @@ export function registerOfflineBandwidthResilience(app: any) {
 
   // === Resilience Dashboard ===
   app.get("/api/resilience/dashboard", (_req: any, res: any) => {
-    res.json({
+    const dashboardItem = {
+      id: "RES-DASH-001",
+      name: "Platform Resilience Dashboard",
       overallScore: 96.5,
-      channels: {
-        webApp: { status: "online", users: 45000, latency: "120ms" },
-        mobileApp: { status: "online", users: 89000, latency: "180ms" },
-        ussd: { status: "online", sessions: 12450, latency: "800ms" },
-        smsBanking: { status: "online", commands: 4500, latency: "2s" },
-        agentPOS: { status: "online", terminals: 1200, latency: "250ms" },
-      },
-      offlineCapability: {
-        mobileOffline: true,
-        agentOffline: true,
-        crdtSync: true,
-        maxOfflineHours: 72,
-        offlineTransactionLimit: "NGN 500,000",
-      },
-      bandwidthAdaptation: {
-        enabled: true,
-        profiles: bandwidthProfiles.length,
-        compressionLevels: ["none", "gzip", "brotli", "max"],
-        payloadFormats: ["json", "protobuf", "msgpack", "cbor"],
-      },
-      disasterRecovery: {
-        rpo: "15 minutes",
-        rto: "60 minutes",
-        backupLocations: 3,
-        airGapped: true,
-      },
-    });
+      channels: "web:online, mobile:online, ussd:online, sms:online, agent:online",
+      offlineCapable: true,
+      maxOfflineHours: 72,
+      bandwidthProfiles: bandwidthProfiles.length,
+      rpo: "15 minutes",
+      rto: "60 minutes",
+      status: "healthy",
+    };
+    res.json({ items: [dashboardItem], total: 1 });
   });
 }

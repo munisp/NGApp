@@ -58,7 +58,8 @@ import { registerAMLEnhancementRoutes } from "./lib/amlEnhancement";
 import { registerAgricultureEnhancementRoutes } from "./lib/agricultureEnhancement";
 import { registerChannelBankingRoutes } from "./lib/channelBanking";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
-import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
+import { registerSeedDataFallback, getProxyFallback, fallbackRegistry, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
+import { registerPlatformSeedRoutes, registerProxySeedFallback } from "./lib/platformSeedData";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
 import { registerKafkaEventBus } from "./lib/kafkaEventBus";
 import { registerJWTAuthEnforcement } from "./lib/jwtAuthEnforcement";
@@ -2978,7 +2979,7 @@ async function startServer() {
   });
 
   app.get("/api/platform/products", async (_req, res) => {
-    res.json({ asOf: new Date().toISOString(), products: defaultProducts });
+    res.json({ items: defaultProducts, total: defaultProducts.length, asOf: new Date().toISOString() });
   });
 
   app.get("/api/platform/roles", (_req, res) => {
@@ -5280,6 +5281,8 @@ async function startServer() {
   // Seed Data Fallback — inline data for all routes so no page ever shows 503
   // MUST be registered BEFORE proxy routes so seed data handlers match first
   registerSeedDataFallback(app);
+  registerProxySeedFallback(fallbackRegistry);
+  registerPlatformSeedRoutes(app);
 
   // Multi-Tenant Platform (feature flags, isolation, white label, provisioning, etc.)
   registerMultiTenantPlatformRoutes(app);

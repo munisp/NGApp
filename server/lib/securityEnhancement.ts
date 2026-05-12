@@ -63,6 +63,38 @@ const SEED = {
     { id: "MFA-E-003", customerId: "CUST-1003", methods: ["pin","otp_sms"], primaryMethod: "otp_sms", status: "active", riskLevel: "low" },
     { id: "MFA-E-004", customerId: "CUST-1004", methods: ["pin","hardware_token","biometric","otp_sms"], primaryMethod: "hardware_token", status: "active", riskLevel: "high" },
   ],
+  pinBlocks: [
+    { id: "PB-001", name: "ISO 9564 Format 0", format: "format_0", algorithm: "3DES", translations: 45000, status: "active" },
+    { id: "PB-002", name: "ISO 9564 Format 3", format: "format_3", algorithm: "AES-128", translations: 28000, status: "active" },
+  ],
+  otpPolicies: [
+    { id: "OTP-001", name: "Transaction OTP", length: 6, expiry: "5 min", maxAttempts: 3, channel: "sms", status: "active" },
+    { id: "OTP-002", name: "Login OTP", length: 6, expiry: "10 min", maxAttempts: 5, channel: "email", status: "active" },
+  ],
+  sessions: [
+    { id: "SES-001", name: "Web Sessions", activeSessions: 12450, maxConcurrent: 50000, avgDuration: "25min", status: "active" },
+    { id: "SES-002", name: "Mobile Sessions", activeSessions: 8200, maxConcurrent: 30000, avgDuration: "45min", status: "active" },
+  ],
+  apiKeys: [
+    { id: "KEY-API-001", name: "Mobile App Key", prefix: "54B-MOB-***", requests: "1.2M/day", status: "active" },
+    { id: "KEY-API-002", name: "Partner API Key", prefix: "54B-PTR-***", requests: "450K/day", status: "active" },
+  ],
+  rateLimits: [
+    { id: "RL-001", name: "API Rate Limit", limit: "10,000 req/min", burst: 500, window: "1 min", status: "active" },
+    { id: "RL-002", name: "Login Rate Limit", limit: "5 req/min", burst: 10, window: "1 min", status: "active" },
+  ],
+  encryptionPolicies: [
+    { id: "ENC-001", name: "AES-256-GCM at Rest", type: "symmetric", algorithm: "AES-256-GCM", fieldsProtected: 45, status: "active" },
+    { id: "ENC-002", name: "RSA-4096 in Transit", type: "asymmetric", algorithm: "RSA-4096", fieldsProtected: 12, status: "active" },
+  ],
+  certificates: [
+    { id: "CERT-001", name: "*.54bank.ng Wildcard SSL", issuer: "DigiCert", expiry: "2027-03-15", keySize: "RSA-4096", status: "active" },
+    { id: "CERT-002", name: "API mTLS Certificate", issuer: "Internal CA", expiry: "2027-01-01", keySize: "ECDSA-P256", status: "active" },
+  ],
+  auditEvents: [
+    { id: "AUD-001", name: "Login — Admin User", type: "authentication", ip: "10.0.1.45", result: "success", timestamp: "2026-05-14T10:30:00Z", status: "active" },
+    { id: "AUD-002", name: "Transfer — ₦2.5M", type: "transaction", ip: "10.0.1.52", result: "success", timestamp: "2026-05-14T10:28:00Z", status: "active" },
+  ],
 };
 
 async function proxyOrSeed(serviceKey: string, path: string, seedData: any, res: Response) {
@@ -92,7 +124,7 @@ export function registerSecurityEnhancementRoutes(app: Express) {
   app.get("/api/security/hsm/stats", (_, res) => proxyOrSeed("hsmKeyManager", "/v1/hsm/stats", {}, res));
 
   // PIN Block Engine
-  app.get("/api/security/pin-blocks", (_, res) => proxyOrSeed("pinBlockEngine", "/v1/pin-blocks", [], res));
+  app.get("/api/security/pin-blocks", (_, res) => proxyOrSeed("pinBlockEngine", "/v1/pin-blocks", SEED.pinBlocks, res));
   app.get("/api/security/pin-blocks/translations", (_, res) => proxyOrSeed("pinBlockEngine", "/v1/pin-blocks/translations", [], res));
   app.get("/api/security/pin-blocks/stats", (_, res) => proxyOrSeed("pinBlockEngine", "/v1/pin-blocks/stats", {}, res));
 
@@ -108,37 +140,37 @@ export function registerSecurityEnhancementRoutes(app: Express) {
   app.get("/api/security/mfa/stats", (_, res) => proxyOrSeed("mfaOrchestrator", "/v1/mfa/stats", {}, res));
 
   // OTP Hardening
-  app.get("/api/security/otp/policies", (_, res) => proxyOrSeed("otpHardening", "/v1/otp/policies", [], res));
+  app.get("/api/security/otp/policies", (_, res) => proxyOrSeed("otpHardening", "/v1/otp/policies", SEED.otpPolicies, res));
   app.get("/api/security/otp/records", (_, res) => proxyOrSeed("otpHardening", "/v1/otp/records", [], res));
   app.get("/api/security/otp/stats", (_, res) => proxyOrSeed("otpHardening", "/v1/otp/stats", {}, res));
 
   // Session Security
-  app.get("/api/security/sessions", (_, res) => proxyOrSeed("sessionSecurity", "/v1/sessions", [], res));
+  app.get("/api/security/sessions", (_, res) => proxyOrSeed("sessionSecurity", "/v1/sessions", SEED.sessions, res));
   app.get("/api/security/sessions/policies", (_, res) => proxyOrSeed("sessionSecurity", "/v1/sessions/policies", [], res));
   app.get("/api/security/sessions/stats", (_, res) => proxyOrSeed("sessionSecurity", "/v1/sessions/stats", {}, res));
 
   // API Key Vault
-  app.get("/api/security/api-keys", (_, res) => proxyOrSeed("apiKeyVault", "/v1/api-keys", [], res));
+  app.get("/api/security/api-keys", (_, res) => proxyOrSeed("apiKeyVault", "/v1/api-keys", SEED.apiKeys, res));
   app.get("/api/security/api-keys/usage", (_, res) => proxyOrSeed("apiKeyVault", "/v1/api-keys/usage", [], res));
   app.get("/api/security/api-keys/stats", (_, res) => proxyOrSeed("apiKeyVault", "/v1/api-keys/stats", {}, res));
 
   // Adaptive Rate Limiter
-  app.get("/api/security/rate-limits/policies", (_, res) => proxyOrSeed("rateLimiter", "/v1/rate-limits/policies", [], res));
+  app.get("/api/security/rate-limits/policies", (_, res) => proxyOrSeed("rateLimiter", "/v1/rate-limits/policies", SEED.rateLimits, res));
   app.get("/api/security/rate-limits/events", (_, res) => proxyOrSeed("rateLimiter", "/v1/rate-limits/events", [], res));
   app.get("/api/security/rate-limits/stats", (_, res) => proxyOrSeed("rateLimiter", "/v1/rate-limits/stats", {}, res));
 
   // Field-Level Encryption
-  app.get("/api/security/encryption/policies", (_, res) => proxyOrSeed("fieldEncryption", "/v1/encryption/policies", [], res));
+  app.get("/api/security/encryption/policies", (_, res) => proxyOrSeed("fieldEncryption", "/v1/encryption/policies", SEED.encryptionPolicies, res));
   app.get("/api/security/encryption/audit", (_, res) => proxyOrSeed("fieldEncryption", "/v1/encryption/audit", [], res));
   app.get("/api/security/encryption/stats", (_, res) => proxyOrSeed("fieldEncryption", "/v1/encryption/stats", {}, res));
 
   // Certificate Manager
-  app.get("/api/security/certificates", (_, res) => proxyOrSeed("certManager", "/v1/certificates", [], res));
+  app.get("/api/security/certificates", (_, res) => proxyOrSeed("certManager", "/v1/certificates", SEED.certificates, res));
   app.get("/api/security/certificates/crl", (_, res) => proxyOrSeed("certManager", "/v1/certificates/crl", [], res));
   app.get("/api/security/certificates/stats", (_, res) => proxyOrSeed("certManager", "/v1/certificates/stats", {}, res));
 
   // Security Audit Logger
-  app.get("/api/security/audit/events", (_, res) => proxyOrSeed("securityAudit", "/v1/security-audit/events", [], res));
+  app.get("/api/security/audit/events", (_, res) => proxyOrSeed("securityAudit", "/v1/security-audit/events", SEED.auditEvents, res));
   app.get("/api/security/audit/alerts", (_, res) => proxyOrSeed("securityAudit", "/v1/security-audit/alerts", [], res));
   app.get("/api/security/audit/retention", (_, res) => proxyOrSeed("securityAudit", "/v1/security-audit/retention", [], res));
   app.get("/api/security/audit/stats", (_, res) => proxyOrSeed("securityAudit", "/v1/security-audit/stats", {}, res));
