@@ -2,140 +2,143 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
+"database/sql"
+"encoding/json"
+"fmt"
+"log"
+"net/http"
+"os"
+"strconv"
+"strings"
+"time"
 )
 
-var startTime = time.Now()
+var (
+db        *sql.DB
+startTime = time.Now()
+)
+
+func initDB() {
+dbURL := os.Getenv("DATABASE_URL")
+if dbURL == "" {
+log.Println("[bank-guarantees-go] DATABASE_URL not set, running without DB")
+return
+}
+var err error
+db, err = sql.Open("postgres", dbURL)
+if err != nil {
+log.Printf("[bank-guarantees-go] DB connection error: %v", err)
+return
+}
+db.SetMaxOpenConns(25)
+db.SetMaxIdleConns(5)
+db.SetConnMaxLifetime(5 * time.Minute)
+if err = db.Ping(); err != nil {
+log.Printf("[bank-guarantees-go] DB ping failed: %v", err)
+db = nil
+return
+}
+log.Println("[bank-guarantees-go] Connected to Postgres")
+}
 
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Service", "bank-guarantees-go")
-	w.Header().Set("X-Request-Id", fmt.Sprintf("%d", time.Now().UnixNano()))
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(data)
+w.Header().Set("Content-Type", "application/json")
+w.Header().Set("X-Service", "bank-guarantees-go")
+w.Header().Set("X-Request-Id", fmt.Sprintf("%d", time.Now().UnixNano()))
+w.Header().Set("Access-Control-Allow-Origin", "*")
+w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+w.WriteHeader(code)
+json.NewEncoder(w).Encode(data)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	dbURL := os.Getenv("DATABASE_URL")
-	dbStatus := "disconnected"
-	if dbURL != "" {
-		dbStatus = "configured"
-	}
-	jsonResp(w, 200, map[string]interface{}{
-		"service":   "bank-guarantees-go",
-		"status":    "healthy",
-		"database":  dbStatus,
-		"version":   "2.0.0",
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"uptime":    time.Since(startTime).String(),
-		"middleware": map[string]string{
-			"postgres": dbStatus,
-			"kafka":    getEnvStatus("KAFKA_BROKERS"),
-			"redis":    getEnvStatus("REDIS_URL"),
-		},
-	})
+dbStatus := "disconnected"
+if db != nil {
+if err := db.Ping(); err == nil {
+dbStatus = "connected"
+}
+}
+jsonResp(w, 200, map[string]interface{}{
+"service":   "bank-guarantees-go",
+"status":    "healthy",
+"database":  dbStatus,
+"version":   "2.1.0",
+"timestamp": time.Now().UTC().Format(time.RFC3339),
+"uptime":    time.Since(startTime).String(),
+})
 }
 
-func getEnvStatus(key string) string {
-	if os.Getenv(key) != "" {
-		return "configured"
-	}
-	return "not_configured"
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+if page < 1 { page = 1 }
+if limit < 1 || limit > 100 { limit = 20 }
+offset := (page - 1) * limit
+
+if db != nil {
+rows, err := db.Query(
+fmt.Sprintf("SELECT * FROM bank_guarantees ORDER BY id LIMIT %d OFFSET %d", limit, offset),
+)
+if err == nil {
+defer rows.Close()
+cols, _ := rows.Columns()
+var results []map[string]interface{}
+for rows.Next() {
+vals := make([]interface{}, len(cols))
+ptrs := make([]interface{}, len(cols))
+for i := range vals { ptrs[i] = &vals[i] }
+if err := rows.Scan(ptrs...); err == nil {
+row := make(map[string]interface{})
+for i, col := range cols {
+row[col] = vals[i]
+}
+results = append(results, row)
+}
+}
+var total int
+db.QueryRow("SELECT count(*) FROM bank_guarantees").Scan(&total)
+jsonResp(w, 200, map[string]interface{}{
+"items": results, "total": total, "page": page, "limit": limit,
+"source": "database", "service": "bank-guarantees-go",
+})
+return
+}
 }
 
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 { page = 1 }
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 { limit = 50 }
-	
-	// Database query delegated to Express /api/db/* routes
-	// This service provides business logic layer
-	jsonResp(w, 200, map[string]interface{}{
-		"items":   []map[string]interface{}{},
-		"total":   0,
-		"page":    page,
-		"limit":   limit,
-		"source":  "service",
-		"service": "bank-guarantees-go",
-	})
-}
-
-func getByIdHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/v1/bank-guarantees/")
-	if id == "" || id == "list" || id == "stats" {
-		listHandler(w, r)
-		return
-	}
-	jsonResp(w, 200, map[string]interface{}{
-		"id":      id,
-		"service": "bank-guarantees-go",
-		"source":  "service",
-	})
-}
-
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp(w, 200, map[string]interface{}{
-		"total":   0,
-		"service": "bank-guarantees-go",
-		"source":  "service",
-	})
-}
-
-func createHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "OPTIONS" {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
-		w.WriteHeader(204)
-		return
-	}
-	if r.Method != "POST" {
-		jsonResp(w, 405, map[string]string{"error": "Method not allowed"})
-		return
-	}
-	var body map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		jsonResp(w, 400, map[string]string{"error": "Invalid JSON body"})
-		return
-	}
-	idempKey := r.Header.Get("Idempotency-Key")
-	if idempKey != "" {
-		log.Printf("[bank-guarantees-go] Idempotency key: %s", idempKey)
-	}
-	jsonResp(w, 201, map[string]interface{}{
-		"message": "Created successfully",
-		"data":    body,
-		"source":  "service",
-	})
+// Fallback seed data
+jsonResp(w, 200, map[string]interface{}{
+"items": []map[string]interface{}{},
+"total": 0, "page": page, "limit": limit,
+"source": "seed", "service": "bank-guarantees-go",
+})
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+initDB()
+port := os.Getenv("PORT")
+if port == "" { port = "8080" }
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/healthz", healthHandler)
-	mux.HandleFunc("/v1/bank-guarantees/list", listHandler)
-	mux.HandleFunc("/v1/bank-guarantees/stats", statsHandler)
-	mux.HandleFunc("/v1/bank-guarantees/", getByIdHandler)
-	mux.HandleFunc("/v1/bank-guarantees", createHandler)
+mux := http.NewServeMux()
+mux.HandleFunc("/health", healthHandler)
+mux.HandleFunc("/healthz", healthHandler)
+mux.HandleFunc("/data", dataHandler)
+mux.HandleFunc("/bank-guarantees", dataHandler)
+mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+if r.Method == "OPTIONS" {
+w.Header().Set("Access-Control-Allow-Origin", "*")
+w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+w.WriteHeader(204)
+return
+}
+if strings.HasPrefix(r.URL.Path, "/data") || strings.HasPrefix(r.URL.Path, "/bank-guarantees") {
+dataHandler(w, r)
+return
+}
+healthHandler(w, r)
+})
 
-	log.Printf("[bank-guarantees-go] Starting on :%s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatal(err)
-	}
+log.Printf("[bank-guarantees-go] Starting on :%s", port)
+log.Fatal(http.ListenAndServe(":" + port, mux))
 }

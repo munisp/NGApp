@@ -102,6 +102,9 @@ import { registerSecurityHardening } from "./lib/securityHardening";
 import { seedDatabaseIfEmpty } from "./lib/seedDatabase";
 import { initRedis, getRedisStatus } from "./lib/redisClient";
 import { initKafka, getKafkaStatus, publish, getRecentMessages } from "./lib/kafkaClient";
+import { registerEventPublisher, registerCacheMiddleware } from "./lib/eventPublisher";
+import { initKeycloak, getKeycloakStatus, getOAuth2Endpoints } from "./lib/keycloakClient";
+import { createSession, validateSession, revokeSession, revokeAllSessions, getSessionStats, listUserSessions } from "./lib/sessionManager";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -1794,10 +1797,14 @@ function persistRuntimeState() {
 async function refreshPartnerOnboardingRuntimeFromDb() {
   const parsed = await loadRuntimeStateFromDb();
   if (!parsed) return;
-  hydratePartnerOnboardingState({
-    partnerOnboardingRecords: parsed.partnerOnboardingRecords as PartnerOnboardingState["partnerOnboardingRecords"],
-    partnerApprovalRecords: parsed.partnerApprovalRecords as PartnerOnboardingState["partnerApprovalRecords"],
-  });
+  // Only hydrate if DB actually has partner records — avoid wiping in-memory
+  // records created during the current session (e.g. test suite)
+  if (parsed.partnerOnboardingRecords && parsed.partnerOnboardingRecords.length > 0) {
+    hydratePartnerOnboardingState({
+      partnerOnboardingRecords: parsed.partnerOnboardingRecords as PartnerOnboardingState["partnerOnboardingRecords"],
+      partnerApprovalRecords: parsed.partnerApprovalRecords as PartnerOnboardingState["partnerApprovalRecords"],
+    });
+  }
 }
 
 
@@ -5322,6 +5329,37 @@ async function startServer() {
   // Initialize Redis + Kafka middleware connections
   initRedis().catch(() => {});
   initKafka().catch(() => {});
+
+  // Initialize Keycloak OAuth2
+  initKeycloak().catch(() => {});
+
+  // Event publishing + Redis caching middleware
+  registerEventPublisher(app);
+  registerCacheMiddleware(app);
+
+  // Keycloak/OAuth2 endpoints
+  app.get("/api/platform/keycloak/config", (_req, res) => {
+    res.json(getKeycloakStatus());
+  });
+
+  app.get("/api/platform/oauth2/endpoints", (_req, res) => {
+    res.json(getOAuth2Endpoints());
+  });
+
+  // Session management endpoints
+  app.get("/api/platform/sessions/stats", (_req, res) => {
+    res.json(getSessionStats());
+  });
+
+  app.get("/api/platform/sessions/:userId", (req, res) => {
+    const sessions = listUserSessions(req.params.userId);
+    res.json({ sessions, count: sessions.length });
+  });
+
+  app.delete("/api/platform/sessions/:userId", (req, res) => {
+    const count = revokeAllSessions(req.params.userId);
+    res.json({ revoked: count });
+  });
 
   // Redis status endpoint
   app.get("/api/platform/redis/status", (_req, res) => {
