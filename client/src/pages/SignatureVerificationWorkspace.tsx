@@ -13,7 +13,7 @@ export default function SignatureVerificationWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customer_name", "signature_type"],
-        apiBase: "/api/platform/signature/list",
+        apiBase: "/api/db/certificates",
         pageSize: 25,
         columns: [
           { key: "id", label: "Record ID" },

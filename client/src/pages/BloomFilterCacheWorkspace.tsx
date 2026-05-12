@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Probabilistic negative cache with zero false negatives",
   icon: Database,
   accentColor: "purple",
-  apiBase: "/api/performance/bloom-filter/list",
+  apiBase: "/api/db/bloom-filters",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

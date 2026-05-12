@@ -695,14 +695,17 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
                               </button>
                             </TableCell>
                           )}
-                          {config.columns.map((col) => (
+                          {config.columns.map((col) => {
+                            const raw = record[col.key];
+                            const safeVal = (raw === null || raw === undefined || raw === "" || (typeof raw === "number" && isNaN(raw)) || String(raw) === "NaN" || String(raw) === "undefined") ? null : raw;
+                            return (
                             <TableCell key={col.key}>
-                              {col.render ? col.render(record[col.key], record) :
-                                col.key === config.statusField ? <StatusBadge status={String(record[col.key] ?? "")} /> :
-                                <span className="text-sm">{String(record[col.key] ?? "\u2014")}</span>
+                              {col.render ? (() => { try { const r = col.render(safeVal, record); return (r === "NaN" || r === "undefined" || r === "₦NaN" || r === "null" || r === "undefined/100") ? "\u2014" : r; } catch { return "\u2014"; } })() :
+                                col.key === config.statusField ? <StatusBadge status={String(safeVal ?? "")} /> :
+                                <span className="text-sm">{safeVal !== null ? String(safeVal) : "\u2014"}</span>
                               }
                             </TableCell>
-                          ))}
+                          );})}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               <Button variant="ghost" size="sm" onClick={() => toggleRowExpand(recordId)} aria-label={isExpanded ? "Collapse row" : "Expand row"}>
@@ -729,7 +732,7 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
                                 {Object.entries(record).filter(([k]) => !config.columns.some(c => c.key === k) || true).map(([key, value]) => (
                                   <div key={key} className="text-sm">
                                     <span className="text-gray-500 font-medium">{key}: </span>
-                                    <span className="text-gray-900">{value === null || value === undefined ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
+                                    <span className="text-gray-900">{(value === null || value === undefined || value === "" || String(value) === "NaN" || String(value) === "undefined") ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
                                   </div>
                                 ))}
                               </div>

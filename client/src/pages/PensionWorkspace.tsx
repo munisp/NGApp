@@ -13,7 +13,7 @@ export default function PensionWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customer_name", "account_type", "pfa"],
-        apiBase: "/api/platform/pension/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Account ID" },

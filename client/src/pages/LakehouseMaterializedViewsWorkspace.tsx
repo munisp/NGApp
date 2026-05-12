@@ -13,7 +13,7 @@ export default function LakehouseMaterializedViewsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "sourceTable"],
-        apiBase: "/api/platform/lakehouse/materialized-views",
+        apiBase: "/api/db/materialized-views-perf",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

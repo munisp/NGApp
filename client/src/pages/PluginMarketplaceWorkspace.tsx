@@ -21,7 +21,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "name", "vendor", "category"],
-  apiBase: "/api/platform/plugin-marketplace/v1/plugins",
+  apiBase: "/api/db/tenants",
   pageSize: 25,
 };
 

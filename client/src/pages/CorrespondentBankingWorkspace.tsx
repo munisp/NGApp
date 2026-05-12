@@ -13,7 +13,7 @@ export default function CorrespondentBankingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["bankName", "swiftBic", "country", "city"],
-        apiBase: "/api/platform/correspondent-banks",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -13,7 +13,7 @@ export default function PgSlowQueriesWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["id", "table", "query"],
-        apiBase: "/api/platform/postgres/slow-queries",
+        apiBase: "/api/db/sql-queries",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "accountId", "beneficiaryName", "frequency"],
-  apiBase: "/api/platform/standing-orders",
+  apiBase: "/api/db/transfers",
   fields: [
     { key: "accountId", label: "Account ID", type: "text", required: true },
     { key: "beneficiaryId", label: "Beneficiary ID", type: "text" },

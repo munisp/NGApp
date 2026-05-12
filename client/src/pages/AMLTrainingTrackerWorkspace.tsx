@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Staff AML/CFT training compliance and certification",
   icon: GraduationCap,
   accentColor: "green",
-  apiBase: "/api/aml-enhancement/aml-training-tracker/list",
+  apiBase: "/api/db/aml-training-records",
   idField: "id",
   statusField: "status",
   searchFields: ["staffName"],

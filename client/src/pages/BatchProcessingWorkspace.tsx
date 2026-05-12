@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "job_type", "status", "created_by"],
-  apiBase: "/api/platform/batch/jobs",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "job_type", label: "Job Type", type: "select", options: ["eod_processing", "interest_accrual", "statement_generation", "dormancy_check", "gl_reconciliation", "regulatory_return"], required: true },
     { key: "created_by", label: "Created By", type: "text", defaultValue: "admin" },

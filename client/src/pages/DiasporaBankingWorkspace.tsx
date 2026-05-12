@@ -13,7 +13,7 @@ export default function DiasporaBankingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "country", "customerId"],
-        apiBase: "/api/platform/diaspora/accounts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

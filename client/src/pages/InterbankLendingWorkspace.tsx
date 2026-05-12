@@ -13,7 +13,7 @@ export default function InterbankLendingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["counterparty_bank", "deal_type", "direction"],
-        apiBase: "/api/platform/interbank/deals",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Deal ID" },

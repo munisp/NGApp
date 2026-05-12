@@ -10,7 +10,7 @@ const config: CrudConfig = {
   accentColor: "blue",
   idField: "id",
   searchFields: ["lcNumber", "requestedBy", "amendmentType", "status"],
-  apiBase: "/api/platform/trade-finance/lc-amendments",
+  apiBase: "/api/db/letters-of-credit",
   columns: [
     { key: "id", label: "Amendment ID", sortable: true },
     { key: "lcNumber", label: "LC Number", sortable: true },

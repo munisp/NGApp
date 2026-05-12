@@ -14,6 +14,6 @@ const config: CrudConfig = {
     { key: "riskImpact", label: "Risk Impact", sortable: true }, { key: "detectedAt", label: "Detected" },
   ],
   idField: "id", statusField: "riskImpact", searchFields: ["entity", "source", "headline"],
-  apiBase: "/api/kyc-enhanced/adverse-media",
+  apiBase: "/api/db/accounts",
 };
 export default function AdverseMediaWorkspace() { return <CrudWorkspace config={config} />; }

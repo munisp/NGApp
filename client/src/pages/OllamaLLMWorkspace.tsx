@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "latencyMs", label: "Latency (ms)" }, { key: "tps", label: "Tokens/s" },
   ],
   idField: "id", searchFields: ["name"],
-  apiBase: "/api/ai-ml/ollama/models",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function OllamaLLMWorkspace() { return <CrudWorkspace config={config} />; }

@@ -19,6 +19,6 @@ const config: CrudConfig = {
     { key: "riskLevel", label: "Risk" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/mfa/enrollments",
+  apiBase: "/api/db/mfa-enrollments",
 };
 export default function MFAOrchestratorWorkspace() { return <CrudWorkspace config={config} />; }

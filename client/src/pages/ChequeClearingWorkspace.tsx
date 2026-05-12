@@ -13,7 +13,7 @@ export default function ChequeClearingWorkspace() {
         idField: "id",
         statusField: "clearingStatus",
         searchFields: ["chequeNumber", "drawerName", "payeeName", "drawerAccount"],
-        apiBase: "/api/platform/cheques",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "chequeNumber", label: "Cheque #", sortable: true },

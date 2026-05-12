@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Index analyzers and result caching",
   icon: Search,
   accentColor: "blue",
-  apiBase: "/api/performance/opensearch-optimizer/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["indexName"],

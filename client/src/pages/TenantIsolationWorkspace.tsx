@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tableName", "policyName", "policyType"],
-  apiBase: "/api/platform/tenant-isolation/v1/rls-policies",
+  apiBase: "/api/db/tenants",
   pageSize: 25,
 };
 

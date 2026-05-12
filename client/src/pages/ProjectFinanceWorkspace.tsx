@@ -13,7 +13,7 @@ export default function ProjectFinanceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["project_name", "sponsor"],
-        apiBase: "/api/platform/project-finance/deals",
+        apiBase: "/api/db/loans",
         pageSize: 25,
         columns: [
           { key: "id", label: "Project ID" },

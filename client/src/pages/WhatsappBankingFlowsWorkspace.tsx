@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Conversational banking flows for balance, transfer, bills",
   icon: GitBranch,
   accentColor: "emerald",
-  apiBase: "/api/channel-banking/whatsapp-banking-flows/list",
+  apiBase: "/api/db/whatsapp-banking-flows",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "riskLevel", label: "Risk Level", sortable: true },
   ],
   idField: "id", statusField: "riskLevel", searchFields: ["name", "entityType", "nationality"],
-  apiBase: "/api/kyc-enhanced/ubo-entities",
+  apiBase: "/api/db/accounts",
 };
 export default function UBOOwnershipGraphWorkspace() { return <CrudWorkspace config={config} />; }

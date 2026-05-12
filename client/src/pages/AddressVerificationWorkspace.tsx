@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "method", label: "Method" }, { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["customerId", "address"],
-  apiBase: "/api/kyc-enhanced/address-verifications",
+  apiBase: "/api/db/accounts",
 };
 export default function AddressVerificationWorkspace() { return <CrudWorkspace config={config} />; }

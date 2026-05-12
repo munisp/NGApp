@@ -13,7 +13,7 @@ export default function ExpenseMgmtWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["category", "department"],
-        apiBase: "/api/platform/expense-mgmt/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Expense ID" },

@@ -13,7 +13,7 @@ export default function FraudAlertsWorkspace() {
         idField: "id",
         statusField: "action",
         searchFields: ["id", "customerId", "ruleName", "details"],
-        apiBase: "/api/platform/fraud/alerts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Alert ID" },

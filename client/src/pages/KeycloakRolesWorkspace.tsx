@@ -13,7 +13,7 @@ export default function KeycloakRolesWorkspace() {
         idField: "id",
         statusField: "name",
         searchFields: ["id", "name", "realm", "description"],
-        apiBase: "/api/platform/keycloak/roles",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

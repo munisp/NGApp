@@ -13,6 +13,6 @@ const config: CrudConfig = {
     { key: "latencyMs", label: "Latency (ms)", sortable: true },
   ],
   idField: "id", searchFields: ["question"],
-  apiBase: "/api/ai-ml/kgqa/samples",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function EPRKGQAWorkspace() { return <CrudWorkspace config={config} />; }

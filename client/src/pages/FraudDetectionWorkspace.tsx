@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "screening_id",
   statusField: "decision",
   searchFields: ["screening_id", "transaction_id", "risk_level", "decision"],
-  apiBase: "/api/platform/fraud/screenings",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "transaction_id", label: "Transaction ID", type: "text", required: true },
     { key: "customer_id", label: "Customer ID", type: "text", required: true },

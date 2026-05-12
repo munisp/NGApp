@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "React.memo + useMemo optimization analyzer",
   icon: Cpu,
   accentColor: "purple",
-  apiBase: "/api/performance/component-memoizer/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["component"],

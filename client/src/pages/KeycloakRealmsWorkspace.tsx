@@ -13,7 +13,7 @@ export default function KeycloakRealmsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "displayName"],
-        apiBase: "/api/platform/keycloak/realms",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

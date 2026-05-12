@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "lastUpdated", label: "Last Updated", sortable: true },
   ],
   idField: "id", statusField: "active", searchFields: ["name", "source"],
-  apiBase: "/api/kyc-enhanced/sanctions-lists",
+  apiBase: "/api/db/accounts",
 };
 export default function SanctionsScreeningWorkspace() { return <CrudWorkspace config={config} />; }

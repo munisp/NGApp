@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "SQL injection prevention via parameterization",
   icon: Database,
   accentColor: "red",
-  apiBase: "/api/security-hardening/sql-parameterizer/list",
+  apiBase: "/api/db/sql-queries",
   idField: "id",
   statusField: "status",
   searchFields: ["originalQuery"],

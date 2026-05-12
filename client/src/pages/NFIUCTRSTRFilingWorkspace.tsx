@@ -17,6 +17,6 @@ const config: CrudConfig = {
     { key: "slaStatus", label: "SLA Status" },
   ],
   idField: "id", statusField: "status", searchFields: ["customerName", "customerId", "status"],
-  apiBase: "/api/kyc-enhanced/ctrs",
+  apiBase: "/api/db/accounts",
 };
 export default function NFIUCTRSTRFilingWorkspace() { return <CrudWorkspace config={config} />; }

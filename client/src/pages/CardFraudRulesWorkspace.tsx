@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"Rule ID"},{key:"name",label:"Rule Name"},{key:"ruleType",label:"Type"},{key:"threshold",label:"Threshold"},{key:"action",label:"Action"},{key:"enabled",label:"Enabled",render:(v:unknown)=>v?"Yes":"No"},{key:"triggeredCount",label:"Triggered"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/cards/fraud-rules",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

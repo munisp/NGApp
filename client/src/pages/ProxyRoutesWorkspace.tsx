@@ -13,7 +13,7 @@ export default function ProxyRoutesWorkspace() {
         idField: "expressPath",
         statusField: "method",
         searchFields: ["expressPath", "upstream"],
-        apiBase: "/api/platform/service-mesh/proxy-routes",
+        apiBase: "/api/db/route-trie-stats",
         pageSize: 25,
         columns: [
           { key: "expressPath", label: "Express Path", sortable: true },

@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenantId", "name", "entityType"],
-  apiBase: "/api/platform/approval-workflows/v1/chains",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

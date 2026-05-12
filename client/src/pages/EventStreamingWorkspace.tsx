@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "name",
   searchFields: ["name", "partitions", "replicationFactor", "messageCount"],
-  apiBase: "/api/platform/event-streaming/v1/topics",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

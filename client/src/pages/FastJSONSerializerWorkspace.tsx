@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Pre-compiled JSON schema serialization",
   icon: Zap,
   accentColor: "yellow",
-  apiBase: "/api/performance/fast-json/list",
+  apiBase: "/api/db/fast-json-schemas",
   idField: "id",
   statusField: "status",
   searchFields: ["schemaName"],

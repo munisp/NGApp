@@ -13,7 +13,7 @@ export default function ATMManagementWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["terminalId", "location", "branch", "state"],
-        apiBase: "/api/platform/atm-management/v1/atm/terminals",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "terminalId", label: "Terminal", sortable: true },

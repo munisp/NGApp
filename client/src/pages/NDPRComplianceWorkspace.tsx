@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Nigeria Data Protection Regulation",
   icon: FileCheck,
   accentColor: "green",
-  apiBase: "/api/security-hardening/ndpr-compliance/list",
+  apiBase: "/api/db/ndpr-records",
   idField: "id",
   statusField: "status",
   searchFields: ["type"],

@@ -13,7 +13,7 @@ export default function PgTableStatsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "table", "schema"],
-        apiBase: "/api/platform/postgres/table-stats",
+        apiBase: "/api/db/table-partitions",
         pageSize: 25,
         columns: [
           { key: "table", label: "Table", sortable: true },

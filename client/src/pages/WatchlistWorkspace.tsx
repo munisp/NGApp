@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"name",label:"Name"},{key:"type",label:"Type"},{key:"source",label:"Source"},{key:"addedDate",label:"Added"},{key:"riskLevel",label:"Risk Level"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/kyc/watchlist",
+  apiBase: "/api/db/watchlist-sources",
   pageSize: 25,
 };
 

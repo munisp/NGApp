@@ -27,7 +27,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "enabled",
   searchFields: ["eventName", "kafkaTopic", "kycLevel", "triggerCondition"],
-  apiBase: "/api/platform/kyc-event-rules",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
   actions: [
     { label: "Toggle", key: "toggle" },

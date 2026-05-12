@@ -13,7 +13,7 @@ export default function DormancyWorkspace() {
         idField: "id",
         statusField: "dormancyStage",
         searchFields: ["accountNumber", "accountName", "branch"],
-        apiBase: "/api/platform/dormancy/accounts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Browser device fingerprint management",
   icon: Fingerprint,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/browser-fingerprint/list",
+  apiBase: "/api/db/device-profiles",
   idField: "id",
   statusField: "status",
   searchFields: ["fingerprintHash"],

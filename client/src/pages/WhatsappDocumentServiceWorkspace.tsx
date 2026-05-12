@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Statement PDF delivery and KYC document collection via WhatsApp",
   icon: FileText,
   accentColor: "blue",
-  apiBase: "/api/channel-banking/whatsapp-document-service/list",
+  apiBase: "/api/db/whatsapp-document-service",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

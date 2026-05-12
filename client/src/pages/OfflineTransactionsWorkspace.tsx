@@ -13,7 +13,7 @@ export default function OfflineTransactionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["type", "deviceId"],
-        apiBase: "/api/resilience/offline/transactions",
+        apiBase: "/api/db/transactions",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

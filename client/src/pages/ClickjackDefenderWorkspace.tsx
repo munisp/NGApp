@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Anti-clickjacking frame policy",
   icon: Shield,
   accentColor: "red",
-  apiBase: "/api/security-hardening/clickjack-defender/list",
+  apiBase: "/api/db/frame-policies",
   idField: "id",
   statusField: "status",
   searchFields: ["domain"],

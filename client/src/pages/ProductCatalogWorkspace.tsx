@@ -13,7 +13,7 @@ export default function ProductCatalogWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "category", "subcategory", "description"],
-        apiBase: "/api/platform/products",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"date",label:"Date"},{key:"description",label:"Description"},{key:"amount",label:"Amount (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"type",label:"Type"},{key:"channel",label:"Channel"},{key:"balance",label:"Balance (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/self-service/transactions",
+  apiBase: "/api/db/transfers",
   pageSize: 25,
 };
 

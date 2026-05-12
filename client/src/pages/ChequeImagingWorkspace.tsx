@@ -10,7 +10,7 @@ const config: CrudConfig = {
   accentColor: "purple",
   idField: "id",
   searchFields: ["chequeNumber", "drawerName", "payeeName", "clearingStatus"],
-  apiBase: "/api/platform/cheque-imaging/images",
+  apiBase: "/api/db/accounts",
   columns: [
     { key: "id", label: "Image ID", sortable: true },
     { key: "chequeNumber", label: "Cheque #", sortable: true },

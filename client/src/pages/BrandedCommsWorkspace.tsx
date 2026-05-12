@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenantId", "templateName", "recipient"],
-  apiBase: "/api/platform/branded-comms/v1/emails",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

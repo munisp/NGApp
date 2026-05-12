@@ -13,7 +13,7 @@ export default function FactoringWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["seller", "buyer"],
-        apiBase: "/api/platform/factoring/deals",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Deal ID" },

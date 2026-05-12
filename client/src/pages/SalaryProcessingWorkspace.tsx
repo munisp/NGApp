@@ -13,7 +13,7 @@ export default function SalaryProcessingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["companyName", "payrollMonth", "status"],
-        apiBase: "/api/platform/salary/v1/salary/batches",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

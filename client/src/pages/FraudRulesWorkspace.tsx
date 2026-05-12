@@ -13,7 +13,7 @@ export default function FraudRulesWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["name", "category", "severity"],
-        apiBase: "/api/platform/fraud/rules",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Rule ID" },

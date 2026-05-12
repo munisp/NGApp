@@ -13,7 +13,7 @@ export default function ETLPipelinesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "source", "destination"],
-        apiBase: "/api/platform/analytics/etl-pipelines",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Pipeline ID" },

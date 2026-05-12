@@ -13,7 +13,7 @@ export default function LakehouseCDCEventsWorkspace() {
         idField: "eventId",
         statusField: "domain",
         searchFields: ["eventId", "eventType", "domain", "service"],
-        apiBase: "/api/platform/lakehouse/cdc-events",
+        apiBase: "/api/db/event-dedup-configs",
         pageSize: 25,
         columns: [
           { key: "eventId", label: "Event ID" },

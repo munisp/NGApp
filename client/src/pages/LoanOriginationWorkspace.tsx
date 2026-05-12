@@ -13,7 +13,7 @@ export default function LoanOriginationWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customerName", "productType", "id"],
-        apiBase: "/api/platform/loan-origination/v1/loans/applications",
+        apiBase: "/api/db/loans",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID", sortable: true },

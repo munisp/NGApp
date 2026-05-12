@@ -22,7 +22,7 @@ const config: CrudConfig = {
   idField: "serviceId",
   statusField: "gateStatus",
   searchFields: ["serviceName", "serviceId", "minimumKYCLevel", "gateStatus"],
-  apiBase: "/api/platform/kyc-gates",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
   actions: [
     { label: "Toggle Gate", key: "toggle" },

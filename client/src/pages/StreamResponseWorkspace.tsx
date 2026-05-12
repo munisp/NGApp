@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Large payload streaming for memory reduction",
   icon: ArrowUpRight,
   accentColor: "green",
-  apiBase: "/api/performance/stream-response/list",
+  apiBase: "/api/db/stream-response-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["endpoint"],

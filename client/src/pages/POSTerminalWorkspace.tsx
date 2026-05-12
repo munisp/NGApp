@@ -13,7 +13,7 @@ export default function POSTerminalWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["merchantName", "terminalId", "location", "state"],
-        apiBase: "/api/platform/pos/v1/pos/terminals",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "terminalId", label: "Terminal" },

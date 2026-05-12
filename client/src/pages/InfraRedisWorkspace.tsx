@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "key",
   searchFields: ["key", "namespace"],
-  apiBase: "/api/platform/infra/redis/cache-keys",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

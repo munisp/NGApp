@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Nonce-based Content Security Policy",
   icon: Shield,
   accentColor: "green",
-  apiBase: "/api/security-hardening/csp-nonce/list",
+  apiBase: "/api/db/csp-policies",
   idField: "id",
   statusField: "status",
   searchFields: ["domain"],

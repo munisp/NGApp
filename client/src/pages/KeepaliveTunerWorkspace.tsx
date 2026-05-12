@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "HTTP connection reuse optimization",
   icon: Activity,
   accentColor: "green",
-  apiBase: "/api/performance/keepalive-tuner/list",
+  apiBase: "/api/db/keepalive-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["service"],

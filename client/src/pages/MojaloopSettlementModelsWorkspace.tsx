@@ -13,7 +13,7 @@ export default function MojaloopSettlementModelsWorkspace() {
         idField: "id",
         statusField: "name",
         searchFields: ["id", "name", "currency"],
-        apiBase: "/api/platform/mojaloop/settlement-models",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

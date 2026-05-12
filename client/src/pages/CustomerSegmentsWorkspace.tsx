@@ -13,7 +13,7 @@ export default function CustomerSegmentsWorkspace() {
         idField: "id",
         statusField: "churnRisk",
         searchFields: ["customerName", "segment", "relationshipManager"],
-        apiBase: "/api/platform/segments",
+        apiBase: "/api/db/customers",
         pageSize: 25,
         columns: [
           { key: "customerId", label: "ID" },

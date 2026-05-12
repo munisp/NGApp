@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automatic weather station data feed to trigger to payout pipeline",
   icon: Zap,
   accentColor: "yellow",
-  apiBase: "/api/agriculture-enhancement/parametric-insurance-iot/list",
+  apiBase: "/api/db/parametric-insurance-iot",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

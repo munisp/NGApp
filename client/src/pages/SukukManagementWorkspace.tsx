@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"sukukType",label:"Type"},{key:"issuer",label:"Issuer"},{key:"faceValue",label:"Face Value (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"couponRate",label:"Coupon %"},{key:"maturityDate",label:"Maturity"},{key:"status",label:"Status"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/islamic/sukuk",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

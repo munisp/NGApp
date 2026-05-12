@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"investor",label:"Investor"},{key:"agent",label:"Agent"},{key:"principal",label:"Principal (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"wakalaFee",label:"Fee %"},{key:"expectedReturn",label:"Expected %"},{key:"actualReturn",label:"Actual %"},{key:"status",label:"Status"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/islamic/wakala",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

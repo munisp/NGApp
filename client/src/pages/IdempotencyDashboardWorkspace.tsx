@@ -13,7 +13,7 @@ export default function IdempotencyDashboardWorkspace() {
         idField: "key",
         statusField: "method",
         searchFields: ["key", "endpoint", "tenantId"],
-        apiBase: "/api/platform/idempotency/keys",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "key", label: "Key", sortable: true },

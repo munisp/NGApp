@@ -11,6 +11,6 @@ const config: CrudConfig = {
     { key: "eventType", label: "Event Type", sortable: true }, { key: "riskImpact", label: "Risk Impact", sortable: true },
   ],
   idField: "id", statusField: "riskImpact", searchFields: ["companyId", "eventType"],
-  apiBase: "/api/kyc-enhanced/corporate-events",
+  apiBase: "/api/db/accounts",
 };
 export default function CorporateMonitoringWorkspace() { return <CrudWorkspace config={config} />; }

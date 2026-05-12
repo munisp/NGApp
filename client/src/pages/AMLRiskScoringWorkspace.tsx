@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Risk-based AML scoring with sanctions, PEP, adverse media factors",
   icon: Shield,
   accentColor: "red",
-  apiBase: "/api/aml-enhancement/aml-risk-scoring/list",
+  apiBase: "/api/db/aml-risk-scores",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

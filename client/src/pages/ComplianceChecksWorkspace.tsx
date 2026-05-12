@@ -13,7 +13,7 @@ export default function ComplianceChecksWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "category", "status", "evidence"],
-        apiBase: "/api/platform/compliance/checks",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

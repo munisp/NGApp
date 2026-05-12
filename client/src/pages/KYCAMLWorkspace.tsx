@@ -13,7 +13,7 @@ export default function KYCAMLWorkspace() {
         idField: "id",
         statusField: "screening_status",
         searchFields: ["full_name", "bvn", "customer_id"],
-        apiBase: "/api/platform/kyc-aml/v1/kyc/records",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID", sortable: true },

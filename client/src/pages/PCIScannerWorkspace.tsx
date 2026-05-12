@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "PCI-DSS compliance scanning",
   icon: FileSearch,
   accentColor: "orange",
-  apiBase: "/api/security-hardening/pci-scanner/list",
+  apiBase: "/api/db/pci-scans",
   idField: "id",
   statusField: "status",
   searchFields: ["requirement"],

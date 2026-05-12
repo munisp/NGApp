@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automated SOC 2 Type II evidence",
   icon: Clipboard,
   accentColor: "green",
-  apiBase: "/api/security-hardening/soc2-evidence/list",
+  apiBase: "/api/db/soc2-evidence",
   idField: "id",
   statusField: "status",
   searchFields: ["controlId"],

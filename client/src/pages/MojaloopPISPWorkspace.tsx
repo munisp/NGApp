@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true }, { key: "credentialType", label: "Auth" },
   ],
   idField: "id", statusField: "status", searchFields: ["pisp", "status"],
-  apiBase: "/api/ai-ml/mojaloop-pisp/consents",
+  apiBase: "/api/db/transfers",
 };
 export default function MojaloopPISPWorkspace() { return <CrudWorkspace config={config} />; }

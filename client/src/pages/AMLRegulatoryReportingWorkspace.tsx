@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "CBN/NFIU/NDIC automated quarterly/monthly reports",
   icon: FileText,
   accentColor: "purple",
-  apiBase: "/api/aml-enhancement/regulatory-reporting/list",
+  apiBase: "/api/db/regulatory-reports-aml",
   idField: "id",
   statusField: "status",
   searchFields: ["reportType"],

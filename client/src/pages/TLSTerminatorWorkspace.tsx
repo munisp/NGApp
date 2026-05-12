@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "TLS 1.3 termination with OCSP stapling",
   icon: Lock,
   accentColor: "green",
-  apiBase: "/api/security-hardening/tls-terminator/list",
+  apiBase: "/api/db/tls-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["domain"],

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "OpenAPI spec enforcement for all routes",
   icon: FileCheck,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/route-schema-enforcer/list",
+  apiBase: "/api/db/route-schemas",
   idField: "id",
   statusField: "status",
   searchFields: ["path"],

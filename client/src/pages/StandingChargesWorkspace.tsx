@@ -13,7 +13,7 @@ export default function StandingChargesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["charge_name", "charge_type", "account_type"],
-        apiBase: "/api/platform/standing-charges/list",
+        apiBase: "/api/db/billing-invoices",
         pageSize: 25,
         columns: [
           { key: "id", label: "Charge ID" },

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Soil moisture, irrigation control and weather station data",
   icon: Cpu,
   accentColor: "sky",
-  apiBase: "/api/agriculture-enhancement/agri-iot-sensor/list",
+  apiBase: "/api/db/agri-iot-sensor",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

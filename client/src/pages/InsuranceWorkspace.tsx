@@ -13,7 +13,7 @@ export default function InsuranceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["product_name", "policy_type", "customer_name"],
-        apiBase: "/api/platform/insurance/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Policy ID" },

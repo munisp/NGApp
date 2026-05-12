@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Natural language understanding for banking voice commands",
   icon: Brain,
   accentColor: "indigo",
-  apiBase: "/api/channel-banking/voice-nlu-banking/list",
+  apiBase: "/api/db/voice-nlu-banking",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -13,7 +13,7 @@ export default function UtilityPaymentsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["biller_name", "biller_category"],
-        apiBase: "/api/platform/utility-payments/transactions",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "Payment ID" },

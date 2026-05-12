@@ -13,6 +13,6 @@ const config: CrudConfig = {
     { key: "methods", label: "Methods" },
   ],
   idField: "trigger", searchFields: ["trigger"],
-  apiBase: "/api/kyc-enhanced/step-up-configs",
+  apiBase: "/api/db/accounts",
 };
 export default function ContinuousLivenessWorkspace() { return <CrudWorkspace config={config} />; }

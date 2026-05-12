@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Real-time OFAC/UN/EU/CBN/EFCC/FATF list sync",
   icon: Globe,
   accentColor: "red",
-  apiBase: "/api/aml-enhancement/watchlist-manager/list",
+  apiBase: "/api/db/watchlist-sources",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

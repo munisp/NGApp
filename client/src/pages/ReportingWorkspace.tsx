@@ -13,7 +13,7 @@ export default function ReportingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "category", "frequency", "description"],
-        apiBase: "/api/platform/reports/definitions",
+        apiBase: "/api/db/regulatory-reports",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID", sortable: true },

@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "branchCode", label: "Branch" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/grid-cards",
+  apiBase: "/api/db/grid-cards",
 };
 export default function GridTokenCardWorkspace() { return <CrudWorkspace config={config} />; }

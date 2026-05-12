@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Truck dispatch, route optimization and cold chain monitoring",
   icon: Truck,
   accentColor: "teal",
-  apiBase: "/api/agriculture-enhancement/agri-logistics/list",
+  apiBase: "/api/db/agri-logistics",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

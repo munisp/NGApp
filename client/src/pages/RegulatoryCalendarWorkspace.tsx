@@ -13,7 +13,7 @@ export default function RegulatoryCalendarWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["regulator", "requirement", "responsible"],
-        apiBase: "/api/platform/compliance/calendar",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

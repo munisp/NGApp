@@ -13,7 +13,7 @@ export default function ApisixUpstreamsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "service"],
-        apiBase: "/api/platform/apisix/upstreams",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

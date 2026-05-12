@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "code", "name", "category"],
-  apiBase: "/api/platform/product-factory/v1/products",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

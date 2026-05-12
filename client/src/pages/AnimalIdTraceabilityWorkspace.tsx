@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "RFID tag tracking, movement permits and disease outbreak mapping",
   icon: ScanLine,
   accentColor: "lime",
-  apiBase: "/api/agriculture-enhancement/animal-id-traceability/list",
+  apiBase: "/api/db/animal-id-traceability",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

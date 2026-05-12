@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "debit_account_id", "credit_account_id", "user_data"],
-  apiBase: "/api/platform/ledger/transfers",
+  apiBase: "/api/db/transfers",
   fields: [
     { key: "debit_account_id", label: "Debit Account", type: "text", required: true },
     { key: "credit_account_id", label: "Credit Account", type: "text", required: true },

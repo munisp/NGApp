@@ -13,7 +13,7 @@ export default function ISO20022HubWorkspace() {
         idField: "id",
         statusField: "validation_status",
         searchFields: ["message_type", "sender_bic", "receiver_bic"],
-        apiBase: "/api/platform/iso20022/messages",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Message ID" },

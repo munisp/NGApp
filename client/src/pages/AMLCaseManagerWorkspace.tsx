@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "AML investigation workflow — alert triage to resolution",
   icon: Briefcase,
   accentColor: "purple",
-  apiBase: "/api/aml-enhancement/aml-case-manager/list",
+  apiBase: "/api/db/aml-cases",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

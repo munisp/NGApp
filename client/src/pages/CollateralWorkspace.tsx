@@ -13,7 +13,7 @@ export default function CollateralWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["description", "ownerName", "type", "registrationRef"],
-        apiBase: "/api/platform/collateral/items",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Real-time compliance metrics — screenings, filings, scores",
   icon: BarChart2,
   accentColor: "blue",
-  apiBase: "/api/aml-enhancement/aml-compliance-dashboard/list",
+  apiBase: "/api/db/aml-compliance-metrics",
   idField: "id",
   statusField: "status",
   searchFields: ["period"],

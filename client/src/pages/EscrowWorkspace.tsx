@@ -13,7 +13,7 @@ export default function EscrowWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "escrowType", "condition", "currency"],
-        apiBase: "/api/platform/escrow/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Escrow ID" },
@@ -41,7 +41,7 @@ export default function EscrowWorkspace() {
           {
             key: "parties",
             label: "Parties",
-            apiBase: "/api/platform/escrow/accounts",
+            apiBase: "/api/db/escrow-accounts",
             subPath: "parties",
             columns: [
               { key: "id", label: "Party ID" },
@@ -57,7 +57,7 @@ export default function EscrowWorkspace() {
           {
             key: "milestones",
             label: "Milestones",
-            apiBase: "/api/platform/escrow/milestones",
+            apiBase: "/api/db/escrow-milestones",
             columns: [
               { key: "id", label: "Milestone ID" },
               { key: "description", label: "Description" },
@@ -73,7 +73,7 @@ export default function EscrowWorkspace() {
           {
             key: "transactions",
             label: "Transactions",
-            apiBase: "/api/platform/escrow/transactions",
+            apiBase: "/api/db/escrow-transactions",
             columns: [
               { key: "id", label: "TX ID" },
               { key: "type", label: "Type", sortable: true },
@@ -90,7 +90,7 @@ export default function EscrowWorkspace() {
           {
             key: "disputes",
             label: "Disputes",
-            apiBase: "/api/platform/escrow/disputes",
+            apiBase: "/api/db/escrow-disputes",
             columns: [
               { key: "id", label: "Dispute ID" },
               { key: "raisedBy", label: "Raised By" },
@@ -105,7 +105,7 @@ export default function EscrowWorkspace() {
           {
             key: "documents",
             label: "Documents",
-            apiBase: "/api/platform/escrow/documents",
+            apiBase: "/api/db/escrow-documents",
             columns: [
               { key: "id", label: "Doc ID" },
               { key: "documentType", label: "Type", sortable: true },
@@ -120,7 +120,7 @@ export default function EscrowWorkspace() {
           {
             key: "fees",
             label: "Fees",
-            apiBase: "/api/platform/escrow/fees",
+            apiBase: "/api/db/escrow-fees",
             columns: [
               { key: "id", label: "Fee ID" },
               { key: "escrowId", label: "Escrow" },
@@ -134,7 +134,7 @@ export default function EscrowWorkspace() {
           {
             key: "interest",
             label: "Interest Accruals",
-            apiBase: "/api/platform/escrow/interest",
+            apiBase: "/api/db/escrow-interest",
             columns: [
               { key: "id", label: "Accrual ID" },
               { key: "escrowId", label: "Escrow" },
@@ -149,7 +149,7 @@ export default function EscrowWorkspace() {
           {
             key: "regulatory",
             label: "Regulatory Reports",
-            apiBase: "/api/platform/escrow/regulatory",
+            apiBase: "/api/db/escrow-regulatory",
             columns: [
               { key: "id", label: "Report ID" },
               { key: "reportType", label: "Type", sortable: true },
@@ -164,7 +164,7 @@ export default function EscrowWorkspace() {
           {
             key: "notifications",
             label: "Notifications",
-            apiBase: "/api/platform/escrow/notifications",
+            apiBase: "/api/db/customer-notifications",
             columns: [
               { key: "id", label: "ID" },
               { key: "escrowId", label: "Escrow" },
@@ -179,7 +179,7 @@ export default function EscrowWorkspace() {
           {
             key: "audit",
             label: "Audit Log",
-            apiBase: "/api/platform/escrow/audit",
+            apiBase: "/api/db/escrow-audit",
             columns: [
               { key: "id", label: "Audit ID" },
               { key: "escrowId", label: "Escrow" },

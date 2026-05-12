@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "confidence", label: "Confidence" }, { key: "riskScore", label: "Risk Score" },
   ],
   idField: "id", statusField: "prediction", searchFields: ["customerId", "model", "prediction"],
-  apiBase: "/api/ai-ml/gnn/predictions",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function GNNFraudDetectionWorkspace() { return <CrudWorkspace config={config} />; }

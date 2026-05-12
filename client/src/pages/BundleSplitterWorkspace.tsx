@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Domain-based code splitting analyzer",
   icon: Package,
   accentColor: "orange",
-  apiBase: "/api/performance/bundle-splitter/list",
+  apiBase: "/api/db/bundle-split-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["chunk"],

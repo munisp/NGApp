@@ -13,7 +13,7 @@ export default function HAZonesWorkspace() {
         idField: "zone",
         statusField: "status",
         searchFields: ["zone", "region"],
-        apiBase: "/api/platform/ha/zones",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "zone", label: "Zone", sortable: true },

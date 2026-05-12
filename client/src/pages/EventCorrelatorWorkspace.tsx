@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "MITRE ATT&CK event correlation engine",
   icon: Activity,
   accentColor: "red",
-  apiBase: "/api/security-hardening/event-correlator/list",
+  apiBase: "/api/db/correlation-rules",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

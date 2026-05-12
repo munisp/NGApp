@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "TTL-based query result caching",
   icon: Zap,
   accentColor: "yellow",
-  apiBase: "/api/performance/query-cache/list",
+  apiBase: "/api/db/query-cache-entries",
   idField: "id",
   statusField: "status",
   searchFields: ["queryHash"],

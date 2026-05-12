@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "status"],
-  apiBase: "/api/platform/search/indices",
+  apiBase: "/api/db/opensearch-index-configs",
   fields: [
     { key: "name", label: "Index Name", type: "text", required: true, placeholder: "e.g. transactions, audit-logs" },
     { key: "mappings", label: "Mappings (JSON)", type: "text" },

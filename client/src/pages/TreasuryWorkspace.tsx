@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "counterparty", "placement_type", "security_type"],
-  apiBase: "/api/platform/treasury/investments",
+  apiBase: "/api/db/fx-trades",
   fields: [
     { key: "security_type", label: "Security Type", type: "select", options: ["tbill", "bond", "commercial_paper"], required: true },
     { key: "issuer", label: "Issuer", type: "text", defaultValue: "FGN" },

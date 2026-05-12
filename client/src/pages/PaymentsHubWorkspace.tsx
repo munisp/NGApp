@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "paymentType", "sourceAccount", "destAccount", "billerName", "nipRef"],
-  apiBase: "/api/platform/payments",
+  apiBase: "/api/db/settlements",
   fields: [
     { key: "paymentType", label: "Payment Type", type: "select", options: ["nip", "ussd", "qr", "bill", "remittance"], required: true },
     { key: "sourceAccount", label: "Source Account", type: "text", required: true },

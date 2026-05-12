@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Redis pub/sub cache invalidation with pattern matching",
   icon: RefreshCw,
   accentColor: "orange",
-  apiBase: "/api/performance/cache-invalidation/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["channel"],

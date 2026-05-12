@@ -19,6 +19,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/pin-blocks",
+  apiBase: "/api/db/pin-hashes",
 };
 export default function PINBlockEngineWorkspace() { return <CrudWorkspace config={config} />; }

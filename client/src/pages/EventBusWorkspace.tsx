@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "retention"],
-  apiBase: "/api/platform/events/topics",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "name", label: "Topic Name", type: "text", required: true, placeholder: "e.g. customer.created" },
     { key: "partitions", label: "Partitions", type: "number", defaultValue: 3 },

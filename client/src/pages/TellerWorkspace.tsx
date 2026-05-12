@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["sessionId", "tellerId", "branchCode"],
-  apiBase: "/api/platform/teller/sessions",
+  apiBase: "/api/db/teller-sessions",
   fields: [
     { key: "tellerId", label: "Teller ID", type: "text", required: true, placeholder: "e.g. TLR-101" },
     { key: "branchCode", label: "Branch Code", type: "text", required: true, placeholder: "e.g. LG001" },

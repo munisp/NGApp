@@ -13,7 +13,7 @@ export default function LimitManagementWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "tier", "channel"],
-        apiBase: "/api/platform/limits/config",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

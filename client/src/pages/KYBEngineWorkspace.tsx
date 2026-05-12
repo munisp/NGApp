@@ -28,7 +28,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["companyName", "rcNumber", "tin", "status"],
-  apiBase: "/api/platform/kyb-engine/v1/verifications",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

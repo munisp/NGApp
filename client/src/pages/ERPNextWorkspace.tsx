@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["jobId", "syncType", "status"],
-  apiBase: "/api/platform/erpnext/sync-jobs",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "syncType", label: "Sync Type", type: "select", options: ["journal_entry", "payment_entry", "invoice", "customer_sync"], required: true },
     { key: "entities", label: "Entity Filter (JSON)", type: "textarea", placeholder: '["JV-001","JV-002"]' },

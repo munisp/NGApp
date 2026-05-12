@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "verificationStatus",
   searchFields: ["profileId", "customerId", "documentNumber", "verificationType"],
-  apiBase: "/api/platform/identity/profiles",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "verificationType", label: "Verification Type", type: "select", options: ["bvn", "nin", "passport", "voters_card", "drivers_license", "biometric"], required: true },

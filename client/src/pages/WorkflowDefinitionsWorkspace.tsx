@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"name",label:"Name"},{key:"category",label:"Category"},{key:"steps",label:"Steps",render:(v:unknown)=>Array.isArray(v)?v.length:0},{key:"slaHours",label:"SLA (hrs)"},{key:"version",label:"Version"},{key:"status",label:"Status"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/workflows/definitions",
+  apiBase: "/api/db/workflow-cases",
   pageSize: 25,
 };
 

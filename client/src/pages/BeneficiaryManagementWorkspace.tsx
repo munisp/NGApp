@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "verified",
   searchFields: ["id", "name", "accountNumber", "bankName", "customerId"],
-  apiBase: "/api/platform/beneficiaries",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "name", label: "Beneficiary Name", type: "text", required: true },

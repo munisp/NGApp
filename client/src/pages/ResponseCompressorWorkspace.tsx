@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Brotli/gzip/zstd per-service compression",
   icon: ArrowUpRight,
   accentColor: "teal",
-  apiBase: "/api/performance/response-compressor/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["algorithm"],

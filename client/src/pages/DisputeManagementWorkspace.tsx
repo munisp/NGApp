@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["caseId", "customerId", "category", "description"],
-  apiBase: "/api/platform/disputes/cases",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "transactionId", label: "Transaction ID", type: "text", required: true },

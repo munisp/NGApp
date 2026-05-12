@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["applicantName", "applicationId", "status"],
-  apiBase: "/api/platform/mortgage/applications",
+  apiBase: "/api/db/mortgage-applications",
   fields: [
     { key: "applicantName", label: "Applicant Name", type: "text", required: true, placeholder: "Full legal name" },
     { key: "propertyValue", label: "Property Value (₦)", type: "number", required: true },

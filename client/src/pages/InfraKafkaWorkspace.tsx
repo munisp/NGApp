@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "name",
   searchFields: ["name"],
-  apiBase: "/api/platform/infra/kafka/topics",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

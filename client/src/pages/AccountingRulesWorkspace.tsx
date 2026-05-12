@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "event", "debitGL", "creditGL"],
-  apiBase: "/api/platform/accounting/rules",
+  apiBase: "/api/db/accounts",
 };
 
 export default function AccountingRulesWorkspace() {

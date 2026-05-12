@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Speech recognition for Nigerian English, Pidgin, Hausa, Yoruba, Igbo",
   icon: Mic,
   accentColor: "blue",
-  apiBase: "/api/channel-banking/voice-asr-nigerian/list",
+  apiBase: "/api/db/voice-asr-nigerian",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

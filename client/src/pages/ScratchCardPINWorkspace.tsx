@@ -21,6 +21,6 @@ const config: CrudConfig = {
     { key: "branchCode", label: "Branch" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/scratch-cards",
+  apiBase: "/api/db/scratch-cards",
 };
 export default function ScratchCardPINWorkspace() { return <CrudWorkspace config={config} />; }

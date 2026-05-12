@@ -13,7 +13,7 @@ export default function WealthMgmtWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["client_name", "client_type"],
-        apiBase: "/api/platform/wealth/clients",
+        apiBase: "/api/db/customers",
         pageSize: 25,
         columns: [
           { key: "id", label: "Client ID" },

@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "factors", label: "Factors" },
   ],
   idField: "id", statusField: "riskTier", searchFields: ["customerId", "riskTier"],
-  apiBase: "/api/kyc-enhanced/risk-scores",
+  apiBase: "/api/db/risk-scores",
 };
 export default function RiskBasedApproachWorkspace() { return <CrudWorkspace config={config} />; }

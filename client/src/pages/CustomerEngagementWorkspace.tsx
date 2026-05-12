@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "referrer_id", "referee_name", "referee_phone"],
-  apiBase: "/api/platform/engagement/referrals",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "referrer_id", label: "Referrer Customer ID", type: "text", required: true },
     { key: "referee_name", label: "Referee Name", type: "text", required: true },

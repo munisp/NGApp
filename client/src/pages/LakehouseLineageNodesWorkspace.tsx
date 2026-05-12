@@ -13,7 +13,7 @@ export default function LakehouseLineageNodesWorkspace() {
         idField: "id",
         statusField: "type",
         searchFields: ["id", "name", "type", "domain"],
-        apiBase: "/api/platform/lakehouse/lineage/nodes",
+        apiBase: "/api/db/avro-schemas",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID", sortable: true },

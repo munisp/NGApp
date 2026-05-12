@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automated quarterly CBN agricultural lending portfolio returns",
   icon: FileText,
   accentColor: "gray",
-  apiBase: "/api/agriculture-enhancement/cbn-agri-returns/list",
+  apiBase: "/api/db/cbn-agri-returns",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

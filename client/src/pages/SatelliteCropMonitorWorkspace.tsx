@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Sentinel-2 NDVI vegetation index and crop health scoring",
   icon: Satellite,
   accentColor: "emerald",
-  apiBase: "/api/agriculture-enhancement/satellite-crop-monitor/list",
+  apiBase: "/api/db/satellite-crop-monitor",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

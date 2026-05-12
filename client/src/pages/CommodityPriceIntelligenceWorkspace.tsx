@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Real-time market prices from NCX, AFEX and regional markets",
   icon: TrendingUp,
   accentColor: "sky",
-  apiBase: "/api/agriculture-enhancement/commodity-price-intelligence/list",
+  apiBase: "/api/db/commodity-price-intelligence",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -11,6 +11,6 @@ const config: CrudConfig = {
     { key: "channelBreakdown", label: "Channels" }, { key: "rejectionReasons", label: "Rejection Reasons" },
   ],
   idField: "id", searchFields: [],
-  apiBase: "/api/kyc-enhanced/analytics-dashboard",
+  apiBase: "/api/db/kyc-data-quality-metrics",
 };
 export default function KYCAnalyticsDashWorkspace() { return <CrudWorkspace config={config} />; }

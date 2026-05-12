@@ -13,7 +13,7 @@ export default function FXDealingRoomWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "pair", "counterparty", "dealer"],
-        apiBase: "/api/platform/fx/deals-v2",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Deal ID" },

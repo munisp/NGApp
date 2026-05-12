@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"name",label:"Service"},{key:"port",label:"Port"},{key:"language",label:"Language"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/health/registry",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

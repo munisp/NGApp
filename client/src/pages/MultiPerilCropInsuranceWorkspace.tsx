@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Comprehensive coverage for pest, disease, hail, fire, theft and flood",
   icon: Umbrella,
   accentColor: "cyan",
-  apiBase: "/api/agriculture-enhancement/multi-peril-crop-insurance/list",
+  apiBase: "/api/db/multi-peril-crop-insurance",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

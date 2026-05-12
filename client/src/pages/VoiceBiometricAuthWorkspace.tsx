@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Voiceprint enrollment, verification and anti-spoofing",
   icon: Fingerprint,
   accentColor: "red",
-  apiBase: "/api/channel-banking/voice-biometric-auth/list",
+  apiBase: "/api/db/voice-biometric-auth",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -13,7 +13,7 @@ export default function OpenappsecEventsWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["id", "ruleName", "sourceIP", "uri"],
-        apiBase: "/api/platform/openappsec/events",
+        apiBase: "/api/db/security-events",
         pageSize: 25,
         columns: [
           { key: "ruleName", label: "Rule", sortable: true },

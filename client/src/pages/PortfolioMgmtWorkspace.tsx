@@ -13,7 +13,7 @@ export default function PortfolioMgmtWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["portfolio_name", "client_name"],
-        apiBase: "/api/platform/portfolios/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Portfolio ID" },

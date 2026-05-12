@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"Instance ID"},{key:"workflowName",label:"Workflow"},{key:"currentStep",label:"Step"},{key:"status",label:"Status"},{key:"startedAt",label:"Started"},{key:"completedAt",label:"Completed"},{key:"initiator",label:"Initiator"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/workflows/instances",
+  apiBase: "/api/db/workflow-cases",
   pageSize: 25,
 };
 

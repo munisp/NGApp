@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"customerName",label:"Customer"},{key:"reason",label:"Reason"},{key:"amount",label:"Amount (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"filedDate",label:"Filed"},{key:"status",label:"Status"},{key:"cbnReference",label:"CBN Ref"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/kyc/sar-reports",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

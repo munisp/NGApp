@@ -8,6 +8,6 @@ const config: CrudConfig = {
   fields: [],
   columns: [{ key: "id", label: "ID" }, { key: "customerName", label: "Customer" }, { key: "status", label: "Status" }],
   idField: "id", statusField: "status", searchFields: ["customerName"],
-  apiBase: "/api/kyc-enhanced/customer-tiers",
+  apiBase: "/api/db/kyc-tiers",
 };
 export default function KYCSelfServiceWorkspace() { return <CrudWorkspace config={config} />; }

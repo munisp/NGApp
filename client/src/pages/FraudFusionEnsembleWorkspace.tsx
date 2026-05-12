@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["fraudType", "status"],
-  apiBase: "/api/ai-ml/fraudfusion/alerts",
+  apiBase: "/api/db/aml-alerts",
 };
 export default function FraudFusionEnsembleWorkspace() { return <CrudWorkspace config={config} />; }

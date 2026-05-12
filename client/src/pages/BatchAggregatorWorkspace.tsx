@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Multi-request batching for N+1 elimination",
   icon: Package,
   accentColor: "blue",
-  apiBase: "/api/performance/batch-aggregator/list",
+  apiBase: "/api/db/batch-aggregator-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["endpoint"],

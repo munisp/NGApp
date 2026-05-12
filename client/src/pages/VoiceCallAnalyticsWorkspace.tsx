@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Call duration, sentiment analysis and intent success metrics",
   icon: BarChart3,
   accentColor: "amber",
-  apiBase: "/api/channel-banking/voice-call-analytics/list",
+  apiBase: "/api/db/voice-call-analytics",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

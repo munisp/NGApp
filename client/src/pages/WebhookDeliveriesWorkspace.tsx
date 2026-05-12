@@ -13,7 +13,7 @@ export default function WebhookDeliveriesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "subscriptionId", "event"],
-        apiBase: "/api/platform/webhooks/deliveries",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "Delivery ID" },

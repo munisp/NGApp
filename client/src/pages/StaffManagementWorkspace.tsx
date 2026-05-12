@@ -13,7 +13,7 @@ export default function StaffManagementWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["fullName", "employeeId", "role", "department", "branch"],
-        apiBase: "/api/platform/staff",
+        apiBase: "/api/db/customers",
         pageSize: 25,
         columns: [
           { key: "employeeId", label: "Emp ID" },

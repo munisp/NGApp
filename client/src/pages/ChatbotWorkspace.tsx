@@ -13,7 +13,7 @@ export default function ChatbotWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["intent", "category"],
-        apiBase: "/api/platform/chatbot/intents",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Intent ID" },

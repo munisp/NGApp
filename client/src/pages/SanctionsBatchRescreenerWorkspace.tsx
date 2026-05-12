@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Daily full-customer-base re-screening against all lists",
   icon: RefreshCw,
   accentColor: "red",
-  apiBase: "/api/aml-enhancement/sanctions-batch-rescreener/list",
+  apiBase: "/api/db/sanctions-batch-runs",
   idField: "id",
   statusField: "status",
   searchFields: ["triggerType"],

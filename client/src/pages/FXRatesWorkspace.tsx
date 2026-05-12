@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "buy_currency", "sell_currency", "deal_type", "counterparty"],
-  apiBase: "/api/platform/fx/deals",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "deal_type", label: "Deal Type", type: "select", options: ["spot", "forward", "swap"], required: true },
     { key: "buy_currency", label: "Buy Currency", type: "select", options: ["USD", "EUR", "GBP", "NGN"], required: true },

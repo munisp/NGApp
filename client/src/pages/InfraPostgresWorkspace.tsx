@@ -27,7 +27,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "customerName", "accountNumber"],
-  apiBase: "/api/platform/infra/postgres/records/accounts",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

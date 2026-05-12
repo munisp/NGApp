@@ -13,7 +13,7 @@ export default function MojaloopSettlementWindowsWorkspace() {
         idField: "id",
         statusField: "state",
         searchFields: ["id", "state", "reason"],
-        apiBase: "/api/platform/mojaloop/settlement-windows",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

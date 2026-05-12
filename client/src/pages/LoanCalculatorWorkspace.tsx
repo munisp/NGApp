@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "loanType", "customerName"],
-  apiBase: "/api/platform/loan-calculator",
+  apiBase: "/api/db/loans",
   fields: [
     { key: "loanType", label: "Loan Type", type: "select", options: ["mortgage", "education", "agriculture", "personal", "auto", "murabaha", "ijara"], required: true },
     { key: "customerName", label: "Customer Name", type: "text" },

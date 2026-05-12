@@ -13,7 +13,7 @@ export default function CardManagementWorkspace2() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "customerName", "maskedPAN", "accountNumber"],
-        apiBase: "/api/platform/card-mgmt/v1/cards",
+        apiBase: "/api/db/customer-cards",
         pageSize: 25,
         columns: [
           { key: "id", label: "Card ID", sortable: true },

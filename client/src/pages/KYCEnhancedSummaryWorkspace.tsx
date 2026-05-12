@@ -12,6 +12,6 @@ const config: CrudConfig = {
     { key: "sanctionsLists", label: "Lists" }, { key: "uboEntities", label: "UBO Entities" },
   ],
   idField: "totalNewServices", searchFields: [],
-  apiBase: "/api/kyc-enhanced/summary",
+  apiBase: "/api/db/accounts",
 };
 export default function KYCEnhancedSummaryWorkspace() { return <CrudWorkspace config={config} />; }

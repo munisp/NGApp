@@ -13,7 +13,7 @@ export default function CreditBureauWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customer_name", "bureau", "score_band", "bvn"],
-        apiBase: "/api/platform/credit-bureau/v1/credit-bureau/reports",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

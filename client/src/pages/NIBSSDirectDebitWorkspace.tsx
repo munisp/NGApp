@@ -13,7 +13,7 @@ export default function NIBSSDirectDebitWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["mandateRef", "customerID", "creditorName", "nibssRef"],
-        apiBase: "/api/platform/nibss/mandates",
+        apiBase: "/api/db/nip-transactions",
         pageSize: 25,
         columns: [
           { key: "mandateRef", label: "Mandate Ref", sortable: true },

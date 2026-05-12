@@ -25,7 +25,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "taskQueue"],
-  apiBase: "/api/platform/infra/temporal/workflows",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

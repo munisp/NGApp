@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenantId", "tenantName", "plan"],
-  apiBase: "/api/platform/tenant-provisioning/v1/provisioning-jobs",
+  apiBase: "/api/db/tenants",
   pageSize: 25,
 };
 

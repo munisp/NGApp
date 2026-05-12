@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Radix-tree O(log N) route matching",
   icon: GitBranch,
   accentColor: "blue",
-  apiBase: "/api/performance/route-trie/list",
+  apiBase: "/api/db/route-trie-stats",
   idField: "id",
   statusField: "status",
   searchFields: ["routePrefix"],

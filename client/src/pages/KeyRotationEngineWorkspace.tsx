@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automated cryptographic key rotation",
   icon: RefreshCw,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/key-rotation/list",
+  apiBase: "/api/db/key-rotations",
   idField: "id",
   statusField: "status",
   searchFields: ["keyId"],

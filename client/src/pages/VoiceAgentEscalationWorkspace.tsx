@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "IVR to human agent handoff with context transfer",
   icon: HeadphonesIcon,
   accentColor: "orange",
-  apiBase: "/api/channel-banking/voice-agent-escalation/list",
+  apiBase: "/api/db/voice-agent-escalation",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

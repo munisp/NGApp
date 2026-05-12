@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Banking commands: /balance, /transfer, /history, /pay_bill",
   icon: Terminal,
   accentColor: "cyan",
-  apiBase: "/api/channel-banking/telegram-banking-commands/list",
+  apiBase: "/api/db/telegram-banking-commands",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Keyword-based SMS commands: BAL, TRF, STMT",
   icon: Mail,
   accentColor: "rose",
-  apiBase: "/api/channel-banking/sms-banking-gateway/list",
+  apiBase: "/api/db/sms-banking-gateway",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

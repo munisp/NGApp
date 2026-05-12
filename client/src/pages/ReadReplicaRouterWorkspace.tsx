@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Query routing to PostgreSQL read replicas",
   icon: Database,
   accentColor: "purple",
-  apiBase: "/api/performance/read-replica/list",
+  apiBase: "/api/db/read-replica-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["replicaHost"],

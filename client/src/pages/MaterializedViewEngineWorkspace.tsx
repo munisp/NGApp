@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Auto-refreshing materialized views for dashboards",
   icon: Gauge,
   accentColor: "purple",
-  apiBase: "/api/performance/materialized-views/list",
+  apiBase: "/api/db/materialized-views-perf",
   idField: "id",
   statusField: "status",
   searchFields: ["viewName"],

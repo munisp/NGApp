@@ -13,7 +13,7 @@ export default function PgTuningParamsWorkspace() {
         idField: "id",
         statusField: "parameter",
         searchFields: ["id", "parameter", "category"],
-        apiBase: "/api/platform/postgres/tuning-params",
+        apiBase: "/api/db/prepared-statements",
         pageSize: 25,
         columns: [
           { key: "parameter", label: "Parameter", sortable: true },

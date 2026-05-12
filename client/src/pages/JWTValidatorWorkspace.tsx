@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Real JWKS validation and token introspection",
   icon: Shield,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/jwt-validator/list",
+  apiBase: "/api/db/jwt-validations",
   idField: "id",
   statusField: "status",
   searchFields: ["tokenType"],

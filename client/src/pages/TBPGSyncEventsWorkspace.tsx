@@ -13,7 +13,7 @@ export default function TBPGSyncEventsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "eventType", "sourceEntity", "targetEntity"],
-        apiBase: "/api/platform/tb-pg-sync/events",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

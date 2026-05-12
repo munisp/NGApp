@@ -13,7 +13,7 @@ export default function SyndicatedLoansWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["facility_name", "borrower"],
-        apiBase: "/api/platform/syndicated-loans/facilities",
+        apiBase: "/api/db/loans",
         pageSize: 25,
         columns: [
           { key: "id", label: "Facility ID" },

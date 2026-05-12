@@ -27,7 +27,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "matched",
   searchFields: ["customer_name", "customer_id"],
-  apiBase: "/api/platform/face-match/v1/matches",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

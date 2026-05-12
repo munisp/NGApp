@@ -13,7 +13,7 @@ export default function BaselEngineWorkspace() {
         idField: "id",
         statusField: "asset_class",
         searchFields: ["counterparty", "asset_class", "exposure_type"],
-        apiBase: "/api/platform/basel/exposures",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Exposure ID" },

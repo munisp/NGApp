@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/rate-limits/policies",
+  apiBase: "/api/db/body-limits",
 };
 export default function AdaptiveRateLimiterWorkspace() { return <CrudWorkspace config={config} />; }

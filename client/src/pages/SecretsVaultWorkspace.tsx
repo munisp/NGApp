@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "HashiCorp Vault integration for secrets",
   icon: Lock,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/secrets-vault/list",
+  apiBase: "/api/db/vault-secrets",
   idField: "id",
   statusField: "status",
   searchFields: ["path"],

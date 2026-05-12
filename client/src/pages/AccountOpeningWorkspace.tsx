@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "fullName", "bvn", "accountNumber", "productType"],
-  apiBase: "/api/platform/accounts/applications",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "fullName", label: "Full Name", type: "text", required: true },
     { key: "productType", label: "Product Type", type: "select", options: ["savings", "current", "domiciliary", "corporate", "joint", "minor"], required: true },

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Schema-first Avro encoding for Kafka",
   icon: FileCheck,
   accentColor: "purple",
-  apiBase: "/api/performance/avro-schema/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["subject"],

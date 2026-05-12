@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "NFIU goAML XML report generation and submission",
   icon: FileText,
   accentColor: "green",
-  apiBase: "/api/aml-enhancement/goaml-integration/list",
+  apiBase: "/api/db/goaml-reports",
   idField: "id",
   statusField: "status",
   searchFields: ["reportType"],

@@ -13,7 +13,7 @@ export default function PerformanceCacheWorkspace() {
         idField: "key",
         statusField: "encoding",
         searchFields: ["key", "endpoint"],
-        apiBase: "/api/platform/performance/cache",
+        apiBase: "/api/db/redis-cache-entries",
         pageSize: 25,
         columns: [
           { key: "key", label: "Key", sortable: true },

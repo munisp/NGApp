@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"agentId",label:"Agent ID"},{key:"name",label:"Name"},{key:"tier",label:"Tier"},{key:"location",label:"State",render:(_:unknown,row:Record<string,unknown>)=>{const loc=row.location as Record<string,unknown>;return String(loc?.state||"")}},{key:"monthlyTxnVolume",label:"Monthly Txns",render:(v:unknown)=>Number(v).toLocaleString()},{key:"commissionEarned",label:"Commission (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"score",label:"Score"},{key:"uptimePercent",label:"Uptime %"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/agents/performance",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

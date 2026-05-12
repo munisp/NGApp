@@ -13,7 +13,7 @@ export default function MojaloopILPPacketsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "transferId", "payerFsp", "payeeFsp"],
-        apiBase: "/api/platform/mojaloop/ilp-packets",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

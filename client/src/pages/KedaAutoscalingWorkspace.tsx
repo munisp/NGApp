@@ -13,7 +13,7 @@ export default function KedaAutoscalingWorkspace() {
         idField: "name",
         statusField: "status",
         searchFields: ["name", "service"],
-        apiBase: "/api/platform/keda/scaled-objects",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

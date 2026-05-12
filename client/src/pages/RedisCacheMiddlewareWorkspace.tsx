@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Redis-backed response cache with per-route TTL",
   icon: Database,
   accentColor: "red",
-  apiBase: "/api/performance/redis-cache/list",
+  apiBase: "/api/db/redis-cache-entries",
   idField: "id",
   statusField: "status",
   searchFields: ["route"],

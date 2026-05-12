@@ -13,7 +13,7 @@ export default function BandwidthAdaptationWorkspace() {
         idField: "id",
         statusField: "connectionType",
         searchFields: ["connectionType", "strategy"],
-        apiBase: "/api/resilience/bandwidth/profiles",
+        apiBase: "/api/db/compression-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

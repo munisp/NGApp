@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenantId", "domain", "sslStatus"],
-  apiBase: "/api/platform/custom-domains/v1/domains",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

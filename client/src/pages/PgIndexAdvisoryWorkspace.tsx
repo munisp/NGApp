@@ -13,7 +13,7 @@ export default function PgIndexAdvisoryWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "table", "createStatement"],
-        apiBase: "/api/platform/postgres/index-advisories",
+        apiBase: "/api/db/table-partitions",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

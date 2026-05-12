@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["period", "type"],
-  apiBase: "/api/kyc-enhanced/efass-returns",
+  apiBase: "/api/db/efass-returns",
 };
 export default function EFASSKYCReturnsWorkspace() { return <CrudWorkspace config={config} />; }

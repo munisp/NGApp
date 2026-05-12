@@ -8,6 +8,6 @@ const config: CrudConfig = {
   fields: [],
   columns: [{ key: "id", label: "ID" }, { key: "name", label: "Workflow" }, { key: "status", label: "Status" }],
   idField: "id", statusField: "status", searchFields: ["name"],
-  apiBase: "/api/kyc-enhanced/analytics-dashboard",
+  apiBase: "/api/db/kyc-data-quality-metrics",
 };
 export default function KYCWorkflowWorkspace() { return <CrudWorkspace config={config} />; }

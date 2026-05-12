@@ -13,7 +13,7 @@ export default function SafeDepositWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customer_name", "branch", "box_size"],
-        apiBase: "/api/platform/safe-deposit/list",
+        apiBase: "/api/db/vault-operations",
         pageSize: 25,
         columns: [
           { key: "id", label: "Box ID" },

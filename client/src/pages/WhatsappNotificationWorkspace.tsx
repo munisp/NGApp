@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Template-based WhatsApp notifications and alerts",
   icon: BellRing,
   accentColor: "cyan",
-  apiBase: "/api/channel-banking/whatsapp-notification/list",
+  apiBase: "/api/db/whatsapp-notification",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

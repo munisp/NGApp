@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "cleanAcc", label: "Clean Acc" }, { key: "advAcc", label: "Adv Acc" },
   ],
   idField: "id", searchFields: ["model", "surface"],
-  apiBase: "/api/ai-ml/art/models",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function ARTAdversarialWorkspace() { return <CrudWorkspace config={config} />; }

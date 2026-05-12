@@ -13,7 +13,7 @@ export default function AlertRulesWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["id", "name", "severity"],
-        apiBase: "/api/platform/observability/alert-rules",
+        apiBase: "/api/db/prometheus-dashboards",
         pageSize: 25,
         columns: [
           { key: "name", label: "Alert", sortable: true },

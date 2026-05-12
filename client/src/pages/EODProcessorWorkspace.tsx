@@ -22,7 +22,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "businessDate", "status"],
-  apiBase: "/api/platform/eod/runs",
+  apiBase: "/api/db/accounts",
 };
 
 export default function EODProcessorWorkspace() {

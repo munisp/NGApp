@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Pond management, fingerling tracking and harvest scheduling",
   icon: Fish,
   accentColor: "blue",
-  apiBase: "/api/agriculture-enhancement/fisheries-aquaculture/list",
+  apiBase: "/api/db/fisheries-aquaculture",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

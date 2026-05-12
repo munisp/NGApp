@@ -14,6 +14,6 @@ const config: CrudConfig = {
     { key: "cypher", label: "Cypher" }, { key: "avgMs", label: "Avg (ms)", sortable: true },
   ],
   idField: "id", searchFields: ["name", "cypher"],
-  apiBase: "/api/ai-ml/falkordb/cypher-queries",
+  apiBase: "/api/db/sql-queries",
 };
 export default function FalkorDBGraphWorkspace() { return <CrudWorkspace config={config} />; }

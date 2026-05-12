@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Tractor rental marketplace and mechanization-as-a-service",
   icon: Tractor,
   accentColor: "orange",
-  apiBase: "/api/agriculture-enhancement/equipment-leasing/list",
+  apiBase: "/api/db/equipment-leasing",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

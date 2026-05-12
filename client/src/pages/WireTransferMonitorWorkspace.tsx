@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "FATF Travel Rule compliance — originator/beneficiary info",
   icon: ArrowUpRight,
   accentColor: "orange",
-  apiBase: "/api/aml-enhancement/wire-transfer-monitor/list",
+  apiBase: "/api/db/wire-transfer-monitor",
   idField: "id",
   statusField: "status",
   searchFields: ["originatorName"],

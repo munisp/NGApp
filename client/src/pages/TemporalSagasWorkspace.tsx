@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "sagaName", "status"],
-  apiBase: "/api/platform/sagas/executions",
+  apiBase: "/api/db/workflow-cases",
 };
 
 export default function TemporalSagasWorkspace() {

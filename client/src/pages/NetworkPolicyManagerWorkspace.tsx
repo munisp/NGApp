@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Kubernetes NetworkPolicy management",
   icon: Network,
   accentColor: "teal",
-  apiBase: "/api/security-hardening/network-policy/list",
+  apiBase: "/api/db/network-policies",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

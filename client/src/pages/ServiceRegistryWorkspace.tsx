@@ -13,7 +13,7 @@ export default function ServiceRegistryWorkspace() {
         idField: "name",
         statusField: "status",
         searchFields: ["name", "language"],
-        apiBase: "/api/platform/service-mesh/registry",
+        apiBase: "/api/db/grpc-services",
         pageSize: 25,
         columns: [
           { key: "name", label: "Service", sortable: true },

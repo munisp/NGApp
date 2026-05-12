@@ -13,7 +13,7 @@ export default function PerformanceMetricsWorkspace() {
         idField: "endpoint",
         statusField: "endpoint",
         searchFields: ["endpoint"],
-        apiBase: "/api/platform/performance/metrics",
+        apiBase: "/api/db/prometheus-dashboards",
         pageSize: 25,
         columns: [
           { key: "endpoint", label: "Endpoint", sortable: true },

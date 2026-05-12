@@ -13,7 +13,7 @@ export default function MojaloopAdminParticipantsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["fspId", "name", "country", "type"],
-        apiBase: "/api/platform/mojaloop/admin/participants",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "fspId", label: "FSP ID", sortable: true },

@@ -10,7 +10,7 @@ const config: CrudConfig = {
   accentColor: "green",
   idField: "name",
   searchFields: ["name", "service", "method", "endpoint"],
-  apiBase: "/api/admin/integration-tests",
+  apiBase: "/api/db/accounts",
   columns: [
     { key: "name", label: "Test Name", sortable: true },
     { key: "service", label: "Service", sortable: true },

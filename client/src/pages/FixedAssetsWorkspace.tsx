@@ -13,7 +13,7 @@ export default function FixedAssetsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["asset_name", "category", "location"],
-        apiBase: "/api/platform/fixed-assets/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Asset ID" },

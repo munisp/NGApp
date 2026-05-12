@@ -26,7 +26,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "passed",
   searchFields: ["customer_id", "spoof_type_detected", "device_platform"],
-  apiBase: "/api/platform/liveness-detection/v1/checks",
+  apiBase: "/api/db/kyc-verifications",
   pageSize: 25,
 };
 

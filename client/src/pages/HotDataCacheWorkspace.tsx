@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "LRU/LFU/ARC per-service in-memory cache",
   icon: Zap,
   accentColor: "orange",
-  apiBase: "/api/performance/hot-data-cache/list",
+  apiBase: "/api/db/hot-data-caches",
   idField: "id",
   statusField: "status",
   searchFields: ["service"],

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "STK push for proactive banking alerts and payment reminders",
   icon: Cpu,
   accentColor: "violet",
-  apiBase: "/api/channel-banking/ussd-sim-toolkit/list",
+  apiBase: "/api/db/ussd-sim-toolkit",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

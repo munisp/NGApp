@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Mortality, theft and disease coverage with parametric triggers",
   icon: ShieldCheck,
   accentColor: "red",
-  apiBase: "/api/agriculture-enhancement/livestock-insurance/list",
+  apiBase: "/api/db/livestock-insurance",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

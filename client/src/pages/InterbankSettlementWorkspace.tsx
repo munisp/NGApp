@@ -13,7 +13,7 @@ export default function InterbankSettlementWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["type", "window", "settlementDate"],
-        apiBase: "/api/platform/settlement/batches",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

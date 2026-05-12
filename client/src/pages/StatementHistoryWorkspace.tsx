@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"accountId",label:"Account"},{key:"format",label:"Format"},{key:"period",label:"Period"},{key:"status",label:"Status"},{key:"deliveryChannel",label:"Channel"},{key:"generatedAt",label:"Generated"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/statements/history",
+  apiBase: "/api/db/customer-statements",
   pageSize: 25,
 };
 

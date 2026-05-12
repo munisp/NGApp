@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["name", "groupId"],
-  apiBase: "/api/platform/esusu/groups",
+  apiBase: "/api/db/esusu-groups",
   fields: [
     { key: "name", label: "Group Name", type: "text", required: true, placeholder: "e.g. Market Women Ajo" },
     { key: "contributionAmount", label: "Contribution Amount (₦)", type: "number", required: true },

@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["policyId", "farmerId", "cropType"],
-  apiBase: "/api/platform/agriculture/insurance",
+  apiBase: "/api/db/crop-insurance",
   fields: [
     { key: "farmerId", label: "Farmer ID", type: "text", required: true },
     { key: "cropType", label: "Crop Type", type: "select", options: ["maize", "cassava", "rice", "yam", "cocoa", "palm_oil", "sorghum", "millet"], required: true },

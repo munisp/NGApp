@@ -13,7 +13,7 @@ export default function OpenappsecRulesWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["id", "name", "category"],
-        apiBase: "/api/platform/openappsec/rules",
+        apiBase: "/api/db/waf-rules",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

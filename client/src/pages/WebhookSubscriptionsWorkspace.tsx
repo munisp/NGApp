@@ -13,7 +13,7 @@ export default function WebhookSubscriptionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "url", "events"],
-        apiBase: "/api/platform/webhooks/subscriptions",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

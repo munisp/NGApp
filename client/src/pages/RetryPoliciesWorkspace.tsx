@@ -13,7 +13,7 @@ export default function RetryPoliciesWorkspace() {
         idField: "id",
         statusField: "name",
         searchFields: ["name"],
-        apiBase: "/api/platform/retry-policies",
+        apiBase: "/api/db/workflow-cases",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

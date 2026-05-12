@@ -13,7 +13,7 @@ export default function StressTestingWorkspace() {
         idField: "id",
         statusField: "result",
         searchFields: ["scenario_name", "scenario_type"],
-        apiBase: "/api/platform/stress-testing/list",
+        apiBase: "/api/db/anomaly-models",
         pageSize: 25,
         columns: [
           { key: "id", label: "Scenario ID" },

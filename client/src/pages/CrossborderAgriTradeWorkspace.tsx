@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Cocoa to EU, cashew to India, sesame to Japan with Mojaloop corridors",
   icon: Globe2,
   accentColor: "blue",
-  apiBase: "/api/agriculture-enhancement/crossborder-agri-trade/list",
+  apiBase: "/api/db/crossborder-agri-trade",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

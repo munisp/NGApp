@@ -13,7 +13,7 @@ export default function InventoryWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["item_name", "category", "warehouse"],
-        apiBase: "/api/platform/inventory/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Item ID" },

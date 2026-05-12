@@ -13,7 +13,7 @@ export default function CircuitBreakerDashboardWorkspace() {
         idField: "service",
         statusField: "state",
         searchFields: ["service", "fallbackStrategy"],
-        apiBase: "/api/platform/circuit-breakers",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "service", label: "Service", sortable: true },

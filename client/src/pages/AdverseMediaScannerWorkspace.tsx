@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "NLP-based negative news analysis (Nigerian + intl sources)",
   icon: Search,
   accentColor: "orange",
-  apiBase: "/api/aml-enhancement/adverse-media-scanner/list",
+  apiBase: "/api/db/adverse-media-scans",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

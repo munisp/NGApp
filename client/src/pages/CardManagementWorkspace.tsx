@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "customerId", "cardNumber", "cardType", "network"],
-  apiBase: "/api/platform/cards",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "cardType", label: "Card Type", type: "select", options: ["debit", "credit", "prepaid", "virtual"], required: true },

@@ -13,7 +13,7 @@ export default function USSDBankingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["msisdn", "menu"],
-        apiBase: "/api/resilience/ussd/sessions",
+        apiBase: "/api/db/ussd-banking-gateway",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

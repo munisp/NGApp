@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Cattle, poultry, goat, sheep herd tracking and health records",
   icon: Bug,
   accentColor: "amber",
-  apiBase: "/api/agriculture-enhancement/livestock-management/list",
+  apiBase: "/api/db/livestock-management",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

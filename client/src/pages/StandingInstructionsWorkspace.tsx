@@ -13,7 +13,7 @@ export default function StandingInstructionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customerName", "type", "description"],
-        apiBase: "/api/platform/standing-instructions",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

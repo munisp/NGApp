@@ -13,7 +13,7 @@ export default function ApisixPluginsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "category"],
-        apiBase: "/api/platform/apisix/plugins",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

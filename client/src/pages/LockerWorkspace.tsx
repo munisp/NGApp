@@ -13,7 +13,7 @@ export default function LockerWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customer_name", "item_type"],
-        apiBase: "/api/platform/locker/list",
+        apiBase: "/api/db/vault-secrets",
         pageSize: 25,
         columns: [
           { key: "id", label: "Item ID" },

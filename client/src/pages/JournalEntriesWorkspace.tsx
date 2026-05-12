@@ -13,7 +13,7 @@ export default function JournalEntriesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "description", "reference"],
-        apiBase: "/api/platform/ledger/journal-entries",
+        apiBase: "/api/db/journal-entries",
         pageSize: 25,
         columns: [
           { key: "id", label: "Entry ID", sortable: true },

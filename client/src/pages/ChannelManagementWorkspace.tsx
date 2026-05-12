@@ -13,7 +13,7 @@ export default function ChannelManagementWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "type", "status"],
-        apiBase: "/api/platform/channels",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

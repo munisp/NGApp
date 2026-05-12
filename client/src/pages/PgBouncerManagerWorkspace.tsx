@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Connection pooling with transaction mode",
   icon: Database,
   accentColor: "green",
-  apiBase: "/api/performance/pgbouncer/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["database"],

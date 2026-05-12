@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Idempotency-key event deduplication",
   icon: Shield,
   accentColor: "green",
-  apiBase: "/api/performance/event-dedup/list",
+  apiBase: "/api/db/event-dedup-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["topic"],

@@ -13,7 +13,7 @@ export default function QRPaymentsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["merchant_name", "qr_type", "channel"],
-        apiBase: "/api/platform/qr-payments/list",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "Txn ID" },

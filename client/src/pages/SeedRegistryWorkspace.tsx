@@ -10,7 +10,7 @@ const config: CrudConfig = {
   accentColor: "orange",
   idField: "name",
   searchFields: ["name", "language"],
-  apiBase: "/api/admin/seed-registry",
+  apiBase: "/api/db/accounts",
   columns: [
     { key: "name", label: "Service", sortable: true },
     { key: "port", label: "Port", sortable: true },

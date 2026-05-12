@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "CRG application, 75% guarantee tracking and claim filing",
   icon: Shield,
   accentColor: "blue",
-  apiBase: "/api/agriculture-enhancement/nirsal-credit-guarantee/list",
+  apiBase: "/api/db/nirsal-credit-guarantee",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

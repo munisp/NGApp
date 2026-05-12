@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "code", "name", "regulator"],
-  apiBase: "/api/platform/regulatory/returns",
+  apiBase: "/api/db/regulatory-reports",
 };
 
 export default function CBNReturnsWorkspace() {

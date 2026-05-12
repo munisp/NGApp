@@ -13,7 +13,7 @@ export default function RansomwareProtectionWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["pattern", "type"],
-        apiBase: "/api/security/ransomware/indicators",
+        apiBase: "/api/db/incidents",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

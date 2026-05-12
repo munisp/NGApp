@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "CIS Docker Benchmark compliance scanner",
   icon: Box,
   accentColor: "gray",
-  apiBase: "/api/security-hardening/docker-hardener/list",
+  apiBase: "/api/db/docker-hardening",
   idField: "id",
   statusField: "status",
   searchFields: ["check"],

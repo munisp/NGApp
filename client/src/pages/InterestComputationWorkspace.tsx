@@ -14,6 +14,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/production/missing-domains/list",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function InterestComputationWorkspace() { return <CrudWorkspace config={config} />; }

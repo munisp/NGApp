@@ -13,7 +13,7 @@ export default function APIMarketplaceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["api_name", "category"],
-        apiBase: "/api/platform/marketplace/apis",
+        apiBase: "/api/db/api-keys",
         pageSize: 25,
         columns: [
           { key: "id", label: "API ID" },

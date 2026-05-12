@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "compression"],
-  apiBase: "/api/platform/streams/topics",
+  apiBase: "/api/db/kafka-consumer-groups",
   fields: [
     { key: "name", label: "Topic Name", type: "text", required: true },
     { key: "partitions", label: "Partitions", type: "number", defaultValue: 3 },

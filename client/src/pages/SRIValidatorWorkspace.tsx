@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Subresource integrity hash management",
   icon: CheckCircle,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/sri-validator/list",
+  apiBase: "/api/db/sri-hashes",
   idField: "id",
   statusField: "status",
   searchFields: ["resource"],

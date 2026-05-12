@@ -13,7 +13,7 @@ export default function CustomerFeedbackWorkspace() {
         idField: "id",
         statusField: "sentiment",
         searchFields: ["customer_name", "channel", "category", "comment"],
-        apiBase: "/api/platform/feedback/v1/feedback/entries",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

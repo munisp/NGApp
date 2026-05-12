@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["runId", "runType", "status"],
-  apiBase: "/api/platform/ledger-recon/runs",
+  apiBase: "/api/db/reconciliation-runs",
   fields: [
     { key: "runType", label: "Run Type", type: "select", options: ["daily", "weekly", "monthly", "ad_hoc"], required: true },
     { key: "sourceLedger", label: "Source Ledger", type: "text", placeholder: "e.g. core_banking_gl" },

@@ -13,7 +13,7 @@ export default function BiometricAuthWorkspace() {
         idField: "id",
         statusField: "auth_result",
         searchFields: ["customer_name", "biometric_type", "device"],
-        apiBase: "/api/platform/biometric-auth/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Record ID" },

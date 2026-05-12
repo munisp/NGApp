@@ -10,7 +10,7 @@ const config: CrudConfig = {
   accentColor: "emerald",
   idField: "id",
   searchFields: ["assetDescription", "customerId", "status"],
-  apiBase: "/api/platform/islamic/murabaha/quotes",
+  apiBase: "/api/db/accounts",
   columns: [
     { key: "id", label: "Quote ID", sortable: true },
     { key: "assetDescription", label: "Asset", sortable: true },

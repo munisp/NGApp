@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Mutual TLS between microservices",
   icon: Network,
   accentColor: "teal",
-  apiBase: "/api/security-hardening/mtls-mesh/list",
+  apiBase: "/api/db/mtls-nodes",
   idField: "id",
   statusField: "status",
   searchFields: ["service"],

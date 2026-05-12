@@ -13,7 +13,7 @@ export default function CashPoolingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["pool_name", "pool_type", "master_account"],
-        apiBase: "/api/platform/cash-pooling/pools",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Pool ID" },

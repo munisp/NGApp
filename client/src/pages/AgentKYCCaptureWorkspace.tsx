@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "offlineCapture", label: "Offline" }, { key: "qualityScore", label: "Quality Score", sortable: true },
   ],
   idField: "id", searchFields: ["agentName", "customerName", "lga"],
-  apiBase: "/api/kyc-enhanced/agent-captures",
+  apiBase: "/api/db/accounts",
 };
 export default function AgentKYCCaptureWorkspace() { return <CrudWorkspace config={config} />; }

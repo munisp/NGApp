@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "L3/L4/L7 DDoS mitigation",
   icon: Zap,
   accentColor: "yellow",
-  apiBase: "/api/security-hardening/ddos-shield/list",
+  apiBase: "/api/db/ddos-rules",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

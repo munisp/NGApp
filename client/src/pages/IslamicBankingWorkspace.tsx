@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["contractId", "customerId", "assetDescription"],
-  apiBase: "/api/platform/islamic/murabaha",
+  apiBase: "/api/db/murabaha-contracts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "assetDescription", label: "Asset Description", type: "text", required: true, placeholder: "e.g. Toyota Hilux" },

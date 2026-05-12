@@ -13,7 +13,7 @@ export default function TBPGBalanceCacheEntriesWorkspace() {
         idField: "accountId",
         statusField: "currency",
         searchFields: ["accountId", "accountName", "currency"],
-        apiBase: "/api/platform/tb-pg-sync/balance-cache/entries",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "accountId", label: "Account ID", sortable: true },

@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "date",
   searchFields: ["date"],
-  apiBase: "/api/platform/liquidity/history",
+  apiBase: "/api/db/fx-trades",
 };
 
 export default function LCRNSFRWorkspace() {

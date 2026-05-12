@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Minimal container images (2MB vs 80MB)",
   icon: Box,
   accentColor: "gray",
-  apiBase: "/api/performance/distroless-builder/list",
+  apiBase: "/api/db/distroless-images",
   idField: "id",
   statusField: "status",
   searchFields: ["service"],

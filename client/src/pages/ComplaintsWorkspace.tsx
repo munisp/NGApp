@@ -13,7 +13,7 @@ export default function ComplaintsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customerName", "subject", "category", "assignedTo"],
-        apiBase: "/api/platform/complaints",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

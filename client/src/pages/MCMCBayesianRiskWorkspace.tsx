@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "posteriorStd", label: "Std Dev" }, { key: "riskGrade", label: "Grade", sortable: true },
   ],
   idField: "id", statusField: "riskGrade", searchFields: ["customerId", "model", "riskGrade"],
-  apiBase: "/api/ai-ml/mcmc/posteriors",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function MCMCBayesianRiskWorkspace() { return <CrudWorkspace config={config} />; }

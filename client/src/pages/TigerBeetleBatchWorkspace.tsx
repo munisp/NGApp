@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "8190-transfer batches at 1M+ TPS",
   icon: Zap,
   accentColor: "yellow",
-  apiBase: "/api/performance/tb-batch/list",
+  apiBase: "/api/db/tb-batch-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["batchSize"],

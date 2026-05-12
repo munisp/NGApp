@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Reusable execution plan caching",
   icon: Database,
   accentColor: "green",
-  apiBase: "/api/performance/prepared-stmt/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["queryPattern"],

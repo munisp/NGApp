@@ -13,7 +13,7 @@ export default function MoneyMarketWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["counterparty", "instrument_type", "currency"],
-        apiBase: "/api/platform/money-market/deals",
+        apiBase: "/api/db/fx-trades",
         pageSize: 25,
         columns: [
           { key: "id", label: "Deal ID" },

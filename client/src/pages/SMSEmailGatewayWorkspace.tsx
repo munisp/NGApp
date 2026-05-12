@@ -13,7 +13,7 @@ export default function SMSEmailGatewayWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["recipient", "channel", "templateId"],
-        apiBase: "/api/platform/sms-email-gateway/v1/messaging/deliveries",
+        apiBase: "/api/db/sms-alert-notification",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

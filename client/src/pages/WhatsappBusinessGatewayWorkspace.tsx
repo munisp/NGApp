@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "WhatsApp Business API with Cloud API webhooks",
   icon: MessageSquare,
   accentColor: "green",
-  apiBase: "/api/channel-banking/whatsapp-business-gateway/list",
+  apiBase: "/api/db/whatsapp-business-gateway",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

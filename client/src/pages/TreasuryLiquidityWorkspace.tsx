@@ -13,7 +13,7 @@ export default function TreasuryLiquidityWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["currency_pair", "counterparty", "deal_type"],
-        apiBase: "/api/platform/treasury/v1/treasury/fx-positions",
+        apiBase: "/api/db/fx-trades",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID", sortable: true },

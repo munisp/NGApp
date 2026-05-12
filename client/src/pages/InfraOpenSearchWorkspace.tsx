@@ -26,7 +26,7 @@ const config: CrudConfig = {
   idField: "name",
   statusField: "status",
   searchFields: ["name"],
-  apiBase: "/api/platform/infra/opensearch/indices",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

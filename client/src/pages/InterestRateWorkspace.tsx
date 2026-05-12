@@ -13,7 +13,7 @@ export default function InterestRateWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "source", "currency"],
-        apiBase: "/api/platform/rates/base",
+        apiBase: "/api/db/fx-trades",
         pageSize: 25,
         columns: [
           { key: "name", label: "Rate Name", sortable: true },

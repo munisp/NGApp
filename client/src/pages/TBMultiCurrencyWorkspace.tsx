@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "fxRateNgn", label: "FX Rate (₦)" },
   ],
   idField: "id", searchFields: ["currency"],
-  apiBase: "/api/ai-ml/tb-multicurrency/accounts",
+  apiBase: "/api/db/accounts",
 };
 export default function TBMultiCurrencyWorkspace() { return <CrudWorkspace config={config} />; }

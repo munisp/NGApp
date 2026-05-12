@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Buying center ops, farmer delivery scheduling and weighing",
   icon: Building,
   accentColor: "teal",
-  apiBase: "/api/agriculture-enhancement/aggregation-center/list",
+  apiBase: "/api/db/aggregation-center",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

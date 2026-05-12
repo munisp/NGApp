@@ -13,7 +13,7 @@ export default function KeycloakIdPsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "alias", "displayName", "providerId"],
-        apiBase: "/api/platform/keycloak/identity-providers",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "alias", label: "Alias", sortable: true },

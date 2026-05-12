@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "OAuth2 PKCE flow for SPAs",
   icon: Shield,
   accentColor: "green",
-  apiBase: "/api/security-hardening/pkce-auth/list",
+  apiBase: "/api/db/pkce-flows",
   idField: "id",
   statusField: "status",
   searchFields: ["clientId"],

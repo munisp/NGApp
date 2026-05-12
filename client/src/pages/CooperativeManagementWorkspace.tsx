@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Cooperative CRUD, membership, governance, bylaws and roles",
   icon: Users,
   accentColor: "green",
-  apiBase: "/api/agriculture-enhancement/cooperative-management/list",
+  apiBase: "/api/db/cooperative-management",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

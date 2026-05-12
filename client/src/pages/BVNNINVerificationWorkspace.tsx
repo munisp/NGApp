@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "ninLinked", label: "NIN Linked" }, { key: "verified", label: "Verified" },
   ],
   idField: "id", statusField: "verified", searchFields: ["bvn", "firstName", "lastName"],
-  apiBase: "/api/kyc-enhanced/bvn-records",
+  apiBase: "/api/db/accounts",
 };
 export default function BVNNINVerificationWorkspace() { return <CrudWorkspace config={config} />; }

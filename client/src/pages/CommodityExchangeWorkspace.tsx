@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "NCX, AFEX, SABEX price feeds, order matching and settlement",
   icon: ArrowLeftRight,
   accentColor: "cyan",
-  apiBase: "/api/agriculture-enhancement/commodity-exchange/list",
+  apiBase: "/api/db/commodity-exchange",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

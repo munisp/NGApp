@@ -13,7 +13,7 @@ export default function PaymentTransactionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["reference", "sourceAccount", "destinationAccount", "narration", "type"],
-        apiBase: "/api/platform/payments/transactions",
+        apiBase: "/api/db/transactions",
         pageSize: 25,
         columns: [
           { key: "reference", label: "Reference", sortable: true },

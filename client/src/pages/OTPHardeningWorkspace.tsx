@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/otp/policies",
+  apiBase: "/api/db/otp-records",
 };
 export default function OTPHardeningWorkspace() { return <CrudWorkspace config={config} />; }

@@ -13,7 +13,7 @@ export default function LeasingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["lessee", "lease_type"],
-        apiBase: "/api/platform/leasing/contracts",
+        apiBase: "/api/db/equipment-leasing",
         pageSize: 25,
         columns: [
           { key: "id", label: "Contract ID" },

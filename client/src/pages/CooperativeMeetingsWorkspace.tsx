@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Attendance tracking, minutes, decisions and election voting",
   icon: Calendar,
   accentColor: "indigo",
-  apiBase: "/api/agriculture-enhancement/cooperative-meetings/list",
+  apiBase: "/api/db/cooperative-meetings",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

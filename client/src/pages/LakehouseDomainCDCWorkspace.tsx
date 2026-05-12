@@ -13,7 +13,7 @@ export default function LakehouseDomainCDCWorkspace() {
         idField: "domain",
         statusField: "domain",
         searchFields: ["domain"],
-        apiBase: "/api/platform/lakehouse/domains",
+        apiBase: "/api/db/avro-schemas",
         pageSize: 25,
         columns: [
           { key: "domain", label: "Domain", sortable: true },

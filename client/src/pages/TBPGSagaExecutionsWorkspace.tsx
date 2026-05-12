@@ -13,7 +13,7 @@ export default function TBPGSagaExecutionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "sagaName", "tenantId", "status"],
-        apiBase: "/api/platform/tb-pg-sync/saga-executions",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -13,7 +13,7 @@ export default function CashManagementWorkspace() {
         idField: "id",
         statusField: "category",
         searchFields: ["description", "category", "currency"],
-        apiBase: "/api/platform/cash/positions",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

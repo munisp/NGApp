@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "fields", label: "Fields" },
   ],
   idField: "id", searchFields: ["subject", "type"],
-  apiBase: "/api/ai-ml/kafka-governance/schemas",
+  apiBase: "/api/db/avro-schemas",
 };
 export default function KafkaGovernanceWorkspace() { return <CrudWorkspace config={config} />; }

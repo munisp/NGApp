@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Event-driven scaling (Kafka lag, Redis queue, cron)",
   icon: TrendingUp,
   accentColor: "orange",
-  apiBase: "/api/performance/keda-scaler/list",
+  apiBase: "/api/db/keda-scale-triggers",
   idField: "id",
   statusField: "status",
   searchFields: ["scaleObject"],

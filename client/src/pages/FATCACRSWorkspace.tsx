@@ -13,7 +13,7 @@ export default function FATCACRSWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["report_type", "jurisdiction"],
-        apiBase: "/api/platform/fatca-crs/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Report ID" },

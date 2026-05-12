@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Grading protocols, lab results and NAFDAC SON certification",
   icon: Award,
   accentColor: "amber",
-  apiBase: "/api/agriculture-enhancement/quality-certification/list",
+  apiBase: "/api/db/quality-certification",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

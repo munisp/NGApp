@@ -13,7 +13,7 @@ export default function BulkPaymentsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "originator", "batch_type"],
-        apiBase: "/api/platform/bulk-payments/v1/bulk-payments/batches",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Batch ID", sortable: true },

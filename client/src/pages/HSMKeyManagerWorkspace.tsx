@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "keySizeBits", label: "Size" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/hsm/keys",
+  apiBase: "/api/db/kms-keys",
 };
 export default function HSMKeyManagerWorkspace() { return <CrudWorkspace config={config} />; }

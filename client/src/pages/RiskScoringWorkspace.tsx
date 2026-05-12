@@ -13,7 +13,7 @@ export default function RiskScoringWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["entity_name", "entity_type", "risk_type", "rating"],
-        apiBase: "/api/platform/risk-scoring/v1/risk/assessments",
+        apiBase: "/api/db/risk-scores",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

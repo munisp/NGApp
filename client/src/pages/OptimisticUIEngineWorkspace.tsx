@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Zero-latency optimistic UI mutations",
   icon: Zap,
   accentColor: "green",
-  apiBase: "/api/performance/optimistic-ui/list",
+  apiBase: "/api/db/optimistic-ui-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["action"],

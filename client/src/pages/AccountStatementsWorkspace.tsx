@@ -13,7 +13,7 @@ export default function AccountStatementsWorkspace() {
         idField: "accountNumber",
         statusField: "status",
         searchFields: ["accountNumber", "accountName", "branchCode"],
-        apiBase: "/api/platform/account-statements/v1/statements/accounts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "accountNumber", label: "Account No.", sortable: true },

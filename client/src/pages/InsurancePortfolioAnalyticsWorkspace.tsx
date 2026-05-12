@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Loss ratio, combined ratio and geographic risk concentration",
   icon: PieChart,
   accentColor: "red",
-  apiBase: "/api/agriculture-enhancement/insurance-portfolio-analytics/list",
+  apiBase: "/api/db/insurance-portfolio-analytics",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

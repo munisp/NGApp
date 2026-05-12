@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Time-series range partitioning with auto-prune",
   icon: Layers,
   accentColor: "blue",
-  apiBase: "/api/performance/table-partitioner/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["tableName"],

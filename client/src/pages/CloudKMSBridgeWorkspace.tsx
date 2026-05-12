@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "AWS KMS / Azure Key Vault bridge",
   icon: Key,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/cloud-kms/list",
+  apiBase: "/api/db/kms-keys",
   idField: "id",
   statusField: "status",
   searchFields: ["provider"],

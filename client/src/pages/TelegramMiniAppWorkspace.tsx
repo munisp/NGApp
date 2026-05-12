@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Rich UI banking via Telegram Mini App platform",
   icon: Smartphone,
   accentColor: "green",
-  apiBase: "/api/channel-banking/telegram-mini-app/list",
+  apiBase: "/api/db/telegram-mini-app",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

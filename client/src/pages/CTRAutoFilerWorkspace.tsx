@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automated ₦5M+ cash transaction reporting to NFIU",
   icon: FileCheck,
   accentColor: "green",
-  apiBase: "/api/aml-enhancement/ctr-auto-filer/list",
+  apiBase: "/api/db/ctr-reports-aml",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

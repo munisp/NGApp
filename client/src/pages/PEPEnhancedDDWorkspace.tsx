@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "pepCategory", label: "PEP Category" }, { key: "enforcement", label: "Enforcement" },
   ],
   idField: "id", statusField: "enforcement", searchFields: ["name", "pepCategory"],
-  apiBase: "/api/kyc-enhanced/pep-edd-rules",
+  apiBase: "/api/db/accounts",
 };
 export default function PEPEnhancedDDWorkspace() { return <CrudWorkspace config={config} />; }

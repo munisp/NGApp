@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "API key policy enforcement",
   icon: Key,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/api-key-enforcer/list",
+  apiBase: "/api/db/api-key-policies",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

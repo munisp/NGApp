@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "customerName", "segment", "tier"],
-  apiBase: "/api/platform/pricing/profiles",
+  apiBase: "/api/db/accounts",
 };
 
 export default function RelationshipPricingWorkspace() {

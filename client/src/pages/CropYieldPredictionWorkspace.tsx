@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "ML-based yield estimation from weather, soil and satellite data",
   icon: Brain,
   accentColor: "violet",
-  apiBase: "/api/agriculture-enhancement/crop-yield-prediction/list",
+  apiBase: "/api/db/crop-yield-prediction",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

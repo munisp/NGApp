@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "ML-based anomaly detection with σ-deviation scoring",
   icon: Activity,
   accentColor: "purple",
-  apiBase: "/api/aml-enhancement/txn-pattern-analyzer/list",
+  apiBase: "/api/db/txn-pattern-analyses",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

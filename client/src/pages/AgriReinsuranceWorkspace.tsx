@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Cedant-reinsurer workflows, treaty management and portfolio cessions",
   icon: Layers,
   accentColor: "purple",
-  apiBase: "/api/agriculture-enhancement/agri-reinsurance/list",
+  apiBase: "/api/db/agri-reinsurance",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

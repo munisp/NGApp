@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "HashiCorp Vault engine management",
   icon: Lock,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/vault-integration/list",
+  apiBase: "/api/db/vault-engines",
   idField: "id",
   statusField: "status",
   searchFields: ["path"],

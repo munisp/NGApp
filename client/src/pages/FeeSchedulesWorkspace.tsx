@@ -13,7 +13,7 @@ export default function FeeSchedulesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "product", "channel", "customerTier"],
-        apiBase: "/api/platform/fees/schedules",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

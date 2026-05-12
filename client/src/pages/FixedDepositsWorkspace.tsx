@@ -13,7 +13,7 @@ export default function FixedDepositsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["customerName", "accountNumber", "currency"],
-        apiBase: "/api/platform/fixed-deposits",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

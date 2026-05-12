@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "URL path traversal prevention",
   icon: Shield,
   accentColor: "red",
-  apiBase: "/api/security-hardening/path-validator/list",
+  apiBase: "/api/db/path-validations",
   idField: "id",
   statusField: "status",
   searchFields: ["pattern"],

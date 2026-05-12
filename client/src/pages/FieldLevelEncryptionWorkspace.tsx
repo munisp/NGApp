@@ -21,6 +21,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/encryption/policies",
+  apiBase: "/api/db/crypto-keys",
 };
 export default function FieldLevelEncryptionWorkspace() { return <CrudWorkspace config={config} />; }

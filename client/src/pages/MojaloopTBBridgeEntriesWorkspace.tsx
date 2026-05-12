@@ -13,7 +13,7 @@ export default function MojaloopTBBridgeEntriesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "mojaloopTransferId", "direction"],
-        apiBase: "/api/platform/mojaloop/tb-bridge/entries",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

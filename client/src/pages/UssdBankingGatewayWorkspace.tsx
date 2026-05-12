@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "USSD session manager for *737# style short codes",
   icon: Hash,
   accentColor: "amber",
-  apiBase: "/api/channel-banking/ussd-banking-gateway/list",
+  apiBase: "/api/db/ussd-banking-gateway",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

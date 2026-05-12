@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Agri-Business SME Investment Scheme loan application workflow",
   icon: Landmark,
   accentColor: "violet",
-  apiBase: "/api/agriculture-enhancement/cbn-agsmeis/list",
+  apiBase: "/api/db/cbn-agsmeis",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

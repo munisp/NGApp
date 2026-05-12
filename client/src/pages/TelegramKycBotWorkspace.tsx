@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "In-chat KYC onboarding with BVN/NIN verification",
   icon: UserCheck,
   accentColor: "lime",
-  apiBase: "/api/channel-banking/telegram-kyc-bot/list",
+  apiBase: "/api/db/telegram-kyc-bot",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

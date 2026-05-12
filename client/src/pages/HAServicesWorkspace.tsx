@@ -13,7 +13,7 @@ export default function HAServicesWorkspace() {
         idField: "service",
         statusField: "status",
         searchFields: ["service", "failoverStrategy"],
-        apiBase: "/api/platform/ha/services",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "service", label: "Service", sortable: true },

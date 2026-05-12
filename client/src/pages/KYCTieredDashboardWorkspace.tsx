@@ -17,6 +17,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true }, { key: "riskFlags", label: "Risk Flags" },
   ],
   idField: "id", statusField: "status", searchFields: ["customerName", "customerId", "status"],
-  apiBase: "/api/kyc-enhanced/customer-tiers",
+  apiBase: "/api/db/kyc-tiers",
 };
 export default function KYCTieredDashboardWorkspace() { return <CrudWorkspace config={config} />; }

@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "tenantId",
   searchFields: ["tenantId", "period", "apiCallsCount", "transactionsCount"],
-  apiBase: "/api/platform/tenant-metering/v1/meters",
+  apiBase: "/api/db/tenants",
   pageSize: 25,
 };
 

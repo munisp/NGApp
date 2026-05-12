@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "description"],
-  apiBase: "/api/platform/authz/roles",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "name", label: "Role Name", type: "text", required: true },
     { key: "description", label: "Description", type: "text" },

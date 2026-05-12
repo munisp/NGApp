@@ -13,7 +13,7 @@ export default function CollateralValuationWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["description", "owner", "collateral_type", "valuer"],
-        apiBase: "/api/platform/collateral-valuation/v1/valuations",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

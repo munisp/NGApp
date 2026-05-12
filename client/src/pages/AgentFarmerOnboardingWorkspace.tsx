@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Field agent workflow with biometric capture and offline sync",
   icon: UserPlus,
   accentColor: "indigo",
-  apiBase: "/api/agriculture-enhancement/agent-farmer-onboarding/list",
+  apiBase: "/api/db/agent-farmer-onboarding",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

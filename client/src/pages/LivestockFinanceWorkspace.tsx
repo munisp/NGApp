@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Asset-based lending against herds, fattening cycle and feed loans",
   icon: Banknote,
   accentColor: "orange",
-  apiBase: "/api/agriculture-enhancement/livestock-finance/list",
+  apiBase: "/api/db/livestock-finance",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

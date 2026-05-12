@@ -13,7 +13,7 @@ export default function LakehouseQueryFederationWorkspace() {
         idField: "id",
         statusField: "consumingService",
         searchFields: ["id", "name", "sourceTable", "consumingService"],
-        apiBase: "/api/platform/lakehouse/queries",
+        apiBase: "/api/db/query-cache-entries",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

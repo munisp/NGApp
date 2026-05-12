@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "ACGSF application, guarantee tracking and CBN reporting",
   icon: BadgeCheck,
   accentColor: "emerald",
-  apiBase: "/api/agriculture-enhancement/acgsf-guarantee/list",
+  apiBase: "/api/db/acgsf-guarantee",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "FATF + CBN typology matching — structuring, TBML, loan-back",
   icon: Crosshair,
   accentColor: "red",
-  apiBase: "/api/aml-enhancement/typology-detector/list",
+  apiBase: "/api/db/typology-matches",
   idField: "id",
   statusField: "status",
   searchFields: ["typologyCode"],

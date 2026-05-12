@@ -28,7 +28,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["customerName", "customerId", "overrideType", "reason", "approvedBy"],
-  apiBase: "/api/platform/kyc-overrides",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
   actions: [
     { label: "Revoke", key: "revoke", condition: (r) => r.status === "active" },

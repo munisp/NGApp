@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "XSS prevention via output encoding",
   icon: Code,
   accentColor: "orange",
-  apiBase: "/api/security-hardening/output-encoder/list",
+  apiBase: "/api/db/output-encoding",
   idField: "id",
   statusField: "status",
   searchFields: ["context"],

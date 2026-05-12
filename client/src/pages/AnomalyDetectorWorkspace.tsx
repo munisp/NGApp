@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "ML-based auth anomaly detection",
   icon: AlertTriangle,
   accentColor: "red",
-  apiBase: "/api/security-hardening/anomaly-detector/list",
+  apiBase: "/api/db/anomaly-models",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

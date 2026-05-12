@@ -14,6 +14,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/production/e2e-tests/results",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function E2EOrchestratorWorkspace() { return <CrudWorkspace config={config} />; }

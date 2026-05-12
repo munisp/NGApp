@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Security incident response automation",
   icon: AlertTriangle,
   accentColor: "red",
-  apiBase: "/api/security-hardening/incident-responder/list",
+  apiBase: "/api/db/incidents",
   idField: "id",
   statusField: "status",
   searchFields: ["title"],

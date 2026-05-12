@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Blockchain-anchored immutable audit trail",
   icon: Link2,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/immutable-audit/list",
+  apiBase: "/api/db/immutable-audit",
   idField: "id",
   statusField: "status",
   searchFields: ["blockNumber"],

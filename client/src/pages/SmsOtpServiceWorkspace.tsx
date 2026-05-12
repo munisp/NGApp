@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Time-based OTP delivery via MTN, Glo, Airtel, 9mobile",
   icon: Key,
   accentColor: "red",
-  apiBase: "/api/channel-banking/sms-otp-service/list",
+  apiBase: "/api/db/sms-otp-service",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "IVR call routing and session management for Nigerian voice banking",
   icon: Phone,
   accentColor: "violet",
-  apiBase: "/api/channel-banking/voice-banking-gateway/list",
+  apiBase: "/api/db/voice-banking-gateway",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

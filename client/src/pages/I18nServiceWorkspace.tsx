@@ -14,6 +14,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/production/i18n/config",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function I18nServiceWorkspace() { return <CrudWorkspace config={config} />; }

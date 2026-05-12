@@ -13,7 +13,7 @@ export default function TBPGReconciliationRunsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "type", "scope", "status"],
-        apiBase: "/api/platform/tb-pg-sync/reconciliation/runs",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Capacity tracking, inventory, quality testing and fumigation",
   icon: Warehouse,
   accentColor: "amber",
-  apiBase: "/api/agriculture-enhancement/warehouse-management/list",
+  apiBase: "/api/db/warehouse-management",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

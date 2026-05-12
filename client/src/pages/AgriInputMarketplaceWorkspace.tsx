@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Seed, fertilizer, herbicide and equipment marketplace",
   icon: ShoppingCart,
   accentColor: "emerald",
-  apiBase: "/api/agriculture-enhancement/agri-input-marketplace/list",
+  apiBase: "/api/db/agri-input-marketplace",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

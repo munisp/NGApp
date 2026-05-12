@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "appId", "protocol", "status"],
-  apiBase: "/api/platform/dapr/apps",
+  apiBase: "/api/db/accounts",
   fields: [],
   columns: [
     { key: "id", label: "App ID" },

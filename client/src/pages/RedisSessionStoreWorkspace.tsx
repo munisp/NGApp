@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Persistent Redis session store with sliding TTL",
   icon: Key,
   accentColor: "red",
-  apiBase: "/api/performance/redis-session/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["sessionId"],

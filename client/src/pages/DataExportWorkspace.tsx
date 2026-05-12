@@ -13,7 +13,7 @@ export default function DataExportWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "export_type", "format", "source", "requested_by"],
-        apiBase: "/api/platform/data-export/v1/exports/jobs",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -13,7 +13,7 @@ export default function AnalyticsWidgetsWorkspace() {
         idField: "id",
         statusField: "category",
         searchFields: ["title", "category", "type"],
-        apiBase: "/api/platform/analytics/widgets",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Widget ID" },

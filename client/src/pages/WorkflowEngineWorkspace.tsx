@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "templateId", "entityId", "status"],
-  apiBase: "/api/platform/workflows",
+  apiBase: "/api/db/workflow-cases",
   fields: [
     { key: "templateId", label: "Workflow Template", type: "select", options: ["loan_origination", "lc_lifecycle", "dispute_resolution", "account_opening", "eod_processing"], required: true },
     { key: "entityId", label: "Entity ID", type: "text", required: true, placeholder: "e.g. LOAN-001, LC-042" },

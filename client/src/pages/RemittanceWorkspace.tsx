@@ -13,7 +13,7 @@ export default function RemittanceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["corridor", "sender_name"],
-        apiBase: "/api/platform/remittance/transactions",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "Txn ID" },

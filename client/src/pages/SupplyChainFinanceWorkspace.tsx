@@ -13,7 +13,7 @@ export default function SupplyChainFinanceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["buyer", "supplier", "program_name"],
-        apiBase: "/api/platform/scf/invoices",
+        apiBase: "/api/db/billing-invoices",
         pageSize: 25,
         columns: [
           { key: "id", label: "Invoice ID" },

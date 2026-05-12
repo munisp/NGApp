@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"Token ID"},{key:"cardId",label:"Card"},{key:"walletProvider",label:"Wallet"},{key:"tokenType",label:"Type"},{key:"deviceId",label:"Device"},{key:"status",label:"Status"},{key:"lastUsed",label:"Last Used"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/cards/tokens",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

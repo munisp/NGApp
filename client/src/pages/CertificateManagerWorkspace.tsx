@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "validTo", label: "Expires" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/certificates",
+  apiBase: "/api/db/certificates",
 };
 export default function CertificateManagerWorkspace() { return <CrudWorkspace config={config} />; }

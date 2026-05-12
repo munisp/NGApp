@@ -13,7 +13,7 @@ export default function FXPositionsWorkspace() {
         idField: "pair",
         statusField: "pair",
         searchFields: ["pair"],
-        apiBase: "/api/platform/fx/positions",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "pair", label: "Pair", sortable: true },

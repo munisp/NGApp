@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "code",
   searchFields: ["code", "name", "source"],
-  apiBase: "/api/platform/rate-cascade/benchmarks",
+  apiBase: "/api/db/fx-trades",
 };
 
 export default function RateCascadeWorkspace() {

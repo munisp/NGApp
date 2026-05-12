@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "P&L, balance sheet, member equity and dividend calculation",
   icon: Receipt,
   accentColor: "slate",
-  apiBase: "/api/agriculture-enhancement/cooperative-financials/list",
+  apiBase: "/api/db/cooperative-financials",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

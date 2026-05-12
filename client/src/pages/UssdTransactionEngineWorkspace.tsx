@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Core USSD transaction processing in 160-char screens",
   icon: Zap,
   accentColor: "orange",
-  apiBase: "/api/channel-banking/ussd-transaction-engine/list",
+  apiBase: "/api/db/ussd-transaction-engine",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

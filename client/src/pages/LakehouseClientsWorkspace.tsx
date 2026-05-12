@@ -13,7 +13,7 @@ export default function LakehouseClientsWorkspace() {
         idField: "language",
         statusField: "language",
         searchFields: ["language", "module"],
-        apiBase: "/api/platform/lakehouse/clients",
+        apiBase: "/api/db/avro-schemas",
         pageSize: 25,
         columns: [
           { key: "language", label: "Language", sortable: true },

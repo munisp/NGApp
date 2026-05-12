@@ -13,7 +13,7 @@ export default function NotificationCenterWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["type", "channel", "title"],
-        apiBase: "/api/platform/notifications",
+        apiBase: "/api/db/customer-notifications",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

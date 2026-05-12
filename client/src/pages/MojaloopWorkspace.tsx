@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "payerFsp", "payeeFsp", "currency"],
-  apiBase: "/api/platform/mojaloop/transfers",
+  apiBase: "/api/db/transfers",
   fields: [
     { key: "quoteId", label: "Quote ID", type: "text", required: true },
     { key: "amount", label: "Amount", type: "number", required: true },

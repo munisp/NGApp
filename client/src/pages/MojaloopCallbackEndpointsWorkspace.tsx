@@ -13,7 +13,7 @@ export default function MojaloopCallbackEndpointsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "fspId", "type"],
-        apiBase: "/api/platform/mojaloop/callback-endpoints",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

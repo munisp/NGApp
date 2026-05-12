@@ -21,6 +21,6 @@ const config: CrudConfig = {
     { key: "timestamp", label: "Time", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/audit/events",
+  apiBase: "/api/db/security-events",
 };
 export default function SecurityAuditLoggerWorkspace() { return <CrudWorkspace config={config} />; }

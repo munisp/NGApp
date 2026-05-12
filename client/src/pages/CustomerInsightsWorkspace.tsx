@@ -13,7 +13,7 @@ export default function CustomerInsightsWorkspace() {
         idField: "id",
         statusField: "risk_level",
         searchFields: ["customer_name", "segment", "risk_level"],
-        apiBase: "/api/platform/customer-insights/v1/insights/churn",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

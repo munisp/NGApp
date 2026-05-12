@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Telegram Bot API webhook receiver and command handler",
   icon: Send,
   accentColor: "sky",
-  apiBase: "/api/channel-banking/telegram-bot-gateway/list",
+  apiBase: "/api/db/telegram-bot-gateway",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

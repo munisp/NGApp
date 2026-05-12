@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "P50/P95/P99 latency and throughput dashboards",
   icon: BarChart2,
   accentColor: "red",
-  apiBase: "/api/performance/prometheus-dashboard/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["dashboard"],

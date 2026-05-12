@@ -13,7 +13,7 @@ export default function SMSBankingWorkspace() {
         idField: "id",
         statusField: "requiresPin",
         searchFields: ["command", "description"],
-        apiBase: "/api/resilience/sms-banking/commands",
+        apiBase: "/api/db/sms-banking-gateway",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

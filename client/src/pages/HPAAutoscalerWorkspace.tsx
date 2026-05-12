@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "CPU/memory/custom-metric pod autoscaling",
   icon: TrendingUp,
   accentColor: "blue",
-  apiBase: "/api/performance/hpa-autoscaler/list",
+  apiBase: "/api/db/hpa-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["deployment"],

@@ -13,7 +13,7 @@ export default function AgentBankingWorkspace2() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "businessName", "ownerName", "state"],
-        apiBase: "/api/platform/agent-banking/v1/agents",
+        apiBase: "/api/db/agent-banking-agents",
         pageSize: 25,
         columns: [
           { key: "id", label: "Agent ID", sortable: true },

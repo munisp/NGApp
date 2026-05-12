@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "featureKey", "name", "strategy"],
-  apiBase: "/api/platform/graduated-rollout/v1/rollouts",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

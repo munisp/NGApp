@@ -19,6 +19,6 @@ const config: CrudConfig = {
     { key: "riskScore", label: "Risk" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/sessions",
+  apiBase: "/api/db/session-records",
 };
 export default function SessionSecurityWorkspace() { return <CrudWorkspace config={config} />; }

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Viewport-only rendering for massive tables",
   icon: Layers,
   accentColor: "green",
-  apiBase: "/api/performance/virtual-scroll/list",
+  apiBase: "/api/db/virtual-scroll-configs",
   idField: "id",
   statusField: "status",
   searchFields: ["tableName"],

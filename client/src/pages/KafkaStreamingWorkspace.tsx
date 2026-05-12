@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "name",
   searchFields: ["name", "domain"],
-  apiBase: "/api/platform/kafka/topics",
+  apiBase: "/api/db/accounts",
 };
 
 export default function KafkaStreamingWorkspace() {

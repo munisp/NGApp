@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "accountNumber", "accountName", "format"],
-  apiBase: "/api/platform/statements/list",
+  apiBase: "/api/db/customer-statements",
 };
 
 export default function StatementGeneratorWorkspace() {

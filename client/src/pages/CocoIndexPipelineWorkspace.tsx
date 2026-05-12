@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "avgLatencyMs", label: "Latency (ms)" },
   ],
   idField: "id", statusField: "status", searchFields: ["name", "source", "sink", "status"],
-  apiBase: "/api/ai-ml/cocoindex/pipelines",
+  apiBase: "/api/db/anomaly-models",
 };
 export default function CocoIndexPipelineWorkspace() { return <CrudWorkspace config={config} />; }

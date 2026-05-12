@@ -17,6 +17,6 @@ const config: CrudConfig = {
     { key: "cbnPrescribed", label: "CBN Prescribed" },
   ],
   idField: "id", statusField: "enabled", searchFields: ["name", "category", "scenarioCode"],
-  apiBase: "/api/kyc-enhanced/monitoring-rules",
+  apiBase: "/api/db/accounts",
 };
 export default function TxnMonitoringRulesWorkspace() { return <CrudWorkspace config={config} />; }

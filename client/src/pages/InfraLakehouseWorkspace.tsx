@@ -26,7 +26,7 @@ const config: CrudConfig = {
   ],
   idField: "name",
   searchFields: ["name", "schema"],
-  apiBase: "/api/platform/infra/lakehouse/tables",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

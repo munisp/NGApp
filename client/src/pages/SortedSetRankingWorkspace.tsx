@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Real-time O(log N) Redis rankings",
   icon: BarChart2,
   accentColor: "blue",
-  apiBase: "/api/performance/sorted-set-ranking/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

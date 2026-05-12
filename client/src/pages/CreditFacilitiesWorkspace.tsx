@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "customerName", "type", "status"],
-  apiBase: "/api/platform/facilities/list",
+  apiBase: "/api/db/accounts",
 };
 
 export default function CreditFacilitiesWorkspace() {

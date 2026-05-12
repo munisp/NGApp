@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Soil type classification, pH levels and nutrient mapping",
   icon: Beaker,
   accentColor: "orange",
-  apiBase: "/api/agriculture-enhancement/soil-analysis/list",
+  apiBase: "/api/db/soil-analysis",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

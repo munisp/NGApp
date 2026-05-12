@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Stale-while-revalidate API caching in SW",
   icon: Download,
   accentColor: "blue",
-  apiBase: "/api/performance/sw-api-cache/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["pattern"],

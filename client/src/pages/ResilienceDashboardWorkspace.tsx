@@ -13,7 +13,7 @@ export default function ResilienceDashboardWorkspace() {
         idField: "channel",
         statusField: "status",
         searchFields: ["channel"],
-        apiBase: "/api/resilience/dashboard",
+        apiBase: "/api/db/incidents",
         pageSize: 25,
         columns: [
           { key: "channel", label: "Channel", sortable: true },

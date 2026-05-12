@@ -13,7 +13,7 @@ export default function ReconciliationWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "type", "sourceSystem", "targetSystem"],
-        apiBase: "/api/platform/reconciliation/runs",
+        apiBase: "/api/db/reconciliation-runs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

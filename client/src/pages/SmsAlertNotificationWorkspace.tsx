@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Transaction alerts, loan reminders and fraud notifications",
   icon: AlertCircle,
   accentColor: "slate",
-  apiBase: "/api/channel-banking/sms-alert-notification/list",
+  apiBase: "/api/db/sms-alert-notification",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

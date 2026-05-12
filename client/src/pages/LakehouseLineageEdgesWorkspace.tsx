@@ -13,7 +13,7 @@ export default function LakehouseLineageEdgesWorkspace() {
         idField: "id",
         statusField: "transformType",
         searchFields: ["id", "source", "target", "transformType"],
-        apiBase: "/api/platform/lakehouse/lineage/edges",
+        apiBase: "/api/db/avro-schemas",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

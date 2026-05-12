@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "VSLA and ROSCA cycle management with contributions and share-out",
   icon: PiggyBank,
   accentColor: "teal",
-  apiBase: "/api/agriculture-enhancement/agri-savings-cycles/list",
+  apiBase: "/api/db/agri-savings-cycles",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

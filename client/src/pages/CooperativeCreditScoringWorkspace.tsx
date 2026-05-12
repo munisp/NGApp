@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Aggregate cooperative health scoring for repayment and governance",
   icon: BarChart3,
   accentColor: "purple",
-  apiBase: "/api/agriculture-enhancement/cooperative-credit-scoring/list",
+  apiBase: "/api/db/cooperative-credit-scoring",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

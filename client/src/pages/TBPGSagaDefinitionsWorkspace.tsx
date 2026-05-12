@@ -13,7 +13,7 @@ export default function TBPGSagaDefinitionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name"],
-        apiBase: "/api/platform/tb-pg-sync/sagas",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

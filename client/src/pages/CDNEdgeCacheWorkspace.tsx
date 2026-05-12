@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Cloudflare/CloudFront edge caching (Lagos, Abuja, Kano)",
   icon: Globe,
   accentColor: "green",
-  apiBase: "/api/performance/cdn-edge-cache/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["provider"],

@@ -25,7 +25,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "accountName", "beneficiary"],
-  apiBase: "/api/platform/mandates/list",
+  apiBase: "/api/db/transfers",
 };
 
 export default function MandateManagementWorkspace() {

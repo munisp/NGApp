@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Duplicate in-flight request deduplication",
   icon: Layers,
   accentColor: "purple",
-  apiBase: "/api/performance/request-coalescer/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["route"],

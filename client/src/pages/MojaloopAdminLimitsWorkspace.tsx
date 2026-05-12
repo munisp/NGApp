@@ -13,7 +13,7 @@ export default function MojaloopAdminLimitsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "fspId", "limitType"],
-        apiBase: "/api/platform/mojaloop/admin/limits",
+        apiBase: "/api/db/settlements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

@@ -13,7 +13,7 @@ export default function SecuritiesTradingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["symbol", "issuer", "security_type", "exchange"],
-        apiBase: "/api/platform/securities/list",
+        apiBase: "/api/db/fx-trades",
         pageSize: 25,
         columns: [
           { key: "id", label: "Security ID" },

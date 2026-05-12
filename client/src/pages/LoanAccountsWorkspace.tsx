@@ -13,7 +13,7 @@ export default function LoanAccountsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "customerName", "classification"],
-        apiBase: "/api/platform/loans/accounts",
+        apiBase: "/api/db/loans",
         pageSize: 25,
         columns: [
           { key: "id", label: "Loan ID", sortable: true },

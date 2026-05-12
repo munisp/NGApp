@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Digital vouchers for subsidized inputs from NIRSAL and state programs",
   icon: Ticket,
   accentColor: "lime",
-  apiBase: "/api/agriculture-enhancement/agri-evoucher/list",
+  apiBase: "/api/db/agri-evoucher",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

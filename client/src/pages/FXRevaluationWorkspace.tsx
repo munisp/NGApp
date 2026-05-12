@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "currency", "accountType"],
-  apiBase: "/api/platform/fx-reval/positions",
+  apiBase: "/api/db/accounts",
 };
 
 export default function FXRevaluationWorkspace() {

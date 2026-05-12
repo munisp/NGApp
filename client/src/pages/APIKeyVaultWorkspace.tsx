@@ -20,6 +20,6 @@ const config: CrudConfig = {
     { key: "usageCount", label: "Usage" },
   ],
   idField: "id", statusField: "status", searchFields: ["id", "status"],
-  apiBase: "/api/security/api-keys",
+  apiBase: "/api/db/api-keys",
 };
 export default function APIKeyVaultWorkspace() { return <CrudWorkspace config={config} />; }

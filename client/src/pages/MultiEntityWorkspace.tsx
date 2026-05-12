@@ -13,7 +13,7 @@ export default function MultiEntityWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["entity_name", "entity_type"],
-        apiBase: "/api/platform/entities",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Entity ID" },

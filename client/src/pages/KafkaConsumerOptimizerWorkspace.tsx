@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Consumer group health and lag monitoring",
   icon: Activity,
   accentColor: "blue",
-  apiBase: "/api/performance/kafka-consumer/list",
+  apiBase: "/api/db/kafka-consumer-groups",
   idField: "id",
   statusField: "status",
   searchFields: ["groupId"],

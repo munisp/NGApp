@@ -13,7 +13,7 @@ export default function ApisixRoutesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "uri", "upstream"],
-        apiBase: "/api/platform/apisix/routes",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

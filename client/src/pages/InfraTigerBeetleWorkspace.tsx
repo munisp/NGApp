@@ -26,7 +26,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/infra/tigerbeetle/accounts",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

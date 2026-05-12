@@ -13,7 +13,7 @@ export default function TrustEstateWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["trust_name", "trust_type", "settlor"],
-        apiBase: "/api/platform/trust-estate/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Trust ID" },

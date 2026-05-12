@@ -13,7 +13,7 @@ export default function ErrorTelemetryWorkspace() {
         idField: "period",
         statusField: "period",
         searchFields: ["period"],
-        apiBase: "/api/platform/error-telemetry",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "period", label: "Period", sortable: true },

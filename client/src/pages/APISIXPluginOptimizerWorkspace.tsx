@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Conditional plugin chain optimization",
   icon: Settings,
   accentColor: "green",
-  apiBase: "/api/performance/apisix-plugin/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["route"],

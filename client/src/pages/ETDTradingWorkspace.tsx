@@ -13,7 +13,7 @@ export default function ETDTradingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["instrument", "exchange"],
-        apiBase: "/api/platform/etd/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Position ID" },

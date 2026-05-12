@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "annualReturnsUpToDate", label: "Annual Returns" },
   ],
   idField: "id", statusField: "status", searchFields: ["companyName", "rcNumber"],
-  apiBase: "/api/kyc-enhanced/cac-companies",
+  apiBase: "/api/db/accounts",
 };
 export default function CACVerificationWorkspace() { return <CrudWorkspace config={config} />; }

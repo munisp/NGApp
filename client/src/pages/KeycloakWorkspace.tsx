@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "enabled",
   searchFields: ["id", "username", "email", "firstName", "lastName"],
-  apiBase: "/api/platform/identity/users",
+  apiBase: "/api/db/accounts",
   fields: [
     { key: "username", label: "Username", type: "text", required: true },
     { key: "email", label: "Email", type: "text", required: true },

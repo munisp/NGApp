@@ -13,7 +13,7 @@ export default function ErrorCatalogWorkspace() {
         idField: "id",
         statusField: "severity",
         searchFields: ["code", "domain", "message"],
-        apiBase: "/api/platform/errors/catalog",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

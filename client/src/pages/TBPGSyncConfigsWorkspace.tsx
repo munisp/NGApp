@@ -13,7 +13,7 @@ export default function TBPGSyncConfigsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "direction", "postgresTable"],
-        apiBase: "/api/platform/tb-pg-sync/configs",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

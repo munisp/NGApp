@@ -13,7 +13,7 @@ export default function PaymentInvestigationWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["original_ref", "payment_type"],
-        apiBase: "/api/platform/investigations",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Case ID" },

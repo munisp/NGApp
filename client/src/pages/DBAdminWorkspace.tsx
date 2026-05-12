@@ -24,7 +24,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "name", "service"],
-  apiBase: "/api/platform/db-admin/migrations",
+  apiBase: "/api/db/accounts",
 };
 
 export default function DBAdminWorkspace() {

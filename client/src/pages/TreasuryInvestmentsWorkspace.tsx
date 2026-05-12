@@ -13,7 +13,7 @@ export default function TreasuryInvestmentsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "issuer", "type", "portfolio"],
-        apiBase: "/api/platform/treasury/investments",
+        apiBase: "/api/db/fx-trades",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

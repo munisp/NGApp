@@ -25,7 +25,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "category", "severity", "regulator"],
-  apiBase: "/api/platform/exams/findings",
+  apiBase: "/api/db/accounts",
 };
 
 export default function ExamManagementWorkspace() {

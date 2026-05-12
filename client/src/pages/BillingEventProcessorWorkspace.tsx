@@ -21,7 +21,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenant_id", "source_service", "event_type", "meter_key"],
-  apiBase: "/api/platform/billing-events/v1/billing/events/metering",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

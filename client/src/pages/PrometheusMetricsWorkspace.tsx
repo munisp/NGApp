@@ -13,7 +13,7 @@ export default function PrometheusMetricsWorkspace() {
         idField: "id",
         statusField: "type",
         searchFields: ["id", "name", "category"],
-        apiBase: "/api/platform/observability/prometheus-metrics",
+        apiBase: "/api/db/prometheus-dashboards",
         pageSize: 25,
         columns: [
           { key: "name", label: "Metric", sortable: true },

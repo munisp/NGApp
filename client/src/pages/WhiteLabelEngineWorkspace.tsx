@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "tenantId",
   searchFields: ["tenantId", "displayName", "legalEntity", "primaryColor"],
-  apiBase: "/api/platform/white-label/v1/themes",
+  apiBase: "/api/db/tenants",
   pageSize: 25,
 };
 

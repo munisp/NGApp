@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Automated SAR/STR generation and NFIU filing",
   icon: FileText,
   accentColor: "orange",
-  apiBase: "/api/aml-enhancement/sar-filing/list",
+  apiBase: "/api/db/sar-reports-aml",
   idField: "id",
   statusField: "status",
   searchFields: ["customerId"],

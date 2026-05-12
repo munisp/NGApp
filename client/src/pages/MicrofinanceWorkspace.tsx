@@ -13,7 +13,7 @@ export default function MicrofinanceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["group_name", "location"],
-        apiBase: "/api/platform/microfinance/groups",
+        apiBase: "/api/db/lending-groups",
         pageSize: 25,
         columns: [
           { key: "id", label: "Group ID" },

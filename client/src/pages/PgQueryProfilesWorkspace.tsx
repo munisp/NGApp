@@ -13,7 +13,7 @@ export default function PgQueryProfilesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "table", "query"],
-        apiBase: "/api/platform/postgres/query-profiles",
+        apiBase: "/api/db/prepared-statements",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

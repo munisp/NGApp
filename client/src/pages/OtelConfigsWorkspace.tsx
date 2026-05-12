@@ -13,7 +13,7 @@ export default function OtelConfigsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "serviceName"],
-        apiBase: "/api/platform/observability/otel-configs",
+        apiBase: "/api/db/prometheus-dashboards",
         pageSize: 25,
         columns: [
           { key: "serviceName", label: "Service", sortable: true },

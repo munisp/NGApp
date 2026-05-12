@@ -13,7 +13,7 @@ export default function KeycloakClientsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "clientId", "name"],
-        apiBase: "/api/platform/keycloak/clients",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "clientId", label: "Client ID", sortable: true },

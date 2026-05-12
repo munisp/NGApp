@@ -13,7 +13,7 @@ export default function BankGuaranteesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["applicant", "beneficiary", "guarantee_type"],
-        apiBase: "/api/platform/guarantees/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Guarantee ID" },

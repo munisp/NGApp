@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Regional yield shortfall triggers and parametric payouts",
   icon: CloudRain,
   accentColor: "slate",
-  apiBase: "/api/agriculture-enhancement/area-yield-index-insurance/list",
+  apiBase: "/api/db/area-yield-index-insurance",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

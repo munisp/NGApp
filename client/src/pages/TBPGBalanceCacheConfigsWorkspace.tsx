@@ -13,7 +13,7 @@ export default function TBPGBalanceCacheConfigsWorkspace() {
         idField: "id",
         statusField: "name",
         searchFields: ["id", "name", "redisKeyPattern"],
-        apiBase: "/api/platform/tb-pg-sync/balance-cache/configs",
+        apiBase: "/api/db/tb-batch-configs",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

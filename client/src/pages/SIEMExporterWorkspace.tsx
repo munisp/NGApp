@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Splunk/QRadar/Elastic export pipelines",
   icon: Upload,
   accentColor: "purple",
-  apiBase: "/api/security-hardening/siem-exporter/list",
+  apiBase: "/api/db/siem-pipelines",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

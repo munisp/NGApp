@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "High-throughput batch producing with LZ4",
   icon: ArrowUpRight,
   accentColor: "red",
-  apiBase: "/api/performance/kafka-batch-producer/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["topic"],

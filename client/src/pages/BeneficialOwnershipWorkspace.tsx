@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "UBO chain analysis — CAC API + manual verification",
   icon: Users,
   accentColor: "blue",
-  apiBase: "/api/aml-enhancement/beneficial-ownership/list",
+  apiBase: "/api/db/beneficial-owners",
   idField: "id",
   statusField: "status",
   searchFields: ["entityName"],

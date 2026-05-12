@@ -13,7 +13,7 @@ export default function CustodyServiceWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["account_name", "client_name"],
-        apiBase: "/api/platform/custody/accounts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Account ID" },

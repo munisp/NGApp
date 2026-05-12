@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "status", label: "Status", sortable: true },
   ],
   idField: "id", statusField: "status", searchFields: ["customerId", "officerId"],
-  apiBase: "/api/kyc-enhanced/video-kyc-sessions",
+  apiBase: "/api/db/accounts",
 };
 export default function VideoKYCWorkspace() { return <CrudWorkspace config={config} />; }

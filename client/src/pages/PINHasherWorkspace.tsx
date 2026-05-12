@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Argon2id PIN hashing with configurable params",
   icon: Key,
   accentColor: "orange",
-  apiBase: "/api/security-hardening/pin-hasher/list",
+  apiBase: "/api/db/pin-hashes",
   idField: "id",
   statusField: "status",
   searchFields: ["algorithm"],

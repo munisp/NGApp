@@ -27,7 +27,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["customer_name", "customer_id", "document_type", "status"],
-  apiBase: "/api/platform/kyc-engine/v1/verifications",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

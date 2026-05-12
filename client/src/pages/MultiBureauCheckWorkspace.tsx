@@ -16,6 +16,6 @@ const config: CrudConfig = {
     { key: "defaultHistory", label: "Default History" },
   ],
   idField: "id", statusField: "riskGrade", searchFields: ["customerId", "bureau"],
-  apiBase: "/api/kyc-enhanced/bureau-checks",
+  apiBase: "/api/db/bureau-checks",
 };
 export default function MultiBureauCheckWorkspace() { return <CrudWorkspace config={config} />; }

@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Geo-mapping farming clusters and satellite-verified production data",
   icon: Globe,
   accentColor: "emerald",
-  apiBase: "/api/agriculture-enhancement/nirsal-agro-geocoop/list",
+  apiBase: "/api/db/nirsal-agro-geocoop",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

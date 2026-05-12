@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Interactive voice response menu tree with DTMF navigation",
   icon: ListTree,
   accentColor: "teal",
-  apiBase: "/api/channel-banking/voice-ivr-menu/list",
+  apiBase: "/api/db/voice-ivr-menu",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

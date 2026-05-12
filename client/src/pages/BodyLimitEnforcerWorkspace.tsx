@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Request body size enforcement per route",
   icon: Shield,
   accentColor: "yellow",
-  apiBase: "/api/security-hardening/body-limit/list",
+  apiBase: "/api/db/body-limits",
   idField: "id",
   statusField: "status",
   searchFields: ["path"],

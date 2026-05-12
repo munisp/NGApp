@@ -13,7 +13,7 @@ export default function SWIFTMessagesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "messageType", "reference", "senderBIC", "receiverBIC", "beneficiary"],
-        apiBase: "/api/platform/swift/messages",
+        apiBase: "/api/db/swift-messages",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

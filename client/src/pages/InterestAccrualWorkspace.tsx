@@ -13,7 +13,7 @@ export default function InterestAccrualWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["accountNumber", "accountName", "productType"],
-        apiBase: "/api/platform/interest-accrual/records",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

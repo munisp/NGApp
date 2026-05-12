@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Environmental and social impact tracking with SDG alignment",
   icon: Leaf,
   accentColor: "green",
-  apiBase: "/api/agriculture-enhancement/agri-esg-impact/list",
+  apiBase: "/api/db/agri-esg-impact",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

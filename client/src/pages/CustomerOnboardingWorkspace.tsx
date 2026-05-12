@@ -13,7 +13,7 @@ export default function CustomerOnboardingWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["firstName", "lastName", "bvn", "phone", "email", "state"],
-        apiBase: "/api/platform/onboarding/applications",
+        apiBase: "/api/db/customers",
         pageSize: 25,
         columns: [
           { key: "id", label: "App ID" },

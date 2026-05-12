@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["lcId", "applicantId", "beneficiaryName", "swiftRef"],
-  apiBase: "/api/platform/trade-finance/lcs",
+  apiBase: "/api/db/letters-of-credit",
   fields: [
     { key: "applicantId", label: "Applicant Customer ID", type: "text", required: true },
     { key: "beneficiaryName", label: "Beneficiary Name", type: "text", required: true },

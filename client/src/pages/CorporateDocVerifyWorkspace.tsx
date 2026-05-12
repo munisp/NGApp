@@ -15,6 +15,6 @@ const config: CrudConfig = {
     { key: "verified", label: "Verified" },
   ],
   idField: "id", statusField: "verified", searchFields: ["companyId", "docType"],
-  apiBase: "/api/kyc-enhanced/corporate-docs",
+  apiBase: "/api/db/accounts",
 };
 export default function CorporateDocVerifyWorkspace() { return <CrudWorkspace config={config} />; }

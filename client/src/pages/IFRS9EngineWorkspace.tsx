@@ -13,7 +13,7 @@ export default function IFRS9EngineWorkspace() {
         idField: "id",
         statusField: "stage",
         searchFields: ["counterparty", "product_type", "stage"],
-        apiBase: "/api/platform/ifrs9/exposures",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Exposure ID" },

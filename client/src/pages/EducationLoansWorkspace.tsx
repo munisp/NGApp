@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["studentName", "institutionName", "loanId", "programName"],
-  apiBase: "/api/platform/education-loans/loans",
+  apiBase: "/api/db/loans",
   fields: [
     { key: "studentName", label: "Student Name", type: "text", required: true },
     { key: "institutionName", label: "Institution", type: "text", required: true, placeholder: "University name" },

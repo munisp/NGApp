@@ -13,7 +13,7 @@ export default function GrafanaDashboardsWorkspace() {
         idField: "id",
         statusField: "category",
         searchFields: ["id", "title", "category"],
-        apiBase: "/api/platform/observability/grafana-dashboards",
+        apiBase: "/api/db/prometheus-dashboards",
         pageSize: 25,
         columns: [
           { key: "title", label: "Dashboard", sortable: true },

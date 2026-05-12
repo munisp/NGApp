@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "IP allowlist/blocklist management",
   icon: Globe,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/ip-allowlist/list",
+  apiBase: "/api/db/ip-rules",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

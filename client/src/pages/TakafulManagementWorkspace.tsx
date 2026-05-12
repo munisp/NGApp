@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"policyType",label:"Type"},{key:"participant",label:"Participant"},{key:"contribution",label:"Contribution (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"coverageAmount",label:"Coverage (₦)",render:(v:unknown)=>`₦${(Number(v)||0).toLocaleString()}`},{key:"surplusShare",label:"Surplus %"},{key:"status",label:"Status"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/islamic/takaful",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

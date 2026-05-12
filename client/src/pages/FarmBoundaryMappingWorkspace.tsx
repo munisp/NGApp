@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Polygon farm boundaries, area verification and overlap detection",
   icon: Map,
   accentColor: "green",
-  apiBase: "/api/agriculture-enhancement/farm-boundary-mapping/list",
+  apiBase: "/api/db/farm-boundary-mapping",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

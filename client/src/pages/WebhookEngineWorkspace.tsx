@@ -19,7 +19,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "tenantId", "url", "active"],
-  apiBase: "/api/platform/webhooks/v1/endpoints",
+  apiBase: "/api/db/transfers",
   pageSize: 25,
 };
 

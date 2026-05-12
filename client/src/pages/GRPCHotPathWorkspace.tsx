@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Protobuf-based inter-service hot paths",
   icon: Zap,
   accentColor: "purple",
-  apiBase: "/api/performance/grpc-hot-path/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["service"],

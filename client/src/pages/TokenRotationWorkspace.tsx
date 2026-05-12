@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Refresh token family rotation and replay detection",
   icon: RefreshCw,
   accentColor: "blue",
-  apiBase: "/api/security-hardening/token-rotation/list",
+  apiBase: "/api/db/token-families",
   idField: "id",
   statusField: "status",
   searchFields: ["familyId"],

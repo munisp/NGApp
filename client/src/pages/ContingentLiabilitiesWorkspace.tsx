@@ -13,7 +13,7 @@ export default function ContingentLiabilitiesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["counterparty", "liability_type"],
-        apiBase: "/api/platform/contingent-liabilities/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

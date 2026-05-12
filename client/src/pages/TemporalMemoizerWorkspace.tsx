@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Deterministic activity memoization for fast replay",
   icon: Clock,
   accentColor: "purple",
-  apiBase: "/api/performance/temporal-memoizer/list",
+  apiBase: "/api/db/temporal-memoized-activities",
   idField: "id",
   statusField: "status",
   searchFields: ["workflow"],

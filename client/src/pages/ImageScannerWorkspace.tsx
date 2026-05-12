@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Trivy/Grype container vulnerability scanning",
   icon: Box,
   accentColor: "gray",
-  apiBase: "/api/security-hardening/image-scanner/list",
+  apiBase: "/api/db/image-scans",
   idField: "id",
   statusField: "status",
   searchFields: ["image"],

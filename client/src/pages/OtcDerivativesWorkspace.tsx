@@ -13,7 +13,7 @@ export default function OtcDerivativesWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["counterparty", "derivative_type", "underlying"],
-        apiBase: "/api/platform/derivatives/list",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Trade ID" },

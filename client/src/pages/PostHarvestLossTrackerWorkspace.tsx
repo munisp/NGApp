@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Storage, transport and processing loss measurement",
   icon: Trash2,
   accentColor: "rose",
-  apiBase: "/api/agriculture-enhancement/post-harvest-loss-tracker/list",
+  apiBase: "/api/db/post-harvest-loss-tracker",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

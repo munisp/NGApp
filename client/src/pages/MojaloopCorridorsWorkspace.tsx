@@ -13,7 +13,7 @@ export default function MojaloopCorridorsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "region", "sourceCountry", "destCountry"],
-        apiBase: "/api/platform/mojaloop/corridors",
+        apiBase: "/api/db/transfers",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

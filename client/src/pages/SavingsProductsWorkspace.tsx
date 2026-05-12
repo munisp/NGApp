@@ -13,7 +13,7 @@ export default function SavingsProductsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["name", "type", "currency"],
-        apiBase: "/api/platform/savings/v1/savings/products",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "Product ID", sortable: true },

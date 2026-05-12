@@ -13,7 +13,7 @@ export default function PgConnectionPoolsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["id", "name", "poolMode"],
-        apiBase: "/api/platform/postgres/connection-pools",
+        apiBase: "/api/db/pgbouncer-pools",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

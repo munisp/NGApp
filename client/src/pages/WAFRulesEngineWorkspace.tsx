@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "OpenAppSec WAF rule management",
   icon: Shield,
   accentColor: "red",
-  apiBase: "/api/security-hardening/waf-rules/list",
+  apiBase: "/api/db/waf-rules",
   idField: "id",
   statusField: "status",
   searchFields: ["ruleId"],

@@ -12,6 +12,6 @@ const config: CrudConfig = {
     { key: "duplicateBVN", label: "Duplicate BVN" }, { key: "missingNIN", label: "Missing NIN" },
   ],
   idField: "totalCustomers", searchFields: [],
-  apiBase: "/api/kyc-enhanced/data-quality",
+  apiBase: "/api/db/kyc-data-quality-metrics",
 };
 export default function KYCDataQualityWorkspace() { return <CrudWorkspace config={config} />; }

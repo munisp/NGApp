@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Transaction alerts and OTP delivery via Telegram",
   icon: Bell,
   accentColor: "emerald",
-  apiBase: "/api/channel-banking/telegram-notification/list",
+  apiBase: "/api/db/telegram-notification",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

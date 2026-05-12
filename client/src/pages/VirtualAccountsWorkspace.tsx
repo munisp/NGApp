@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["accountName", "accountNumber", "accountId", "customerId"],
-  apiBase: "/api/platform/virtual-accounts/accounts",
+  apiBase: "/api/db/virtual-accounts",
   fields: [
     { key: "customerId", label: "Customer ID", type: "text", required: true },
     { key: "accountName", label: "Account Name", type: "text", required: true, placeholder: "e.g. Collections Account" },

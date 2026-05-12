@@ -13,7 +13,7 @@ export default function DocCollectionsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["collectionNumber", "type"],
-        apiBase: "/api/platform/trade-finance/collections",
+        apiBase: "/api/db/bank-guarantees",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

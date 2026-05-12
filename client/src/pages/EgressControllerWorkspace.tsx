@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Service egress traffic control",
   icon: ArrowUpRight,
   accentColor: "teal",
-  apiBase: "/api/security-hardening/egress-controller/list",
+  apiBase: "/api/db/egress-policies",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

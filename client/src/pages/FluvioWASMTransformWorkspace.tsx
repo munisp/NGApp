@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Zero-copy WASM inline stream transforms",
   icon: Cpu,
   accentColor: "orange",
-  apiBase: "/api/performance/fluvio-wasm/list",
+  apiBase: "/api/db/accounts",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

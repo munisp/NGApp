@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "USSD translation for English, Hausa, Yoruba, Igbo, Pidgin",
   icon: Globe,
   accentColor: "indigo",
-  apiBase: "/api/channel-banking/ussd-multilingual/list",
+  apiBase: "/api/db/ussd-multilingual",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

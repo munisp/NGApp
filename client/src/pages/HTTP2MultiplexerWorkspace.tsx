@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "HTTP/2 multiplexing with server push",
   icon: Globe,
   accentColor: "orange",
-  apiBase: "/api/performance/http2-multiplexer/list",
+  apiBase: "/api/db/http2-connections",
   idField: "id",
   statusField: "status",
   searchFields: ["clientIp"],

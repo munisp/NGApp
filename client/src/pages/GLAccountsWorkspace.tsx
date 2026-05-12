@@ -13,7 +13,7 @@ export default function GLAccountsWorkspace() {
         idField: "id",
         statusField: "status",
         searchFields: ["accountCode", "accountName", "category", "subcategory"],
-        apiBase: "/api/platform/gl/accounts",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "accountCode", label: "Code", sortable: true },

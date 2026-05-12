@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "CBN security circular compliance",
   icon: FileCheck,
   accentColor: "green",
-  apiBase: "/api/security-hardening/cbn-compliance/list",
+  apiBase: "/api/db/cbn-compliance",
   idField: "id",
   statusField: "status",
   searchFields: ["circular"],

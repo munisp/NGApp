@@ -13,7 +13,7 @@ export default function HAMiddlewareWorkspace() {
         idField: "name",
         statusField: "status",
         searchFields: ["name", "type", "mode"],
-        apiBase: "/api/platform/ha/middleware",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "name", label: "Name", sortable: true },

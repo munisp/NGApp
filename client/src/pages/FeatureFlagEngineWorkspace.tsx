@@ -21,7 +21,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "key", "name", "enabled"],
-  apiBase: "/api/platform/feature-flags/v1/flags",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

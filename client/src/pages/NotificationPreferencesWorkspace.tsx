@@ -13,7 +13,7 @@ export default function NotificationPreferencesWorkspace() {
         idField: "id",
         statusField: "language",
         searchFields: ["customerName", "customerId"],
-        apiBase: "/api/platform/notification-preferences",
+        apiBase: "/api/db/customer-notifications",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

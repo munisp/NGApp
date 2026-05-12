@@ -13,7 +13,7 @@ export default function CreditRiskWorkspace() {
         idField: "id",
         statusField: "creditGrade",
         searchFields: ["customerName", "customerId", "creditGrade"],
-        apiBase: "/api/platform/credit-risk/assessments",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "id", label: "ID" },

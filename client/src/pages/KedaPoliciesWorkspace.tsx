@@ -13,7 +13,7 @@ export default function KedaPoliciesWorkspace() {
         idField: "tier",
         statusField: "tier",
         searchFields: ["tier", "description"],
-        apiBase: "/api/platform/keda/policies",
+        apiBase: "/api/db/accounts",
         pageSize: 25,
         columns: [
           { key: "tier", label: "Tier", sortable: true },

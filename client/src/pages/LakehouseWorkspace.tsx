@@ -10,7 +10,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["id", "name", "schema_name", "format"],
-  apiBase: "/api/platform/lakehouse/datasets",
+  apiBase: "/api/db/avro-schemas",
   fields: [
     { key: "name", label: "Dataset Name", type: "text", required: true },
     { key: "schema_name", label: "Schema", type: "select", options: ["bronze", "silver", "gold"], defaultValue: "bronze" },

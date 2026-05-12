@@ -27,7 +27,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "bvn", "firstName", "lastName", "phone"],
-  apiBase: "/api/platform/cif/customers",
+  apiBase: "/api/db/customers",
 };
 
 export default function CIFManagementWorkspace() {

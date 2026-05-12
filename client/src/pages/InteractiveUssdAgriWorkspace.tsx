@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Full session state machine with multilingual support",
   icon: Smartphone,
   accentColor: "violet",
-  apiBase: "/api/agriculture-enhancement/interactive-ussd-agri/list",
+  apiBase: "/api/db/interactive-ussd-agri",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

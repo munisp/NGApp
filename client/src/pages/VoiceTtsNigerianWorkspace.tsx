@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "Nigerian male and female voice text-to-speech synthesis",
   icon: Volume2,
   accentColor: "purple",
-  apiBase: "/api/channel-banking/voice-tts-nigerian/list",
+  apiBase: "/api/db/voice-tts-nigerian",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

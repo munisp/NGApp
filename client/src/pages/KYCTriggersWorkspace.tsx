@@ -28,7 +28,7 @@ const config: CrudConfig = {
   idField: "id",
   statusField: "status",
   searchFields: ["customerName", "customerId", "triggerType", "status", "triggerSource"],
-  apiBase: "/api/platform/kyc-triggers",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
   actions: [
     { label: "Re-verify", key: "re-verify", condition: (r) => r.status === "completed" },

@@ -12,7 +12,7 @@ const config: CrudConfig = {
   columns: [{key:"id",label:"ID"},{key:"name",label:"Name"},{key:"position",label:"Position"},{key:"category",label:"Category"},{key:"jurisdiction",label:"Jurisdiction"},{key:"riskTier",label:"Risk Tier"},{key:"startDate",label:"Start Date"}],
   idField: "id",
   searchFields: ["id", "name"],
-  apiBase: "/api/platform/kyc/pep-database",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 

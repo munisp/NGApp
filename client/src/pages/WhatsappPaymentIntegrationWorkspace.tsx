@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "WhatsApp Pay P2P transfers and merchant payments",
   icon: CreditCard,
   accentColor: "teal",
-  apiBase: "/api/channel-banking/whatsapp-payment-integration/list",
+  apiBase: "/api/db/whatsapp-payment-integration",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

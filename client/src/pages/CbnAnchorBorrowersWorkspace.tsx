@@ -8,7 +8,7 @@ const config: CrudConfig = {
   subtitle: "ABP application flow: farmer to cooperative to anchor to PFI to CBN",
   icon: Landmark,
   accentColor: "indigo",
-  apiBase: "/api/agriculture-enhancement/cbn-anchor-borrowers/list",
+  apiBase: "/api/db/cbn-anchor-borrowers",
   idField: "id",
   statusField: "status",
   searchFields: ["name"],

@@ -13,7 +13,7 @@ export default function ChartOfAccountsWorkspace() {
         idField: "code",
         statusField: "status",
         searchFields: ["code", "name", "type"],
-        apiBase: "/api/platform/ledger/chart-of-accounts",
+        apiBase: "/api/db/gl-accounts",
         pageSize: 50,
         columns: [
           { key: "code", label: "Code", sortable: true },

@@ -20,7 +20,7 @@ const config: CrudConfig = {
   ],
   idField: "id",
   searchFields: ["id", "resource", "action", "enforcementMode"],
-  apiBase: "/api/platform/billing-rbac/v1/billing/rbac/policies",
+  apiBase: "/api/db/accounts",
   pageSize: 25,
 };
 
