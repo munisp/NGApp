@@ -66,7 +66,7 @@ export function pciAuditHeaders() {
       logger.info("PCI audit: card endpoint accessed", {
         path: req.path,
         method: req.method,
-        actor: req.user?.sub ?? "anonymous",
+        actor: (req as any).user?.sub ?? "anonymous",
         ip: req.ip,
       });
     }
