@@ -2810,9 +2810,6 @@ async function startServer() {
   // Prometheus metrics middleware (#12)
   app.use(metricsMiddleware());
 
-  registerMfaRoutes(app);
-  registerApiKeyRoutes(app);
-
   // Correlation ID middleware (#11)
   app.use((req, _res, next) => {
     if (!req.headers["x-correlation-id"]) {
@@ -2855,6 +2852,10 @@ async function startServer() {
 
   // Production auth middleware (validates JWT on all /api/* routes)
   app.use(authMiddleware());
+
+  // MFA & API key routes (must be AFTER authMiddleware so req.user is populated)
+  registerMfaRoutes(app);
+  registerApiKeyRoutes(app);
 
   // Input validation (Zod schemas on all endpoints)
   registerInputValidation(app);
