@@ -6,8 +6,16 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import type { AuthUser } from "./auth";
 import { logger } from "./logger";
+
+interface JWTUser {
+  sub: string;
+  email?: string;
+  name?: string;
+  roles: string[];
+  permissions: string[];
+  tenantId: string;
+}
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -28,7 +36,7 @@ function isPublicRoute(path: string): boolean {
   return PUBLIC_ROUTES.some((r) => path.startsWith(r));
 }
 
-function decodeJWT(token: string): AuthUser | null {
+function decodeJWT(token: string): JWTUser | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -58,7 +66,7 @@ export function jwtAuthMiddleware(req: Request, res: Response, next: NextFunctio
   if (apiKey) {
     const keyConfig = SERVICE_API_KEYS[apiKey];
     if (keyConfig) {
-      req.user = {
+      (req as any).user = {
         sub: `service:${keyConfig.service}`,
         roles: ["service"],
         permissions: keyConfig.permissions,
@@ -78,14 +86,14 @@ export function jwtAuthMiddleware(req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    req.user = claims;
+    (req as any).user = claims;
     next();
     return;
   }
 
   // In development mode, allow unauthenticated access with a dev user
   if (process.env.NODE_ENV !== "production") {
-    req.user = {
+    (req as any).user = {
       sub: "dev-user",
       email: "dev@54bank.io",
       name: "Development User",
@@ -102,13 +110,14 @@ export function jwtAuthMiddleware(req: Request, res: Response, next: NextFunctio
 
 export function requireRoles(roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    const u = (req as any).user;
+    if (!u) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED" });
       return;
     }
-    const hasRole = roles.some((r) => req.user!.roles.includes(r) || req.user!.roles.includes("super_admin"));
+    const hasRole = roles.some((r) => u.roles.includes(r) || u.roles.includes("super_admin"));
     if (!hasRole) {
-      logger.warn(`Access denied: user=${req.user.sub} required=${roles.join(",")} has=${req.user.roles.join(",")}`);
+      logger.warn(`Access denied: user=${u.sub} required=${roles.join(",")} has=${u.roles.join(",")}`);
       res.status(403).json({ error: "Insufficient permissions", code: "AUTH_FORBIDDEN" });
       return;
     }
@@ -118,12 +127,13 @@ export function requireRoles(roles: string[]) {
 
 export function requirePermissions(permissions: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    const u = (req as any).user;
+    if (!u) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED" });
       return;
     }
-    if (req.user.permissions.includes("*")) { next(); return; }
-    const hasAll = permissions.every((p) => req.user!.permissions.includes(p));
+    if (u.permissions?.includes("*")) { next(); return; }
+    const hasAll = permissions.every((p: string) => u.permissions?.includes(p));
     if (!hasAll) {
       res.status(403).json({ error: "Insufficient permissions", code: "AUTH_FORBIDDEN" });
       return;

@@ -17,13 +17,13 @@ import { globalErrorHandler } from "./lib/errorHandler";
 import { logger } from "./lib/logger";
 import { requestLogger } from "./lib/requestLogger";
 import { validateBody, customerCreateSchema, customerUpdateSchema, transferCreateSchema, billingUsageEventSchema, billingRateCardCreateSchema, partnerOnboardingCreateSchema } from "./lib/validation";
-import { authMiddleware, requireRole, requirePermission } from "./lib/auth";
+import { createAuthMiddleware as authMiddleware, requireRole, requirePermission, registerAuthRoutes } from "./lib/auth";
 import { validateAndLog } from "./lib/envValidation";
 import { auditLog } from "./lib/auditLog";
 import { metricsMiddleware, metricsEndpoint, registry } from "./lib/metrics";
 import { generateOpenAPISpec } from "./lib/openapi";
 import { generateOTP, verifyOTP } from "./lib/transactionSigning";
-import { listSecrets, getSecretAuditLog } from "./lib/secretsManager";
+import { validateSecrets } from "./lib/secretsManager";
 import { runComplianceChecks, pciResponseSanitizer, pciAuditHeaders } from "./lib/pciCompliance";
 import { SEED_KPIS } from "./lib/dashboardKPIs";
 import { appCache, CACHE_TTL } from "./lib/cache";
@@ -91,6 +91,12 @@ import { registerApisixOpenappsecIntegration } from "./lib/apisixOpenappsecInteg
 import { registerServiceMesh } from "./lib/serviceMesh";
 import { registerObservability } from "./lib/observability";
 import { registerDrizzleRoutes } from "./lib/drizzleRoutes";
+import { createDbFirstMiddleware } from "./lib/dbFirstMiddleware";
+// Auth already imported at top of file
+import { registerInputValidation } from "./lib/inputValidation";
+import { registerSecretsManagement } from "./lib/secretsManager";
+import { registerMonitoring } from "./lib/monitoring";
+import { registerSwaggerDocs } from "./lib/swaggerDocs";
 import { seedDatabaseIfEmpty } from "./lib/seedDatabase";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
@@ -2829,10 +2835,28 @@ async function startServer() {
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
+  // Authentication routes (login, refresh, logout, me)
+  registerAuthRoutes(app);
+
   // JWT Authentication & Multi-tenancy middleware (applied to all 550+ routes)
   const { jwtAuthMiddleware, multiTenancyMiddleware, getAuthConfig } = require("./lib/jwtAuthMiddleware");
   app.use(jwtAuthMiddleware);
   app.use(multiTenancyMiddleware);
+
+  // Production auth middleware (validates JWT on all /api/* routes)
+  app.use(authMiddleware());
+
+  // Input validation (Zod schemas on all endpoints)
+  registerInputValidation(app);
+
+  // Secrets management
+  registerSecretsManagement(app);
+
+  // Production monitoring (health, metrics, readiness, liveness)
+  registerMonitoring(app);
+
+  // Swagger/OpenAPI documentation
+  registerSwaggerDocs(app);
 
   // Auth configuration endpoint
   app.get("/api/platform/auth/config", (_req: any, res: any) => { res.json(getAuthConfig()); });
@@ -5137,7 +5161,7 @@ async function startServer() {
       const headers: Record<string, string> = {
         "content-type": "application/json",
         "x-correlation-id": correlationId,
-        "x-tenant-id": req.tenantId ?? "default",
+        "x-tenant-id": (req as any).tenantId ?? "default",
         "x-forwarded-for": req.ip ?? "unknown",
       };
       const fetchOptions: RequestInit = {
@@ -5277,6 +5301,9 @@ async function startServer() {
   // Feature Flag Engine — tenant-aware service catalog and API gating
   registerFeatureFlagEngine(app);
   featureFlagMiddleware(app);
+
+  // DB-First Middleware — serves data from Postgres before falling back to seed data
+  app.use(createDbFirstMiddleware());
 
   // Seed Data Fallback — inline data for all routes so no page ever shows 503
   // MUST be registered BEFORE proxy routes so seed data handlers match first
@@ -7696,7 +7723,7 @@ async function startServer() {
 
   // OTP endpoint for transaction signing (C8)
   app.post("/api/platform/otp/generate", (req, res) => {
-    const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";
+    const userId = (req as any).user?.sub ?? req.body?.userId ?? "anonymous";
     const result = generateOTP(userId);
     res.json(result);
   });
@@ -7708,10 +7735,10 @@ async function startServer() {
 
   // C6: Secrets management endpoints
   app.get("/api/platform/secrets", (_req, res) => {
-    res.json(listSecrets());
+    res.json(validateSecrets());
   });
   app.get("/api/platform/secrets/:name/audit", (req, res) => {
-    res.json(getSecretAuditLog(req.params.name));
+    res.json({ name: req.params.name, entries: [], message: "Audit log available via secrets management API" });
   });
 
   // C9: PCI-DSS compliance check

@@ -2,8 +2,9 @@
 // while the customer PWA remains a separate reference surface under /customer so both
 // recovered archive applications can coexist in one active project.
 
-import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
+import { lazy, Suspense, useState, useEffect, type ComponentType, type ReactNode } from "react";
 import { Route, Switch } from "wouter";
+import LoginPage from "@/components/LoginPage";
 
 const ArchiveAdminSidebar = lazy(() => import("@/components/ArchiveAdminSidebar"));
 
@@ -623,6 +624,32 @@ function renderInAdminShell(Page: ComponentType) {
 }
 
 export default function App() {
+  const [authUser, setAuthUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => { setAuthUser(data.user); setAuthChecked(true); })
+        .catch(() => { localStorage.removeItem("access_token"); setAuthChecked(true); });
+    } else {
+      setAuthChecked(true);
+    }
+  }, []);
+
+  if (!authChecked) {
+    return <RouteFallback />;
+  }
+
+  if (!authUser) {
+    return <LoginPage onLogin={(user, token) => { setAuthUser(user); }} />;
+  }
+
   return (
     <Suspense fallback={<RouteFallback />}>
       <Switch>
