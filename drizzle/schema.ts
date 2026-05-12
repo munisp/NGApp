@@ -2042,3 +2042,224 @@ export type BureauCheck = typeof bureauChecks.$inferSelect;
 export type InsertBureauCheck = typeof bureauChecks.$inferInsert;
 export type EFASSReturn = typeof efassReturns.$inferSelect;
 export type InsertEFASSReturn = typeof efassReturns.$inferInsert;
+
+// ─── Escrow Account Management ──────────────────────────────────────────────
+
+export const escrowAccounts = pgTable("escrow_accounts", {
+  id: serial("id").primaryKey(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  escrowType: varchar("escrowType", { length: 64 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("NGN"),
+  condition: text("condition"),
+  expiresAt: timestamp("expiresAt"),
+  interestRate: doublePrecision("interestRate").default(0),
+  accruedInterest: doublePrecision("accruedInterest").default(0),
+  setupFee: doublePrecision("setupFee").default(0),
+  holdingFeeAnnual: doublePrecision("holdingFeeAnnual").default(0),
+  totalFeesCharged: doublePrecision("totalFeesCharged").default(0),
+  tigerBeetleTxId: varchar("tigerBeetleTxId", { length: 64 }),
+  kafkaEventId: varchar("kafkaEventId", { length: 64 }),
+  temporalWorkflowId: varchar("temporalWorkflowId", { length: 128 }),
+  approvedBy: varchar("approvedBy", { length: 128 }),
+  releasedAt: timestamp("releasedAt"),
+  cancelledAt: timestamp("cancelledAt"),
+  disputeReason: text("disputeReason"),
+  notes: text("notes"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_accounts_tenant_idx").on(table.tenantId),
+  index("escrow_accounts_status_idx").on(table.status),
+  index("escrow_accounts_type_idx").on(table.escrowType),
+]);
+
+export const escrowParties = pgTable("escrow_parties", {
+  id: serial("id").primaryKey(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  role: varchar("role", { length: 32 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  accountId: varchar("accountId", { length: 64 }),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 32 }),
+  kycStatus: varchar("kycStatus", { length: 32 }).default("pending"),
+  kybStatus: varchar("kybStatus", { length: 32 }).default("pending"),
+  sharePercent: doublePrecision("sharePercent").default(0),
+  signedAt: timestamp("signedAt"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_parties_escrow_idx").on(table.escrowId),
+  index("escrow_parties_role_idx").on(table.role),
+]);
+
+export const escrowTransactions = pgTable("escrow_transactions", {
+  id: serial("id").primaryKey(),
+  txId: varchar("txId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  type: varchar("type", { length: 32 }).notNull(),
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("NGN"),
+  fromAccount: varchar("fromAccount", { length: 64 }),
+  toAccount: varchar("toAccount", { length: 64 }),
+  status: varchar("status", { length: 32 }).notNull(),
+  ledgerRef: varchar("ledgerRef", { length: 64 }),
+  milestoneId: varchar("milestoneId", { length: 32 }),
+  narration: text("narration"),
+  fxRate: doublePrecision("fxRate"),
+  fxSourceCurrency: varchar("fxSourceCurrency", { length: 8 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_txn_escrow_idx").on(table.escrowId),
+  index("escrow_txn_type_idx").on(table.type),
+]);
+
+export const escrowMilestones = pgTable("escrow_milestones", {
+  id: serial("id").primaryKey(),
+  milestoneId: varchar("milestoneId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  description: text("description").notNull(),
+  releaseAmount: doublePrecision("releaseAmount"),
+  releasePercent: doublePrecision("releasePercent"),
+  dueDate: timestamp("dueDate"),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  verifiedBy: varchar("verifiedBy", { length: 128 }),
+  verifiedAt: timestamp("verifiedAt"),
+  evidenceDocId: varchar("evidenceDocId", { length: 64 }),
+  sequenceOrder: integer("sequenceOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_milestones_escrow_idx").on(table.escrowId),
+]);
+
+export const escrowDisputes = pgTable("escrow_disputes", {
+  id: serial("id").primaryKey(),
+  disputeId: varchar("disputeId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  raisedBy: varchar("raisedBy", { length: 256 }).notNull(),
+  raisedByPartyId: integer("raisedByPartyId"),
+  reason: text("reason").notNull(),
+  category: varchar("category", { length: 64 }),
+  status: varchar("status", { length: 32 }).notNull().default("under_review"),
+  resolution: text("resolution"),
+  arbitratorName: varchar("arbitratorName", { length: 256 }),
+  arbitratorDecision: text("arbitratorDecision"),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_disputes_escrow_idx").on(table.escrowId),
+  index("escrow_disputes_status_idx").on(table.status),
+]);
+
+export const escrowDocuments = pgTable("escrow_documents", {
+  id: serial("id").primaryKey(),
+  documentId: varchar("documentId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  documentType: varchar("documentType", { length: 64 }).notNull(),
+  fileName: varchar("fileName", { length: 512 }).notNull(),
+  fileSize: integer("fileSize"),
+  mimeType: varchar("mimeType", { length: 128 }),
+  storageUrl: text("storageUrl"),
+  uploadedBy: varchar("uploadedBy", { length: 256 }),
+  verifiedBy: varchar("verifiedBy", { length: 256 }),
+  verifiedAt: timestamp("verifiedAt"),
+  status: varchar("status", { length: 32 }).default("uploaded"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_documents_escrow_idx").on(table.escrowId),
+]);
+
+export const escrowFees = pgTable("escrow_fees", {
+  id: serial("id").primaryKey(),
+  feeId: varchar("feeId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  feeType: varchar("feeType", { length: 32 }).notNull(),
+  amount: doublePrecision("amount").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("NGN"),
+  chargedAt: timestamp("chargedAt").defaultNow().notNull(),
+  status: varchar("status", { length: 32 }).default("charged"),
+  ledgerRef: varchar("ledgerRef", { length: 64 }),
+  narration: text("narration"),
+}, (table) => [
+  index("escrow_fees_escrow_idx").on(table.escrowId),
+]);
+
+export const escrowInterestAccruals = pgTable("escrow_interest_accruals", {
+  id: serial("id").primaryKey(),
+  accrualId: varchar("accrualId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  principalAmount: doublePrecision("principalAmount").notNull(),
+  rate: doublePrecision("rate").notNull(),
+  accrualPeriodStart: timestamp("accrualPeriodStart").notNull(),
+  accrualPeriodEnd: timestamp("accrualPeriodEnd").notNull(),
+  daysInPeriod: integer("daysInPeriod").notNull(),
+  interestAmount: doublePrecision("interestAmount").notNull(),
+  cumulativeInterest: doublePrecision("cumulativeInterest").notNull(),
+  status: varchar("status", { length: 32 }).default("accrued"),
+  ledgerRef: varchar("ledgerRef", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_interest_escrow_idx").on(table.escrowId),
+]);
+
+export const escrowRegulatoryReports = pgTable("escrow_regulatory_reports", {
+  id: serial("id").primaryKey(),
+  reportId: varchar("reportId", { length: 32 }).notNull().unique(),
+  reportType: varchar("reportType", { length: 64 }).notNull(),
+  reportingPeriodStart: timestamp("reportingPeriodStart").notNull(),
+  reportingPeriodEnd: timestamp("reportingPeriodEnd").notNull(),
+  totalEscrowAccounts: integer("totalEscrowAccounts"),
+  totalHeldValue: doublePrecision("totalHeldValue"),
+  totalReleasedValue: doublePrecision("totalReleasedValue"),
+  totalDisputedValue: doublePrecision("totalDisputedValue"),
+  totalInterestAccrued: doublePrecision("totalInterestAccrued"),
+  filedAt: timestamp("filedAt"),
+  filingReference: varchar("filingReference", { length: 128 }),
+  status: varchar("status", { length: 32 }).default("draft"),
+  reportData: jsonb("reportData"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_regulatory_status_idx").on(table.status),
+]);
+
+export const escrowAuditLog = pgTable("escrow_audit_log", {
+  id: serial("id").primaryKey(),
+  auditId: varchar("auditId", { length: 32 }).notNull().unique(),
+  escrowId: varchar("escrowId", { length: 32 }).notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  actor: varchar("actor", { length: 256 }).notNull(),
+  details: text("details"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  kafkaTopic: varchar("kafkaTopic", { length: 128 }),
+  kafkaOffset: varchar("kafkaOffset", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("escrow_audit_escrow_idx").on(table.escrowId),
+  index("escrow_audit_action_idx").on(table.action),
+]);
+
+// Escrow type exports
+export type EscrowAccount = typeof escrowAccounts.$inferSelect;
+export type InsertEscrowAccount = typeof escrowAccounts.$inferInsert;
+export type EscrowParty = typeof escrowParties.$inferSelect;
+export type InsertEscrowParty = typeof escrowParties.$inferInsert;
+export type EscrowTransaction = typeof escrowTransactions.$inferSelect;
+export type InsertEscrowTransaction = typeof escrowTransactions.$inferInsert;
+export type EscrowMilestone = typeof escrowMilestones.$inferSelect;
+export type InsertEscrowMilestone = typeof escrowMilestones.$inferInsert;
+export type EscrowDispute = typeof escrowDisputes.$inferSelect;
+export type InsertEscrowDispute = typeof escrowDisputes.$inferInsert;
+export type EscrowDocument = typeof escrowDocuments.$inferSelect;
+export type InsertEscrowDocument = typeof escrowDocuments.$inferInsert;
+export type EscrowFee = typeof escrowFees.$inferSelect;
+export type InsertEscrowFee = typeof escrowFees.$inferInsert;
+export type EscrowInterestAccrual = typeof escrowInterestAccruals.$inferSelect;
+export type InsertEscrowInterestAccrual = typeof escrowInterestAccruals.$inferInsert;
+export type EscrowRegulatoryReport = typeof escrowRegulatoryReports.$inferSelect;
+export type InsertEscrowRegulatoryReport = typeof escrowRegulatoryReports.$inferInsert;
+export type EscrowAuditLogEntry = typeof escrowAuditLog.$inferSelect;
+export type InsertEscrowAuditLogEntry = typeof escrowAuditLog.$inferInsert;

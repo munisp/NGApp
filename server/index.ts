@@ -7106,10 +7106,23 @@ async function startServer() {
   app.all("/api/platform/trust-estate/list", (req, res) => { void proxyToService(TRUST_URL, "/v1/trust-estate-rs/list", req, res); });
   app.all("/api/platform/trust-estate/healthz", (req, res) => { void proxyToService(TRUST_URL, "/healthz", req, res); });
 
-  // Escrow (Go :8186)
+  // Escrow (Go :8186) — Production-grade multi-party escrow
   const ESCROW_URL = process.env.ESCROW_URL || "http://localhost:8186";
-  app.all("/api/platform/escrow/list", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow-go/list", req, res); });
-  app.all("/api/platform/escrow/stats", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow-go/stats", req, res); });
+  app.all("/api/platform/escrow/list", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/accounts", req, res); });
+  app.all("/api/platform/escrow/accounts", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/accounts", req, res); });
+  app.all("/api/platform/escrow/accounts/*", (req, res) => { const sub = (req.params as Record<string, string>)[0]; void proxyToService(ESCROW_URL, `/v1/escrow/accounts/${sub}`, req, res); });
+  app.all("/api/platform/escrow/transactions", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/transactions", req, res); });
+  app.all("/api/platform/escrow/milestones", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/milestones", req, res); });
+  app.all("/api/platform/escrow/milestones/*", (req, res) => { const sub = (req.params as Record<string, string>)[0]; void proxyToService(ESCROW_URL, `/v1/escrow/milestones/${sub}`, req, res); });
+  app.all("/api/platform/escrow/disputes", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/disputes", req, res); });
+  app.all("/api/platform/escrow/documents", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/documents", req, res); });
+  app.all("/api/platform/escrow/fees", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/fees", req, res); });
+  app.all("/api/platform/escrow/interest", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/interest", req, res); });
+  app.all("/api/platform/escrow/regulatory", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/regulatory", req, res); });
+  app.all("/api/platform/escrow/notifications", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/notifications", req, res); });
+  app.all("/api/platform/escrow/fx-rates", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/fx-rates", req, res); });
+  app.all("/api/platform/escrow/audit", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/audit", req, res); });
+  app.all("/api/platform/escrow/stats", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow/stats", req, res); });
   app.all("/api/platform/escrow/healthz", (req, res) => { void proxyToService(ESCROW_URL, "/healthz", req, res); });
 
   // QR Payments (Go :8187)

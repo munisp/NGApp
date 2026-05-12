@@ -32,6 +32,9 @@ import {
   virtualAccounts, agentBankingAgents, lendingGroups,
   identityProfiles, disputeCases, reconciliationRuns,
   erpnextSyncJobs, regulatoryReports,
+  escrowAccounts, escrowParties, escrowTransactions, escrowMilestones,
+  escrowDisputes, escrowDocuments, escrowFees, escrowInterestAccruals,
+  escrowRegulatoryReports, escrowAuditLog,
 } from "../../drizzle/schema";
 
 // ── Repository Instances ──
@@ -92,6 +95,17 @@ const repos = {
   reconciliationRuns: createRepository(reconciliationRuns, reconciliationRuns.id, { tableName: "reconciliationRuns" }),
   erpnextSyncJobs: createRepository(erpnextSyncJobs, erpnextSyncJobs.id, { tableName: "erpnextSyncJobs" }),
   regulatoryReports: createRepository(regulatoryReports, regulatoryReports.id, { tableName: "regulatoryReports" }),
+  // Escrow
+  escrowAccounts: createRepository(escrowAccounts, escrowAccounts.escrowId, { tableName: "escrowAccounts" }),
+  escrowParties: createRepository(escrowParties, escrowParties.id, { tableName: "escrowParties" }),
+  escrowTransactions: createRepository(escrowTransactions, escrowTransactions.txId, { tableName: "escrowTransactions" }),
+  escrowMilestones: createRepository(escrowMilestones, escrowMilestones.milestoneId, { tableName: "escrowMilestones" }),
+  escrowDisputes: createRepository(escrowDisputes, escrowDisputes.disputeId, { tableName: "escrowDisputes" }),
+  escrowDocuments: createRepository(escrowDocuments, escrowDocuments.documentId, { tableName: "escrowDocuments" }),
+  escrowFees: createRepository(escrowFees, escrowFees.feeId, { tableName: "escrowFees" }),
+  escrowInterestAccruals: createRepository(escrowInterestAccruals, escrowInterestAccruals.accrualId, { tableName: "escrowInterestAccruals" }),
+  escrowRegulatoryReports: createRepository(escrowRegulatoryReports, escrowRegulatoryReports.reportId, { tableName: "escrowRegulatoryReports" }),
+  escrowAuditLog: createRepository(escrowAuditLog, escrowAuditLog.auditId, { tableName: "escrowAuditLog" }),
 };
 
 // ── Helper: DB-first, seed-fallback ──
@@ -214,6 +228,17 @@ const routeConfigs: RouteConfig[] = [
   // ERP & Regulatory
   { basePath: "/api/db/erpnext-sync-jobs", repo: "erpnextSyncJobs", idParam: "id", domain: "ERP" },
   { basePath: "/api/db/regulatory-reports", repo: "regulatoryReports", idParam: "id", domain: "Regulatory" },
+  // Escrow
+  { basePath: "/api/db/escrow-accounts", repo: "escrowAccounts", idParam: "escrowId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-parties", repo: "escrowParties", idParam: "id", domain: "Escrow" },
+  { basePath: "/api/db/escrow-transactions", repo: "escrowTransactions", idParam: "txId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-milestones", repo: "escrowMilestones", idParam: "milestoneId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-disputes", repo: "escrowDisputes", idParam: "disputeId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-documents", repo: "escrowDocuments", idParam: "documentId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-fees", repo: "escrowFees", idParam: "feeId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-interest", repo: "escrowInterestAccruals", idParam: "accrualId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-regulatory", repo: "escrowRegulatoryReports", idParam: "reportId", domain: "Escrow" },
+  { basePath: "/api/db/escrow-audit", repo: "escrowAuditLog", idParam: "auditId", domain: "Escrow" },
 ];
 
 export function registerDrizzleRoutes(app: any) {

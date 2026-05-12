@@ -84,6 +84,7 @@ export interface CrudConfig {
   actions?: { label: string; key: string; variant?: string; condition?: (row: Record<string, unknown>) => boolean }[];
   pageSize?: number;
   bulkActions?: { label: string; key: string; variant?: string }[];
+  tabs?: { key: string; label: string; apiBase: string; subPath?: string; columns: { key: string; label: string; sortable?: boolean; render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode }[] }[];
 }
 
 interface CrudWorkspaceProps {
