@@ -1535,7 +1535,7 @@ const fallbackAudit: AuditResponse = {
     {
       id: "AUD-952",
       timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-      actorRole: "security",
+      actorRole: "compliance",
       actorId: "soc.analyst",
       entityType: "fraud_alert",
       entityId: "FRD-ALT-892",
