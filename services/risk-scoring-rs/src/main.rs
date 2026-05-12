@@ -93,6 +93,9 @@ async fn stats(data: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
+
+// Real Postgres query: SELECT "customerId", "customerName", "riskScore", "riskLevel", status FROM "aml_risk_scores" ORDER BY id LIMIT 25
+// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080);

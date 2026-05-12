@@ -119,6 +119,31 @@ class Handler(BaseHTTPRequestHandler):
         body["created_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         self.send_json(201, {"created": True, "data": body})
 
+
+
+@app.route("/data")
+def data_endpoint():
+    """Query transactions from Postgres."""
+    db_url = os.environ.get("DATABASE_URL", "")
+    if not db_url:
+        return jsonify({"items": [], "source": "no-db"})
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        page = int(request.args.get("page", 1))
+        limit = min(int(request.args.get("limit", 25)), 100)
+        offset = (page - 1) * limit
+        cur.execute('SELECT count(*) FROM "transactions"')
+        total = cur.fetchone()["count"]
+        cur.execute('SELECT "transactionId", "accountId", amount, currency, status FROM "transactions" ORDER BY id LIMIT %s OFFSET %s', (limit, offset))
+        items = cur.fetchall()
+        conn.close()
+        return jsonify({"items": [dict(r) for r in items], "total": total, "page": page, "limit": limit, "source": "database"})
+    except Exception as e:
+        return jsonify({"items": [], "error": str(e), "source": "error"}), 200
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     server = HTTPServer(("0.0.0.0", port), Handler)

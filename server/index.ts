@@ -100,6 +100,8 @@ import { registerSwaggerDocs } from "./lib/swaggerDocs";
 import { registerMiddlewareIntegration } from "./lib/middlewareIntegration";
 import { registerSecurityHardening } from "./lib/securityHardening";
 import { seedDatabaseIfEmpty } from "./lib/seedDatabase";
+import { initRedis, getRedisStatus } from "./lib/redisClient";
+import { initKafka, getKafkaStatus, publish, getRecentMessages } from "./lib/kafkaClient";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -2971,6 +2973,8 @@ async function startServer() {
       }
     }
     const status = dbStatus === "disconnected" ? "degraded" : "ok";
+    const redisStatus = getRedisStatus();
+    const kafkaStatus = getKafkaStatus();
     const health = {
       status,
       app: "54bank-core-banking",
@@ -2980,6 +2984,8 @@ async function startServer() {
       environment: runtimeEnvironment,
       persistence: fs.existsSync(persistenceFile) ? "available" : "initializing",
       database: dbStatus,
+      redis: redisStatus.connected ? "connected" : redisStatus.mode,
+      kafka: kafkaStatus.connected ? "connected" : kafkaStatus.mode,
       configurationWarnings: runtimeConfigWarnings.length,
     };
     res.setHeader("Cache-Control", `public, max-age=${healthCacheSeconds}, stale-while-revalidate=${healthCacheSeconds}`);
@@ -5312,6 +5318,35 @@ async function startServer() {
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
+
+  // Initialize Redis + Kafka middleware connections
+  initRedis().catch(() => {});
+  initKafka().catch(() => {});
+
+  // Redis status endpoint
+  app.get("/api/platform/redis/status", (_req, res) => {
+    res.json(getRedisStatus());
+  });
+
+  // Kafka status + publish + messages endpoints
+  app.get("/api/platform/kafka/status", (_req, res) => {
+    res.json(getKafkaStatus());
+  });
+
+  app.post("/api/platform/kafka/publish", (req, res) => {
+    const { topic, message } = req.body || {};
+    if (!topic || !message) {
+      return res.status(400).json({ error: "topic and message required" });
+    }
+    publish(topic, message);
+    res.status(201).json({ published: true, topic });
+  });
+
+  app.get("/api/platform/kafka/messages", (req, res) => {
+    const topic = req.query.topic as string | undefined;
+    const limit = parseInt(req.query.limit as string) || 50;
+    res.json({ messages: getRecentMessages(topic, limit) });
+  });
   registerKedaAutoscaling(app);
   registerHighAvailability(app);
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,7 +13,10 @@ import (
 	"time"
 )
 
-var startTime = time.Now()
+var (
+	db        *sql.DB
+	startTime = time.Now()
+)
 
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -117,6 +121,74 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Created successfully",
 		"data":    body,
 		"source":  "service",
+	})
+}
+
+func initDB() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Println("[account-statement-go] DATABASE_URL not set, running without DB")
+		return
+	}
+	var err error
+	db, err = sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("[account-statement-go] DB connection error: %v", err)
+		return
+	}
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[account-statement-go] DB ping failed: %v", err)
+		db = nil
+		return
+	}
+	log.Println("[account-statement-go] Connected to Postgres")
+}
+
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "source": "no-db"})
+		return
+	}
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 { page = 1 }
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 { limit = 25 }
+	offset := (page - 1) * limit
+
+	var total int
+	db.QueryRow(`SELECT count(*) FROM "transactions"`).Scan(&total)
+
+	rows, err := db.Query(fmt.Sprintf(`SELECT transactionId, accountId, type, amount, narration, status FROM "transactions" ORDER BY id LIMIT %d OFFSET %d`, limit, offset))
+	if err != nil {
+		jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	cols, _ := rows.Columns()
+	var items []map[string]interface{}
+	for rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		rows.Scan(ptrs...)
+		row := make(map[string]interface{})
+		for i, col := range cols {
+			row[col] = vals[i]
+		}
+		items = append(items, row)
+	}
+	if items == nil { items = []map[string]interface{}{} }
+
+	jsonResp(w, 200, map[string]interface{}{
+		"items": items,
+		"total": total,
+		"page": page,
+		"limit": limit,
+		"source": "database",
 	})
 }
 

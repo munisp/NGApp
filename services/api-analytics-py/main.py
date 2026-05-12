@@ -184,6 +184,31 @@ class Handler(BaseHTTPRequestHandler):
     
     def log_message(self, format, *args): pass
 
+
+
+@app.route("/data")
+def data_endpoint():
+    """Query transactions from Postgres."""
+    db_url = os.environ.get("DATABASE_URL", "")
+    if not db_url:
+        return jsonify({"items": [], "source": "no-db"})
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        page = int(request.args.get("page", 1))
+        limit = min(int(request.args.get("limit", 25)), 100)
+        offset = (page - 1) * limit
+        cur.execute('SELECT count(*) FROM "transactions"')
+        total = cur.fetchone()["count"]
+        cur.execute('SELECT "transactionId", channel, amount, status FROM "transactions" ORDER BY id LIMIT %s OFFSET %s', (limit, offset))
+        items = cur.fetchall()
+        conn.close()
+        return jsonify({"items": [dict(r) for r in items], "total": total, "page": page, "limit": limit, "source": "database"})
+    except Exception as e:
+        return jsonify({"items": [], "error": str(e), "source": "error"}), 200
+
 if __name__ == "__main__":
     logger.info(f"Starting on :{PORT} (Postgres-backed)")
     HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
