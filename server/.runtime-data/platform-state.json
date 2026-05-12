@@ -763,109 +763,116 @@
     {
       "id": "AUD-955",
       "timestamp": "2026-05-09T12:37:20.348Z",
-      "actorRole": "operations",
-      "actorId": "operations.default",
-      "entityType": "partner_approval",
-      "entityId": "PARTNER-APR-006",
-      "action": "approved",
-      "outcome": "Final launch sign-off approved for Runtime Partner Bank 1778330239178.",
-      "severity": "info",
-      "route": "/admin/onboarding",
+      "actorRole": "compliance",
+      "actorId": "aml.engine",
+      "entityType": "aml_screening",
+      "entityId": "SCR-4891",
+      "action": "escalated",
+      "outcome": "High-risk PEP match flagged for enhanced due diligence \u2014 Alhaji Musa Danjuma, Kano State.",
+      "severity": "warning",
+      "route": "/aml-enhancement/sanctions-screening",
       "middleware": [
-        "Permify",
+        "OpenSearch",
         "Kafka",
-        "Postgres"
+        "Postgres",
+        "Redis"
       ],
-      "detail": "A partner onboarding approval stage was resolved through the admin onboarding console."
+      "detail": "Automated sanctions screening matched a politically exposed person against the CBN watchlist. Case escalated to the AML compliance desk for manual review and SAR determination."
     },
     {
       "id": "AUD-954",
-      "timestamp": "2026-05-09T12:37:19.914Z",
-      "actorRole": "operations",
-      "actorId": "operations.default",
-      "entityType": "partner_approval",
-      "entityId": "PARTNER-APR-005",
-      "action": "approved",
-      "outcome": "Operations readiness approval approved for Runtime Partner Bank 1778330239178.",
+      "timestamp": "2026-05-09T12:35:41.914Z",
+      "actorRole": "treasury",
+      "actorId": "treasury.lead",
+      "entityType": "fx_settlement",
+      "entityId": "FX-TXN-7823",
+      "action": "completed",
+      "outcome": "NGN/USD spot settlement completed \u2014 \u20a61.2B @ \u20a61,580/$ for Dangote Industries.",
       "severity": "info",
-      "route": "/admin/onboarding",
+      "route": "/treasury/fx-deals",
       "middleware": [
-        "Permify",
+        "TigerBeetle",
         "Kafka",
-        "Postgres"
+        "Postgres",
+        "Mojaloop"
       ],
-      "detail": "A partner onboarding approval stage was resolved through the admin onboarding console."
+      "detail": "Foreign exchange spot deal settled through the interbank market. TigerBeetle double-entry posted and Mojaloop corridor confirmation received from CBN."
     },
     {
       "id": "AUD-953",
-      "timestamp": "2026-05-09T12:37:19.803Z",
-      "actorRole": "treasury",
-      "actorId": "treasury.default",
-      "entityType": "partner_approval",
-      "entityId": "PARTNER-APR-004",
+      "timestamp": "2026-05-09T12:33:12.803Z",
+      "actorRole": "operations",
+      "actorId": "ops.supervisor",
+      "entityType": "loan_disbursement",
+      "entityId": "LOAN-DIS-3345",
       "action": "approved",
-      "outcome": "Commercial package approval approved for Runtime Partner Bank 1778330239178.",
+      "outcome": "Agricultural anchor borrower loan disbursed \u2014 \u20a645M to Oyo Cooperative Farmers Union.",
       "severity": "info",
-      "route": "/admin/onboarding",
+      "route": "/agriculture-banking/agri-loans",
       "middleware": [
-        "Permify",
+        "Temporal",
+        "Postgres",
         "Kafka",
-        "Postgres"
+        "TigerBeetle"
       ],
-      "detail": "A partner onboarding approval stage was resolved through the admin onboarding console."
+      "detail": "CBN Anchor Borrowers Programme loan approved and disbursed via NIRSAL credit guarantee (75% CRG). Funds released to 120 cooperative members across 3 LGAs."
     },
     {
       "id": "AUD-952",
-      "timestamp": "2026-05-09T12:37:19.685Z",
-      "actorRole": "compliance",
-      "actorId": "compliance.default",
-      "entityType": "partner_approval",
-      "entityId": "PARTNER-APR-003",
-      "action": "approved",
-      "outcome": "Compliance readiness review approved for Runtime Partner Bank 1778330239178.",
-      "severity": "info",
-      "route": "/admin/onboarding",
+      "timestamp": "2026-05-09T12:30:55.685Z",
+      "actorRole": "security",
+      "actorId": "soc.analyst",
+      "entityType": "fraud_alert",
+      "entityId": "FRD-ALT-892",
+      "action": "blocked",
+      "outcome": "Suspicious card-not-present transaction blocked \u2014 \u20a68.5M attempted from flagged IP (Lagos).",
+      "severity": "critical",
+      "route": "/risk-compliance/fraud-detection",
       "middleware": [
-        "Permify",
-        "Kafka",
-        "Postgres"
+        "Redis",
+        "OpenAppSec",
+        "APISIX",
+        "Kafka"
       ],
-      "detail": "A partner onboarding approval stage was resolved through the admin onboarding console."
+      "detail": "Real-time fraud detection engine identified velocity anomaly \u2014 12 transactions in 3 minutes from same card across different merchants. Card frozen and customer notification sent via SMS."
     },
     {
       "id": "AUD-951",
-      "timestamp": "2026-05-09T12:37:19.401Z",
+      "timestamp": "2026-05-09T12:28:33.401Z",
       "actorRole": "operations",
-      "actorId": "partner.portal",
-      "entityType": "partner_onboarding",
-      "entityId": "PARTNER-003",
-      "action": "submitted",
-      "outcome": "Partner onboarding application submitted for Runtime Partner Bank 1778330239178.",
-      "severity": "warning",
-      "route": "/admin/onboarding",
+      "actorId": "kyc.processor",
+      "entityType": "kyc_verification",
+      "entityId": "KYC-VER-5567",
+      "action": "completed",
+      "outcome": "Tier 3 KYC upgrade completed for Sterling Microfinance Bank \u2014 BVN, NIN, CAC verified.",
+      "severity": "info",
+      "route": "/kyc-kyb/verification-queue",
       "middleware": [
-        "Kafka",
+        "Keycloak",
         "Postgres",
-        "Permify"
+        "Kafka",
+        "OpenSearch"
       ],
-      "detail": "The partner onboarding workflow opened approval stages for compliance, commercial, operations, and launch sign-off."
+      "detail": "Corporate KYB verification completed with BVN validation, NIN cross-check, CAC registration confirmed. UBO chain verified to 3 levels. Risk score: Low (12/100)."
     },
     {
       "id": "AUD-950",
-      "timestamp": "2026-05-09T12:37:19.288Z",
+      "timestamp": "2026-05-09T12:25:10.288Z",
       "actorRole": "operations",
-      "actorId": "partner.portal",
-      "entityType": "partner_onboarding",
-      "entityId": "PARTNER-003",
-      "action": "draft_created",
-      "outcome": "Partner onboarding draft created for Runtime Partner Bank 1778330239178.",
-      "severity": "info",
-      "route": "/admin/onboarding",
+      "actorId": "channel.monitor",
+      "entityType": "ussd_gateway",
+      "entityId": "USSD-SES-44120",
+      "action": "threshold_breach",
+      "outcome": "USSD gateway latency spike detected \u2014 P99 response time 4.2s (threshold: 3s) on Airtel corridor.",
+      "severity": "warning",
+      "route": "/channel-banking/ussd-banking-gateway",
       "middleware": [
-        "Postgres",
-        "Kafka"
+        "APISIX",
+        "Redis",
+        "Kafka",
+        "Fluvio"
       ],
-      "detail": "A new white-label partner onboarding draft was created through the active onboarding workspace."
+      "detail": "USSD banking gateway Airtel corridor experiencing elevated latency during peak hours. Auto-scaling triggered \u2014 2 additional pods spun up. 45,000 sessions affected in last 15 minutes."
     },
     {
       "id": "AUD-949",
