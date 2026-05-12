@@ -154,6 +154,9 @@ import {
   refreshBillingAccrualSnapshots,
   resolveBillingInvoiceApproval,
 } from "./billingEngine";
+import { registerMfaRoutes } from "./lib/mfaTotp";
+import { registerApiKeyRoutes, validateApiKey } from "./lib/apiKeyManagement";
+import { corsMiddleware } from "./lib/corsPolicy";
 import {
   createBillingApprovalMatrix,
   createBillingInvoiceDispute,
@@ -2790,6 +2793,7 @@ async function startServer() {
     legacyHeaders: false,
     message: { error: "Too many requests, please try again later" },
     skip: (req) => req.method === "OPTIONS",
+    validate: { trustProxy: false },
   }));
 
   // Security: Stricter rate limiter for mutations
@@ -2800,10 +2804,14 @@ async function startServer() {
     legacyHeaders: false,
     message: { error: "Write rate limit exceeded" },
     skip: (req) => !["POST", "PUT", "PATCH", "DELETE"].includes(req.method),
+    validate: { trustProxy: false },
   }));
 
   // Prometheus metrics middleware (#12)
   app.use(metricsMiddleware());
+
+  registerMfaRoutes(app);
+  registerApiKeyRoutes(app);
 
   // Correlation ID middleware (#11)
   app.use((req, _res, next) => {

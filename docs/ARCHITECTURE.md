@@ -2,113 +2,111 @@
 
 ## System Overview
 
-54Bank follows a microservices architecture with a unified frontend gateway pattern.
-
-### Request Flow
+54Bank is a full-stack core banking platform built for Nigerian and African financial institutions. It supports commercial banks, microfinance banks, mortgage banks, and agriculture banking.
 
 ```
-Client → APISIX Gateway → Express Server → Microservice (Go/Rust/Python)
-                ↓                  ↓                    ↓
-           Rate Limit        JWT Verify           Postgres DB
-           WAF Check         RBAC Check           Kafka Event
-           Auth Plugin       Audit Log            Redis Cache
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Layer                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ React PWA│  │ Flutter  │  │ USSD     │  │ Voice/SMS  │  │
+│  │ (Vite)   │  │ Mobile   │  │ Gateway  │  │ Channels   │  │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └─────┬──────┘  │
+└───────┼──────────────┼─────────────┼──────────────┼─────────┘
+        │              │             │              │
+┌───────┴──────────────┴─────────────┴──────────────┴─────────┐
+│                    API Gateway (APISIX)                       │
+│  - Rate limiting  - WAF (OpenAppSec)  - JWT validation       │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────┴──────────────────────────────────┐
+│                    Express Server (:3000)                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ Auth/RBAC│  │ CORS     │  │ Validation│  │ Audit Log  │  │
+│  │ JWT+MFA  │  │ Whitelist│  │ Zod+BVN  │  │ Events     │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ 260 Drizzle CRUD Routes (/api/db/*)                  │   │
+│  │ → SELECT/INSERT/UPDATE/DELETE with pagination        │   │
+│  └──────────────────────────┬───────────────────────────┘   │
+└─────────────────────────────┼───────────────────────────────┘
+                              │
+┌─────────────────────────────┴───────────────────────────────┐
+│                    Data Layer                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ Postgres │  │ Redis    │  │ TigerBtl │  │ OpenSearch │  │
+│  │ 267 tbls │  │ Cache    │  │ Ledger   │  │ Analytics  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│               Microservices (425 total)                       │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
+│  │ Go (180)   │  │ Rust (139) │  │ Python(106)│            │
+│  │ stdlib-only│  │ actix-web  │  │ psycopg2   │            │
+│  └────────────┘  └────────────┘  └────────────┘            │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│               Event & Workflow Layer                          │
+│  ┌──────┐  ┌────────┐  ┌────────┐  ┌──────┐  ┌──────────┐ │
+│  │Kafka │  │Temporal│  │Mojaloop│  │ Dapr │  │ Fluvio   │ │
+│  │Events│  │Workflow│  │ILP Xfer│  │Sidecar│  │Streaming │ │
+│  └──────┘  └────────┘  └────────┘  └──────┘  └──────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow
+## Domain Model (46 categories)
+
+| Domain | Tables | Services | Description |
+|--------|--------|----------|-------------|
+| Core Banking | 12 | 15 | Accounts, customers, transactions, branches |
+| Payments | 8 | 12 | Transfers (NIP/NEFT/RTGS), bills, cards |
+| Lending | 10 | 14 | Loans, repayments, collateral, credit scoring |
+| Treasury | 6 | 8 | FX, bonds, money market, ALM |
+| KYC/AML | 8 | 10 | Verification, sanctions, PEP screening |
+| Agriculture | 15 | 40 | Farmers, cooperatives, NIRSAL, livestock |
+| Channel Banking | 12 | 25 | Voice, Telegram, WhatsApp, USSD, SMS |
+| Risk & Compliance | 10 | 15 | Regulatory reporting, capital adequacy |
+
+## Authentication Flow
 
 ```
-User Action → Express API → Drizzle ORM → PostgreSQL
-                   ↓              ↓
-              Kafka Event    TigerBeetle Ledger
-                   ↓              ↓
-            OpenSearch Index  Lakehouse (Iceberg)
+Client → POST /api/auth/login (email, password)
+  → PBKDF2-SHA512 verify → JWT token (8h)
+  → MFA required? → POST /api/auth/mfa/validate (TOTP)
+  → Set HttpOnly cookie + return Bearer token
+  → All /api/* routes validate JWT via middleware
+  → Role checked: admin|operations|compliance|treasury|branch|teller|user|auditor
 ```
 
-## Service Architecture
+## Data Flow
 
-### Express Gateway (Port 3000)
-The main Express server acts as an API gateway and serves the React SPA. It handles:
-- Static file serving (React PWA build)
-- 259 Drizzle-backed CRUD route sets (1,554 endpoints)
-- 415 proxy routes to microservices
-- JWT authentication and RBAC
-- Input validation (Zod schemas)
-- OWASP security headers
-- Rate limiting and brute force protection
-
-### Microservices (Ports 8080-8700+)
-426 microservices organized by language:
-- **Go (180)**: Core banking, payments, agent banking, agriculture
-- **Rust (139)**: AML engine, fraud detection, performance-critical paths
-- **Python (106)**: Analytics, ML models, compliance reporting
-
-Each service:
-- Connects to PostgreSQL directly
-- Publishes events to Kafka
-- Caches hot data in Redis
-- Registers Temporal workflows
-- Exposes /healthz endpoint
-
-### Database Layer
-- **PostgreSQL**: 267 tables, primary OLTP database
-- **TigerBeetle**: Double-entry financial ledger for transfers
-- **Redis**: Session cache, rate limiting, OTP storage
-- **OpenSearch**: Full-text search, audit log indexing
-
-## Security Architecture
-
-### Authentication Flow
 ```
-Login Request → Express /api/auth/login
-     → Verify credentials against DB
-     → Generate JWT (access + refresh tokens)
-     → Set HttpOnly secure cookies
-     → Return user profile + role
+PWA page → GET /api/db/{table}?page=1&limit=20
+  → Express dbFirstMiddleware
+  → Drizzle ORM query → PostgreSQL
+  → Return { items: [...], total: N, page: 1, source: "database" }
 ```
-
-### RBAC Roles
-| Role | Permissions |
-|------|------------|
-| admin | Full platform access |
-| operations | Transaction management, operations |
-| compliance | AML, KYC, regulatory reports |
-| treasury | FX, money market, investments |
-| branch | Branch-level operations |
-| teller | Counter transactions only |
-
-### Security Layers
-1. **Network**: APISIX rate limiting, DDoS protection
-2. **Application**: OWASP headers, CSP, HSTS, X-Frame-Options
-3. **Authentication**: JWT with short-lived tokens, refresh rotation
-4. **Authorization**: Role-based + policy-based (Permify)
-5. **Data**: AES-256-GCM encryption at rest, TLS in transit
-6. **Compliance**: NDPR data protection, PCI-DSS card handling
 
 ## Deployment Architecture
 
-### Production
-```
-                    ┌─── Load Balancer (Nginx/HAProxy)
-                    │
-                    ├─── APISIX Gateway Cluster (3 nodes)
-                    │
-                    ├─── Express App Cluster (2-10 pods, HPA)
-                    │
-                    ├─── Microservice Pods (per-service scaling)
-                    │
-                    ├─── PostgreSQL (Primary + 2 Replicas)
-                    │
-                    ├─── Redis Sentinel (3 nodes)
-                    │
-                    ├─── Kafka Cluster (3 brokers)
-                    │
-                    └─── TigerBeetle Cluster (3 replicas)
-```
+- **CI:** GitHub Actions (7 checks: lint, build, test, Go, Rust, Python, Docker)
+- **CD:** Auto-deploy to staging on merge to main
+- **Container:** Docker (multi-stage builds)
+- **Orchestration:** Kubernetes (Helm charts, HPA 2-10 replicas)
+- **Database:** PostgreSQL 16 (RDS in AWS, local in dev)
+- **Cache:** Redis 7 (ElastiCache in AWS)
+- **IaC:** Terraform (VPC, EKS, RDS, ElastiCache)
 
-## Monitoring
+## Security Architecture
 
-- **Health**: /api/health, /api/ready, /api/live
-- **Metrics**: Prometheus endpoint at /api/metrics/prometheus
-- **Logging**: Structured JSON logs with correlation IDs
-- **Tracing**: OpenTelemetry distributed tracing
-- **Alerting**: Prometheus AlertManager rules
+- PBKDF2-SHA512 (100K iterations) password hashing
+- JWT HS256 tokens (8h access, 7d refresh)
+- MFA/TOTP (RFC 6238) with backup codes
+- API key management for service-to-service auth
+- 7 OWASP security headers
+- CORS origin whitelist (environment-specific)
+- Brute force protection (5 attempts → 15-min lockout)
+- Token blacklisting on logout
+- Input validation (Zod + Nigerian validators)
+- Rate limiting on all routes
