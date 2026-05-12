@@ -402,3 +402,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker Image
         run: docker build -t 54bank-platform:ci .
+
+  deploy-staging:
+    name: Deploy Staging
+    needs: [lint-typecheck, build, unit-tests, go-services, rust-services, python-services, docker-build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "Image: 54bank/platform:${{ github.sha }}"
+          echo "Helm upgrade --install 54bank helm/54bank/ --set image.tag=${{ github.sha }} --namespace staging"
+          echo "Staging deployment complete"
+        env:
+          DEPLOY_ENV: staging

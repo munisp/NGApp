@@ -1,58 +1,70 @@
-# Contributing to 54Bank Platform
-
-Thank you for contributing to the 54Bank Core Banking Platform.
+# Contributing to 54Bank
 
 ## Development Setup
 
 ```bash
+# Clone and install
+git clone https://github.com/munisp/NGApp.git
+cd NGApp
 pnpm install
-pnpm dev
+
+# Start database
+docker-compose up -d postgres redis
+
+# Run migrations
+pnpm drizzle-kit push
+
+# Start dev server
+pnpm run dev
 ```
 
 ## Branch Naming
 
-- `feat/<description>` — New features
-- `fix/<description>` — Bug fixes
-- `chore/<description>` — Maintenance
+- `feature/` — new features
+- `fix/` — bug fixes
+- `docs/` — documentation
+- `refactor/` — code improvements
+- `test/` — test additions
 
-## Commit Convention
+## Commit Messages
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+Follow Conventional Commits:
+- `feat:` new feature
+- `fix:` bug fix
+- `docs:` documentation
+- `test:` test changes
+- `refactor:` code refactoring
+- `ci:` CI/CD changes
 
-- `feat(scope): description` — New feature
-- `fix(scope): description` — Bug fix
-- `docs(scope): description` — Documentation
-- `test(scope): description` — Tests
-- `chore(scope): description` — Maintenance
+## Pull Request Process
 
-## Code Standards
+1. Create a feature branch from `main`
+2. Write tests for new functionality
+3. Ensure all CI checks pass (7/7)
+4. Request review from at least one team member
+5. Squash and merge when approved
 
-- **TypeScript**: Strict mode, no `any`
-- **Go**: `gofmt`, `golint`, `go vet`
-- **Rust**: `cargo fmt`, `cargo clippy`
-- **Python**: `ruff`, type hints required
+## Code Style
+
+- TypeScript: Follow existing patterns in `server/lib/`
+- Go: `gofmt` + stdlib-only where possible
+- Rust: `cargo fmt` + `cargo clippy`
+- Python: PEP 8 + type hints
 
 ## Testing
 
 ```bash
-pnpm test          # Unit tests (vitest)
-pnpm run check     # TypeScript type checking
+# Unit tests
+pnpm test
+
+# Lint + typecheck
+pnpm run lint
+pnpm run typecheck
+
+# E2E tests
+npx playwright test
 ```
-
-## Pull Requests
-
-1. Create a feature branch from `main`
-2. Make focused, minimal changes
-3. Ensure all CI checks pass (7/7)
-4. Request review from a maintainer
 
 ## Architecture
 
-- **219 polyglot microservices** (Go, Rust, Python)
-- **14-middleware integration** per service
-- **Express** API gateway with seed data + Drizzle ORM
-- **PWA** (React) + **Flutter** mobile clients
-
-## Questions?
-
-Open an issue or contact the platform team.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design.

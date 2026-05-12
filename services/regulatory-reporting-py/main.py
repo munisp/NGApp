@@ -1,5 +1,5 @@
 """
-credit-scoring-py — Production service with Postgres SQL queries
+regulatory-reporting-py — Production service with Postgres SQL queries
 """
 import os
 import json
@@ -9,7 +9,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("credit-scoring-py")
+logger = logging.getLogger("regulatory-reporting-py")
 
 DB_URL = os.environ.get("DATABASE_URL", "")
 START_TIME = time.time()
@@ -39,7 +39,7 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self, code, data):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("X-Service", "credit-scoring-py")
+        self.send_header("X-Service", "regulatory-reporting-py")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -57,10 +57,10 @@ class Handler(BaseHTTPRequestHandler):
             conn = get_db()
             self.send_json(200, {
                 "status": "healthy",
-                "service": "credit-scoring-py",
+                "service": "regulatory-reporting-py",
                 "database": "connected" if conn else "disconnected",
                 "uptime": f"{time.time() - START_TIME:.0f}s",
-                "table": "credit_scores",
+                "table": "regulatory_reports",
             })
             return
         
@@ -76,12 +76,12 @@ class Handler(BaseHTTPRequestHandler):
                     import psycopg2.extras
                     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                     if search:
-                        cur.execute(f"SELECT * FROM credit_scores WHERE score_id::text ILIKE %s ORDER BY score_id LIMIT %s OFFSET %s",
+                        cur.execute(f"SELECT * FROM regulatory_reports WHERE report_id::text ILIKE %s ORDER BY report_id LIMIT %s OFFSET %s",
                                    (f"%{search}%", limit, offset))
                     else:
-                        cur.execute(f"SELECT * FROM credit_scores ORDER BY score_id LIMIT %s OFFSET %s", (limit, offset))
+                        cur.execute(f"SELECT * FROM regulatory_reports ORDER BY report_id LIMIT %s OFFSET %s", (limit, offset))
                     items = cur.fetchall()
-                    cur.execute(f"SELECT COUNT(*) FROM credit_scores")
+                    cur.execute(f"SELECT COUNT(*) FROM regulatory_reports")
                     total = cur.fetchone()["count"]
                     cur.close()
                     self.send_json(200, {"items": items, "total": total, "page": page, "limit": limit, "source": "database"})
@@ -103,12 +103,12 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     import psycopg2.extras
                     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                    cur.execute(f"SELECT COUNT(*) FROM credit_scores")
+                    cur.execute(f"SELECT COUNT(*) FROM regulatory_reports")
                     total = cur.fetchone()["count"]
                     cur.close()
                 except Exception as e:
                     logger.warning(f"Stats error: {e}")
-            self.send_json(200, {"total": total, "table": "credit_scores", "source": "database"})
+            self.send_json(200, {"total": total, "table": "regulatory_reports", "source": "database"})
             return
         
         self.send_json(404, {"error": "Not found"})
@@ -122,5 +122,5 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     server = HTTPServer(("0.0.0.0", port), Handler)
-    logger.info(f"[credit-scoring-py] Starting on :{port}")
+    logger.info(f"[regulatory-reporting-py] Starting on :{port}")
     server.serve_forever()

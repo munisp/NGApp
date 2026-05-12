@@ -152,6 +152,62 @@ function initDefaultUsers() {
 
 initDefaultUsers();
 
+// Brute force protection
+const loginAttempts: Map<string, { count: number; lockedUntil: number }> = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkBruteForce(email: string): { blocked: boolean; remainingAttempts: number; lockedUntil?: string } {
+  const record = loginAttempts.get(email);
+  if (!record) return { blocked: false, remainingAttempts: MAX_LOGIN_ATTEMPTS };
+  if (record.lockedUntil > Date.now()) {
+    return { blocked: true, remainingAttempts: 0, lockedUntil: new Date(record.lockedUntil).toISOString() };
+  }
+  if (record.count >= MAX_LOGIN_ATTEMPTS) {
+    record.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+    return { blocked: true, remainingAttempts: 0, lockedUntil: new Date(record.lockedUntil).toISOString() };
+  }
+  return { blocked: false, remainingAttempts: MAX_LOGIN_ATTEMPTS - record.count };
+}
+
+function recordLoginAttempt(email: string, success: boolean) {
+  if (success) {
+    loginAttempts.delete(email);
+    return;
+  }
+  const record = loginAttempts.get(email) || { count: 0, lockedUntil: 0 };
+  record.count++;
+  loginAttempts.set(email, record);
+}
+
+// Token blacklist for logout
+const tokenBlacklist: Set<string> = new Set();
+const TOKEN_CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hour
+
+function blacklistToken(token: string) {
+  tokenBlacklist.add(token);
+}
+
+function isTokenBlacklisted(token: string): boolean {
+  return tokenBlacklist.has(token);
+}
+
+// Cleanup expired tokens periodically
+setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  Array.from(tokenBlacklist).forEach((token) => {
+    try {
+      const parts = token.split(".");
+      const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+      if (payload.exp && payload.exp < now) {
+        tokenBlacklist.delete(token);
+      }
+    } catch {
+      tokenBlacklist.delete(token);
+    }
+  });
+}, TOKEN_CLEANUP_INTERVAL);
+
 // RBAC permission matrix
 const rolePermissions: Record<string, string[]> = {
   admin: ["*"],
@@ -189,6 +245,10 @@ export function createAuthMiddleware() {
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.access_token;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : cookieToken;
+
+    if (token && isTokenBlacklisted(token)) {
+      return res.status(401).json({ error: "Token has been revoked", code: "TOKEN_REVOKED" });
+    }
 
     if (!token) {
       // In development mode, allow unauthenticated access with default role
@@ -269,6 +329,17 @@ export function registerAuthRoutes(app: Express) {
       return res.status(400).json({ error: "Email and password required" });
     }
 
+    // Brute force check
+    const bruteCheck = checkBruteForce(email);
+    if (bruteCheck.blocked) {
+      logAuthEvent("login_blocked", email, req.ip || "unknown", req.headers["user-agent"] || "unknown", false);
+      return res.status(429).json({
+        error: "Account temporarily locked due to too many failed attempts",
+        lockedUntil: bruteCheck.lockedUntil,
+        code: "ACCOUNT_LOCKED",
+      });
+    }
+
     // Try in-memory users first (includes defaults)
     const memUser = inMemoryUsers.get(email);
     if (memUser && verifyPassword(password, memUser.passwordHash, memUser.salt)) {
@@ -279,6 +350,8 @@ export function registerAuthRoutes(app: Express) {
         sameSite: "lax",
         maxAge: 8 * 60 * 60 * 1000,
       });
+      recordLoginAttempt(email, true);
+      logAuthEvent("login_success", email, req.ip || "unknown", req.headers["user-agent"] || "unknown", true, memUser.user.role);
       return res.json({
         user: {
           id: memUser.user.id,
@@ -327,8 +400,13 @@ export function registerAuthRoutes(app: Express) {
       }
     }
 
+    recordLoginAttempt(email, false);
     logAuthEvent("login_failed", email, req.ip || "unknown", req.headers["user-agent"] || "unknown", false);
-    return res.status(401).json({ error: "Invalid credentials" });
+    const remaining = checkBruteForce(email);
+    return res.status(401).json({
+      error: "Invalid credentials",
+      remainingAttempts: remaining.remainingAttempts,
+    });
   });
 
   // POST /api/auth/refresh
@@ -364,8 +442,15 @@ export function registerAuthRoutes(app: Express) {
   });
 
   // POST /api/auth/logout
-  app.post("/api/auth/logout", (_req: Request, res: Response) => {
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.access_token;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : cookieToken;
+    if (token) {
+      blacklistToken(token);
+    }
     res.clearCookie("access_token");
+    logAuthEvent("logout", (req as any).user?.email || "unknown", req.ip || "unknown", req.headers["user-agent"] || "unknown", true);
     return res.json({ message: "Logged out successfully" });
   });
 
