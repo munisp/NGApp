@@ -50,6 +50,7 @@ import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerKYCKYBEnhancedSuite } from "./lib/kycKybEnhancedSuite";
 import { registerAiMlGnnSuite } from "./lib/aiMlGnnIntegration";
+import { registerProductionHardening } from "./lib/productionHardening";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
@@ -5208,6 +5209,9 @@ async function startServer() {
 
   // AI/ML/DL/GNN/CV Suite — GNN, FraudFusion, MCMC, CocoIndex, EPR-KGQA, FalkorDB, Ollama, ART
   registerAiMlGnnSuite(app);
+
+  // Production Hardening Suite — 30 improvements (security, data, testing, observability, frontend, architecture)
+  registerProductionHardening(app);
 
   // === Production Infrastructure Modules ===
   registerDatabasePersistence(app);

@@ -692,6 +692,72 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/kafka-governance", label: "Kafka Governance", icon: Radio },
     ],
   },
+  {
+    category: "Security Hardening",
+    icon: Shield,
+    items: [
+      { path: "/cors-gateway", label: "CORS Gateway", icon: Globe },
+      { path: "/auth-enforcer", label: "Auth Enforcer", icon: Lock },
+      { path: "/request-validator", label: "Request Validator", icon: CheckCircle },
+      { path: "/api-versioning", label: "API Versioning", icon: GitBranch },
+      { path: "/apm-sentry", label: "APM & Sentry", icon: Activity },
+      { path: "/secrets-rotation", label: "Secrets Rotation", icon: Key },
+    ],
+  },
+  {
+    category: "Data Management",
+    icon: Database,
+    items: [
+      { path: "/db-migration-manager", label: "DB Migrations", icon: Database },
+      { path: "/connection-pooler", label: "Connection Pooler", icon: Zap },
+      { path: "/backup-manager", label: "Backup Manager", icon: Download },
+    ],
+  },
+  {
+    category: "Testing Suite",
+    icon: CheckCircle,
+    items: [
+      { path: "/unit-test-runner", label: "Unit Tests", icon: CheckSquare },
+      { path: "/e2e-orchestrator", label: "E2E Orchestrator", icon: PlayCircle },
+      { path: "/contract-tests", label: "Contract Tests", icon: Scale },
+      { path: "/load-test-runner", label: "Load Tests", icon: Gauge },
+    ],
+  },
+  {
+    category: "Extended Observability",
+    icon: Radio,
+    items: [
+      { path: "/otel-collector", label: "OTel Collector", icon: Radio },
+      { path: "/changelog-generator", label: "Changelog", icon: FileText },
+      { path: "/helm-validator", label: "Helm Validator", icon: Shield },
+    ],
+  },
+  {
+    category: "Frontend Quality",
+    icon: Code,
+    items: [
+      { path: "/accessibility-auditor", label: "Accessibility (WCAG)", icon: Shield },
+      { path: "/i18n-service", label: "i18n Localization", icon: Globe },
+    ],
+  },
+  {
+    category: "Missing Banking Domains",
+    icon: Building2,
+    items: [
+      { path: "/credit-scoring", label: "Credit Scoring", icon: TrendingUp },
+      { path: "/debt-collection", label: "Debt Collection", icon: DollarSign },
+      { path: "/account-closure", label: "Account Closure", icon: Shield },
+      { path: "/dormancy-management", label: "Dormancy Management", icon: Clock },
+      { path: "/interest-computation", label: "Interest Computation", icon: Calculator },
+      { path: "/fee-management", label: "Fee Management", icon: Receipt },
+      { path: "/tax-reporting", label: "Tax Reporting", icon: FileBarChart },
+      { path: "/regulatory-sandbox", label: "Regulatory Sandbox", icon: Rocket },
+      { path: "/api-analytics", label: "API Analytics", icon: BarChart3 },
+      { path: "/developer-portal", label: "Developer Portal", icon: Code },
+      { path: "/customer-360-dashboard", label: "Customer 360", icon: Users },
+      { path: "/realtime-pricing", label: "Real-Time Pricing", icon: Zap },
+    ],
+  },
 ];
 
 function CategorySection({

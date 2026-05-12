@@ -197,6 +197,37 @@ import 'screens/art_adversarial_screen.dart';
 import 'screens/mojaloop_pisp_screen.dart';
 import 'screens/tb_multicurrency_screen.dart';
 import 'screens/kafka_governance_screen.dart';
+// Production Hardening — 30 screens
+import 'screens/cors_gateway_screen.dart';
+import 'screens/auth_enforcer_screen.dart';
+import 'screens/request_validator_screen.dart';
+import 'screens/api_versioning_screen.dart';
+import 'screens/apm_sentry_screen.dart';
+import 'screens/secrets_rotation_screen.dart';
+import 'screens/db_migration_manager_screen.dart';
+import 'screens/connection_pooler_screen.dart';
+import 'screens/backup_manager_screen.dart';
+import 'screens/unit_test_runner_screen.dart';
+import 'screens/e2e_orchestrator_screen.dart';
+import 'screens/contract_test_screen.dart';
+import 'screens/load_test_runner_screen.dart';
+import 'screens/otel_collector_screen.dart';
+import 'screens/changelog_generator_screen.dart';
+import 'screens/helm_validator_screen.dart';
+import 'screens/accessibility_auditor_screen.dart';
+import 'screens/i18n_service_screen.dart';
+import 'screens/credit_scoring_screen.dart';
+import 'screens/debt_collection_screen.dart';
+import 'screens/account_closure_screen.dart';
+import 'screens/dormancy_management_screen.dart';
+import 'screens/interest_computation_screen.dart';
+import 'screens/fee_management_screen.dart';
+import 'screens/tax_reporting_screen.dart';
+import 'screens/regulatory_sandbox_screen.dart';
+import 'screens/api_analytics_screen.dart';
+import 'screens/developer_portal_screen.dart';
+import 'screens/customer_360_dashboard_screen.dart';
+import 'screens/realtime_pricing_screen.dart';
 import 'screens/lakehouse_cdc_events_screen.dart';
 import 'screens/lakehouse_clients_screen.dart';
 import 'screens/lakehouse_domain_cdc_screen.dart';
@@ -580,6 +611,37 @@ class BankApp extends StatelessWidget {
           '/mojaloop-pisp': (context) => const MojaloopPispScreen(),
           '/tb-multicurrency': (context) => const TbMulticurrencyScreen(),
           '/kafka-governance': (context) => const KafkaGovernanceScreen(),
+          // Production Hardening
+          '/cors-gateway': (context) => const CorsGatewayScreen(),
+          '/auth-enforcer': (context) => const AuthEnforcerScreen(),
+          '/request-validator': (context) => const RequestValidatorScreen(),
+          '/api-versioning': (context) => const ApiVersioningScreen(),
+          '/apm-sentry': (context) => const ApmSentryScreen(),
+          '/secrets-rotation': (context) => const SecretsRotationScreen(),
+          '/db-migration-manager': (context) => const DbMigrationManagerScreen(),
+          '/connection-pooler': (context) => const ConnectionPoolerScreen(),
+          '/backup-manager': (context) => const BackupManagerScreen(),
+          '/unit-test-runner': (context) => const UnitTestRunnerScreen(),
+          '/e2e-orchestrator': (context) => const E2eOrchestratorScreen(),
+          '/contract-tests': (context) => const ContractTestScreen(),
+          '/load-test-runner': (context) => const LoadTestRunnerScreen(),
+          '/otel-collector': (context) => const OtelCollectorScreen(),
+          '/changelog-generator': (context) => const ChangelogGeneratorScreen(),
+          '/helm-validator': (context) => const HelmValidatorScreen(),
+          '/accessibility-auditor': (context) => const AccessibilityAuditorScreen(),
+          '/i18n-service': (context) => const I18nServiceScreen(),
+          '/credit-scoring': (context) => const CreditScoringScreen(),
+          '/debt-collection': (context) => const DebtCollectionScreen(),
+          '/account-closure': (context) => const AccountClosureScreen(),
+          '/dormancy-management': (context) => const DormancyManagementScreen(),
+          '/interest-computation': (context) => const InterestComputationScreen(),
+          '/fee-management': (context) => const FeeManagementScreen(),
+          '/tax-reporting': (context) => const TaxReportingScreen(),
+          '/regulatory-sandbox': (context) => const RegulatorySandboxScreen(),
+          '/api-analytics': (context) => const ApiAnalyticsScreen(),
+          '/developer-portal': (context) => const DeveloperPortalScreen(),
+          '/customer-360-dashboard': (context) => const Customer360DashboardScreen(),
+          '/realtime-pricing': (context) => const RealtimePricingScreen(),
           '/lakehouse-cdc-events': (context) => const LakehouseCDCEventsScreen(),
           '/lakehouse-clients': (context) => const LakehouseClientsScreen(),
           '/lakehouse-domain-cdc': (context) => const LakehouseDomainCDCScreen(),
@@ -962,6 +1024,37 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('Mojaloop PISP'), onTap: () => Navigator.pushNamed(context, '/mojaloop-pisp')),
             ListTile(title: const Text('TB Multi-Currency'), onTap: () => Navigator.pushNamed(context, '/tb-multicurrency')),
             ListTile(title: const Text('Kafka Governance'), onTap: () => Navigator.pushNamed(context, '/kafka-governance')),
+            const Divider(), const Padding(padding: EdgeInsets.all(8), child: Text('Production Hardening', style: TextStyle(fontWeight: FontWeight.bold))),
+            ListTile(title: const Text('CORS Gateway'), onTap: () => Navigator.pushNamed(context, '/cors-gateway')),
+            ListTile(title: const Text('Auth Enforcer'), onTap: () => Navigator.pushNamed(context, '/auth-enforcer')),
+            ListTile(title: const Text('Request Validator'), onTap: () => Navigator.pushNamed(context, '/request-validator')),
+            ListTile(title: const Text('API Versioning'), onTap: () => Navigator.pushNamed(context, '/api-versioning')),
+            ListTile(title: const Text('APM & Sentry'), onTap: () => Navigator.pushNamed(context, '/apm-sentry')),
+            ListTile(title: const Text('Secrets Rotation'), onTap: () => Navigator.pushNamed(context, '/secrets-rotation')),
+            ListTile(title: const Text('DB Migrations'), onTap: () => Navigator.pushNamed(context, '/db-migration-manager')),
+            ListTile(title: const Text('Connection Pooler'), onTap: () => Navigator.pushNamed(context, '/connection-pooler')),
+            ListTile(title: const Text('Backup Manager'), onTap: () => Navigator.pushNamed(context, '/backup-manager')),
+            ListTile(title: const Text('Unit Tests'), onTap: () => Navigator.pushNamed(context, '/unit-test-runner')),
+            ListTile(title: const Text('E2E Orchestrator'), onTap: () => Navigator.pushNamed(context, '/e2e-orchestrator')),
+            ListTile(title: const Text('Contract Tests'), onTap: () => Navigator.pushNamed(context, '/contract-tests')),
+            ListTile(title: const Text('Load Tests'), onTap: () => Navigator.pushNamed(context, '/load-test-runner')),
+            ListTile(title: const Text('OTel Collector'), onTap: () => Navigator.pushNamed(context, '/otel-collector')),
+            ListTile(title: const Text('Changelog Generator'), onTap: () => Navigator.pushNamed(context, '/changelog-generator')),
+            ListTile(title: const Text('Helm Validator'), onTap: () => Navigator.pushNamed(context, '/helm-validator')),
+            ListTile(title: const Text('Accessibility Auditor'), onTap: () => Navigator.pushNamed(context, '/accessibility-auditor')),
+            ListTile(title: const Text('i18n Localization'), onTap: () => Navigator.pushNamed(context, '/i18n-service')),
+            ListTile(title: const Text('Credit Scoring'), onTap: () => Navigator.pushNamed(context, '/credit-scoring')),
+            ListTile(title: const Text('Debt Collection'), onTap: () => Navigator.pushNamed(context, '/debt-collection')),
+            ListTile(title: const Text('Account Closure'), onTap: () => Navigator.pushNamed(context, '/account-closure')),
+            ListTile(title: const Text('Dormancy Management'), onTap: () => Navigator.pushNamed(context, '/dormancy-management')),
+            ListTile(title: const Text('Interest Computation'), onTap: () => Navigator.pushNamed(context, '/interest-computation')),
+            ListTile(title: const Text('Fee Management'), onTap: () => Navigator.pushNamed(context, '/fee-management')),
+            ListTile(title: const Text('Tax Reporting'), onTap: () => Navigator.pushNamed(context, '/tax-reporting')),
+            ListTile(title: const Text('Regulatory Sandbox'), onTap: () => Navigator.pushNamed(context, '/regulatory-sandbox')),
+            ListTile(title: const Text('API Analytics'), onTap: () => Navigator.pushNamed(context, '/api-analytics')),
+            ListTile(title: const Text('Developer Portal'), onTap: () => Navigator.pushNamed(context, '/developer-portal')),
+            ListTile(title: const Text('Customer 360'), onTap: () => Navigator.pushNamed(context, '/customer-360-dashboard')),
+            ListTile(title: const Text('Real-Time Pricing'), onTap: () => Navigator.pushNamed(context, '/realtime-pricing')),
             ListTile(title: const Text('Lakehouse Cdc Events'), onTap: () => Navigator.pushNamed(context, '/lakehouse-cdc-events')),
             ListTile(title: const Text('Lakehouse Clients'), onTap: () => Navigator.pushNamed(context, '/lakehouse-clients')),
             ListTile(title: const Text('Lakehouse Domain Cdc'), onTap: () => Navigator.pushNamed(context, '/lakehouse-domain-cdc')),

@@ -162,6 +162,37 @@ const ARTAdversarialWorkspace = lazy(() => import("@/pages/ARTAdversarialWorkspa
 const MojaloopPISPWorkspace = lazy(() => import("@/pages/MojaloopPISPWorkspace"));
 const TBMultiCurrencyWorkspace = lazy(() => import("@/pages/TBMultiCurrencyWorkspace"));
 const KafkaGovernanceWorkspace = lazy(() => import("@/pages/KafkaGovernanceWorkspace"));
+/* Production Hardening — 30 improvements */
+const CORSGatewayWorkspace = lazy(() => import("@/pages/CORSGatewayWorkspace"));
+const AuthEnforcerWorkspace = lazy(() => import("@/pages/AuthEnforcerWorkspace"));
+const RequestValidatorWorkspace = lazy(() => import("@/pages/RequestValidatorWorkspace"));
+const APIVersioningWorkspace = lazy(() => import("@/pages/APIVersioningWorkspace"));
+const APMSentryWorkspace = lazy(() => import("@/pages/APMSentryWorkspace"));
+const SecretsRotationWorkspace = lazy(() => import("@/pages/SecretsRotationWorkspace"));
+const DBMigrationManagerWorkspace = lazy(() => import("@/pages/DBMigrationManagerWorkspace"));
+const ConnectionPoolerWorkspace = lazy(() => import("@/pages/ConnectionPoolerWorkspace"));
+const BackupManagerWorkspace = lazy(() => import("@/pages/BackupManagerWorkspace"));
+const UnitTestRunnerWorkspace = lazy(() => import("@/pages/UnitTestRunnerWorkspace"));
+const E2EOrchestratorWorkspace = lazy(() => import("@/pages/E2EOrchestratorWorkspace"));
+const ContractTestWorkspace = lazy(() => import("@/pages/ContractTestWorkspace"));
+const LoadTestRunnerWorkspace = lazy(() => import("@/pages/LoadTestRunnerWorkspace"));
+const OTelCollectorWorkspace = lazy(() => import("@/pages/OTelCollectorWorkspace"));
+const ChangelogGeneratorWorkspace = lazy(() => import("@/pages/ChangelogGeneratorWorkspace"));
+const HelmValidatorWorkspace = lazy(() => import("@/pages/HelmValidatorWorkspace"));
+const AccessibilityAuditorWorkspace = lazy(() => import("@/pages/AccessibilityAuditorWorkspace"));
+const I18nServiceWorkspace = lazy(() => import("@/pages/I18nServiceWorkspace"));
+const CreditScoringWorkspace = lazy(() => import("@/pages/CreditScoringWorkspace"));
+const DebtCollectionWorkspace = lazy(() => import("@/pages/DebtCollectionWorkspace"));
+const AccountClosureWorkspace = lazy(() => import("@/pages/AccountClosureWorkspace"));
+const DormancyManagementWorkspace = lazy(() => import("@/pages/DormancyManagementWorkspace"));
+const InterestComputationWorkspace = lazy(() => import("@/pages/InterestComputationWorkspace"));
+const FeeManagementWorkspace = lazy(() => import("@/pages/FeeManagementWorkspace"));
+const TaxReportingWorkspace = lazy(() => import("@/pages/TaxReportingWorkspace"));
+const RegulatorySandboxWorkspace = lazy(() => import("@/pages/RegulatorySandboxWorkspace"));
+const APIAnalyticsWorkspace = lazy(() => import("@/pages/APIAnalyticsWorkspace"));
+const DeveloperPortalWorkspace = lazy(() => import("@/pages/DeveloperPortalWorkspace"));
+const Customer360DashboardWorkspace = lazy(() => import("@/pages/Customer360DashboardWorkspace"));
+const RealtimePricingWorkspace = lazy(() => import("@/pages/RealtimePricingWorkspace"));
 const GLAccountsWorkspace = lazy(() => import("@/pages/GLAccountsWorkspace"));
 const CollateralWorkspace = lazy(() => import("@/pages/CollateralWorkspace"));
 const ComplaintsWorkspace = lazy(() => import("@/pages/ComplaintsWorkspace"));
@@ -730,6 +761,42 @@ export default function App() {
         <Route path="/mojaloop-pisp" component={renderInAdminShell(MojaloopPISPWorkspace)} />
         <Route path="/tb-multicurrency" component={renderInAdminShell(TBMultiCurrencyWorkspace)} />
         <Route path="/kafka-governance" component={renderInAdminShell(KafkaGovernanceWorkspace)} />
+        {/* Production Hardening — Security */}
+        <Route path="/cors-gateway" component={renderInAdminShell(CORSGatewayWorkspace)} />
+        <Route path="/auth-enforcer" component={renderInAdminShell(AuthEnforcerWorkspace)} />
+        <Route path="/request-validator" component={renderInAdminShell(RequestValidatorWorkspace)} />
+        <Route path="/api-versioning" component={renderInAdminShell(APIVersioningWorkspace)} />
+        <Route path="/apm-sentry" component={renderInAdminShell(APMSentryWorkspace)} />
+        <Route path="/secrets-rotation" component={renderInAdminShell(SecretsRotationWorkspace)} />
+        {/* Production Hardening — Data */}
+        <Route path="/db-migration-manager" component={renderInAdminShell(DBMigrationManagerWorkspace)} />
+        <Route path="/connection-pooler" component={renderInAdminShell(ConnectionPoolerWorkspace)} />
+        <Route path="/backup-manager" component={renderInAdminShell(BackupManagerWorkspace)} />
+        {/* Production Hardening — Testing */}
+        <Route path="/unit-test-runner" component={renderInAdminShell(UnitTestRunnerWorkspace)} />
+        <Route path="/e2e-orchestrator" component={renderInAdminShell(E2EOrchestratorWorkspace)} />
+        <Route path="/contract-tests" component={renderInAdminShell(ContractTestWorkspace)} />
+        <Route path="/load-test-runner" component={renderInAdminShell(LoadTestRunnerWorkspace)} />
+        {/* Production Hardening — Observability */}
+        <Route path="/otel-collector" component={renderInAdminShell(OTelCollectorWorkspace)} />
+        <Route path="/changelog-generator" component={renderInAdminShell(ChangelogGeneratorWorkspace)} />
+        <Route path="/helm-validator" component={renderInAdminShell(HelmValidatorWorkspace)} />
+        {/* Production Hardening — Frontend */}
+        <Route path="/accessibility-auditor" component={renderInAdminShell(AccessibilityAuditorWorkspace)} />
+        <Route path="/i18n-service" component={renderInAdminShell(I18nServiceWorkspace)} />
+        {/* Production Hardening — Missing Domains */}
+        <Route path="/credit-scoring" component={renderInAdminShell(CreditScoringWorkspace)} />
+        <Route path="/debt-collection" component={renderInAdminShell(DebtCollectionWorkspace)} />
+        <Route path="/account-closure" component={renderInAdminShell(AccountClosureWorkspace)} />
+        <Route path="/dormancy-management" component={renderInAdminShell(DormancyManagementWorkspace)} />
+        <Route path="/interest-computation" component={renderInAdminShell(InterestComputationWorkspace)} />
+        <Route path="/fee-management" component={renderInAdminShell(FeeManagementWorkspace)} />
+        <Route path="/tax-reporting" component={renderInAdminShell(TaxReportingWorkspace)} />
+        <Route path="/regulatory-sandbox" component={renderInAdminShell(RegulatorySandboxWorkspace)} />
+        <Route path="/api-analytics" component={renderInAdminShell(APIAnalyticsWorkspace)} />
+        <Route path="/developer-portal" component={renderInAdminShell(DeveloperPortalWorkspace)} />
+        <Route path="/customer-360-dashboard" component={renderInAdminShell(Customer360DashboardWorkspace)} />
+        <Route path="/realtime-pricing" component={renderInAdminShell(RealtimePricingWorkspace)} />
         {/* Multi-Tenant Platform */}
         <Route path="/tenant-isolation" component={renderInAdminShell(TenantIsolationWorkspace)} />
         <Route path="/feature-flag-engine" component={renderInAdminShell(FeatureFlagEngineWorkspace)} />
