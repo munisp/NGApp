@@ -51,6 +51,7 @@ import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerKYCKYBEnhancedSuite } from "./lib/kycKybEnhancedSuite";
 import { registerAiMlGnnSuite } from "./lib/aiMlGnnIntegration";
 import { registerProductionHardening } from "./lib/productionHardening";
+import { registerSecurityEnhancementRoutes } from "./lib/securityEnhancement";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
@@ -5212,6 +5213,9 @@ async function startServer() {
 
   // Production Hardening Suite — 30 improvements (security, data, testing, observability, frontend, architecture)
   registerProductionHardening(app);
+
+  // Security Enhancement Suite — Scratch Card PIN, HSM, PIN Block, Grid Token, MFA, OTP, Session, API Keys, Rate Limiting, Encryption, Certificates, Audit
+  registerSecurityEnhancementRoutes(app);
 
   // === Production Infrastructure Modules ===
   registerDatabasePersistence(app);

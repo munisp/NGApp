@@ -3543,3 +3543,173 @@ services:
     ports: ["8347:8347"]
     depends_on: [postgres, redis, kafka]
     restart: unless-stopped
+
+  # ─── Security Enhancement Suite (12 services) ─────────────────────────────
+
+  scratch-card-pin-go:
+    build: ./services/scratch-card-pin-go
+    environment:
+      PORT: "8485"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: scratch-card-pin-go
+    ports: ["8485:8485"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  hsm-key-manager-rs:
+    build: ./services/hsm-key-manager-rs
+    environment:
+      PORT: "8486"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: hsm-key-manager-rs
+    ports: ["8486:8486"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  pin-block-engine-rs:
+    build: ./services/pin-block-engine-rs
+    environment:
+      PORT: "8487"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: pin-block-engine-rs
+    ports: ["8487:8487"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  grid-token-card-go:
+    build: ./services/grid-token-card-go
+    environment:
+      PORT: "8488"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: grid-token-card-go
+    ports: ["8488:8488"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  mfa-orchestrator-go:
+    build: ./services/mfa-orchestrator-go
+    environment:
+      PORT: "8489"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: mfa-orchestrator-go
+    ports: ["8489:8489"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  otp-hardening-rs:
+    build: ./services/otp-hardening-rs
+    environment:
+      PORT: "8490"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: otp-hardening-rs
+    ports: ["8490:8490"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  session-security-rs:
+    build: ./services/session-security-rs
+    environment:
+      PORT: "8491"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: session-security-rs
+    ports: ["8491:8491"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  api-key-vault-go:
+    build: ./services/api-key-vault-go
+    environment:
+      PORT: "8492"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: api-key-vault-go
+    ports: ["8492:8492"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  adaptive-rate-limiter-rs:
+    build: ./services/adaptive-rate-limiter-rs
+    environment:
+      PORT: "8493"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: adaptive-rate-limiter-rs
+    ports: ["8493:8493"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  field-level-encryption-rs:
+    build: ./services/field-level-encryption-rs
+    environment:
+      PORT: "8494"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: field-level-encryption-rs
+    ports: ["8494:8494"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  certificate-manager-py:
+    build: ./services/certificate-manager-py
+    environment:
+      PORT: "8495"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: certificate-manager-py
+    ports: ["8495:8495"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  security-audit-logger-py:
+    build: ./services/security-audit-logger-py
+    environment:
+      PORT: "8496"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: security-audit-logger-py
+    ports: ["8496:8496"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped

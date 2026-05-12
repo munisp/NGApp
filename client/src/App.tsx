@@ -426,6 +426,19 @@ const TBPGBalanceCacheConfigsWorkspace = lazy(() => import("@/pages/TBPGBalanceC
 const TBPGBalanceCacheEntriesWorkspace = lazy(() => import("@/pages/TBPGBalanceCacheEntriesWorkspace"));
 const TBPGSagaDefinitionsWorkspace = lazy(() => import("@/pages/TBPGSagaDefinitionsWorkspace"));
 const TBPGSagaExecutionsWorkspace = lazy(() => import("@/pages/TBPGSagaExecutionsWorkspace"));
+/* Security Enhancement — 12 services */
+const ScratchCardPINWorkspace = lazy(() => import("@/pages/ScratchCardPINWorkspace"));
+const HSMKeyManagerWorkspace = lazy(() => import("@/pages/HSMKeyManagerWorkspace"));
+const PINBlockEngineWorkspace = lazy(() => import("@/pages/PINBlockEngineWorkspace"));
+const GridTokenCardWorkspace = lazy(() => import("@/pages/GridTokenCardWorkspace"));
+const MFAOrchestratorWorkspace = lazy(() => import("@/pages/MFAOrchestratorWorkspace"));
+const OTPHardeningWorkspace = lazy(() => import("@/pages/OTPHardeningWorkspace"));
+const SessionSecurityWorkspace = lazy(() => import("@/pages/SessionSecurityWorkspace"));
+const APIKeyVaultWorkspace = lazy(() => import("@/pages/APIKeyVaultWorkspace"));
+const AdaptiveRateLimiterWorkspace = lazy(() => import("@/pages/AdaptiveRateLimiterWorkspace"));
+const FieldLevelEncryptionWorkspace = lazy(() => import("@/pages/FieldLevelEncryptionWorkspace"));
+const CertificateManagerWorkspace = lazy(() => import("@/pages/CertificateManagerWorkspace"));
+const SecurityAuditLoggerWorkspace = lazy(() => import("@/pages/SecurityAuditLoggerWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -904,6 +917,19 @@ export default function App() {
         <Route path="/tb-pg-balance-cache-entries" component={renderInAdminShell(TBPGBalanceCacheEntriesWorkspace)} />
         <Route path="/tb-pg-saga-definitions" component={renderInAdminShell(TBPGSagaDefinitionsWorkspace)} />
         <Route path="/tb-pg-saga-executions" component={renderInAdminShell(TBPGSagaExecutionsWorkspace)} />
+        {/* Security Enhancement */}
+        <Route path="/scratch-card-pins" component={renderInAdminShell(ScratchCardPINWorkspace)} />
+        <Route path="/hsm-key-manager" component={renderInAdminShell(HSMKeyManagerWorkspace)} />
+        <Route path="/pin-block-engine" component={renderInAdminShell(PINBlockEngineWorkspace)} />
+        <Route path="/grid-token-cards" component={renderInAdminShell(GridTokenCardWorkspace)} />
+        <Route path="/mfa-orchestrator" component={renderInAdminShell(MFAOrchestratorWorkspace)} />
+        <Route path="/otp-hardening" component={renderInAdminShell(OTPHardeningWorkspace)} />
+        <Route path="/session-security" component={renderInAdminShell(SessionSecurityWorkspace)} />
+        <Route path="/api-key-vault" component={renderInAdminShell(APIKeyVaultWorkspace)} />
+        <Route path="/adaptive-rate-limiter" component={renderInAdminShell(AdaptiveRateLimiterWorkspace)} />
+        <Route path="/field-level-encryption" component={renderInAdminShell(FieldLevelEncryptionWorkspace)} />
+        <Route path="/certificate-manager" component={renderInAdminShell(CertificateManagerWorkspace)} />
+        <Route path="/security-audit-logger" component={renderInAdminShell(SecurityAuditLoggerWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

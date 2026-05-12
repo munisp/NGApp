@@ -35,6 +35,9 @@ import {
   escrowAccounts, escrowParties, escrowTransactions, escrowMilestones,
   escrowDisputes, escrowDocuments, escrowFees, escrowInterestAccruals,
   escrowRegulatoryReports, escrowAuditLog,
+  scratchCards, cardBatches, pinVerifications, gridCards, cryptoKeys,
+  mfaEnrollments, mfaPolicies, otpRecords, sessionRecords, apiKeys,
+  securityEvents, certificates,
 } from "../../drizzle/schema";
 
 // ── Repository Instances ──
@@ -106,6 +109,19 @@ const repos = {
   escrowInterestAccruals: createRepository(escrowInterestAccruals, escrowInterestAccruals.accrualId, { tableName: "escrowInterestAccruals" }),
   escrowRegulatoryReports: createRepository(escrowRegulatoryReports, escrowRegulatoryReports.reportId, { tableName: "escrowRegulatoryReports" }),
   escrowAuditLog: createRepository(escrowAuditLog, escrowAuditLog.auditId, { tableName: "escrowAuditLog" }),
+  // Security
+  scratchCards: createRepository(scratchCards, scratchCards.id, { tableName: "scratchCards" }),
+  cardBatches: createRepository(cardBatches, cardBatches.id, { tableName: "cardBatches" }),
+  pinVerifications: createRepository(pinVerifications, pinVerifications.id, { tableName: "pinVerifications" }),
+  gridCards: createRepository(gridCards, gridCards.id, { tableName: "gridCards" }),
+  cryptoKeys: createRepository(cryptoKeys, cryptoKeys.id, { tableName: "cryptoKeys" }),
+  mfaEnrollments: createRepository(mfaEnrollments, mfaEnrollments.id, { tableName: "mfaEnrollments" }),
+  mfaPolicies: createRepository(mfaPolicies, mfaPolicies.id, { tableName: "mfaPolicies" }),
+  otpRecords: createRepository(otpRecords, otpRecords.id, { tableName: "otpRecords" }),
+  sessionRecords: createRepository(sessionRecords, sessionRecords.id, { tableName: "sessionRecords" }),
+  apiKeys: createRepository(apiKeys, apiKeys.id, { tableName: "apiKeys" }),
+  securityEvents: createRepository(securityEvents, securityEvents.id, { tableName: "securityEvents" }),
+  certificates: createRepository(certificates, certificates.id, { tableName: "certificates" }),
 };
 
 // ── Helper: DB-first, seed-fallback ──
@@ -239,6 +255,19 @@ const routeConfigs: RouteConfig[] = [
   { basePath: "/api/db/escrow-interest", repo: "escrowInterestAccruals", idParam: "accrualId", domain: "Escrow" },
   { basePath: "/api/db/escrow-regulatory", repo: "escrowRegulatoryReports", idParam: "reportId", domain: "Escrow" },
   { basePath: "/api/db/escrow-audit", repo: "escrowAuditLog", idParam: "auditId", domain: "Escrow" },
+  // Security
+  { basePath: "/api/db/scratch-cards", repo: "scratchCards", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/card-batches", repo: "cardBatches", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/pin-verifications", repo: "pinVerifications", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/grid-cards", repo: "gridCards", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/crypto-keys", repo: "cryptoKeys", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/mfa-enrollments", repo: "mfaEnrollments", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/mfa-policies", repo: "mfaPolicies", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/otp-records", repo: "otpRecords", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/session-records", repo: "sessionRecords", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/api-keys", repo: "apiKeys", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/security-events", repo: "securityEvents", idParam: "id", domain: "Security" },
+  { basePath: "/api/db/certificates", repo: "certificates", idParam: "id", domain: "Security" },
 ];
 
 export function registerDrizzleRoutes(app: any) {

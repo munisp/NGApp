@@ -1,9 +1,12 @@
 import {
+  bigint,
+  boolean,
   doublePrecision,
   integer,
   jsonb,
   index,
   pgTable,
+  real,
   serial,
   text,
   timestamp,
@@ -2263,3 +2266,241 @@ export type EscrowRegulatoryReport = typeof escrowRegulatoryReports.$inferSelect
 export type InsertEscrowRegulatoryReport = typeof escrowRegulatoryReports.$inferInsert;
 export type EscrowAuditLogEntry = typeof escrowAuditLog.$inferSelect;
 export type InsertEscrowAuditLogEntry = typeof escrowAuditLog.$inferInsert;
+
+// ─── Security Enhancement Tables ─────────────────────────────────────────────
+
+export const scratchCards = pgTable("scratch_cards", {
+  id: serial("id").primaryKey(),
+  cardId: text("card_id").notNull(),
+  batchId: text("batch_id").notNull(),
+  serialNumber: text("serial_number").notNull(),
+  cardType: text("card_type").notNull(), // transaction_pin, grid_challenge, activation, prepaid_value
+  pinHash: text("pin_hash"),
+  pinLength: integer("pin_length"),
+  status: text("status").notNull().default("generated"),
+  maxAttempts: integer("max_attempts").default(3),
+  usedAttempts: integer("used_attempts").default(0),
+  value: real("value"),
+  currency: text("currency"),
+  issuedTo: text("issued_to"),
+  customerId: text("customer_id"),
+  branchCode: text("branch_code"),
+  expiresAt: timestamp("expires_at"),
+  activatedAt: timestamp("activated_at"),
+  usedAt: timestamp("used_at"),
+  revokedAt: timestamp("revoked_at"),
+  revokeReason: text("revoke_reason"),
+  tamperDetected: boolean("tamper_detected").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  serialIdx: index("scratch_cards_serial_idx").on(table.serialNumber),
+  batchIdx: index("scratch_cards_batch_idx").on(table.batchId),
+  statusIdx: index("scratch_cards_status_idx").on(table.status),
+}));
+
+export const cardBatches = pgTable("card_batches", {
+  id: serial("id").primaryKey(),
+  batchId: text("batch_id").notNull(),
+  batchSize: integer("batch_size").notNull(),
+  cardType: text("card_type").notNull(),
+  generatedBy: text("generated_by"),
+  status: text("status").notNull().default("generating"),
+  cardsIssued: integer("cards_issued").default(0),
+  cardsUsed: integer("cards_used").default(0),
+  cardsRevoked: integer("cards_revoked").default(0),
+  branchCode: text("branch_code"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const pinVerifications = pgTable("pin_verifications", {
+  id: serial("id").primaryKey(),
+  verificationId: text("verification_id").notNull(),
+  cardId: text("card_id").notNull(),
+  serialNumber: text("serial_number").notNull(),
+  customerId: text("customer_id").notNull(),
+  transactionId: text("transaction_id"),
+  channel: text("channel"),
+  result: text("result").notNull(),
+  ipAddress: text("ip_address"),
+  deviceId: text("device_id"),
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => ({
+  customerIdx: index("pin_verifications_customer_idx").on(table.customerId),
+  resultIdx: index("pin_verifications_result_idx").on(table.result),
+}));
+
+export const gridCards = pgTable("grid_cards", {
+  id: serial("id").primaryKey(),
+  gridCardId: text("grid_card_id").notNull(),
+  customerId: text("customer_id").notNull(),
+  cardSerial: text("card_serial").notNull(),
+  gridSize: text("grid_size").notNull(),
+  gridValuesEncrypted: text("grid_values_encrypted"),
+  status: text("status").notNull().default("active"),
+  usageCount: integer("usage_count").default(0),
+  branchCode: text("branch_code"),
+  issuedAt: timestamp("issued_at"),
+  expiresAt: timestamp("expires_at"),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cryptoKeys = pgTable("crypto_keys", {
+  id: serial("id").primaryKey(),
+  keyId: text("key_id").notNull(),
+  name: text("name").notNull(),
+  keyType: text("key_type").notNull(),
+  algorithm: text("algorithm").notNull(),
+  purpose: text("purpose").notNull(),
+  status: text("status").notNull().default("generated"),
+  keySizeBits: integer("key_size_bits"),
+  rotationPeriodDays: integer("rotation_period_days"),
+  hsmSlot: text("hsm_slot"),
+  custodian1: text("custodian_1"),
+  custodian2: text("custodian_2"),
+  usageCount: bigint("usage_count", { mode: "number" }).default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  rotatedAt: timestamp("rotated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const mfaEnrollments = pgTable("mfa_enrollments", {
+  id: serial("id").primaryKey(),
+  enrollmentId: text("enrollment_id").notNull(),
+  customerId: text("customer_id").notNull(),
+  methods: text("methods").notNull(), // JSON array of methods
+  primaryMethod: text("primary_method"),
+  backupMethod: text("backup_method"),
+  status: text("status").notNull().default("enrolled"),
+  riskLevel: text("risk_level"),
+  channel: text("channel"),
+  enrolledAt: timestamp("enrolled_at").defaultNow(),
+  lastVerified: timestamp("last_verified"),
+});
+
+export const mfaPolicies = pgTable("mfa_policies", {
+  id: serial("id").primaryKey(),
+  policyId: text("policy_id").notNull(),
+  name: text("name").notNull(),
+  transactionType: text("transaction_type"),
+  amountThresholdNgn: real("amount_threshold_ngn").default(0),
+  requiredFactors: integer("required_factors").default(1),
+  allowedMethods: text("allowed_methods"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const otpRecords = pgTable("otp_records", {
+  id: serial("id").primaryKey(),
+  otpId: text("otp_id").notNull(),
+  policyId: text("policy_id"),
+  customerId: text("customer_id").notNull(),
+  channel: text("channel"),
+  purpose: text("purpose"),
+  otpHash: text("otp_hash"),
+  status: text("status").notNull(),
+  attempts: integer("attempts").default(0),
+  deliveredVia: text("delivered_via"),
+  expiresAt: timestamp("expires_at"),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const sessionRecords = pgTable("session_records", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  customerId: text("customer_id").notNull(),
+  channel: text("channel"),
+  deviceFingerprint: text("device_fingerprint"),
+  ipAddress: text("ip_address"),
+  geoLocation: text("geo_location"),
+  status: text("status").notNull(),
+  mfaLevel: text("mfa_level"),
+  riskScore: real("risk_score"),
+  lastActivity: timestamp("last_activity"),
+  expiresAt: timestamp("expires_at"),
+  terminatedReason: text("terminated_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  apiKeyId: text("api_key_id").notNull(),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix"),
+  tenantId: text("tenant_id"),
+  scopes: text("scopes"),
+  rateLimit: integer("rate_limit"),
+  status: text("status").notNull().default("active"),
+  ipWhitelist: text("ip_whitelist"),
+  usageCount: bigint("usage_count", { mode: "number" }).default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const securityEvents = pgTable("security_events", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  subType: text("sub_type"),
+  actor: text("actor"),
+  channel: text("channel"),
+  ipAddress: text("ip_address"),
+  geoLocation: text("geo_location"),
+  details: text("details"),
+  riskScore: real("risk_score"),
+  severity: text("severity"),
+  hashChain: text("hash_chain"),
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => ({
+  eventTypeIdx: index("security_events_event_type_idx").on(table.eventType),
+  severityIdx: index("security_events_severity_idx").on(table.severity),
+}));
+
+export const certificates = pgTable("certificates", {
+  id: serial("id").primaryKey(),
+  certId: text("cert_id").notNull(),
+  commonName: text("common_name").notNull(),
+  certType: text("cert_type").notNull(),
+  algorithm: text("algorithm"),
+  issuer: text("issuer"),
+  serialNumber: text("serial_number"),
+  status: text("status").notNull().default("active"),
+  validFrom: timestamp("valid_from"),
+  validTo: timestamp("valid_to"),
+  renewalDays: integer("renewal_days"),
+  lastRenewed: timestamp("last_renewed"),
+  revokedAt: timestamp("revoked_at"),
+  revocationReason: text("revocation_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Security type exports
+export type ScratchCard = typeof scratchCards.$inferSelect;
+export type InsertScratchCard = typeof scratchCards.$inferInsert;
+export type CardBatch = typeof cardBatches.$inferSelect;
+export type InsertCardBatch = typeof cardBatches.$inferInsert;
+export type PinVerification = typeof pinVerifications.$inferSelect;
+export type InsertPinVerification = typeof pinVerifications.$inferInsert;
+export type GridCard = typeof gridCards.$inferSelect;
+export type InsertGridCard = typeof gridCards.$inferInsert;
+export type CryptoKey = typeof cryptoKeys.$inferSelect;
+export type InsertCryptoKey = typeof cryptoKeys.$inferInsert;
+export type MFAEnrollment = typeof mfaEnrollments.$inferSelect;
+export type InsertMFAEnrollment = typeof mfaEnrollments.$inferInsert;
+export type MFAPolicy = typeof mfaPolicies.$inferSelect;
+export type InsertMFAPolicy = typeof mfaPolicies.$inferInsert;
+export type OTPRecord = typeof otpRecords.$inferSelect;
+export type InsertOTPRecord = typeof otpRecords.$inferInsert;
+export type SessionRecord = typeof sessionRecords.$inferSelect;
+export type InsertSessionRecord = typeof sessionRecords.$inferInsert;
+export type APIKeyRecord = typeof apiKeys.$inferSelect;
+export type InsertAPIKeyRecord = typeof apiKeys.$inferInsert;
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type InsertSecurityEvent = typeof securityEvents.$inferInsert;
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = typeof certificates.$inferInsert;

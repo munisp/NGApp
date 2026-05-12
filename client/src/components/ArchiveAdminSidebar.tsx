@@ -111,6 +111,9 @@ import {
   RotateCcw,
   ArrowUpCircle,
   RefreshCw,
+  LayoutGrid,
+  Monitor,
+  FileCheck,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -756,6 +759,24 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/developer-portal", label: "Developer Portal", icon: Code },
       { path: "/customer-360-dashboard", label: "Customer 360", icon: Users },
       { path: "/realtime-pricing", label: "Real-Time Pricing", icon: Zap },
+    ],
+  },
+  {
+    category: "Security Enhancement",
+    icon: Shield,
+    items: [
+      { path: "/scratch-card-pins", label: "Scratch Card PINs", icon: CreditCard },
+      { path: "/hsm-key-manager", label: "HSM Key Manager", icon: Key },
+      { path: "/pin-block-engine", label: "PIN Block Engine", icon: Lock },
+      { path: "/grid-token-cards", label: "Grid Token Cards", icon: LayoutGrid },
+      { path: "/mfa-orchestrator", label: "MFA Orchestrator", icon: Fingerprint },
+      { path: "/otp-hardening", label: "OTP Hardening", icon: Shield },
+      { path: "/session-security", label: "Session Security", icon: Monitor },
+      { path: "/api-key-vault", label: "API Key Vault", icon: Key },
+      { path: "/adaptive-rate-limiter", label: "Rate Limiter", icon: Activity },
+      { path: "/field-level-encryption", label: "Field Encryption", icon: Lock },
+      { path: "/certificate-manager", label: "Certificate Manager", icon: FileCheck },
+      { path: "/security-audit-logger", label: "Security Audit", icon: FileSearch },
     ],
   },
 ];
