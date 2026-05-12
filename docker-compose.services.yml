@@ -5164,3 +5164,179 @@ services:
     environment:
       - PORT=8628
     restart: unless-stopped
+  # === Channel Banking Services (25 services, ports 8629-8653) ===
+  voice-banking-gateway-go:
+    build: ./services/voice-banking-gateway-go
+    ports:
+      - "8629:8629"
+    environment:
+      - PORT=8629
+    restart: unless-stopped
+  voice-tts-nigerian-ru:
+    build: ./services/voice-tts-nigerian-ru
+    ports:
+      - "8630:8630"
+    environment:
+      - PORT=8630
+    restart: unless-stopped
+  voice-asr-nigerian-py:
+    build: ./services/voice-asr-nigerian-py
+    ports:
+      - "8631:8631"
+    environment:
+      - PORT=8631
+    restart: unless-stopped
+  voice-nlu-banking-py:
+    build: ./services/voice-nlu-banking-py
+    ports:
+      - "8632:8632"
+    environment:
+      - PORT=8632
+    restart: unless-stopped
+  voice-biometric-auth-ru:
+    build: ./services/voice-biometric-auth-ru
+    ports:
+      - "8633:8633"
+    environment:
+      - PORT=8633
+    restart: unless-stopped
+  voice-ivr-menu-go:
+    build: ./services/voice-ivr-menu-go
+    ports:
+      - "8634:8634"
+    environment:
+      - PORT=8634
+    restart: unless-stopped
+  voice-call-analytics-py:
+    build: ./services/voice-call-analytics-py
+    ports:
+      - "8635:8635"
+    environment:
+      - PORT=8635
+    restart: unless-stopped
+  voice-agent-escalation-go:
+    build: ./services/voice-agent-escalation-go
+    ports:
+      - "8636:8636"
+    environment:
+      - PORT=8636
+    restart: unless-stopped
+  telegram-bot-gateway-go:
+    build: ./services/telegram-bot-gateway-go
+    ports:
+      - "8637:8637"
+    environment:
+      - PORT=8637
+    restart: unless-stopped
+  telegram-banking-commands-ru:
+    build: ./services/telegram-banking-commands-ru
+    ports:
+      - "8638:8638"
+    environment:
+      - PORT=8638
+    restart: unless-stopped
+  telegram-notification-py:
+    build: ./services/telegram-notification-py
+    ports:
+      - "8639:8639"
+    environment:
+      - PORT=8639
+    restart: unless-stopped
+  telegram-mini-app-go:
+    build: ./services/telegram-mini-app-go
+    ports:
+      - "8640:8640"
+    environment:
+      - PORT=8640
+    restart: unless-stopped
+  telegram-kyc-bot-ru:
+    build: ./services/telegram-kyc-bot-ru
+    ports:
+      - "8641:8641"
+    environment:
+      - PORT=8641
+    restart: unless-stopped
+  whatsapp-business-gateway-go:
+    build: ./services/whatsapp-business-gateway-go
+    ports:
+      - "8642:8642"
+    environment:
+      - PORT=8642
+    restart: unless-stopped
+  whatsapp-banking-flows-ru:
+    build: ./services/whatsapp-banking-flows-ru
+    ports:
+      - "8643:8643"
+    environment:
+      - PORT=8643
+    restart: unless-stopped
+  whatsapp-payment-integration-go:
+    build: ./services/whatsapp-payment-integration-go
+    ports:
+      - "8644:8644"
+    environment:
+      - PORT=8644
+    restart: unless-stopped
+  whatsapp-notification-py:
+    build: ./services/whatsapp-notification-py
+    ports:
+      - "8645:8645"
+    environment:
+      - PORT=8645
+    restart: unless-stopped
+  whatsapp-document-service-ru:
+    build: ./services/whatsapp-document-service-ru
+    ports:
+      - "8646:8646"
+    environment:
+      - PORT=8646
+    restart: unless-stopped
+  ussd-banking-gateway-go:
+    build: ./services/ussd-banking-gateway-go
+    ports:
+      - "8647:8647"
+    environment:
+      - PORT=8647
+    restart: unless-stopped
+  ussd-transaction-engine-ru:
+    build: ./services/ussd-transaction-engine-ru
+    ports:
+      - "8648:8648"
+    environment:
+      - PORT=8648
+    restart: unless-stopped
+  ussd-multilingual-py:
+    build: ./services/ussd-multilingual-py
+    ports:
+      - "8649:8649"
+    environment:
+      - PORT=8649
+    restart: unless-stopped
+  ussd-sim-toolkit-go:
+    build: ./services/ussd-sim-toolkit-go
+    ports:
+      - "8650:8650"
+    environment:
+      - PORT=8650
+    restart: unless-stopped
+  sms-banking-gateway-go:
+    build: ./services/sms-banking-gateway-go
+    ports:
+      - "8651:8651"
+    environment:
+      - PORT=8651
+    restart: unless-stopped
+  sms-otp-service-ru:
+    build: ./services/sms-otp-service-ru
+    ports:
+      - "8652:8652"
+    environment:
+      - PORT=8652
+    restart: unless-stopped
+  sms-alert-notification-py:
+    build: ./services/sms-alert-notification-py
+    ports:
+      - "8653:8653"
+    environment:
+      - PORT=8653
+    restart: unless-stopped

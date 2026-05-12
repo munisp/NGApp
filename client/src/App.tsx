@@ -574,6 +574,33 @@ const AggregationCenterWorkspace = lazy(() => import("@/pages/AggregationCenterW
 const CbnAgsmeisWorkspace = lazy(() => import("@/pages/CbnAgsmeisWorkspace"));
 const AcgsfGuaranteeWorkspace = lazy(() => import("@/pages/AcgsfGuaranteeWorkspace"));
 
+// Channel Banking (25 services)
+const VoiceBankingGatewayWorkspace = lazy(() => import("@/pages/VoiceBankingGatewayWorkspace"));
+const VoiceTtsNigerianWorkspace = lazy(() => import("@/pages/VoiceTtsNigerianWorkspace"));
+const VoiceAsrNigerianWorkspace = lazy(() => import("@/pages/VoiceAsrNigerianWorkspace"));
+const VoiceNluBankingWorkspace = lazy(() => import("@/pages/VoiceNluBankingWorkspace"));
+const VoiceBiometricAuthWorkspace = lazy(() => import("@/pages/VoiceBiometricAuthWorkspace"));
+const VoiceIvrMenuWorkspace = lazy(() => import("@/pages/VoiceIvrMenuWorkspace"));
+const VoiceCallAnalyticsWorkspace = lazy(() => import("@/pages/VoiceCallAnalyticsWorkspace"));
+const VoiceAgentEscalationWorkspace = lazy(() => import("@/pages/VoiceAgentEscalationWorkspace"));
+const TelegramBotGatewayWorkspace = lazy(() => import("@/pages/TelegramBotGatewayWorkspace"));
+const TelegramBankingCommandsWorkspace = lazy(() => import("@/pages/TelegramBankingCommandsWorkspace"));
+const TelegramNotificationWorkspace = lazy(() => import("@/pages/TelegramNotificationWorkspace"));
+const TelegramMiniAppWorkspace = lazy(() => import("@/pages/TelegramMiniAppWorkspace"));
+const TelegramKycBotWorkspace = lazy(() => import("@/pages/TelegramKycBotWorkspace"));
+const WhatsappBusinessGatewayWorkspace = lazy(() => import("@/pages/WhatsappBusinessGatewayWorkspace"));
+const WhatsappBankingFlowsWorkspace = lazy(() => import("@/pages/WhatsappBankingFlowsWorkspace"));
+const WhatsappPaymentIntegrationWorkspace = lazy(() => import("@/pages/WhatsappPaymentIntegrationWorkspace"));
+const WhatsappNotificationWorkspace = lazy(() => import("@/pages/WhatsappNotificationWorkspace"));
+const WhatsappDocumentServiceWorkspace = lazy(() => import("@/pages/WhatsappDocumentServiceWorkspace"));
+const UssdBankingGatewayWorkspace = lazy(() => import("@/pages/UssdBankingGatewayWorkspace"));
+const UssdTransactionEngineWorkspace = lazy(() => import("@/pages/UssdTransactionEngineWorkspace"));
+const UssdMultilingualWorkspace = lazy(() => import("@/pages/UssdMultilingualWorkspace"));
+const UssdSimToolkitWorkspace = lazy(() => import("@/pages/UssdSimToolkitWorkspace"));
+const SmsBankingGatewayWorkspace = lazy(() => import("@/pages/SmsBankingGatewayWorkspace"));
+const SmsOtpServiceWorkspace = lazy(() => import("@/pages/SmsOtpServiceWorkspace"));
+const SmsAlertNotificationWorkspace = lazy(() => import("@/pages/SmsAlertNotificationWorkspace"));
+
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
 }
@@ -1198,6 +1225,33 @@ export default function App() {
         <Route path="/agriculture-enhancement/aggregation-center" component={renderInAdminShell(AggregationCenterWorkspace)} />
         <Route path="/agriculture-enhancement/cbn-agsmeis" component={renderInAdminShell(CbnAgsmeisWorkspace)} />
         <Route path="/agriculture-enhancement/acgsf-guarantee" component={renderInAdminShell(AcgsfGuaranteeWorkspace)} />
+
+        {/* Channel Banking (25 services) */}
+        <Route path="/channel-banking/voice-banking-gateway" component={renderInAdminShell(VoiceBankingGatewayWorkspace)} />
+        <Route path="/channel-banking/voice-tts-nigerian" component={renderInAdminShell(VoiceTtsNigerianWorkspace)} />
+        <Route path="/channel-banking/voice-asr-nigerian" component={renderInAdminShell(VoiceAsrNigerianWorkspace)} />
+        <Route path="/channel-banking/voice-nlu-banking" component={renderInAdminShell(VoiceNluBankingWorkspace)} />
+        <Route path="/channel-banking/voice-biometric-auth" component={renderInAdminShell(VoiceBiometricAuthWorkspace)} />
+        <Route path="/channel-banking/voice-ivr-menu" component={renderInAdminShell(VoiceIvrMenuWorkspace)} />
+        <Route path="/channel-banking/voice-call-analytics" component={renderInAdminShell(VoiceCallAnalyticsWorkspace)} />
+        <Route path="/channel-banking/voice-agent-escalation" component={renderInAdminShell(VoiceAgentEscalationWorkspace)} />
+        <Route path="/channel-banking/telegram-bot-gateway" component={renderInAdminShell(TelegramBotGatewayWorkspace)} />
+        <Route path="/channel-banking/telegram-banking-commands" component={renderInAdminShell(TelegramBankingCommandsWorkspace)} />
+        <Route path="/channel-banking/telegram-notification" component={renderInAdminShell(TelegramNotificationWorkspace)} />
+        <Route path="/channel-banking/telegram-mini-app" component={renderInAdminShell(TelegramMiniAppWorkspace)} />
+        <Route path="/channel-banking/telegram-kyc-bot" component={renderInAdminShell(TelegramKycBotWorkspace)} />
+        <Route path="/channel-banking/whatsapp-business-gateway" component={renderInAdminShell(WhatsappBusinessGatewayWorkspace)} />
+        <Route path="/channel-banking/whatsapp-banking-flows" component={renderInAdminShell(WhatsappBankingFlowsWorkspace)} />
+        <Route path="/channel-banking/whatsapp-payment-integration" component={renderInAdminShell(WhatsappPaymentIntegrationWorkspace)} />
+        <Route path="/channel-banking/whatsapp-notification" component={renderInAdminShell(WhatsappNotificationWorkspace)} />
+        <Route path="/channel-banking/whatsapp-document-service" component={renderInAdminShell(WhatsappDocumentServiceWorkspace)} />
+        <Route path="/channel-banking/ussd-banking-gateway" component={renderInAdminShell(UssdBankingGatewayWorkspace)} />
+        <Route path="/channel-banking/ussd-transaction-engine" component={renderInAdminShell(UssdTransactionEngineWorkspace)} />
+        <Route path="/channel-banking/ussd-multilingual" component={renderInAdminShell(UssdMultilingualWorkspace)} />
+        <Route path="/channel-banking/ussd-sim-toolkit" component={renderInAdminShell(UssdSimToolkitWorkspace)} />
+        <Route path="/channel-banking/sms-banking-gateway" component={renderInAdminShell(SmsBankingGatewayWorkspace)} />
+        <Route path="/channel-banking/sms-otp-service" component={renderInAdminShell(SmsOtpServiceWorkspace)} />
+        <Route path="/channel-banking/sms-alert-notification" component={renderInAdminShell(SmsAlertNotificationWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

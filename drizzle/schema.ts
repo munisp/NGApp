@@ -4390,3 +4390,505 @@ export const acgsfGuarantee = pgTable("acgsf_guarantee", {
 }, (t) => [
   index("acgsf_guarantee_tenant_idx").on(t.tenantId),
 ]);
+
+// === Channel Banking Tables (25 services, ports 8629-8653) ===
+
+export const voiceBankingGateway = pgTable("voice_banking_gateway", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_banking_gateway_tenant_idx").on(t.tenantId),
+  index("voice_banking_gateway_channel_idx").on(t.channel),
+]);
+
+export const voiceTtsNigerian = pgTable("voice_tts_nigerian", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_tts_nigerian_tenant_idx").on(t.tenantId),
+  index("voice_tts_nigerian_channel_idx").on(t.channel),
+]);
+
+export const voiceAsrNigerian = pgTable("voice_asr_nigerian", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_asr_nigerian_tenant_idx").on(t.tenantId),
+  index("voice_asr_nigerian_channel_idx").on(t.channel),
+]);
+
+export const voiceNluBanking = pgTable("voice_nlu_banking", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_nlu_banking_tenant_idx").on(t.tenantId),
+  index("voice_nlu_banking_channel_idx").on(t.channel),
+]);
+
+export const voiceBiometricAuth = pgTable("voice_biometric_auth", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_biometric_auth_tenant_idx").on(t.tenantId),
+  index("voice_biometric_auth_channel_idx").on(t.channel),
+]);
+
+export const voiceIvrMenu = pgTable("voice_ivr_menu", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_ivr_menu_tenant_idx").on(t.tenantId),
+  index("voice_ivr_menu_channel_idx").on(t.channel),
+]);
+
+export const voiceCallAnalytics = pgTable("voice_call_analytics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_call_analytics_tenant_idx").on(t.tenantId),
+  index("voice_call_analytics_channel_idx").on(t.channel),
+]);
+
+export const voiceAgentEscalation = pgTable("voice_agent_escalation", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("voice_agent_escalation_tenant_idx").on(t.tenantId),
+  index("voice_agent_escalation_channel_idx").on(t.channel),
+]);
+
+export const telegramBotGateway = pgTable("telegram_bot_gateway", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("telegram_bot_gateway_tenant_idx").on(t.tenantId),
+  index("telegram_bot_gateway_channel_idx").on(t.channel),
+]);
+
+export const telegramBankingCommands = pgTable("telegram_banking_commands", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("telegram_banking_commands_tenant_idx").on(t.tenantId),
+  index("telegram_banking_commands_channel_idx").on(t.channel),
+]);
+
+export const telegramNotification = pgTable("telegram_notification", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("telegram_notification_tenant_idx").on(t.tenantId),
+  index("telegram_notification_channel_idx").on(t.channel),
+]);
+
+export const telegramMiniApp = pgTable("telegram_mini_app", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("telegram_mini_app_tenant_idx").on(t.tenantId),
+  index("telegram_mini_app_channel_idx").on(t.channel),
+]);
+
+export const telegramKycBot = pgTable("telegram_kyc_bot", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("telegram_kyc_bot_tenant_idx").on(t.tenantId),
+  index("telegram_kyc_bot_channel_idx").on(t.channel),
+]);
+
+export const whatsappBusinessGateway = pgTable("whatsapp_business_gateway", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("whatsapp_business_gateway_tenant_idx").on(t.tenantId),
+  index("whatsapp_business_gateway_channel_idx").on(t.channel),
+]);
+
+export const whatsappBankingFlows = pgTable("whatsapp_banking_flows", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("whatsapp_banking_flows_tenant_idx").on(t.tenantId),
+  index("whatsapp_banking_flows_channel_idx").on(t.channel),
+]);
+
+export const whatsappPaymentIntegration = pgTable("whatsapp_payment_integration", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("whatsapp_payment_integration_tenant_idx").on(t.tenantId),
+  index("whatsapp_payment_integration_channel_idx").on(t.channel),
+]);
+
+export const whatsappNotification = pgTable("whatsapp_notification", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("whatsapp_notification_tenant_idx").on(t.tenantId),
+  index("whatsapp_notification_channel_idx").on(t.channel),
+]);
+
+export const whatsappDocumentService = pgTable("whatsapp_document_service", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("whatsapp_document_service_tenant_idx").on(t.tenantId),
+  index("whatsapp_document_service_channel_idx").on(t.channel),
+]);
+
+export const ussdBankingGateway = pgTable("ussd_banking_gateway", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("ussd_banking_gateway_tenant_idx").on(t.tenantId),
+  index("ussd_banking_gateway_channel_idx").on(t.channel),
+]);
+
+export const ussdTransactionEngine = pgTable("ussd_transaction_engine", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("ussd_transaction_engine_tenant_idx").on(t.tenantId),
+  index("ussd_transaction_engine_channel_idx").on(t.channel),
+]);
+
+export const ussdMultilingual = pgTable("ussd_multilingual", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("ussd_multilingual_tenant_idx").on(t.tenantId),
+  index("ussd_multilingual_channel_idx").on(t.channel),
+]);
+
+export const ussdSimToolkit = pgTable("ussd_sim_toolkit", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("ussd_sim_toolkit_tenant_idx").on(t.tenantId),
+  index("ussd_sim_toolkit_channel_idx").on(t.channel),
+]);
+
+export const smsBankingGateway = pgTable("sms_banking_gateway", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("sms_banking_gateway_tenant_idx").on(t.tenantId),
+  index("sms_banking_gateway_channel_idx").on(t.channel),
+]);
+
+export const smsOtpService = pgTable("sms_otp_service", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("sms_otp_service_tenant_idx").on(t.tenantId),
+  index("sms_otp_service_channel_idx").on(t.channel),
+]);
+
+export const smsAlertNotification = pgTable("sms_alert_notification", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  channel: text("channel"),
+  msisdn: text("msisdn"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("sms_alert_notification_tenant_idx").on(t.tenantId),
+  index("sms_alert_notification_channel_idx").on(t.channel),
+]);

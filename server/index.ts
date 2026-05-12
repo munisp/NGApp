@@ -56,6 +56,7 @@ import { registerPlatformSecurityHardeningRoutes } from "./lib/platformSecurityH
 import { registerPerformanceOptimizationRoutes } from "./lib/platformPerformanceOptimization";
 import { registerAMLEnhancementRoutes } from "./lib/amlEnhancement";
 import { registerAgricultureEnhancementRoutes } from "./lib/agricultureEnhancement";
+import { registerChannelBankingRoutes } from "./lib/channelBanking";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
@@ -5231,6 +5232,7 @@ async function startServer() {
   registerPerformanceOptimizationRoutes(app);
   registerAMLEnhancementRoutes(app);
   registerAgricultureEnhancementRoutes(app);
+  registerChannelBankingRoutes(app);
 
   // === Production Infrastructure Modules ===
   registerDatabasePersistence(app);
