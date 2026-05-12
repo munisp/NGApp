@@ -532,6 +532,48 @@ const WireTransferMonitorWorkspace = lazy(() => import("@/pages/WireTransferMoni
 const AMLRegulatoryReportingWorkspace = lazy(() => import("@/pages/AMLRegulatoryReportingWorkspace"));
 const TypologyDetectorWorkspace = lazy(() => import("@/pages/TypologyDetectorWorkspace"));
 
+// Agriculture Enhancement (40 services)
+const CooperativeManagementWorkspace = lazy(() => import("@/pages/CooperativeManagementWorkspace"));
+const LivestockManagementWorkspace = lazy(() => import("@/pages/LivestockManagementWorkspace"));
+const AgriInputMarketplaceWorkspace = lazy(() => import("@/pages/AgriInputMarketplaceWorkspace"));
+const NirsalCreditGuaranteeWorkspace = lazy(() => import("@/pages/NirsalCreditGuaranteeWorkspace"));
+const CbnAnchorBorrowersWorkspace = lazy(() => import("@/pages/CbnAnchorBorrowersWorkspace"));
+const InteractiveUssdAgriWorkspace = lazy(() => import("@/pages/InteractiveUssdAgriWorkspace"));
+const AgriSavingsCyclesWorkspace = lazy(() => import("@/pages/AgriSavingsCyclesWorkspace"));
+const LivestockFinanceWorkspace = lazy(() => import("@/pages/LivestockFinanceWorkspace"));
+const CommodityExchangeWorkspace = lazy(() => import("@/pages/CommodityExchangeWorkspace"));
+const AgriEvoucherWorkspace = lazy(() => import("@/pages/AgriEvoucherWorkspace"));
+const CommodityPriceIntelligenceWorkspace = lazy(() => import("@/pages/CommodityPriceIntelligenceWorkspace"));
+const SatelliteCropMonitorWorkspace = lazy(() => import("@/pages/SatelliteCropMonitorWorkspace"));
+const CooperativeCreditScoringWorkspace = lazy(() => import("@/pages/CooperativeCreditScoringWorkspace"));
+const FisheriesAquacultureWorkspace = lazy(() => import("@/pages/FisheriesAquacultureWorkspace"));
+const FarmBoundaryMappingWorkspace = lazy(() => import("@/pages/FarmBoundaryMappingWorkspace"));
+const AreaYieldIndexInsuranceWorkspace = lazy(() => import("@/pages/AreaYieldIndexInsuranceWorkspace"));
+const WarehouseManagementWorkspace = lazy(() => import("@/pages/WarehouseManagementWorkspace"));
+const AgentFarmerOnboardingWorkspace = lazy(() => import("@/pages/AgentFarmerOnboardingWorkspace"));
+const LivestockInsuranceWorkspace = lazy(() => import("@/pages/LivestockInsuranceWorkspace"));
+const EquipmentLeasingWorkspace = lazy(() => import("@/pages/EquipmentLeasingWorkspace"));
+const CropYieldPredictionWorkspace = lazy(() => import("@/pages/CropYieldPredictionWorkspace"));
+const MultiPerilCropInsuranceWorkspace = lazy(() => import("@/pages/MultiPerilCropInsuranceWorkspace"));
+const AgriLogisticsWorkspace = lazy(() => import("@/pages/AgriLogisticsWorkspace"));
+const CbnAgriReturnsWorkspace = lazy(() => import("@/pages/CbnAgriReturnsWorkspace"));
+const AnimalIdTraceabilityWorkspace = lazy(() => import("@/pages/AnimalIdTraceabilityWorkspace"));
+const NirsalAgroGeocoopWorkspace = lazy(() => import("@/pages/NirsalAgroGeocoopWorkspace"));
+const AgriIotSensorWorkspace = lazy(() => import("@/pages/AgriIotSensorWorkspace"));
+const AgriReinsuranceWorkspace = lazy(() => import("@/pages/AgriReinsuranceWorkspace"));
+const QualityCertificationWorkspace = lazy(() => import("@/pages/QualityCertificationWorkspace"));
+const AgriEsgImpactWorkspace = lazy(() => import("@/pages/AgriEsgImpactWorkspace"));
+const CrossborderAgriTradeWorkspace = lazy(() => import("@/pages/CrossborderAgriTradeWorkspace"));
+const CooperativeMeetingsWorkspace = lazy(() => import("@/pages/CooperativeMeetingsWorkspace"));
+const CooperativeFinancialsWorkspace = lazy(() => import("@/pages/CooperativeFinancialsWorkspace"));
+const SoilAnalysisWorkspace = lazy(() => import("@/pages/SoilAnalysisWorkspace"));
+const InsurancePortfolioAnalyticsWorkspace = lazy(() => import("@/pages/InsurancePortfolioAnalyticsWorkspace"));
+const ParametricInsuranceIotWorkspace = lazy(() => import("@/pages/ParametricInsuranceIotWorkspace"));
+const PostHarvestLossTrackerWorkspace = lazy(() => import("@/pages/PostHarvestLossTrackerWorkspace"));
+const AggregationCenterWorkspace = lazy(() => import("@/pages/AggregationCenterWorkspace"));
+const CbnAgsmeisWorkspace = lazy(() => import("@/pages/CbnAgsmeisWorkspace"));
+const AcgsfGuaranteeWorkspace = lazy(() => import("@/pages/AcgsfGuaranteeWorkspace"));
+
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
 }
@@ -1114,6 +1156,48 @@ export default function App() {
         <Route path="/wire-transfer-monitor" component={renderInAdminShell(WireTransferMonitorWorkspace)} />
         <Route path="/aml-regulatory-reporting" component={renderInAdminShell(AMLRegulatoryReportingWorkspace)} />
         <Route path="/typology-detector" component={renderInAdminShell(TypologyDetectorWorkspace)} />
+
+        {/* Agriculture Enhancement (40 services) */}
+        <Route path="/agriculture-enhancement/cooperative-management" component={renderInAdminShell(CooperativeManagementWorkspace)} />
+        <Route path="/agriculture-enhancement/livestock-management" component={renderInAdminShell(LivestockManagementWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-input-marketplace" component={renderInAdminShell(AgriInputMarketplaceWorkspace)} />
+        <Route path="/agriculture-enhancement/nirsal-credit-guarantee" component={renderInAdminShell(NirsalCreditGuaranteeWorkspace)} />
+        <Route path="/agriculture-enhancement/cbn-anchor-borrowers" component={renderInAdminShell(CbnAnchorBorrowersWorkspace)} />
+        <Route path="/agriculture-enhancement/interactive-ussd-agri" component={renderInAdminShell(InteractiveUssdAgriWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-savings-cycles" component={renderInAdminShell(AgriSavingsCyclesWorkspace)} />
+        <Route path="/agriculture-enhancement/livestock-finance" component={renderInAdminShell(LivestockFinanceWorkspace)} />
+        <Route path="/agriculture-enhancement/commodity-exchange" component={renderInAdminShell(CommodityExchangeWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-evoucher" component={renderInAdminShell(AgriEvoucherWorkspace)} />
+        <Route path="/agriculture-enhancement/commodity-price-intelligence" component={renderInAdminShell(CommodityPriceIntelligenceWorkspace)} />
+        <Route path="/agriculture-enhancement/satellite-crop-monitor" component={renderInAdminShell(SatelliteCropMonitorWorkspace)} />
+        <Route path="/agriculture-enhancement/cooperative-credit-scoring" component={renderInAdminShell(CooperativeCreditScoringWorkspace)} />
+        <Route path="/agriculture-enhancement/fisheries-aquaculture" component={renderInAdminShell(FisheriesAquacultureWorkspace)} />
+        <Route path="/agriculture-enhancement/farm-boundary-mapping" component={renderInAdminShell(FarmBoundaryMappingWorkspace)} />
+        <Route path="/agriculture-enhancement/area-yield-index-insurance" component={renderInAdminShell(AreaYieldIndexInsuranceWorkspace)} />
+        <Route path="/agriculture-enhancement/warehouse-management" component={renderInAdminShell(WarehouseManagementWorkspace)} />
+        <Route path="/agriculture-enhancement/agent-farmer-onboarding" component={renderInAdminShell(AgentFarmerOnboardingWorkspace)} />
+        <Route path="/agriculture-enhancement/livestock-insurance" component={renderInAdminShell(LivestockInsuranceWorkspace)} />
+        <Route path="/agriculture-enhancement/equipment-leasing" component={renderInAdminShell(EquipmentLeasingWorkspace)} />
+        <Route path="/agriculture-enhancement/crop-yield-prediction" component={renderInAdminShell(CropYieldPredictionWorkspace)} />
+        <Route path="/agriculture-enhancement/multi-peril-crop-insurance" component={renderInAdminShell(MultiPerilCropInsuranceWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-logistics" component={renderInAdminShell(AgriLogisticsWorkspace)} />
+        <Route path="/agriculture-enhancement/cbn-agri-returns" component={renderInAdminShell(CbnAgriReturnsWorkspace)} />
+        <Route path="/agriculture-enhancement/animal-id-traceability" component={renderInAdminShell(AnimalIdTraceabilityWorkspace)} />
+        <Route path="/agriculture-enhancement/nirsal-agro-geocoop" component={renderInAdminShell(NirsalAgroGeocoopWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-iot-sensor" component={renderInAdminShell(AgriIotSensorWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-reinsurance" component={renderInAdminShell(AgriReinsuranceWorkspace)} />
+        <Route path="/agriculture-enhancement/quality-certification" component={renderInAdminShell(QualityCertificationWorkspace)} />
+        <Route path="/agriculture-enhancement/agri-esg-impact" component={renderInAdminShell(AgriEsgImpactWorkspace)} />
+        <Route path="/agriculture-enhancement/crossborder-agri-trade" component={renderInAdminShell(CrossborderAgriTradeWorkspace)} />
+        <Route path="/agriculture-enhancement/cooperative-meetings" component={renderInAdminShell(CooperativeMeetingsWorkspace)} />
+        <Route path="/agriculture-enhancement/cooperative-financials" component={renderInAdminShell(CooperativeFinancialsWorkspace)} />
+        <Route path="/agriculture-enhancement/soil-analysis" component={renderInAdminShell(SoilAnalysisWorkspace)} />
+        <Route path="/agriculture-enhancement/insurance-portfolio-analytics" component={renderInAdminShell(InsurancePortfolioAnalyticsWorkspace)} />
+        <Route path="/agriculture-enhancement/parametric-insurance-iot" component={renderInAdminShell(ParametricInsuranceIotWorkspace)} />
+        <Route path="/agriculture-enhancement/post-harvest-loss-tracker" component={renderInAdminShell(PostHarvestLossTrackerWorkspace)} />
+        <Route path="/agriculture-enhancement/aggregation-center" component={renderInAdminShell(AggregationCenterWorkspace)} />
+        <Route path="/agriculture-enhancement/cbn-agsmeis" component={renderInAdminShell(CbnAgsmeisWorkspace)} />
+        <Route path="/agriculture-enhancement/acgsf-guarantee" component={renderInAdminShell(AcgsfGuaranteeWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

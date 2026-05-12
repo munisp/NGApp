@@ -3665,3 +3665,728 @@ export const typologyMatches = pgTable("typology_matches", {
   status: varchar("status", { length: 30 }).default("active"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [index("typology_matches_status_idx").on(table.status)]);
+
+
+
+
+// === Agriculture Enhancement Tables (40 services, ports 8589-8628) ===
+
+export const cooperativeManagement = pgTable("cooperative_management", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cooperative_management_tenant_idx").on(t.tenantId),
+]);
+
+export const livestockManagement = pgTable("livestock_management", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("livestock_management_tenant_idx").on(t.tenantId),
+]);
+
+export const agriInputMarketplace = pgTable("agri_input_marketplace", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_input_marketplace_tenant_idx").on(t.tenantId),
+]);
+
+export const nirsalCreditGuarantee = pgTable("nirsal_credit_guarantee", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("nirsal_credit_guarantee_tenant_idx").on(t.tenantId),
+]);
+
+export const cbnAnchorBorrowers = pgTable("cbn_anchor_borrowers", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cbn_anchor_borrowers_tenant_idx").on(t.tenantId),
+]);
+
+export const interactiveUssdAgri = pgTable("interactive_ussd_agri", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("interactive_ussd_agri_tenant_idx").on(t.tenantId),
+]);
+
+export const agriSavingsCycles = pgTable("agri_savings_cycles", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_savings_cycles_tenant_idx").on(t.tenantId),
+]);
+
+export const livestockFinance = pgTable("livestock_finance", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("livestock_finance_tenant_idx").on(t.tenantId),
+]);
+
+export const commodityExchange = pgTable("commodity_exchange", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("commodity_exchange_tenant_idx").on(t.tenantId),
+]);
+
+export const agriEvoucher = pgTable("agri_evoucher", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_evoucher_tenant_idx").on(t.tenantId),
+]);
+
+export const commodityPriceIntelligence = pgTable("commodity_price_intelligence", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("commodity_price_intelligence_tenant_idx").on(t.tenantId),
+]);
+
+export const satelliteCropMonitor = pgTable("satellite_crop_monitor", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("satellite_crop_monitor_tenant_idx").on(t.tenantId),
+]);
+
+export const cooperativeCreditScoring = pgTable("cooperative_credit_scoring", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cooperative_credit_scoring_tenant_idx").on(t.tenantId),
+]);
+
+export const fisheriesAquaculture = pgTable("fisheries_aquaculture", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("fisheries_aquaculture_tenant_idx").on(t.tenantId),
+]);
+
+export const farmBoundaryMapping = pgTable("farm_boundary_mapping", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("farm_boundary_mapping_tenant_idx").on(t.tenantId),
+]);
+
+export const areaYieldIndexInsurance = pgTable("area_yield_index_insurance", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("area_yield_index_insurance_tenant_idx").on(t.tenantId),
+]);
+
+export const warehouseManagement = pgTable("warehouse_management", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("warehouse_management_tenant_idx").on(t.tenantId),
+]);
+
+export const agentFarmerOnboarding = pgTable("agent_farmer_onboarding", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agent_farmer_onboarding_tenant_idx").on(t.tenantId),
+]);
+
+export const livestockInsurance = pgTable("livestock_insurance", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("livestock_insurance_tenant_idx").on(t.tenantId),
+]);
+
+export const equipmentLeasing = pgTable("equipment_leasing", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("equipment_leasing_tenant_idx").on(t.tenantId),
+]);
+
+export const cropYieldPrediction = pgTable("crop_yield_prediction", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("crop_yield_prediction_tenant_idx").on(t.tenantId),
+]);
+
+export const multiPerilCropInsurance = pgTable("multi_peril_crop_insurance", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("multi_peril_crop_insurance_tenant_idx").on(t.tenantId),
+]);
+
+export const agriLogistics = pgTable("agri_logistics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_logistics_tenant_idx").on(t.tenantId),
+]);
+
+export const cbnAgriReturns = pgTable("cbn_agri_returns", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cbn_agri_returns_tenant_idx").on(t.tenantId),
+]);
+
+export const animalIdTraceability = pgTable("animal_id_traceability", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("animal_id_traceability_tenant_idx").on(t.tenantId),
+]);
+
+export const nirsalAgroGeocoop = pgTable("nirsal_agro_geocoop", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("nirsal_agro_geocoop_tenant_idx").on(t.tenantId),
+]);
+
+export const agriIotSensor = pgTable("agri_iot_sensor", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_iot_sensor_tenant_idx").on(t.tenantId),
+]);
+
+export const agriReinsurance = pgTable("agri_reinsurance", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_reinsurance_tenant_idx").on(t.tenantId),
+]);
+
+export const qualityCertification = pgTable("quality_certification", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("quality_certification_tenant_idx").on(t.tenantId),
+]);
+
+export const agriEsgImpact = pgTable("agri_esg_impact", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("agri_esg_impact_tenant_idx").on(t.tenantId),
+]);
+
+export const crossborderAgriTrade = pgTable("crossborder_agri_trade", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("crossborder_agri_trade_tenant_idx").on(t.tenantId),
+]);
+
+export const cooperativeMeetings = pgTable("cooperative_meetings", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cooperative_meetings_tenant_idx").on(t.tenantId),
+]);
+
+export const cooperativeFinancials = pgTable("cooperative_financials", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cooperative_financials_tenant_idx").on(t.tenantId),
+]);
+
+export const soilAnalysis = pgTable("soil_analysis", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("soil_analysis_tenant_idx").on(t.tenantId),
+]);
+
+export const insurancePortfolioAnalytics = pgTable("insurance_portfolio_analytics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("insurance_portfolio_analytics_tenant_idx").on(t.tenantId),
+]);
+
+export const parametricInsuranceIot = pgTable("parametric_insurance_iot", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("parametric_insurance_iot_tenant_idx").on(t.tenantId),
+]);
+
+export const postHarvestLossTracker = pgTable("post_harvest_loss_tracker", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("post_harvest_loss_tracker_tenant_idx").on(t.tenantId),
+]);
+
+export const aggregationCenter = pgTable("aggregation_center", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("aggregation_center_tenant_idx").on(t.tenantId),
+]);
+
+export const cbnAgsmeis = pgTable("cbn_agsmeis", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("cbn_agsmeis_tenant_idx").on(t.tenantId),
+]);
+
+export const acgsfGuarantee = pgTable("acgsf_guarantee", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  recordId: text("record_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  amount: doublePrecision("amount").default(0),
+  region: text("region"),
+  reference: text("reference"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("acgsf_guarantee_tenant_idx").on(t.tenantId),
+]);

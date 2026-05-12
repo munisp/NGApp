@@ -4880,3 +4880,287 @@ services:
     ports: ["8588:8588"]
     depends_on: [postgres, redis, kafka]
     restart: unless-stopped
+
+
+
+  # === Agriculture Enhancement Services (40 services, ports 8589-8628) ===
+  cooperative-management-go:
+    build: ./services/cooperative-management-go
+    ports:
+      - "8589:8589"
+    environment:
+      - PORT=8589
+    restart: unless-stopped
+  livestock-management-rs:
+    build: ./services/livestock-management-rs
+    ports:
+      - "8590:8590"
+    environment:
+      - PORT=8590
+    restart: unless-stopped
+  agri-input-marketplace-go:
+    build: ./services/agri-input-marketplace-go
+    ports:
+      - "8591:8591"
+    environment:
+      - PORT=8591
+    restart: unless-stopped
+  nirsal-credit-guarantee-go:
+    build: ./services/nirsal-credit-guarantee-go
+    ports:
+      - "8592:8592"
+    environment:
+      - PORT=8592
+    restart: unless-stopped
+  cbn-anchor-borrowers-go:
+    build: ./services/cbn-anchor-borrowers-go
+    ports:
+      - "8593:8593"
+    environment:
+      - PORT=8593
+    restart: unless-stopped
+  interactive-ussd-agri-py:
+    build: ./services/interactive-ussd-agri-py
+    ports:
+      - "8594:8594"
+    environment:
+      - PORT=8594
+    restart: unless-stopped
+  agri-savings-cycles-go:
+    build: ./services/agri-savings-cycles-go
+    ports:
+      - "8595:8595"
+    environment:
+      - PORT=8595
+    restart: unless-stopped
+  livestock-finance-rs:
+    build: ./services/livestock-finance-rs
+    ports:
+      - "8596:8596"
+    environment:
+      - PORT=8596
+    restart: unless-stopped
+  commodity-exchange-rs:
+    build: ./services/commodity-exchange-rs
+    ports:
+      - "8597:8597"
+    environment:
+      - PORT=8597
+    restart: unless-stopped
+  agri-evoucher-go:
+    build: ./services/agri-evoucher-go
+    ports:
+      - "8598:8598"
+    environment:
+      - PORT=8598
+    restart: unless-stopped
+  commodity-price-intelligence-py:
+    build: ./services/commodity-price-intelligence-py
+    ports:
+      - "8599:8599"
+    environment:
+      - PORT=8599
+    restart: unless-stopped
+  satellite-crop-monitor-rs:
+    build: ./services/satellite-crop-monitor-rs
+    ports:
+      - "8600:8600"
+    environment:
+      - PORT=8600
+    restart: unless-stopped
+  cooperative-credit-scoring-py:
+    build: ./services/cooperative-credit-scoring-py
+    ports:
+      - "8601:8601"
+    environment:
+      - PORT=8601
+    restart: unless-stopped
+  fisheries-aquaculture-go:
+    build: ./services/fisheries-aquaculture-go
+    ports:
+      - "8602:8602"
+    environment:
+      - PORT=8602
+    restart: unless-stopped
+  farm-boundary-mapping-rs:
+    build: ./services/farm-boundary-mapping-rs
+    ports:
+      - "8603:8603"
+    environment:
+      - PORT=8603
+    restart: unless-stopped
+  area-yield-index-insurance-py:
+    build: ./services/area-yield-index-insurance-py
+    ports:
+      - "8604:8604"
+    environment:
+      - PORT=8604
+    restart: unless-stopped
+  warehouse-management-go:
+    build: ./services/warehouse-management-go
+    ports:
+      - "8605:8605"
+    environment:
+      - PORT=8605
+    restart: unless-stopped
+  agent-farmer-onboarding-go:
+    build: ./services/agent-farmer-onboarding-go
+    ports:
+      - "8606:8606"
+    environment:
+      - PORT=8606
+    restart: unless-stopped
+  livestock-insurance-rs:
+    build: ./services/livestock-insurance-rs
+    ports:
+      - "8607:8607"
+    environment:
+      - PORT=8607
+    restart: unless-stopped
+  equipment-leasing-go:
+    build: ./services/equipment-leasing-go
+    ports:
+      - "8608:8608"
+    environment:
+      - PORT=8608
+    restart: unless-stopped
+  crop-yield-prediction-py:
+    build: ./services/crop-yield-prediction-py
+    ports:
+      - "8609:8609"
+    environment:
+      - PORT=8609
+    restart: unless-stopped
+  multi-peril-crop-insurance-rs:
+    build: ./services/multi-peril-crop-insurance-rs
+    ports:
+      - "8610:8610"
+    environment:
+      - PORT=8610
+    restart: unless-stopped
+  agri-logistics-go:
+    build: ./services/agri-logistics-go
+    ports:
+      - "8611:8611"
+    environment:
+      - PORT=8611
+    restart: unless-stopped
+  cbn-agri-returns-py:
+    build: ./services/cbn-agri-returns-py
+    ports:
+      - "8612:8612"
+    environment:
+      - PORT=8612
+    restart: unless-stopped
+  animal-id-traceability-rs:
+    build: ./services/animal-id-traceability-rs
+    ports:
+      - "8613:8613"
+    environment:
+      - PORT=8613
+    restart: unless-stopped
+  nirsal-agro-geocoop-go:
+    build: ./services/nirsal-agro-geocoop-go
+    ports:
+      - "8614:8614"
+    environment:
+      - PORT=8614
+    restart: unless-stopped
+  agri-iot-sensor-rs:
+    build: ./services/agri-iot-sensor-rs
+    ports:
+      - "8615:8615"
+    environment:
+      - PORT=8615
+    restart: unless-stopped
+  agri-reinsurance-go:
+    build: ./services/agri-reinsurance-go
+    ports:
+      - "8616:8616"
+    environment:
+      - PORT=8616
+    restart: unless-stopped
+  quality-certification-go:
+    build: ./services/quality-certification-go
+    ports:
+      - "8617:8617"
+    environment:
+      - PORT=8617
+    restart: unless-stopped
+  agri-esg-impact-py:
+    build: ./services/agri-esg-impact-py
+    ports:
+      - "8618:8618"
+    environment:
+      - PORT=8618
+    restart: unless-stopped
+  crossborder-agri-trade-rs:
+    build: ./services/crossborder-agri-trade-rs
+    ports:
+      - "8619:8619"
+    environment:
+      - PORT=8619
+    restart: unless-stopped
+  cooperative-meetings-go:
+    build: ./services/cooperative-meetings-go
+    ports:
+      - "8620:8620"
+    environment:
+      - PORT=8620
+    restart: unless-stopped
+  cooperative-financials-py:
+    build: ./services/cooperative-financials-py
+    ports:
+      - "8621:8621"
+    environment:
+      - PORT=8621
+    restart: unless-stopped
+  soil-analysis-py:
+    build: ./services/soil-analysis-py
+    ports:
+      - "8622:8622"
+    environment:
+      - PORT=8622
+    restart: unless-stopped
+  insurance-portfolio-analytics-py:
+    build: ./services/insurance-portfolio-analytics-py
+    ports:
+      - "8623:8623"
+    environment:
+      - PORT=8623
+    restart: unless-stopped
+  parametric-insurance-iot-rs:
+    build: ./services/parametric-insurance-iot-rs
+    ports:
+      - "8624:8624"
+    environment:
+      - PORT=8624
+    restart: unless-stopped
+  post-harvest-loss-tracker-go:
+    build: ./services/post-harvest-loss-tracker-go
+    ports:
+      - "8625:8625"
+    environment:
+      - PORT=8625
+    restart: unless-stopped
+  aggregation-center-go:
+    build: ./services/aggregation-center-go
+    ports:
+      - "8626:8626"
+    environment:
+      - PORT=8626
+    restart: unless-stopped
+  cbn-agsmeis-go:
+    build: ./services/cbn-agsmeis-go
+    ports:
+      - "8627:8627"
+    environment:
+      - PORT=8627
+    restart: unless-stopped
+  acgsf-guarantee-go:
+    build: ./services/acgsf-guarantee-go
+    ports:
+      - "8628:8628"
+    environment:
+      - PORT=8628
+    restart: unless-stopped
