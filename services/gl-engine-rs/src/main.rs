@@ -1,3 +1,4 @@
+use tokio_postgres;
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -36,6 +37,40 @@ async fn list_records(
     let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
     let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
     let search = query.get("search").cloned().unwrap_or_default();
+
+    // Try real Postgres query first
+    if let Some(ref db_url) = data.db_url {
+        if let Ok(config) = db_url.parse::<tokio_postgres::Config>() {
+            if let Ok((client, connection)) = tokio_postgres::connect(&db_url, tokio_postgres::NoTls).await {
+                tokio::spawn(async move { let _ = connection.await; });
+                let count_sql = format!("SELECT COUNT(*) FROM gl_accounts");
+                let total: i64 = client.query_one(&count_sql, &[]).await
+                    .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
+                let sql = format!(
+                    "SELECT gl_account_code, gl_account_name, account_type, balance, currency FROM gl_accounts ORDER BY 1 LIMIT $1 OFFSET $2"
+                );
+                if let Ok(rows) = client.query(&sql, &[&(limit as i64), &(((page - 1) * limit) as i64)]).await {
+                    let items: Vec<Record> = rows.iter().map(|row| Record {
+                    gl_account_code: row.get(0),
+                    gl_account_name: row.get(1),
+                    account_type: row.get(2),
+                    balance: row.get(3),
+                    currency: row.get(4),
+                    }).collect();
+                    return HttpResponse::Ok().json(json!({
+                        "items": items,
+                        "total": total,
+                        "page": page,
+                        "limit": limit,
+                        "source": "database",
+                    }));
+                }
+            }
+        }
+    }
+
+    // Fallback to in-memory data
+
     
     let filtered: Vec<&Record> = if search.is_empty() {
         records.iter().collect()

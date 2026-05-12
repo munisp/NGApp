@@ -40,9 +40,12 @@ export function corsMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
 
-    if (origin && (origins.includes(origin) || env === "development")) {
+    if (origin && origins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
+    } else if (!origin && env !== "production") {
+      // Allow same-origin requests in non-production
+      res.setHeader("Access-Control-Allow-Origin", "*");
     }
 
     res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);

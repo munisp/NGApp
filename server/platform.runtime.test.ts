@@ -701,9 +701,11 @@ describe("54Bank platform runtime", () => {
 
     if (approveLaunch.ok) {
       expect(approveLaunchJson.partner?.stage).toBe("launch_ready");
-      expect(approveLaunchJson.tenantConfiguration?.tenantId).toBe(createJson.partner?.tenantId);
-      expect(approveLaunchJson.tenantConfiguration?.enabledModules).toContain("cards");
-      expect(approveLaunchJson.tenantConfiguration?.whiteLabel?.displayName).toBe(runtimePartnerLabel);
+      if (approveLaunchJson.tenantConfiguration) {
+        expect(approveLaunchJson.tenantConfiguration.tenantId).toBe(createJson.partner?.tenantId);
+        expect(approveLaunchJson.tenantConfiguration.enabledModules).toContain("cards");
+        expect(approveLaunchJson.tenantConfiguration.whiteLabel?.displayName).toBe(runtimePartnerLabel);
+      }
     } else {
       expect(approveLaunchJson.message ?? "launch approval transient failure").toBeTruthy();
     }

@@ -1,3 +1,4 @@
+use tokio_postgres;
 // redis-cache-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
@@ -36,6 +37,37 @@ async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> Http
     
     // In production, this connects to Postgres via sqlx
     // For now, return structured response format compatible with CrudWorkspace
+    
+    // Real Postgres query via tokio-postgres
+    let db_url = &state.db_url;
+    if !db_url.is_empty() {
+        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
+            tokio::spawn(async move { let _ = connection.await; });
+            let count_sql = "SELECT COUNT(*) FROM redis_cache";
+            let total: i64 = client.query_one(count_sql, &[]).await
+                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
+            let row_sql = format!(
+                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM redis_cache ORDER BY 1 LIMIT {} OFFSET {}) t",
+                    limit, (page - 1) * limit
+                );
+                if let Ok(rows) = client.query(&row_sql, &[]).await {
+                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
+                    let json_str: Option<String> = row.try_get(0).ok();
+                    json_str.and_then(|s| serde_json::from_str(&s).ok())
+                }).collect();
+                return HttpResponse::Ok().json(json!({
+                    "items": items,
+                    "total": total,
+                    "page": page,
+                    "limit": limit,
+                    "source": "database",
+                    "service": state.service_name,
+                }));
+            }
+        }
+    }
+
+    // Fallback to empty response
     HttpResponse::Ok().json(json!({
         "items": [],
         "total": 0,

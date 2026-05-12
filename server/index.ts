@@ -5320,6 +5320,9 @@ async function startServer() {
   registerApisixOpenappsecIntegration(app);
   registerServiceMesh(app);
   registerObservability(app);
+  // Redis/LRU caching middleware — MUST be registered BEFORE DB routes
+  registerCacheMiddleware(app);
+
   registerDrizzleRoutes(app);
   registerPerformanceTuning(app);
 
@@ -5333,9 +5336,8 @@ async function startServer() {
   // Initialize Keycloak OAuth2
   initKeycloak().catch(() => {});
 
-  // Event publishing + Redis caching middleware
+  // Event publishing middleware (audit events on all writes)
   registerEventPublisher(app);
-  registerCacheMiddleware(app);
 
   // Keycloak/OAuth2 endpoints
   app.get("/api/platform/keycloak/config", (_req, res) => {

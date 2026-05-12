@@ -251,8 +251,8 @@ export function createAuthMiddleware() {
     }
 
     if (!token) {
-      // In development mode, allow unauthenticated access with default role
-      if (process.env.NODE_ENV !== "production") {
+      // In development mode, allow unauthenticated access with default role UNLESS ENFORCE_AUTH is set
+      if (process.env.NODE_ENV !== "production" && process.env.ENFORCE_AUTH !== "true") {
         (req as any).user = {
           id: 1,
           openId: "dev-admin",
@@ -410,7 +410,7 @@ export function registerAuthRoutes(app: Express) {
   });
 
   // POST /api/auth/refresh
-  app.post("/api/auth/refresh", (req: Request, res: Response) => {
+  app.post("/api/auth/refresh", async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
     if (!refreshToken) {
       return res.status(400).json({ error: "Refresh token required" });
@@ -422,8 +422,39 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Invalid refresh token" });
       }
 
+      // Look up user by openId (sub claim) to preserve identity on refresh
+      let userRole = "user";
+      let userName = "";
+      let userEmail = "";
+
+      // Check in-memory users first
+      inMemoryUsers.forEach((entry) => {
+        if (entry.user.openId === decoded.sub) {
+          userRole = entry.user.role;
+          userName = entry.user.name || "";
+          userEmail = entry.user.email || "";
+        }
+      });
+
+      // If not found in memory, try database
+      if (!userName) {
+        const db = await getDb();
+        if (db) {
+          try {
+            const result = await db.select().from(users).where(eq(users.openId, decoded.sub)).limit(1);
+            if (result.length > 0) {
+              userRole = result[0].role;
+              userName = result[0].name || "";
+              userEmail = result[0].email || "";
+            }
+          } catch {
+            // DB lookup failed, use defaults
+          }
+        }
+      }
+
       const newAccessToken = jwtUtil.sign(
-        { sub: decoded.sub, role: decoded.role || "user", name: "", email: "" },
+        { sub: decoded.sub, role: userRole, name: userName, email: userEmail },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRY }
       );

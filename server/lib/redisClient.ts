@@ -76,6 +76,7 @@ export async function initRedis(): Promise<void> {
       state.mode = "redis";
       state.lastPing = new Date();
       state.error = null;
+      reconnectAttempts = 0;
       logger.info(`[Redis] Connected to ${host}:${port}`);
 
       // Start ping interval
@@ -118,6 +119,7 @@ export async function initRedis(): Promise<void> {
       state.mode = "memory";
       if (pingInterval) clearInterval(pingInterval);
       logger.info("[Redis] Connection closed — falling back to in-memory cache");
+      scheduleReconnect();
     });
 
     socket.on("timeout", () => {
@@ -178,9 +180,28 @@ export function getRedisStatus(): RedisState {
 
 export function shutdownRedis(): void {
   if (pingInterval) clearInterval(pingInterval);
+  if (reconnectTimer) clearTimeout(reconnectTimer);
   if (redisSocket) {
     redisSocket.destroy();
     redisSocket = null;
   }
   state.connected = false;
+}
+
+// Auto-reconnect with exponential backoff
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+
+function scheduleReconnect(): void {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    logger.warn(`[Redis] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached — staying in memory mode`);
+    return;
+  }
+  const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+  reconnectAttempts++;
+  logger.info(`[Redis] Reconnecting in ${delayMs}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+  reconnectTimer = setTimeout(() => {
+    initRedis().catch(() => {});
+  }, delayMs);
 }
