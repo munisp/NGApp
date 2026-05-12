@@ -516,6 +516,21 @@ const PrometheusDashboardWorkspace = lazy(() => import("@/pages/PrometheusDashbo
 const OpenSearchOptimizerWorkspace = lazy(() => import("@/pages/OpenSearchOptimizerWorkspace"));
 const TemporalMemoizerWorkspace = lazy(() => import("@/pages/TemporalMemoizerWorkspace"));
 const APISIXPluginOptimizerWorkspace = lazy(() => import("@/pages/APISIXPluginOptimizerWorkspace"));
+const AMLRiskScoringWorkspace = lazy(() => import("@/pages/AMLRiskScoringWorkspace"));
+const SARFilingEngineWorkspace = lazy(() => import("@/pages/SARFilingEngineWorkspace"));
+const CTRAutoFilerWorkspace = lazy(() => import("@/pages/CTRAutoFilerWorkspace"));
+const AMLCaseManagerWorkspace = lazy(() => import("@/pages/AMLCaseManagerWorkspace"));
+const WatchlistManagerWorkspace = lazy(() => import("@/pages/WatchlistManagerWorkspace"));
+const AdverseMediaScannerWorkspace = lazy(() => import("@/pages/AdverseMediaScannerWorkspace"));
+const BeneficialOwnershipWorkspace = lazy(() => import("@/pages/BeneficialOwnershipWorkspace"));
+const TxnPatternAnalyzerWorkspace = lazy(() => import("@/pages/TxnPatternAnalyzerWorkspace"));
+const GoAMLIntegrationWorkspace = lazy(() => import("@/pages/GoAMLIntegrationWorkspace"));
+const AMLComplianceDashboardWorkspace = lazy(() => import("@/pages/AMLComplianceDashboardWorkspace"));
+const SanctionsBatchRescreenerWorkspace = lazy(() => import("@/pages/SanctionsBatchRescreenerWorkspace"));
+const AMLTrainingTrackerWorkspace = lazy(() => import("@/pages/AMLTrainingTrackerWorkspace"));
+const WireTransferMonitorWorkspace = lazy(() => import("@/pages/WireTransferMonitorWorkspace"));
+const AMLRegulatoryReportingWorkspace = lazy(() => import("@/pages/AMLRegulatoryReportingWorkspace"));
+const TypologyDetectorWorkspace = lazy(() => import("@/pages/TypologyDetectorWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -1084,6 +1099,21 @@ export default function App() {
         <Route path="/opensearch-optimizer" component={renderInAdminShell(OpenSearchOptimizerWorkspace)} />
         <Route path="/temporal-memoizer" component={renderInAdminShell(TemporalMemoizerWorkspace)} />
         <Route path="/apisix-plugin-optimizer" component={renderInAdminShell(APISIXPluginOptimizerWorkspace)} />
+        <Route path="/aml-risk-scoring" component={renderInAdminShell(AMLRiskScoringWorkspace)} />
+        <Route path="/sar-filing" component={renderInAdminShell(SARFilingEngineWorkspace)} />
+        <Route path="/ctr-auto-filer" component={renderInAdminShell(CTRAutoFilerWorkspace)} />
+        <Route path="/aml-case-manager" component={renderInAdminShell(AMLCaseManagerWorkspace)} />
+        <Route path="/watchlist-manager" component={renderInAdminShell(WatchlistManagerWorkspace)} />
+        <Route path="/adverse-media-scanner" component={renderInAdminShell(AdverseMediaScannerWorkspace)} />
+        <Route path="/beneficial-ownership" component={renderInAdminShell(BeneficialOwnershipWorkspace)} />
+        <Route path="/txn-pattern-analyzer" component={renderInAdminShell(TxnPatternAnalyzerWorkspace)} />
+        <Route path="/goaml-integration" component={renderInAdminShell(GoAMLIntegrationWorkspace)} />
+        <Route path="/aml-compliance-dashboard" component={renderInAdminShell(AMLComplianceDashboardWorkspace)} />
+        <Route path="/sanctions-batch-rescreener" component={renderInAdminShell(SanctionsBatchRescreenerWorkspace)} />
+        <Route path="/aml-training-tracker" component={renderInAdminShell(AMLTrainingTrackerWorkspace)} />
+        <Route path="/wire-transfer-monitor" component={renderInAdminShell(WireTransferMonitorWorkspace)} />
+        <Route path="/aml-regulatory-reporting" component={renderInAdminShell(AMLRegulatoryReportingWorkspace)} />
+        <Route path="/typology-detector" component={renderInAdminShell(TypologyDetectorWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

@@ -7,14 +7,9 @@ class RegulatoryReportingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ApiListScreen(
-      title: 'Regulatory Reporting',
-      apiEndpoint: '/api/regulatory/v1/returns',
-      columnKeys: const ['id', 'name', 'regulator', 'frequency', 'status'],
-      columnLabels: const ['ID', 'Return', 'Regulator', 'Freq', 'Status'],
-      seedData: const [
-      {'id': 'REG-001', 'name': 'eFASS Returns', 'regulator': 'CBN', 'frequency': 'Monthly', 'status': 'Submitted'},
-      {'id': 'REG-002', 'name': 'NDIC Premium', 'regulator': 'NDIC', 'frequency': 'Quarterly', 'status': 'Due'},
-    ],
+      title: 'Regulatory Reporting Engine',
+      apiPath: '/api/aml-enhancement/regulatory-reporting/list',
+      columnLabels: ["Type", "Period", "Submitted To"],
     );
   }
 }

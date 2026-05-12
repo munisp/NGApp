@@ -3488,3 +3488,180 @@ export const apisixPluginChains = pgTable("apisix_plugin_chains", {
   status: varchar("status", { length: 30 }).default("active"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [index("apisix_plugin_chains_status_idx").on(table.status)]);
+
+// ─── AML Enhancement Tables (15) ───────────────────────
+export const amlRiskScores = pgTable("aml_risk_scores", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  riskScore: integer("riskScore").default(0),
+  riskLevel: varchar("riskLevel", { length: 20 }).notNull(),
+  sanctionsHits: integer("sanctionsHits").default(0),
+  pepMatch: boolean("pepMatch").default(false),
+  adverseMedia: integer("adverseMedia").default(0),
+  cddLevel: varchar("cddLevel", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("aml_risk_scores_status_idx").on(table.status)]);
+export const sarReports = pgTable("sar_reports_aml", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  reportType: varchar("reportType", { length: 10 }).notNull(),
+  reason: text("reason").notNull(),
+  amount: bigint("amount", { mode: "number" }).default(0),
+  currency: varchar("currency", { length: 5 }).notNull(),
+  nfiuReference: varchar("nfiuReference", { length: 50 }).notNull(),
+  priority: varchar("priority", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sar_reports_aml_status_idx").on(table.status)]);
+export const ctrReports = pgTable("ctr_reports_aml", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  transactionId: varchar("transactionId", { length: 50 }).notNull(),
+  amount: bigint("amount", { mode: "number" }).default(0),
+  currency: varchar("currency", { length: 5 }).notNull(),
+  transactionType: varchar("transactionType", { length: 30 }).notNull(),
+  nfiuReference: varchar("nfiuReference", { length: 50 }).notNull(),
+  autoFiled: boolean("autoFiled").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("ctr_reports_aml_status_idx").on(table.status)]);
+export const amlCases = pgTable("aml_cases", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  caseType: varchar("caseType", { length: 30 }).notNull(),
+  riskLevel: varchar("riskLevel", { length: 20 }).notNull(),
+  assignedTo: varchar("assignedTo", { length: 100 }).notNull(),
+  sarFiled: boolean("sarFiled").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("aml_cases_status_idx").on(table.status)]);
+export const watchlistSources = pgTable("watchlist_sources", {
+
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  source: varchar("source", { length: 100 }).notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  format: varchar("format", { length: 20 }).notNull(),
+  entries: integer("entries").default(0),
+  syncFrequency: varchar("syncFrequency", { length: 20 }).notNull(),
+  autoSync: boolean("autoSync").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("watchlist_sources_status_idx").on(table.status)]);
+export const adverseMediaScans = pgTable("adverse_media_scans", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  relevantArticles: integer("relevantArticles").default(0),
+  sentiment: varchar("sentiment", { length: 20 }).notNull(),
+  riskImpact: varchar("riskImpact", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("adverse_media_scans_status_idx").on(table.status)]);
+export const beneficialOwners = pgTable("beneficial_owners", {
+
+  id: serial("id").primaryKey(),
+  entityId: varchar("entityId", { length: 50 }).notNull(),
+  entityName: varchar("entityName", { length: 200 }).notNull(),
+  entityType: varchar("entityType", { length: 30 }).notNull(),
+  rcNumber: varchar("rcNumber", { length: 30 }).notNull(),
+  totalLayers: integer("totalLayers").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("beneficial_owners_status_idx").on(table.status)]);
+export const txnPatternAnalyses = pgTable("txn_pattern_analyses", {
+
+  id: serial("id").primaryKey(),
+  customerId: varchar("customerId", { length: 50 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  anomalyScore: real("anomalyScore").default(0),
+  baselineDeviation: varchar("baselineDeviation", { length: 20 }).notNull(),
+  recommendation: varchar("recommendation", { length: 50 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("txn_pattern_analyses_status_idx").on(table.status)]);
+export const goamlReports = pgTable("goaml_reports", {
+
+  id: serial("id").primaryKey(),
+  reportType: varchar("reportType", { length: 10 }).notNull(),
+  subject: varchar("subject", { length: 200 }).notNull(),
+  amount: bigint("amount", { mode: "number" }).default(0),
+  nfiuAcknowledgement: varchar("nfiuAcknowledgement", { length: 50 }).notNull(),
+  xmlValidated: boolean("xmlValidated").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("goaml_reports_status_idx").on(table.status)]);
+export const amlComplianceMetrics = pgTable("aml_compliance_metrics", {
+
+  id: serial("id").primaryKey(),
+  period: varchar("period", { length: 20 }).notNull(),
+  totalScreenings: integer("totalScreenings").default(0),
+  sarsFiled: integer("sarsFiled").default(0),
+  ctrsFiled: integer("ctrsFiled").default(0),
+  complianceScore: integer("complianceScore").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("aml_compliance_metrics_status_idx").on(table.status)]);
+export const sanctionsBatchRuns = pgTable("sanctions_batch_runs", {
+
+  id: serial("id").primaryKey(),
+  triggerType: varchar("triggerType", { length: 30 }).notNull(),
+  customersScreened: integer("customersScreened").default(0),
+  newMatches: integer("newMatches").default(0),
+  processingTimeMin: integer("processingTimeMin").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sanctions_batch_runs_status_idx").on(table.status)]);
+export const amlTrainingRecords = pgTable("aml_training_records", {
+
+  id: serial("id").primaryKey(),
+  staffId: varchar("staffId", { length: 30 }).notNull(),
+  staffName: varchar("staffName", { length: 200 }).notNull(),
+  role: varchar("role", { length: 50 }).notNull(),
+  trainingModule: varchar("trainingModule", { length: 200 }).notNull(),
+  score: integer("score").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("aml_training_records_status_idx").on(table.status)]);
+export const wireTransferMonitor = pgTable("wire_transfer_monitor", {
+
+  id: serial("id").primaryKey(),
+  originatorName: varchar("originatorName", { length: 200 }).notNull(),
+  beneficiaryName: varchar("beneficiaryName", { length: 200 }).notNull(),
+  amount: bigint("amount", { mode: "number" }).default(0),
+  currency: varchar("currency", { length: 5 }).notNull(),
+  travelRuleCompliant: boolean("travelRuleCompliant").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("wire_transfer_monitor_status_idx").on(table.status)]);
+export const amlRegulatoryReports = pgTable("regulatory_reports_aml", {
+
+  id: serial("id").primaryKey(),
+  reportType: varchar("reportType", { length: 50 }).notNull(),
+  period: varchar("period", { length: 20 }).notNull(),
+  submittedTo: varchar("submittedTo", { length: 30 }).notNull(),
+  filedDate: varchar("filedDate", { length: 30 }).notNull(),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("regulatory_reports_aml_status_idx").on(table.status)]);
+export const typologyMatches = pgTable("typology_matches", {
+
+  id: serial("id").primaryKey(),
+  typologyCode: varchar("typologyCode", { length: 30 }).notNull(),
+  typologyName: varchar("typologyName", { length: 200 }).notNull(),
+  riskLevel: varchar("riskLevel", { length: 20 }).notNull(),
+  customersTriggered: integer("customersTriggered").default(0),
+  autoSARGeneration: boolean("autoSARGeneration").default(false),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("typology_matches_status_idx").on(table.status)]);

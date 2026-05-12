@@ -4683,3 +4683,200 @@ services:
     ports: ["8573:8573"]
     depends_on: [postgres, redis, kafka]
     restart: unless-stopped
+
+  # ─── AML Enhancement (15 services) ───────────────────────
+
+  aml-risk-scoring-rs:
+    build: ./services/aml-risk-scoring-rs
+    environment:
+      PORT: "8574"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: aml-risk-scoring-rs
+    ports: ["8574:8574"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  sar-filing-engine-go:
+    build: ./services/sar-filing-engine-go
+    environment:
+      PORT: "8575"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: sar-filing-engine-go
+    ports: ["8575:8575"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  ctr-auto-filer-go:
+    build: ./services/ctr-auto-filer-go
+    environment:
+      PORT: "8576"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: ctr-auto-filer-go
+    ports: ["8576:8576"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  aml-case-manager-go:
+    build: ./services/aml-case-manager-go
+    environment:
+      PORT: "8577"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: aml-case-manager-go
+    ports: ["8577:8577"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  watchlist-manager-rs:
+    build: ./services/watchlist-manager-rs
+    environment:
+      PORT: "8578"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: watchlist-manager-rs
+    ports: ["8578:8578"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  adverse-media-scanner-py:
+    build: ./services/adverse-media-scanner-py
+    environment:
+      PORT: "8579"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: adverse-media-scanner-py
+    ports: ["8579:8579"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  beneficial-ownership-go:
+    build: ./services/beneficial-ownership-go
+    environment:
+      PORT: "8580"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: beneficial-ownership-go
+    ports: ["8580:8580"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  txn-pattern-analyzer-py:
+    build: ./services/txn-pattern-analyzer-py
+    environment:
+      PORT: "8581"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: txn-pattern-analyzer-py
+    ports: ["8581:8581"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  goaml-integration-go:
+    build: ./services/goaml-integration-go
+    environment:
+      PORT: "8582"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: goaml-integration-go
+    ports: ["8582:8582"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  aml-compliance-dashboard-py:
+    build: ./services/aml-compliance-dashboard-py
+    environment:
+      PORT: "8583"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: aml-compliance-dashboard-py
+    ports: ["8583:8583"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  sanctions-batch-rescreener-rs:
+    build: ./services/sanctions-batch-rescreener-rs
+    environment:
+      PORT: "8584"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: sanctions-batch-rescreener-rs
+    ports: ["8584:8584"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  aml-training-tracker-go:
+    build: ./services/aml-training-tracker-go
+    environment:
+      PORT: "8585"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: aml-training-tracker-go
+    ports: ["8585:8585"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  wire-transfer-monitor-rs:
+    build: ./services/wire-transfer-monitor-rs
+    environment:
+      PORT: "8586"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: wire-transfer-monitor-rs
+    ports: ["8586:8586"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  regulatory-reporting-go:
+    build: ./services/regulatory-reporting-go
+    environment:
+      PORT: "8587"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: regulatory-reporting-go
+    ports: ["8587:8587"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  typology-detector-rs:
+    build: ./services/typology-detector-rs
+    environment:
+      PORT: "8588"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: typology-detector-rs
+    ports: ["8588:8588"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped

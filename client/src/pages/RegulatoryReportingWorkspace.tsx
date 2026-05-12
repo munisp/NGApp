@@ -1,35 +1,31 @@
 import CrudWorkspace from "@/components/CrudWorkspace";
+import type { CrudConfig } from "@/components/CrudWorkspace";
 import { FileText } from "lucide-react";
 
+const config: CrudConfig = {
+  domainKey: "regulatory-reporting",
+  title: "Regulatory Reporting",
+  subtitle: "CBN, NFIU, NDIC regulatory filing and compliance reporting",
+  icon: FileText,
+  accentColor: "blue",
+  apiBase: "/api/db/regulatoryReports",
+  idField: "id",
+  statusField: "status",
+  searchFields: ["reportType"],
+  fields: [
+    { key: "reportType", label: "Report Type", type: "text" },
+    { key: "filingPeriod", label: "Period", type: "text" },
+    { key: "regulator", label: "Regulator", type: "text" },
+    { key: "status", label: "Status", type: "text" },
+  ],
+  columns: [
+    { key: "reportType", label: "Report Type" },
+    { key: "filingPeriod", label: "Period" },
+    { key: "regulator", label: "Regulator" },
+    { key: "status", label: "Status" },
+  ],
+};
+
 export default function RegulatoryReportingWorkspace() {
-  return (
-    <CrudWorkspace
-      config={{
-        domainKey: "regulatory-reporting",
-        title: "Regulatory Reporting",
-        subtitle: "CBN eFASS, NDIC, FIRS VAT, CTR, Basel III, IFRS 9 ECL (Python :8146)",
-        icon: FileText,
-        accentColor: "text-amber-800",
-        idField: "id",
-        statusField: "status",
-        searchFields: ["name", "regulator", "report_type", "period"],
-        apiBase: "/api/platform/regulatory-reporting/v1/regulatory/reports",
-        pageSize: 25,
-        columns: [
-          { key: "id", label: "ID" },
-          { key: "name", label: "Report", sortable: true },
-          { key: "regulator", label: "Regulator", sortable: true },
-          { key: "frequency", label: "Freq" },
-          { key: "period", label: "Period", sortable: true },
-          { key: "status", label: "Status", sortable: true },
-          { key: "due_date", label: "Due", sortable: true },
-          { key: "submitted_date", label: "Submitted" },
-          { key: "data_points", label: "Data Points", sortable: true },
-          { key: "validation_errors", label: "Errors" },
-          { key: "file_format", label: "Format" },
-        ],
-        fields: [],
-      }}
-    />
-  );
+  return <CrudWorkspace config={config} />;
 }

@@ -119,6 +119,9 @@ import {
   Target,
   Upload,
   Network,
+  Briefcase,
+  GraduationCap,
+  Crosshair,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -871,6 +874,27 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/opensearch-optimizer", label: "OpenSearch Optimizer", icon: Search },
       { path: "/temporal-memoizer", label: "Temporal Memoizer", icon: Clock },
       { path: "/apisix-plugin-optimizer", label: "APISIX Plugin Optimizer", icon: Settings },
+    ],
+  },
+  {
+    category: "AML Enhancement",
+    icon: Shield,
+    items: [
+      { path: "/aml-risk-scoring", label: "AML Risk Scoring", icon: Shield },
+      { path: "/sar-filing", label: "SAR Filing Engine", icon: FileText },
+      { path: "/ctr-auto-filer", label: "CTR Auto-Filing", icon: FileText },
+      { path: "/aml-case-manager", label: "AML Case Management", icon: Briefcase },
+      { path: "/watchlist-manager", label: "Global Watchlist Manager", icon: Globe },
+      { path: "/adverse-media-scanner", label: "Adverse Media Scanner", icon: Search },
+      { path: "/beneficial-ownership", label: "Beneficial Ownership", icon: Users },
+      { path: "/txn-pattern-analyzer", label: "Transaction Patterns", icon: Activity },
+      { path: "/goaml-integration", label: "goAML Integration", icon: FileText },
+      { path: "/aml-compliance-dashboard", label: "AML Compliance Dashboard", icon: BarChart2 },
+      { path: "/sanctions-batch-rescreener", label: "Batch Re-screener", icon: RefreshCw },
+      { path: "/aml-training-tracker", label: "AML Training Tracker", icon: GraduationCap },
+      { path: "/wire-transfer-monitor", label: "Wire Transfer Monitor", icon: ArrowUpRight },
+      { path: "/aml-regulatory-reporting", label: "Regulatory Reporting", icon: FileText },
+      { path: "/typology-detector", label: "Typology Detector", icon: Crosshair },
     ],
   },
 ];
