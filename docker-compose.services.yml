@@ -3713,3 +3713,451 @@ services:
     ports: ["8496:8496"]
     depends_on: [postgres, redis, kafka]
     restart: unless-stopped
+
+  # ─── Platform Security Hardening (37 services) ───────────────────────
+  jwt-validator-rs:
+    build: ./services/jwt-validator-rs
+    environment:
+      PORT: "8497"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: jwt-validator-rs
+    ports: ["8497:8497"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  route-schema-enforcer-go:
+    build: ./services/route-schema-enforcer-go
+    environment:
+      PORT: "8498"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: route-schema-enforcer-go
+    ports: ["8498:8498"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  sql-parameterizer-rs:
+    build: ./services/sql-parameterizer-rs
+    environment:
+      PORT: "8499"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: sql-parameterizer-rs
+    ports: ["8499:8499"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  secrets-vault-go:
+    build: ./services/secrets-vault-go
+    environment:
+      PORT: "8500"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: secrets-vault-go
+    ports: ["8500:8500"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  pin-hasher-rs:
+    build: ./services/pin-hasher-rs
+    environment:
+      PORT: "8501"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: pin-hasher-rs
+    ports: ["8501:8501"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  docker-hardener-py:
+    build: ./services/docker-hardener-py
+    environment:
+      PORT: "8502"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: docker-hardener-py
+    ports: ["8502:8502"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  pkce-auth-flow-go:
+    build: ./services/pkce-auth-flow-go
+    environment:
+      PORT: "8503"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_SERVICE_NAME: pkce-auth-flow-go
+    ports: ["8503:8503"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  token-rotation-rs:
+    build: ./services/token-rotation-rs
+    environment:
+      PORT: "8504"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: token-rotation-rs
+    ports: ["8504:8504"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  mtls-mesh-rs:
+    build: ./services/mtls-mesh-rs
+    environment:
+      PORT: "8505"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: mtls-mesh-rs
+    ports: ["8505:8505"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  body-limit-enforcer-go:
+    build: ./services/body-limit-enforcer-go
+    environment:
+      PORT: "8506"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: body-limit-enforcer-go
+    ports: ["8506:8506"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  cloud-kms-bridge-rs:
+    build: ./services/cloud-kms-bridge-rs
+    environment:
+      PORT: "8507"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: cloud-kms-bridge-rs
+    ports: ["8507:8507"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  tls-terminator-go:
+    build: ./services/tls-terminator-go
+    environment:
+      PORT: "8508"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: tls-terminator-go
+    ports: ["8508:8508"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  event-correlator-py:
+    build: ./services/event-correlator-py
+    environment:
+      PORT: "8509"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: event-correlator-py
+    ports: ["8509:8509"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  pci-scanner-rs:
+    build: ./services/pci-scanner-rs
+    environment:
+      PORT: "8510"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: pci-scanner-rs
+    ports: ["8510:8510"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  api-key-enforcer-go:
+    build: ./services/api-key-enforcer-go
+    environment:
+      PORT: "8511"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: api-key-enforcer-go
+    ports: ["8511:8511"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  path-validator-rs:
+    build: ./services/path-validator-rs
+    environment:
+      PORT: "8512"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: path-validator-rs
+    ports: ["8512:8512"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  key-rotation-engine-go:
+    build: ./services/key-rotation-engine-go
+    environment:
+      PORT: "8513"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: key-rotation-engine-go
+    ports: ["8513:8513"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  network-policy-manager-py:
+    build: ./services/network-policy-manager-py
+    environment:
+      PORT: "8514"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: network-policy-manager-py
+    ports: ["8514:8514"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  vault-integration-rs:
+    build: ./services/vault-integration-rs
+    environment:
+      PORT: "8515"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: vault-integration-rs
+    ports: ["8515:8515"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  anomaly-detector-py:
+    build: ./services/anomaly-detector-py
+    environment:
+      PORT: "8516"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: anomaly-detector-py
+    ports: ["8516:8516"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  ndpr-compliance-py:
+    build: ./services/ndpr-compliance-py
+    environment:
+      PORT: "8517"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: ndpr-compliance-py
+    ports: ["8517:8517"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  output-encoder-rs:
+    build: ./services/output-encoder-rs
+    environment:
+      PORT: "8518"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: output-encoder-rs
+    ports: ["8518:8518"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  image-scanner-go:
+    build: ./services/image-scanner-go
+    environment:
+      PORT: "8519"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: image-scanner-go
+    ports: ["8519:8519"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  waf-rules-engine-rs:
+    build: ./services/waf-rules-engine-rs
+    environment:
+      PORT: "8520"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: waf-rules-engine-rs
+    ports: ["8520:8520"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  ddos-shield-go:
+    build: ./services/ddos-shield-go
+    environment:
+      PORT: "8521"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: ddos-shield-go
+    ports: ["8521:8521"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  ip-allowlist-rs:
+    build: ./services/ip-allowlist-rs
+    environment:
+      PORT: "8522"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: ip-allowlist-rs
+    ports: ["8522:8522"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  siem-exporter-py:
+    build: ./services/siem-exporter-py
+    environment:
+      PORT: "8523"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: siem-exporter-py
+    ports: ["8523:8523"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  cbn-compliance-checker-py:
+    build: ./services/cbn-compliance-checker-py
+    environment:
+      PORT: "8524"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: cbn-compliance-checker-py
+    ports: ["8524:8524"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  egress-controller-rs:
+    build: ./services/egress-controller-rs
+    environment:
+      PORT: "8525"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: egress-controller-rs
+    ports: ["8525:8525"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  incident-responder-go:
+    build: ./services/incident-responder-go
+    environment:
+      PORT: "8526"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: incident-responder-go
+    ports: ["8526:8526"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  immutable-audit-rs:
+    build: ./services/immutable-audit-rs
+    environment:
+      PORT: "8527"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: immutable-audit-rs
+    ports: ["8527:8527"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  soc2-evidence-collector-py:
+    build: ./services/soc2-evidence-collector-py
+    environment:
+      PORT: "8528"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: soc2-evidence-collector-py
+    ports: ["8528:8528"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  pentest-orchestrator-go:
+    build: ./services/pentest-orchestrator-go
+    environment:
+      PORT: "8529"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: pentest-orchestrator-go
+    ports: ["8529:8529"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  sri-validator-rs:
+    build: ./services/sri-validator-rs
+    environment:
+      PORT: "8530"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: sri-validator-rs
+    ports: ["8530:8530"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  csp-nonce-engine-go:
+    build: ./services/csp-nonce-engine-go
+    environment:
+      PORT: "8531"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: csp-nonce-engine-go
+    ports: ["8531:8531"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  clickjack-defender-rs:
+    build: ./services/clickjack-defender-rs
+    environment:
+      PORT: "8532"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: clickjack-defender-rs
+    ports: ["8532:8532"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  browser-fingerprint-go:
+    build: ./services/browser-fingerprint-go
+    environment:
+      PORT: "8533"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_SERVICE_NAME: browser-fingerprint-go
+    ports: ["8533:8533"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped

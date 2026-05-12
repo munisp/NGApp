@@ -52,6 +52,7 @@ import { registerKYCKYBEnhancedSuite } from "./lib/kycKybEnhancedSuite";
 import { registerAiMlGnnSuite } from "./lib/aiMlGnnIntegration";
 import { registerProductionHardening } from "./lib/productionHardening";
 import { registerSecurityEnhancementRoutes } from "./lib/securityEnhancement";
+import { registerPlatformSecurityHardeningRoutes } from "./lib/platformSecurityHardening";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
@@ -5216,6 +5217,14 @@ async function startServer() {
 
   // Security Enhancement Suite — Scratch Card PIN, HSM, PIN Block, Grid Token, MFA, OTP, Session, API Keys, Rate Limiting, Encryption, Certificates, Audit
   registerSecurityEnhancementRoutes(app);
+
+  // Platform Security Hardening — JWT Validator, Route Schema, SQL Parameterizer, Secrets Vault, PIN Hasher, Docker Hardener,
+  // PKCE Auth, Token Rotation, mTLS Mesh, Body Limit, Cloud KMS, TLS Terminator, Event Correlator, PCI Scanner,
+  // API Key Enforcer, Path Validator, Key Rotation, Network Policy, Vault Integration, Anomaly Detector, NDPR Compliance,
+  // Output Encoder, Image Scanner, WAF Rules, DDoS Shield, IP Allowlist, SIEM Exporter, CBN Compliance,
+  // Egress Controller, Incident Responder, Immutable Audit, SOC 2 Evidence, Pentest Orchestrator, SRI Validator,
+  // CSP Nonce, Clickjack Defender, Browser Fingerprint
+  registerPlatformSecurityHardeningRoutes(app);
 
   // === Production Infrastructure Modules ===
   registerDatabasePersistence(app);

@@ -2504,3 +2504,580 @@ export type SecurityEvent = typeof securityEvents.$inferSelect;
 export type InsertSecurityEvent = typeof securityEvents.$inferInsert;
 export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = typeof certificates.$inferInsert;
+
+// ─── Platform Security Hardening Tables ────────────────────────────────
+export const jwtValidations = pgTable("jwt_validations", {
+  id: serial("id").primaryKey(),
+  tokenType: varchar("token_type", { length: 50 }).notNull(),
+  issuer: text("issuer").notNull(),
+  audience: varchar("audience", { length: 100 }),
+  algorithm: varchar("algorithm", { length: 20 }),
+  validations24h: bigint("validations_24h", { mode: "number" }).default(0),
+  rejections24h: integer("rejections_24h").default(0),
+  avgLatencyMs: real("avg_latency_ms"),
+  cacheHitRate: real("cache_hit_rate"),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("jwt_validations_status_idx").on(table.status)]);
+
+export const routeSchemas = pgTable("route_schemas", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  method: varchar("method", { length: 10 }).notNull(),
+  schemaName: varchar("schema_name", { length: 100 }),
+  validationCount: integer("validation_count").default(0),
+  passRate: real("pass_rate"),
+  failedRequests: integer("failed_requests").default(0),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("route_schemas_status_idx").on(table.status)]);
+
+export const sqlQueries = pgTable("sql_queries", {
+  id: serial("id").primaryKey(),
+  originalQuery: text("original_query").notNull(),
+  parameterized: boolean("parameterized").default(false),
+  parameterCount: integer("parameter_count").default(0),
+  executionCount: bigint("execution_count", { mode: "number" }).default(0),
+  avgLatencyMs: real("avg_latency_ms"),
+  injectionAttempts: integer("injection_attempts").default(0),
+  blocked: integer("blocked").default(0),
+  status: varchar("status", { length: 30 }).default("safe"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sql_queries_status_idx").on(table.status)]);
+
+export const vaultSecrets = pgTable("vault_secrets", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  engine: varchar("engine", { length: 30 }).notNull(),
+  version: integer("version").default(1),
+  rotationDays: integer("rotation_days"),
+  lastRotated: timestamp("last_rotated"),
+  nextRotation: timestamp("next_rotation"),
+  accessCount: bigint("access_count", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("vault_secrets_status_idx").on(table.status)]);
+
+export const pinHashes = pgTable("pin_hashes", {
+  id: serial("id").primaryKey(),
+  algorithm: varchar("algorithm", { length: 30 }).notNull(),
+  memoryCost: integer("memory_cost"),
+  timeCost: integer("time_cost"),
+  parallelism: integer("parallelism"),
+  saltLength: integer("salt_length"),
+  hashLength: integer("hash_length"),
+  activeHashes: bigint("active_hashes", { mode: "number" }).default(0),
+  migratedFromBcrypt: integer("migrated_from_bcrypt").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("pin_hashes_status_idx").on(table.status)]);
+
+export const dockerHardeningChecks = pgTable("docker_hardening_checks", {
+  id: serial("id").primaryKey(),
+  checkName: varchar("check_name", { length: 100 }).notNull(),
+  category: varchar("category", { length: 50 }),
+  cisBenchmark: varchar("cis_benchmark", { length: 20 }),
+  passingContainers: integer("passing_containers").default(0),
+  failingContainers: integer("failing_containers").default(0),
+  totalContainers: integer("total_containers").default(0),
+  severity: varchar("severity", { length: 20 }),
+  status: varchar("status", { length: 30 }).default("unknown"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("docker_hardening_status_idx").on(table.status)]);
+
+export const pkceFlows = pgTable("pkce_flows", {
+  id: serial("id").primaryKey(),
+  clientId: varchar("client_id", { length: 100 }).notNull(),
+  grantType: varchar("grant_type", { length: 50 }),
+  codeChallengeMethod: varchar("code_challenge_method", { length: 10 }),
+  redirectUri: text("redirect_uri"),
+  scopes: jsonb("scopes"),
+  tokenLifetime: integer("token_lifetime"),
+  refreshLifetime: integer("refresh_lifetime"),
+  activeFlows: bigint("active_flows", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("pkce_flows_status_idx").on(table.status)]);
+
+export const tokenFamilies = pgTable("token_families", {
+  id: serial("id").primaryKey(),
+  familyId: varchar("family_id", { length: 50 }).notNull(),
+  userId: varchar("user_id", { length: 50 }),
+  clientId: varchar("client_id", { length: 100 }),
+  generation: integer("generation").default(0),
+  maxGenerations: integer("max_generations").default(100),
+  replayDetected: boolean("replay_detected").default(false),
+  revokedDescendants: integer("revoked_descendants").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("token_families_status_idx").on(table.status)]);
+
+export const mtlsNodes = pgTable("mtls_nodes", {
+  id: serial("id").primaryKey(),
+  serviceName: varchar("service_name", { length: 100 }).notNull(),
+  spiffeId: text("spiffe_id"),
+  certSerial: varchar("cert_serial", { length: 50 }),
+  certExpiry: timestamp("cert_expiry"),
+  issuer: varchar("issuer", { length: 100 }),
+  peerConnections: integer("peer_connections").default(0),
+  handshakes24h: bigint("handshakes_24h", { mode: "number" }).default(0),
+  failedHandshakes: integer("failed_handshakes").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("mtls_nodes_status_idx").on(table.status)]);
+
+export const bodyLimitRules = pgTable("body_limit_rules", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  method: varchar("method", { length: 10 }),
+  maxBodyBytes: bigint("max_body_bytes", { mode: "number" }),
+  contentTypes: jsonb("content_types"),
+  enforced: boolean("enforced").default(true),
+  violations24h: integer("violations_24h").default(0),
+  blocked24h: integer("blocked_24h").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("body_limit_rules_status_idx").on(table.status)]);
+
+export const kmsKeys = pgTable("kms_keys", {
+  id: serial("id").primaryKey(),
+  provider: varchar("provider", { length: 20 }).notNull(),
+  keyId: text("key_id").notNull(),
+  algorithm: varchar("algorithm", { length: 30 }),
+  usage: varchar("usage", { length: 30 }),
+  state: varchar("state", { length: 20 }),
+  rotationEnabled: boolean("rotation_enabled").default(true),
+  encryptionOps24h: bigint("encryption_ops_24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("kms_keys_status_idx").on(table.status)]);
+
+export const tlsConfigs = pgTable("tls_configs", {
+  id: serial("id").primaryKey(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  protocol: varchar("protocol", { length: 20 }),
+  cipherSuites: jsonb("cipher_suites"),
+  certExpiry: timestamp("cert_expiry"),
+  ocspStapling: boolean("ocsp_stapling").default(true),
+  hstsPreload: boolean("hsts_preload").default(true),
+  handshakes24h: bigint("handshakes_24h", { mode: "number" }).default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("tls_configs_status_idx").on(table.status)]);
+
+export const correlationRules = pgTable("correlation_rules", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  mitreIds: jsonb("mitre_ids"),
+  killChainPhase: varchar("kill_chain_phase", { length: 50 }),
+  triggerEvents: jsonb("trigger_events"),
+  correlationWindow: varchar("correlation_window", { length: 20 }),
+  triggered24h: integer("triggered_24h").default(0),
+  truePositives: integer("true_positives").default(0),
+  falsePositives: integer("false_positives").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("correlation_rules_status_idx").on(table.status)]);
+
+export const pciScans = pgTable("pci_scans", {
+  id: serial("id").primaryKey(),
+  requirement: text("requirement").notNull(),
+  totalControls: integer("total_controls").default(0),
+  passing: integer("passing").default(0),
+  failing: integer("failing").default(0),
+  findings: jsonb("findings"),
+  lastScan: timestamp("last_scan"),
+  scanDuration: varchar("scan_duration", { length: 20 }),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("pci_scans_status_idx").on(table.status)]);
+
+export const apiKeyPolicies = pgTable("api_key_policies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  prefix: varchar("prefix", { length: 20 }),
+  requiredScopes: jsonb("required_scopes"),
+  ipWhitelist: jsonb("ip_whitelist"),
+  rateLimit: integer("rate_limit"),
+  rotationWarningDays: integer("rotation_warning_days"),
+  activeKeys: integer("active_keys").default(0),
+  violations24h: integer("violations_24h").default(0),
+  status: varchar("status", { length: 30 }).default("enforced"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("api_key_policies_status_idx").on(table.status)]);
+
+export const pathValidationRules = pgTable("path_validation_rules", {
+  id: serial("id").primaryKey(),
+  pattern: varchar("pattern", { length: 100 }).notNull(),
+  regex: text("regex"),
+  blocked24h: integer("blocked_24h").default(0),
+  passed24h: bigint("passed_24h", { mode: "number" }).default(0),
+  commonViolations: jsonb("common_violations"),
+  status: varchar("status", { length: 30 }).default("enforced"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("path_validation_rules_status_idx").on(table.status)]);
+
+export const keyRotationSchedules = pgTable("key_rotation_schedules", {
+  id: serial("id").primaryKey(),
+  keyId: varchar("key_id", { length: 100 }).notNull(),
+  algorithm: varchar("algorithm", { length: 30 }),
+  rotationInterval: varchar("rotation_interval", { length: 20 }),
+  gracePeriod: varchar("grace_period", { length: 20 }),
+  activeVersion: integer("active_version").default(1),
+  previousVersion: integer("previous_version"),
+  nextRotation: timestamp("next_rotation"),
+  rotationsCompleted: integer("rotations_completed").default(0),
+  failedRotations: integer("failed_rotations").default(0),
+  status: varchar("status", { length: 30 }).default("scheduled"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("key_rotation_schedules_status_idx").on(table.status)]);
+
+export const networkPolicies = pgTable("network_policies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  namespace: varchar("namespace", { length: 100 }),
+  podSelector: text("pod_selector"),
+  ingressRules: jsonb("ingress_rules"),
+  egressRules: jsonb("egress_rules"),
+  appliedPods: integer("applied_pods").default(0),
+  deniedConnections24h: integer("denied_connections_24h").default(0),
+  status: varchar("status", { length: 30 }).default("enforced"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("network_policies_status_idx").on(table.status)]);
+
+export const vaultEngines = pgTable("vault_engines", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  engineType: varchar("engine_type", { length: 30 }),
+  description: text("description"),
+  leases: integer("leases").default(0),
+  maxTTL: varchar("max_ttl", { length: 20 }),
+  defaultTTL: varchar("default_ttl", { length: 20 }),
+  rotationsCompleted: integer("rotations_completed").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("vault_engines_status_idx").on(table.status)]);
+
+export const anomalyModels = pgTable("anomaly_models", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  modelType: varchar("model_type", { length: 50 }),
+  features: jsonb("features"),
+  accuracy: real("accuracy"),
+  precision: real("precision"),
+  recall: real("recall"),
+  f1Score: real("f1_score"),
+  trainingSize: bigint("training_size", { mode: "number" }),
+  anomalies24h: integer("anomalies_24h").default(0),
+  truePositives: integer("true_positives").default(0),
+  status: varchar("status", { length: 30 }).default("production"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("anomaly_models_status_idx").on(table.status)]);
+
+export const ndprRecords = pgTable("ndpr_records", {
+  id: serial("id").primaryKey(),
+  recordType: varchar("record_type", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }),
+  requestType: varchar("request_type", { length: 50 }),
+  responseTimeDays: integer("response_time_days"),
+  slaDeadlineDays: integer("sla_deadline_days"),
+  dataCategories: jsonb("data_categories"),
+  dpo: varchar("dpo", { length: 100 }),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("ndpr_records_status_idx").on(table.status)]);
+
+export const outputEncodingRules = pgTable("output_encoding_rules", {
+  id: serial("id").primaryKey(),
+  context: varchar("context", { length: 50 }).notNull(),
+  encoder: varchar("encoder", { length: 100 }),
+  charsEncoded: jsonb("chars_encoded"),
+  applied24h: bigint("applied_24h", { mode: "number" }).default(0),
+  xssBlocked: integer("xss_blocked").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("output_encoding_rules_status_idx").on(table.status)]);
+
+export const imageScans = pgTable("image_scans", {
+  id: serial("id").primaryKey(),
+  imageName: text("image_name").notNull(),
+  registry: varchar("registry", { length: 100 }),
+  baseImage: varchar("base_image", { length: 100 }),
+  totalVulns: integer("total_vulns").default(0),
+  critical: integer("critical").default(0),
+  high: integer("high").default(0),
+  medium: integer("medium").default(0),
+  low: integer("low").default(0),
+  sbomArtifacts: integer("sbom_artifacts").default(0),
+  lastScanned: timestamp("last_scanned"),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("image_scans_status_idx").on(table.status)]);
+
+export const wafRules = pgTable("waf_rules", {
+  id: serial("id").primaryKey(),
+  ruleId: varchar("rule_id", { length: 20 }).notNull(),
+  name: varchar("name", { length: 200 }),
+  category: varchar("category", { length: 50 }),
+  severity: varchar("severity", { length: 20 }),
+  paranoia: integer("paranoia").default(1),
+  matched24h: integer("matched_24h").default(0),
+  blocked24h: integer("blocked_24h").default(0),
+  falsePositives: integer("false_positives").default(0),
+  status: varchar("status", { length: 30 }).default("enforced"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("waf_rules_status_idx").on(table.status)]);
+
+export const ddosRules = pgTable("ddos_rules", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  layer: varchar("layer", { length: 5 }),
+  threshold: varchar("threshold", { length: 50 }),
+  action: varchar("action", { length: 20 }),
+  mitigated24h: integer("mitigated_24h").default(0),
+  falsePositives: integer("false_positives").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("ddos_rules_status_idx").on(table.status)]);
+
+export const ipRules = pgTable("ip_rules", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  cidr: varchar("cidr", { length: 50 }),
+  ruleType: varchar("rule_type", { length: 20 }),
+  appliesTo: varchar("applies_to", { length: 50 }),
+  hits24h: integer("hits_24h").default(0),
+  blocked24h: integer("blocked_24h").default(0),
+  geoCountry: varchar("geo_country", { length: 10 }),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("ip_rules_status_idx").on(table.status)]);
+
+export const siemPipelines = pgTable("siem_pipelines", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  format: varchar("format", { length: 30 }),
+  destination: text("destination"),
+  eventsExported24h: bigint("events_exported_24h", { mode: "number" }).default(0),
+  avgLatencyMs: real("avg_latency_ms"),
+  errorRate: real("error_rate"),
+  batchSize: integer("batch_size"),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("siem_pipelines_status_idx").on(table.status)]);
+
+export const cbnComplianceChecks = pgTable("cbn_compliance_checks", {
+  id: serial("id").primaryKey(),
+  circular: varchar("circular", { length: 100 }).notNull(),
+  title: text("title"),
+  category: varchar("category", { length: 50 }),
+  totalControls: integer("total_controls").default(0),
+  passing: integer("passing").default(0),
+  failing: integer("failing").default(0),
+  complianceScore: real("compliance_score"),
+  lastAssessed: timestamp("last_assessed"),
+  nextAssessment: timestamp("next_assessment"),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("cbn_compliance_checks_status_idx").on(table.status)]);
+
+export const egressPolicies = pgTable("egress_policies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  domains: jsonb("domains"),
+  ports: jsonb("ports"),
+  protocol: varchar("protocol", { length: 20 }),
+  allowed: boolean("allowed").default(false),
+  requests24h: bigint("requests_24h", { mode: "number" }).default(0),
+  blocked24h: integer("blocked_24h").default(0),
+  status: varchar("status", { length: 30 }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("egress_policies_status_idx").on(table.status)]);
+
+export const incidents = pgTable("incidents", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  severity: varchar("severity", { length: 20 }),
+  category: varchar("category", { length: 50 }),
+  affectedSystems: jsonb("affected_systems"),
+  containmentActions: jsonb("containment_actions"),
+  escalationLevel: integer("escalation_level").default(1),
+  assignee: varchar("assignee", { length: 100 }),
+  detectedAt: timestamp("detected_at"),
+  containedAt: timestamp("contained_at"),
+  ttdMinutes: integer("ttd_minutes"),
+  ttcMinutes: integer("ttc_minutes"),
+  status: varchar("status", { length: 30 }).default("open"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("incidents_status_idx").on(table.status)]);
+
+export const immutableAuditBlocks = pgTable("immutable_audit_blocks", {
+  id: serial("id").primaryKey(),
+  blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+  previousHash: varchar("previous_hash", { length: 64 }),
+  merkleRoot: varchar("merkle_root", { length: 64 }),
+  transactions: integer("transactions").default(0),
+  validator: varchar("validator", { length: 50 }),
+  anchoredToChain: varchar("anchored_to_chain", { length: 50 }),
+  anchorTxHash: text("anchor_tx_hash"),
+  verified: boolean("verified").default(false),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("immutable_audit_blocks_status_idx").on(table.status)]);
+
+export const soc2Evidence = pgTable("soc2_evidence", {
+  id: serial("id").primaryKey(),
+  controlId: varchar("control_id", { length: 20 }).notNull(),
+  category: varchar("category", { length: 50 }),
+  title: text("title"),
+  evidenceType: varchar("evidence_type", { length: 50 }),
+  result: varchar("result", { length: 20 }),
+  period: varchar("period", { length: 20 }),
+  artifacts: jsonb("artifacts"),
+  auditor: varchar("auditor", { length: 100 }),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("soc2_evidence_status_idx").on(table.status)]);
+
+export const pentestScans = pgTable("pentest_scans", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  scope: varchar("scope", { length: 50 }),
+  scanType: varchar("scan_type", { length: 30 }),
+  target: text("target"),
+  totalFindings: integer("total_findings").default(0),
+  critical: integer("critical").default(0),
+  high: integer("high").default(0),
+  medium: integer("medium").default(0),
+  low: integer("low").default(0),
+  remediated: integer("remediated").default(0),
+  vendor: varchar("vendor", { length: 100 }),
+  status: varchar("status", { length: 30 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("pentest_scans_status_idx").on(table.status)]);
+
+export const sriHashes = pgTable("sri_hashes", {
+  id: serial("id").primaryKey(),
+  resource: text("resource").notNull(),
+  algorithm: varchar("algorithm", { length: 10 }),
+  hash: text("hash"),
+  lastVerified: timestamp("last_verified"),
+  violations: integer("violations").default(0),
+  cdnProvider: varchar("cdn_provider", { length: 50 }),
+  status: varchar("status", { length: 30 }).default("valid"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("sri_hashes_status_idx").on(table.status)]);
+
+export const cspPolicies = pgTable("csp_policies", {
+  id: serial("id").primaryKey(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  directives: jsonb("directives"),
+  reportUri: text("report_uri"),
+  violations24h: integer("violations_24h").default(0),
+  uniqueSources: integer("unique_sources").default(0),
+  status: varchar("status", { length: 30 }).default("enforce"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("csp_policies_status_idx").on(table.status)]);
+
+export const framePolicies = pgTable("frame_policies", {
+  id: serial("id").primaryKey(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  frameAncestors: varchar("frame_ancestors", { length: 100 }),
+  xFrameOptions: varchar("x_frame_options", { length: 20 }),
+  frameDetection: varchar("frame_detection", { length: 30 }),
+  violations24h: integer("violations_24h").default(0),
+  uniqueFramers: integer("unique_framers").default(0),
+  status: varchar("status", { length: 30 }).default("enforced"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("frame_policies_status_idx").on(table.status)]);
+
+export const deviceProfiles = pgTable("device_profiles", {
+  id: serial("id").primaryKey(),
+  fingerprintHash: varchar("fingerprint_hash", { length: 64 }),
+  userId: varchar("user_id", { length: 50 }),
+  deviceType: varchar("device_type", { length: 20 }),
+  browser: varchar("browser", { length: 50 }),
+  os: varchar("os", { length: 50 }),
+  screenRes: varchar("screen_res", { length: 20 }),
+  timezone: varchar("timezone", { length: 50 }),
+  trustScore: integer("trust_score").default(0),
+  sessionsCount: integer("sessions_count").default(0),
+  status: varchar("status", { length: 30 }).default("trusted"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [index("device_profiles_status_idx").on(table.status)]);
+
+// Type exports for Platform Security Hardening
+export type JwtValidation = typeof jwtValidations.$inferSelect;
+export type InsertJwtValidation = typeof jwtValidations.$inferInsert;
+export type RouteSchema = typeof routeSchemas.$inferSelect;
+export type InsertRouteSchema = typeof routeSchemas.$inferInsert;
+export type SqlQuery = typeof sqlQueries.$inferSelect;
+export type InsertSqlQuery = typeof sqlQueries.$inferInsert;
+export type VaultSecret = typeof vaultSecrets.$inferSelect;
+export type InsertVaultSecret = typeof vaultSecrets.$inferInsert;
+export type PinHash = typeof pinHashes.$inferSelect;
+export type InsertPinHash = typeof pinHashes.$inferInsert;
+export type DockerHardeningCheck = typeof dockerHardeningChecks.$inferSelect;
+export type InsertDockerHardeningCheck = typeof dockerHardeningChecks.$inferInsert;
+export type PkceFlow = typeof pkceFlows.$inferSelect;
+export type InsertPkceFlow = typeof pkceFlows.$inferInsert;
+export type TokenFamily = typeof tokenFamilies.$inferSelect;
+export type InsertTokenFamily = typeof tokenFamilies.$inferInsert;
+export type MtlsNode = typeof mtlsNodes.$inferSelect;
+export type InsertMtlsNode = typeof mtlsNodes.$inferInsert;
+export type BodyLimitRule = typeof bodyLimitRules.$inferSelect;
+export type InsertBodyLimitRule = typeof bodyLimitRules.$inferInsert;
+export type KmsKey = typeof kmsKeys.$inferSelect;
+export type InsertKmsKey = typeof kmsKeys.$inferInsert;
+export type TlsConfig = typeof tlsConfigs.$inferSelect;
+export type InsertTlsConfig = typeof tlsConfigs.$inferInsert;
+export type CorrelationRule = typeof correlationRules.$inferSelect;
+export type InsertCorrelationRule = typeof correlationRules.$inferInsert;
+export type PciScan = typeof pciScans.$inferSelect;
+export type InsertPciScan = typeof pciScans.$inferInsert;
+export type ApiKeyPolicy = typeof apiKeyPolicies.$inferSelect;
+export type InsertApiKeyPolicy = typeof apiKeyPolicies.$inferInsert;
+export type PathValidationRule = typeof pathValidationRules.$inferSelect;
+export type InsertPathValidationRule = typeof pathValidationRules.$inferInsert;
+export type KeyRotationSchedule = typeof keyRotationSchedules.$inferSelect;
+export type InsertKeyRotationSchedule = typeof keyRotationSchedules.$inferInsert;
+export type NetworkPolicy = typeof networkPolicies.$inferSelect;
+export type InsertNetworkPolicy = typeof networkPolicies.$inferInsert;
+export type VaultEngine = typeof vaultEngines.$inferSelect;
+export type InsertVaultEngine = typeof vaultEngines.$inferInsert;
+export type AnomalyModel = typeof anomalyModels.$inferSelect;
+export type InsertAnomalyModel = typeof anomalyModels.$inferInsert;
+export type NdprRecord = typeof ndprRecords.$inferSelect;
+export type InsertNdprRecord = typeof ndprRecords.$inferInsert;
+export type OutputEncodingRule = typeof outputEncodingRules.$inferSelect;
+export type InsertOutputEncodingRule = typeof outputEncodingRules.$inferInsert;
+export type ImageScan = typeof imageScans.$inferSelect;
+export type InsertImageScan = typeof imageScans.$inferInsert;
+export type WafRule = typeof wafRules.$inferSelect;
+export type InsertWafRule = typeof wafRules.$inferInsert;
+export type DdosRule = typeof ddosRules.$inferSelect;
+export type InsertDdosRule = typeof ddosRules.$inferInsert;
+export type IpRule = typeof ipRules.$inferSelect;
+export type InsertIpRule = typeof ipRules.$inferInsert;
+export type SiemPipeline = typeof siemPipelines.$inferSelect;
+export type InsertSiemPipeline = typeof siemPipelines.$inferInsert;
+export type CbnComplianceCheck = typeof cbnComplianceChecks.$inferSelect;
+export type InsertCbnComplianceCheck = typeof cbnComplianceChecks.$inferInsert;
+export type EgressPolicy = typeof egressPolicies.$inferSelect;
+export type InsertEgressPolicy = typeof egressPolicies.$inferInsert;
+export type Incident = typeof incidents.$inferSelect;
+export type InsertIncident = typeof incidents.$inferInsert;
+export type ImmutableAuditBlock = typeof immutableAuditBlocks.$inferSelect;
+export type InsertImmutableAuditBlock = typeof immutableAuditBlocks.$inferInsert;
+export type Soc2Evidence = typeof soc2Evidence.$inferSelect;
+export type InsertSoc2Evidence = typeof soc2Evidence.$inferInsert;
+export type PentestScan = typeof pentestScans.$inferSelect;
+export type InsertPentestScan = typeof pentestScans.$inferInsert;
+export type SriHash = typeof sriHashes.$inferSelect;
+export type InsertSriHash = typeof sriHashes.$inferInsert;
+export type CspPolicy = typeof cspPolicies.$inferSelect;
+export type InsertCspPolicy = typeof cspPolicies.$inferInsert;
+export type FramePolicy = typeof framePolicies.$inferSelect;
+export type InsertFramePolicy = typeof framePolicies.$inferInsert;
+export type DeviceProfile = typeof deviceProfiles.$inferSelect;
+export type InsertDeviceProfile = typeof deviceProfiles.$inferInsert;

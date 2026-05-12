@@ -439,6 +439,43 @@ const AdaptiveRateLimiterWorkspace = lazy(() => import("@/pages/AdaptiveRateLimi
 const FieldLevelEncryptionWorkspace = lazy(() => import("@/pages/FieldLevelEncryptionWorkspace"));
 const CertificateManagerWorkspace = lazy(() => import("@/pages/CertificateManagerWorkspace"));
 const SecurityAuditLoggerWorkspace = lazy(() => import("@/pages/SecurityAuditLoggerWorkspace"));
+const JWTValidatorWorkspace = lazy(() => import("@/pages/JWTValidatorWorkspace"));
+const RouteSchemaEnforcerWorkspace = lazy(() => import("@/pages/RouteSchemaEnforcerWorkspace"));
+const SQLParameterizerWorkspace = lazy(() => import("@/pages/SQLParameterizerWorkspace"));
+const SecretsVaultWorkspace = lazy(() => import("@/pages/SecretsVaultWorkspace"));
+const PINHasherWorkspace = lazy(() => import("@/pages/PINHasherWorkspace"));
+const DockerHardenerWorkspace = lazy(() => import("@/pages/DockerHardenerWorkspace"));
+const PKCEAuthFlowWorkspace = lazy(() => import("@/pages/PKCEAuthFlowWorkspace"));
+const TokenRotationWorkspace = lazy(() => import("@/pages/TokenRotationWorkspace"));
+const MTLSMeshWorkspace = lazy(() => import("@/pages/MTLSMeshWorkspace"));
+const BodyLimitEnforcerWorkspace = lazy(() => import("@/pages/BodyLimitEnforcerWorkspace"));
+const CloudKMSBridgeWorkspace = lazy(() => import("@/pages/CloudKMSBridgeWorkspace"));
+const TLSTerminatorWorkspace = lazy(() => import("@/pages/TLSTerminatorWorkspace"));
+const EventCorrelatorWorkspace = lazy(() => import("@/pages/EventCorrelatorWorkspace"));
+const PCIScannerWorkspace = lazy(() => import("@/pages/PCIScannerWorkspace"));
+const APIKeyEnforcerWorkspace = lazy(() => import("@/pages/APIKeyEnforcerWorkspace"));
+const PathValidatorWorkspace = lazy(() => import("@/pages/PathValidatorWorkspace"));
+const KeyRotationEngineWorkspace = lazy(() => import("@/pages/KeyRotationEngineWorkspace"));
+const NetworkPolicyManagerWorkspace = lazy(() => import("@/pages/NetworkPolicyManagerWorkspace"));
+const VaultIntegrationWorkspace = lazy(() => import("@/pages/VaultIntegrationWorkspace"));
+const AnomalyDetectorWorkspace = lazy(() => import("@/pages/AnomalyDetectorWorkspace"));
+const NDPRComplianceWorkspace = lazy(() => import("@/pages/NDPRComplianceWorkspace"));
+const OutputEncoderWorkspace = lazy(() => import("@/pages/OutputEncoderWorkspace"));
+const ImageScannerWorkspace = lazy(() => import("@/pages/ImageScannerWorkspace"));
+const WAFRulesEngineWorkspace = lazy(() => import("@/pages/WAFRulesEngineWorkspace"));
+const DDoSShieldWorkspace = lazy(() => import("@/pages/DDoSShieldWorkspace"));
+const IPAllowlistWorkspace = lazy(() => import("@/pages/IPAllowlistWorkspace"));
+const SIEMExporterWorkspace = lazy(() => import("@/pages/SIEMExporterWorkspace"));
+const CBNComplianceCheckerWorkspace = lazy(() => import("@/pages/CBNComplianceCheckerWorkspace"));
+const EgressControllerWorkspace = lazy(() => import("@/pages/EgressControllerWorkspace"));
+const IncidentResponderWorkspace = lazy(() => import("@/pages/IncidentResponderWorkspace"));
+const ImmutableAuditWorkspace = lazy(() => import("@/pages/ImmutableAuditWorkspace"));
+const SOC2EvidenceWorkspace = lazy(() => import("@/pages/SOC2EvidenceWorkspace"));
+const PentestOrchestratorWorkspace = lazy(() => import("@/pages/PentestOrchestratorWorkspace"));
+const SRIValidatorWorkspace = lazy(() => import("@/pages/SRIValidatorWorkspace"));
+const CSPNonceEngineWorkspace = lazy(() => import("@/pages/CSPNonceEngineWorkspace"));
+const ClickjackDefenderWorkspace = lazy(() => import("@/pages/ClickjackDefenderWorkspace"));
+const BrowserFingerprintWorkspace = lazy(() => import("@/pages/BrowserFingerprintWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -930,6 +967,43 @@ export default function App() {
         <Route path="/field-level-encryption" component={renderInAdminShell(FieldLevelEncryptionWorkspace)} />
         <Route path="/certificate-manager" component={renderInAdminShell(CertificateManagerWorkspace)} />
         <Route path="/security-audit-logger" component={renderInAdminShell(SecurityAuditLoggerWorkspace)} />
+        <Route path="/jwt-validator" component={renderInAdminShell(JWTValidatorWorkspace)} />
+        <Route path="/route-schema-enforcer" component={renderInAdminShell(RouteSchemaEnforcerWorkspace)} />
+        <Route path="/sql-parameterizer" component={renderInAdminShell(SQLParameterizerWorkspace)} />
+        <Route path="/secrets-vault" component={renderInAdminShell(SecretsVaultWorkspace)} />
+        <Route path="/pin-hasher" component={renderInAdminShell(PINHasherWorkspace)} />
+        <Route path="/docker-hardener" component={renderInAdminShell(DockerHardenerWorkspace)} />
+        <Route path="/pkce-auth-flow" component={renderInAdminShell(PKCEAuthFlowWorkspace)} />
+        <Route path="/token-rotation" component={renderInAdminShell(TokenRotationWorkspace)} />
+        <Route path="/mtls-mesh" component={renderInAdminShell(MTLSMeshWorkspace)} />
+        <Route path="/body-limit-enforcer" component={renderInAdminShell(BodyLimitEnforcerWorkspace)} />
+        <Route path="/cloud-kms-bridge" component={renderInAdminShell(CloudKMSBridgeWorkspace)} />
+        <Route path="/tls-terminator" component={renderInAdminShell(TLSTerminatorWorkspace)} />
+        <Route path="/event-correlator" component={renderInAdminShell(EventCorrelatorWorkspace)} />
+        <Route path="/pci-scanner" component={renderInAdminShell(PCIScannerWorkspace)} />
+        <Route path="/api-key-enforcer" component={renderInAdminShell(APIKeyEnforcerWorkspace)} />
+        <Route path="/path-validator" component={renderInAdminShell(PathValidatorWorkspace)} />
+        <Route path="/key-rotation-engine" component={renderInAdminShell(KeyRotationEngineWorkspace)} />
+        <Route path="/network-policy-manager" component={renderInAdminShell(NetworkPolicyManagerWorkspace)} />
+        <Route path="/vault-integration" component={renderInAdminShell(VaultIntegrationWorkspace)} />
+        <Route path="/anomaly-detector" component={renderInAdminShell(AnomalyDetectorWorkspace)} />
+        <Route path="/ndpr-compliance" component={renderInAdminShell(NDPRComplianceWorkspace)} />
+        <Route path="/output-encoder" component={renderInAdminShell(OutputEncoderWorkspace)} />
+        <Route path="/image-scanner" component={renderInAdminShell(ImageScannerWorkspace)} />
+        <Route path="/waf-rules-engine" component={renderInAdminShell(WAFRulesEngineWorkspace)} />
+        <Route path="/ddos-shield" component={renderInAdminShell(DDoSShieldWorkspace)} />
+        <Route path="/ip-allowlist" component={renderInAdminShell(IPAllowlistWorkspace)} />
+        <Route path="/siem-exporter" component={renderInAdminShell(SIEMExporterWorkspace)} />
+        <Route path="/cbn-compliance-checker" component={renderInAdminShell(CBNComplianceCheckerWorkspace)} />
+        <Route path="/egress-controller" component={renderInAdminShell(EgressControllerWorkspace)} />
+        <Route path="/incident-responder" component={renderInAdminShell(IncidentResponderWorkspace)} />
+        <Route path="/immutable-audit" component={renderInAdminShell(ImmutableAuditWorkspace)} />
+        <Route path="/soc2-evidence" component={renderInAdminShell(SOC2EvidenceWorkspace)} />
+        <Route path="/pentest-orchestrator" component={renderInAdminShell(PentestOrchestratorWorkspace)} />
+        <Route path="/sri-validator" component={renderInAdminShell(SRIValidatorWorkspace)} />
+        <Route path="/csp-nonce-engine" component={renderInAdminShell(CSPNonceEngineWorkspace)} />
+        <Route path="/clickjack-defender" component={renderInAdminShell(ClickjackDefenderWorkspace)} />
+        <Route path="/browser-fingerprint" component={renderInAdminShell(BrowserFingerprintWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
