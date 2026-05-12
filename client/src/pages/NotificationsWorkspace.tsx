@@ -8,11 +8,11 @@ export default function NotificationsWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/notifications/v1/log")
+    fetch("/api/db/customer-notifications")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/notifications/v1/stats")
+    fetch("/api/db/customer-notifications/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

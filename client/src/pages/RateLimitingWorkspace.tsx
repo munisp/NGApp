@@ -8,11 +8,11 @@ export default function RateLimitingWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/rate-limits/v1/tiers")
+    fetch("/api/db/body-limits")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/rate-limits/v1/stats")
+    fetch("/api/db/body-limits/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

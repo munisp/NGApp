@@ -4892,3 +4892,5 @@ export const smsAlertNotification = pgTable("sms_alert_notification", {
   index("sms_alert_notification_tenant_idx").on(t.tenantId),
   index("sms_alert_notification_channel_idx").on(t.channel),
 ]);
+
+

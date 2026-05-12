@@ -8,11 +8,11 @@ export default function DatabasePersistenceWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/database/v1/schema")
+    fetch("/api/db/table-partitions")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/database/v1/health")
+    fetch("/api/db/table-partitions/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

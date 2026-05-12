@@ -8,11 +8,11 @@ export default function AIFraudDetectionWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/fraud/v1/alerts")
+    fetch("/api/db/aml-alerts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/fraud/v1/stats")
+    fetch("/api/db/aml-alerts/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

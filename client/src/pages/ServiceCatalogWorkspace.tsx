@@ -183,7 +183,7 @@ export default function ServiceCatalogWorkspace() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await fetch("/api/feature-flag-engine/v1/tenant-flags", {
+      await fetch("/api/db/tenant-feature-flags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

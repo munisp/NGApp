@@ -8,11 +8,11 @@ export default function E2ETestSuiteWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/tests/v1/cases")
+    fetch("/api/db/pentest-scans")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/tests/v1/stats")
+    fetch("/api/db/pentest-scans/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -208,7 +208,7 @@ export default function WhiteLabelConfigWorkspace() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await fetch("/api/white-label-engine/v1/config", {
+      await fetch("/api/db/tenants", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ partnerId: partner.id, subTenants: partner.subTenants }),

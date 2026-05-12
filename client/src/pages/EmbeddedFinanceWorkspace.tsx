@@ -8,11 +8,11 @@ export default function EmbeddedFinanceWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/sdk/v1/partners")
+    fetch("/api/db/billing-accounts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/sdk/v1/stats")
+    fetch("/api/db/billing-accounts/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

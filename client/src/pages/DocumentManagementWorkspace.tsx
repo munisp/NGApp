@@ -8,11 +8,11 @@ export default function DocumentManagementWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/documents/v1/files")
+    fetch("/api/db/escrow-documents")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/documents/v1/stats")
+    fetch("/api/db/escrow-documents/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

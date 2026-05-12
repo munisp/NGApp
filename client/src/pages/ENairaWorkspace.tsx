@@ -8,11 +8,11 @@ export default function ENairaWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/enaira/v1/wallets")
+    fetch("/api/db/virtual-accounts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/enaira/v1/stats")
+    fetch("/api/db/virtual-accounts/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -273,7 +273,7 @@ export function AdminFeatureFlagsPage() {
   async function syncFeatureFlag(tenantId: string, flagKey: string, enabled: boolean) {
     try {
       setSyncStatus(`Syncing ${flagKey} to recovered tenant governance…`);
-      const response = await fetch(`/api/platform/tenants/configurations/${encodeURIComponent(tenantId)}/feature-flags/${encodeURIComponent(flagKey)}`, {
+      const response = await fetch(`/api/db/tenant-feature-flags/${encodeURIComponent(flagKey)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled, rolloutPct: enabled ? 100 : 0 }),
@@ -293,7 +293,7 @@ export function AdminFeatureFlagsPage() {
   ) {
     try {
       setSyncStatus(`Syncing white-label branding for ${tenantId}…`);
-      const response = await fetch(`/api/platform/tenants/configurations/${encodeURIComponent(tenantId)}/branding`, {
+      const response = await fetch(`/api/db/tenants/${encodeURIComponent(tenantId)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),

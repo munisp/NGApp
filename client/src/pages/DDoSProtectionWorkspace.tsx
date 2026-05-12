@@ -8,11 +8,11 @@ export default function DDoSProtectionWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/ddos-protection/v1/ddos/rules")
+    fetch("/api/db/ddos-rules")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/ddos-protection/v1/ddos/stats")
+    fetch("/api/db/ddos-rules/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

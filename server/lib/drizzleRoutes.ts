@@ -764,6 +764,7 @@ const routeConfigs: RouteConfig[] = [
   { basePath: "/api/db/whatsapp-document-service", repo: "whatsappDocumentService", idParam: "id", domain: "Channel Banking" },
   { basePath: "/api/db/whatsapp-notification", repo: "whatsappNotification", idParam: "id", domain: "Channel Banking" },
   { basePath: "/api/db/whatsapp-payment-integration", repo: "whatsappPaymentIntegration", idParam: "id", domain: "Channel Banking" },
+  { basePath: "/api/db/customer-notifications", repo: "customerNotifications", idParam: "id", domain: "Core Banking" },
 ];
 
 export function registerDrizzleRoutes(app: any) {

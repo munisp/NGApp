@@ -8,11 +8,11 @@ export default function MultiCurrencyFxWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/fx/v1/rates")
+    fetch("/api/db/fx-trades")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/fx/v1/stats")
+    fetch("/api/db/fx-trades/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -8,11 +8,11 @@ export default function MakerCheckerWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/maker-checker/v1/requests")
+    fetch("/api/db/customer-approvals")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/maker-checker/v1/stats")
+    fetch("/api/db/customer-approvals/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

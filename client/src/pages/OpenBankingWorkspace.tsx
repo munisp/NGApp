@@ -8,11 +8,11 @@ export default function OpenBankingWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/open-banking/v1/tpps")
+    fetch("/api/db/api-keys")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/open-banking/v1/stats")
+    fetch("/api/db/api-keys/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

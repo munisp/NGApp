@@ -8,11 +8,11 @@ export default function TigerBeetleLedgerWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/tigerbeetle/v1/accounts")
+    fetch("/api/db/accounts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/tigerbeetle/v1/stats")
+    fetch("/api/db/accounts/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

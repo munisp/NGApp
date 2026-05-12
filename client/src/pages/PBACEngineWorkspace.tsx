@@ -8,11 +8,11 @@ export default function PBACEngineWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/pbac-engine/v1/pbac/policies")
+    fetch("/api/db/network-policies")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/pbac-engine/v1/pbac/stats")
+    fetch("/api/db/network-policies/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

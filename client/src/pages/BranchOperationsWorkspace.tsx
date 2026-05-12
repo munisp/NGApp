@@ -8,11 +8,11 @@ export default function BranchOperationsWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/branch-operations/v1/branch/branches")
+    fetch("/api/db/agent-banking-agents")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/branch-operations/v1/branch/stats")
+    fetch("/api/db/agent-banking-agents/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -8,11 +8,11 @@ export default function JWTAuthWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/auth/v1/sessions")
+    fetch("/api/db/session-records")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/auth/v1/stats")
+    fetch("/api/db/session-records/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

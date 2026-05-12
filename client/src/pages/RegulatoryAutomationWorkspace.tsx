@@ -8,11 +8,11 @@ export default function RegulatoryAutomationWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/regulatory-automation/v1/regulatory/returns")
+    fetch("/api/db/regulatory-reports")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/regulatory-automation/v1/regulatory/stats")
+    fetch("/api/db/regulatory-reports/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

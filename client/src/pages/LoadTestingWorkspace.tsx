@@ -8,11 +8,11 @@ export default function LoadTestingWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/load-tests/v1/results")
+    fetch("/api/db/hpa-configs")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/load-tests/v1/stats")
+    fetch("/api/db/hpa-configs/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

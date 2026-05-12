@@ -8,11 +8,11 @@ export default function KafkaEventBusWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/kafka/v1/topics")
+    fetch("/api/db/kafka-consumer-groups")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/kafka/v1/stats")
+    fetch("/api/db/kafka-consumer-groups/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

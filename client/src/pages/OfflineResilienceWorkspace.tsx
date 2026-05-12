@@ -8,11 +8,11 @@ export default function OfflineResilienceWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/offline-resilience/v1/offline/capabilities")
+    fetch("/api/db/sw-cache-strategies")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/offline-resilience/v1/offline/stats")
+    fetch("/api/db/sw-cache-strategies/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

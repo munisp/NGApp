@@ -8,11 +8,11 @@ export default function DisasterRecoveryWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/dr/v1/replicas")
+    fetch("/api/db/read-replica-configs")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/dr/v1/stats")
+    fetch("/api/db/read-replica-configs/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

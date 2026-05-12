@@ -8,11 +8,11 @@ export default function MicrofinanceEngineWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/microfinance-engine/v1/microfinance/groups")
+    fetch("/api/db/esusu-groups")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/microfinance-engine/v1/microfinance/stats")
+    fetch("/api/db/esusu-groups/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

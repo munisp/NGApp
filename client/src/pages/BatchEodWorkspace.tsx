@@ -8,11 +8,11 @@ export default function BatchEodWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/eod/v1/jobs")
+    fetch("/api/db/reconciliation-runs")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/eod/v1/stats")
+    fetch("/api/db/reconciliation-runs/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

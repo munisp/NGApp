@@ -8,11 +8,11 @@ export default function ESGBankingWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/esg/v1/scores")
+    fetch("/api/db/agri-esg-impact")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/esg/v1/stats")
+    fetch("/api/db/agri-esg-impact/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

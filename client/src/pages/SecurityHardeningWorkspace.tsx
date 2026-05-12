@@ -8,11 +8,11 @@ export default function SecurityHardeningWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/security-hardening/v1/security/policies")
+    fetch("/api/db/waf-rules")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/security-hardening/v1/security/stats")
+    fetch("/api/db/waf-rules/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

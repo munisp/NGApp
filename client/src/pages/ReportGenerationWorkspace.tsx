@@ -8,11 +8,11 @@ export default function ReportGenerationWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/reports/v1/generated")
+    fetch("/api/db/efass-returns")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/reports/v1/stats")
+    fetch("/api/db/efass-returns/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

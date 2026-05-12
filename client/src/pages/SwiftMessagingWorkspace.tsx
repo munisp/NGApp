@@ -8,11 +8,11 @@ export default function SwiftMessagingWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/swift-messaging/v1/swift/messages")
+    fetch("/api/db/swift-messages")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/swift-messaging/v1/swift/stats")
+    fetch("/api/db/swift-messages/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

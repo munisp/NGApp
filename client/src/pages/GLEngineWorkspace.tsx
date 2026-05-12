@@ -8,11 +8,11 @@ export default function GLEngineWorkspace() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/gl-engine/v1/gl/accounts")
+    fetch("/api/db/gl-accounts")
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/gl-engine/v1/gl/stats")
+    fetch("/api/db/gl-accounts/count")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});
