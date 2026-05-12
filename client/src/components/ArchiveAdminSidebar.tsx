@@ -675,6 +675,23 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/tb-pg-saga-executions", label: "Saga Executions", icon: PlayCircle },
     ],
   },
+  {
+    category: "AI / ML / GNN / CV",
+    icon: Zap,
+    items: [
+      { path: "/gnn-fraud-detection", label: "GNN Fraud Detection", icon: Shield },
+      { path: "/fraudfusion-ensemble", label: "FraudFusion Ensemble", icon: Layers },
+      { path: "/mcmc-bayesian-risk", label: "MCMC Bayesian Risk", icon: TrendingUp },
+      { path: "/cocoindex-pipeline", label: "CocoIndex Pipelines", icon: Database },
+      { path: "/epr-kgqa", label: "EPR-KGQA (Knowledge QA)", icon: Search },
+      { path: "/falkordb-graph", label: "FalkorDB Graph", icon: GitBranch },
+      { path: "/ollama-llm", label: "Ollama Local LLM", icon: Zap },
+      { path: "/art-adversarial", label: "ART Adversarial Defense", icon: Shield },
+      { path: "/mojaloop-pisp", label: "Mojaloop PISP", icon: Globe },
+      { path: "/tb-multicurrency", label: "TB Multi-Currency", icon: Coins },
+      { path: "/kafka-governance", label: "Kafka Governance", icon: Radio },
+    ],
+  },
 ];
 
 function CategorySection({

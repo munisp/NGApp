@@ -186,6 +186,17 @@ import 'screens/corporate_monitoring_screen.dart';
 import 'screens/kyc_data_quality_screen.dart';
 import 'screens/efass_kyc_returns_screen.dart';
 import 'screens/kyc_enhanced_summary_screen.dart';
+import 'screens/gnn_fraud_detection_screen.dart';
+import 'screens/fraudfusion_ensemble_screen.dart';
+import 'screens/mcmc_bayesian_risk_screen.dart';
+import 'screens/cocoindex_pipeline_screen.dart';
+import 'screens/epr_kgqa_screen.dart';
+import 'screens/falkordb_graph_screen.dart';
+import 'screens/ollama_llm_screen.dart';
+import 'screens/art_adversarial_screen.dart';
+import 'screens/mojaloop_pisp_screen.dart';
+import 'screens/tb_multicurrency_screen.dart';
+import 'screens/kafka_governance_screen.dart';
 import 'screens/lakehouse_cdc_events_screen.dart';
 import 'screens/lakehouse_clients_screen.dart';
 import 'screens/lakehouse_domain_cdc_screen.dart';
@@ -558,6 +569,17 @@ class BankApp extends StatelessWidget {
           '/kyc-data-quality': (context) => const KycDataQualityScreen(),
           '/efass-kyc-returns': (context) => const EfassKycReturnsScreen(),
           '/kyc-enhanced-summary': (context) => const KycEnhancedSummaryScreen(),
+          '/gnn-fraud-detection': (context) => const GnnFraudDetectionScreen(),
+          '/fraudfusion-ensemble': (context) => const FraudfusionEnsembleScreen(),
+          '/mcmc-bayesian-risk': (context) => const McmcBayesianRiskScreen(),
+          '/cocoindex-pipeline': (context) => const CocoindexPipelineScreen(),
+          '/epr-kgqa': (context) => const EprKgqaScreen(),
+          '/falkordb-graph': (context) => const FalkordbGraphScreen(),
+          '/ollama-llm': (context) => const OllamaLlmScreen(),
+          '/art-adversarial': (context) => const ArtAdversarialScreen(),
+          '/mojaloop-pisp': (context) => const MojaloopPispScreen(),
+          '/tb-multicurrency': (context) => const TbMulticurrencyScreen(),
+          '/kafka-governance': (context) => const KafkaGovernanceScreen(),
           '/lakehouse-cdc-events': (context) => const LakehouseCDCEventsScreen(),
           '/lakehouse-clients': (context) => const LakehouseClientsScreen(),
           '/lakehouse-domain-cdc': (context) => const LakehouseDomainCDCScreen(),
@@ -928,6 +950,18 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('KYC Data Quality'), onTap: () => Navigator.pushNamed(context, '/kyc-data-quality')),
             ListTile(title: const Text('eFASS KYC Returns'), onTap: () => Navigator.pushNamed(context, '/efass-kyc-returns')),
             ListTile(title: const Text('KYC Enhanced Summary'), onTap: () => Navigator.pushNamed(context, '/kyc-enhanced-summary')),
+            const Divider(), const Padding(padding: EdgeInsets.only(left: 16, top: 8), child: Text('AI / ML / GNN / CV', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+            ListTile(title: const Text('GNN Fraud Detection'), onTap: () => Navigator.pushNamed(context, '/gnn-fraud-detection')),
+            ListTile(title: const Text('FraudFusion Ensemble'), onTap: () => Navigator.pushNamed(context, '/fraudfusion-ensemble')),
+            ListTile(title: const Text('MCMC Bayesian Risk'), onTap: () => Navigator.pushNamed(context, '/mcmc-bayesian-risk')),
+            ListTile(title: const Text('CocoIndex Pipelines'), onTap: () => Navigator.pushNamed(context, '/cocoindex-pipeline')),
+            ListTile(title: const Text('EPR-KGQA Knowledge QA'), onTap: () => Navigator.pushNamed(context, '/epr-kgqa')),
+            ListTile(title: const Text('FalkorDB Graph'), onTap: () => Navigator.pushNamed(context, '/falkordb-graph')),
+            ListTile(title: const Text('Ollama Local LLM'), onTap: () => Navigator.pushNamed(context, '/ollama-llm')),
+            ListTile(title: const Text('ART Adversarial Defense'), onTap: () => Navigator.pushNamed(context, '/art-adversarial')),
+            ListTile(title: const Text('Mojaloop PISP'), onTap: () => Navigator.pushNamed(context, '/mojaloop-pisp')),
+            ListTile(title: const Text('TB Multi-Currency'), onTap: () => Navigator.pushNamed(context, '/tb-multicurrency')),
+            ListTile(title: const Text('Kafka Governance'), onTap: () => Navigator.pushNamed(context, '/kafka-governance')),
             ListTile(title: const Text('Lakehouse Cdc Events'), onTap: () => Navigator.pushNamed(context, '/lakehouse-cdc-events')),
             ListTile(title: const Text('Lakehouse Clients'), onTap: () => Navigator.pushNamed(context, '/lakehouse-clients')),
             ListTile(title: const Text('Lakehouse Domain Cdc'), onTap: () => Navigator.pushNamed(context, '/lakehouse-domain-cdc')),

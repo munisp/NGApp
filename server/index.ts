@@ -49,6 +49,7 @@ import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerKYCKYBEnhancedSuite } from "./lib/kycKybEnhancedSuite";
+import { registerAiMlGnnSuite } from "./lib/aiMlGnnIntegration";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
 import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { registerDatabasePersistence } from "./lib/databasePersistence";
@@ -5204,6 +5205,9 @@ async function startServer() {
   registerKYCKYBIntegration(app);
   // KYC/KYB Enhanced Suite — 22 enhancements (5 phases, 22 polyglot services)
   registerKYCKYBEnhancedSuite(app);
+
+  // AI/ML/DL/GNN/CV Suite — GNN, FraudFusion, MCMC, CocoIndex, EPR-KGQA, FalkorDB, Ollama, ART
+  registerAiMlGnnSuite(app);
 
   // === Production Infrastructure Modules ===
   registerDatabasePersistence(app);

@@ -151,6 +151,17 @@ const CorporateMonitoringWorkspace = lazy(() => import("@/pages/CorporateMonitor
 const KYCDataQualityWorkspace = lazy(() => import("@/pages/KYCDataQualityWorkspace"));
 const EFASSKYCReturnsWorkspace = lazy(() => import("@/pages/EFASSKYCReturnsWorkspace"));
 const KYCEnhancedSummaryWorkspace = lazy(() => import("@/pages/KYCEnhancedSummaryWorkspace"));
+const GNNFraudDetectionWorkspace = lazy(() => import("@/pages/GNNFraudDetectionWorkspace"));
+const FraudFusionEnsembleWorkspace = lazy(() => import("@/pages/FraudFusionEnsembleWorkspace"));
+const MCMCBayesianRiskWorkspace = lazy(() => import("@/pages/MCMCBayesianRiskWorkspace"));
+const CocoIndexPipelineWorkspace = lazy(() => import("@/pages/CocoIndexPipelineWorkspace"));
+const EPRKGQAWorkspace = lazy(() => import("@/pages/EPRKGQAWorkspace"));
+const FalkorDBGraphWorkspace = lazy(() => import("@/pages/FalkorDBGraphWorkspace"));
+const OllamaLLMWorkspace = lazy(() => import("@/pages/OllamaLLMWorkspace"));
+const ARTAdversarialWorkspace = lazy(() => import("@/pages/ARTAdversarialWorkspace"));
+const MojaloopPISPWorkspace = lazy(() => import("@/pages/MojaloopPISPWorkspace"));
+const TBMultiCurrencyWorkspace = lazy(() => import("@/pages/TBMultiCurrencyWorkspace"));
+const KafkaGovernanceWorkspace = lazy(() => import("@/pages/KafkaGovernanceWorkspace"));
 const GLAccountsWorkspace = lazy(() => import("@/pages/GLAccountsWorkspace"));
 const CollateralWorkspace = lazy(() => import("@/pages/CollateralWorkspace"));
 const ComplaintsWorkspace = lazy(() => import("@/pages/ComplaintsWorkspace"));
@@ -707,6 +718,18 @@ export default function App() {
         <Route path="/kyc-data-quality" component={renderInAdminShell(KYCDataQualityWorkspace)} />
         <Route path="/efass-kyc-returns" component={renderInAdminShell(EFASSKYCReturnsWorkspace)} />
         <Route path="/kyc-enhanced-summary" component={renderInAdminShell(KYCEnhancedSummaryWorkspace)} />
+        {/* AI/ML/DL/GNN/CV Suite */}
+        <Route path="/gnn-fraud-detection" component={renderInAdminShell(GNNFraudDetectionWorkspace)} />
+        <Route path="/fraudfusion-ensemble" component={renderInAdminShell(FraudFusionEnsembleWorkspace)} />
+        <Route path="/mcmc-bayesian-risk" component={renderInAdminShell(MCMCBayesianRiskWorkspace)} />
+        <Route path="/cocoindex-pipeline" component={renderInAdminShell(CocoIndexPipelineWorkspace)} />
+        <Route path="/epr-kgqa" component={renderInAdminShell(EPRKGQAWorkspace)} />
+        <Route path="/falkordb-graph" component={renderInAdminShell(FalkorDBGraphWorkspace)} />
+        <Route path="/ollama-llm" component={renderInAdminShell(OllamaLLMWorkspace)} />
+        <Route path="/art-adversarial" component={renderInAdminShell(ARTAdversarialWorkspace)} />
+        <Route path="/mojaloop-pisp" component={renderInAdminShell(MojaloopPISPWorkspace)} />
+        <Route path="/tb-multicurrency" component={renderInAdminShell(TBMultiCurrencyWorkspace)} />
+        <Route path="/kafka-governance" component={renderInAdminShell(KafkaGovernanceWorkspace)} />
         {/* Multi-Tenant Platform */}
         <Route path="/tenant-isolation" component={renderInAdminShell(TenantIsolationWorkspace)} />
         <Route path="/feature-flag-engine" component={renderInAdminShell(FeatureFlagEngineWorkspace)} />

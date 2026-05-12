@@ -2905,3 +2905,149 @@ services:
     ports: ["8301:8301"]
     depends_on: [postgres, redis, kafka]
     restart: unless-stopped
+
+  # ======== AI/ML/DL/GNN/CV Services ========
+  gnn-fraud-detection-py:
+    build: ./services/gnn-fraud-detection-py
+    environment:
+      PORT: "8302"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: gnn-fraud-detection-py
+    ports: ["8302:8302"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  fraudfusion-ensemble-rs:
+    build: ./services/fraudfusion-ensemble-rs
+    environment:
+      PORT: "8303"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: fraudfusion-ensemble-rs
+    ports: ["8303:8303"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  mcmc-bayesian-risk-py:
+    build: ./services/mcmc-bayesian-risk-py
+    environment:
+      PORT: "8304"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: mcmc-bayesian-risk-py
+    ports: ["8304:8304"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  cocoindex-pipeline-py:
+    build: ./services/cocoindex-pipeline-py
+    environment:
+      PORT: "8305"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: cocoindex-pipeline-py
+    ports: ["8305:8305"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  epr-kgqa-engine-py:
+    build: ./services/epr-kgqa-engine-py
+    environment:
+      PORT: "8306"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: epr-kgqa-engine-py
+    ports: ["8306:8306"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  falkordb-graph-rs:
+    build: ./services/falkordb-graph-rs
+    environment:
+      PORT: "8307"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: falkordb-graph-rs
+    ports: ["8307:8307"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  ollama-inference-go:
+    build: ./services/ollama-inference-go
+    environment:
+      PORT: "8308"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: ollama-inference-go
+    ports: ["8308:8308"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  art-adversarial-robustness-py:
+    build: ./services/art-adversarial-robustness-py
+    environment:
+      PORT: "8309"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: art-adversarial-robustness-py
+    ports: ["8309:8309"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  mojaloop-pisp-go:
+    build: ./services/mojaloop-pisp-go
+    environment:
+      PORT: "8310"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: mojaloop-pisp-go
+    ports: ["8310:8310"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  tigerbeetle-multicurrency-rs:
+    build: ./services/tigerbeetle-multicurrency-rs
+    environment:
+      PORT: "8311"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: tigerbeetle-multicurrency-rs
+    ports: ["8311:8311"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
+
+  kafka-schema-registry-go:
+    build: ./services/kafka-schema-registry-go
+    environment:
+      PORT: "8312"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/bank54
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: kafka-schema-registry-go
+    ports: ["8312:8312"]
+    depends_on: [postgres, redis, kafka]
+    restart: unless-stopped
