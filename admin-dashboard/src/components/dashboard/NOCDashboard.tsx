@@ -17,6 +17,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { formatDateTime, formatCurrency } from '@/lib/utils';
 import type { DashboardMetrics, ParticipantHealth, KillSwitch, Transaction } from '@/types';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('NOCDashboard');
 
 // Mock data generators
 const generateMockMetrics = (): DashboardMetrics => ({
@@ -193,7 +195,7 @@ export function NOCDashboard() {
       {/* Participant Health */}
       <ParticipantHealthGrid
         participants={participants}
-        onParticipantClick={(fspId) => console.log('Clicked participant:', fspId)}
+        onParticipantClick={(fspId) => log.info('Clicked participant:', fspId)}
       />
 
       {/* Kill Switches and Emergency Controls */}

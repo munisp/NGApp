@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Loader2, AlertCircle, Smartphone } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('TwoFactorVerify');
 
 /**
  * TwoFactorVerify Component
@@ -51,7 +53,7 @@ export default function TwoFactorVerify({
       toast.success('This device will be remembered for 30 days');
     },
     onError: (error) => {
-      console.error('Failed to trust device:', error);
+      log.error('Failed to trust device:', error);
       // Don't show error to user as this is optional
     },
   });

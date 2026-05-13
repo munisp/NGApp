@@ -25,6 +25,8 @@ import { Input, Select, Textarea } from '../common/Input';
 import { MetricCard, MetricGrid } from '../dashboard/MetricCard';
 import { formatCurrency, formatDateTime, cn } from '@/lib/utils';
 import type { Participant, ParticipantLimits } from '@/types';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ParticipantPortal');
 
 const API_BASE = process.env.NEXT_PUBLIC_PARTICIPANTS_API || 'https://app-kjesixal.fly.dev';
 
@@ -140,7 +142,7 @@ export function ParticipantPortal() {
         setParticipants(data.participants || data || mockParticipants);
       }
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      log.error('Error fetching participants:', error);
     }
   };
 
@@ -276,7 +278,7 @@ export function ParticipantPortal() {
               alert('Failed to onboard participant. Please try again.');
             }
           } catch (error) {
-            console.error('Error onboarding participant:', error);
+            log.error('Error onboarding participant:', error);
             alert('Error onboarding participant. Please try again.');
           }
         }}
@@ -302,7 +304,7 @@ export function ParticipantPortal() {
                 alert('Failed to update participant status. Please try again.');
               }
             } catch (error) {
-              console.error('Error updating participant status:', error);
+              log.error('Error updating participant status:', error);
               alert('Error updating participant status. Please try again.');
             }
           }
@@ -338,7 +340,7 @@ export function ParticipantPortal() {
                 alert('Failed to update participant limits. Please try again.');
               }
             } catch (error) {
-              console.error('Error updating participant limits:', error);
+              log.error('Error updating participant limits:', error);
               alert('Error updating participant limits. Please try again.');
             }
           }

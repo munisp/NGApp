@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('JourneyDashboard');
 
 interface Journey {
   id: number;
@@ -235,7 +237,7 @@ export default function JourneyDashboard() {
 
   const handleRunJourney = async (journeyId: number) => {
     // API call to trigger journey workflow
-    console.log(`Running journey ${journeyId}`);
+    log.info(`Running journey ${journeyId}`);
     alert(`Journey ${journeyId} triggered successfully!`);
   };
 

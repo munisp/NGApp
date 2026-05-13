@@ -22,5 +22,21 @@ export default defineConfig({
     ],
     setupFiles: ['client/src/test/setup.ts'],
     globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'lcov', 'html'],
+      reportsDirectory: './coverage',
+      include: [
+        'server/**/*.ts',
+        'client/src/**/*.{ts,tsx}',
+      ],
+      exclude: [
+        '**/*.test.*',
+        '**/*.spec.*',
+        '**/test/**',
+        '**/__mocks__/**',
+        'server/scripts/**',
+      ],
+    },
   },
 });

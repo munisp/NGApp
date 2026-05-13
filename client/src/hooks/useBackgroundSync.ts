@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('useBackgroundSync');
 
 interface PendingItem {
   id: number;
@@ -88,7 +90,7 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
 
       setPendingCount(txnCount + formCount);
     } catch (error) {
-      console.error("[BackgroundSync] Error counting pending items:", error);
+      log.error("[BackgroundSync] Error counting pending items:", error);
     }
   }, []);
 
@@ -114,10 +116,10 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
         // Request background sync
         await requestSync("sync-transactions");
 
-        console.log("[BackgroundSync] Added pending transaction:", id);
+        log.info("[BackgroundSync] Added pending transaction:", id);
         return id;
       } catch (error) {
-        console.error("[BackgroundSync] Error adding transaction:", error);
+        log.error("[BackgroundSync] Error adding transaction:", error);
         throw error;
       }
     },
@@ -147,10 +149,10 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
         // Request background sync
         await requestSync("sync-form-data");
 
-        console.log("[BackgroundSync] Added pending form data:", id);
+        log.info("[BackgroundSync] Added pending form data:", id);
         return id;
       } catch (error) {
-        console.error("[BackgroundSync] Error adding form data:", error);
+        log.error("[BackgroundSync] Error adding form data:", error);
         throw error;
       }
     },
@@ -197,7 +199,7 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
 
       return items.sort((a, b) => a.timestamp - b.timestamp);
     } catch (error) {
-      console.error("[BackgroundSync] Error getting pending items:", error);
+      log.error("[BackgroundSync] Error getting pending items:", error);
       return [];
     }
   }, []);
@@ -224,9 +226,9 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
       });
 
       await updatePendingCount();
-      console.log("[BackgroundSync] Cleared all pending items");
+      log.info("[BackgroundSync] Cleared all pending items");
     } catch (error) {
-      console.error("[BackgroundSync] Error clearing pending items:", error);
+      log.error("[BackgroundSync] Error clearing pending items:", error);
     }
   }, [updatePendingCount]);
 
@@ -234,7 +236,7 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
   const requestSync = useCallback(
     async (tag: string = "sync-transactions"): Promise<boolean> => {
       if (!isSupported) {
-        console.log("[BackgroundSync] Background sync not supported");
+        log.info("[BackgroundSync] Background sync not supported");
         return false;
       }
 
@@ -242,10 +244,10 @@ export function useBackgroundSync(): UseBackgroundSyncReturn {
         const registration = await navigator.serviceWorker.ready;
         // @ts-expect-error - SyncManager types not fully available
         await registration.sync.register(tag);
-        console.log("[BackgroundSync] Sync registered:", tag);
+        log.info("[BackgroundSync] Sync registered:", tag);
         return true;
       } catch (error) {
-        console.error("[BackgroundSync] Error registering sync:", error);
+        log.error("[BackgroundSync] Error registering sync:", error);
         return false;
       }
     },

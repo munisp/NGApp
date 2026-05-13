@@ -44,6 +44,8 @@
  */
 
 import { useEffect, useRef } from "react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('Map');
 
 declare global {
   interface Window {
@@ -97,7 +99,7 @@ export function MapView({
           
           setTimeout(() => clearInterval(checkGoogle), 10000);
         })
-        .catch(error => console.error('Failed to fetch Google Maps script:', error));
+        .catch(error => log.error('Failed to fetch Google Maps script:', error));
     } else {
       initMap();
     }
@@ -117,7 +119,7 @@ export function MapView({
 
       // Map is ready - initialize services or add event listeners via onMapReady callback
       // Example: new google.maps.Marker({ map: map.current, position: { lat: 0, lng: 0 } })
-      // Example: map.current.addListener('click', (e) => console.log(e.latLng))
+      // Example: map.current.addListener('click', (e) => log.info(e.latLng))
       
       if (onMapReady) {
         onMapReady(map.current);

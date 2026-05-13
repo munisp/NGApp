@@ -11,6 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { 
+import { createLogger } from '@/lib/logger';
+const log = createLogger('RemittanceDemo');
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
@@ -535,7 +537,7 @@ function CreateRemittance() {
   const createMutation = trpc.remittance.createRemittance.useMutation({
     onSuccess: (data) => {
       toast.success('Remittance created successfully!');
-      console.log('Remittance:', data);
+      log.info('Remittance:', data);
     },
     onError: (error) => {
       toast.error(error.message);

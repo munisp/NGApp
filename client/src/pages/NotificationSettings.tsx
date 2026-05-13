@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Loader2, Bell, Mail, MessageSquare, Shield, Key, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('NotificationSettings');
 
 export default function NotificationSettings() {
   const { data: preferences, isLoading, refetch } = trpc.notificationPreferences.getPreferences.useQuery();
@@ -51,7 +53,7 @@ export default function NotificationSettings() {
       }
     } catch (error) {
       toast.error('Failed to save preferences');
-      console.error(error);
+      log.error(error);
     }
   };
 
@@ -72,7 +74,7 @@ export default function NotificationSettings() {
       }
     } catch (error) {
       toast.error('Failed to reset preferences');
-      console.error(error);
+      log.error(error);
     }
   };
 

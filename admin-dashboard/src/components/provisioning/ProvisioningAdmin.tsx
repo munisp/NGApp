@@ -22,6 +22,8 @@ import { Badge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { MetricCard, MetricGrid } from '../dashboard/MetricCard';
 import { formatDateTime, cn } from '@/lib/utils';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ProvisioningAdmin');
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://app-kjesixal.fly.dev';
 
@@ -110,7 +112,7 @@ export function ProvisioningAdmin() {
         setSagas(data.sagas || []);
       }
     } catch (error) {
-      console.error('Error fetching provisioning sagas:', error);
+      log.error('Error fetching provisioning sagas:', error);
     } finally {
       setLoading(false);
     }
@@ -125,7 +127,7 @@ export function ProvisioningAdmin() {
         setIntegrationHealth(data);
       }
     } catch (error) {
-      console.error('Error checking integration health:', error);
+      log.error('Error checking integration health:', error);
     } finally {
       setRefreshing(false);
     }

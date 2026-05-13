@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Clock, XCircle, RefreshCw, Download } from "lucide-react";
 import { useState, useEffect } from "react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('PaymentStatusTracker');
 
 interface PaymentStatus {
   transactionID: string;
@@ -89,7 +91,7 @@ export default function PaymentStatusTracker({
       });
       setLoading(false);
     } catch (error) {
-      console.error("Failed to fetch payment status:", error);
+      log.error("Failed to fetch payment status:", error);
       setLoading(false);
     }
   };

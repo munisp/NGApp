@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('OnboardingPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -255,11 +257,11 @@ export function OnboardingPortal() {
           const data = await response.json();
           setCases(data.cases || []);
         } else {
-          console.error('Failed to fetch cases');
+          log.error('Failed to fetch cases');
           setCases(mockCases); // Fallback to mock data
         }
       } catch (error) {
-        console.error('Error fetching cases:', error);
+        log.error('Error fetching cases:', error);
         setCases(mockCases); // Fallback to mock data
       } finally {
         setLoading(false);
@@ -274,7 +276,7 @@ export function OnboardingPortal() {
           setStats(data);
         }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        log.error('Error fetching stats:', error);
       }
     };
 
@@ -298,7 +300,7 @@ export function OnboardingPortal() {
         setCases(data.cases || data || []);
       }
     } catch (error) {
-      console.error('Error refetching onboarding cases:', error);
+      log.error('Error refetching onboarding cases:', error);
     }
   };
 
@@ -309,11 +311,11 @@ export function OnboardingPortal() {
         const data = await response.json();
         setSelectedCase(data);
       } else {
-        console.error('Failed to fetch case details');
+        log.error('Failed to fetch case details');
         setSelectedCase(mockCaseDetail); // Fallback
       }
     } catch (error) {
-      console.error('Error fetching case:', error);
+      log.error('Error fetching case:', error);
       setSelectedCase(mockCaseDetail); // Fallback
     }
   };
@@ -338,7 +340,7 @@ export function OnboardingPortal() {
         alert('Failed to approve requirement. Please try again.');
       }
     } catch (error) {
-      console.error('Error approving requirement:', error);
+      log.error('Error approving requirement:', error);
       alert('Error approving requirement. Please try again.');
     }
   };
@@ -363,7 +365,7 @@ export function OnboardingPortal() {
         alert('Failed to reject requirement. Please try again.');
       }
     } catch (error) {
-      console.error('Error rejecting requirement:', error);
+      log.error('Error rejecting requirement:', error);
       alert('Error rejecting requirement. Please try again.');
     }
   };
@@ -383,7 +385,7 @@ export function OnboardingPortal() {
         alert('Failed to transition case. Please try again.');
       }
     } catch (error) {
-      console.error('Error transitioning case:', error);
+      log.error('Error transitioning case:', error);
       alert('Error transitioning case. Please try again.');
     }
   };
@@ -438,7 +440,7 @@ export function OnboardingPortal() {
         alert(`Failed to provision: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error provisioning:', error);
+      log.error('Error provisioning:', error);
       alert('Error provisioning resources. Please try again.');
     } finally {
       setProvisioning(false);

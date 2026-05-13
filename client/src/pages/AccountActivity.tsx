@@ -24,6 +24,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('AccountActivity');
 
 export default function AccountActivity() {
   const { data: loginHistory, isLoading, refetch } = trpc.accountActivity.getLoginHistory.useQuery({ limit: 50 });
@@ -48,7 +50,7 @@ export default function AccountActivity() {
       }
     } catch (error) {
       toast.error('Failed to end session');
-      console.error(error);
+      log.error(error);
     } finally {
       setSessionToEnd(null);
     }
@@ -67,7 +69,7 @@ export default function AccountActivity() {
       }
     } catch (error) {
       toast.error('Failed to end sessions');
-      console.error(error);
+      log.error(error);
     } finally {
       setShowEndAllDialog(false);
     }

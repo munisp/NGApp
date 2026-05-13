@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('useLakehouse');
   lakehouseAPI,
   NOCMetrics,
   FraudMetrics,
@@ -132,7 +134,7 @@ export function useRealtimeMetrics() {
         
         wsRef.current.onopen = () => {
           setConnected(true);
-          console.log('WebSocket connected');
+          log.info('WebSocket connected');
         };
         
         wsRef.current.onmessage = (event) => {
@@ -142,21 +144,21 @@ export function useRealtimeMetrics() {
               setMetrics(data.data);
             }
           } catch (e) {
-            console.error('WebSocket message parse error:', e);
+            log.error('WebSocket message parse error:', e);
           }
         };
         
         wsRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          log.error('WebSocket error:', error);
         };
         
         wsRef.current.onclose = () => {
           setConnected(false);
-          console.log('WebSocket disconnected, reconnecting...');
+          log.info('WebSocket disconnected, reconnecting...');
           setTimeout(connect, 5000);
         };
       } catch (e) {
-        console.error('WebSocket connection error:', e);
+        log.error('WebSocket connection error:', e);
         setTimeout(connect, 5000);
       }
     };

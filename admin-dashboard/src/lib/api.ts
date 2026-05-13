@@ -281,7 +281,7 @@ class LakehouseAPIClient {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      log.info('WebSocket connected');
     };
 
     this.ws.onmessage = (event) => {
@@ -289,16 +289,16 @@ class LakehouseAPIClient {
         const data = JSON.parse(event.data);
         onMessage(data);
       } catch (e) {
-        console.error('WebSocket message parse error:', e);
+        log.error('WebSocket message parse error:', e);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      log.error('WebSocket error:', error);
     };
 
     this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
+      log.info('WebSocket disconnected');
       // Reconnect after 5 seconds
       setTimeout(() => this.connectWebSocket(onMessage), 5000);
     };
@@ -354,3 +354,5 @@ export function useLakehouseData<T>(
 
 // Import React for hooks
 import React from 'react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('api');

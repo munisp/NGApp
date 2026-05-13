@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('KYCVerificationPortal');
   User,
   FileText,
   CheckCircle,
@@ -442,7 +444,7 @@ export function KYCVerificationPortal() {
           setPersons(mockPersons);
         }
       } catch (error) {
-        console.error('Error fetching KYC cases:', error);
+        log.error('Error fetching KYC cases:', error);
         setPersons(mockPersons);
       } finally {
         setLoading(false);
@@ -493,7 +495,7 @@ export function KYCVerificationPortal() {
         setPersons(mappedPersons.length > 0 ? mappedPersons : mockPersons);
       }
     } catch (error) {
-      console.error('Error refetching KYC cases:', error);
+      log.error('Error refetching KYC cases:', error);
     }
   };
 
@@ -541,7 +543,7 @@ export function KYCVerificationPortal() {
         setSelectedPerson(mockDetail);
       }
     } catch (error) {
-      console.error('Error fetching KYC case details:', error);
+      log.error('Error fetching KYC case details:', error);
       setSelectedPerson(mockDetail);
     }
   };
@@ -561,7 +563,7 @@ export function KYCVerificationPortal() {
         alert('Failed to approve KYC case. Please try again.');
       }
     } catch (error) {
-      console.error('Error approving KYC case:', error);
+      log.error('Error approving KYC case:', error);
       alert('Error approving KYC case. Please try again.');
     }
   };
@@ -582,7 +584,7 @@ export function KYCVerificationPortal() {
         alert('Failed to reject KYC case. Please try again.');
       }
     } catch (error) {
-      console.error('Error rejecting KYC case:', error);
+      log.error('Error rejecting KYC case:', error);
       alert('Error rejecting KYC case. Please try again.');
     }
   };
@@ -1253,7 +1255,7 @@ export function KYCVerificationPortal() {
                   alert('Failed to create KYC case. Please try again.');
                 }
               } catch (error) {
-                console.error('Error creating KYC case:', error);
+                log.error('Error creating KYC case:', error);
                 alert('Error creating KYC case. Please try again.');
               }
             }}>

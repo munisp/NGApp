@@ -1,3 +1,6 @@
+import { createLogger } from '@/lib/logger';
+const log = createLogger('const');
+
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 export const APP_TITLE = import.meta.env.VITE_APP_TITLE || "App";
@@ -13,7 +16,7 @@ export const getLoginUrl = () => {
   
   // Return a fallback URL if OAuth is not configured (for development)
   if (!oauthPortalUrl) {
-    console.warn("VITE_OAUTH_PORTAL_URL is not configured. OAuth login disabled.");
+    log.warn("VITE_OAUTH_PORTAL_URL is not configured. OAuth login disabled.");
     return "/login-not-configured";
   }
   

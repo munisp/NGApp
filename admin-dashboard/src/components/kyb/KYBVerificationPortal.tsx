@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('KYBVerificationPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -497,7 +499,7 @@ export function KYBVerificationPortal() {
           setCases(mockCases);
         }
       } catch (error) {
-        console.error('Error fetching KYB cases:', error);
+        log.error('Error fetching KYB cases:', error);
         setCases(mockCases);
       } finally {
         setLoading(false);
@@ -530,7 +532,7 @@ export function KYBVerificationPortal() {
         setSelectedCase(mockDetail);
       }
     } catch (error) {
-      console.error('Error fetching KYB case:', error);
+      log.error('Error fetching KYB case:', error);
       setSelectedCase(mockDetail);
     }
   };
@@ -561,7 +563,7 @@ export function KYBVerificationPortal() {
         setCases(mappedCases.length > 0 ? mappedCases : mockCases);
       }
     } catch (error) {
-      console.error('Error refetching KYB cases:', error);
+      log.error('Error refetching KYB cases:', error);
     }
   };
 
@@ -580,7 +582,7 @@ export function KYBVerificationPortal() {
         alert('Failed to approve KYB case. Please try again.');
       }
     } catch (error) {
-      console.error('Error approving KYB case:', error);
+      log.error('Error approving KYB case:', error);
       alert('Error approving KYB case. Please try again.');
     }
   };
@@ -600,7 +602,7 @@ export function KYBVerificationPortal() {
         alert('Failed to reject KYB case. Please try again.');
       }
     } catch (error) {
-      console.error('Error rejecting KYB case:', error);
+      log.error('Error rejecting KYB case:', error);
       alert('Error rejecting KYB case. Please try again.');
     }
   };
@@ -1306,7 +1308,7 @@ export function KYBVerificationPortal() {
                   alert('Failed to create KYB case. Please try again.');
                 }
               } catch (error) {
-                console.error('Error creating KYB case:', error);
+                log.error('Error creating KYB case:', error);
                 alert('Error creating KYB case. Please try again.');
               }
             }}>

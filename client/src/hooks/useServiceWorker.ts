@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('useServiceWorker');
 
 interface ServiceWorkerState {
   isSupported: boolean;
@@ -40,7 +42,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
   // Register service worker
   useEffect(() => {
     if (!("serviceWorker" in navigator)) {
-      console.log("[PWA] Service workers not supported");
+      log.info("[PWA] Service workers not supported");
       return;
     }
 
@@ -52,7 +54,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
           scope: "/",
         });
 
-        console.log("[PWA] Service worker registered:", registration.scope);
+        log.info("[PWA] Service worker registered:", registration.scope);
 
         setState((s) => ({
           ...s,
@@ -69,7 +71,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
                 newWorker.state === "installed" &&
                 navigator.serviceWorker.controller
               ) {
-                console.log("[PWA] New version available");
+                log.info("[PWA] New version available");
                 setState((s) => ({ ...s, isUpdateAvailable: true }));
               }
             });
@@ -81,7 +83,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
           setState((s) => ({ ...s, isUpdateAvailable: true }));
         }
       } catch (error) {
-        console.error("[PWA] Service worker registration failed:", error);
+        log.error("[PWA] Service worker registration failed:", error);
       }
     };
 
@@ -89,7 +91,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
 
     // Handle controller change (new SW activated)
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      console.log("[PWA] New service worker activated, reloading...");
+      log.info("[PWA] New service worker activated, reloading...");
       window.location.reload();
     });
   }, []);

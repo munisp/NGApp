@@ -172,6 +172,8 @@ import {
 import { useState } from "react";
 import { toast as sonnerToast } from "sonner";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ComponentShowcase');
 
 export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();
@@ -194,7 +196,7 @@ export default function ComponentsShowcase() {
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   const handleDialogSubmit = () => {
-    console.log("Dialog submitted with value:", dialogInput);
+    log.info("Dialog submitted with value:", dialogInput);
     sonnerToast.success("Submitted successfully", {
       description: `Input: ${dialogInput}`,
     });

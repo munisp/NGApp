@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('BulkOnboarding');
   Upload,
   FileSpreadsheet,
   CheckCircle,
@@ -143,7 +145,7 @@ export function BulkOnboarding() {
           }
         }
       } catch (err) {
-        console.error('Failed to poll status:', err);
+        log.error('Failed to poll status:', err);
       }
     };
     poll();

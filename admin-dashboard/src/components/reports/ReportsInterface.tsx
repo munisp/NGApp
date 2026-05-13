@@ -21,6 +21,8 @@ import { Input, Select } from '../common/Input';
 import { MetricCard, MetricGrid } from '../dashboard/MetricCard';
 import { formatDateTime, cn } from '@/lib/utils';
 import type { Report, ReportType, ReportStatus } from '@/types';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ReportsInterface');
 
 // Mock data
 const mockReports: Report[] = [
@@ -193,8 +195,8 @@ export function ReportsInterface() {
           <ReportCard
             key={report.id}
             report={report}
-            onDownload={() => console.log('Download:', report.id)}
-            onSubmit={() => console.log('Submit:', report.id)}
+            onDownload={() => log.info('Download:', report.id)}
+            onSubmit={() => log.info('Submit:', report.id)}
             onRetry={() => handleRetry(report.id)}
             onDelete={() => handleDelete(report.id)}
             onView={() => setSelectedReport(report)}
@@ -225,7 +227,7 @@ export function ReportsInterface() {
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
         onSchedule={(data) => {
-          console.log('Schedule:', data);
+          log.info('Schedule:', data);
           setShowScheduleModal(false);
         }}
       />

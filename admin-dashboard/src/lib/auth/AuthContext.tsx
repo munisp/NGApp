@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('AuthContext');
 
 // Types
 export interface User {
@@ -148,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setState((prev) => ({ ...prev, isLoading: false }));
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        log.error('Auth initialization error:', error);
         clearAuth();
       }
     };
@@ -207,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: null,
       });
     } catch (error) {
-      console.error('Token refresh error:', error);
+      log.error('Token refresh error:', error);
       clearAuth();
     }
   };

@@ -3,6 +3,8 @@ import express from "express";
 import compression from "compression";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
+import { fileURLToPath } from "url";
 import { logger } from "../lib/logger";
 import { securityHeaders } from "../middleware/security-headers";
 import { corsMiddleware } from "../middleware/cors-config";
@@ -64,14 +66,45 @@ async function startServer() {
   app.use(rateLimitErrorHandler);
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
+
+  // tRPC API middleware
+  const trpcMiddleware = createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  });
+
+  // API versioning: v1 is the current version
+  app.use("/api/v1/trpc", trpcMiddleware);
+  // Backward-compatible unversioned route
+  app.use("/api/trpc", trpcMiddleware);
+
+  // API version info endpoint
+  app.get("/api/version", (_req, res) => {
+    res.json({
+      current: "v1",
+      supported: ["v1"],
+      deprecated: [],
+    });
+  });
+
+  // OpenAPI/Swagger documentation endpoint
+  app.get("/api/docs", (_req, res) => {
+    const html = `<!DOCTYPE html>
+<html><head><title>Payment Switch API Docs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+</head><body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>SwaggerUIBundle({ url: '/api/docs/openapi.yaml', dom_id: '#swagger-ui' });</script>
+</body></html>`;
+    res.type('html').send(html);
+  });
+
+  // Serve the OpenAPI spec file
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  app.get("/api/docs/openapi.yaml", (_req, res) => {
+    res.sendFile(path.resolve(__dirname, '../../docs/api/openapi.yaml'));
+  });
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

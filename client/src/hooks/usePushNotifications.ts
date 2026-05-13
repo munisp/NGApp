@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('usePushNotifications');
 
 interface PushNotificationState {
   isSupported: boolean;
@@ -45,7 +47,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         "Notification" in window;
 
       if (!isSupported) {
-        console.log("[Push] Push notifications not supported");
+        log.info("[Push] Push notifications not supported");
         return;
       }
 
@@ -68,7 +70,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
           }));
         }
       } catch (error) {
-        console.error("[Push] Error checking subscription:", error);
+        log.error("[Push] Error checking subscription:", error);
       }
     };
 
@@ -86,7 +88,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       setState((s) => ({ ...s, permission }));
       return permission;
     } catch (error) {
-      console.error("[Push] Error requesting permission:", error);
+      log.error("[Push] Error requesting permission:", error);
       return "denied";
     }
   }, [state.isSupported]);
@@ -94,7 +96,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   // Subscribe to push notifications
   const subscribe = useCallback(async (): Promise<PushSubscription | null> => {
     if (!state.isSupported) {
-      console.log("[Push] Push not supported");
+      log.info("[Push] Push not supported");
       return null;
     }
 
@@ -102,7 +104,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     if (Notification.permission !== "granted") {
       const permission = await requestPermission();
       if (permission !== "granted") {
-        console.log("[Push] Permission denied");
+        log.info("[Push] Permission denied");
         return null;
       }
     }
@@ -115,7 +117,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      console.log("[Push] Subscribed:", subscription.endpoint);
+      log.info("[Push] Subscribed:", subscription.endpoint);
 
       setState((s) => ({
         ...s,
@@ -128,7 +130,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       return subscription;
     } catch (error) {
-      console.error("[Push] Subscription failed:", error);
+      log.error("[Push] Subscription failed:", error);
       return null;
     }
   }, [state.isSupported, requestPermission]);
@@ -151,10 +153,10 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         subscription: null,
       }));
 
-      console.log("[Push] Unsubscribed");
+      log.info("[Push] Unsubscribed");
       return true;
     } catch (error) {
-      console.error("[Push] Unsubscribe failed:", error);
+      log.error("[Push] Unsubscribe failed:", error);
       return false;
     }
   }, [state.subscription]);
@@ -163,7 +165,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const showNotification = useCallback(
     async (title: string, options?: NotificationOptions): Promise<void> => {
       if (!state.isSupported || Notification.permission !== "granted") {
-        console.log("[Push] Cannot show notification - not permitted");
+        log.info("[Push] Cannot show notification - not permitted");
         return;
       }
 
@@ -176,7 +178,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
           ...options,
         });
       } catch (error) {
-        console.error("[Push] Error showing notification:", error);
+        log.error("[Push] Error showing notification:", error);
       }
     },
     [state.isSupported]
@@ -203,7 +205,7 @@ async function sendSubscriptionToServer(subscription: PushSubscription): Promise
       credentials: "include",
     });
   } catch (error) {
-    console.error("[Push] Failed to send subscription to server:", error);
+    log.error("[Push] Failed to send subscription to server:", error);
   }
 }
 
@@ -218,7 +220,7 @@ async function removeSubscriptionFromServer(subscription: PushSubscription): Pro
       credentials: "include",
     });
   } catch (error) {
-    console.error("[Push] Failed to remove subscription from server:", error);
+    log.error("[Push] Failed to remove subscription from server:", error);
   }
 }
 

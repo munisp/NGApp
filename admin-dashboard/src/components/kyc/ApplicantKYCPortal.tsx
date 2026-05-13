@@ -2,6 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ApplicantKYCPortal');
   User,
   FileText,
   CheckCircle,
@@ -237,7 +239,7 @@ function SelfieCapture({
         setLivenessStep('center');
       }
     } catch (err) {
-      console.error('Error accessing camera:', err);
+      log.error('Error accessing camera:', err);
     }
   };
 

@@ -27,6 +27,8 @@ import { Loader2, Trash2, Eye, Calendar, Search, X, Tag, Edit, Share2, Copy, Che
 import { toast } from "sonner";
 import { TestComparisonDialog } from "./TestComparisonDialog";
 import { QRCodeSVG } from "qrcode.react";
+import { createLogger } from '@/lib/logger';
+const log = createLogger('SavedComparisonsTab');
 
 interface SavedComparisonsTabProps {
   credentialId: number;
@@ -172,7 +174,7 @@ export function SavedComparisonsTab({ credentialId }: SavedComparisonsTabProps) 
         img.src = url;
       });
     } catch (err) {
-      console.error('Failed to convert QR code:', err);
+      log.error('Failed to convert QR code:', err);
       return null;
     }
   };
@@ -198,12 +200,12 @@ export function SavedComparisonsTab({ credentialId }: SavedComparisonsTabProps) 
           setTimeout(() => setQrCopied(false), 2000);
           toast.success("QR code copied to clipboard");
         } catch (err) {
-          console.error('Failed to copy QR code:', err);
+          log.error('Failed to copy QR code:', err);
           toast.error("Failed to copy QR code");
         }
       }, 'image/png');
     } catch (err) {
-      console.error('Failed to copy QR code:', err);
+      log.error('Failed to copy QR code:', err);
       toast.error("Failed to copy QR code");
     }
   };
@@ -232,7 +234,7 @@ export function SavedComparisonsTab({ credentialId }: SavedComparisonsTabProps) 
         toast.success("QR code downloaded successfully");
       }, 'image/png');
     } catch (err) {
-      console.error('Failed to download QR code:', err);
+      log.error('Failed to download QR code:', err);
       toast.error("Failed to download QR code");
     }
   };

@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import {
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ApplicantPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -213,7 +215,7 @@ export function ApplicantPortal() {
       setIsSubmitted(true);
       setCurrentStep(5);
     } catch (error) {
-      console.error('Submission error:', error);
+      log.error('Submission error:', error);
       setErrors({ submit: 'Failed to submit application. Please try again.' });
     } finally {
       setIsSubmitting(false);
