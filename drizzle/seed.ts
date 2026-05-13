@@ -2142,7 +2142,30 @@ async function seed() {
   ]).onConflictDoNothing();
   console.log("  seeded: sms_alert_notification");
 
-  console.log("Done! Seeded 267 tables.");
+  // ─── KPI PERSONNEL FRAMEWORK ──────────────────────────────────────────────
+  await db.insert(schema.kpiRoles).values([
+    { roleKey: "ceo", title: "Chief Executive Officer", department: "Executive", level: 1, reportsTo: null, fixedRatio: 60, variableRatio: 40, description: "Strategic oversight" },
+    { roleKey: "coo", title: "Chief Operating Officer", department: "Operations", level: 2, reportsTo: "ceo", fixedRatio: 70, variableRatio: 30, description: "Operations throughput" },
+    { roleKey: "cro", title: "Chief Risk Officer", department: "Risk", level: 2, reportsTo: "ceo", fixedRatio: 75, variableRatio: 25, description: "AML/CFT compliance" },
+    { roleKey: "cto", title: "Chief Technology Officer", department: "Technology", level: 2, reportsTo: "ceo", fixedRatio: 70, variableRatio: 30, description: "Platform availability" },
+    { roleKey: "cso", title: "Chief Security Officer", department: "Security", level: 2, reportsTo: "ceo", fixedRatio: 75, variableRatio: 25, description: "Cyber security" },
+    { roleKey: "treasury", title: "Treasury Manager", department: "Treasury", level: 3, reportsTo: "ceo", fixedRatio: 70, variableRatio: 30, description: "Liquidity management" },
+    { roleKey: "credit", title: "Head of Credit", department: "Lending", level: 3, reportsTo: "ceo", fixedRatio: 65, variableRatio: 35, description: "Portfolio quality" },
+    { roleKey: "head_teller", title: "Head Teller", department: "Operations", level: 3, reportsTo: "coo", fixedRatio: 60, variableRatio: 40, description: "Transaction speed" },
+    { roleKey: "compliance", title: "Compliance Officer", department: "Risk", level: 3, reportsTo: "cro", fixedRatio: 80, variableRatio: 20, description: "Regulatory filings" },
+    { roleKey: "customer_service", title: "Customer Service Manager", department: "Service", level: 3, reportsTo: "ceo", fixedRatio: 65, variableRatio: 35, description: "Complaint resolution" },
+    { roleKey: "internal_audit", title: "Internal Auditor", department: "Audit", level: 3, reportsTo: "cro", fixedRatio: 80, variableRatio: 20, description: "Maker-checker compliance" },
+  ]).onConflictDoNothing();
+  console.log("  seeded: kpi_roles");
+
+  await db.insert(schema.kpiBranches).values([
+    { branchId: "BR-001", name: "Lagos Island Main", state: "Lagos", lga: "Lagos Island", latitude: 6.4541, longitude: 3.4082, revenueNgn: 850000000, transactionsDaily: 2400, customers: 15200, nplPct: 2.1, depositsNgn: 12500000000, status: "green" },
+    { branchId: "BR-002", name: "Victoria Island", state: "Lagos", lga: "Eti-Osa", latitude: 6.4281, longitude: 3.4219, revenueNgn: 1200000000, transactionsDaily: 3100, customers: 18500, nplPct: 1.8, depositsNgn: 18000000000, status: "green" },
+    { branchId: "BR-005", name: "Abuja Central", state: "FCT", lga: "Municipal", latitude: 9.0579, longitude: 7.4951, revenueNgn: 780000000, transactionsDaily: 2000, customers: 11000, nplPct: 2.8, depositsNgn: 10500000000, status: "green" },
+  ]).onConflictDoNothing();
+  console.log("  seeded: kpi_branches");
+
+  console.log("Done! Seeded 275 tables.");
   await client.end();
 }
 

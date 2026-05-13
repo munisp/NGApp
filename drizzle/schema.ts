@@ -4893,4 +4893,149 @@ export const smsAlertNotification = pgTable("sms_alert_notification", {
   index("sms_alert_notification_channel_idx").on(t.channel),
 ]);
 
+// ─── KPI PERSONNEL FRAMEWORK ────────────────────────────────────────────────
+
+export const kpiRoles = pgTable("kpi_roles", {
+  id: serial("id").primaryKey(),
+  roleKey: varchar("role_key", { length: 50 }).notNull().unique(),
+  title: text("title").notNull(),
+  department: text("department").notNull(),
+  level: integer("level").notNull().default(2),
+  reportsTo: varchar("reports_to", { length: 50 }),
+  fixedRatio: integer("fixed_ratio").default(70),
+  variableRatio: integer("variable_ratio").default(30),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const kpiMetrics = pgTable("kpi_metrics", {
+  id: serial("id").primaryKey(),
+  metricKey: varchar("metric_key", { length: 80 }).notNull().unique(),
+  roleKey: varchar("role_key", { length: 50 }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(),
+  unit: text("unit").notNull().default("percent"),
+  direction: text("direction").notNull().default("higher_better"),
+  weight: doublePrecision("weight").notNull().default(0.1),
+  greenThreshold: doublePrecision("green_threshold").notNull().default(85),
+  amberThreshold: doublePrecision("amber_threshold").notNull().default(60),
+  frequency: text("frequency").notNull().default("daily"),
+  dataSource: text("data_source"),
+  sqlQuery: text("sql_query"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kpi_metrics_role_idx").on(t.roleKey),
+  index("kpi_metrics_category_idx").on(t.category),
+]);
+
+export const kpiScores = pgTable("kpi_scores", {
+  id: serial("id").primaryKey(),
+  metricKey: varchar("metric_key", { length: 80 }).notNull(),
+  roleKey: varchar("role_key", { length: 50 }).notNull(),
+  personnelId: varchar("personnel_id", { length: 50 }),
+  value: doublePrecision("value").notNull(),
+  normalizedScore: doublePrecision("normalized_score").notNull(),
+  status: varchar("status", { length: 10 }).notNull().default("green"),
+  cadence: varchar("cadence", { length: 20 }).notNull().default("daily"),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kpi_scores_metric_idx").on(t.metricKey),
+  index("kpi_scores_role_idx").on(t.roleKey),
+  index("kpi_scores_period_idx").on(t.periodStart),
+  index("kpi_scores_cadence_idx").on(t.cadence),
+]);
+
+export const kpiCompositeScores = pgTable("kpi_composite_scores", {
+  id: serial("id").primaryKey(),
+  roleKey: varchar("role_key", { length: 50 }).notNull(),
+  personnelId: varchar("personnel_id", { length: 50 }),
+  ownScore: doublePrecision("own_score").notNull(),
+  rollupScore: doublePrecision("rollup_score"),
+  compositeScore: doublePrecision("composite_score").notNull(),
+  status: varchar("status", { length: 10 }).notNull().default("green"),
+  cadence: varchar("cadence", { length: 20 }).notNull().default("daily"),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  variablePayMultiplier: doublePrecision("variable_pay_multiplier").default(1.0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kpi_composite_role_idx").on(t.roleKey),
+  index("kpi_composite_period_idx").on(t.periodStart),
+]);
+
+export const kpiNotificationRules = pgTable("kpi_notification_rules", {
+  id: serial("id").primaryKey(),
+  ruleKey: varchar("rule_key", { length: 50 }).notNull().unique(),
+  roleKey: varchar("role_key", { length: 50 }).notNull(),
+  metricKey: varchar("metric_key", { length: 80 }).notNull(),
+  condition: varchar("condition", { length: 10 }).notNull(),
+  thresholdValue: doublePrecision("threshold_value").notNull(),
+  severity: varchar("severity", { length: 20 }).notNull().default("warning"),
+  channels: jsonb("channels").notNull(),
+  escalationChain: jsonb("escalation_chain"),
+  cooldownMinutes: integer("cooldown_minutes").notNull().default(60),
+  enabled: boolean("enabled").notNull().default(true),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kpi_notification_rules_role_idx").on(t.roleKey),
+]);
+
+export const kpiNotificationEvents = pgTable("kpi_notification_events", {
+  id: serial("id").primaryKey(),
+  ruleKey: varchar("rule_key", { length: 50 }).notNull(),
+  roleKey: varchar("role_key", { length: 50 }).notNull(),
+  metricKey: varchar("metric_key", { length: 80 }).notNull(),
+  currentValue: doublePrecision("current_value").notNull(),
+  thresholdValue: doublePrecision("threshold_value").notNull(),
+  severity: varchar("severity", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("fired"),
+  message: text("message"),
+  firedAt: timestamp("fired_at").defaultNow(),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  resolvedAt: timestamp("resolved_at"),
+  acknowledgedBy: varchar("acknowledged_by", { length: 50 }),
+}, (t) => [
+  index("kpi_events_rule_idx").on(t.ruleKey),
+  index("kpi_events_role_idx").on(t.roleKey),
+  index("kpi_events_status_idx").on(t.status),
+  index("kpi_events_fired_idx").on(t.firedAt),
+]);
+
+export const kpiBranches = pgTable("kpi_branches", {
+  id: serial("id").primaryKey(),
+  branchId: varchar("branch_id", { length: 20 }).notNull().unique(),
+  name: text("name").notNull(),
+  state: text("state").notNull(),
+  lga: text("lga").notNull(),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  revenueNgn: bigint("revenue_ngn", { mode: "number" }).default(0),
+  transactionsDaily: integer("transactions_daily").default(0),
+  customers: integer("customers").default(0),
+  nplPct: doublePrecision("npl_pct").default(0),
+  depositsNgn: bigint("deposits_ngn", { mode: "number" }).default(0),
+  status: varchar("status", { length: 10 }).notNull().default("green"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("kpi_branches_state_idx").on(t.state),
+  index("kpi_branches_status_idx").on(t.status),
+]);
+
+export const kpiHierarchy = pgTable("kpi_hierarchy", {
+  id: serial("id").primaryKey(),
+  parentRoleKey: varchar("parent_role_key", { length: 50 }).notNull(),
+  childRoleKey: varchar("child_role_key", { length: 50 }).notNull(),
+  rollupWeight: doublePrecision("rollup_weight").notNull().default(1.0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kpi_hierarchy_parent_idx").on(t.parentRoleKey),
+  index("kpi_hierarchy_child_idx").on(t.childRoleKey),
+]);
+
 
