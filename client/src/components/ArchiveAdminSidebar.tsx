@@ -241,6 +241,7 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/open-banking", label: "Open Banking", icon: Globe },
       { path: "/api-marketplace", label: "API Marketplace", icon: Globe },
       { path: "/chatbot", label: "AI Chatbot", icon: MessageSquare },
+      { path: "/growth-features", label: "Growth Features", icon: TrendingUp },
       { path: "/locker", label: "Digital Locker", icon: FolderLock },
     ],
   },

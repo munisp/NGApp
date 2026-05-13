@@ -5058,4 +5058,139 @@ export const efassMapping = pgTable("efassMapping", {
   efassGlRangeIdx: index("efass_gl_range_idx").on(table.glCodeStart, table.glCodeEnd),
 }));
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GROWTH FEATURES TABLES (Enhancement 13-20)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const chatbotIntents = pgTable("chatbot_intents", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  intent: text("intent").notNull(),
+  category: text("category").notNull(),
+  confidenceThreshold: real("confidence_threshold").default(0.85),
+  responses: integer("responses").default(0),
+  avgConfidence: real("avg_confidence").default(0.92),
+  escalationRate: real("escalation_rate").default(0.05),
+  channel: text("channel").default("all"),
+  language: text("language").default("en"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const smartSavingsGoals = pgTable("smart_savings_goals", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  customerId: text("customer_id").notNull(),
+  goalName: text("goal_name").notNull(),
+  goalType: text("goal_type").notNull(),
+  targetAmount: real("target_amount").notNull(),
+  currentAmount: real("current_amount").default(0),
+  currency: text("currency").default("NGN"),
+  autoDebitAmount: real("auto_debit_amount"),
+  frequency: text("frequency").default("monthly"),
+  startDate: timestamp("start_date").defaultNow(),
+  targetDate: timestamp("target_date"),
+  interestRate: real("interest_rate").default(12.0),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const virtualCards = pgTable("virtual_cards", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  customerId: text("customer_id").notNull(),
+  cardType: text("card_type").notNull(),
+  cardScheme: text("card_scheme").notNull(),
+  maskedPan: text("masked_pan").notNull(),
+  expiryDate: text("expiry_date").notNull(),
+  spendLimit: real("spend_limit").notNull(),
+  currentSpend: real("current_spend").default(0),
+  currency: text("currency").default("NGN"),
+  isFrozen: boolean("is_frozen").default(false),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const qrPaymentTransactions = pgTable("qr_payment_transactions", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  merchantName: text("merchant_name").notNull(),
+  merchantId: text("merchant_id").notNull(),
+  amount: real("amount").notNull(),
+  qrType: text("qr_type").notNull(),
+  channel: text("channel").default("NQR"),
+  customerAccount: text("customer_account"),
+  settlementTime: text("settlement_time").default("T+0"),
+  fee: real("fee").default(0),
+  status: text("status").default("completed"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const bnplOrders = pgTable("bnpl_orders", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  customerId: text("customer_id").notNull(),
+  merchantName: text("merchant_name").notNull(),
+  orderAmount: real("order_amount").notNull(),
+  product: text("product").notNull(),
+  installments: integer("installments").notNull(),
+  installmentAmount: real("installment_amount").notNull(),
+  interestRate: real("interest_rate").default(0),
+  paidInstallments: integer("paid_installments").default(0),
+  nextDueDate: timestamp("next_due_date"),
+  creditScore: integer("credit_score"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const investmentOrders = pgTable("investment_orders", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  customerId: text("customer_id").notNull(),
+  productType: text("product_type").notNull(),
+  productName: text("product_name").notNull(),
+  amount: real("amount").notNull(),
+  currency: text("currency").default("NGN"),
+  expectedReturn: real("expected_return"),
+  tenor: integer("tenor"),
+  maturityDate: timestamp("maturity_date"),
+  currentValue: real("current_value"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const remittanceTransactions = pgTable("remittance_transactions", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  corridor: text("corridor").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderCountry: text("sender_country").notNull(),
+  receiverName: text("receiver_name").notNull(),
+  receiverCountry: text("receiver_country").default("NG"),
+  sendAmount: real("send_amount").notNull(),
+  sendCurrency: text("send_currency").notNull(),
+  receiveAmount: real("receive_amount").notNull(),
+  receiveCurrency: text("receive_currency").default("NGN"),
+  fxRate: real("fx_rate").notNull(),
+  fee: real("fee").default(0),
+  partner: text("partner").notNull(),
+  status: text("status").default("completed"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rewardsAccounts = pgTable("rewards_accounts", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().default("tenant-lagos-main"),
+  customerId: text("customer_id").notNull(),
+  tier: text("tier").default("Bronze"),
+  totalPoints: integer("total_points").default(0),
+  availablePoints: integer("available_points").default(0),
+  lifetimePoints: integer("lifetime_points").default(0),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  badges: text("badges").default("[]"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 

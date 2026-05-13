@@ -242,6 +242,7 @@ const PaymentInvestigationWorkspace = lazy(() => import("@/pages/PaymentInvestig
 const StressTestingWorkspace = lazy(() => import("@/pages/StressTestingWorkspace"));
 const APIMarketplaceWorkspace = lazy(() => import("@/pages/APIMarketplaceWorkspace"));
 const ChatbotWorkspace = lazy(() => import("@/pages/ChatbotWorkspace"));
+const GrowthFeaturesWorkspace = lazy(() => import("@/pages/GrowthFeaturesWorkspace"));
 const SignatureVerificationWorkspace = lazy(() => import("@/pages/SignatureVerificationWorkspace"));
 const RemittanceWorkspace = lazy(() => import("@/pages/RemittanceWorkspace"));
 const MicrofinanceWorkspace = lazy(() => import("@/pages/MicrofinanceWorkspace"));
@@ -853,6 +854,7 @@ export default function App() {
         <Route path="/stress-testing" component={renderInAdminShell(StressTestingWorkspace)} />
         <Route path="/api-marketplace" component={renderInAdminShell(APIMarketplaceWorkspace)} />
         <Route path="/chatbot" component={renderInAdminShell(ChatbotWorkspace)} />
+        <Route path="/growth-features" component={renderInAdminShell(GrowthFeaturesWorkspace)} />
         <Route path="/signature-verification" component={renderInAdminShell(SignatureVerificationWorkspace)} />
         <Route path="/remittance" component={renderInAdminShell(RemittanceWorkspace)} />
         <Route path="/microfinance" component={renderInAdminShell(MicrofinanceWorkspace)} />
