@@ -3,6 +3,8 @@ import { Layers, Upload, CheckSquare, Send, UserPlus, RefreshCw, AlertTriangle, 
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const OPERATIONS = [
   { id: 'import_customers', name: 'Bulk Customer Import', icon: UserPlus, desc: 'Import customer records from CSV/XLSX', fields: ['name', 'phone', 'email', 'bvn', 'address', 'kyc_level'] },
@@ -19,6 +21,7 @@ const RECENT_JOBS = [
 ];
 
 export default function BulkOperations() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('bulkoperations', () => apiClient.dashboard.metrics(), { fallback: OPERATIONS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedOp, setSelectedOp] = useState(null);

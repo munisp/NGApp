@@ -3,6 +3,8 @@ import { Zap, CheckCircle, Clock, AlertTriangle, ArrowUp, ArrowDown, User, Brain
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tasks = [
   { id: 'TSK-001', title: 'Follow up: Dangote Trade Finance', priority: 'high', assignee: 'Sarah Okonkwo', due: 'Today', source: 'AI — Deal stage changed', status: 'overdue' },
@@ -25,6 +27,7 @@ const statusConfig = {
 }
 
 export default function SmartTaskAutomation() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('smarttaskautomation', () => apiClient.dashboard.metrics(), { fallback: tasks })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [filter, setFilter] = useState('all')

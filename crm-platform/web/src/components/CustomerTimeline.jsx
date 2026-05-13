@@ -1,5 +1,7 @@
 import { Clock, Mail, Phone, AlertTriangle, DollarSign, Calendar, MessageSquare, CreditCard, FileText, Star } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const timeline = [
   { date: 'May 4, 2026', events: [
@@ -20,6 +22,7 @@ const timeline = [
 ]
 
 export default function CustomerTimeline() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customertimeline', () => apiClient.dashboard.metrics(), { fallback: timeline })
   return (
     <div role="region" aria-label="CustomerTimeline" className="space-y-6">
       <div className="flex items-center justify-between">

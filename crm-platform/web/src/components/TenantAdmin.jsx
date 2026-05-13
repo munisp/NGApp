@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const productIcons = {
   core_banking: Landmark,
@@ -47,6 +49,7 @@ const tierLimits = {
 }
 
 const TenantAdmin = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('tenantadmin', () => apiClient.dashboard.metrics(), { fallback: productIcons })
   const { tenant, allTenants, switchTenant, allProducts } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedTenant, setSelectedTenant] = useState(null)

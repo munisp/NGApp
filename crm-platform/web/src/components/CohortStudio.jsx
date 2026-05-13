@@ -3,6 +3,8 @@ import { Users, TrendingUp, BarChart3, Calendar, Target, ArrowUpRight, Filter } 
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const cohorts = [
   { name: 'Jan 2026 Acquired', size: 1842, retention30: 92, retention90: 78, retention180: 65, avgLTV: '\u20A64.2M', topProduct: 'Business Account', source: 'Organic', color: 'bg-blue-500' },
@@ -13,6 +15,7 @@ const cohorts = [
 ]
 
 export default function CohortStudio() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('cohortstudio', () => apiClient.dashboard.metrics(), { fallback: cohorts })
   const { tenant } = useTenant()
   const { t } = useTranslation()
 

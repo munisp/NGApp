@@ -3,6 +3,8 @@ import { BarChart3, Code, Eye, Copy, Check, ExternalLink, Palette, Settings, Lay
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const dashboards = [
   { id: 'emb-001', name: 'Customer Overview', type: 'KPI Dashboard', embedCount: 48, views: 12400, avgSession: '4.2 min', status: 'active', theme: 'light', widgets: ['Revenue Chart', 'Customer Count', 'NPS Score', 'Health Distribution'], audiences: ['Enterprise Clients', 'Partners'] },
@@ -12,6 +14,7 @@ const dashboards = [
 ]
 
 const EmbeddedAnalytics = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('embeddedanalytics', () => apiClient.dashboard.metrics(), { fallback: dashboards })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('dashboards')

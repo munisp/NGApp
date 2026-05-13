@@ -9,6 +9,7 @@ import {
 import { unifiedCustomerService } from '../services/unifiedCustomerService'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const SourceBadge = ({ source }) => {
   const config = {
@@ -201,6 +202,7 @@ const CustomerDetail = ({ customer, onClose }) => {
 }
 
 const Customer360 = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customer360', () => apiClient.dashboard.metrics(), { fallback: [] })
   const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [search, setSearch] = useState('')

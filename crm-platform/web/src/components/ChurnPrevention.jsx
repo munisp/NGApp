@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const RISK_SEGMENTS = [
   { id: 'critical', label: 'Critical Risk', color: 'red', customers: 842, churnProb: '85-100%', icon: XCircle },
@@ -81,6 +82,7 @@ const MODEL_FEATURES = [
 ];
 
 export default function ChurnPrevention() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('churnprevention', () => apiClient.dashboard.metrics(), { fallback: RISK_SEGMENTS })
   const { t } = useTranslation()
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);

@@ -1,6 +1,8 @@
 import { Banknote } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'NIP-2605-001', cells: ['NIP-2605-001', 'Transfer', '₦2,500,000', 'Successful', 'Dangote Corp', 'Shell Nigeria', 'GTBank', '12:34:22'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function BankingNIPPayments() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('bankingnippayments', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="BankingNIPPayments" className="space-y-6">

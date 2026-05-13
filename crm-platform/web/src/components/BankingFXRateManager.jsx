@@ -1,5 +1,7 @@
 import { DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rates = [
   { pair: 'USD/NGN', bid: 1580.25, ask: 1582.50, change: +2.4, spread: 2.25, volume: '₦42.8B', lastUpdate: '2 sec ago' },
@@ -16,6 +18,7 @@ const alerts = [
 ]
 
 export default function BankingFXRateManager() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('bankingfxratemanager', () => apiClient.dashboard.metrics(), { fallback: rates })
   return (
     <div role="region" aria-label="FXRateManager" className="space-y-6">
       <div className="flex items-center justify-between">

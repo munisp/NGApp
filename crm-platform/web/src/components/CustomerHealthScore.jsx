@@ -4,6 +4,7 @@ import { Heart, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Users, Pho
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantHealthData = {
   'acme-bank': {
@@ -95,6 +96,7 @@ const getScoreBg = (score) => {
 }
 
 export default function CustomerHealthScore() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customerhealthscore', () => apiClient.dashboard.metrics(), { fallback: tenantHealthData })
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')

@@ -3,6 +3,8 @@ import { DollarSign, TrendingUp, TrendingDown, Target, BarChart3, Users, ArrowUp
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const revenueData = {
   forecast: [
@@ -25,6 +27,7 @@ const revenueData = {
 }
 
 export default function RevenueIntelligence() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('revenueintelligence', () => apiClient.dashboard.metrics(), { fallback: revenueData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('forecast')

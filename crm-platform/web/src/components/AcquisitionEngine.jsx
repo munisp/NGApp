@@ -3,6 +3,8 @@ import { TenantContext } from '../contexts/TenantContext';
 import { UserPlus, Target, TrendingUp, Filter, Search, BarChart3, ArrowRight, Phone, Mail, MessageSquare, Users, Zap, DollarSign, Clock, Star, ChevronDown, ChevronUp, Globe } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const LEAD_SOURCES = [
   { id: 'facebook', name: 'Facebook', icon: Globe, color: 'bg-blue-500', leads: 3200, conv: 6.0, cpa: 1250, roas: 12.0 },
@@ -45,6 +47,7 @@ const STAGE_COLORS = {
 };
 
 export default function AcquisitionEngine() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('acquisitionengine', () => apiClient.dashboard.metrics(), { fallback: LEAD_SOURCES })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('funnel');

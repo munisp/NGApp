@@ -3,6 +3,8 @@ import { FileText, Download, Eye, Copy, Clock, CheckCircle, Settings, Plus, Star
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const templates = [
   { id: 'TPL-001', name: 'Sales Proposal', type: 'Proposal', uses: 892, lastUsed: '2 hours ago', fields: 24, pages: '8-12', format: 'PDF', rating: 4.8 },
@@ -20,6 +22,7 @@ const recentDocs = [
 ]
 
 export default function DocGeneration() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('docgeneration', () => apiClient.dashboard.metrics(), { fallback: templates })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('templates')

@@ -1,6 +1,8 @@
 import { AlertTriangle } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'CP-001', cells: ['Shell Trading', 'AA-', '$420M', '$500M', '84%', '0.12%', 'Oil & Gas', 'Normal'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function CommodityCounterpartyRisk() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('commoditycounterpartyrisk', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="CommodityCounterpartyRisk" className="space-y-6">

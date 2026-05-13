@@ -1,6 +1,8 @@
 import { KeyRound } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'CON-84271', cells: ['CON-84271', 'Dangote Corp', 'Paystack', 'Accounts + Transactions', 'Active', '2026-01-15', '2027-01-15', '2 min ago'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function BankingOpenBankingConsent() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('bankingopenbankingconsent', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="BankingOpenBankingConsent" className="space-y-6">

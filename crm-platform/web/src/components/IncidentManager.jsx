@@ -4,6 +4,7 @@ import { AlertOctagon, Plus, Search, Clock, CheckCircle, ArrowUp, AlertTriangle,
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const SEED_INCIDENTS = {
   'tenant-acme-bank': [
@@ -19,6 +20,7 @@ const SEVERITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-100 text-blue-700', investigating: 'bg-purple-100 text-purple-700', resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-100 text-gray-500' };
 
 export default function IncidentManager() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('incidentmanager', () => apiClient.dashboard.metrics(), { fallback: SEED_INCIDENTS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [incidents, setIncidents] = useState(SEED_INCIDENTS[tenantId] || []);

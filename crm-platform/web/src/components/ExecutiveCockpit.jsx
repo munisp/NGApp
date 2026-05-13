@@ -3,6 +3,8 @@ import { Monitor, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Activi
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantCockpitData = {
   'acme-bank': {
@@ -32,6 +34,7 @@ const tenantCockpitData = {
 }
 
 export default function ExecutiveCockpit() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('executivecockpit', () => apiClient.dashboard.metrics(), { fallback: tenantCockpitData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [showNarrative, setShowNarrative] = useState(true)

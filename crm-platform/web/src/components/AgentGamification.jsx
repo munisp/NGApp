@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const LEADERBOARD = [
   {
@@ -95,6 +97,7 @@ const INCENTIVES = [
 ];
 
 export default function AgentGamification() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('agentgamification', () => apiClient.dashboard.metrics(), { fallback: LEADERBOARD })
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('leaderboard');
   const [selectedAgent, setSelectedAgent] = useState(null);

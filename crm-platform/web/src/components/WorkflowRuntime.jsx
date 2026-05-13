@@ -3,6 +3,8 @@ import { Workflow, Play, Pause, CheckCircle, XCircle, Clock, AlertTriangle, Acti
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const workflows = [
   { id: 'WF-001', name: 'Lead Qualification Pipeline', status: 'running', executions: 342, successRate: 96, avgDuration: '2.4s', lastRun: '30 sec ago', trigger: 'New lead created', steps: [
@@ -40,6 +42,7 @@ const workflows = [
 ]
 
 const WorkflowRuntime = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('workflowruntime', () => apiClient.dashboard.metrics(), { fallback: workflows })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('workflows')

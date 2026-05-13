@@ -1,6 +1,8 @@
 import { CreditCard } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'SIM-001', cells: ['8923410012345678', '09012345678', 'Active', 'eSIM', 'Dangote Corp', '2026-01-15', '5G SA', '24.8 GB'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function SIMLifecycle() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('simlifecycle', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="SIMLifecycle" className="space-y-6">

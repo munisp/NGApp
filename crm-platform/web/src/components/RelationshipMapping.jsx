@@ -3,6 +3,8 @@ import { GitBranch, Users, Star, AlertTriangle, TrendingUp, Mail, Phone, Calenda
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 const tenantData = {
   'acme-bank': {
     accounts: [
@@ -35,6 +37,7 @@ const tenantData = {
 }
 const typeIcons = { champion: { icon: Crown, color: 'text-emerald-600 bg-emerald-100' }, influencer: { icon: Star, color: 'text-blue-600 bg-blue-100' }, neutral: { icon: UserCheck, color: 'text-gray-600 bg-gray-100' }, blocker: { icon: Shield, color: 'text-red-600 bg-red-100' } }
 export default function RelationshipMapping() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('relationshipmapping', () => apiClient.dashboard.metrics(), { fallback: tenantData })
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [selectedAccount, setSelectedAccount] = useState(0)

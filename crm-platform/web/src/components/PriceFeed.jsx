@@ -1,6 +1,8 @@
 import { Radio } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'WTI', cells: ['WTI Crude', 'NYMEX', '$78.42', '+1.24%', '842K lots', '2.1M', '2s ago', 'ICE/CME'] },
@@ -19,6 +21,7 @@ function statusColor(s) {
 }
 
 export default function PriceFeed() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('pricefeed', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="PriceFeed" className="space-y-6">

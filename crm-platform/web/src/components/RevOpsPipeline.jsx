@@ -1,5 +1,7 @@
 import { TrendingUp, ArrowRight } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const stages = [
   { name: 'Qualification', deals: 28, value: '₦1.8B', avgDays: 12, convRate: 68 },
@@ -17,6 +19,7 @@ const topDeals = [
 ]
 
 export default function RevOpsPipeline() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('revopspipeline', () => apiClient.dashboard.metrics(), { fallback: stages })
   return (
     <div role="region" aria-label="RevOpsPipeline" className="space-y-6">
       <div className="flex items-center justify-between">

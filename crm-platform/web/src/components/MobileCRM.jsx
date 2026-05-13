@@ -3,6 +3,8 @@ import { Smartphone, Wifi, WifiOff, MapPin, Mic, Zap, Download, CheckCircle, Clo
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const features = [
   { name: 'Offline Mode', status: 'active', icon: WifiOff, color: 'text-emerald-500', metric: '3 pending syncs', desc: 'Work without internet — auto-syncs when reconnected', detail: 'Last synced 2 min ago. 3 records pending upload (2 visit logs, 1 deal update).' },
@@ -14,6 +16,7 @@ const features = [
 ]
 
 export default function MobileCRM() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('mobilecrm', () => apiClient.dashboard.metrics(), { fallback: features })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(null)

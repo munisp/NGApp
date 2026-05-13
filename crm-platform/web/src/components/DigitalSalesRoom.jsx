@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Monitor } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rooms = [
   { id: 'DSR-001', name: 'Dangote — Trade Finance', deal: '₦2.5B', stage: 'Negotiation', visitors: 12, lastVisit: '2 hours ago', docs: 8, engagement: 94, stakeholders: ['CEO', 'CFO', 'Procurement'], recentActivity: ['CFO viewed pricing proposal (2 hrs ago)', 'CEO shared room with board (1 day ago)', 'Legal downloaded NDA (2 days ago)'] },
@@ -9,6 +11,7 @@ const rooms = [
 ]
 
 export default function DigitalSalesRoom() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('digitalsalesroom', () => apiClient.dashboard.metrics(), { fallback: rooms })
   const [selected, setSelected] = useState(null)
 
   return (

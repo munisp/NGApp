@@ -3,6 +3,8 @@ import { Store, Download, Star, CheckCircle, Shield, Code, Users, TrendingUp, Se
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const plugins = [
   { id: 'PLG-001', name: 'Salesforce Connector', category: 'Integration', author: 'CRM Core', installs: 12400, rating: 4.8, status: 'installed', price: 'Free', description: 'Bi-directional sync with Salesforce CRM including contacts, deals, and activities', verified: true },
@@ -16,6 +18,7 @@ const plugins = [
 ]
 
 export default function PluginMarketplace() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('pluginmarketplace', () => apiClient.dashboard.metrics(), { fallback: plugins })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('all')

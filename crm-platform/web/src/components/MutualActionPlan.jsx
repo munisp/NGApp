@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ClipboardList, CheckCircle, Clock, Circle } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const plans = [
   { id: 'MAP-001', deal: 'Dangote — Trade Finance', value: '₦2.5B', closeDate: 'Jun 15', completion: 72, milestones: [
@@ -23,6 +25,7 @@ const plans = [
 ]
 
 export default function MutualActionPlan() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('mutualactionplan', () => apiClient.dashboard.metrics(), { fallback: plans })
   const [expanded, setExpanded] = useState(plans[0].id)
 
   return (

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const REGIONS = [
   {
@@ -82,6 +84,7 @@ const REGIONS = [
 const HEAT_COLORS = ['bg-green-200', 'bg-green-300', 'bg-yellow-300', 'bg-orange-300', 'bg-red-300', 'bg-red-400'];
 
 export default function GeoTargeting() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('geotargeting', () => apiClient.dashboard.metrics(), { fallback: REGIONS })
   const { t } = useTranslation()
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [activeTab, setActiveTab] = useState('map');

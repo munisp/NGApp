@@ -3,6 +3,8 @@ import { Brain, MessageSquare, Sparkles, Send, ArrowRight, CheckCircle, AlertTri
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const suggestions = [
   { type: 'deal', title: 'Schedule QBR with Dangote', confidence: 94, reason: 'No executive contact in 30 days, \u20A62.5B deal at risk', icon: TrendingUp, color: 'border-emerald-500' },
@@ -18,6 +20,7 @@ const conversations = [
 ]
 
 export default function AICoPilot() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('aicopilot', () => apiClient.dashboard.metrics(), { fallback: suggestions })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('suggestions')

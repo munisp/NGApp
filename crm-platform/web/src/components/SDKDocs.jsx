@@ -3,6 +3,8 @@ import {
   Code2, Download, Book, Copy, CheckCircle, Terminal, Globe, Package,
   FileCode, Braces, ChevronRight, ExternalLink
 } from 'lucide-react'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const LANGUAGES = [
   { id: 'python', name: 'Python', icon: '🐍', pkg: 'banking-crm-sdk', install: 'pip install banking-crm-sdk', version: '2.1.0', size: '245 KB' },
@@ -250,6 +252,7 @@ const METHOD_COLORS = {
 }
 
 const SDKDocs = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('sdkdocs', () => apiClient.dashboard.metrics(), { fallback: LANGUAGES })
   const [lang, setLang] = useState('python')
   const [tab, setTab] = useState('quickstart')
   const [copiedId, setCopiedId] = useState(null)

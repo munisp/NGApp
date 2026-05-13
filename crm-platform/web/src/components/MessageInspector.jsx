@@ -1,6 +1,8 @@
 import { Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'MSG-84271234', cells: ['MSG-84271234', 'SMS', '+234801234567', '+234901234567', 'Delivered', '0.8s', '₦4.50', '12:34:22'] },
@@ -23,6 +25,7 @@ function statusColor(s) {
 }
 
 export default function MessageInspector() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('messageinspector', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="MessageInspector" className="space-y-6">

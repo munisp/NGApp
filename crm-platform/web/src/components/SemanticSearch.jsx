@@ -3,6 +3,8 @@ import { Search, Brain, Clock, Filter, X, Users, Building2, MapPin, TrendingUp, 
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const customerDB = {
   'acme-bank': [
@@ -82,6 +84,7 @@ function semanticMatch(customer, query) {
 }
 
 const SemanticSearch = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('semanticsearch', () => apiClient.dashboard.metrics(), { fallback: customerDB })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [query, setQuery] = useState('')

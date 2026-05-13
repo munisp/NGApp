@@ -1,6 +1,8 @@
 import { BarChart2 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'CH-SMS', cells: ['SMS', '29.8M', '98.4%', '$521K', '0.8s', '0.4%', '+12%', 'Healthy'] },
@@ -23,6 +25,7 @@ function statusColor(s) {
 }
 
 export default function ChannelAnalytics() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('channelanalytics', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="ChannelAnalytics" className="space-y-6">

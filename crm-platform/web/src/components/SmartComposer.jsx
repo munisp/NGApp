@@ -3,6 +3,8 @@ import { PenTool, Sparkles, Send, Copy, RotateCw, Globe, Users, Sliders, Mail, M
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const templates = [
   { id: 'follow-up', name: 'Follow-Up Email', desc: 'After meeting or call', icon: Mail },
@@ -66,6 +68,7 @@ const recentDrafts = [
 ]
 
 export default function SmartComposer() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('smartcomposer', () => apiClient.dashboard.metrics(), { fallback: templates })
   const { t } = useTranslation()
   const [selectedTemplate, setSelectedTemplate] = useState('follow-up')
   const [tone, setTone] = useState('Professional')

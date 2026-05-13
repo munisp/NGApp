@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const CHANNEL_CONSENT = [
   { channel: 'SMS', icon: Smartphone, optedIn: 38200, optedOut: 4800, pending: 2100, total: 45100, rate: 84.7 },
@@ -49,6 +51,7 @@ const SUPPRESSION_LISTS = [
 ];
 
 export default function ConsentCompliance() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('consentcompliance', () => apiClient.dashboard.metrics(), { fallback: CHANNEL_CONSENT })
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview');
 

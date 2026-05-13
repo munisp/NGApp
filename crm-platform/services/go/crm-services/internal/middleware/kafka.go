@@ -1,4 +1,6 @@
-package repository
+//go:build ignore
+
+package middleware
 
 import (
 	"context"

@@ -3,6 +3,8 @@ import { Copy, CheckCircle, AlertTriangle, Merge, Eye, Search, Filter, Users, Da
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const duplicates = [
   { id: 'DUP-001', records: ['Dangote Industries Ltd', 'Dangote Industries'], confidence: 98, field: 'Company Name', count: 2, impact: '\u20A62.4B revenue split across records', status: 'pending', matchType: 'Fuzzy name' },
@@ -13,6 +15,7 @@ const duplicates = [
 ]
 
 export default function DuplicateDetection() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('duplicatedetection', () => apiClient.dashboard.metrics(), { fallback: duplicates })
   const { tenant } = useTenant()
   const { t } = useTranslation()
 

@@ -3,6 +3,8 @@ import { Mic, Phone, TrendingUp, TrendingDown, AlertTriangle, Clock, Users, BarC
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantData = {
   'acme-bank': {
@@ -40,6 +42,7 @@ const tenantData = {
 }
 
 export default function ConversationIntelligence() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('conversationintelligence', () => apiClient.dashboard.metrics(), { fallback: tenantData })
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('calls')

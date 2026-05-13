@@ -3,6 +3,8 @@ import { TenantContext } from '../contexts/TenantContext';
 import { Bot, Brain, Shield, TrendingUp, Users, Zap, Activity, AlertTriangle, CheckCircle, Clock, DollarSign, Eye, Settings, Play, Pause, BarChart3, Target, Cpu, MessageSquare, Search as SearchIcon, FileText } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const AGENTS = [
   {
@@ -67,6 +69,7 @@ const AUTONOMY_COLORS = { 'Level 2': 'bg-blue-100 text-blue-700', 'Level 3': 'bg
 const STATUS_COLORS = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', maintenance: 'bg-gray-100 text-gray-600' };
 
 export default function AgenticAI() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('agenticai', () => apiClient.dashboard.metrics(), { fallback: AGENTS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('agents');

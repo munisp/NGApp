@@ -1,6 +1,8 @@
 import { FileSpreadsheet } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'REG-001', cells: ['Capital Adequacy (CAR)', 'CBN', 'Quarterly', 'Submitted', '2026-04-30', '2026-04-28', 'Q1 2026', 'Compliance Head'] },
@@ -23,6 +25,7 @@ function statusColor(s) {
 }
 
 export default function BankingRegulatoryReports() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('bankingregulatoryreports', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="BankingRegulatoryReports" className="space-y-6">

@@ -6,6 +6,8 @@ import {
 import { useTenant } from '../contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const PERMISSIONS = [
   'customers:read', 'customers:write', 'transactions:read', 'transactions:write',
@@ -35,6 +37,7 @@ const SEED_KEYS = {
 }
 
 const APIKeyManager = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('apikeymanager', () => apiClient.dashboard.metrics(), { fallback: PERMISSIONS })
   const { tenant, tenantId } = useTenant()
   const [keys, setKeys] = useState(SEED_KEYS[tenantId] || [])
   const [showCreate, setShowCreate] = useState(false)

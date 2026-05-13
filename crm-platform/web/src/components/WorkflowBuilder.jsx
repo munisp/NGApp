@@ -3,6 +3,8 @@ import { Workflow, Plus, Play, Pause, Trash2, Copy, Settings, ArrowRight, CheckC
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const templates = [
   { id: 'TPL-001', name: 'Lead Qualification', category: 'Sales', steps: 5, uses: 342, rating: 4.8, description: 'Automatically qualify, score, and route new leads' },
@@ -22,6 +24,7 @@ const nodeTypes = [
 ]
 
 export default function WorkflowBuilder() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('workflowbuilder', () => apiClient.dashboard.metrics(), { fallback: templates })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('templates')

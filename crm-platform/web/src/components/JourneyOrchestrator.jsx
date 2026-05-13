@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const STEP_TYPES = [
   { id: 'sms', label: 'Send SMS', icon: Smartphone, color: 'blue' },
@@ -86,6 +88,7 @@ const STATUS_COLORS = {
 };
 
 export default function JourneyOrchestrator() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('journeyorchestrator', () => apiClient.dashboard.metrics(), { fallback: STEP_TYPES })
   const { t } = useTranslation()
   const [journeys] = useState(SAMPLE_JOURNEYS);
   const [selectedJourney, setSelectedJourney] = useState(null);

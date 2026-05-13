@@ -4,6 +4,7 @@ import { ShieldAlert, ShieldCheck, Lock, Eye, AlertTriangle, Ban, Activity, Glob
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const SEED_SECURITY = {
   'tenant-acme-bank': {
@@ -41,6 +42,7 @@ const OWASP_LABELS = {
 };
 
 export default function SecurityDashboard() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('securitydashboard', () => apiClient.dashboard.metrics(), { fallback: SEED_SECURITY })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SEED_SECURITY[tenantId] || SEED_SECURITY['tenant-acme-bank']);

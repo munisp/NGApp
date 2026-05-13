@@ -1,6 +1,8 @@
 import { Code } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'EP-001', cells: ['/v3/messages/send', 'POST', 'Send SMS/WhatsApp message', '42ms', '100/s', 'API Key', 'Active'] },
@@ -21,6 +23,7 @@ function statusColor(s) {
 }
 
 export default function CPaaSAPIExplorer() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('cpaasapiexplorer', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="CPaaSAPIExplorer" className="space-y-6">

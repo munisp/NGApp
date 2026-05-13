@@ -3,6 +3,8 @@ import { Calendar, Plus, Clock, Users, MapPin, Video, ChevronLeft, ChevronRight 
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -19,6 +21,7 @@ const SEED_EVENTS = [
 ];
 
 export default function CalendarView() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('calendarview', () => apiClient.dashboard.metrics(), { fallback: MONTHS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 1)); // May 2025

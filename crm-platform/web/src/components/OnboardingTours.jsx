@@ -1,5 +1,7 @@
 import { Navigation, Play } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tours = [
   { id: 'TOUR-001', name: 'New User Welcome', steps: 5, completionRate: 84, startedBy: 4200, completedBy: 3528, avgTime: '3.2 min', status: 'active' },
@@ -10,6 +12,7 @@ const tours = [
 ]
 
 export default function OnboardingTours() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('onboardingtours', () => apiClient.dashboard.metrics(), { fallback: tours })
   return (
     <div role="region" aria-label="OnboardingTours" className="space-y-6">
       <div className="flex items-center justify-between">

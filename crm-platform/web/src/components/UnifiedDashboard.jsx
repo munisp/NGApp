@@ -12,6 +12,7 @@ import { eventBus } from '../services/eventBus'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
 
@@ -92,6 +93,7 @@ const EventFeed = ({ events }) => (
 )
 
 const UnifiedDashboard = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('unifieddashboard', () => apiClient.dashboard.metrics(), { fallback: COLORS })
   const [metrics, setMetrics] = useState(null)
   const [segments, setSegments] = useState([])
   const [sourceDistribution, setSourceDistribution] = useState([])

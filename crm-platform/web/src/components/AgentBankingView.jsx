@@ -9,6 +9,8 @@ import { AreaChart, Area, BarChart, Bar, Cell,
 import { agentBankingAdapter } from '../services/agentBankingAdapter'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -20,6 +22,7 @@ const formatCurrency = (val) => {
 }
 
 const AgentBankingView = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('agentbankingview', () => apiClient.dashboard.metrics(), { fallback: COLORS })
   const [metrics, setMetrics] = useState(null)
   const [agents, setAgents] = useState([])
   const [customers, setCustomers] = useState([])

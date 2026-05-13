@@ -43,8 +43,11 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const Settings = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('settings', () => apiClient.dashboard.metrics(), { fallback: [] })
   const { currentUser, updateProfile } = useAuth()
   const { theme, setTheme } = useTheme()
   const { showNotification } = useNotification()

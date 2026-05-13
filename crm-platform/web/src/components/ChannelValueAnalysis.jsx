@@ -3,6 +3,8 @@ import { TenantContext } from '../contexts/TenantContext';
 import { Building2, Users, Globe, CreditCard, TrendingUp, DollarSign, Target, BarChart3, ArrowUpRight, ArrowDownRight, Zap, Shield, Landmark, PieChart, Star } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const CHANNELS = {
   core_banking: {
@@ -88,6 +90,7 @@ const BG_MAP = { blue: 'bg-blue-50', green: 'bg-green-50', purple: 'bg-purple-50
 const TEXT_MAP = { blue: 'text-blue-700', green: 'text-green-700', purple: 'text-purple-700', orange: 'text-orange-700' };
 
 export default function ChannelValueAnalysis() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('channelvalueanalysis', () => apiClient.dashboard.metrics(), { fallback: CHANNELS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedChannel, setSelectedChannel] = useState('core_banking');

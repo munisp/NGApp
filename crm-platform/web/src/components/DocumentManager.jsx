@@ -3,6 +3,8 @@ import { FileText, Upload, Search, Filter, Download, Trash2, Eye, CheckCircle, C
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const SEED_DOCS = {
   'tenant-acme-bank': [
@@ -35,6 +37,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DocumentManager() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('documentmanager', () => apiClient.dashboard.metrics(), { fallback: SEED_DOCS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [docs, setDocs] = useState(SEED_DOCS[tenantId] || []);

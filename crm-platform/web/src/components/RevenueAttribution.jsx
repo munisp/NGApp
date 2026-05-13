@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const CAMPAIGN_ROI = [
   {
@@ -75,6 +76,7 @@ const PRODUCT_ATTRIBUTION = [
 ];
 
 export default function RevenueAttribution() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('revenueattribution', () => apiClient.dashboard.metrics(), { fallback: CAMPAIGN_ROI })
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview');
   const [attributionModel, setAttributionModel] = useState('lastTouch');

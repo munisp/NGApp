@@ -1,4 +1,4 @@
-package adapters
+package communication
 
 import (
 	"context"

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { BookOpen, Search, Star, Clock, Eye } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const articles = [
   { id: 'KB-001', title: 'Getting Started with Trade Finance', category: 'Product', views: 4200, rating: 4.8, lastUpdated: '2 days ago', author: 'Product Team', tags: ['trade-finance', 'onboarding'] },
@@ -12,6 +14,7 @@ const articles = [
 ]
 
 export default function KnowledgeBase() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('knowledgebase', () => apiClient.dashboard.metrics(), { fallback: articles })
   const [search, setSearch] = useState('')
 
   const filtered = search ? articles.filter(a => a.title.toLowerCase().includes(search.toLowerCase()) || a.tags.some(t => t.includes(search.toLowerCase()))) : articles

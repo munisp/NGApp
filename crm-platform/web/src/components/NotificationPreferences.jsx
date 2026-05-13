@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const CHANNELS = [
   { id: 'sms', label: 'SMS', icon: Smartphone, color: 'blue', description: 'Text messages to mobile number' },
@@ -43,6 +45,7 @@ const CUSTOMER_SEGMENTS_PREFS = [
 ];
 
 export default function NotificationPreferences() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('notificationpreferences', () => apiClient.dashboard.metrics(), { fallback: CHANNELS })
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview');
   const [preferences, setPreferences] = useState(() => {

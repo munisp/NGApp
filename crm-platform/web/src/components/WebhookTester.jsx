@@ -1,6 +1,8 @@
 import { Webhook } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'EVT-842712', cells: ['EVT-842712', 'message.delivered', 'https://api.acme.com/webhooks', '200 OK', 'Acknowledged', '142ms', '0', '12:34:22'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function WebhookTester() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('webhooktester', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="WebhookTester" className="space-y-6">

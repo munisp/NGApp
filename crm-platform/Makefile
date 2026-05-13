@@ -1,52 +1,57 @@
-.PHONY: dev build test lint clean
+.PHONY: help dev build test lint clean docker-up docker-down
 
-# Frontend
-dev-web:
+help: ## Show available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# --- Frontend ---
+dev: ## Start frontend dev server
 	cd web && npm run dev
 
-build-web:
+build: ## Production build
 	cd web && npm run build
 
-# Go services
-build-go:
-	cd services/go/crm-services && go build ./cmd/...
+test-frontend: ## Run frontend unit tests
+	cd web && npx vitest run
 
-test-go:
+lint-frontend: ## Lint frontend code
+	cd web && npx eslint src/
+
+# --- Go Backend ---
+go-build: ## Build Go services
+	cd services/go/crm-services && go build ./cmd/main.go
+
+go-test: ## Run Go tests
 	cd services/go/crm-services && go test ./...
 
-lint-go:
-	cd services/go/crm-services && golangci-lint run ./...
+go-vet: ## Vet Go code
+	cd services/go/crm-services && go vet ./cmd/
 
-# Rust services
-build-rust:
-	cd services/rust/bulk-sender && cargo build
-	cd services/rust/usage-metering && cargo build
+go-run: ## Run Go services
+	cd services/go/crm-services && go run ./cmd/main.go
 
-test-rust:
-	cd services/rust/bulk-sender && cargo test
-	cd services/rust/usage-metering && cargo test
+# --- Python ---
+py-test: ## Run Python tests
+	cd services/python/sales-agent && python -m pytest -v
+	cd services/python/predictive-analytics && python -m pytest -v
 
-# Python services
-install-python:
-	cd services/python/campaign-analytics && pip install -r requirements.txt
+# --- All Tests ---
+test: test-frontend go-test py-test ## Run all tests
 
-# All
-build: build-go build-rust build-web
+# --- Docker ---
+docker-up: ## Start all Docker services
+	docker compose -f deploy/docker/docker-compose.yml up -d
 
-test: test-go test-rust
+docker-down: ## Stop all Docker services
+	docker compose -f deploy/docker/docker-compose.yml down
 
-# Docker
-docker-up:
-	cd deploy/docker && docker compose up -d
+docker-build: ## Build Docker images
+	docker compose -f deploy/docker/docker-compose.yml build
 
-docker-down:
-	cd deploy/docker && docker compose down
+docker-infra: ## Start infrastructure only (postgres, redis, kafka)
+	docker compose -f deploy/docker/docker-compose.yml up -d postgres redis kafka
 
-docker-build:
-	cd deploy/docker && docker compose build
-
-clean:
-	cd services/go/crm-services && go clean ./...
-	cd services/rust/bulk-sender && cargo clean
-	cd services/rust/usage-metering && cargo clean
-	cd web && rm -rf dist node_modules
+# --- Cleanup ---
+clean: ## Clean build artifacts
+	rm -rf web/dist
+	find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	find . -name "*.pyc" -delete 2>/dev/null || true

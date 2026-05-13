@@ -3,6 +3,8 @@ import { Database, RefreshCw, CheckCircle, Pause, Activity, Globe, Clock, Trendi
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const sources = [
   { id: 'DS-001', name: 'LinkedIn Company Data', status: 'active', records: 28400, matchRate: 94, lastSync: '2 hours ago', fields: ['Company size', 'Industry', 'HQ location', 'Revenue estimate'], costPerRecord: '$0.02' },
@@ -13,6 +15,7 @@ const sources = [
 ]
 
 export default function DataEnrichment() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dataenrichment', () => apiClient.dashboard.metrics(), { fallback: sources })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [selected, setSelected] = useState(null)

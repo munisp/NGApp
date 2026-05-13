@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const feedback = [
   { id: 'FB-001', source: 'NPS Survey', customer: 'Dangote Industries', score: 9, category: 'Product', comment: 'Trade finance platform has transformed our operations. The real-time FX rates are game-changing.', sentiment: 'positive', date: '2 days ago' },
@@ -11,6 +13,7 @@ const feedback = [
 ]
 
 export default function FeedbackLoop() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('feedbackloop', () => apiClient.dashboard.metrics(), { fallback: feedback })
   const [filter, setFilter] = useState('all')
 
   const filtered = filter === 'all' ? feedback : feedback.filter(f => f.sentiment === filter)

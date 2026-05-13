@@ -1,6 +1,8 @@
 import { FileText } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'CFTC-2024-142', cells: ['CFTC-2024-142', 'Large Trader', 'Q1 2026', 'Filed', '2026-04-15', '847 positions', '2026-04-30', 'Compliance Desk'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function CommodityCFTCReporting() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('commoditycftcreporting', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="CommodityCFTCReporting" className="space-y-6">

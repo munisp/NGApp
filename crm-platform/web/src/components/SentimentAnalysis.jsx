@@ -1,5 +1,7 @@
 import { Smile } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const sentimentData = [
   { channel: 'Email', positive: 68, neutral: 22, negative: 10, volume: 12400, trend: 'up' },
@@ -17,6 +19,7 @@ const recentMentions = [
 ]
 
 export default function SentimentAnalysis() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('sentimentanalysis', () => apiClient.dashboard.metrics(), { fallback: sentimentData })
   return (
     <div role="region" aria-label="SentimentAnalysis" className="space-y-6">
       <div className="flex items-center justify-between">

@@ -4,6 +4,7 @@ import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, 
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantData = {
   'acme-bank': {
@@ -53,6 +54,7 @@ const tenantData = {
 const riskBadge = { none: null, competitor: { label: 'Competitor', color: 'bg-orange-100 text-orange-700' }, slow: { label: 'Slow Moving', color: 'bg-amber-100 text-amber-700' }, stalled: { label: 'Stalled', color: 'bg-red-100 text-red-700' }, dead: { label: 'At Risk', color: 'bg-red-100 text-red-700' } }
 
 export default function DealScoring() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dealscoring', () => apiClient.dashboard.metrics(), { fallback: tenantData })
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('pipeline')

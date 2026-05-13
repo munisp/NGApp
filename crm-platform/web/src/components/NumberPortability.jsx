@@ -1,6 +1,8 @@
 import { ArrowRightLeft } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'MNP-8842', cells: ['MNP-8842', '08031234567', 'Port-In', 'MTN', 'AeroTel', 'Completed', '2026-05-02', 'Within SLA'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function NumberPortability() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('numberportability', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="NumberPortability" className="space-y-6">

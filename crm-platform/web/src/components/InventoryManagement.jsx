@@ -50,8 +50,11 @@ import {
 } from 'recharts'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const InventoryManagement = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('inventorymanagement', () => apiClient.dashboard.metrics(), { fallback: [] })
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')

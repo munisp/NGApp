@@ -306,6 +306,7 @@ function App() {
   }
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <ThemeProvider>
@@ -319,15 +320,15 @@ function App() {
                         <Route path="/login" element={<Login />} />
 
                         {/* Core CRM */}
-                        <Route path="/" element={<P><UnifiedDashboard /></P>} />
-                        <Route path="/hub" element={<P><UnifiedDashboard /></P>} />
-                        <Route path="/dashboard" element={<P><Dashboard /></P>} />
+                        <Route path="/" element={<P permission="dashboard:read"><UnifiedDashboard /></P>} />
+                        <Route path="/hub" element={<P permission="dashboard:read"><UnifiedDashboard /></P>} />
+                        <Route path="/dashboard" element={<P permission="dashboard:read"><Dashboard /></P>} />
                         <Route path="/customers" element={<P permission="customers:read"><CustomerManagement /></P>} />
                         <Route path="/customer-360" element={<P permission="customers:read"><Customer360 /></P>} />
-                        <Route path="/crm" element={<P><CRMCore /></P>} />
-                        <Route path="/inventory" element={<P><InventoryManagement /></P>} />
+                        <Route path="/crm" element={<P permission="crm:read"><CRMCore /></P>} />
+                        <Route path="/inventory" element={<P permission="inventory:read"><InventoryManagement /></P>} />
                         <Route path="/analytics" element={<P permission="analytics:read"><Analytics /></P>} />
-                        <Route path="/settings" element={<P><Settings /></P>} />
+                        <Route path="/settings" element={<P permission="settings:read"><Settings /></P>} />
 
                         {/* Banking */}
                         <Route path="/core-banking" element={<P permission="banking:read"><CoreBankingView /></P>} />
@@ -493,6 +494,7 @@ function App() {
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

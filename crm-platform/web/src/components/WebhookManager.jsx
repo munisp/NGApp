@@ -6,6 +6,8 @@ import {
 import { useTenant } from '../contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const EVENT_CATEGORIES = {
   Customer: ['customer.created', 'customer.updated', 'customer.deleted'],
@@ -45,6 +47,7 @@ const SEED_DELIVERIES = [
 ]
 
 const WebhookManager = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('webhookmanager', () => apiClient.dashboard.metrics(), { fallback: EVENT_CATEGORIES })
   const { tenant, tenantId } = useTenant()
   const [subs, setSubs] = useState(SEED_SUBS[tenantId] || [])
   const [tab, setTab] = useState('subscriptions')

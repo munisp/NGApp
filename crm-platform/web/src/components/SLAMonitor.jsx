@@ -4,6 +4,7 @@ import { Timer, AlertTriangle, CheckCircle, TrendingUp, Clock, ArrowUpRight, Arr
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const SLA_DATA = {
   'tenant-acme-bank': {
@@ -27,6 +28,7 @@ const SLA_DATA = {
 };
 
 export default function SLAMonitor() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('slamonitor', () => apiClient.dashboard.metrics(), { fallback: SLA_DATA })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SLA_DATA[tenantId] || SLA_DATA['tenant-acme-bank']);

@@ -9,6 +9,7 @@ import {
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const CHANNELS = [
   { id: 'sms', label: 'SMS', icon: Smartphone, color: 'blue' },
@@ -116,6 +117,7 @@ const AB_TEST_RESULTS = {
 };
 
 export default function CampaignManager() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('campaignmanager', () => apiClient.dashboard.metrics(), { fallback: CHANNELS })
   const { t } = useTranslation()
   const [campaigns, setCampaigns] = useState(SAMPLE_CAMPAIGNS);
   const [selectedCampaign, setSelectedCampaign] = useState(null);

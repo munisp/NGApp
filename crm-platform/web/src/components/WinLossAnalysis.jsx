@@ -3,6 +3,8 @@ import { Target, TrendingUp, TrendingDown, BarChart3, Users, Clock, CheckCircle,
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const deals = [
   { deal: 'Dangote Trade Finance', outcome: 'won', value: '\u20A62.5B', cycle: '38 days', competitors: ['GTBank', 'Zenith'], factors: [{ f: 'CEO relationship', impact: '+' }, { f: 'Competitive pricing', impact: '+' }, { f: 'Fast POC delivery', impact: '+' }] },
@@ -13,6 +15,7 @@ const deals = [
 ]
 
 export default function WinLossAnalysis() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('winlossanalysis', () => apiClient.dashboard.metrics(), { fallback: deals })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [filter, setFilter] = useState('all')

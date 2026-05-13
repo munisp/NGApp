@@ -8,14 +8,10 @@ import (
 )
 
 // CustomerService defines customer operations needed by handlers.
-type CustomerService interface {
-	// Placeholder — implemented in service package
-}
+type CustomerService interface{}
 
 // HealthService defines health check operations.
-type HealthService interface {
-	// Placeholder — implemented in service package
-}
+type HealthService interface{}
 
 // CustomerHandler handles customer HTTP endpoints.
 type CustomerHandler struct {
@@ -28,33 +24,119 @@ func NewCustomerHandler(service CustomerService, logger *logrus.Logger) *Custome
 	return &CustomerHandler{service: service, logger: logger}
 }
 
-// RegisterRoutes adds customer routes to the router group.
-func (h *CustomerHandler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.GET("/customers", h.List)
-	rg.POST("/customers", h.Create)
-	rg.GET("/customers/:id", h.Get)
-	rg.PUT("/customers/:id", h.Update)
-	rg.DELETE("/customers/:id", h.Delete)
-}
-
-func (h *CustomerHandler) List(c *gin.Context) {
+// GetCustomers lists customers for a tenant.
+func (h *CustomerHandler) GetCustomers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": []interface{}{}, "total": 0})
 }
 
-func (h *CustomerHandler) Create(c *gin.Context) {
+// CreateCustomer creates a new customer.
+func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "created"})
 }
 
-func (h *CustomerHandler) Get(c *gin.Context) {
+// GetCustomer retrieves a customer by ID.
+func (h *CustomerHandler) GetCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": c.Param("id")})
 }
 
-func (h *CustomerHandler) Update(c *gin.Context) {
+// UpdateCustomer updates an existing customer.
+func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "status": "updated"})
 }
 
-func (h *CustomerHandler) Delete(c *gin.Context) {
+// DeleteCustomer removes a customer.
+func (h *CustomerHandler) DeleteCustomer(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// GetCustomerProfile returns the full profile for a customer.
+func (h *CustomerHandler) GetCustomerProfile(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "profile": gin.H{}})
+}
+
+// UpdateCustomerProfile updates the profile for a customer.
+func (h *CustomerHandler) UpdateCustomerProfile(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "status": "profile_updated"})
+}
+
+// GetCustomerInteractions lists interactions for a customer.
+func (h *CustomerHandler) GetCustomerInteractions(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"data": []interface{}{}, "total": 0})
+}
+
+// CreateCustomerInteraction adds an interaction for a customer.
+func (h *CustomerHandler) CreateCustomerInteraction(c *gin.Context) {
+	c.JSON(http.StatusCreated, gin.H{"status": "interaction_created"})
+}
+
+// GetCustomerSegments returns segments a customer belongs to.
+func (h *CustomerHandler) GetCustomerSegments(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"data": []interface{}{}, "total": 0})
+}
+
+// UpdateCustomerSegments updates segment assignments.
+func (h *CustomerHandler) UpdateCustomerSegments(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "status": "segments_updated"})
+}
+
+// GetSegmentAnalytics returns analytics grouped by segment.
+func (h *CustomerHandler) GetSegmentAnalytics(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"segments": []interface{}{}})
+}
+
+// GetLifecycleAnalytics returns lifecycle stage analytics.
+func (h *CustomerHandler) GetLifecycleAnalytics(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"lifecycle": gin.H{}})
+}
+
+// GetValueAnalytics returns customer value analysis.
+func (h *CustomerHandler) GetValueAnalytics(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"value": gin.H{}})
+}
+
+// GetChurnAnalytics returns churn risk analytics.
+func (h *CustomerHandler) GetChurnAnalytics(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"churn": gin.H{}})
+}
+
+// SearchCustomers performs a keyword search across customers.
+func (h *CustomerHandler) SearchCustomers(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"data": []interface{}{}, "total": 0})
+}
+
+// AdvancedSearchCustomers handles complex search queries.
+func (h *CustomerHandler) AdvancedSearchCustomers(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"data": []interface{}{}, "total": 0})
+}
+
+// BulkCreateCustomers creates multiple customers in a batch.
+func (h *CustomerHandler) BulkCreateCustomers(c *gin.Context) {
+	c.JSON(http.StatusCreated, gin.H{"created": 0})
+}
+
+// BulkUpdateCustomers updates multiple customers in a batch.
+func (h *CustomerHandler) BulkUpdateCustomers(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"updated": 0})
+}
+
+// BulkDeleteCustomers removes multiple customers.
+func (h *CustomerHandler) BulkDeleteCustomers(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"deleted": 0})
+}
+
+// HandleCustomerEvent processes a customer event.
+func (h *CustomerHandler) HandleCustomerEvent(c *gin.Context) {
+	c.JSON(http.StatusAccepted, gin.H{"status": "event_queued"})
+}
+
+// HandleInteractionEvent processes an interaction event.
+func (h *CustomerHandler) HandleInteractionEvent(c *gin.Context) {
+	c.JSON(http.StatusAccepted, gin.H{"status": "event_queued"})
+}
+
+// HandleSegmentEvent processes a segment change event.
+func (h *CustomerHandler) HandleSegmentEvent(c *gin.Context) {
+	c.JSON(http.StatusAccepted, gin.H{"status": "event_queued"})
 }
 
 // HealthHandler handles health check endpoints.
@@ -68,16 +150,12 @@ func NewHealthHandler(service HealthService, logger *logrus.Logger) *HealthHandl
 	return &HealthHandler{service: service, logger: logger}
 }
 
-// RegisterRoutes adds health routes.
-func (h *HealthHandler) RegisterRoutes(router *gin.Engine) {
-	router.GET("/health", h.Health)
-	router.GET("/ready", h.Ready)
-}
-
-func (h *HealthHandler) Health(c *gin.Context) {
+// HealthCheck verifies the service is running.
+func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "healthy"})
 }
 
-func (h *HealthHandler) Ready(c *gin.Context) {
+// ReadinessCheck verifies all dependencies are available.
+func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ready"})
 }

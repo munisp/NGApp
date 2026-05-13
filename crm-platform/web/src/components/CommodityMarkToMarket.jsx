@@ -1,6 +1,8 @@
 import { BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'BK-CRUDE', cells: ['Crude Oil', 'Energy Desk', '$1.8B', '$420M', '+$8.4M', '+$62M', '$22M', '1.42'] },
@@ -19,6 +21,7 @@ function statusColor(s) {
 }
 
 export default function CommodityMarkToMarket() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('commoditymarktomarket', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="CommodityMarkToMarket" className="space-y-6">

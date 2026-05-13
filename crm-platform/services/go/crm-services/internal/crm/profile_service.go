@@ -1,6 +1,6 @@
 //go:build ignore
 
-package services
+package crm
 
 import (
 	"context"

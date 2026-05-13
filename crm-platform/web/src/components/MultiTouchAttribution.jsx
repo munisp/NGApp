@@ -3,6 +3,8 @@ import { GitBranch, TrendingUp, DollarSign, Users, BarChart3, Mail, Globe, Phone
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const journeys = [
   { deal: 'Dangote — Trade Finance', value: '\u20A62.5B', outcome: 'won', touches: [
@@ -34,6 +36,7 @@ const channelSummary = [
 ]
 
 export default function MultiTouchAttribution() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('multitouchattribution', () => apiClient.dashboard.metrics(), { fallback: journeys })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('journeys')

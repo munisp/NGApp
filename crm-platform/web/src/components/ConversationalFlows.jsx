@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const SAMPLE_FLOWS = [
   {
@@ -89,6 +91,7 @@ const STATUS_COLORS = {
 };
 
 export default function ConversationalFlows() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('conversationalflows', () => apiClient.dashboard.metrics(), { fallback: SAMPLE_FLOWS })
   const { t } = useTranslation()
   const [flows] = useState(SAMPLE_FLOWS);
   const [selectedFlow, setSelectedFlow] = useState(null);

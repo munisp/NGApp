@@ -4,6 +4,7 @@ import { ClipboardCheck, FileText, AlertTriangle, CheckCircle, XCircle, Trending
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const FRAMEWORKS = [
   { id: 'ndpr', name: 'NDPR', full: 'Nigeria Data Protection Regulation', score: 93.8, total: 8, compliant: 7, partial: 1, non: 0, color: 'bg-green-500' },
@@ -24,6 +25,7 @@ const AML_DATA = {
 };
 
 export default function ComplianceDashboard() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('compliancedashboard', () => apiClient.dashboard.metrics(), { fallback: FRAMEWORKS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');

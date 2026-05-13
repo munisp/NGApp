@@ -6,6 +6,8 @@ import {
 import { useTenant } from '../contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const SANDBOX_DATA = {
   'tenant-acme-bank': { customers: 500, agents: 200, txns: 5000, accounts: 1000, corridors: 8, status: 'active', expires: '2025-07-25' },
@@ -30,6 +32,7 @@ const TEST_SCENARIOS = [
 ]
 
 const SandboxManager = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('sandboxmanager', () => apiClient.dashboard.metrics(), { fallback: SANDBOX_DATA })
   const { tenant, tenantId } = useTenant()
   const sandbox = SANDBOX_DATA[tenantId] || SANDBOX_DATA['tenant-nextgen-mfb']
   const [tab, setTab] = useState('environment')

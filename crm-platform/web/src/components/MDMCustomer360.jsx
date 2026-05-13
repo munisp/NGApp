@@ -3,6 +3,8 @@ import { TenantContext } from '../contexts/TenantContext';
 import { Database, Users, Shield, TrendingUp, Search, CheckCircle, AlertTriangle, XCircle, BarChart3, Layers, GitMerge, Fingerprint, Star, ArrowUpRight, Clock, Zap } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const MDM_STATS = {
   totalSourceRecords: 142500,
@@ -60,6 +62,7 @@ const PRODUCT_AFFINITIES = [
 const QUALITY_ICON = (score) => score >= 90 ? <CheckCircle className="w-4 h-4 text-green-500" /> : score >= 70 ? <AlertTriangle className="w-4 h-4 text-yellow-500" /> : <XCircle className="w-4 h-4 text-red-500" />;
 
 export default function MDMCustomer360() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('mdmcustomer360', () => apiClient.dashboard.metrics(), { fallback: MDM_STATS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');

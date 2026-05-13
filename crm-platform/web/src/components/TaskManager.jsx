@@ -3,6 +3,8 @@ import { CheckSquare, Plus, Search, Clock, AlertTriangle, User, Filter, Calendar
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const SEED_TASKS = {
   'tenant-acme-bank': [
@@ -24,6 +26,7 @@ const PRIORITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-50 text-blue-700', in_progress: 'bg-yellow-50 text-yellow-700', review: 'bg-purple-50 text-purple-700', done: 'bg-green-50 text-green-700', blocked: 'bg-red-50 text-red-700', cancelled: 'bg-gray-50 text-gray-400' };
 
 export default function TaskManager() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('taskmanager', () => apiClient.dashboard.metrics(), { fallback: SEED_TASKS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [tasks, setTasks] = useState(SEED_TASKS[tenantId] || []);

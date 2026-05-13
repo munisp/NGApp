@@ -3,6 +3,8 @@ import { Brain, TrendingUp, TrendingDown, Target, Users, DollarSign, AlertTriang
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantPredictions = {
   'acme-bank': {
@@ -37,6 +39,7 @@ const tenantPredictions = {
 }
 
 const PredictiveAnalytics = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('predictiveanalytics', () => apiClient.dashboard.metrics(), { fallback: tenantPredictions })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('win')

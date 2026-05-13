@@ -205,8 +205,7 @@ func main() {
 	}
 
 	// Close database connections
-	sqlDB, _ := db.DB()
-	if err := sqlDB.Close(); err != nil {
+	if err := db.Close(); err != nil {
 		logger.Errorf("Failed to close database connection: %v", err)
 	}
 

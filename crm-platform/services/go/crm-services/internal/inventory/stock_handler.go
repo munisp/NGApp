@@ -1,4 +1,4 @@
-package handlers
+package inventory
 
 import (
 	"net/http"

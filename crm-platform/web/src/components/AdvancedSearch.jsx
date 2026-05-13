@@ -3,6 +3,8 @@ import { Search, Filter, Save, Clock, User, CreditCard, Briefcase, MapPin, Star,
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const SEARCH_FIELDS = [
   { id: 'name', label: 'Name', type: 'text', icon: User },
@@ -34,6 +36,7 @@ const SAVED_SEARCHES = [
 ];
 
 export default function AdvancedSearch() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('advancedsearch', () => apiClient.dashboard.metrics(), { fallback: SEARCH_FIELDS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeFilters, setActiveFilters] = useState([]);

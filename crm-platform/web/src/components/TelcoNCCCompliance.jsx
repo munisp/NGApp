@@ -1,6 +1,8 @@
 import { Shield } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'NCC-01', cells: ['SIM Registration Compliance', 'Compliant', '2026-06-30', '98.2%', '2026-04-28', 'Subscriber', 'Low'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function TelcoNCCCompliance() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('telconcccompliance', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="TelcoNCCCompliance" className="space-y-6">

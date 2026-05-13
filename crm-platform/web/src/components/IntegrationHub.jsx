@@ -8,6 +8,8 @@ import { BarChart, Bar, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, 
 import { eventBus } from '../services/eventBus'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const TOPIC_COLORS = {
   'core-banking': '#3b82f6',
@@ -17,6 +19,7 @@ const TOPIC_COLORS = {
 }
 
 const IntegrationHub = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('integrationhub', () => apiClient.dashboard.metrics(), { fallback: TOPIC_COLORS })
   const [topicStats, setTopicStats] = useState({})
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)

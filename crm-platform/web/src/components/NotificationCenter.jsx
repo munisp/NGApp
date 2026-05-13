@@ -28,8 +28,11 @@ import {
 import { useNotification } from '../contexts/NotificationContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const NotificationCenter = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('notificationcenter', () => apiClient.dashboard.metrics(), { fallback: [] })
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotification()
   const [isOpen, setIsOpen] = useState(false)
   const [filter, setFilter] = useState('all') // all, unread, important, system

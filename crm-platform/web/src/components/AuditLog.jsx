@@ -4,6 +4,7 @@ import { Shield, Search, Filter, Download, AlertTriangle, CheckCircle, XCircle, 
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const SEED_EVENTS = {
   'tenant-acme-bank': [
@@ -37,6 +38,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function AuditLog() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('auditlog', () => apiClient.dashboard.metrics(), { fallback: SEED_EVENTS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [events, setEvents] = useState(SEED_EVENTS[tenantId] || []);

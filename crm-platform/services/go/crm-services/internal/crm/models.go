@@ -1,4 +1,4 @@
-package models
+package crm
 
 import (
 	"time"

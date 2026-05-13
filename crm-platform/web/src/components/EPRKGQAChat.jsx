@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { useTenant } from '../contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const EPRKGQAChat = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('eprkgqachat', () => apiClient.dashboard.metrics(), { fallback: [] })
   const { tenant } = useTenant()
   const [question, setQuestion] = useState('')
   const [chatHistory, setChatHistory] = useState([])

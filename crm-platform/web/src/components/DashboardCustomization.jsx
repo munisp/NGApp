@@ -3,6 +3,8 @@ import { LayoutGrid, Settings, Plus, GripVertical, Eye, EyeOff, Save, RotateCcw,
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const AVAILABLE_WIDGETS = [
   { id: 'customer-overview', name: 'Customer Overview', category: 'customers', size: '2x1', desc: 'Total customers, growth trend, active/dormant ratio' },
@@ -43,6 +45,7 @@ const ROLE_PRESETS = [
 ];
 
 export default function DashboardCustomization() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dashboardcustomization', () => apiClient.dashboard.metrics(), { fallback: AVAILABLE_WIDGETS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);

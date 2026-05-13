@@ -3,6 +3,8 @@ import { Inbox, Mail, MessageSquare, Phone, Send, Search, Filter, Star, Clock, C
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantInboxData = {
   'acme-bank': {
@@ -44,6 +46,7 @@ const channelColors = { whatsapp: 'text-green-600 bg-green-100', email: 'text-bl
 const priorityColors = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-700' }
 
 export default function OmnichannelInbox() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('omnichannelinbox', () => apiClient.dashboard.metrics(), { fallback: tenantInboxData })
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [selectedConv, setSelectedConv] = useState('conv-1')

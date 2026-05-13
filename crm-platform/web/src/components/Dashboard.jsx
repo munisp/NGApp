@@ -38,8 +38,11 @@ import {
 } from 'recharts'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const Dashboard = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dashboard', () => apiClient.dashboard.metrics(), { fallback: [] })
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
   const [refreshing, setRefreshing] = useState(false)

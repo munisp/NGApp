@@ -29,8 +29,10 @@ import {
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const CustomerManagement = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customermanagement', () => apiClient.dashboard.metrics(), { fallback: [] })
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')

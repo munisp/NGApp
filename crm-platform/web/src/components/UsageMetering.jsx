@@ -7,6 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useTenant } from '../contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const TIER_QUOTAS = {
   trial: { monthly: 10000, daily: 500, rps: 10, bandwidth: 1, price: 0, overage: 0 },
@@ -70,6 +72,7 @@ const ENDPOINT_BREAKDOWN = {
 const STATUS_COLORS = { '2xx': '#10b981', '4xx': '#f59e0b', '5xx': '#ef4444' }
 
 const UsageMetering = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('usagemetering', () => apiClient.dashboard.metrics(), { fallback: TIER_QUOTAS })
   const { tenant, tenantId } = useTenant()
   const [tab, setTab] = useState('overview')
   const usage = TENANT_USAGE[tenantId] || TENANT_USAGE['tenant-nextgen-mfb']

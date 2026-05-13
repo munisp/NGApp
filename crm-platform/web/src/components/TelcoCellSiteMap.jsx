@@ -1,6 +1,8 @@
 import { MapPin, AlertTriangle, CheckCircle, WifiOff } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantSiteData = {
   'aerotel': { totalSites: 847, operational: 812, degraded: 28, down: 7 },
@@ -16,6 +18,7 @@ const sites = [
 ]
 
 export default function TelcoCellSiteMap() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('telcocellsitemap', () => apiClient.dashboard.metrics(), { fallback: tenantSiteData })
   const { tenant } = useTenant()
   const tenantSlug = tenant?.slug || 'aerotel'
   const stats = tenantSiteData[tenantSlug] || tenantSiteData['aerotel']

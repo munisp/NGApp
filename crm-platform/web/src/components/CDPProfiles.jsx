@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Database, Activity, Link } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const profiles = [
   { id: 'CDP-001', name: 'Dangote Industries', type: 'Enterprise', identities: 24, events: 12400, sources: ['CRM', 'Email', 'Web', 'Support', 'Billing'], segments: ['Enterprise', 'High-Value', 'Trade Finance'], ltv: '₦2.4B', health: 92, lastSeen: '2 hours ago' },
@@ -10,6 +12,7 @@ const profiles = [
 ]
 
 export default function CDPProfiles() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('cdpprofiles', () => apiClient.dashboard.metrics(), { fallback: profiles })
   const [selected, setSelected] = useState(null)
 
   return (

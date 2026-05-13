@@ -3,6 +3,8 @@ import { Layout, Plus, Eye, Settings, Code, CheckCircle, Clock, Globe, Users, La
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const apps = [
   { id: 'APP-001', name: 'Client Portal', status: 'published', views: 12400, components: 18, lastUpdated: '2 days ago', pages: 8, users: 3200, description: 'Self-service portal for clients to view accounts, statements, and raise requests' },
@@ -21,6 +23,7 @@ const componentLibrary = [
 ]
 
 export default function CustomerAppBuilder() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customerappbuilder', () => apiClient.dashboard.metrics(), { fallback: apps })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [selected, setSelected] = useState(null)

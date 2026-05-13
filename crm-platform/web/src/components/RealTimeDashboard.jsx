@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const CHANNELS = [
   { id: 'sms', label: 'SMS', icon: Smartphone, color: 'blue' },
@@ -39,6 +40,7 @@ function generateEvent(campaigns) {
 }
 
 export default function RealTimeDashboard() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('realtimedashboard', () => apiClient.dashboard.metrics(), { fallback: CHANNELS })
   const { t } = useTranslation()
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState([]);

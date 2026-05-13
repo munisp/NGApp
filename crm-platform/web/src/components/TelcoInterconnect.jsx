@@ -7,6 +7,8 @@ import {
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const seedData = {
   'aerotel': {
@@ -70,6 +72,7 @@ const formatMinutes = (n) => {
 }
 
 const TelcoInterconnect = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('telcointerconnect', () => apiClient.dashboard.metrics(), { fallback: seedData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('partners')

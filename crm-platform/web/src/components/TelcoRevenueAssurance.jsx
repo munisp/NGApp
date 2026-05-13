@@ -1,6 +1,8 @@
 import { TrendingUp } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'RA-2401', cells: ['RA-2401', 'CDR Gap', '₦42.8M', 'Investigating', 'Mediation', '2026-04-28', 'Revenue Team A', 'Critical'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function TelcoRevenueAssurance() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('telcorevenueassurance', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="TelcoRevenueAssurance" className="space-y-6">

@@ -3,6 +3,8 @@ import { Shield, Activity, AlertTriangle, CheckCircle, XCircle, Eye, Clock, User
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const governanceData = {
   stats: { totalAgents: 4, activeAgents: 3, actionsToday: 276, pendingApproval: 8, costToday: '$12.40', humanOverrides: 3 },
@@ -36,6 +38,7 @@ const governanceData = {
 }
 
 const AgentGovernanceDashboard = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('agentgovernancedashboard', () => apiClient.dashboard.metrics(), { fallback: governanceData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('agents')

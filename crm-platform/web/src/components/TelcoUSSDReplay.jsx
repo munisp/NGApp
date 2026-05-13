@@ -1,6 +1,8 @@
 import { Terminal } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'USS-90012', cells: ['USS-90012', '08031234567', '*123#', '5 steps', '28s', 'Completed', '2026-05-04 12:34', 'GW-Lagos-01'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function TelcoUSSDReplay() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('telcoussdreplay', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="TelcoUSSDReplay" className="space-y-6">

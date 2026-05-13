@@ -1,6 +1,8 @@
 import { BookOpen } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'T-284712', cells: ['T-284712', 'WTI Jun26', 'Buy', '500 lots', '$78.42', '$39.2M', 'Filled', '12:34:22.847'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function TradeBlotter() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('tradeblotter', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="TradeBlotter" className="space-y-6">

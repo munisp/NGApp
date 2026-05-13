@@ -3,6 +3,8 @@ import { Brain, Activity, Shield, Target, Users, Mail, Phone, MessageSquare, Tre
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantAgentData = {
   'acme-bank': {
@@ -48,6 +50,7 @@ const stages = ['Qualification', 'Discovery', 'Proposal', 'Negotiation', 'Closin
 const stageColors = { Qualification: 'bg-gray-500', Discovery: 'bg-blue-500', Proposal: 'bg-indigo-500', Negotiation: 'bg-purple-500', Closing: 'bg-emerald-500' }
 
 const SalesAgentDashboard = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('salesagentdashboard', () => apiClient.dashboard.metrics(), { fallback: tenantAgentData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('pipeline')

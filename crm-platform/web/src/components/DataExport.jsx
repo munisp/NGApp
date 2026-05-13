@@ -3,6 +3,8 @@ import { Download, Database, FileText, Table, Settings, Clock, CheckCircle, Play
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const EXPORT_TYPES = [
   { id: 'customers', name: 'Customer Records', icon: '👤', fields: ['customer_id', 'name', 'email', 'phone', 'bvn_hash', 'status', 'risk_score', 'kyc_level', 'products', 'created_at'], estimated: '45,230 records' },
@@ -26,6 +28,7 @@ const RECENT_EXPORTS = [
 ];
 
 export default function DataExport() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dataexport', () => apiClient.dashboard.metrics(), { fallback: EXPORT_TYPES })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedType, setSelectedType] = useState(null);

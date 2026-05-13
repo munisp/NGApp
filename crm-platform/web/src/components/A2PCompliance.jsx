@@ -1,6 +1,8 @@
 import { ShieldCheck } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const rows = [
     { id: 'SID-001', cells: ['ACMEBANK', 'Acme Bank', 'Approved', 'SMS', '142K', '0.02%', '2024-01-15', 'Passed'] },
@@ -22,6 +24,7 @@ function statusColor(s) {
 }
 
 export default function A2PCompliance() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('a2pcompliance', () => apiClient.dashboard.metrics(), { fallback: rows })
   const { tenant } = useTenant()
   return (
     <div role="region" aria-label="A2PCompliance" className="space-y-6">

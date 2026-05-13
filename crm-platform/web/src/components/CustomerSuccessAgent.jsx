@@ -3,6 +3,8 @@ import { Heart, Shield, Activity, AlertTriangle, TrendingDown, TrendingUp, Users
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const tenantCSData = {
   'acme-bank': {
@@ -47,6 +49,7 @@ const tenantCSData = {
 }
 
 const CustomerSuccessAgent = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customersuccessagent', () => apiClient.dashboard.metrics(), { fallback: tenantCSData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('at-risk')

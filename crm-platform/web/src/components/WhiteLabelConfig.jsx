@@ -3,6 +3,8 @@ import { Palette, Globe, Users, Eye, CheckCircle, Settings, Image, Type } from '
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const resellers = [
   { id: 'WL-001', name: 'PayTech Partners', domain: 'crm.paytech.ng', primaryColor: '#2563EB', users: 1240, status: 'active', plan: 'Enterprise', mrr: '₦2.4M', features: ['Custom domain', 'Logo', 'Email templates', 'SSO'] },
@@ -12,6 +14,7 @@ const resellers = [
 ]
 
 export default function WhiteLabelConfig() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('whitelabelconfig', () => apiClient.dashboard.metrics(), { fallback: resellers })
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [selected, setSelected] = useState(null)

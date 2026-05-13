@@ -3,6 +3,8 @@ import { Play, MapPin, ArrowRight, CheckCircle, XCircle, Clock, AlertTriangle, U
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 const journeys = [
   { id: 'J-001', customer: 'Chinedu Okafor', type: 'SME Loan Onboarding', status: 'completed', startDate: 'Jan 15', endDate: 'Feb 12', days: 28, designedDays: 14, steps: [
     { name: 'Application Received', status: 'completed', actual: 'Jan 15', designed: 'Day 1', duration: '0d', channel: 'Web' },
@@ -29,6 +31,7 @@ const journeys = [
 ]
 const stats = { totalJourneys: 4280, completed: 3420, inProgress: 640, dropped: 220, avgDuration: '18 days', designedAvg: '10 days', bottleneckRate: '34%' }
 export default function JourneyReplay() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('journeyreplay', () => apiClient.dashboard.metrics(), { fallback: journeys })
   const { t } = useTranslation()
   const [selectedJourney, setSelectedJourney] = useState('J-001')
   const journey = journeys.find(j => j.id === selectedJourney)

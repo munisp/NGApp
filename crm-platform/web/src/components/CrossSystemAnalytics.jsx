@@ -13,6 +13,7 @@ import { agentBankingAdapter } from '../services/agentBankingAdapter'
 import { remittanceAdapter } from '../services/remittanceAdapter'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { apiClient } from '@/lib/apiClient'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -31,6 +32,7 @@ const formatNumber = (val) => {
 }
 
 const CrossSystemAnalytics = () => {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('crosssystemanalytics', () => apiClient.dashboard.metrics(), { fallback: COLORS })
   const [metrics, setMetrics] = useState(null)
   const [segments, setSegments] = useState([])
   const [crossSell, setCrossSell] = useState([])

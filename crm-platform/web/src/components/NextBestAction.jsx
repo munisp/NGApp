@@ -1,5 +1,7 @@
 import { Lightbulb, Zap } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const actions = [
   { id: 'NBA-001', customer: 'Dangote Industries', action: 'Schedule Executive Business Review', type: 'retention', impact: '₦2.5B ARR', confidence: 94, reason: 'No exec meeting in 45 days. Health trending down. Contract renewal in 60 days.', urgency: 'high' },
@@ -13,6 +15,7 @@ const urgencyColor = { critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dar
 const typeColor = { retention: 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400', expansion: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400', nurture: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' }
 
 export default function NextBestAction() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('nextbestaction', () => apiClient.dashboard.metrics(), { fallback: actions })
 
   return (
     <div role="region" aria-label="NextBestAction" className="space-y-6">

@@ -3,6 +3,8 @@ import { TenantContext } from '../contexts/TenantContext';
 import { Share2, Globe, MessageSquare, TrendingUp, DollarSign, Eye, MousePointer, Users, Target, Megaphone, BarChart3, Calendar, Play, Pause, Plus, ArrowUpRight, Heart, Repeat2 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
+import { apiClient } from '@/lib/apiClient'
 
 const PLATFORMS = [
   { id: 'facebook', name: 'Facebook', color: 'bg-blue-600', textColor: 'text-blue-600', bgLight: 'bg-blue-50', followers: '125K', engagement: '4.2%', reach: '450K' },
@@ -34,6 +36,7 @@ const CONTENT_CALENDAR = [
 const STATUS_COLORS = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', completed: 'bg-gray-100 text-gray-600', draft: 'bg-blue-100 text-blue-700', scheduled: 'bg-purple-100 text-purple-700', approved: 'bg-teal-100 text-teal-700' };
 
 export default function SocialMediaHub() {
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('socialmediahub', () => apiClient.dashboard.metrics(), { fallback: PLATFORMS })
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');
