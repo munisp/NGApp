@@ -5038,4 +5038,24 @@ export const kpiHierarchy = pgTable("kpi_hierarchy", {
   index("kpi_hierarchy_child_idx").on(t.childRoleKey),
 ]);
 
+// ─── GL → eFASS MAPPING TABLE ──────────────────────────────────────────────
+// Maps GL account code ranges to CBN eFASS MBR form lines
+export const efassMapping = pgTable("efassMapping", {
+  id: serial("id").primaryKey(),
+  glCodeStart: varchar("glCodeStart", { length: 32 }).notNull(),
+  glCodeEnd: varchar("glCodeEnd", { length: 32 }).notNull(),
+  mbrForm: varchar("mbrForm", { length: 16 }).notNull(),
+  mbrLine: integer("mbrLine").notNull(),
+  lineName: varchar("lineName", { length: 191 }).notNull(),
+  reportCategory: text("reportCategory").notNull(),
+  aggregationType: varchar("aggregationType", { length: 16 }).notNull().default("sum"),
+  signConvention: varchar("signConvention", { length: 8 }).notNull().default("normal"),
+  cbnCode: varchar("cbnCode", { length: 32 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  efassMbrIdx: index("efass_mbr_idx").on(table.mbrForm, table.mbrLine),
+  efassGlRangeIdx: index("efass_gl_range_idx").on(table.glCodeStart, table.glCodeEnd),
+}));
+
 
