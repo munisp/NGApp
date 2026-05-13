@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -89,11 +90,24 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
-	// CORS configuration
+	// CORS configuration — restrict to known origins (env-configurable)
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true
+	allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if allowedOrigins != "" {
+		corsConfig.AllowOrigins = strings.Split(allowedOrigins, ",")
+	} else {
+		corsConfig.AllowOrigins = []string{
+			"https://crm.platform.ng",
+			"https://*.crm.platform.ng",
+			"http://localhost:5173",
+			"http://localhost:3000",
+		}
+	}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "X-Requested-With"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID", "X-Request-ID", "X-CSRF-Token"}
+	corsConfig.ExposeHeaders = []string{"X-Request-ID", "X-Total-Count"}
+	corsConfig.AllowCredentials = true
+	corsConfig.MaxAge = 3600
 	router.Use(cors.New(corsConfig))
 
 	// Prometheus metrics endpoint

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-runtime
+  namespace: crm
+  labels:
+    app: workflow-runtime
+    platform: crm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: workflow-runtime
+  template:
+    metadata:
+      labels:
+        app: workflow-runtime
+        platform: crm
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8108"
+    spec:
+      containers:
+        - name: workflow-runtime
+          image: crm-platform/workflow-runtime:latest
+          ports:
+            - containerPort: 8108
+          env:
+            - name: PORT
+              value: "8108"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-secrets
+                  key: redis-url
+            - name: KAFKA_BROKERS
+              value: kafka.crm.svc:9092
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8108
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8108
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-runtime-service
+  namespace: crm
+spec:
+  selector:
+    app: workflow-runtime
+  ports:
+    - port: 8108
+      targetPort: 8108
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: workflow-runtime-hpa
+  namespace: crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: workflow-runtime
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

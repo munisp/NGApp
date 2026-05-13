@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useApiData } from '@/hooks/useApiData'
 import { motion } from 'framer-motion'
 import {
   BarChart3, TrendingUp, Users, DollarSign, Target, Globe, Landmark,

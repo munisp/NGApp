@@ -1,0 +1,88 @@
+{
+  "dashboard": {
+    "title": "CRM Platform Overview",
+    "uid": "crm-overview",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job='crm-core'}[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job='crm-core',status=~'5..'}[5m])"
+          }
+        ]
+      },
+      {
+        "title": "P99 Latency",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job='crm-core'}[5m]))"
+          }
+        ]
+      },
+      {
+        "title": "Active Tenants",
+        "type": "stat",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "count(count by (tenant_id) (http_requests_total{job='crm-core'}))"
+          }
+        ]
+      },
+      {
+        "title": "DB Pool Usage",
+        "type": "gauge",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "db_pool_in_use / db_pool_max_open * 100"
+          }
+        ]
+      },
+      {
+        "title": "Redis Hit Rate",
+        "type": "gauge",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "redis_cache_hits / (redis_cache_hits + redis_cache_misses) * 100"
+          }
+        ]
+      },
+      {
+        "title": "Kafka Consumer Lag",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "kafka_consumer_group_lag"
+          }
+        ]
+      },
+      {
+        "title": "API Response Codes",
+        "type": "piechart",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum by (status) (http_requests_total{job='crm-core'})"
+          }
+        ]
+      }
+    ]
+  }
+}

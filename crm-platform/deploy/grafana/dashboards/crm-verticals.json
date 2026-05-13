@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "CRM Vertical Metrics",
+    "uid": "crm-verticals",
+    "panels": [
+      {
+        "title": "Banking \u2014 Transactions/min",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(banking_transactions_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Telco \u2014 Active Subscribers",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "telco_active_subscribers"
+          }
+        ]
+      },
+      {
+        "title": "Commodity \u2014 Trade Volume (USD)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(commodity_trade_volume_usd)"
+          }
+        ]
+      },
+      {
+        "title": "CPaaS \u2014 Messages/sec",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(cpaas_messages_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "TigerBeetle \u2014 Transfers/sec",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(tigerbeetle_transfers_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Mojaloop \u2014 Payment Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "mojaloop_successful_transfers / mojaloop_total_transfers * 100"
+          }
+        ]
+      }
+    ]
+  }
+}

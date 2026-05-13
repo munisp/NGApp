@@ -334,20 +334,20 @@ function App() {
                         <Route path="/agent-banking" element={<P permission="banking:read"><AgentBankingView /></P>} />
                         <Route path="/remittance" element={<P permission="banking:read"><RemittanceView /></P>} />
                         {/* Telco Vertical */}
-                        <Route path="/telco-subscribers" element={<P><TelcoSubscriberManagement /></P>} />
-                        <Route path="/telco-field-ops" element={<P><TelcoFieldOps /></P>} />
-                        <Route path="/telco-interconnect" element={<P><TelcoInterconnect /></P>} />
+                        <Route path="/telco-subscribers" element={<P permission="customers:read"><TelcoSubscriberManagement /></P>} />
+                        <Route path="/telco-field-ops" element={<P permission="operations:read"><TelcoFieldOps /></P>} />
+                        <Route path="/telco-interconnect" element={<P permission="operations:read"><TelcoInterconnect /></P>} />
 
                         {/* Commodity Vertical */}
-                        <Route path="/commodity-trading" element={<P><CommodityTradingDesk /></P>} />
-                        <Route path="/commodity-broker" element={<P><CommodityBrokerPortal /></P>} />
-                        <Route path="/commodity-settlement" element={<P><CommoditySettlement /></P>} />
+                        <Route path="/commodity-trading" element={<P permission="analytics:read"><CommodityTradingDesk /></P>} />
+                        <Route path="/commodity-broker" element={<P permission="analytics:read"><CommodityBrokerPortal /></P>} />
+                        <Route path="/commodity-settlement" element={<P permission="analytics:read"><CommoditySettlement /></P>} />
 
                         {/* CPaaS Vertical */}
-                        <Route path="/cpaas-channels" element={<P><CPaaSChannelDashboard /></P>} />
-                        <Route path="/cpaas-developers" element={<P><CPaaSDeveloperOnboarding /></P>} />
+                        <Route path="/cpaas-channels" element={<P permission="analytics:read"><CPaaSChannelDashboard /></P>} />
+                        <Route path="/cpaas-developers" element={<P permission="admin:full"><CPaaSDeveloperOnboarding /></P>} />
 
-                        <Route path="/integrations" element={<P><IntegrationHub /></P>} />
+                        <Route path="/integrations" element={<P permission="admin:full"><IntegrationHub /></P>} />
                         <Route path="/cross-analytics" element={<P permission="analytics:read"><CrossSystemAnalytics /></P>} />
 
                         {/* Campaign & Engagement */}
@@ -359,7 +359,7 @@ function App() {
                         <Route path="/geo-targeting" element={<P permission="campaigns:read"><GeoTargeting /></P>} />
                         <Route path="/ab-testing" element={<P permission="campaigns:read"><ABTestAutomation /></P>} />
                         <Route path="/compliance" element={<P permission="compliance:read"><ConsentCompliance /></P>} />
-                        <Route path="/preferences" element={<P><NotificationPreferences /></P>} />
+                        <Route path="/preferences" element={<P permission="customers:read"><NotificationPreferences /></P>} />
                         <Route path="/revenue" element={<P permission="analytics:read"><RevenueAttribution /></P>} />
                         <Route path="/gamification" element={<P permission="campaigns:read"><AgentGamification /></P>} />
                         <Route path="/tenant-admin" element={<P permission="admin:full"><TenantAdmin /></P>} />
@@ -367,7 +367,7 @@ function App() {
                         {/* Developer Portal */}
                         <Route path="/api-keys" element={<P permission="admin:full"><APIKeyManager /></P>} />
                         <Route path="/usage" element={<P permission="analytics:read"><UsageMetering /></P>} />
-                        <Route path="/sdk-docs" element={<P><SDKDocs /></P>} />
+                        <Route path="/sdk-docs" element={<P permission="analytics:read"><SDKDocs /></P>} />
                         <Route path="/webhooks" element={<P permission="admin:full"><WebhookManager /></P>} />
                         <Route path="/sandbox" element={<P permission="admin:full"><SandboxManager /></P>} />
 
@@ -391,88 +391,88 @@ function App() {
                         <Route path="/audit-log" element={<P permission="audit:read"><AuditLog /></P>} />
                         <Route path="/security-dashboard" element={<P permission="security:read"><SecurityDashboard /></P>} />
                         <Route path="/compliance-dashboard" element={<P permission="compliance:read"><ComplianceDashboard /></P>} />
-                        <Route path="/documents" element={<P><DocumentManager /></P>} />
-                        <Route path="/tasks" element={<P><TaskManager /></P>} />
+                        <Route path="/documents" element={<P permission="customers:read"><DocumentManager /></P>} />
+                        <Route path="/tasks" element={<P permission="customers:read"><TaskManager /></P>} />
                         <Route path="/sla-monitor" element={<P permission="analytics:read"><SLAMonitor /></P>} />
                         <Route path="/incidents" element={<P permission="security:read"><IncidentManager /></P>} />
                         <Route path="/data-export" element={<P permission="admin:full"><DataExport /></P>} />
                         <Route path="/bulk-operations" element={<P permission="admin:full"><BulkOperations /></P>} />
-                        <Route path="/search" element={<P><AdvancedSearch /></P>} />
-                        <Route path="/calendar" element={<P><CalendarView /></P>} />
-                        <Route path="/customize-dashboard" element={<P><DashboardCustomization /></P>} />
+                        <Route path="/search" element={<P permission="customers:read"><AdvancedSearch /></P>} />
+                        <Route path="/calendar" element={<P permission="customers:read"><CalendarView /></P>} />
+                        <Route path="/customize-dashboard" element={<P permission="admin:full"><DashboardCustomization /></P>} />
 
                         {/* Next-Gen CRM — Tier 1: AI-Native */}
-                        <Route path="/health-scoring" element={<P><CustomerHealthScore /></P>} />
-                        <Route path="/omnichannel-inbox" element={<P><OmnichannelInbox /></P>} />
-                        <Route path="/conversation-intelligence" element={<P><ConversationIntelligence /></P>} />
-                        <Route path="/deal-scoring" element={<P><DealScoring /></P>} />
-                        <Route path="/smart-composer" element={<P><SmartComposer /></P>} />
+                        <Route path="/health-scoring" element={<P permission="analytics:read"><CustomerHealthScore /></P>} />
+                        <Route path="/omnichannel-inbox" element={<P permission="campaigns:read"><OmnichannelInbox /></P>} />
+                        <Route path="/conversation-intelligence" element={<P permission="analytics:read"><ConversationIntelligence /></P>} />
+                        <Route path="/deal-scoring" element={<P permission="analytics:read"><DealScoring /></P>} />
+                        <Route path="/smart-composer" element={<P permission="campaigns:read"><SmartComposer /></P>} />
 
                         {/* Next-Gen CRM — Tier 2: Relationship Intelligence */}
-                        <Route path="/relationship-mapping" element={<P><RelationshipMapping /></P>} />
-                        <Route path="/customer-timeline" element={<P><CustomerTimeline /></P>} />
-                        <Route path="/journey-replay" element={<P><JourneyReplay /></P>} />
-                        <Route path="/next-best-action" element={<P><NextBestAction /></P>} />
-                        <Route path="/sentiment-analysis" element={<P><SentimentAnalysis /></P>} />
+                        <Route path="/relationship-mapping" element={<P permission="customers:read"><RelationshipMapping /></P>} />
+                        <Route path="/customer-timeline" element={<P permission="customers:read"><CustomerTimeline /></P>} />
+                        <Route path="/journey-replay" element={<P permission="analytics:read"><JourneyReplay /></P>} />
+                        <Route path="/next-best-action" element={<P permission="analytics:read"><NextBestAction /></P>} />
+                        <Route path="/sentiment-analysis" element={<P permission="analytics:read"><SentimentAnalysis /></P>} />
 
                         {/* Next-Gen CRM — Tier 3: Engagement */}
-                        <Route path="/digital-sales-room" element={<P><DigitalSalesRoom /></P>} />
-                        <Route path="/mutual-action-plans" element={<P><MutualActionPlan /></P>} />
-                        <Route path="/knowledge-base" element={<P><KnowledgeBase /></P>} />
-                        <Route path="/onboarding-tours" element={<P><OnboardingTours /></P>} />
-                        <Route path="/feedback" element={<P><FeedbackLoop /></P>} />
+                        <Route path="/digital-sales-room" element={<P permission="campaigns:read"><DigitalSalesRoom /></P>} />
+                        <Route path="/mutual-action-plans" element={<P permission="campaigns:read"><MutualActionPlan /></P>} />
+                        <Route path="/knowledge-base" element={<P permission="analytics:read"><KnowledgeBase /></P>} />
+                        <Route path="/onboarding-tours" element={<P permission="admin:full"><OnboardingTours /></P>} />
+                        <Route path="/feedback" element={<P permission="customers:read"><FeedbackLoop /></P>} />
 
                         {/* Next-Gen CRM — Tier 4: Automation */}
-                        <Route path="/workflow-builder" element={<P><WorkflowBuilder /></P>} />
-                        <Route path="/smart-tasks" element={<P><SmartTaskAutomation /></P>} />
-                        <Route path="/doc-generation" element={<P><DocGeneration /></P>} />
-                        <Route path="/data-enrichment" element={<P><DataEnrichment /></P>} />
-                        <Route path="/duplicate-detection" element={<P><DuplicateDetection /></P>} />
+                        <Route path="/workflow-builder" element={<P permission="admin:full"><WorkflowBuilder /></P>} />
+                        <Route path="/smart-tasks" element={<P permission="campaigns:read"><SmartTaskAutomation /></P>} />
+                        <Route path="/doc-generation" element={<P permission="analytics:read"><DocGeneration /></P>} />
+                        <Route path="/data-enrichment" element={<P permission="admin:full"><DataEnrichment /></P>} />
+                        <Route path="/duplicate-detection" element={<P permission="customers:read"><DuplicateDetection /></P>} />
 
                         {/* Next-Gen CRM — Tier 5: Analytics */}
-                        <Route path="/revenue-intelligence" element={<P><RevenueIntelligence /></P>} />
-                        <Route path="/cohort-studio" element={<P><CohortStudio /></P>} />
-                        <Route path="/win-loss" element={<P><WinLossAnalysis /></P>} />
-                        <Route path="/attribution" element={<P><MultiTouchAttribution /></P>} />
-                        <Route path="/executive-cockpit" element={<P><ExecutiveCockpit /></P>} />
+                        <Route path="/revenue-intelligence" element={<P permission="analytics:read"><RevenueIntelligence /></P>} />
+                        <Route path="/cohort-studio" element={<P permission="analytics:read"><CohortStudio /></P>} />
+                        <Route path="/win-loss" element={<P permission="analytics:read"><WinLossAnalysis /></P>} />
+                        <Route path="/attribution" element={<P permission="analytics:read"><MultiTouchAttribution /></P>} />
+                        <Route path="/executive-cockpit" element={<P permission="analytics:read"><ExecutiveCockpit /></P>} />
 
                         {/* Next-Gen CRM — Tier 6: Ecosystem */}
                         <Route path="/app-builder" element={<P permission="admin:full"><CustomerAppBuilder /></P>} />
-                        <Route path="/marketplace" element={<P><PluginMarketplace /></P>} />
+                        <Route path="/marketplace" element={<P permission="admin:full"><PluginMarketplace /></P>} />
                         <Route path="/white-label" element={<P permission="admin:full"><WhiteLabelConfig /></P>} />
-                        <Route path="/mobile-crm" element={<P><MobileCRM /></P>} />
-                        <Route path="/ai-copilot" element={<P><AICoPilot /></P>} />
+                        <Route path="/mobile-crm" element={<P permission="customers:read"><MobileCRM /></P>} />
+                        <Route path="/ai-copilot" element={<P permission="analytics:read"><AICoPilot /></P>} />
 
                         {/* v2 — Agentic AI */}
-                        <Route path="/semantic-search" element={<P><SemanticSearch /></P>} />
+                        <Route path="/semantic-search" element={<P permission="analytics:read"><SemanticSearch /></P>} />
                         <Route path="/agent-governance" element={<P permission="admin:full"><AgentGovernanceDashboard /></P>} />
-                        <Route path="/sales-agent" element={<P><SalesAgentDashboard /></P>} />
-                        <Route path="/cs-agent" element={<P><CustomerSuccessAgent /></P>} />
+                        <Route path="/sales-agent" element={<P permission="campaigns:read"><SalesAgentDashboard /></P>} />
+                        <Route path="/cs-agent" element={<P permission="customers:read"><CustomerSuccessAgent /></P>} />
                         <Route path="/predictive-analytics" element={<P permission="analytics:read"><PredictiveAnalytics /></P>} />
-                        <Route path="/workflow-runtime" element={<P><WorkflowRuntime /></P>} />
+                        <Route path="/workflow-runtime" element={<P permission="admin:full"><WorkflowRuntime /></P>} />
                         <Route path="/embedded-analytics" element={<P permission="admin:full"><EmbeddedAnalytics /></P>} />
 
                         {/* v2 — Telco Deepening */}
-                        <Route path="/telco-cell-sites" element={<P><TelcoCellSiteMap /></P>} />
-                        <Route path="/telco-sim-lifecycle" element={<P><TelcoSIMLifecycle /></P>} />
-                        <Route path="/telco-revenue-assurance" element={<P><TelcoRevenueAssurance /></P>} />
-                        <Route path="/telco-ncc-compliance" element={<P><TelcoNCCCompliance /></P>} />
-                        <Route path="/telco-number-portability" element={<P><TelcoNumberPortability /></P>} />
-                        <Route path="/telco-ussd-replay" element={<P><TelcoUSSDReplay /></P>} />
+                        <Route path="/telco-cell-sites" element={<P permission="operations:read"><TelcoCellSiteMap /></P>} />
+                        <Route path="/telco-sim-lifecycle" element={<P permission="customers:read"><TelcoSIMLifecycle /></P>} />
+                        <Route path="/telco-revenue-assurance" element={<P permission="analytics:read"><TelcoRevenueAssurance /></P>} />
+                        <Route path="/telco-ncc-compliance" element={<P permission="compliance:read"><TelcoNCCCompliance /></P>} />
+                        <Route path="/telco-number-portability" element={<P permission="operations:read"><TelcoNumberPortability /></P>} />
+                        <Route path="/telco-ussd-replay" element={<P permission="operations:read"><TelcoUSSDReplay /></P>} />
 
                         {/* v2 — Commodity Deepening */}
-                        <Route path="/commodity-price-feed" element={<P><CommodityPriceFeed /></P>} />
-                        <Route path="/commodity-trade-blotter" element={<P><CommodityTradeBlotter /></P>} />
-                        <Route path="/commodity-counterparty-risk" element={<P><CommodityCounterpartyRisk /></P>} />
-                        <Route path="/commodity-cftc-reporting" element={<P><CommodityCFTCReporting /></P>} />
-                        <Route path="/commodity-mark-to-market" element={<P><CommodityMarkToMarket /></P>} />
+                        <Route path="/commodity-price-feed" element={<P permission="analytics:read"><CommodityPriceFeed /></P>} />
+                        <Route path="/commodity-trade-blotter" element={<P permission="analytics:read"><CommodityTradeBlotter /></P>} />
+                        <Route path="/commodity-counterparty-risk" element={<P permission="analytics:read"><CommodityCounterpartyRisk /></P>} />
+                        <Route path="/commodity-cftc-reporting" element={<P permission="compliance:read"><CommodityCFTCReporting /></P>} />
+                        <Route path="/commodity-mark-to-market" element={<P permission="analytics:read"><CommodityMarkToMarket /></P>} />
 
                         {/* v2 — CPaaS Deepening */}
-                        <Route path="/cpaas-api-explorer" element={<P><CPaaSAPIExplorer /></P>} />
-                        <Route path="/cpaas-message-inspector" element={<P><CPaaSMessageInspector /></P>} />
-                        <Route path="/cpaas-a2p-compliance" element={<P><CPaaSA2PCompliance /></P>} />
-                        <Route path="/cpaas-channel-analytics" element={<P><CPaaSChannelAnalytics /></P>} />
-                        <Route path="/cpaas-webhook-tester" element={<P><CPaaSWebhookTester /></P>} />
+                        <Route path="/cpaas-api-explorer" element={<P permission="admin:full"><CPaaSAPIExplorer /></P>} />
+                        <Route path="/cpaas-message-inspector" element={<P permission="analytics:read"><CPaaSMessageInspector /></P>} />
+                        <Route path="/cpaas-a2p-compliance" element={<P permission="compliance:read"><CPaaSA2PCompliance /></P>} />
+                        <Route path="/cpaas-channel-analytics" element={<P permission="analytics:read"><CPaaSChannelAnalytics /></P>} />
+                        <Route path="/cpaas-webhook-tester" element={<P permission="admin:full"><CPaaSWebhookTester /></P>} />
 
                         {/* v2 — Banking Deepening */}
                         <Route path="/banking-open-banking" element={<P permission="banking:read"><BankingOpenBankingConsent /></P>} />

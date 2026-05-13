@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "engine": "permify",
+  "entities": {
+    "user": {
+      "relations": {}
+    },
+    "tenant": {
+      "relations": {
+        "admin": "user",
+        "member": "user",
+        "viewer": "user"
+      },
+      "permissions": {
+        "manage": "admin",
+        "write": "admin or member",
+        "read": "admin or member or viewer"
+      }
+    },
+    "customer": {
+      "relations": {
+        "owner": "user",
+        "tenant": "tenant"
+      },
+      "permissions": {
+        "view": "owner or tenant.read",
+        "edit": "owner or tenant.write",
+        "delete": "tenant.manage"
+      }
+    },
+    "campaign": {
+      "relations": {
+        "creator": "user",
+        "tenant": "tenant"
+      },
+      "permissions": {
+        "view": "creator or tenant.read",
+        "edit": "creator or tenant.write",
+        "execute": "tenant.manage"
+      }
+    },
+    "report": {
+      "relations": {
+        "tenant": "tenant"
+      },
+      "permissions": {
+        "view": "tenant.read",
+        "export": "tenant.write",
+        "configure": "tenant.manage"
+      }
+    }
+  }
+}

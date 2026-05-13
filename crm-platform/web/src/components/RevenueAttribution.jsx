@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useApiData } from '@/hooks/useApiData'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DollarSign, TrendingUp, BarChart3, Target, ArrowUpRight,

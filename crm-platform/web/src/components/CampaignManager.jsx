@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useApiData } from '@/hooks/useApiData'
 
 const CHANNELS = [
   { id: 'sms', label: 'SMS', icon: Smartphone, color: 'blue' },

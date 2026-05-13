@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useApiData } from '@/hooks/useApiData'
 import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'

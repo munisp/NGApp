@@ -1,4 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
+import { useApiData } from '@/hooks/useApiData'
 import { Shield, Search, Filter, Download, AlertTriangle, CheckCircle, XCircle, Clock, Eye, ChevronDown, ChevronRight, RefreshCw, FileText } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'

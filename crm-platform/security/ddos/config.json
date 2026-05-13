@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "protection": {
+    "enabled": true,
+    "mode": "automatic",
+    "thresholds": {
+      "requests_per_second": 1000,
+      "connections_per_ip": 50,
+      "bandwidth_mbps": 100,
+      "syn_flood_threshold": 500
+    },
+    "mitigation": {
+      "auto_block_duration_seconds": 300,
+      "challenge_threshold": 0.7,
+      "escalation_webhook": "/api/v1/security/ddos-alert"
+    },
+    "allowlist": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+    ],
+    "rate_limits": [
+      {
+        "path": "/api/v1/*",
+        "limit": 200,
+        "window_seconds": 60
+      },
+      {
+        "path": "/api/v1/auth/*",
+        "limit": 10,
+        "window_seconds": 60
+      },
+      {
+        "path": "/api/v1/bulk/*",
+        "limit": 5,
+        "window_seconds": 60
+      }
+    ]
+  }
+}

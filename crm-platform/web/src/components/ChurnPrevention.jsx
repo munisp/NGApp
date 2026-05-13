@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useApiData } from '@/hooks/useApiData'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, TrendingDown, Users, Shield, Zap, ArrowUpRight,

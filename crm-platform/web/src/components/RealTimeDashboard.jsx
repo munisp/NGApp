@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useApiData } from '@/hooks/useApiData'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Wifi, WifiOff, Zap, Send, MessageSquare, Phone, Mail,

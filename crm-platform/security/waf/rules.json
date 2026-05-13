@@ -1,0 +1,93 @@
+{
+  "version": "1.0",
+  "engine": "openappsec",
+  "mode": "prevent",
+  "rules": [
+    {
+      "id": "WAF-001",
+      "name": "SQL Injection Prevention",
+      "enabled": true,
+      "severity": "critical",
+      "action": "block"
+    },
+    {
+      "id": "WAF-002",
+      "name": "XSS Prevention",
+      "enabled": true,
+      "severity": "critical",
+      "action": "block"
+    },
+    {
+      "id": "WAF-003",
+      "name": "Command Injection",
+      "enabled": true,
+      "severity": "critical",
+      "action": "block"
+    },
+    {
+      "id": "WAF-004",
+      "name": "Path Traversal",
+      "enabled": true,
+      "severity": "high",
+      "action": "block"
+    },
+    {
+      "id": "WAF-005",
+      "name": "SSRF Prevention",
+      "enabled": true,
+      "severity": "high",
+      "action": "block"
+    },
+    {
+      "id": "WAF-006",
+      "name": "XXE Prevention",
+      "enabled": true,
+      "severity": "high",
+      "action": "block"
+    },
+    {
+      "id": "WAF-007",
+      "name": "LDAP Injection",
+      "enabled": true,
+      "severity": "high",
+      "action": "block"
+    },
+    {
+      "id": "WAF-008",
+      "name": "Request Size Limit",
+      "enabled": true,
+      "severity": "medium",
+      "action": "block",
+      "config": {
+        "max_body_size": "10mb"
+      }
+    },
+    {
+      "id": "WAF-009",
+      "name": "Rate Limiting",
+      "enabled": true,
+      "severity": "medium",
+      "action": "throttle",
+      "config": {
+        "requests_per_minute": 200
+      }
+    },
+    {
+      "id": "WAF-010",
+      "name": "Bot Detection",
+      "enabled": true,
+      "severity": "low",
+      "action": "challenge"
+    }
+  ],
+  "ip_allowlist": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ],
+  "ip_blocklist": [],
+  "geo_restrictions": {
+    "enabled": false,
+    "blocked_countries": []
+  }
+}
