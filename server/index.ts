@@ -108,6 +108,7 @@ import { createSession, validateSession, revokeSession, revokeAllSessions, getSe
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerDbPerformanceEndpoints } from "./lib/dbPerformance";
 import { registerKPIGateway } from "./lib/kpiGateway";
+import { registerKPINotifications } from "./lib/kpiNotifications";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5342,6 +5343,8 @@ async function startServer() {
 
   // KPI Gateway — role-based KPI endpoints with weighted scoring, RBAC, flow-down roll-up
   registerKPIGateway(app);
+  // KPI Notifications — threshold breach alerts, cadence customization, branch geospatial
+  registerKPINotifications(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});

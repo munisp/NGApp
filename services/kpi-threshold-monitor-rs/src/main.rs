@@ -1,7 +1,8 @@
 use tokio_postgres;
 // kpi-threshold-monitor-rs — Real-time KPI threshold monitoring with Kafka alert publishing
 // Port: 8501
-// Middleware: Postgres, Redis, Kafka
+// Middleware: Postgres, Redis, Kafka, Dapr, Fluvio, Temporal, OpenSearch, Permify
+mod middleware_integration;
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
