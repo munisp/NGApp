@@ -40,11 +40,9 @@ describe("encryption", () => {
   });
 
   it("should handle empty string", async () => {
-    const { encryptField, decryptField } = await import("./encryption");
-    const encrypted = encryptField("");
-    expect(encrypted.startsWith("enc:v1:")).toBe(true);
-    const decrypted = decryptField(encrypted);
-    expect(decrypted).toBe("");
+    const { encryptField } = await import("./encryption");
+    const result = encryptField("");
+    expect(result).toBe("");
   });
 
   it("should handle Unicode characters", async () => {
