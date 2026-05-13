@@ -113,6 +113,7 @@ import { registerGLPipelineRoutes } from "./lib/glPipeline";
 import { registerBankingOperationsPipeline } from "./lib/bankingOperationsPipeline";
 import { registerBankingDomainGateway } from "./lib/bankingDomainGateway";
 import { registerBankingFinalGapsGateway } from "./lib/bankingFinalGapsGateway";
+import { registerPlatformGapsGateway } from "./lib/platformGapsGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5357,6 +5358,8 @@ async function startServer() {
   registerBankingDomainGateway(app);
   // Final Banking Gaps Gateway — closes gaps 17-23 (LC, DocColl, Islamic, Disputes, MakerChecker, Limits, Products → GL)
   registerBankingFinalGapsGateway(app);
+  // Platform Gaps Gateway — closes gaps A-I (DB queries, Error handling, Events, Scheduling, Reports, Tenancy, Webhooks, Docs, Validation)
+  registerPlatformGapsGateway(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
