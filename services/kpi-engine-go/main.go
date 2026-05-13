@@ -831,6 +831,7 @@ func main() {
 	mux.HandleFunc("/api/kpi/hierarchy", orgHierarchyHandler)
 	mux.HandleFunc("/api/kpi/all", allKPIsHandler)
 	mux.HandleFunc("/api/kpi/rollup", rollUpHandler)
+	mux.HandleFunc("/api/kpi/middleware", middlewareStatusHandler)
 	mux.HandleFunc("/api/kpi/", kpiHandler)
 	
 	// CORS preflight

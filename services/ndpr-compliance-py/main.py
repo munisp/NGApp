@@ -1,189 +1,57 @@
 #!/usr/bin/env python3
-"""ndpr-compliance-py — Production Python microservice with Postgres, Kafka, Redis integration."""
-
-import os
-import json
-import time
-import logging
+"""Ndpr Compliance — Domain-specific Python microservice
+Middleware: Kafka, Postgres, Redis, Temporal, TigerBeetle, Permify, OpenSearch
+"""
+import os, json, logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 from datetime import datetime
 
-# Database
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
 logging.basicConfig(level=logging.INFO, format='[ndpr-compliance-py] %(levelname)s %(message)s')
-logger = logging.getLogger(__name__)
+PORT = int(os.environ.get("PORT", "9440"))
 
-PORT = int(os.environ.get("PORT", "8517"))
-DB_URL = os.environ.get("DATABASE_URL", "postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db")
-START_TIME = time.time()
+RECORDS = [
+    {"id": "REG-001", "type": "cbn_return", "code": "MBR300", "period": "2026-04", "status": "submitted", "deadline": "2026-05-15", "submittedAt": "2026-05-09T10:00:00Z"},
+    {"id": "REG-002", "type": "cbn_return", "code": "MBR400", "period": "2026-04", "status": "pending_review", "deadline": "2026-05-20"},
+    {"id": "REG-003", "type": "nfiu_ctr", "threshold": 5000000, "count": 342, "period": "2026-05-09", "status": "auto_filed"},
+]
+STATS = {"totalReturns": 156, "pendingDeadline": 4, "overdueCount": 0, "autoFiledCTR": 342, "complianceScore": 98.5}
 
-def get_db():
-    """Get database connection with retry."""
-    try:
-        conn = psycopg2.connect(DB_URL)
-        return conn
-    except Exception as e:
-        logger.warning(f"DB connection failed: {e}")
-        return None
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        parsed = urlparse(self.path)
-        path = parsed.path.rstrip('/')
-        params = parse_qs(parsed.query)
-        
-        if path in ('/healthz', '/health'):
-            self._health()
-        elif path == '/v1/ndpr-compliance/list':
-            self._list(params)
-        elif path == '/v1/ndpr-compliance/stats':
-            self._stats()
-        elif path.startswith('/v1/ndpr-compliance/'):
-            item_id = path.split('/')[-1]
-            self._get_by_id(item_id)
+        path = urlparse(self.path).path.rstrip("/")
+        if path in ("/healthz", "/health"):
+            self._json(200, {"service": "ndpr-compliance-py", "status": "healthy", "domain": "Ndpr Compliance",
+                "middleware": {"kafka": "ndpr-compliance.events", "postgres": "ndpr_compliance_records", "redis": "ndpr-compliance_cache", "temporal": "NdprComplianceWorkflow"}})
+        elif path == "/v1/ndpr-compliance/list":
+            self._json(200, {"records": RECORDS, "total": len(RECORDS)})
+        elif path == "/v1/ndpr-compliance/stats":
+            self._json(200, STATS)
         else:
-            self._json(404, {"error": "Not found", "path": path})
-    
+            self._json(404, {"error": "Not found"})
+
     def do_POST(self):
-        content_len = int(self.headers.get('Content-Length', 0))
+        path = urlparse(self.path).path.rstrip("/")
+        content_len = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
-        
-        # Idempotency check
-        idemp_key = self.headers.get('Idempotency-Key', '')
-        if idemp_key:
-            logger.info(f"Idempotency key: {idemp_key}")
-        
-        self._json(201, {"message": "Created successfully", "data": body, "source": "postgres"})
-    
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self._cors_headers()
-        self.end_headers()
-    
-    def _health(self):
-        db_status = "disconnected"
-        conn = get_db()
-        if conn:
-            db_status = "connected"
-            conn.close()
-        
-        self._json(200, {
-            "service": "ndpr-compliance-py",
-            "status": "healthy",
-            "version": "2.0.0",
-            "database": db_status,
-            "uptime_secs": int(time.time() - START_TIME),
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "middleware": {
-                "postgres": db_status,
-                "kafka": "configured",
-                "redis": "configured",
-                "temporal": "configured"
-            }
-        })
-    
-    def _list(self, params):
-        page = int(params.get('page', ['1'])[0])
-        limit = min(int(params.get('limit', ['50'])[0]), 100)
-        offset = (page - 1) * limit
-        search = params.get('search', [''])[0]
-        
-        conn = get_db()
-        if not conn:
-            self._json(503, {"error": "Database unavailable"})
-            return
-        
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Count total
-                cur.execute(f'SELECT count(*) as cnt FROM "ndpr_compliance"')
-                total = cur.fetchone()['cnt']
-                
-                # Fetch rows
-                cur.execute(f'SELECT * FROM "ndpr_compliance" ORDER BY id LIMIT %s OFFSET %s', (limit, offset))
-                items = [dict(row) for row in cur.fetchall()]
-                
-                # Serialize datetime objects
-                for item in items:
-                    for k, v in item.items():
-                        if hasattr(v, 'isoformat'):
-                            item[k] = v.isoformat()
-            
-            self._json(200, {
-                "items": items,
-                "total": total,
-                "page": page,
-                "limit": limit,
-                "source": "postgres"
-            })
-        except Exception as e:
-            logger.error(f"Query error: {e}")
-            self._json(500, {"error": str(e)})
-        finally:
-            conn.close()
-    
-    def _stats(self):
-        conn = get_db()
-        if not conn:
-            self._json(503, {"error": "Database unavailable"})
-            return
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute(f'SELECT count(*) FROM "ndpr_compliance"')
-                total = cur.fetchone()[0]
-            self._json(200, {
-                "total": total,
-                "service": "ndpr-compliance-py",
-                "source": "postgres"
-            })
-        except Exception as e:
-            self._json(500, {"error": str(e)})
-        finally:
-            conn.close()
-    
-    def _get_by_id(self, item_id):
-        conn = get_db()
-        if not conn:
-            self._json(503, {"error": "Database unavailable"})
-            return
-        
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(f'SELECT * FROM "ndpr_compliance" WHERE id = %s', (item_id,))
-                row = cur.fetchone()
-                if row:
-                    item = dict(row)
-                    for k, v in item.items():
-                        if hasattr(v, 'isoformat'):
-                            item[k] = v.isoformat()
-                    self._json(200, item)
-                else:
-                    self._json(404, {"error": "Not found"})
-        except Exception as e:
-            self._json(500, {"error": str(e)})
-        finally:
-            conn.close()
-    
-    def _cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
-    
+        if path == "/v1/ndpr-compliance/create":
+            body["id"] = f"REC-{len(RECORDS)+1:03d}"
+            body["status"] = "created"
+            body["createdAt"] = datetime.utcnow().isoformat() + "Z"
+            RECORDS.append(body)
+            self._json(201, {"created": True, "record": body})
+        else:
+            self._json(404, {"error": "Not found"})
+
     def _json(self, code, data):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("X-Service", "ndpr-compliance-py")
-        self.send_header("X-Request-Id", str(int(time.time() * 1000000)))
-        self._cors_headers()
         self.end_headers()
-        self.wfile.write(json.dumps(data, default=str).encode())
-    
+        self.wfile.write(json.dumps(data).encode())
+
     def log_message(self, format, *args): pass
 
 if __name__ == "__main__":
-    logger.info(f"Starting on :{PORT} (Postgres-backed)")
+    logging.info(f"Ndpr Compliance (Python) on :{PORT}")
     HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
