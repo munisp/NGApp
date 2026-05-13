@@ -106,6 +106,7 @@ import { registerEventPublisher, registerCacheMiddleware } from "./lib/eventPubl
 import { initKeycloak, getKeycloakStatus, getOAuth2Endpoints } from "./lib/keycloakClient";
 import { createSession, validateSession, revokeSession, revokeAllSessions, getSessionStats, listUserSessions } from "./lib/sessionManager";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
+import { registerDbPerformanceEndpoints } from "./lib/dbPerformance";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5327,6 +5328,16 @@ async function startServer() {
 
   registerDrizzleRoutes(app);
   registerPerformanceTuning(app);
+
+  // DB performance monitoring endpoints (pool health, slow queries, index stats)
+  try {
+    const db = await getDb();
+    if (db) {
+      const pg = await import("pg");
+      const pool = new pg.default.Pool({ connectionString: process.env.DATABASE_URL || "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db", max: 5 });
+      registerDbPerformanceEndpoints(app, pool);
+    }
+  } catch { /* DB not available */ }
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});

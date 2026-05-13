@@ -20,10 +20,15 @@ function getPool() {
 
   _pool = new pg.Pool({
     connectionString: ENV.databaseUrl,
-    max: parsePositiveInt(process.env.DB_POOL_MAX, 10),
-    idleTimeoutMillis: parsePositiveInt(process.env.DB_POOL_IDLE_TIMEOUT_MS, 60_000),
-    connectionTimeoutMillis: parsePositiveInt(process.env.DB_POOL_QUEUE_LIMIT, 10_000),
-  });
+    max: parsePositiveInt(process.env.DB_POOL_MAX, 20),
+    min: parsePositiveInt(process.env.DB_POOL_MIN, 5),
+    idleTimeoutMillis: parsePositiveInt(process.env.DB_POOL_IDLE_TIMEOUT_MS, 30_000),
+    connectionTimeoutMillis: parsePositiveInt(process.env.DB_POOL_CONNECT_TIMEOUT_MS, 5_000),
+    allowExitOnIdle: false,
+    statement_timeout: parsePositiveInt(process.env.DB_STATEMENT_TIMEOUT_MS, 30_000),
+    query_timeout: parsePositiveInt(process.env.DB_QUERY_TIMEOUT_MS, 30_000),
+    application_name: '54bank-platform',
+  } as any);
 
   return _pool;
 }
