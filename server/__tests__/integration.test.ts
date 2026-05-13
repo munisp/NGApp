@@ -5,8 +5,14 @@ let serverAvailable = false;
 
 beforeAll(async () => {
   try {
-    const res = await fetch(`${BASE_URL}/api/health`, { signal: AbortSignal.timeout(3000) });
-    serverAvailable = res.ok;
+    const res = await fetch(`${BASE_URL}/healthz`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const json = await res.json();
+        serverAvailable = json.database === "connected";
+      }
+    }
   } catch {
     serverAvailable = false;
   }

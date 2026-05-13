@@ -162,6 +162,7 @@ import {
 import { registerMfaRoutes } from "./lib/mfaTotp";
 import { registerApiKeyRoutes, validateApiKey } from "./lib/apiKeyManagement";
 import { corsMiddleware } from "./lib/corsPolicy";
+import { registerOAuth2Endpoints } from "./lib/oauth2Flow";
 import {
   createBillingApprovalMatrix,
   createBillingInvoiceDispute,
@@ -5247,6 +5248,7 @@ async function startServer() {
   registerHealthDashboard(app);
   // D1: Keycloak SSO endpoints
   registerSSOEndpoints(app);
+  registerOAuth2Endpoints(app);
   // D3: Field-level encryption for PII
   registerFieldEncryption(app);
   // C1+C4: Performance configuration endpoints

@@ -2,7 +2,8 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
+"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,7 +13,10 @@ import (
 	"time"
 )
 
-var startTime = time.Now()
+var (
+db        *sql.DB
+startTime = time.Now()
+)
 
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -58,9 +62,38 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	if page < 1 { page = 1 }
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit < 1 || limit > 100 { limit = 50 }
-	
-	// Database query delegated to Express /api/db/* routes
-	// This service provides business logic layer
+	offset := (page - 1) * limit
+
+	if db != nil {
+		var total int
+		db.QueryRow(`SELECT count(*) FROM "audit_trail"`).Scan(&total)
+
+		rows, err := db.Query(fmt.Sprintf(`SELECT row_to_json(t)::text FROM (SELECT * FROM "audit_trail" ORDER BY 1 LIMIT %d OFFSET %d) t`, limit, offset))
+		if err == nil {
+			defer rows.Close()
+			var items []map[string]interface{}
+			for rows.Next() {
+				var jsonStr string
+				if rows.Scan(&jsonStr) == nil {
+					var item map[string]interface{}
+					if json.Unmarshal([]byte(jsonStr), &item) == nil {
+						items = append(items, item)
+					}
+				}
+			}
+			if items == nil { items = []map[string]interface{}{} }
+			jsonResp(w, 200, map[string]interface{}{
+				"items": items,
+				"total": total,
+				"page": page,
+				"limit": limit,
+				"source": "database",
+				"service": "route-schema-enforcer-go",
+			})
+			return
+		}
+	}
+
 	jsonResp(w, 200, map[string]interface{}{
 		"items":   []map[string]interface{}{},
 		"total":   0,
