@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -106,13 +105,12 @@ interface JourneyNotificationsProps {
 }
 
 export default function JourneyNotifications({ onClose, isPanel = false }: JourneyNotificationsProps) {
-  const fetcher = useCallback(() =>
-    lakehouseAPI.fetch<{ notifications: Notification[] }>('/api/v1/notifications')
-      .then(d => d.notifications)
-      .catch(() => mockNotifications), []);
-  const { data: apiNotifs } = useLakehouseData(fetcher, 15000);
   const [notifications, setNotifications] = useState(mockNotifications);
-  useEffect(() => { if (apiNotifs) setNotifications(apiNotifs); }, [apiNotifs]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/notifications')
+      .then(r => r.json()).then(d => { if (d.notifications) setNotifications(d.notifications); })
+      .catch(() => {});
+  }, []);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const filteredNotifications = notifications.filter(

@@ -3,6 +3,7 @@
  * Connects admin dashboard to the lakehouse query service
  */
 
+import { useState, useEffect, useCallback } from 'react';
 const API_BASE_URL = process.env.NEXT_PUBLIC_LAKEHOUSE_API_URL || 'http://localhost:8080';
 
 export interface MetricCard {
@@ -281,7 +282,7 @@ class LakehouseAPIClient {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      log.info('WebSocket connected');
+      console.info('[api] WebSocket connected');
     };
 
     this.ws.onmessage = (event) => {
@@ -289,16 +290,16 @@ class LakehouseAPIClient {
         const data = JSON.parse(event.data);
         onMessage(data);
       } catch (e) {
-        log.error('WebSocket message parse error:', e);
+        console.error('[api] WebSocket message parse error:', e);
       }
     };
 
     this.ws.onerror = (error) => {
-      log.error('WebSocket error:', error);
+      console.error('[api] WebSocket error:', error);
     };
 
     this.ws.onclose = () => {
-      log.info('WebSocket disconnected');
+      console.info('[api] WebSocket disconnected');
       // Reconnect after 5 seconds
       setTimeout(() => this.connectWebSocket(onMessage), 5000);
     };
@@ -326,11 +327,11 @@ export function useLakehouseData<T>(
   fetcher: () => Promise<T>,
   refreshInterval: number = 30000
 ): { data: T | null; loading: boolean; error: Error | null; refetch: () => void } {
-  const [data, setData] = React.useState<T | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const result = await fetcher();
@@ -343,7 +344,7 @@ export function useLakehouseData<T>(
     }
   }, [fetcher]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, refreshInterval);
     return () => clearInterval(interval);
@@ -352,7 +353,3 @@ export function useLakehouseData<T>(
   return { data, loading, error, refetch: fetchData };
 }
 
-// Import React for hooks
-import React from 'react';
-import { createLogger } from '@/lib/logger';
-const log = createLogger('api');
