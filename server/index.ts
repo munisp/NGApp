@@ -111,6 +111,7 @@ import { registerKPIGateway } from "./lib/kpiGateway";
 import { registerKPINotifications } from "./lib/kpiNotifications";
 import { registerGLPipelineRoutes } from "./lib/glPipeline";
 import { registerBankingOperationsPipeline } from "./lib/bankingOperationsPipeline";
+import { registerBankingDomainGateway } from "./lib/bankingDomainGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5351,6 +5352,8 @@ async function startServer() {
   registerGLPipelineRoutes(app);
   // Banking Operations Pipeline — closes 7 gaps (Interest, ECL, Recon, Fees, Treasury, Settlement, Dormancy → GL)
   registerBankingOperationsPipeline(app);
+  // Banking Domain Gateway — closes gaps 8-16 (Payments, Loans, FX, FD, SI, Cheque, Collateral, Cash, SWIFT → GL)
+  registerBankingDomainGateway(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
