@@ -114,6 +114,7 @@ import { registerBankingOperationsPipeline } from "./lib/bankingOperationsPipeli
 import { registerBankingDomainGateway } from "./lib/bankingDomainGateway";
 import { registerBankingFinalGapsGateway } from "./lib/bankingFinalGapsGateway";
 import { registerPlatformGapsGateway } from "./lib/platformGapsGateway";
+import { registerPlatformEnhancementsGateway } from "./lib/platformEnhancementsGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5360,6 +5361,8 @@ async function startServer() {
   registerBankingFinalGapsGateway(app);
   // Platform Gaps Gateway — closes gaps A-I (DB queries, Error handling, Events, Scheduling, Reports, Tenancy, Webhooks, Docs, Validation)
   registerPlatformGapsGateway(app);
+  // Platform Enhancements — all 28 improvements + 5 quick wins (Open Banking, AI, Growth, Tech Debt)
+  registerPlatformEnhancementsGateway(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
