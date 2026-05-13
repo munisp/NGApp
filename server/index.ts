@@ -117,6 +117,7 @@ import { registerPlatformGapsGateway } from "./lib/platformGapsGateway";
 import { registerPlatformEnhancementsGateway } from "./lib/platformEnhancementsGateway";
 import { registerFeatureEntitlementRoutes } from "./lib/featureEntitlementGateway";
 import { registerERPNextBridgeRoutes } from "./lib/erpnextBridgeGateway";
+import { registerIntegrationProtocolRoutes } from "./lib/integrationProtocolGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5367,6 +5368,7 @@ async function startServer() {
   registerPlatformEnhancementsGateway(app);
   registerFeatureEntitlementRoutes(app);
   registerERPNextBridgeRoutes(app);
+  registerIntegrationProtocolRoutes(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});

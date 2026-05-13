@@ -1,0 +1,12 @@
+[package]
+name = "swift-iso20022-rs"
+version = "2.0.0"
+edition = "2021"
+[[bin]]
+name = "swift-iso20022-rs"
+path = "src/main.rs"
+[dependencies]
+actix-web = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
