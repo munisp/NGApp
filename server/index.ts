@@ -115,6 +115,7 @@ import { registerBankingDomainGateway } from "./lib/bankingDomainGateway";
 import { registerBankingFinalGapsGateway } from "./lib/bankingFinalGapsGateway";
 import { registerPlatformGapsGateway } from "./lib/platformGapsGateway";
 import { registerPlatformEnhancementsGateway } from "./lib/platformEnhancementsGateway";
+import { registerFeatureEntitlementRoutes } from "./lib/featureEntitlementGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5363,6 +5364,7 @@ async function startServer() {
   registerPlatformGapsGateway(app);
   // Platform Enhancements — all 28 improvements + 5 quick wins (Open Banking, AI, Growth, Tech Debt)
   registerPlatformEnhancementsGateway(app);
+  registerFeatureEntitlementRoutes(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
