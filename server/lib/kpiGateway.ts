@@ -42,7 +42,7 @@ interface KPIMetric {
   unit: string;
   weight: number;
   status: "green" | "amber" | "red";
-  cadence: "hourly" | "daily";
+  cadence: "hourly" | "daily" | "monthly" | "quarterly";
   description: string;
 }
 

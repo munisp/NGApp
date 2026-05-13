@@ -56,7 +56,7 @@ function paymentsGL(businessDate: string) {
     ],
     summary: { totalTransactions: 3, totalAmount: 507_500_000, totalFees: 5550, glCodesImpacted: ["2101", "1104", "2301", "4202", "2311"] },
     pipeline: { step1: "Validate payment + AML screen", step2: "Dr sender (2101) / Cr receiver or clearing", step3: "Post fee to GL 4202 + VAT to GL 2311", step4: "Settle via NIBSS/internal", step5: "Publish Kafka event" },
-    middleware: { kafka: { topic: "banking.payments.posted" }, tigerbeetle: { transfers: 7 }, ...MIDDLEWARE_STATUS },
+    middleware: { ...MIDDLEWARE_STATUS, kafkaTopic: "banking.payments.posted", tigerbeetleTransfers: 7 },
   };
 }
 
