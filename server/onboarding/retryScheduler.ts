@@ -55,7 +55,7 @@ async function processRetries() {
     const result = await processAllPendingRetries();
     
     if (result.processed > 0) {
-      console.log(
+      log.info(
         `[RetryScheduler] Completed: ${result.processed} processed, ${result.succeeded} succeeded, ${result.failed} failed`
       );
     }

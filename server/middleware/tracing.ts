@@ -375,7 +375,7 @@ export interface SpanExporter {
 export class ConsoleSpanExporter implements SpanExporter {
   async export(spans: Span[]): Promise<void> {
     for (const span of spans) {
-      console.log(JSON.stringify({
+      log.info(JSON.stringify({
         type: 'span',
         traceId: span.traceId,
         spanId: span.spanId,

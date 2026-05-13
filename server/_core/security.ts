@@ -154,7 +154,7 @@ export function auditLog(req: Request, res: Response, next: NextFunction) {
   const originalSend = res.send;
   res.send = function (data: any) {
     const duration = Date.now() - start;
-    console.log(JSON.stringify({
+    log.info(JSON.stringify({
       ...logEntry,
       status: res.statusCode,
       duration,

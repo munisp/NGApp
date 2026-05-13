@@ -31,7 +31,7 @@ export function registerOAuthRoutes(app: Express) {
       const openId = userInfo.openId ?? (userInfo as any).sub;
       
       if (!openId) {
-        console.error("[OAuth] Missing user identifier - neither openId nor sub found in userInfo:", 
+        log.error("[OAuth] Missing user identifier - neither openId nor sub found in userInfo:", 
           Object.keys(userInfo));
         res.status(400).json({ error: "User identifier (openId/sub) missing from user info" });
         return;

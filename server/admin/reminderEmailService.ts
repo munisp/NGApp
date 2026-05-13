@@ -254,7 +254,7 @@ export async function sendReminderEmail(applicationId: number, stage: Stage, man
   try {
     // In a real implementation, you would send the email here using an email service
     // For now, we'll just log it and notify the owner
-    console.log(`[ReminderEmail] Sending to ${participant.contactEmail}:`, {
+    log.info(`[ReminderEmail] Sending to ${participant.contactEmail}:`, {
       subject: config.emailSubject,
       body: emailBody,
     });
@@ -324,12 +324,12 @@ export async function processAutomatedReminders() {
     try {
       await sendReminderEmail(participant.applicationId, participant.stage, false);
       sentCount++;
-      console.log(
+      log.info(
         `[ReminderJob] Sent reminder to ${participant.organizationName} (${participant.stage})`
       );
     } catch (error) {
       failedCount++;
-      console.error(
+      log.error(
         `[ReminderJob] Failed to send reminder to ${participant.organizationName}:`,
         error
       );

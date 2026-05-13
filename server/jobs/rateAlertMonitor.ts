@@ -36,7 +36,7 @@ export async function runRateAlertMonitor(): Promise<void> {
 
     const duration = new Date().getTime() - startTime.getTime();
     
-    console.log(
+    log.info(
       `[RateAlertMonitor] Completed in ${duration}ms - ` +
       `Checked: ${result.checked}, Triggered: ${result.triggered}`
     );

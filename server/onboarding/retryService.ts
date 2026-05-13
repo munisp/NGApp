@@ -128,7 +128,7 @@ export async function scheduleRetry(deliveryLogId: number): Promise<void> {
     })
     .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-  console.log(
+  log.info(
     `[Retry] Scheduled retry for delivery ${deliveryLogId} at ${nextRetryAt.toISOString()}`
   );
 }
@@ -232,16 +232,16 @@ export async function sendFinalFailureNotification(
     });
 
     if (response.ok) {
-      console.log(
+      log.info(
         `[Retry] Final failure notification sent for delivery ${deliveryLogId} to ${webhook.finalFailureNotificationUrl}`
       );
     } else {
-      console.error(
+      log.error(
         `[Retry] Failed to send final failure notification: HTTP ${response.status}`
       );
     }
   } catch (error) {
-    console.error(
+    log.error(
       `[Retry] Error sending final failure notification:`,
       error instanceof Error ? error.message : "Unknown error"
     );
@@ -396,7 +396,7 @@ export async function processRetryAttempt(
           .where(eq(apiKeyWebhooks.id, webhook.id));
         
         if (shouldAutoPause) {
-          console.log(
+          log.info(
             `[Retry] Auto-paused webhook ${webhook.id} after ${newConsecutiveFailures} consecutive failures`
           );
         }
@@ -422,7 +422,7 @@ export async function processRetryAttempt(
           })
           .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-        console.log(
+        log.info(
           `[Retry] Delivery ${deliveryLogId} failed (attempt ${newAttempts}/${webhook.maxRetries}). Next retry at ${nextRetryAt.toISOString()}`
         );
         return false;
@@ -495,7 +495,7 @@ export async function processRetryAttempt(
             })
             .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-          console.log(
+          log.info(
             `[Retry] Delivery ${deliveryLogId} failed with error (attempt ${newAttempts}/${webhook.maxRetries}). Next retry at ${nextRetryAt.toISOString()}`
           );
         }
@@ -535,7 +535,7 @@ export async function processAllPendingRetries(): Promise<{
     }
   }
 
-  console.log(
+  log.info(
     `[Retry] Processed ${pendingIds.length} retries: ${succeeded} succeeded, ${failed} failed`
   );
 
