@@ -192,7 +192,7 @@ function OverviewTab() {
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h3 className="text-lg font-medium text-white mb-4">Provider Health</h3>
           <div className="space-y-2">
-            {activeProviders.slice(0, 5).map((p) => (
+            {providers.slice(0, 5).map((p) => (
               <div key={p.id} className="flex items-center justify-between py-2">
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${p.status === 'active' ? 'bg-green-400' : 'bg-yellow-400'}`} />
