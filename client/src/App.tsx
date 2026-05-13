@@ -369,6 +369,7 @@ const SMSBankingWorkspace = lazy(() => import("@/pages/SMSBankingWorkspace"));
 const OfflineTransactionsWorkspace = lazy(() => import("@/pages/OfflineTransactionsWorkspace"));
 const BandwidthAdaptationWorkspace = lazy(() => import("@/pages/BandwidthAdaptationWorkspace"));
 const ResilienceDashboardWorkspace = lazy(() => import("@/pages/ResilienceDashboardWorkspace"));
+const KPIDashboardWorkspace = lazy(() => import("@/pages/KPIDashboardWorkspace"));
 const CircuitBreakerDashboardWorkspace = lazy(() => import("@/pages/CircuitBreakerDashboardWorkspace"));
 const IdempotencyDashboardWorkspace = lazy(() => import("@/pages/IdempotencyDashboardWorkspace"));
 const ErrorCatalogWorkspace = lazy(() => import("@/pages/ErrorCatalogWorkspace"));
@@ -1047,6 +1048,7 @@ export default function App() {
         <Route path="/offline-transactions" component={renderInAdminShell(OfflineTransactionsWorkspace)} />
         <Route path="/bandwidth-adaptation" component={renderInAdminShell(BandwidthAdaptationWorkspace)} />
         <Route path="/resilience-dashboard" component={renderInAdminShell(ResilienceDashboardWorkspace)} />
+        <Route path="/kpi-dashboard" component={renderInAdminShell(KPIDashboardWorkspace)} />
         <Route path="/circuit-breaker-dashboard" component={renderInAdminShell(CircuitBreakerDashboardWorkspace)} />
         <Route path="/idempotency-dashboard" component={renderInAdminShell(IdempotencyDashboardWorkspace)} />
         <Route path="/error-catalog" component={renderInAdminShell(ErrorCatalogWorkspace)} />

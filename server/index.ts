@@ -107,6 +107,7 @@ import { initKeycloak, getKeycloakStatus, getOAuth2Endpoints } from "./lib/keycl
 import { createSession, validateSession, revokeSession, revokeAllSessions, getSessionStats, listUserSessions } from "./lib/sessionManager";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerDbPerformanceEndpoints } from "./lib/dbPerformance";
+import { registerKPIGateway } from "./lib/kpiGateway";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5338,6 +5339,9 @@ async function startServer() {
       registerDbPerformanceEndpoints(app, pool);
     }
   } catch { /* DB not available */ }
+
+  // KPI Gateway — role-based KPI endpoints with weighted scoring, RBAC, flow-down roll-up
+  registerKPIGateway(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
