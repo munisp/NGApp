@@ -1,65 +1,97 @@
 import { useState } from 'react'
-import { ClipboardList, CheckCircle, Clock, Circle } from 'lucide-react'
+import { ListChecks, Search, Plus, CheckCircle, Clock, AlertTriangle, Users } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
 const plans = [
-  { id: 'MAP-001', deal: 'Dangote — Trade Finance', value: '₦2.5B', closeDate: 'Jun 15', completion: 72, milestones: [
-    { name: 'Discovery Complete', owner: 'Both', due: 'Apr 10', status: 'completed' },
-    { name: 'Technical Evaluation', owner: 'Dangote IT', due: 'Apr 25', status: 'completed' },
-    { name: 'Proposal Delivered', owner: 'Acme Bank', due: 'May 5', status: 'completed' },
-    { name: 'Legal Review', owner: 'Both Legal', due: 'May 20', status: 'in_progress' },
-    { name: 'Final Pricing', owner: 'Acme Bank', due: 'May 30', status: 'pending' },
-    { name: 'Board Approval', owner: 'Dangote Board', due: 'Jun 10', status: 'pending' },
-    { name: 'Contract Signed', owner: 'Both', due: 'Jun 15', status: 'pending' },
-  ]},
-  { id: 'MAP-002', deal: 'MTN — Payroll', value: '₦890M', closeDate: 'Jul 30', completion: 43, milestones: [
-    { name: 'Initial Demo', owner: 'Acme Bank', due: 'Apr 15', status: 'completed' },
-    { name: 'POC Setup', owner: 'Both', due: 'May 1', status: 'completed' },
-    { name: 'POC Evaluation', owner: 'MTN HR', due: 'May 30', status: 'in_progress' },
-    { name: 'Commercial Terms', owner: 'Both', due: 'Jun 15', status: 'pending' },
-    { name: 'Contract', owner: 'Both Legal', due: 'Jul 15', status: 'pending' },
-    { name: 'Go-Live', owner: 'Both', due: 'Jul 30', status: 'pending' },
-  ]},
+  { id: 'MAP-001', deal: 'Dangote — Trade Finance Expansion', value: '₦2.5B', owner: 'Sarah Okonkwo', totalTasks: 12, completed: 10, overdue: 0, progress: 83, targetClose: 'May 30, 2026', status: 'on-track',
+    tasks: [
+      { task: 'NDA signed', owner: 'Legal', due: 'Apr 5', status: 'completed' },
+      { task: 'Technical demo delivered', owner: 'Sarah', due: 'Apr 12', status: 'completed' },
+      { task: 'Pilot environment provisioned', owner: 'DevOps', due: 'Apr 20', status: 'completed' },
+      { task: 'Security review completed', owner: 'CISO', due: 'Apr 28', status: 'completed' },
+      { task: 'Final pricing approved', owner: 'CFO', due: 'May 5', status: 'in-progress' },
+      { task: 'Contract review', owner: 'Legal', due: 'May 15', status: 'pending' },
+    ] },
+  { id: 'MAP-002', deal: 'MTN — Enterprise Payroll', value: '₦890M', owner: 'Chidi Obi', totalTasks: 8, completed: 4, overdue: 1, progress: 50, targetClose: 'Jun 15, 2026', status: 'at-risk',
+    tasks: [
+      { task: 'Requirements gathering', owner: 'Chidi', due: 'Mar 20', status: 'completed' },
+      { task: 'Architecture review', owner: 'CTO', due: 'Apr 1', status: 'completed' },
+      { task: 'Integration testing', owner: 'QA', due: 'Apr 15', status: 'overdue' },
+      { task: 'Payroll data migration plan', owner: 'Data Team', due: 'May 10', status: 'in-progress' },
+    ] },
+  { id: 'MAP-003', deal: 'Lafarge — Treasury Module', value: '₦450M', owner: 'Fatima Ibrahim', totalTasks: 10, completed: 7, overdue: 0, progress: 70, targetClose: 'May 25, 2026', status: 'on-track',
+    tasks: [
+      { task: 'Treasury needs assessment', owner: 'Fatima', due: 'Mar 10', status: 'completed' },
+      { task: 'Cash management demo', owner: 'Product', due: 'Mar 25', status: 'completed' },
+      { task: 'ROI analysis delivered', owner: 'Fatima', due: 'Apr 8', status: 'completed' },
+      { task: 'Procurement approval', owner: 'CFO', due: 'May 8', status: 'in-progress' },
+    ] },
 ]
+
+const taskStatusIcons = { completed: CheckCircle, 'in-progress': Clock, pending: Clock, overdue: AlertTriangle }
+const taskStatusColors = { completed: 'text-emerald-500', 'in-progress': 'text-blue-500', pending: 'text-gray-400', overdue: 'text-red-500' }
 
 export default function MutualActionPlan() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('mutualactionplan', () => apiClient.dashboard.metrics(), { fallback: plans })
-  const [expanded, setExpanded] = useState(plans[0].id)
+  const [search, setSearch] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const filtered = plans.filter(p => {
+    const matchesSearch = !search || p.deal.toLowerCase().includes(search.toLowerCase()) || p.owner.toLowerCase().includes(search.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   return (
     <div role="region" aria-label="MutualActionPlan" className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><ClipboardList className="w-7 h-7 text-blue-600" /> Mutual Action Plans</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Collaborative buyer-seller milestones tracking</p></div>
-        <FallbackBadge />
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><ListChecks className="w-7 h-7 text-teal-600" /> Mutual Action Plans</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Collaborative closing plans with buyer stakeholders</p></div>
+        <div className="flex gap-2"><button className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-teal-700"><Plus className="w-4 h-4" /> New Plan</button><FallbackBadge /></div>
       </div>
+
       <div className="grid grid-cols-4 gap-3">
-        {[{ l: 'Active Plans', v: plans.length }, { l: 'Total Milestones', v: plans.reduce((s, p) => s + p.milestones.length, 0) }, { l: 'Completed', v: plans.reduce((s, p) => s + p.milestones.filter(m => m.status === 'completed').length, 0) }, { l: 'Avg Completion', v: Math.round(plans.reduce((s, p) => s + p.completion, 0) / plans.length) + '%' }].map(s => (
-          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
+        {[{ l: 'Active Plans', v: plans.length }, { l: 'On Track', v: plans.filter(p => p.status === 'on-track').length, c: 'text-emerald-600' }, { l: 'At Risk', v: plans.filter(p => p.status === 'at-risk').length, c: 'text-red-600' }, { l: 'Overdue Tasks', v: plans.reduce((s, p) => s + p.overdue, 0), c: plans.reduce((s, p) => s + p.overdue, 0) > 0 ? 'text-red-600' : 'text-emerald-600' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
       </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search plans..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Status</option><option value="on-track">On Track</option><option value="at-risk">At Risk</option></select>
+      </div>
+
       <div className="space-y-3">
-        {plans.map(plan => (
-          <div key={plan.id} onClick={() => setExpanded(expanded === plan.id ? null : plan.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer ${expanded === plan.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-700'}`}>
+        {filtered.map(p => (
+          <div key={p.id} onClick={() => setSelectedPlan(selectedPlan === p.id ? null : p.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedPlan === p.id ? 'border-teal-500 ring-1 ring-teal-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between mb-2">
-              <div><h4 className="font-semibold text-gray-900 dark:text-white">{plan.deal}</h4><div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5"><span>{plan.value}</span><span>Close: {plan.closeDate}</span></div></div>
-              <div className="text-right"><p className="text-xl font-bold text-blue-600">{plan.completion}%</p><div className="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${plan.completion}%` }} /></div></div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{p.deal}</h4><span className={`text-xs px-2 py-0.5 rounded ${p.status === 'on-track' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{p.status}</span></div>
+                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1"><span>{p.value}</span><span><Users className="w-3 h-3 inline mr-0.5" />{p.owner}</span><span>Close: {p.targetClose}</span></div>
+              </div>
+              <div className="text-right"><div className="text-lg font-bold text-gray-900 dark:text-white">{p.progress}%</div><div className="w-20 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full"><div className={`h-full rounded-full ${p.progress >= 70 ? 'bg-emerald-500' : p.progress >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${p.progress}%` }} /></div></div>
             </div>
-            {expanded === plan.id && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-                {plan.milestones.map((m, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="flex flex-col items-center">
-                      {m.status === 'completed' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : m.status === 'in_progress' ? <Clock className="w-4 h-4 text-blue-500" /> : <Circle className="w-4 h-4 text-gray-300" />}
-                      {i < plan.milestones.length - 1 && <div className="w-0.5 h-5 bg-gray-200 dark:bg-gray-700" />}
+            <div className="flex items-center gap-4 text-xs text-gray-500"><span>{p.completed}/{p.totalTasks} tasks done</span>{p.overdue > 0 && <span className="text-red-600">{p.overdue} overdue</span>}</div>
+            {selectedPlan === p.id && (
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                {p.tasks.map((t, i) => {
+                  const Icon = taskStatusIcons[t.status] || Clock
+                  return (
+                    <div key={i} className="flex items-center gap-3 py-1">
+                      <Icon className={`w-4 h-4 ${taskStatusColors[t.status]}`} />
+                      <span className={`flex-1 text-sm ${t.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>{t.task}</span>
+                      <span className="text-xs text-gray-500">{t.owner}</span>
+                      <span className={`text-xs ${t.status === 'overdue' ? 'text-red-600 font-medium' : 'text-gray-400'}`}>{t.due}</span>
                     </div>
-                    <div className="flex-1 flex items-center justify-between pb-1">
-                      <div><span className={`text-sm ${m.status === 'completed' ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-white font-medium'}`}>{m.name}</span><span className="text-xs text-gray-400 ml-2">{m.owner}</span></div>
-                      <span className="text-xs text-gray-400">{m.due}</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
+                <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <button className="px-3 py-1.5 bg-teal-600 text-white rounded text-xs hover:bg-teal-700 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Task</button>
+                  <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">Share with Buyer</button>
+                  <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">Export PDF</button>
+                </div>
               </div>
             )}
           </div>

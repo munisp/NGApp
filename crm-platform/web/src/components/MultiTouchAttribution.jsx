@@ -40,6 +40,7 @@ export default function MultiTouchAttribution() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('journeys')
+  const [search, setSearch] = useState('')
 
   return (
     <div role="region" aria-label="MultiTouchAttribution" className="space-y-6">

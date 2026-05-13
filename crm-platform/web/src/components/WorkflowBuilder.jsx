@@ -28,6 +28,7 @@ export default function WorkflowBuilder() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('templates')
+  const [search, setSearch] = useState('')
 
   return (
     <div role="region" aria-label="WorkflowBuilder" className="space-y-6">

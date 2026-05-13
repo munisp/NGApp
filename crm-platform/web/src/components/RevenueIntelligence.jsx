@@ -31,6 +31,7 @@ export default function RevenueIntelligence() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('forecast')
+  const [search, setSearch] = useState('')
 
   return (
     <div role="region" aria-label="RevenueIntelligence" className="space-y-6">

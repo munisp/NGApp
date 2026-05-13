@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Plus, Eye, Settings, Code, CheckCircle, Clock, Globe, Users, Layers } from 'lucide-react'
+import { Layout, Plus, Eye, Settings, Code, CheckCircle, Clock, Globe, Users, Layers, Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -27,6 +27,7 @@ export default function CustomerAppBuilder() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [selected, setSelected] = useState(null)
+  const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('apps')
 
   return (
@@ -45,9 +46,9 @@ export default function CustomerAppBuilder() {
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`pb-3 text-sm font-medium border-b-2 ${activeTab === tab.id ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500'}`}>{tab.label}</button>
         ))}
       </div></div>
-      {activeTab === 'apps' && (
+      {activeTab === 'apps' && (<div className="space-y-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search apps..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {apps.map(app => (
+          {apps.filter(a => !search || a.name.toLowerCase().includes(search.toLowerCase())).map(app => (
             <div key={app.id} onClick={() => setSelected(selected === app.id ? null : app.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === app.id ? 'border-rose-500 ring-1 ring-rose-500' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-gray-900 dark:text-white">{app.name}</h4>
@@ -65,7 +66,7 @@ export default function CustomerAppBuilder() {
             </div>
           ))}
         </div>
-      )}
+      </div>)}
       {activeTab === 'components' && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {componentLibrary.map(c => (

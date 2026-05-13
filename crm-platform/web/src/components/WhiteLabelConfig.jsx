@@ -1,60 +1,80 @@
 import { useState } from 'react'
-import { Palette, Globe, Users, Eye, CheckCircle, Settings, Image, Type } from 'lucide-react'
+import { Palette, Globe, Eye, CheckCircle, Settings, Image, Type, Save } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
-import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
-const resellers = [
-  { id: 'WL-001', name: 'PayTech Partners', domain: 'crm.paytech.ng', primaryColor: '#2563EB', users: 1240, status: 'active', plan: 'Enterprise', mrr: '₦2.4M', features: ['Custom domain', 'Logo', 'Email templates', 'SSO'] },
-  { id: 'WL-002', name: 'FinServ Solutions', domain: 'crm.finserv.com', primaryColor: '#059669', users: 890, status: 'active', plan: 'Professional', mrr: '₦1.8M', features: ['Custom domain', 'Logo', 'Email templates'] },
-  { id: 'WL-003', name: 'AfriBank Group', domain: 'crm.afribank.ng', primaryColor: '#7C3AED', users: 2400, status: 'active', plan: 'Enterprise', mrr: '₦4.2M', features: ['Custom domain', 'Logo', 'Email templates', 'SSO', 'API access'] },
-  { id: 'WL-004', name: 'MicroLend Africa', domain: 'crm.microlend.co', primaryColor: '#DC2626', users: 340, status: 'pending', plan: 'Starter', mrr: '₦0.6M', features: ['Logo', 'Email templates'] },
-]
+const config = {
+  branding: { primaryColor: '#0F766E', secondaryColor: '#6366F1', logoUrl: '/logo.svg', favicon: '/favicon.ico', appName: 'NexGen CRM' },
+  theme: { mode: 'auto', font: 'Inter', borderRadius: 'rounded-lg', density: 'comfortable' },
+  domain: { customDomain: 'crm.acmebank.com', sslStatus: 'active', emailDomain: 'notifications@acmebank.com' },
+  features: [
+    { name: 'Customer Portal', enabled: true },
+    { name: 'API Documentation', enabled: true },
+    { name: 'In-App Chat', enabled: false },
+    { name: 'Custom Reports', enabled: true },
+    { name: 'Mobile App Branding', enabled: false },
+    { name: 'SSO Configuration', enabled: true },
+  ]
+}
 
 export default function WhiteLabelConfig() {
-  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('whitelabelconfig', () => apiClient.dashboard.metrics(), { fallback: resellers })
+  const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('whitelabelconfig', () => apiClient.dashboard.metrics(), { fallback: config })
   const { tenant } = useTenant()
-  const { t } = useTranslation()
-  const [selected, setSelected] = useState(null)
+  const [activeTab, setActiveTab] = useState('branding')
+  const [previewMode, setPreviewMode] = useState(false)
 
   return (
     <div role="region" aria-label="WhiteLabelConfig" className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Palette className="w-7 h-7 text-pink-600" /> White-Label Configuration</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Customize branding for resellers and partners</p></div>
-        <FallbackBadge />
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Palette className="w-7 h-7 text-pink-600" /> White Label Configuration</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Customize branding for {tenant?.name || 'Platform'}</p></div>
+        <div className="flex gap-2"><button onClick={() => setPreviewMode(!previewMode)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300"><Eye className="w-4 h-4" /> {previewMode ? 'Edit' : 'Preview'}</button><button className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-pink-700"><Save className="w-4 h-4" /> Save</button><FallbackBadge /></div>
       </div>
       <div className="grid grid-cols-4 gap-3">
-        {[{ l: 'Resellers', v: resellers.length }, { l: 'Active', v: resellers.filter(r => r.status === 'active').length }, { l: 'Total Users', v: resellers.reduce((s, r) => s + r.users, 0).toLocaleString() }, { l: 'Total MRR', v: '\u20A69.0M' }].map(s => (
-          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
+        {[{ l: 'Custom Domain', v: config.domain.customDomain, c: 'text-emerald-600' }, { l: 'SSL Status', v: config.domain.sslStatus === 'active' ? 'Active' : 'Pending', c: 'text-emerald-600' }, { l: 'Features Enabled', v: config.features.filter(f => f.enabled).length + '/' + config.features.length }, { l: 'Theme', v: config.theme.mode }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
       </div>
-      <div className="space-y-2">
-        {resellers.map(r => (
-          <div key={r.id} onClick={() => setSelected(selected === r.id ? null : r.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md transition-all ${selected === r.id ? 'border-pink-500 ring-1 ring-pink-500' : 'border-gray-200 dark:border-gray-700'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: r.primaryColor }}><Type className="w-4 h-4 text-white" /></div>
-                <div>
-                  <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{r.name}</h4><span className={`text-xs px-1.5 py-0.5 rounded ${r.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span></div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5"><span><Globe className="w-3 h-3 inline mr-1" />{r.domain}</span><span>{r.users.toLocaleString()} users</span><span>{r.plan}</span><span>{r.mrr}/mo</span></div>
-                </div>
-              </div>
-            </div>
-            {selected === r.id && (
-              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <h5 className="text-xs font-medium text-gray-500 mb-2">Enabled Features</h5>
-                <div className="flex flex-wrap gap-1">{r.features.map(f => <span key={f} className="text-xs px-2 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400">{f}</span>)}</div>
-                <div className="flex gap-2 mt-3">
-                  <button className="px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 flex items-center gap-1"><Settings className="w-3 h-3" /> Configure</button>
-                  <button className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1"><Eye className="w-3 h-3" /> Preview</button>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+        {['branding', 'theme', 'domain', 'features'].map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
         ))}
       </div>
+      {activeTab === 'branding' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-white">Brand Settings</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="text-xs text-gray-500 block mb-1">App Name</label><input type="text" defaultValue={config.branding.appName} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Logo URL</label><input type="text" defaultValue={config.branding.logoUrl} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Primary Color</label><div className="flex gap-2"><input type="color" defaultValue={config.branding.primaryColor} className="w-10 h-10 rounded border-0 cursor-pointer" /><input type="text" defaultValue={config.branding.primaryColor} className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Secondary Color</label><div className="flex gap-2"><input type="color" defaultValue={config.branding.secondaryColor} className="w-10 h-10 rounded border-0 cursor-pointer" /><input type="text" defaultValue={config.branding.secondaryColor} className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div></div>
+        </div>
+      </div>)}
+      {activeTab === 'theme' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-white">Theme Settings</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="text-xs text-gray-500 block mb-1">Theme Mode</label><select defaultValue={config.theme.mode} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>auto</option><option>light</option><option>dark</option></select></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Font</label><select defaultValue={config.theme.font} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>Inter</option><option>Roboto</option><option>Open Sans</option><option>Lato</option></select></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Border Radius</label><select defaultValue={config.theme.borderRadius} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>rounded-none</option><option>rounded-sm</option><option>rounded-lg</option><option>rounded-xl</option></select></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Density</label><select defaultValue={config.theme.density} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>compact</option><option>comfortable</option><option>spacious</option></select></div>
+        </div>
+      </div>)}
+      {activeTab === 'domain' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-white">Domain Settings</h3>
+        <div className="space-y-4">
+          <div><label className="text-xs text-gray-500 block mb-1">Custom Domain</label><div className="flex gap-2"><input type="text" defaultValue={config.domain.customDomain} className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /><span className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-xs flex items-center gap-1"><CheckCircle className="w-3 h-3" /> SSL Active</span></div></div>
+          <div><label className="text-xs text-gray-500 block mb-1">Email Sender Domain</label><input type="text" defaultValue={config.domain.emailDomain} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
+        </div>
+      </div>)}
+      {activeTab === 'features' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-white">Feature Toggles</h3>
+        {config.features.map(f => (
+          <label key={f.name} className="flex items-center justify-between cursor-pointer p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <span className="text-sm text-gray-700 dark:text-gray-300">{f.name}</span>
+            <input type="checkbox" defaultChecked={f.enabled} className="w-4 h-4 rounded border-gray-300 text-pink-600" />
+          </label>
+        ))}
+      </div>)}
     </div>
   )
 }

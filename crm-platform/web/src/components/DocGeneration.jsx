@@ -26,6 +26,7 @@ export default function DocGeneration() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('templates')
+  const [search, setSearch] = useState('')
 
   return (
     <div role="region" aria-label="DocGeneration" className="space-y-6">
