@@ -23,7 +23,7 @@ import { useNotification } from '../contexts/NotificationContext'
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth()
-  const { theme, setTheme } = useTheme()
+  const { theme, setDarkTheme, setLightTheme, setSystemThemePreference } = useTheme()
   const { notifications, unreadCount, markAsRead } = useNotification()
   const [searchQuery, setSearchQuery] = useState('')
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -136,7 +136,9 @@ const Header = ({ onMenuClick }) => {
                       <button
                         key={option.value}
                         onClick={() => {
-                          setTheme(option.value)
+                          if (option.value === 'dark') setDarkTheme()
+                          else if (option.value === 'light') setLightTheme()
+                          else setSystemThemePreference()
                           setShowThemeMenu(false)
                         }}
                         className={`w-full flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
