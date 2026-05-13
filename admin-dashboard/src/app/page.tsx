@@ -43,6 +43,7 @@ const WebhookConfig = dynamic(() => import('@/components/webhooks/WebhookConfig'
 const MaintenanceDashboard = dynamic(() => import('@/components/maintenance-mode/MaintenanceDashboard').then(m => ({ default: m.MaintenanceDashboard })), { loading: () => <PageSpinner /> });
 const RustServices = dynamic(() => import('@/components/infrastructure/RustServices').then(m => ({ default: m.RustServices })), { loading: () => <PageSpinner /> });
 const OutboundRemittanceDashboard = dynamic(() => import('@/components/outbound/OutboundRemittanceDashboard'), { loading: () => <PageSpinner /> });
+const InboundRemittanceDashboard = dynamic(() => import('@/components/inbound/InboundRemittanceDashboard'), { loading: () => <PageSpinner /> });
 const GoServices = dynamic(() => import('@/components/infrastructure/GoServices').then(m => ({ default: m.GoServices })), { loading: () => <PageSpinner /> });
 const MiddlewareDashboard = dynamic(() => import('@/components/infrastructure/MiddlewareDashboard').then(m => ({ default: m.MiddlewareDashboard })), { loading: () => <PageSpinner /> });
 const DashboardHub = dynamic(() => import('@/components/hub/DashboardHub').then(m => ({ default: m.DashboardHub })), { loading: () => <PageSpinner /> });
@@ -158,6 +159,8 @@ export default function Home() {
           return <ReportsInterface />;
         case 'outbound-remittance':
           return <OutboundRemittanceDashboard />;
+        case 'inbound-remittance':
+          return <InboundRemittanceDashboard />;
         case 'rust-services':
           return <RustServices />;
         case 'go-services':

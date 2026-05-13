@@ -41,6 +41,7 @@ import {
   Database,
   Cpu,
   Home,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, ROLES } from '@/lib/auth';
@@ -285,6 +286,13 @@ const navItems: NavItem[] = [
     id: 'outbound-remittance',
     label: 'Outbound Remittance',
     icon: <Globe className="h-5 w-5" />,
+    section: 'Cross-Border',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.SETTLEMENT_OFFICER, 'admin', 'participant'],
+  },
+  {
+    id: 'inbound-remittance',
+    label: 'Inbound Remittance',
+    icon: <ArrowDownLeft className="h-5 w-5" />,
     section: 'Cross-Border',
     allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.SETTLEMENT_OFFICER, 'admin', 'participant'],
   },
