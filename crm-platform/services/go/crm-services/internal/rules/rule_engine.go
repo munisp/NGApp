@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/your-org/banking-crm/enterprise-crm/banking-ai-telephony/fraud-prevention/go/common/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // RuleResult represents the result of evaluating a rule

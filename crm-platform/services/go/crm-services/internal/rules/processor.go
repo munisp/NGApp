@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/your-org/banking-crm/enterprise-crm/banking-ai-telephony/fraud-prevention/go/common/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // TransactionProcessor handles processing of transactions from various sources

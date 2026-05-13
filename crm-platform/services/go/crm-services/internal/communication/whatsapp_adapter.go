@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/your-org/banking-crm/enterprise-crm/banking-ai-telephony/multi-channel/go/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // WhatsAppAdapter implements the ChannelAdapter interface for WhatsApp

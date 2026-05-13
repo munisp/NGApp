@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
+	swaggerFiles "github.com/swaggo/files"
 
 	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/config"
 	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/handlers"

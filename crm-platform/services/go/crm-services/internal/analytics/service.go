@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/crm-core-service/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
 )
 
 // AnalyticsService interface defines analytics operations

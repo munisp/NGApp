@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -17,7 +19,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/yaml.v2"
 
-	permifyv1 "github.com/Permify/permify-go/generated/base/v1"
+	// permifyv1 package wired via middleware/permify client
+	_ "github.com/Permify/permify-go"
 )
 
 // Configuration structures

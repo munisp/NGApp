@@ -9,8 +9,8 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/inventory-service/internal/models"
-	"github.com/enterprise-crm/inventory-service/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
 )
 
 // InventoryService handles inventory business logic

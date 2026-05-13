@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/enterprise-crm/inventory-service/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // CategoryRepository handles category data operations

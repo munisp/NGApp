@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/enterprise-crm/crm-core-service/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // LeadRepository interface defines lead data access operations

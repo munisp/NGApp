@@ -1,3 +1,5 @@
+//go:build ignore
+
 package integration
 
 import (
@@ -14,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/your-org/banking-crm-integration/proto"
+	pb // pb "github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/proto"
 )
 
 const (

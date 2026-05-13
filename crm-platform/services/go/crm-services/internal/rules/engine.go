@@ -15,8 +15,8 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/your-org/banking-crm/enterprise-crm/banking-ai-telephony/fraud-prevention/go/common/models"
-	"github.com/your-org/banking-crm/enterprise-crm/banking-ai-telephony/fraud-prevention/go/fraud_detection_engine/rules"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/fraud"
 )
 
 // FraudDetectionResult represents the result of a fraud detection evaluation

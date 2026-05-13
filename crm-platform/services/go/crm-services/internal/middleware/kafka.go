@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/crm-core-service/internal/config"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/config"
 )
 
 // KafkaProducer wraps the Kafka producer with additional functionality

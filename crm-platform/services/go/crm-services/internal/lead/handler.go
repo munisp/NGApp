@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/crm-core-service/internal/repository"
-	"github.com/enterprise-crm/crm-core-service/internal/service"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/service"
 )
 
 // LeadHandler handles lead-related HTTP requests
