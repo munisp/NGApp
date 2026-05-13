@@ -110,6 +110,7 @@ import { registerDbPerformanceEndpoints } from "./lib/dbPerformance";
 import { registerKPIGateway } from "./lib/kpiGateway";
 import { registerKPINotifications } from "./lib/kpiNotifications";
 import { registerGLPipelineRoutes } from "./lib/glPipeline";
+import { registerBankingOperationsPipeline } from "./lib/bankingOperationsPipeline";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
@@ -5348,6 +5349,8 @@ async function startServer() {
   registerKPINotifications(app);
   // GL → CoA → eFASS Report Pipeline (14 middleware integrated)
   registerGLPipelineRoutes(app);
+  // Banking Operations Pipeline — closes 7 gaps (Interest, ECL, Recon, Fees, Treasury, Settlement, Dormancy → GL)
+  registerBankingOperationsPipeline(app);
 
   // Seed database on startup (no-op if tables already have data or no DB)
   seedDatabaseIfEmpty().catch(() => {});
