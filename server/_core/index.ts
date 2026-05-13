@@ -3,6 +3,9 @@ import express from "express";
 import compression from "compression";
 import { createServer } from "http";
 import net from "net";
+import { logger } from "../lib/logger";
+import { securityHeaders } from "../middleware/security-headers";
+import { corsMiddleware } from "../middleware/cors-config";
 import { startRetryProcessor } from "../onboarding/retryScheduler";
 import { startTestScheduler } from "../onboarding/testScheduler";
 import { startRateAlertMonitor } from "../jobs/rateAlertMonitor";
@@ -38,10 +41,14 @@ async function startServer() {
   const server = createServer(app);
   
   // Trust proxy for proper protocol detection behind reverse proxies (nginx, APISIX, etc.)
-  // This ensures req.protocol and req.ip are correct when behind a TLS-terminating proxy
-  // Set to 1 for single proxy hop, or 'loopback' for localhost proxies
   const trustProxy = process.env.TRUST_PROXY || '1';
   app.set('trust proxy', trustProxy === 'true' ? true : trustProxy === 'false' ? false : trustProxy);
+
+  // Security headers (CSP, HSTS, X-Frame-Options, etc.)
+  app.use(securityHeaders);
+
+  // CORS
+  app.use(corsMiddleware);
   
   // Gzip/deflate compression for all responses
   app.use(compression({ level: 6, threshold: 1024 }));
@@ -76,11 +83,11 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.warn({ preferredPort, port }, 'Port busy, using alternative');
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info({ port, env: process.env.NODE_ENV }, 'Server started');
     
     // Start webhook retry processor
     startRetryProcessor();
@@ -96,4 +103,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logger.fatal({ err }, 'Server failed to start');
+  process.exit(1);
+});

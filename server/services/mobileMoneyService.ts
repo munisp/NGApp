@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('mobileMoney');
 /**
  * Mobile Money Service
  * 
@@ -86,7 +89,7 @@ export async function validateMobileMoneyAccount(params: {
   }
 
   // In production, call provider API for validation
-  console.log('[Mobile Money] Validating account:', params);
+  log.info('[Mobile Money] Validating account:', params);
 
   // Mock validation
   return {
@@ -120,7 +123,7 @@ export async function sendMobileMoneyTransfer(params: {
   }
 
   // In production, call provider API
-  console.log('[Mobile Money] Sending transfer:', params);
+  log.info('[Mobile Money] Sending transfer:', params);
 
   // Mock transfer result
   const result: MobileMoneyTransfer = {
@@ -234,7 +237,7 @@ export async function sendMobileMoneyReceipt(params: {
   const message = `You have received ₦${params.amount.toLocaleString()} in your ${providerInfo?.shortName} wallet. Ref: ${params.reference}${params.transactionId ? `. TxnID: ${params.transactionId}` : ''}`;
 
   // In production, send via SMS provider
-  console.log(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
+  log.info(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
 
   return true;
 }
@@ -286,7 +289,7 @@ export async function reverseMobileMoneyTransfer(reference: string): Promise<{
   message: string;
 }> {
   // In production, call provider API for reversal
-  console.log('[Mobile Money] Reversing transfer:', reference);
+  log.info('[Mobile Money] Reversing transfer:', reference);
 
   return {
     success: true,

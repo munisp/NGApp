@@ -20,6 +20,9 @@ import { hashBackupCodes } from './twoFactorService';
 import crypto from 'crypto';
 import { sendRecoveryCodeEmail } from './emailService';
 import { sendRecoverySMS } from './smsService';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('accountRecovery');
 
 // Hash a single backup code (same logic as twoFactorService)
 function hashBackupCode(code: string): string {
@@ -88,7 +91,7 @@ export async function checkRecoveryRateLimit(userId: number): Promise<{ allowed:
 
     return { allowed, remainingRequests };
   } catch (error) {
-    console.error('[AccountRecovery] Rate limit check failed:', error);
+    log.error('[AccountRecovery] Rate limit check failed:', error);
     return { allowed: false, remainingRequests: 0 };
   }
 }
@@ -166,11 +169,11 @@ export async function initiateRecovery(params: {
           });
 
           if (!emailResult.success) {
-            console.error('[AccountRecovery] Failed to send recovery email:', emailResult.error);
+            log.error('[AccountRecovery] Failed to send recovery email:', emailResult.error);
             // Continue anyway - code is still valid, just not emailed
           }
         } else {
-          console.warn('[AccountRecovery] User has no email address, cannot send recovery code');
+          log.warn('[AccountRecovery] User has no email address, cannot send recovery code');
         }
       } else if (params.recoveryMethod === 'sms') {
         if (params.phoneNumber) {
@@ -181,11 +184,11 @@ export async function initiateRecovery(params: {
           });
 
           if (!smsResult.success) {
-            console.error('[AccountRecovery] Failed to send recovery SMS:', smsResult.error);
+            log.error('[AccountRecovery] Failed to send recovery SMS:', smsResult.error);
             // Continue anyway - code is still valid, just not sent
           }
         } else {
-          console.warn('[AccountRecovery] SMS recovery requested but no phone number provided');
+          log.warn('[AccountRecovery] SMS recovery requested but no phone number provided');
           return { success: false, error: 'Phone number required for SMS recovery' };
         }
       }
@@ -197,7 +200,7 @@ export async function initiateRecovery(params: {
       recoveryCode: params.recoveryMethod === 'admin' ? undefined : recoveryCode, // Don't return code for admin recovery
     };
   } catch (error) {
-    console.error('[AccountRecovery] Failed to initiate recovery:', error);
+    log.error('[AccountRecovery] Failed to initiate recovery:', error);
     return { success: false, error: 'Failed to create recovery request' };
   }
 }
@@ -279,7 +282,7 @@ export async function verifyRecoveryCode(params: {
 
     return { success: false, error: 'Invalid recovery code' };
   } catch (error) {
-    console.error('[AccountRecovery] Failed to verify recovery code:', error);
+    log.error('[AccountRecovery] Failed to verify recovery code:', error);
     return { success: false, error: 'Verification failed' };
   }
 }
@@ -342,7 +345,7 @@ export async function completeRecovery(params: {
 
     return { success: true };
   } catch (error) {
-    console.error('[AccountRecovery] Failed to complete recovery:', error);
+    log.error('[AccountRecovery] Failed to complete recovery:', error);
     return { success: false, error: 'Failed to reset 2FA' };
   }
 }
@@ -365,7 +368,7 @@ export async function listPendingRecoveryRequests(): Promise<AccountRecoveryRequ
 
     return requests;
   } catch (error) {
-    console.error('[AccountRecovery] Failed to list pending requests:', error);
+    log.error('[AccountRecovery] Failed to list pending requests:', error);
     return [];
   }
 }
@@ -414,7 +417,7 @@ export async function approveRecoveryRequest(params: {
 
     return { success: true };
   } catch (error) {
-    console.error('[AccountRecovery] Failed to approve request:', error);
+    log.error('[AccountRecovery] Failed to approve request:', error);
     return { success: false, error: 'Failed to approve request' };
   }
 }
@@ -463,7 +466,7 @@ export async function rejectRecoveryRequest(params: {
 
     return { success: true };
   } catch (error) {
-    console.error('[AccountRecovery] Failed to reject request:', error);
+    log.error('[AccountRecovery] Failed to reject request:', error);
     return { success: false, error: 'Failed to reject request' };
   }
 }
@@ -507,7 +510,7 @@ export async function cleanupExpiredRequests(): Promise<number> {
 
     return expiredRequests.length;
   } catch (error) {
-    console.error('[AccountRecovery] Failed to cleanup expired requests:', error);
+    log.error('[AccountRecovery] Failed to cleanup expired requests:', error);
     return 0;
   }
 }
@@ -530,6 +533,6 @@ async function logRecoveryAction(params: Omit<InsertAccountRecoveryAuditLog, 'id
       details: params.details,
     });
   } catch (error) {
-    console.error('[AccountRecovery] Failed to log action:', error);
+    log.error('[AccountRecovery] Failed to log action:', error);
   }
 }

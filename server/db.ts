@@ -1,6 +1,9 @@
 import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import { createChildLogger } from './lib/logger';
+
+const log = createChildLogger('database');
 import { 
   InsertUser, users, 
   merchants, InsertMerchant, Merchant,
@@ -27,7 +30,7 @@ export async function getDb() {
       });
       _db = drizzle(_pool);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      log.warn({ err: error }, 'Failed to connect to database');
       _db = null;
     }
   }
@@ -41,7 +44,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    log.warn('Cannot upsert user: database not available');
     return;
   }
 
@@ -89,7 +92,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    log.error({ err: error }, 'Failed to upsert user');
     throw error;
   }
 }
@@ -97,7 +100,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    log.warn('Cannot get user: database not available');
     return undefined;
   }
 

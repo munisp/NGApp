@@ -7,6 +7,9 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { notificationChannels, notificationDeliveries } from "../../drizzle/schema";
 import { renderTemplate } from "./templateEngine";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('notificationChannel');
 
 interface SlackConfig {
   webhookUrl: string;
@@ -153,9 +156,9 @@ async function sendSlackNotification(config: SlackConfig, payload: any): Promise
 async function sendEmailNotification(config: EmailConfig, payload: any): Promise<void> {
   // For now, we'll use a simple console log
   // In production, integrate with SendGrid, AWS SES, or SMTP
-  console.log(`[Email Notification] To: ${config.to}`);
-  console.log(`[Email Notification] Subject: ${config.subject || "Webhook Failure Alert"}`);
-  console.log(`[Email Notification] Body:`, payload);
+  log.info(`[Email Notification] To: ${config.to}`);
+  log.info(`[Email Notification] Subject: ${config.subject || "Webhook Failure Alert"}`);
+  log.info(`[Email Notification] Body:`, payload);
 
   // Send email using SendGrid or Resend
   try {
@@ -197,7 +200,7 @@ async function sendEmailNotification(config: EmailConfig, payload: any): Promise
       if (!response.ok) {
         throw new Error(`SendGrid API error: ${response.status}`);
       }
-      console.log('[Email] Sent via SendGrid');
+      log.info('[Email] Sent via SendGrid');
     } else if (resendApiKey) {
       // Use Resend
       const response = await fetch('https://api.resend.com/emails', {
@@ -217,7 +220,7 @@ async function sendEmailNotification(config: EmailConfig, payload: any): Promise
       if (!response.ok) {
         throw new Error(`Resend API error: ${response.status}`);
       }
-      console.log('[Email] Sent via Resend');
+      log.info('[Email] Sent via Resend');
     } else {
       // Development mode: save to file
       const fs = await import('fs/promises');
@@ -226,10 +229,10 @@ async function sendEmailNotification(config: EmailConfig, payload: any): Promise
       await fs.mkdir(emailDir, { recursive: true });
       const filename = `email_${Date.now()}_${Math.random().toString(36).substring(7)}.html`;
       await fs.writeFile(path.join(emailDir, filename), emailBody);
-      console.log(`[Email] Saved to storage/emails/${filename} (no email service configured)`);
+      log.info(`[Email] Saved to storage/emails/${filename} (no email service configured)`);
     }
   } catch (error) {
-    console.error('[Email] Failed to send:', error);
+    log.error('[Email] Failed to send:', error);
     throw error;
   }
 }
@@ -270,7 +273,7 @@ function isDuringDND(channel: any): boolean {
         }
       }
     } catch (error) {
-      console.error('[DND] Failed to parse schedules:', error);
+      log.error('[DND] Failed to parse schedules:', error);
     }
   }
 
@@ -306,7 +309,7 @@ export async function sendNotification(params: {
 
   // Check Do Not Disturb mode
   if (isDuringDND(channel)) {
-    console.log(`[Notification] Channel ${channel.id} is in DND mode, skipping notification`);
+    log.info(`[Notification] Channel ${channel.id} is in DND mode, skipping notification`);
     return { success: false, reason: "dnd_active" };
   }
 
@@ -319,7 +322,7 @@ export async function sendNotification(params: {
       const rendered = renderTemplate(channel.template, params.data as any);
       payload = JSON.parse(rendered);
     } catch (error) {
-      console.error("[Notification] Template rendering failed:", error);
+      log.error("[Notification] Template rendering failed:", error);
       // Fall back to raw data
     }
   }

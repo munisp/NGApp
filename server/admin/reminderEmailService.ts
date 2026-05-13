@@ -7,6 +7,9 @@ import {
 } from '../../drizzle/schema';
 import { eq, and, lt, sql, desc } from 'drizzle-orm';
 import { notifyOwner } from '../_core/notification';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('reminderEmail');
 
 type Stage = 'registration' | 'technical' | 'integration' | 'testing' | 'production';
 
@@ -309,10 +312,10 @@ export async function getReminderLog(applicationId?: number) {
  * Automated reminder job (to be called by a scheduler)
  */
 export async function processAutomatedReminders() {
-  console.log('[ReminderJob] Starting automated reminder processing...');
+  log.info('[ReminderJob] Starting automated reminder processing...');
 
   const stuckParticipants = await getStuckParticipants();
-  console.log(`[ReminderJob] Found ${stuckParticipants.length} participants needing reminders`);
+  log.info(`[ReminderJob] Found ${stuckParticipants.length} participants needing reminders`);
 
   let sentCount = 0;
   let failedCount = 0;
@@ -333,7 +336,7 @@ export async function processAutomatedReminders() {
     }
   }
 
-  console.log(`[ReminderJob] Completed: ${sentCount} sent, ${failedCount} failed`);
+  log.info(`[ReminderJob] Completed: ${sentCount} sent, ${failedCount} failed`);
 
   return { sentCount, failedCount, totalProcessed: stuckParticipants.length };
 }

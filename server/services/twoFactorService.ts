@@ -1,6 +1,9 @@
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('twoFactor');
 
 /**
  * Two-Factor Authentication Service
@@ -210,7 +213,7 @@ export async function sendSmsVerificationCode(
       await sendAfricasTalkingSms(options.phoneNumber, code);
     }
   } else {
-    console.log(`[2FA SMS] Code for ${options.phoneNumber}: ${code}`);
+    log.info(`[2FA SMS] Code for ${options.phoneNumber}: ${code}`);
   }
 
   return {
@@ -268,7 +271,7 @@ async function sendTwilioSms(phoneNumber: string, code: string): Promise<void> {
   //   to: phoneNumber,
   // });
 
-  console.log(`[Twilio] Sending code ${code} to ${phoneNumber}`);
+  log.info(`[Twilio] Sending code ${code} to ${phoneNumber}`);
 }
 
 /**
@@ -296,7 +299,7 @@ async function sendAfricasTalkingSms(
   //   message: `Your verification code is: ${code}`,
   // });
 
-  console.log(`[Africa's Talking] Sending code ${code} to ${phoneNumber}`);
+  log.info(`[Africa's Talking] Sending code ${code} to ${phoneNumber}`);
 }
 
 /**

@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('agentCash');
 /**
  * Agent Cash Service
  * 
@@ -208,7 +211,7 @@ export function calculateAgentFee(amount: number, provider: 'paga' | 'opay' | 'k
  */
 async function registerPagaCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call Paga API
-  console.log('[Paga] Registered collection code:', collectionCode.code);
+  log.info('[Paga] Registered collection code:', collectionCode.code);
 
   // Example Paga API call:
   // const response = await fetch('https://api.paga.com/v1/collection-codes', {
@@ -231,7 +234,7 @@ async function registerPagaCollectionCode(collectionCode: CollectionCode): Promi
  */
 async function registerOPayCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call OPay API
-  console.log('[OPay] Registered collection code:', collectionCode.code);
+  log.info('[OPay] Registered collection code:', collectionCode.code);
 
   // Example OPay API call:
   // const response = await fetch('https://api.opay.com/v1/cashout/create', {
@@ -256,7 +259,7 @@ async function registerOPayCollectionCode(collectionCode: CollectionCode): Promi
  */
 async function registerKudiCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call Kudi API
-  console.log('[Kudi] Registered collection code:', collectionCode.code);
+  log.info('[Kudi] Registered collection code:', collectionCode.code);
 
   // Example Kudi API call:
   // const response = await fetch('https://api.kudi.com/v1/withdrawals', {
@@ -288,7 +291,7 @@ export async function sendCollectionCodeSMS(params: {
   const message = `Your cash pickup code is: ${params.code}. Collect ₦${params.amount.toLocaleString()} from any ${params.agentName} agent. Code expires on ${params.expiresAt.toLocaleDateString()}. Keep this code secure.`;
 
   // In production, send via Twilio, Africa's Talking, etc.
-  console.log(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
+  log.info(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
 
   return true;
 }

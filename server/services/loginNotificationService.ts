@@ -9,6 +9,9 @@ import { sendSMS } from './smsService';
 import { getDb } from '../db';
 import { users } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('loginNotification');
 
 interface LoginNotificationParams {
   userId: number;
@@ -102,7 +105,7 @@ export async function sendLoginNotification(params: LoginNotificationParams): Pr
       });
 
       if (!emailResult.success) {
-        console.error('[LoginNotification] Failed to send email:', emailResult.error);
+        log.error('[LoginNotification] Failed to send email:', emailResult.error);
       }
     }
 
@@ -113,7 +116,7 @@ export async function sendLoginNotification(params: LoginNotificationParams): Pr
 
     return { success: true };
   } catch (error) {
-    console.error('[LoginNotification] Error sending notification:', error);
+    log.error('[LoginNotification] Error sending notification:', error);
     return { success: false, error: 'Failed to send notification' };
   }
 }

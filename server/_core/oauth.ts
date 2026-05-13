@@ -3,6 +3,9 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('oauth');
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -117,7 +120,7 @@ export function registerOAuthRoutes(app: Express) {
             isNewDevice,
             isSuspicious: suspicious,
           }).catch(error => {
-            console.error('[OAuth] Failed to send login notification:', error);
+            log.error('[OAuth] Failed to send login notification:', error);
           });
         }
       }
@@ -157,7 +160,7 @@ export function registerOAuthRoutes(app: Express) {
         res.redirect(302, "/");
       }
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
+      log.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });

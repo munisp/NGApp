@@ -11,6 +11,9 @@
  */
 
 import { EventEmitter } from 'events';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('circuitBreaker');
 
 export enum CircuitState {
   CLOSED = 'CLOSED',
@@ -295,7 +298,7 @@ export const coinbaseCircuitBreaker = paymentCircuitBreakers.getOrCreate('coinba
   timeout: 15000,
   resetTimeout: 30000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] Coinbase: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] Coinbase: ${from} -> ${to}`);
   }
 });
 
@@ -305,7 +308,7 @@ export const circleCircuitBreaker = paymentCircuitBreakers.getOrCreate('circle',
   timeout: 15000,
   resetTimeout: 30000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] Circle: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] Circle: ${from} -> ${to}`);
   }
 });
 
@@ -315,7 +318,7 @@ export const nibssCircuitBreaker = paymentCircuitBreakers.getOrCreate('nibss', {
   timeout: 30000,
   resetTimeout: 60000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] NIBSS: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] NIBSS: ${from} -> ${to}`);
   }
 });
 
@@ -325,7 +328,7 @@ export const smileIdentityCircuitBreaker = paymentCircuitBreakers.getOrCreate('s
   timeout: 45000,
   resetTimeout: 60000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] SmileIdentity: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] SmileIdentity: ${from} -> ${to}`);
   }
 });
 
@@ -335,7 +338,7 @@ export const smsCircuitBreaker = paymentCircuitBreakers.getOrCreate('sms', {
   timeout: 10000,
   resetTimeout: 30000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] SMS: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] SMS: ${from} -> ${to}`);
   }
 });
 
@@ -345,7 +348,7 @@ export const emailCircuitBreaker = paymentCircuitBreakers.getOrCreate('email', {
   timeout: 10000,
   resetTimeout: 30000,
   onStateChange: (from, to) => {
-    console.log(`[CircuitBreaker] Email: ${from} -> ${to}`);
+    log.info(`[CircuitBreaker] Email: ${from} -> ${to}`);
   }
 });
 

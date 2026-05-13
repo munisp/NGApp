@@ -7,6 +7,9 @@
 import { getDb } from '../db';
 import { notificationPreferences, type NotificationPreference, type InsertNotificationPreference } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('notificationPreferences');
 
 /**
  * Get user's notification preferences
@@ -15,7 +18,7 @@ import { eq } from 'drizzle-orm';
 export async function getNotificationPreferences(userId: number): Promise<NotificationPreference | null> {
   const db = await getDb();
   if (!db) {
-    console.warn('[NotificationPreferences] Database not available');
+    log.warn('[NotificationPreferences] Database not available');
     return null;
   }
 
@@ -54,7 +57,7 @@ export async function getNotificationPreferences(userId: number): Promise<Notifi
 
     return created || null;
   } catch (error) {
-    console.error('[NotificationPreferences] Error getting preferences:', error);
+    log.error('[NotificationPreferences] Error getting preferences:', error);
     return null;
   }
 }
@@ -83,7 +86,7 @@ export async function updateNotificationPreferences(
 
     return { success: true };
   } catch (error) {
-    console.error('[NotificationPreferences] Error updating preferences:', error);
+    log.error('[NotificationPreferences] Error updating preferences:', error);
     return { success: false, error: 'Failed to update preferences' };
   }
 }
@@ -115,7 +118,7 @@ export async function resetNotificationPreferences(userId: number): Promise<{ su
 
     return { success: true };
   } catch (error) {
-    console.error('[NotificationPreferences] Error resetting preferences:', error);
+    log.error('[NotificationPreferences] Error resetting preferences:', error);
     return { success: false, error: 'Failed to reset preferences' };
   }
 }

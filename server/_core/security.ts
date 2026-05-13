@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from "express";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('security');
 
 /**
  * Rate limiting store using in-memory map

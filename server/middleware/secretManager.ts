@@ -9,6 +9,9 @@
  */
 
 import crypto from 'crypto';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('secretManager');
 
 export interface VaultConfig {
   address: string;
@@ -322,9 +325,9 @@ export class SecretRotationScheduler {
         if (cb) {
           cb(newSecret);
         }
-        console.log(`[SecretRotation] Rotated secret: ${path}`);
+        log.info(`[SecretRotation] Rotated secret: ${path}`);
       } catch (error) {
-        console.error(`[SecretRotation] Failed to rotate secret ${path}:`, error);
+        log.error(`[SecretRotation] Failed to rotate secret ${path}:`, error);
       }
     }, intervalMs);
 

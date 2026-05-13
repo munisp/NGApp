@@ -6,6 +6,9 @@
 import { getDb } from "../db";
 import { ocrFeedback, ocrCorrectionPatterns } from "../../drizzle/schema";
 import { sql, eq, and, desc } from "drizzle-orm";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('correctionLearning');
 
 interface FeedbackPattern {
   fieldName: string;
@@ -119,7 +122,7 @@ export async function generateCorrectionPatterns(minOccurrences: number = 3): Pr
     }
   }
 
-  console.log(`[CorrectionLearning] Generated ${createdCount} new patterns from ${patterns.length} total patterns`);
+  log.info(`[CorrectionLearning] Generated ${createdCount} new patterns from ${patterns.length} total patterns`);
   return createdCount;
 }
 

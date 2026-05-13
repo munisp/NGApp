@@ -1,6 +1,9 @@
 import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('integrations');
 
 // Integration service URL - in production this would be configured via environment
 const INTEGRATION_SERVICE_URL = process.env.INTEGRATION_SERVICE_URL || "http://localhost:8090";
@@ -22,7 +25,7 @@ async function fetchIntegrationService(endpoint: string, options?: RequestInit) 
     
     return response.json();
   } catch (error) {
-    console.error(`Integration service request failed: ${endpoint}`, error);
+    log.error(`Integration service request failed: ${endpoint}`, error);
     // Return mock data for demo purposes when service is unavailable
     return getMockData(endpoint);
   }

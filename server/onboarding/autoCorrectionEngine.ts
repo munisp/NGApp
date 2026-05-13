@@ -117,7 +117,7 @@ export async function applyCorrection(
             correctedValue = value.replace(regex, pattern.correctPattern);
           }
         } catch (error) {
-          console.error(`[AutoCorrection] Invalid regex pattern: ${pattern.incorrectPattern}`);
+          log.error(`[AutoCorrection] Invalid regex pattern: ${pattern.incorrectPattern}`);
         }
         break;
 
@@ -140,9 +140,9 @@ export async function applyCorrection(
         pattern.confidence < thresholds.globalMinConfidence;
 
       if (shouldAutoApply) {
-        console.log(`[AutoCorrection] Auto-applied pattern ${pattern.id} to field ${fieldName}: "${value}" → "${correctedValue}" (confidence: ${pattern.confidence}%)`);
+        log.info(`[AutoCorrection] Auto-applied pattern ${pattern.id} to field ${fieldName}: "${value}" → "${correctedValue}" (confidence: ${pattern.confidence}%)`);
       } else if (isSuggestion) {
-        console.log(`[AutoCorrection] Suggested pattern ${pattern.id} for field ${fieldName}: "${value}" → "${correctedValue}" (confidence: ${pattern.confidence}%)`);
+        log.info(`[AutoCorrection] Suggested pattern ${pattern.id} for field ${fieldName}: "${value}" → "${correctedValue}" (confidence: ${pattern.confidence}%)`);
       }
 
       return {
@@ -298,3 +298,6 @@ function levenshteinDistance(str1: string, str2: string): number {
 
 // Import sql for the recordCorrectionFeedback function
 import { sql } from "drizzle-orm";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('autoCorrectionEngine');

@@ -17,6 +17,9 @@ import * as circleService from './circleService';
 import * as nibssService from './nibssService';
 import * as kycService from './kycService';
 import * as exchangeRateService from './exchangeRateService';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('remittanceOrchestrator');
 
 export interface RemittanceWorkflowState {
   remittanceId: string;
@@ -444,7 +447,7 @@ async function sendWebhook(
   event: string,
   data: Record<string, any>
 ): Promise<void> {
-  console.log(`[Webhook] ${event} for ${remittanceId}:`, data);
+  log.info(`[Webhook] ${event} for ${remittanceId}:`, data);
   
   // In production, send to registered webhook URL
   // Store in database for tracking and retry
@@ -459,7 +462,7 @@ async function sendNotification(params: {
   recipient: string;
   amount: number;
 }): Promise<void> {
-  console.log(`[SMS] ${params.type} to ${params.recipient}: ₦${params.amount.toLocaleString()}`);
+  log.info(`[SMS] ${params.type} to ${params.recipient}: ₦${params.amount.toLocaleString()}`);
   
   // In production, send via Twilio, Africa's Talking, etc.
 }
@@ -482,7 +485,7 @@ export async function cancelWorkflow(
   remittanceId: string
 ): Promise<boolean> {
   // In production, update database and stop processing
-  console.log(`[Workflow] Cancelled ${remittanceId}`);
+  log.info(`[Workflow] Cancelled ${remittanceId}`);
   return true;
 }
 

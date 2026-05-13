@@ -9,6 +9,9 @@ import { loginHistory, type LoginHistory, type InsertLoginHistory } from '../../
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { getGeolocation } from './geolocationService';
 import crypto from 'crypto';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('accountActivity');
 
 /**
  * Log a login attempt
@@ -60,11 +63,11 @@ export async function logLoginAttempt(params: {
     const result = await db.insert(loginHistory).values(loginRecord);
     const loginId = result[0]?.insertId ? Number(result[0].insertId) : 0;
 
-    console.log(`[AccountActivity] Logged ${params.success ? 'successful' : 'failed'} login for user ${params.userId} from ${geoData?.city}, ${geoData?.country}`);
+    log.info(`[AccountActivity] Logged ${params.success ? 'successful' : 'failed'} login for user ${params.userId} from ${geoData?.city}, ${geoData?.country}`);
 
     return { success: true, loginId };
   } catch (error) {
-    console.error('[AccountActivity] Error logging login attempt:', error);
+    log.error('[AccountActivity] Error logging login attempt:', error);
     return { success: false, error: 'Failed to log login attempt' };
   }
 }
@@ -105,7 +108,7 @@ export async function getLoginHistory(params: {
 
     return results;
   } catch (error) {
-    console.error('[AccountActivity] Error getting login history:', error);
+    log.error('[AccountActivity] Error getting login history:', error);
     return [];
   }
 }
@@ -134,7 +137,7 @@ export async function getActiveSessions(userId: number): Promise<LoginHistory[]>
 
     return results;
   } catch (error) {
-    console.error('[AccountActivity] Error getting active sessions:', error);
+    log.error('[AccountActivity] Error getting active sessions:', error);
     return [];
   }
 }
@@ -165,10 +168,10 @@ export async function endSession(params: {
         )
       );
 
-    console.log(`[AccountActivity] Ended session ${params.sessionId} for user ${params.userId}`);
+    log.info(`[AccountActivity] Ended session ${params.sessionId} for user ${params.userId}`);
     return { success: true };
   } catch (error) {
-    console.error('[AccountActivity] Error ending session:', error);
+    log.error('[AccountActivity] Error ending session:', error);
     return { success: false, error: 'Failed to end session' };
   }
 }
@@ -211,10 +214,10 @@ export async function endAllSessions(params: {
       }
     }
 
-    console.log(`[AccountActivity] Ended ${sessionsToEnd.length} sessions for user ${params.userId}`);
+    log.info(`[AccountActivity] Ended ${sessionsToEnd.length} sessions for user ${params.userId}`);
     return { success: true, count: sessionsToEnd.length };
   } catch (error) {
-    console.error('[AccountActivity] Error ending all sessions:', error);
+    log.error('[AccountActivity] Error ending all sessions:', error);
     return { success: false, error: 'Failed to end sessions' };
   }
 }
@@ -236,7 +239,7 @@ export async function markLoginAsSuspicious(loginId: number): Promise<{ success:
 
     return { success: true };
   } catch (error) {
-    console.error('[AccountActivity] Error marking login as suspicious:', error);
+    log.error('[AccountActivity] Error marking login as suspicious:', error);
     return { success: false };
   }
 }
@@ -265,7 +268,7 @@ export async function getLastSuccessfulLogin(userId: number): Promise<LoginHisto
 
     return result || null;
   } catch (error) {
-    console.error('[AccountActivity] Error getting last login:', error);
+    log.error('[AccountActivity] Error getting last login:', error);
     return null;
   }
 }

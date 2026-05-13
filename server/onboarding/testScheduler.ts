@@ -7,6 +7,9 @@ import {
   InsertScheduledTestRun,
 } from "../../drizzle/schema";
 import { executeTest } from "./testingService";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('testScheduler');
 
 /**
  * Create a new test schedule
@@ -244,7 +247,7 @@ function calculateNextRunTime(params: {
 export async function processScheduledTests() {
   const db = await getDb();
   if (!db) {
-    console.warn("[TestScheduler] Database not available");
+    log.warn("[TestScheduler] Database not available");
     return;
   }
 
@@ -258,7 +261,7 @@ export async function processScheduledTests() {
 
     const schedulesToRun = dueSchedules.filter(s => new Date(s.nextRunAt) <= now);
 
-    console.log(`[TestScheduler] Found ${schedulesToRun.length} scheduled tests to run`);
+    log.info(`[TestScheduler] Found ${schedulesToRun.length} scheduled tests to run`);
 
     for (const schedule of schedulesToRun) {
       try {
@@ -305,9 +308,9 @@ export async function processScheduledTests() {
           .set({ nextRunAt })
           .where(eq(testSchedules.id, schedule.id));
 
-        console.log(`[TestScheduler] Completed schedule ${schedule.id}, next run at ${nextRunAt}`);
+        log.info(`[TestScheduler] Completed schedule ${schedule.id}, next run at ${nextRunAt}`);
       } catch (error) {
-        console.error(`[TestScheduler] Error executing schedule ${schedule.id}:`, error);
+        log.error(`[TestScheduler] Error executing schedule ${schedule.id}:`, error);
 
         // Mark run as failed
         await db
@@ -317,7 +320,7 @@ export async function processScheduledTests() {
       }
     }
   } catch (error) {
-    console.error("[TestScheduler] Error processing scheduled tests:", error);
+    log.error("[TestScheduler] Error processing scheduled tests:", error);
   }
 }
 
@@ -325,7 +328,7 @@ export async function processScheduledTests() {
  * Start the test scheduler (runs every minute)
  */
 export function startTestScheduler() {
-  console.log("[TestScheduler] Starting test scheduler (runs every minute)");
+  log.info("[TestScheduler] Starting test scheduler (runs every minute)");
 
   // Run immediately on startup
   processScheduledTests();

@@ -10,6 +10,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('tracing');
 
 // Trace context headers (W3C Trace Context standard)
 const TRACEPARENT_HEADER = 'traceparent';
@@ -427,7 +430,7 @@ export class JaegerSpanExporter implements SpanExporter {
         body: JSON.stringify({ spans: jaegerSpans })
       });
     } catch (error) {
-      console.error('Failed to export spans to Jaeger:', error);
+      log.error('Failed to export spans to Jaeger:', error);
     }
   }
 }

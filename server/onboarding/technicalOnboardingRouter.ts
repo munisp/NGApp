@@ -20,6 +20,9 @@ import {
 } from './technicalValidationService';
 import { notifyAdminsOfNewSubmission } from '../services/notificationService';
 import { storagePut } from '../storage';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('technicalOnboarding');
 
 export const technicalOnboardingRouter = router({
   // Save technical configuration
@@ -387,7 +390,7 @@ export const technicalOnboardingRouter = router({
       try {
         await notifyAdminsOfNewSubmission(input.applicationId, `Application ${input.applicationId}`);
       } catch (error) {
-        console.error('Failed to send admin notifications:', error);
+        log.error('Failed to send admin notifications:', error);
         // Don't fail the submission if notifications fail
       }
 
@@ -494,7 +497,7 @@ export const technicalOnboardingRouter = router({
         });
       } catch (notificationError) {
         // Log notification error but don't fail the review
-        console.error('[TechnicalOnboarding] Notification delivery failed:', notificationError);
+        log.error('[TechnicalOnboarding] Notification delivery failed:', notificationError);
       }
 
       return { message: 'Review completed successfully' };

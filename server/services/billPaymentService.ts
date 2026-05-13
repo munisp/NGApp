@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('billPayment');
 /**
  * Bill Payment Service
  * 
@@ -284,7 +287,7 @@ export async function validateBillDetails(params: {
   error?: string;
 }> {
   // In production, call Quickteller/Interswitch validation API
-  console.log('[Bill Validation] Validating:', params);
+  log.info('[Bill Validation] Validating:', params);
 
   // Mock validation
   return {
@@ -308,7 +311,7 @@ export async function processBillPayment(params: {
   const reference = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // In production, call Quickteller/Interswitch payment API
-  console.log('[Bill Payment] Processing:', params);
+  log.info('[Bill Payment] Processing:', params);
 
   // Mock payment result
   const result: BillPaymentResult = {
@@ -404,7 +407,7 @@ export async function sendBillPaymentReceipt(params: {
   }
 
   // In production, send via SMS provider
-  console.log(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
+  log.info(`[SMS] Sending to ${params.recipientPhone}: ${message}`);
 
   return true;
 }

@@ -8,6 +8,9 @@ import {
 } from "../../drizzle/schema";
 import { notifyOwner } from "../_core/notification";
 import { sendAlertToSlack } from "./slackNotificationService";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('monitoringAlerts');
 
 /**
  * Create alert rule
@@ -235,7 +238,7 @@ async function triggerAlert(
         content: message,
       });
     } catch (error) {
-      console.error("Failed to notify owner:", error);
+      log.error("Failed to notify owner:", error);
     }
   }
 
@@ -252,7 +255,7 @@ async function triggerAlert(
       triggeredAt: new Date(),
     });
   } catch (error) {
-    console.error("Failed to send Slack notification:", error);
+    log.error("Failed to send Slack notification:", error);
   }
 
   return { id: alertId, title, message };

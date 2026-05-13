@@ -6,6 +6,9 @@
  */
 
 import crypto from 'crypto';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('otel-setup');
 
 // Configuration
 const OTEL_CONFIG = {
@@ -235,7 +238,7 @@ async function flushSpans(): Promise<void> {
  */
 export function initTracing(): void {
   flushTimer = setInterval(flushSpans, OTEL_CONFIG.batchTimeout);
-  console.log(`[OTel] Tracing initialized: service=${OTEL_CONFIG.serviceName}, endpoint=${OTEL_CONFIG.otlpEndpoint}`);
+  log.info(`[OTel] Tracing initialized: service=${OTEL_CONFIG.serviceName}, endpoint=${OTEL_CONFIG.otlpEndpoint}`);
 }
 
 /**
@@ -244,7 +247,7 @@ export function initTracing(): void {
 export async function shutdownTracing(): Promise<void> {
   if (flushTimer) clearInterval(flushTimer);
   await flushSpans();
-  console.log(`[OTel] Tracing shutdown: exported=${metrics.exportedSpans}, dropped=${metrics.droppedSpans}`);
+  log.info(`[OTel] Tracing shutdown: exported=${metrics.exportedSpans}, dropped=${metrics.droppedSpans}`);
 }
 
 /**

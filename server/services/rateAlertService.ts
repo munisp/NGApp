@@ -2,6 +2,9 @@ import { eq, and, lt, gt, lte, gte } from "drizzle-orm";
 import { getDb } from "../db";
 import { rateAlerts, rateAlertHistory, InsertRateAlert, RateAlert } from "../../drizzle/rate-alerts-schema";
 import { getExchangeRate } from "./exchangeRateService";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('rateAlert');
 // import { notifyOwner } from "./_core/notification";
 
 /**
@@ -102,7 +105,7 @@ export async function getUserRateAlerts(userId: number): Promise<RateAlertWithPr
           distanceFromTarget,
         };
       } catch (error) {
-        console.error(`Failed to fetch rate for alert ${alert.id}:`, error);
+        log.error(`Failed to fetch rate for alert ${alert.id}:`, error);
         return { ...alert };
       }
     })
@@ -232,7 +235,7 @@ export async function checkAndTriggerAlerts(): Promise<{ checked: number; trigge
         triggeredCount++;
       }
     } catch (error) {
-      console.error(`Error checking alert ${alert.id}:`, error);
+      log.error(`Error checking alert ${alert.id}:`, error);
     }
   }
 
@@ -299,7 +302,7 @@ async function triggerAlert(alert: RateAlert, triggeredRate: number): Promise<vo
       triggeredAt: new Date(),
     });
   } catch (error) {
-    console.error(`Failed to trigger alert ${alert.id}:`, error);
+    log.error(`Failed to trigger alert ${alert.id}:`, error);
 
     // Record failed notification in history
     await db.insert(rateAlertHistory).values({
@@ -321,7 +324,7 @@ async function triggerAlert(alert: RateAlert, triggeredRate: number): Promise<vo
  * Send email notification for triggered alert
  */
 async function sendEmailNotification(alert: RateAlert, triggeredRate: number): Promise<void> {
-  console.log(`[Email] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
+  log.info(`[Email] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
 
   // Email template
   const subject = `🚨 Rate Alert: ${alert.fromCurrency}/${alert.toCurrency} ${alert.condition} ${alert.targetRate}`;
@@ -385,7 +388,7 @@ async function sendEmailNotification(alert: RateAlert, triggeredRate: number): P
       if (!response.ok) {
         throw new Error(`SendGrid API error: ${response.status}`);
       }
-      console.log('[Email] Rate alert sent via SendGrid');
+      log.info('[Email] Rate alert sent via SendGrid');
     } else if (resendApiKey) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -404,7 +407,7 @@ async function sendEmailNotification(alert: RateAlert, triggeredRate: number): P
       if (!response.ok) {
         throw new Error(`Resend API error: ${response.status}`);
       }
-      console.log('[Email] Rate alert sent via Resend');
+      log.info('[Email] Rate alert sent via Resend');
     } else {
       // Development mode: save to file
       const fs = await import('fs/promises');
@@ -413,10 +416,10 @@ async function sendEmailNotification(alert: RateAlert, triggeredRate: number): P
       await fs.mkdir(emailDir, { recursive: true });
       const filename = `rate_alert_${Date.now()}.html`;
       await fs.writeFile(path.join(emailDir, filename), htmlBody);
-      console.log(`[Email] Rate alert saved to storage/emails/${filename}`);
+      log.info(`[Email] Rate alert saved to storage/emails/${filename}`);
     }
   } catch (error) {
-    console.error('[Email] Failed to send rate alert:', error);
+    log.error('[Email] Failed to send rate alert:', error);
   }
 }
 
@@ -424,7 +427,7 @@ async function sendEmailNotification(alert: RateAlert, triggeredRate: number): P
  * Send SMS notification for triggered alert
  */
 async function sendSmsNotification(alert: RateAlert, triggeredRate: number): Promise<void> {
-  console.log(`[SMS] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
+  log.info(`[SMS] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
 
   const message = `Rate Alert: ${alert.fromCurrency}/${alert.toCurrency} is now ${triggeredRate.toLocaleString()}. Your target of ${parseFloat(alert.targetRate).toLocaleString()} has been reached!`;
 
@@ -459,7 +462,7 @@ async function sendSmsNotification(alert: RateAlert, triggeredRate: number): Pro
       if (!response.ok) {
         throw new Error(`Twilio API error: ${response.status}`);
       }
-      console.log('[SMS] Rate alert sent via Twilio');
+      log.info('[SMS] Rate alert sent via Twilio');
     } else {
       // Development mode: save to file
       const fs = await import('fs/promises');
@@ -468,10 +471,10 @@ async function sendSmsNotification(alert: RateAlert, triggeredRate: number): Pro
       await fs.mkdir(smsDir, { recursive: true });
       const filename = `rate_alert_${Date.now()}.txt`;
       await fs.writeFile(path.join(smsDir, filename), `To: ${userPhone}\n\n${message}`);
-      console.log(`[SMS] Rate alert saved to storage/sms/${filename}`);
+      log.info(`[SMS] Rate alert saved to storage/sms/${filename}`);
     }
   } catch (error) {
-    console.error('[SMS] Failed to send rate alert:', error);
+    log.error('[SMS] Failed to send rate alert:', error);
   }
 }
 
@@ -479,7 +482,7 @@ async function sendSmsNotification(alert: RateAlert, triggeredRate: number): Pro
  * Send push notification for triggered alert
  */
 async function sendPushNotification(alert: RateAlert, triggeredRate: number): Promise<void> {
-  console.log(`[Push] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
+  log.info(`[Push] Rate alert triggered for ${alert.fromCurrency}/${alert.toCurrency} at ${triggeredRate}`);
 
   const notification = {
     title: `🚨 Rate Alert Triggered!`,
@@ -503,9 +506,9 @@ async function sendPushNotification(alert: RateAlert, triggeredRate: number): Pr
       content: notification.body,
     });
     
-    console.log('[Push] Rate alert notification sent');
+    log.info('[Push] Rate alert notification sent');
   } catch (error) {
-    console.error('[Push] Failed to send rate alert:', error);
+    log.error('[Push] Failed to send rate alert:', error);
     
     // Development mode: save to file
     const fs = await import('fs/promises');
@@ -514,7 +517,7 @@ async function sendPushNotification(alert: RateAlert, triggeredRate: number): Pr
     await fs.mkdir(pushDir, { recursive: true });
     const filename = `rate_alert_${Date.now()}.json`;
     await fs.writeFile(path.join(pushDir, filename), JSON.stringify(notification, null, 2));
-    console.log(`[Push] Rate alert saved to storage/push/${filename}`);
+    log.info(`[Push] Rate alert saved to storage/push/${filename}`);
   }
 }
 

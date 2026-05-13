@@ -58,6 +58,9 @@ import { openBankingRouter } from './routers/openBankingRouter';
 import { middlewareRouter } from './routers/middlewareRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
+import { createChildLogger } from './lib/logger';
+
+const log = createChildLogger('routers');
 
 // Helper to generate unique IDs
 function generateId(prefix: string): string {
@@ -643,7 +646,7 @@ export const appRouter = router({
           }
         } catch (webhookError) {
           // Log webhook error but don't fail the payment
-          console.error('[Payment] Webhook delivery failed:', webhookError);
+          log.error('[Payment] Webhook delivery failed:', webhookError);
         }
 
         return {

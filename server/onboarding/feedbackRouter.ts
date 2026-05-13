@@ -8,6 +8,9 @@ import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { ocrFeedback } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('feedback');
 
 export const feedbackRouter = router({
   /**
@@ -43,7 +46,7 @@ export const feedbackRouter = router({
         notes: input.notes || null,
       });
 
-      console.log(`[Feedback] User ${ctx.user.id} reported OCR issue for field ${input.fieldName}`);
+      log.info(`[Feedback] User ${ctx.user.id} reported OCR issue for field ${input.fieldName}`);
 
       return {
         success: true,

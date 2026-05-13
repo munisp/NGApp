@@ -216,8 +216,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Demo mode: allow demo/demo login for testing
-        if (username === 'demo' && password === 'demo') {
+        // Demo mode: only available in development environment
+        const isDemoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
+          process.env.NODE_ENV === 'development';
+        if (isDemoMode && username === 'demo' && password === 'demo') {
           const demoUser: User = {
             id: 'demo-user-001',
             username: 'demo',
@@ -228,7 +230,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             organizationId: 'demo-org',
             participantId: 'demo-participant',
           };
-          // Persist both user and token to localStorage for session persistence
           localStorage.setItem(USER_KEY, JSON.stringify(demoUser));
           localStorage.setItem(ACCESS_TOKEN_KEY, 'demo-token');
           setState({
@@ -241,8 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Direct grant (Resource Owner Password Credentials)
-        // In production, use authorization code flow with PKCE
+        // Keycloak authentication (primary — production mode)
         const response = await fetch(
           `${KEYCLOAK_CONFIG.baseUrl}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`,
           {

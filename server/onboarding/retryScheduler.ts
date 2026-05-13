@@ -3,6 +3,9 @@
  */
 
 import { processAllPendingRetries } from "./retryService";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('retryScheduler');
 
 let retryInterval: NodeJS.Timeout | null = null;
 let isProcessing = false;
@@ -13,11 +16,11 @@ let isProcessing = false;
  */
 export function startRetryProcessor() {
   if (retryInterval) {
-    console.log("[RetryScheduler] Retry processor already running");
+    log.info("[RetryScheduler] Retry processor already running");
     return;
   }
 
-  console.log("[RetryScheduler] Starting retry processor (runs every minute)");
+  log.info("[RetryScheduler] Starting retry processor (runs every minute)");
 
   // Run immediately on start
   processRetries();
@@ -33,7 +36,7 @@ export function stopRetryProcessor() {
   if (retryInterval) {
     clearInterval(retryInterval);
     retryInterval = null;
-    console.log("[RetryScheduler] Retry processor stopped");
+    log.info("[RetryScheduler] Retry processor stopped");
   }
 }
 
@@ -42,7 +45,7 @@ export function stopRetryProcessor() {
  */
 async function processRetries() {
   if (isProcessing) {
-    console.log("[RetryScheduler] Skipping retry processing - already in progress");
+    log.info("[RetryScheduler] Skipping retry processing - already in progress");
     return;
   }
 
@@ -57,7 +60,7 @@ async function processRetries() {
       );
     }
   } catch (error) {
-    console.error("[RetryScheduler] Error processing retries:", error);
+    log.error("[RetryScheduler] Error processing retries:", error);
   } finally {
     isProcessing = false;
   }

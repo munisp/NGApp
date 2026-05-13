@@ -251,7 +251,7 @@ export async function triggerWebhooks(event: WebhookEvent): Promise<void> {
       event: event.event,
       payload: event.data,
     }).catch((error) => {
-      console.error(`Failed to send webhook ${webhook.id}:`, error);
+      log.error(`Failed to send webhook ${webhook.id}:`, error);
     });
   }
 }
@@ -360,3 +360,6 @@ export async function getWebhookLogs(params: {
 
 // Import sql for raw queries
 import { sql } from "drizzle-orm";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('webhook');

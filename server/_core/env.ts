@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('env');
 // Validate required environment variables at startup
 function validateEnv() {
   const warnings: string[] = [];
@@ -11,7 +14,7 @@ function validateEnv() {
   }
   
   if (warnings.length > 0 && process.env.NODE_ENV === "production") {
-    console.error("[ENV] Configuration warnings:", warnings.join("; "));
+    log.error("[ENV] Configuration warnings:", warnings.join("; "));
   }
 }
 

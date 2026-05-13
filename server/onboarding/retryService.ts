@@ -5,6 +5,9 @@
 import { and, eq, lte, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { apiKeyWebhooks, webhookDeliveryLogs, retryAttemptLogs } from "../../drizzle/schema";
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('retry');
 
 const MAX_BACKOFF_MS = 60 * 60 * 1000; // 1 hour maximum backoff
 
@@ -89,7 +92,7 @@ export async function scheduleRetry(deliveryLogId: number): Promise<void> {
   const { shouldRetry: canRetry, reason } = await shouldRetry(deliveryLogId);
   
   if (!canRetry) {
-    console.log(`[Retry] Cannot retry delivery ${deliveryLogId}: ${reason}`);
+    log.info(`[Retry] Cannot retry delivery ${deliveryLogId}: ${reason}`);
     return;
   }
 
@@ -211,7 +214,7 @@ export async function sendFinalFailureNotification(
       const rendered = renderTemplate(webhook.finalFailureTemplate, templateData as any);
       notificationPayload = JSON.parse(rendered);
     } catch (error) {
-      console.error("[Retry] Failed to render final failure template, using default:", error);
+      log.error("[Retry] Failed to render final failure template, using default:", error);
       // Fall back to default payload
     }
   }
@@ -266,7 +269,7 @@ export async function markAsPermanentlyFailed(
     })
     .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-  console.log(`[Retry] Marked delivery ${deliveryLogId} as permanently failed: ${reason}`);
+  log.info(`[Retry] Marked delivery ${deliveryLogId} as permanently failed: ${reason}`);
 
   // Send final failure notification if configured
   if (webhookId && attempts) {
@@ -295,7 +298,7 @@ export async function processRetryAttempt(
       .limit(1);
 
     if (logs.length === 0) {
-      console.error(`[Retry] Delivery log ${deliveryLogId} not found`);
+      log.error(`[Retry] Delivery log ${deliveryLogId} not found`);
       return false;
     }
 
@@ -316,7 +319,7 @@ export async function processRetryAttempt(
     const webhook = webhooks[0];
 
     // Attempt delivery
-    console.log(`[Retry] Attempting delivery ${deliveryLogId} (attempt ${log.attempts + 1}/${webhook.maxRetries})`);
+    log.info(`[Retry] Attempting delivery ${deliveryLogId} (attempt ${log.attempts + 1}/${webhook.maxRetries})`);
 
     const response = await fetch(webhook.webhookUrl, {
       method: "POST",
@@ -347,7 +350,7 @@ export async function processRetryAttempt(
         })
         .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-        console.log(`[Retry] Delivery ${deliveryLogId} succeeded on attempt ${log.attempts + 1}`);
+        log.info(`[Retry] Delivery ${deliveryLogId} succeeded on attempt ${log.attempts + 1}`);
         
         // Reset consecutive failures counter on success
         await db
@@ -378,7 +381,7 @@ export async function processRetryAttempt(
           })
           .where(eq(webhookDeliveryLogs.id, deliveryLogId));
 
-        console.log(`[Retry] Delivery ${deliveryLogId} permanently failed after ${newAttempts} attempts`);
+        log.info(`[Retry] Delivery ${deliveryLogId} permanently failed after ${newAttempts} attempts`);
         
         // Increment consecutive failures and check auto-pause threshold
         const newConsecutiveFailures = webhook.consecutiveFailures + 1;
@@ -449,7 +452,7 @@ export async function processRetryAttempt(
         });
       }
     } catch (logError) {
-      console.error(`[Retry] Failed to log retry attempt:`, logError);
+      log.error(`[Retry] Failed to log retry attempt:`, logError);
     }
 
     const logs = await db
@@ -518,7 +521,7 @@ export async function processAllPendingRetries(): Promise<{
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
-  console.log(`[Retry] Processing ${pendingIds.length} pending retries`);
+  log.info(`[Retry] Processing ${pendingIds.length} pending retries`);
 
   let succeeded = 0;
   let failed = 0;

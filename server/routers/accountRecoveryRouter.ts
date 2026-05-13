@@ -9,6 +9,9 @@ import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
 import * as accountRecoveryService from '../services/accountRecoveryService';
 import { notifyOwner } from '../_core/notification';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('accountRecovery');
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -67,7 +70,7 @@ export const accountRecoveryRouter = router({
 
       // Send recovery code via email if email method
       if (input.recoveryMethod === 'email' && result.recoveryCode) {
-        console.log('[AccountRecovery] Sending recovery code via email');
+        log.info('[AccountRecovery] Sending recovery code via email');
         
         try {
           const sendgridApiKey = process.env.SENDGRID_API_KEY;
@@ -112,7 +115,7 @@ export const accountRecoveryRouter = router({
             if (!response.ok) {
               throw new Error(`SendGrid API error: ${response.status}`);
             }
-            console.log('[AccountRecovery] Recovery code sent via SendGrid');
+            log.info('[AccountRecovery] Recovery code sent via SendGrid');
           } else if (resendApiKey) {
             const response = await fetch('https://api.resend.com/emails', {
               method: 'POST',
@@ -131,7 +134,7 @@ export const accountRecoveryRouter = router({
             if (!response.ok) {
               throw new Error(`Resend API error: ${response.status}`);
             }
-            console.log('[AccountRecovery] Recovery code sent via Resend');
+            log.info('[AccountRecovery] Recovery code sent via Resend');
           } else {
             // Development mode: save to file
             const fs = await import('fs/promises');
@@ -140,10 +143,10 @@ export const accountRecoveryRouter = router({
             await fs.mkdir(emailDir, { recursive: true });
             const filename = `recovery_${Date.now()}.html`;
             await fs.writeFile(path.join(emailDir, filename), htmlBody);
-            console.log(`[AccountRecovery] Recovery code saved to storage/emails/${filename}`);
+            log.info(`[AccountRecovery] Recovery code saved to storage/emails/${filename}`);
           }
         } catch (error) {
-          console.error('[AccountRecovery] Failed to send recovery code:', error);
+          log.error('[AccountRecovery] Failed to send recovery code:', error);
           // Don't fail the request if email fails
         }
       }

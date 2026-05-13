@@ -1,4 +1,7 @@
 import { checkAndTriggerAlerts } from '../services/rateAlertService';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('rateAlertMonitor');
 
 /**
  * Rate Alert Monitoring Job
@@ -16,7 +19,7 @@ let lastRunResult: { checked: number; triggered: number } | null = null;
 export async function runRateAlertMonitor(): Promise<void> {
   // Prevent concurrent runs
   if (isRunning) {
-    console.log('[RateAlertMonitor] Skipping run - already in progress');
+    log.info('[RateAlertMonitor] Skipping run - already in progress');
     return;
   }
 
@@ -24,7 +27,7 @@ export async function runRateAlertMonitor(): Promise<void> {
   const startTime = new Date();
 
   try {
-    console.log('[RateAlertMonitor] Starting rate alert check...');
+    log.info('[RateAlertMonitor] Starting rate alert check...');
     
     const result = await checkAndTriggerAlerts();
     
@@ -39,10 +42,10 @@ export async function runRateAlertMonitor(): Promise<void> {
     );
 
     if (result.triggered > 0) {
-      console.log(`[RateAlertMonitor] 🔔 ${result.triggered} alert(s) triggered!`);
+      log.info(`[RateAlertMonitor] 🔔 ${result.triggered} alert(s) triggered!`);
     }
   } catch (error) {
-    console.error('[RateAlertMonitor] Error:', error);
+    log.error('[RateAlertMonitor] Error:', error);
   } finally {
     isRunning = false;
   }
@@ -67,7 +70,7 @@ export function getRateAlertMonitorStatus() {
  * Runs every 5 minutes
  */
 export function startRateAlertMonitor(): NodeJS.Timeout {
-  console.log('[RateAlertMonitor] Starting scheduler (5-minute interval)');
+  log.info('[RateAlertMonitor] Starting scheduler (5-minute interval)');
   
   // Run immediately on start
   runRateAlertMonitor();
@@ -84,6 +87,6 @@ export function startRateAlertMonitor(): NodeJS.Timeout {
  * Stop the rate alert monitoring scheduler
  */
 export function stopRateAlertMonitor(interval: NodeJS.Timeout): void {
-  console.log('[RateAlertMonitor] Stopping scheduler');
+  log.info('[RateAlertMonitor] Stopping scheduler');
   clearInterval(interval);
 }

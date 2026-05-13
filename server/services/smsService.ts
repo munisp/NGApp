@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('sms');
 /**
  * SMS Service
  * 
@@ -51,27 +54,27 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('[SMS] Failed to send SMS:', error);
+        log.error('[SMS] Failed to send SMS:', error);
         return { success: false, error: 'Failed to send SMS' };
       }
 
       const data = await response.json();
-      console.log('[SMS] SMS sent successfully:', data.sid);
+      log.info('[SMS] SMS sent successfully:', data.sid);
       return { success: true };
     } catch (error) {
-      console.error('[SMS] Error sending SMS:', error);
+      log.error('[SMS] Error sending SMS:', error);
       return { success: false, error: 'SMS service error' };
     }
   }
 
   // Local development mode - log to console and save to file
-  console.log('\n' + '='.repeat(80));
-  console.log('📱 SMS SENT (Local Development Mode)');
-  console.log('='.repeat(80));
-  console.log(`To: ${params.to}`);
-  console.log('-'.repeat(80));
-  console.log(params.message);
-  console.log('='.repeat(80) + '\n');
+  log.info('\n' + '='.repeat(80));
+  log.info('📱 SMS SENT (Local Development Mode)');
+  log.info('='.repeat(80));
+  log.info(`To: ${params.to}`);
+  log.info('-'.repeat(80));
+  log.info(params.message);
+  log.info('='.repeat(80) + '\n');
 
   // Save SMS to file for testing
   try {
@@ -99,9 +102,9 @@ ${params.message}
     `.trim();
     
     await fs.writeFile(filepath, smsContent, 'utf-8');
-    console.log(`[SMS] Saved to: ${filepath}`);
+    log.info(`[SMS] Saved to: ${filepath}`);
   } catch (error) {
-    console.error('[SMS] Failed to save SMS to file:', error);
+    log.error('[SMS] Failed to save SMS to file:', error);
   }
 
   return { success: true };

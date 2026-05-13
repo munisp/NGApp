@@ -1,6 +1,9 @@
 import { getDb } from "./db";
 import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { auditStatusEnum } from "../drizzle/schema";
+import { createChildLogger } from './lib/logger';
+
+const log = createChildLogger('auditLog');
 
 /**
  * Audit log table for compliance and security
@@ -52,7 +55,7 @@ export async function logAudit(data: {
       status: data.status,
     });
   } catch (error) {
-    console.error("Failed to write audit log:", error);
+    log.error("Failed to write audit log:", error);
   }
 }
 

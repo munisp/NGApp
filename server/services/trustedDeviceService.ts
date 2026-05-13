@@ -13,6 +13,9 @@ import {
   type TrustedDevice,
   type InsertTrustedDevice,
 } from '../../drizzle/schema';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('trustedDevice');
 
 // Trust duration: 30 days
 const TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -117,7 +120,7 @@ export async function trustDevice(params: {
 
     return { success: true, deviceId: result.insertId };
   } catch (error) {
-    console.error('[TrustedDevice] Failed to trust device:', error);
+    log.error('[TrustedDevice] Failed to trust device:', error);
     return { success: false, error: 'Failed to trust device' };
   }
 }
@@ -160,7 +163,7 @@ export async function verifyTrustedDevice(params: {
 
     return { trusted: true, deviceId: devices[0].id };
   } catch (error) {
-    console.error('[TrustedDevice] Failed to verify device:', error);
+    log.error('[TrustedDevice] Failed to verify device:', error);
     return { trusted: false };
   }
 }
@@ -188,7 +191,7 @@ export async function getUserTrustedDevices(userId: number): Promise<TrustedDevi
 
     return devices;
   } catch (error) {
-    console.error('[TrustedDevice] Failed to get user devices:', error);
+    log.error('[TrustedDevice] Failed to get user devices:', error);
     return [];
   }
 }
@@ -230,7 +233,7 @@ export async function revokeTrustedDevice(params: {
 
     return { success: true };
   } catch (error) {
-    console.error('[TrustedDevice] Failed to revoke device:', error);
+    log.error('[TrustedDevice] Failed to revoke device:', error);
     return { success: false, error: 'Failed to revoke device' };
   }
 }
@@ -269,7 +272,7 @@ export async function revokeAllTrustedDevices(userId: number): Promise<{ success
 
     return { success: true, count: activeDevices.length };
   } catch (error) {
-    console.error('[TrustedDevice] Failed to revoke all devices:', error);
+    log.error('[TrustedDevice] Failed to revoke all devices:', error);
     return { success: false, count: 0, error: 'Failed to revoke devices' };
   }
 }
@@ -309,7 +312,7 @@ export async function cleanupExpiredDevices(): Promise<number> {
 
     return expiredDevices.length;
   } catch (error) {
-    console.error('[TrustedDevice] Failed to cleanup expired devices:', error);
+    log.error('[TrustedDevice] Failed to cleanup expired devices:', error);
     return 0;
   }
 }

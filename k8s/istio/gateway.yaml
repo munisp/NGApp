@@ -1,0 +1,77 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: payment-switch-gateway
+  namespace: payment-switch
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: payment-switch-tls
+      hosts:
+        - "*.payment-switch.com"
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*.payment-switch.com"
+      tls:
+        httpsRedirect: true
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: payment-switch-api
+  namespace: payment-switch
+spec:
+  hosts:
+    - "api.payment-switch.com"
+  gateways:
+    - payment-switch-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/trpc
+      route:
+        - destination:
+            host: payment-switch-api
+            port:
+              number: 3000
+          weight: 100
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,retriable-status-codes
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: payment-switch-web
+            port:
+              number: 3000
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: admin-dashboard
+  namespace: payment-switch
+spec:
+  hosts:
+    - "admin.payment-switch.com"
+  gateways:
+    - payment-switch-gateway
+  http:
+    - route:
+        - destination:
+            host: admin-dashboard
+            port:
+              number: 3001

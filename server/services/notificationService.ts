@@ -1,6 +1,9 @@
 import { getDb } from '../db';
 import { notifyOwner } from '../_core/notification';
 import { sql } from 'drizzle-orm';
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('notification');
 
 export interface CreateNotificationInput {
   userId: number;
@@ -186,7 +189,7 @@ export async function notifyAdminsOfNewSubmission(applicationId: number, organiz
         content: `Organization: ${organizationName}\nApplication ID: ${applicationId}\n\nA new participant has submitted their technical onboarding and is ready for review.\n\nReview at: ${process.env.VITE_APP_URL || 'https://your-app.com'}/admin/technical-onboarding`,
       });
     } catch (error) {
-      console.error('Failed to send owner notification:', error);
+      log.error('Failed to send owner notification:', error);
       // Don't throw - in-app notifications were created successfully
     }
   }

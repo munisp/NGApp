@@ -1,0 +1,105 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: payment-api-canary
+  namespace: payment-switch
+spec:
+  hosts:
+    - payment-switch-api
+  http:
+    - match:
+        - headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: payment-switch-api
+            subset: canary
+          weight: 100
+    - route:
+        - destination:
+            host: payment-switch-api
+            subset: stable
+          weight: 95
+        - destination:
+            host: payment-switch-api
+            subset: canary
+          weight: 5
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: payment-api-versions
+  namespace: payment-switch
+spec:
+  host: payment-switch-api
+  subsets:
+    - name: stable
+      labels:
+        version: stable
+      trafficPolicy:
+        connectionPool:
+          tcp:
+            maxConnections: 100
+    - name: canary
+      labels:
+        version: canary
+      trafficPolicy:
+        connectionPool:
+          tcp:
+            maxConnections: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-switch-api-canary
+  namespace: payment-switch
+  labels:
+    app: payment-switch-api
+    version: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-switch-api
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: payment-switch-api
+        version: canary
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+        - name: api
+          image: payment-switch-api:canary
+          ports:
+            - containerPort: 3000
+          env:
+            - name: CANARY
+              value: "true"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/trpc/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/trpc/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10

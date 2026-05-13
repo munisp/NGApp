@@ -1,3 +1,6 @@
+import { createChildLogger } from '../lib/logger';
+
+const log = createChildLogger('email');
 /**
  * Email Service
  * 
@@ -45,28 +48,28 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('[Email] Failed to send email:', error);
+        log.error('[Email] Failed to send email:', error);
         return { success: false, error: 'Failed to send email' };
       }
 
       const data = await response.json();
-      console.log('[Email] Email sent successfully:', data.id);
+      log.info('[Email] Email sent successfully:', data.id);
       return { success: true };
     } catch (error) {
-      console.error('[Email] Error sending email:', error);
+      log.error('[Email] Error sending email:', error);
       return { success: false, error: 'Email service error' };
     }
   }
 
   // Local development mode - log to console and save to file
-  console.log('\n' + '='.repeat(80));
-  console.log('📧 EMAIL SENT (Local Development Mode)');
-  console.log('='.repeat(80));
-  console.log(`To: ${params.to}`);
-  console.log(`Subject: ${params.subject}`);
-  console.log('-'.repeat(80));
-  console.log(params.text || 'No plain text version');
-  console.log('='.repeat(80) + '\n');
+  log.info('\n' + '='.repeat(80));
+  log.info('📧 EMAIL SENT (Local Development Mode)');
+  log.info('='.repeat(80));
+  log.info(`To: ${params.to}`);
+  log.info(`Subject: ${params.subject}`);
+  log.info('-'.repeat(80));
+  log.info(params.text || 'No plain text version');
+  log.info('='.repeat(80) + '\n');
 
   // Save email to file for testing
   try {
@@ -102,9 +105,9 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     `;
     
     await fs.writeFile(filepath, emailContent, 'utf-8');
-    console.log(`[Email] Saved to: ${filepath}`);
+    log.info(`[Email] Saved to: ${filepath}`);
   } catch (error) {
-    console.error('[Email] Failed to save email to file:', error);
+    log.error('[Email] Failed to save email to file:', error);
   }
 
   return { success: true };
