@@ -406,7 +406,7 @@ export class FXRiskManagementService extends EventEmitter {
    * Check volatility alerts
    */
   private checkVolatilityAlerts(currencyPair: string, change: number): void {
-    for (const alert of this.volatilityAlerts.values()) {
+    for (const alert of Array.from(this.volatilityAlerts.values())) {
       if (alert.currencyPair !== currencyPair) continue;
       if (alert.triggered) continue;
 
@@ -433,13 +433,13 @@ export class FXRiskManagementService extends EventEmitter {
     let hedgedExposure = 0;
 
     // Calculate total exposure
-    for (const exposure of this.exposures.values()) {
+    for (const exposure of Array.from(this.exposures.values())) {
       const rate = this.getCurrentRate(exposure.currency, 'NGN') || 1;
       totalExposure += Math.abs(exposure.netPosition * rate);
     }
 
     // Calculate hedged exposure
-    for (const hedge of this.hedgePositions.values()) {
+    for (const hedge of Array.from(this.hedgePositions.values())) {
       if (hedge.status === 'open') {
         const rate = this.getCurrentRate(hedge.currency, 'NGN') || 1;
         hedgedExposure += hedge.notionalAmount * rate;
@@ -515,7 +515,7 @@ export class FXRiskManagementService extends EventEmitter {
   private startExpirationChecker(): void {
     setInterval(() => {
       const now = new Date();
-      for (const rateLock of this.rateLocks.values()) {
+      for (const rateLock of Array.from(this.rateLocks.values())) {
         if (rateLock.status === 'active' && rateLock.expiresAt < now) {
           rateLock.status = 'expired';
           this.emit('rateLockExpired', rateLock);

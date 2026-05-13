@@ -303,7 +303,7 @@ export class ReconciliationService extends EventEmitter {
       }
 
       // Check for entries in ledger but not in DB
-      for (const [txId, entry] of ledgerMap) {
+      for (const [txId, entry] of Array.from(ledgerMap.entries())) {
         totalLedgerAmount += entry.amount;
         const discrepancy = this.createDiscrepancy(
           'missing_in_db',
@@ -379,7 +379,7 @@ export class ReconciliationService extends EventEmitter {
     const results: AccountBalance[] = [];
 
     // Check all DB accounts
-    for (const [accountId, dbBalance] of dbBalances) {
+    for (const [accountId, dbBalance] of Array.from(dbBalances.entries())) {
       const ledgerBalance = ledgerBalances.get(accountId) || 0;
       const difference = dbBalance - ledgerBalance;
 
@@ -405,7 +405,7 @@ export class ReconciliationService extends EventEmitter {
     }
 
     // Check for accounts only in ledger
-    for (const [accountId, ledgerBalance] of ledgerBalances) {
+    for (const [accountId, ledgerBalance] of Array.from(ledgerBalances.entries())) {
       results.push({
         accountId,
         dbBalance: 0,

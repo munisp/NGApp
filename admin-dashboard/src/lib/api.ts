@@ -175,7 +175,7 @@ class LakehouseAPIClient {
     this.baseUrl = baseUrl;
   }
 
-  private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {

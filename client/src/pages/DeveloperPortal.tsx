@@ -1,9 +1,113 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import ChatWidget from "@/components/ChatWidget";
-import { Code2, Book, Webhook, TestTube, Shield, Zap } from "lucide-react";
+import { Code2, Book, Webhook, TestTube, Shield, Zap, Key, Plus, Trash2, Send, Loader2 } from "lucide-react";
 import { APP_TITLE } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+function ApiKeysSection() {
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyEnv, setNewKeyEnv] = useState<"sandbox" | "production">("sandbox");
+  const { data: keys, refetch } = trpc.developerPortal.listApiKeys.useQuery();
+  const { data: stats } = trpc.developerPortal.getUsageStats.useQuery();
+  const createMutation = trpc.developerPortal.createApiKey.useMutation({
+    onSuccess: (data) => { toast.success(`API key created: ${data.key}`); refetch(); setNewKeyName(""); },
+    onError: (err) => toast.error(err.message),
+  });
+  const revokeMutation = trpc.developerPortal.revokeApiKey.useMutation({
+    onSuccess: () => { toast.success("Key revoked"); refetch(); },
+  });
+
+  return (
+    <div className="space-y-4">
+      {stats && (
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{stats.totalKeys}</p><p className="text-xs text-muted-foreground">Total Keys</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{stats.activeKeys}</p><p className="text-xs text-muted-foreground">Active</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{stats.totalRequests}</p><p className="text-xs text-muted-foreground">Total Requests</p></CardContent></Card>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input placeholder="Key name (e.g. Production App)" value={newKeyName} onChange={e => setNewKeyName(e.target.value)} />
+        <Button variant={newKeyEnv === "sandbox" ? "secondary" : "default"} size="sm" onClick={() => setNewKeyEnv(newKeyEnv === "sandbox" ? "production" : "sandbox")}>
+          {newKeyEnv}
+        </Button>
+        <Button onClick={() => createMutation.mutate({ name: newKeyName, environment: newKeyEnv, scopes: ['payments:read', 'payments:write'] })}
+          disabled={!newKeyName || createMutation.isPending}>
+          <Plus className="h-4 w-4 mr-1" /> Create
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {(keys || []).map(key => (
+          <div key={key.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-medium">{key.name}</p>
+              <p className="font-mono text-xs text-muted-foreground">{key.key}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={key.environment === 'sandbox' ? 'secondary' : 'default'}>{key.environment}</Badge>
+              <Badge variant={key.status === 'active' ? 'default' : 'destructive'}>{key.status}</Badge>
+              {key.status === 'active' && (
+                <Button variant="ghost" size="sm" onClick={() => revokeMutation.mutate({ id: key.id })}>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WebhooksSection() {
+  const [newUrl, setNewUrl] = useState("");
+  const { data: endpoints, refetch } = trpc.developerPortal.listWebhookEndpoints.useQuery();
+  const createMutation = trpc.developerPortal.createWebhookEndpoint.useMutation({
+    onSuccess: (data) => { toast.success(`Webhook created. Secret: ${data.secret}`); refetch(); setNewUrl(""); },
+    onError: (err) => toast.error(err.message),
+  });
+  const testMutation = trpc.developerPortal.testWebhook.useMutation({
+    onSuccess: (data) => {
+      if (data.success) toast.success(`Test delivered: ${data.statusCode} in ${data.responseTimeMs}ms`);
+      else toast.error(`Test failed: ${data.statusCode || 'unreachable'}`);
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input placeholder="https://your-server.com/webhooks" value={newUrl} onChange={e => setNewUrl(e.target.value)} />
+        <Button onClick={() => createMutation.mutate({ url: newUrl, events: ['payment.completed', 'transfer.completed'] })}
+          disabled={!newUrl || createMutation.isPending}>
+          <Plus className="h-4 w-4 mr-1" /> Add Endpoint
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {(endpoints || []).map(ep => (
+          <div key={ep.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-mono text-sm">{ep.url}</p>
+              <p className="text-xs text-muted-foreground">{ep.events.join(', ')} • Success rate: {ep.successRate}%</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={ep.status === 'active' ? 'default' : 'destructive'}>{ep.status}</Badge>
+              <Button variant="outline" size="sm" onClick={() => testMutation.mutate({ endpointId: ep.id })}
+                disabled={testMutation.isPending}>
+                {testMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DeveloperPortal() {
   return (
@@ -92,11 +196,13 @@ export default function DeveloperPortal() {
 
           {/* Documentation Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="api-keys">API Keys</TabsTrigger>
               <TabsTrigger value="sdks">SDKs</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
+              <TabsTrigger value="api-docs">API Docs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -236,56 +342,68 @@ ps.checkout(activity, amount = 5000)`}
               </div>
             </TabsContent>
 
+            <TabsContent value="api-keys" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> API Key Management</CardTitle>
+                  <CardDescription>Create and manage API keys for your integrations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ApiKeysSection />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="webhooks" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Webhook Events</CardTitle>
-                  <CardDescription>Real-time notifications about payment events</CardDescription>
+                  <CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5" /> Webhook Endpoints</CardTitle>
+                  <CardDescription>Configure and test webhook endpoints for real-time event notifications</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Available Events</h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <Badge variant="outline">payment.created</Badge>
-                        <span className="text-muted-foreground">Payment session created</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge variant="outline">payment.completed</Badge>
-                        <span className="text-muted-foreground">Payment successful</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge variant="outline">payment.failed</Badge>
-                        <span className="text-muted-foreground">Payment failed</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge variant="outline">refund.created</Badge>
-                        <span className="text-muted-foreground">Refund initiated</span>
-                      </li>
-                    </ul>
-                  </div>
+                <CardContent>
+                  <WebhooksSection />
+                </CardContent>
+              </Card>
 
-                  <div>
-                    <h3 className="font-semibold mb-2">Example Webhook Handler</h3>
-                    <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+              <Card>
+                <CardHeader><CardTitle>Example Webhook Handler</CardTitle></CardHeader>
+                <CardContent>
+                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
 {`app.post('/webhook', (req, res) => {
-  const signature = req.headers['x-payment-switch-signature'];
-  
-  // Verify signature
-  const isValid = verifySignature(req.body, signature);
+  const signature = req.headers['x-webhook-signature'];
+  const isValid = verifySignature(req.body, signature, webhookSecret);
   if (!isValid) return res.status(401).send('Invalid signature');
   
   const event = req.body;
-  
-  if (event.type === 'payment.completed') {
-    // Update order status
-    updateOrder(event.data.sessionId, 'paid');
+  switch (event.type) {
+    case 'payment.completed':
+      updateOrder(event.data.sessionId, 'paid');
+      break;
+    case 'transfer.completed':
+      notifyRecipient(event.data.transferId);
+      break;
   }
-  
   res.send('OK');
 });`}
-                    </pre>
-                  </div>
+                  </pre>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="api-docs" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>API Documentation</CardTitle>
+                  <CardDescription>Interactive API documentation powered by OpenAPI/Swagger</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Full interactive API documentation is available at <code className="bg-muted px-2 py-1 rounded">/api/docs</code>.
+                    This covers all 43 tRPC routers including payments, transfers, compliance, and admin endpoints.
+                  </p>
+                  <Button onClick={() => window.open('/api/docs', '_blank')}>
+                    <Book className="h-4 w-4 mr-2" /> Open API Docs
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

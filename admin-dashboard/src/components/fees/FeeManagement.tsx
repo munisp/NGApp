@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { DollarSign, Plus, Edit, Trash2, Calculator, ToggleLeft, ToggleRight } from 'lucide-react';
 
 const feeConfigs = [
@@ -11,9 +12,15 @@ const feeConfigs = [
 ];
 
 export function FeeManagement() {
+  const feesFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ fees: typeof feeConfigs }>('/api/v1/fees')
+      .then(d => d.fees)
+      .catch(() => feeConfigs), []);
+  const { data: fees } = useLakehouseData(feesFetcher, 60000);
+  const activeFees = fees || feeConfigs;
   const [calcAmount, setCalcAmount] = useState(100000);
   const [calcType, setCalcType] = useState('Transfer');
-  const standardFee = feeConfigs.find(f => f.type === calcType && f.tier === 'Standard');
+  const standardFee = activeFees.find(f => f.type === calcType && f.tier === 'Standard');
   const estimatedFee = standardFee ? Math.min(Math.max(standardFee.flatFee + (calcAmount * standardFee.percentFee / 100), standardFee.minFee), standardFee.maxFee || Infinity) : 0;
 
   return (
@@ -38,7 +45,7 @@ export function FeeManagement() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr><th className="text-left px-4 py-3 font-medium text-gray-600">Name</th><th className="text-left px-4 py-3 font-medium text-gray-600">Tier</th><th className="text-left px-4 py-3 font-medium text-gray-600">Type</th><th className="text-left px-4 py-3 font-medium text-gray-600">Flat</th><th className="text-left px-4 py-3 font-medium text-gray-600">%</th><th className="text-left px-4 py-3 font-medium text-gray-600">Min/Max</th><th className="text-left px-4 py-3 font-medium text-gray-600">Active</th><th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th></tr></thead>
           <tbody className="divide-y">
-            {feeConfigs.map(f => (
+            {activeFees.map(f => (
               <tr key={f.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{f.name}</td>
                 <td className="px-4 py-3"><span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{f.tier}</span></td>

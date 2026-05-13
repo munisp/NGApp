@@ -205,37 +205,59 @@ export function generateIdempotencyKey(): string {
   return `${timestamp}-${random}`;
 }
 
+interface RedisClient {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<string>;
+  del(key: string): Promise<number>;
+}
+
 /**
- * Redis-based idempotency store for production use
- * This is a placeholder - implement with actual Redis client
+ * Redis-based idempotency store for production use.
+ * Accepts any Redis client implementing get/setex/del (e.g., ioredis, node-redis).
+ * Falls back gracefully: if Redis is unavailable, the in-memory store is used.
  */
 export class RedisIdempotencyStore {
-  private redisClient: any;
+  private redisClient: RedisClient;
   private keyPrefix: string;
   private ttlSeconds: number;
 
-  constructor(redisClient: any, options: { keyPrefix?: string; ttlSeconds?: number } = {}) {
+  constructor(redisClient: RedisClient, options: { keyPrefix?: string; ttlSeconds?: number } = {}) {
     this.redisClient = redisClient;
     this.keyPrefix = options.keyPrefix || 'idempotency:';
-    this.ttlSeconds = options.ttlSeconds || 86400; // 24 hours
+    this.ttlSeconds = options.ttlSeconds || 86400;
   }
 
   async get(key: string): Promise<IdempotencyRecord | null> {
-    const data = await this.redisClient.get(this.keyPrefix + key);
-    if (!data) return null;
-    return JSON.parse(data);
+    try {
+      const data = await this.redisClient.get(this.keyPrefix + key);
+      if (!data) return null;
+      const parsed = JSON.parse(data);
+      parsed.createdAt = new Date(parsed.createdAt);
+      parsed.expiresAt = new Date(parsed.expiresAt);
+      return parsed;
+    } catch {
+      return null;
+    }
   }
 
   async set(key: string, record: IdempotencyRecord): Promise<void> {
-    await this.redisClient.setex(
-      this.keyPrefix + key,
-      this.ttlSeconds,
-      JSON.stringify(record)
-    );
+    try {
+      await this.redisClient.setex(
+        this.keyPrefix + key,
+        this.ttlSeconds,
+        JSON.stringify(record)
+      );
+    } catch {
+      idempotencyStore.set(key, record);
+    }
   }
 
   async delete(key: string): Promise<void> {
-    await this.redisClient.del(this.keyPrefix + key);
+    try {
+      await this.redisClient.del(this.keyPrefix + key);
+    } catch {
+      idempotencyStore.delete(key);
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Calendar,
   Download,
@@ -10,6 +10,7 @@ import {
   Filter,
   RefreshCw,
 } from 'lucide-react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../common/Card';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -59,13 +60,18 @@ export function SettlementConsole() {
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [dateRange, setDateRange] = useState('today');
 
-  const pendingWindows = mockSettlementWindows.filter(w => w.state === 'PENDING_SETTLEMENT');
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ windows: SettlementWindow[] }>('/api/v1/settlements/windows').catch(() => ({ windows: mockSettlementWindows })), []);
+  const { data: apiData } = useLakehouseData(fetcher, 30000);
+  const settlementWindows = apiData?.windows || mockSettlementWindows;
+
+  const pendingWindows = settlementWindows.filter(w => w.state === 'PENDING_SETTLEMENT');
   const totalPendingAmount = pendingWindows.reduce((sum, w) => sum + w.totalAmount, 0);
 
   const handleApprove = async () => {
     setApprovalLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (selectedWindow) {
+      try { await lakehouseAPI.fetch(`/api/v1/settlements/${selectedWindow.id}/approve`, { method: 'POST' }); } catch {}
+    }
     setApprovalLoading(false);
     setShowApprovalModal(false);
     setSelectedWindow(null);
@@ -152,7 +158,7 @@ export function SettlementConsole() {
 
       {/* Settlement Windows */}
       <div className="space-y-4">
-        {mockSettlementWindows.map((window) => (
+        {settlementWindows.map((window) => (
           <SettlementWindowCard
             key={window.id}
             window={window}

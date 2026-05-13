@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Shield, Lock, Eye, AlertTriangle, Users, Key, Globe, Activity } from 'lucide-react';
 
 const securityEvents = [
@@ -20,6 +21,12 @@ const pbacPolicies = [
 const severityColors: Record<string, string> = { low: 'bg-gray-100 text-gray-800', medium: 'bg-yellow-100 text-yellow-800', high: 'bg-orange-100 text-orange-800', critical: 'bg-red-100 text-red-800' };
 
 export function SecurityDashboard() {
+  const eventsFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ events: typeof securityEvents }>('/api/v1/security/events')
+      .then(d => d.events)
+      .catch(() => securityEvents), []);
+  const { data: apiEvents } = useLakehouseData(eventsFetcher, 15000);
+  const events = apiEvents || securityEvents;
   const [tab, setTab] = useState<'events' | 'pbac' | 'ip_blocklist' | 'rate_limits'>('events');
 
   return (
@@ -55,7 +62,7 @@ export function SecurityDashboard() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b"><tr><th className="text-left px-4 py-3 font-medium text-gray-600">Time</th><th className="text-left px-4 py-3 font-medium text-gray-600">Type</th><th className="text-left px-4 py-3 font-medium text-gray-600">Severity</th><th className="text-left px-4 py-3 font-medium text-gray-600">Source IP</th><th className="text-left px-4 py-3 font-medium text-gray-600">Description</th><th className="text-left px-4 py-3 font-medium text-gray-600">Blocked</th></tr></thead>
             <tbody className="divide-y">
-              {securityEvents.map((e, i) => (
+              {events.map((e, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-xs">{e.time}</td>
                   <td className="px-4 py-3 font-mono text-xs">{e.type}</td>

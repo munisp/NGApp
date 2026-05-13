@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Code,
   Key,
@@ -102,8 +103,14 @@ const generateUsageData = () => {
 };
 
 export function DeveloperPortal() {
+  const keyFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ keys: APIKey[] }>('/api/v1/developer/keys')
+      .then(d => d.keys)
+      .catch(() => mockAPIKeys), []);
+  const { data: apiKeys_ } = useLakehouseData(keyFetcher, 30000);
   const [apiKeys, setApiKeys] = useState<APIKey[]>(mockAPIKeys);
   const [webhooks, setWebhooks] = useState(mockWebhooks);
+  useEffect(() => { if (apiKeys_) setApiKeys(apiKeys_); }, [apiKeys_]);
   const [activeTab, setActiveTab] = useState<'keys' | 'webhooks' | 'docs' | 'sandbox'>('keys');
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [showCreateWebhookModal, setShowCreateWebhookModal] = useState(false);

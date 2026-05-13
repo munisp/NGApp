@@ -287,7 +287,7 @@ export async function validateBillDetails(params: {
   error?: string;
 }> {
   // In production, call Quickteller/Interswitch validation API
-  log.info('[Bill Validation] Validating:', params);
+  log.info(params, '[Bill Validation] Validating');
 
   // Mock validation
   return {
@@ -311,7 +311,7 @@ export async function processBillPayment(params: {
   const reference = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // In production, call Quickteller/Interswitch payment API
-  log.info('[Bill Payment] Processing:', params);
+  log.info(params, '[Bill Payment] Processing');
 
   // Mock payment result
   const result: BillPaymentResult = {

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Gauge, Edit, Plus } from 'lucide-react';
 
 const limits = [
@@ -10,6 +11,12 @@ const limits = [
 ];
 
 export function TransactionLimits() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ limits: typeof limits }>('/api/v1/limits')
+      .then(d => d.limits)
+      .catch(() => limits), []);
+  const { data: apiLimits } = useLakehouseData(fetcher, 60000);
+  const activeLimits = apiLimits || limits;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -20,7 +27,7 @@ export function TransactionLimits() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr><th className="text-left px-4 py-3 font-medium text-gray-600">Type</th><th className="text-left px-4 py-3 font-medium text-gray-600">Tier</th><th className="text-left px-4 py-3 font-medium text-gray-600">Per Transaction</th><th className="text-left px-4 py-3 font-medium text-gray-600">Daily</th><th className="text-left px-4 py-3 font-medium text-gray-600">Weekly</th><th className="text-left px-4 py-3 font-medium text-gray-600">Monthly</th><th className="text-left px-4 py-3 font-medium text-gray-600">Utilization</th><th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th></tr></thead>
           <tbody className="divide-y">
-            {limits.map(l => (
+            {activeLimits.map(l => (
               <tr key={l.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{l.name}</td>
                 <td className="px-4 py-3"><span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{l.tier}</span></td>

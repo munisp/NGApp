@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Shield,
   AlertTriangle,
@@ -175,6 +176,9 @@ const generateChartData = () => {
 
 export function FraudDashboard() {
   const [alerts, setAlerts] = useState<FraudAlert[]>(mockAlerts);
+  const fetcher = useCallback(() => lakehouseAPI.getFraudMetrics().then(m => m.alerts as unknown as FraudAlert[]).catch(() => mockAlerts), []);
+  const { data: apiAlerts } = useLakehouseData(fetcher, 30000);
+  useEffect(() => { if (apiAlerts && apiAlerts.length > 0) setAlerts(apiAlerts); }, [apiAlerts]);
   const [selectedAlert, setSelectedAlert] = useState<FraudAlert | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');

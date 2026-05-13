@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Clock,
   AlertTriangle,
@@ -161,8 +162,14 @@ const mockMetrics: SLAMetrics = {
 };
 
 export function SLADashboard() {
+  const slaFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ data: SLATracking[]; metrics: SLAMetrics }>('/api/v1/onboarding/sla')
+      .then(d => ({ data: d.data, metrics: d.metrics }))
+      .catch(() => ({ data: mockSLAData, metrics: mockMetrics })), []);
+  const { data: apiSla } = useLakehouseData(slaFetcher, 15000);
   const [slaData, setSlaData] = useState<SLATracking[]>(mockSLAData);
   const [metrics, setMetrics] = useState<SLAMetrics>(mockMetrics);
+  useEffect(() => { if (apiSla) { setSlaData(apiSla.data); setMetrics(apiSla.metrics); } }, [apiSla]);
   const [filter, setFilter] = useState<'ALL' | 'ON_TRACK' | 'AT_RISK' | 'OVERDUE'>('ALL');
   const [selectedCase, setSelectedCase] = useState<SLATracking | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);

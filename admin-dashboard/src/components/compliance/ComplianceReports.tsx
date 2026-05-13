@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { FileText, Download, Eye, Filter, Calendar, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
-const reports = [
+const fallbackReports = [
   { id: 'CTR-2026-0501', type: 'CTR', title: 'Currency Transaction Report', period: '2026-05-01', status: 'submitted', transactions: 156, totalAmount: 2400000000, regulator: 'CBN' },
   { id: 'SAR-2026-0428', type: 'SAR', title: 'Suspicious Activity Report', period: '2026-04-28', status: 'under_review', transactions: 3, totalAmount: 15000000, regulator: 'NFIU' },
   { id: 'AML-2026-Q1', type: 'AML', title: 'AML Quarterly Assessment', period: '2026-Q1', status: 'approved', transactions: 4500, totalAmount: 89000000000, regulator: 'CBN' },
@@ -14,6 +15,10 @@ const statusColors: Record<string, string> = { submitted: 'bg-blue-100 text-blue
 const typeColors: Record<string, string> = { CTR: 'bg-purple-100 text-purple-800', SAR: 'bg-red-100 text-red-800', AML: 'bg-blue-100 text-blue-800', STR: 'bg-orange-100 text-orange-800', PEP: 'bg-yellow-100 text-yellow-800', Sanctions: 'bg-gray-100 text-gray-800' };
 
 export function ComplianceReports() {
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ reports: typeof fallbackReports }>('/api/v1/compliance/reports').catch(() => ({ reports: fallbackReports })), []);
+  const { data } = useLakehouseData(fetcher, 60000);
+  const reports = data?.reports || fallbackReports;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

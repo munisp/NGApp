@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
 interface JourneyMetric {
   journeyId: number;
@@ -19,7 +20,7 @@ interface DailyMetric {
   failed: number;
 }
 
-const mockMetrics: JourneyMetric[] = [
+const defaultMetrics: JourneyMetric[] = [
   { journeyId: 1, journeyName: 'Admin Provision Organization', totalRuns: 1250, successRate: 98.5, avgDuration: '2.3s', lastRun: '5 min ago', trend: 'up' },
   { journeyId: 2, journeyName: 'Participant KYB Activation', totalRuns: 890, successRate: 94.2, avgDuration: '45s', lastRun: '12 min ago', trend: 'stable' },
   { journeyId: 3, journeyName: 'User KYC Product Access', totalRuns: 3420, successRate: 96.8, avgDuration: '30s', lastRun: '2 min ago', trend: 'up' },
@@ -41,6 +42,12 @@ const mockDailyData: DailyMetric[] = [
 ];
 
 export default function JourneyAnalytics() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ metrics: JourneyMetric[] }>('/api/v1/journeys/analytics')
+      .then(d => d.metrics)
+      .catch(() => defaultMetrics), []);
+  const { data: apiMetrics } = useLakehouseData(fetcher, 30000);
+  const metrics = apiMetrics || defaultMetrics;
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -51,8 +58,8 @@ export default function JourneyAnalytics() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const totalRuns = mockMetrics.reduce((sum, m) => sum + m.totalRuns, 0);
-  const avgSuccessRate = mockMetrics.reduce((sum, m) => sum + m.successRate, 0) / mockMetrics.length;
+  const totalRuns = metrics.reduce((sum, m) => sum + m.totalRuns, 0);
+  const avgSuccessRate = metrics.reduce((sum, m) => sum + m.successRate, 0) / metrics.length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
@@ -162,7 +169,7 @@ export default function JourneyAnalytics() {
         {/* Mobile View */}
         {isMobile ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {mockMetrics.map((metric) => (
+            {metrics.map((metric) => (
               <div key={metric.journeyId} className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -229,7 +236,7 @@ export default function JourneyAnalytics() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {mockMetrics.map((metric) => (
+                {metrics.map((metric) => (
                   <tr key={metric.journeyId} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>

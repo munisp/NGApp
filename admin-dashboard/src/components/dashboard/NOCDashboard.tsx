@@ -86,6 +86,17 @@ export function NOCDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(generateRecentTransactions());
   const [isGlobalHalted, setIsGlobalHalted] = useState(false);
 
+  // Try to fetch from API first, fall back to mock data
+  useEffect(() => {
+    (async () => {
+      try {
+        const { lakehouseAPI } = await import('@/lib/api');
+        const nocData = await lakehouseAPI.getNOCMetrics();
+        if (nocData?.participant_health) setParticipants(nocData.participant_health as unknown as ParticipantHealth[]);
+      } catch { /* API unavailable — use mock data */ }
+    })();
+  }, []);
+
   // Simulate real-time updates
   useEffect(() => {
     const interval = setInterval(() => {

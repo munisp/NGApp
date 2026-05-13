@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ScrollText, Search, Filter, Download, Eye, User, Clock } from 'lucide-react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
-const auditEntries = [
+const fallbackAuditEntries = [
   { id: 'AUD-9001', timestamp: '2026-05-02 16:45:12', actor: 'admin@payment-switch.com', action: 'kill_switch.activate', resource: 'Sterling Bank', details: 'Suspended participant due to high failure rate', ip: '10.0.1.55', risk: 'high' },
   { id: 'AUD-9000', timestamp: '2026-05-02 16:30:05', actor: 'compliance@payment-switch.com', action: 'dispute.escalate', resource: 'DSP-005', details: 'Escalated to fraud team for investigation', ip: '10.0.1.42', risk: 'medium' },
   { id: 'AUD-8999', timestamp: '2026-05-02 15:20:33', actor: 'treasury@payment-switch.com', action: 'settlement.approve', resource: 'STL-2026-0502', details: 'Approved ₦2.4B settlement batch', ip: '10.0.1.38', risk: 'high' },
@@ -15,6 +16,9 @@ const riskColors: Record<string, string> = { low: 'text-gray-500', medium: 'text
 
 export function AuditLog() {
   const [search, setSearch] = useState('');
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ entries: typeof fallbackAuditEntries }>('/api/v1/audit/log').catch(() => ({ entries: fallbackAuditEntries })), []);
+  const { data } = useLakehouseData(fetcher, 15000);
+  const auditEntries = data?.entries || fallbackAuditEntries;
   const filtered = auditEntries.filter(e => search === '' || e.action.includes(search.toLowerCase()) || e.actor.includes(search.toLowerCase()) || e.details.toLowerCase().includes(search.toLowerCase()));
 
   return (

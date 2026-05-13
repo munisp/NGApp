@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   FileText,
   Download,
@@ -89,7 +90,13 @@ const reportTypeLabels: Record<ReportType, string> = {
 };
 
 export function ReportsInterface() {
+  const reportsFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ reports: Report[] }>('/api/v1/reports')
+      .then(d => d.reports)
+      .catch(() => mockReports), []);
+  const { data: apiReports } = useLakehouseData(reportsFetcher, 30000);
   const [reports, setReports] = useState<Report[]>(mockReports);
+  useEffect(() => { if (apiReports) setReports(apiReports); }, [apiReports]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);

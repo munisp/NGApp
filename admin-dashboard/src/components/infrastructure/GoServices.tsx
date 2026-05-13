@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Zap, Activity, Server, Globe, RefreshCw, Webhook, FileText, Shield, DollarSign } from 'lucide-react';
 
 const goServices = [
@@ -13,20 +14,26 @@ const goServices = [
 ];
 
 export function GoServices() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ services: typeof goServices }>('/api/v1/infrastructure/go-services')
+      .then(d => d.services)
+      .catch(() => goServices), []);
+  const { data: services } = useLakehouseData(fetcher, 30000);
+  const activeServices = services || goServices;
   return (
     <div className="space-y-6">
       <div><h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Zap className="h-6 w-6 text-cyan-600" /> Go Performance Services</h2><p className="text-sm text-gray-500 mt-1">High-throughput I/O-bound orchestration replacing TypeScript hot paths</p></div>
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-cyan-600">{goServices.length}</div><div className="text-sm text-gray-500">Services</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold">{goServices.reduce((sum, s) => sum + s.goroutines, 0).toLocaleString()}</div><div className="text-sm text-gray-500">Active Goroutines</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{goServices.filter(s => s.status === 'running').length}/{goServices.length}</div><div className="text-sm text-gray-500">Healthy</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-cyan-600">{activeServices.length}</div><div className="text-sm text-gray-500">Services</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold">{activeServices.reduce((sum, s) => sum + s.goroutines, 0).toLocaleString()}</div><div className="text-sm text-gray-500">Active Goroutines</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{activeServices.filter(s => s.status === 'running').length}/{activeServices.length}</div><div className="text-sm text-gray-500">Healthy</div></div>
         <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold">p50: 5ms</div><div className="text-sm text-gray-500">Avg Latency</div></div>
       </div>
       <div className="bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr><th className="text-left px-4 py-3 font-medium text-gray-600">Service</th><th className="text-left px-4 py-3 font-medium text-gray-600">Description</th><th className="text-left px-4 py-3 font-medium text-gray-600">Status</th><th className="text-left px-4 py-3 font-medium text-gray-600">Goroutines</th><th className="text-left px-4 py-3 font-medium text-gray-600">Latency</th><th className="text-left px-4 py-3 font-medium text-gray-600">Throughput</th></tr></thead>
           <tbody className="divide-y">
-            {goServices.map(s => (
+            {activeServices.map(s => (
               <tr key={s.name} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{s.name}</td>
                 <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">{s.description}</td>

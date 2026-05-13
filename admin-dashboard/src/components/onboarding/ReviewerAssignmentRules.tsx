@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Users,
   Plus,
@@ -121,8 +122,14 @@ const mockRules: AssignmentRule[] = [
 ];
 
 export function ReviewerAssignmentRules() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ rules: AssignmentRule[]; reviewers: Assignee[] }>('/api/v1/onboarding/assignment-rules')
+      .then(d => ({ rules: d.rules, reviewers: d.reviewers }))
+      .catch(() => ({ rules: mockRules, reviewers: mockReviewers })), []);
+  const { data: apiData } = useLakehouseData(fetcher, 30000);
   const [rules, setRules] = useState<AssignmentRule[]>(mockRules);
   const [reviewers] = useState<Assignee[]>(mockReviewers);
+  useEffect(() => { if (apiData) { setRules(apiData.rules); } }, [apiData]);
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRule, setEditingRule] = useState<AssignmentRule | null>(null);

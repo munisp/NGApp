@@ -398,9 +398,19 @@ export function verifyCircleWebhook(
   payload: string,
   signature: string
 ): boolean {
-  // Circle uses a different webhook verification method
-  // This is a placeholder - implement according to Circle's docs
-  return true;
+  const crypto = require('crypto');
+  const secret = process.env.CIRCLE_WEBHOOK_SECRET;
+  if (!secret) {
+    log.warn('CIRCLE_WEBHOOK_SECRET not configured, skipping verification');
+    return false;
+  }
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(payload);
+  const expectedSignature = hmac.digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature),
+  );
 }
 
 /**

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Gavel, Search, Plus, Eye, MessageSquare, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Gavel, Search, Plus, Eye, MessageSquare, Clock, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
 interface Dispute {
   id: string;
@@ -15,7 +16,7 @@ interface Dispute {
   assignee: string;
 }
 
-const sampleDisputes: Dispute[] = [
+const fallbackDisputes: Dispute[] = [
   { id: 'DSP-001', transactionId: 'TXN-89234', merchant: 'FirstBank PLC', amount: 250000, currency: 'NGN', reason: 'Unauthorized transaction', status: 'open', priority: 'critical', createdAt: '2026-05-02 10:30', updatedAt: '2026-05-02 14:15', assignee: 'Adunni Okafor' },
   { id: 'DSP-002', transactionId: 'TXN-89156', merchant: 'GTBank', amount: 75000, currency: 'NGN', reason: 'Amount mismatch', status: 'under_review', priority: 'high', createdAt: '2026-05-01 16:45', updatedAt: '2026-05-02 09:30', assignee: 'Chidi Nwankwo' },
   { id: 'DSP-003', transactionId: 'TXN-88901', merchant: 'Zenith Bank', amount: 500000, currency: 'NGN', reason: 'Service not received', status: 'evidence_requested', priority: 'medium', createdAt: '2026-04-30 11:20', updatedAt: '2026-05-01 15:00', assignee: 'Adunni Okafor' },
@@ -44,18 +45,22 @@ export function DisputesDashboard() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const filtered = sampleDisputes.filter(d => {
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ disputes: Dispute[] }>('/api/v1/disputes').catch(() => ({ disputes: fallbackDisputes })), []);
+  const { data, loading } = useLakehouseData(fetcher, 30000);
+  const disputes = data?.disputes || fallbackDisputes;
+
+  const filtered = disputes.filter(d => {
     const matchSearch = search === '' || d.transactionId.toLowerCase().includes(search.toLowerCase()) || d.merchant.toLowerCase().includes(search.toLowerCase()) || d.reason.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || d.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
   const stats = {
-    total: sampleDisputes.length,
-    open: sampleDisputes.filter(d => d.status === 'open').length,
-    underReview: sampleDisputes.filter(d => d.status === 'under_review').length,
-    escalated: sampleDisputes.filter(d => d.status === 'escalated').length,
-    resolved: sampleDisputes.filter(d => d.status.startsWith('resolved')).length,
+    total: disputes.length,
+    open: disputes.filter(d => d.status === 'open').length,
+    underReview: disputes.filter(d => d.status === 'under_review').length,
+    escalated: disputes.filter(d => d.status === 'escalated').length,
+    resolved: disputes.filter(d => d.status.startsWith('resolved')).length,
   };
 
   return (

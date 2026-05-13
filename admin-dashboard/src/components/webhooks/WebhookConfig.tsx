@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Webhook, Plus, Edit, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 const webhooks = [
@@ -12,6 +13,12 @@ const webhooks = [
 const statusColors: Record<string, string> = { active: 'bg-green-100 text-green-800', degraded: 'bg-yellow-100 text-yellow-800', failed: 'bg-red-100 text-red-800', disabled: 'bg-gray-100 text-gray-800' };
 
 export function WebhookConfig() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ webhooks: typeof webhooks }>('/api/v1/webhooks')
+      .then(d => d.webhooks)
+      .catch(() => webhooks), []);
+  const { data: apiWebhooks } = useLakehouseData(fetcher, 15000);
+  const activeWebhooks = apiWebhooks || webhooks;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -19,15 +26,15 @@ export function WebhookConfig() {
         <button className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"><Plus className="h-4 w-4" /> Add Endpoint</button>
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{webhooks.filter(w => w.status === 'active').length}</div><div className="text-sm text-gray-500">Active Endpoints</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-yellow-600">{webhooks.filter(w => w.status === 'degraded').length}</div><div className="text-sm text-gray-500">Degraded</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-red-600">{webhooks.filter(w => w.status === 'failed').length}</div><div className="text-sm text-gray-500">Failed</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{activeWebhooks.filter(w => w.status === 'active').length}</div><div className="text-sm text-gray-500">Active Endpoints</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-yellow-600">{activeWebhooks.filter(w => w.status === 'degraded').length}</div><div className="text-sm text-gray-500">Degraded</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-red-600">{activeWebhooks.filter(w => w.status === 'failed').length}</div><div className="text-sm text-gray-500">Failed</div></div>
       </div>
       <div className="bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr><th className="text-left px-4 py-3 font-medium text-gray-600">Endpoint</th><th className="text-left px-4 py-3 font-medium text-gray-600">Events</th><th className="text-left px-4 py-3 font-medium text-gray-600">Status</th><th className="text-left px-4 py-3 font-medium text-gray-600">Success Rate</th><th className="text-left px-4 py-3 font-medium text-gray-600">Last Delivery</th><th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th></tr></thead>
           <tbody className="divide-y">
-            {webhooks.map(w => (
+            {activeWebhooks.map(w => (
               <tr key={w.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs max-w-xs truncate">{w.url}</td>
                 <td className="px-4 py-3"><div className="flex flex-wrap gap-1">{w.events.slice(0, 2).map(e => <span key={e} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{e}</span>)}{w.events.length > 2 && <span className="text-xs text-gray-400">+{w.events.length - 2}</span>}</div></td>

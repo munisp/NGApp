@@ -89,7 +89,7 @@ export async function validateMobileMoneyAccount(params: {
   }
 
   // In production, call provider API for validation
-  log.info('[Mobile Money] Validating account:', params);
+  log.info(params, '[Mobile Money] Validating account');
 
   // Mock validation
   return {
@@ -123,7 +123,7 @@ export async function sendMobileMoneyTransfer(params: {
   }
 
   // In production, call provider API
-  log.info('[Mobile Money] Sending transfer:', params);
+  log.info(params, '[Mobile Money] Sending transfer');
 
   // Mock transfer result
   const result: MobileMoneyTransfer = {
@@ -289,7 +289,7 @@ export async function reverseMobileMoneyTransfer(reference: string): Promise<{
   message: string;
 }> {
   // In production, call provider API for reversal
-  log.info('[Mobile Money] Reversing transfer:', reference);
+  log.info({ reference }, '[Mobile Money] Reversing transfer');
 
   return {
     success: true,

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Copy,
   Search,
@@ -125,7 +126,13 @@ const mockTemplates: OrganizationTemplate[] = [
 ];
 
 export function TemplateCloning() {
+  const tmplFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ templates: OrganizationTemplate[] }>('/api/v1/onboarding/templates')
+      .then(d => d.templates)
+      .catch(() => mockTemplates), []);
+  const { data: apiTemplates } = useLakehouseData(tmplFetcher, 30000);
   const [templates, setTemplates] = useState<OrganizationTemplate[]>(mockTemplates);
+  useEffect(() => { if (apiTemplates) setTemplates(apiTemplates); }, [apiTemplates]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [selectedTemplate, setSelectedTemplate] = useState<OrganizationTemplate | null>(null);

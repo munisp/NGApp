@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { RefreshCw, Plus, Search, Play, Pause, Trash2, Edit } from 'lucide-react';
 
 interface RecurringRemittance {
@@ -31,9 +32,15 @@ const statusColors: Record<string, string> = {
 };
 
 export function RecurringRemittances() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ remittances: RecurringRemittance[] }>('/api/v1/remittances/recurring')
+      .then(d => d.remittances)
+      .catch(() => sampleRemittances), []);
+  const { data: apiRemittances } = useLakehouseData(fetcher, 30000);
+  const activeRemittances = apiRemittances || sampleRemittances;
   const [search, setSearch] = useState('');
 
-  const filtered = sampleRemittances.filter(r =>
+  const filtered = activeRemittances.filter(r =>
     search === '' || r.sender.toLowerCase().includes(search.toLowerCase()) || r.recipient.toLowerCase().includes(search.toLowerCase()) || r.corridor.includes(search)
   );
 

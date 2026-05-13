@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Layers, Plus, Search, Upload, Download, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface BatchTransfer {
@@ -32,9 +33,15 @@ const statusColors: Record<string, string> = {
 };
 
 export function BatchTransfers() {
+  const batchFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ batches: BatchTransfer[] }>('/api/v1/batch/transfers')
+      .then(d => d.batches)
+      .catch(() => sampleBatches), []);
+  const { data: batches } = useLakehouseData(batchFetcher, 15000);
+  const activeBatches = batches || sampleBatches;
   const [search, setSearch] = useState('');
 
-  const filtered = sampleBatches.filter(b =>
+  const filtered = activeBatches.filter(b =>
     search === '' || b.name.toLowerCase().includes(search.toLowerCase()) || b.id.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -60,19 +67,19 @@ export function BatchTransfers() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold">{sampleBatches.length}</div>
+          <div className="text-2xl font-bold">{activeBatches.length}</div>
           <div className="text-sm text-gray-500">Total Batches</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold text-blue-600">{sampleBatches.filter(b => b.status === 'processing').length}</div>
+          <div className="text-2xl font-bold text-blue-600">{activeBatches.filter(b => b.status === 'processing').length}</div>
           <div className="text-sm text-gray-500">Processing</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold">{sampleBatches.reduce((sum, b) => sum + b.totalRecipients, 0).toLocaleString()}</div>
+          <div className="text-2xl font-bold">{activeBatches.reduce((sum, b) => sum + b.totalRecipients, 0).toLocaleString()}</div>
           <div className="text-sm text-gray-500">Total Recipients</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold">₦{(sampleBatches.reduce((sum, b) => sum + b.totalAmount, 0) / 1000000000).toFixed(1)}B</div>
+          <div className="text-2xl font-bold">₦{(activeBatches.reduce((sum, b) => sum + b.totalAmount, 0) / 1000000000).toFixed(1)}B</div>
           <div className="text-sm text-gray-500">Total Volume</div>
         </div>
       </div>

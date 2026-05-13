@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { Database, Activity, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 const middleware = [
@@ -23,17 +24,23 @@ const statusIcons: Record<string, React.ReactNode> = {
 };
 
 export function MiddlewareDashboard() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ services: typeof middleware }>('/api/v1/infrastructure/middleware')
+      .then(d => d.services)
+      .catch(() => middleware), []);
+  const { data: services } = useLakehouseData(fetcher, 15000);
+  const activeMiddleware = services || middleware;
   return (
     <div className="space-y-6">
       <div><h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Database className="h-6 w-6" /> Middleware Services</h2><p className="text-sm text-gray-500 mt-1">Infrastructure status: Kafka, Temporal, TigerBeetle, Redis, PostgreSQL, OpenSearch, Keycloak, APISIX, Dapr, OpenAppSec, Permify, Mojaloop</p></div>
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold">{middleware.length}</div><div className="text-sm text-gray-500">Total Services</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{middleware.filter(m => m.status === 'healthy').length}</div><div className="text-sm text-gray-500">Healthy</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-yellow-600">{middleware.filter(m => m.status === 'degraded').length}</div><div className="text-sm text-gray-500">Degraded</div></div>
-        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-red-600">{middleware.filter(m => m.status === 'down').length}</div><div className="text-sm text-gray-500">Down</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold">{activeMiddleware.length}</div><div className="text-sm text-gray-500">Total Services</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-green-600">{activeMiddleware.filter(m => m.status === 'healthy').length}</div><div className="text-sm text-gray-500">Healthy</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-yellow-600">{activeMiddleware.filter(m => m.status === 'degraded').length}</div><div className="text-sm text-gray-500">Degraded</div></div>
+        <div className="bg-white rounded-lg border p-4"><div className="text-2xl font-bold text-red-600">{activeMiddleware.filter(m => m.status === 'down').length}</div><div className="text-sm text-gray-500">Down</div></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        {middleware.map(m => (
+        {activeMiddleware.map(m => (
           <div key={m.name} className="bg-white rounded-lg border p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">{statusIcons[m.status]}<h3 className="font-semibold">{m.name}</h3></div>

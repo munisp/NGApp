@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Play,
   CheckCircle,
@@ -174,7 +175,13 @@ const defaultScenarios: TestScenario[] = [
 ];
 
 export function IntegrationTestingPortal() {
+  const scenarioFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ scenarios: TestScenario[] }>('/api/v1/onboarding/test-scenarios')
+      .then(d => d.scenarios)
+      .catch(() => defaultScenarios), []);
+  const { data: apiScenarios } = useLakehouseData(scenarioFetcher, 60000);
   const [scenarios, setScenarios] = useState<TestScenario[]>(defaultScenarios);
+  useEffect(() => { if (apiScenarios) setScenarios(apiScenarios); }, [apiScenarios]);
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [progress, setProgress] = useState<CertificationProgress | null>(null);
   const [credentials, setCredentials] = useState<SandboxCredentials | null>(null);

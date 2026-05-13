@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { createLogger } from '@/lib/logger';
 const log = createLogger('JourneyDashboard');
 
@@ -214,6 +215,12 @@ const statusColors: Record<string, string> = {
 };
 
 export default function JourneyDashboard() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ journeys: Journey[] }>('/api/v1/journeys')
+      .then(d => d.journeys)
+      .catch(() => journeys), []);
+  const { data: apiJourneys } = useLakehouseData(fetcher, 30000);
+  const activeJourneys = apiJourneys || journeys;
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
@@ -226,7 +233,7 @@ export default function JourneyDashboard() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const filteredJourneys = journeys.filter((journey) => {
+  const filteredJourneys = activeJourneys.filter((journey) => {
     const matchesCategory = selectedCategory === 'all' || journey.category === selectedCategory;
     const matchesSearch = journey.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       journey.description.toLowerCase().includes(searchQuery.toLowerCase());

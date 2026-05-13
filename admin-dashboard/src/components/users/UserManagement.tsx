@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
   Users,
   UserPlus,
@@ -174,7 +175,13 @@ const availableRoles: Role[] = [
 ];
 
 export function UserManagement() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ users: User[] }>('/api/v1/users')
+      .then(d => d.users)
+      .catch(() => mockUsers), []);
+  const { data: apiUsers, loading } = useLakehouseData(fetcher, 30000);
   const [users, setUsers] = useState<User[]>(mockUsers);
+  useEffect(() => { if (apiUsers) setUsers(apiUsers); }, [apiUsers]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');

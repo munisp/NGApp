@@ -3,97 +3,148 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUpDown, Download, Search, Filter, RefreshCcw } from "lucide-react";
-
-const seedSettlements = Array.from({ length: 20 }, (_, i) => ({
-  id: `STL-${String(i + 1).padStart(4, "0")}`,
-  date: new Date(Date.now() - i * 86400000).toISOString().split("T")[0],
-  bankCode: ["058", "044", "057", "011", "033"][i % 5],
-  bankName: ["GTBank", "Access Bank", "Zenith Bank", "First Bank", "UBA"][i % 5],
-  totalTransactions: Math.floor(Math.random() * 50000) + 1000,
-  totalAmount: Math.round(Math.random() * 10000000000),
-  netAmount: Math.round(Math.random() * 9000000000),
-  fees: Math.round(Math.random() * 100000000),
-  status: ["settled", "settled", "pending", "settled"][i % 4] as string,
-}));
+import { ArrowUpDown, Download, Search, Filter, RefreshCcw, CheckCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function Settlements() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortField, setSortField] = useState<string>("date");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
 
-  const filtered = seedSettlements
-    .filter((s) => {
-      if (statusFilter !== "all" && s.status !== statusFilter) return false;
-      if (search && !s.bankName.toLowerCase().includes(search.toLowerCase()) && !s.id.includes(search)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const aVal = (a as any)[sortField];
-      const bVal = (b as any)[sortField];
-      if (typeof aVal === "number") return sortDir === "asc" ? aVal - bVal : bVal - aVal;
-      return sortDir === "asc" ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
-    });
+  const { data, isLoading, refetch } = trpc.settlements.list.useQuery({
+    status: statusFilter as 'all' | 'pending' | 'processing' | 'settled' | 'failed' | 'disputed',
+    page,
+    limit: 20,
+  });
 
-  const totalSettled = seedSettlements.filter((s) => s.status === "settled").reduce((sum, s) => sum + s.netAmount, 0);
-  const totalPending = seedSettlements.filter((s) => s.status === "pending").reduce((sum, s) => sum + s.netAmount, 0);
+  const { data: summary } = trpc.settlements.getSummary.useQuery();
+  const reconcileMutation = trpc.settlements.reconcile.useMutation({
+    onSuccess: () => { toast.success("Settlement reconciled"); refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const settlements = data?.settlements || [];
+  const total = data?.total || 0;
+  const totalPages = data?.totalPages || 1;
+
+  const filtered = search
+    ? settlements.filter((s: Record<string, any>) => s.id.toLowerCase().includes(search.toLowerCase()) ||
+        s.bankName.toLowerCase().includes(search.toLowerCase()))
+    : settlements;
+
+  const formatAmount = (amount: number) => `₦${(amount / 100).toLocaleString()}`;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Settlement Management</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><RefreshCcw className="h-4 w-4 mr-1" /> Refresh</Button>
-          <Button size="sm"><Download className="h-4 w-4 mr-1" /> Export</Button>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><ArrowUpDown className="h-6 w-6" /> Settlement Management</h1>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCcw className="h-4 w-4 mr-2" /> Refresh
+        </Button>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card><CardContent className="p-4 text-center">
+            <CheckCircle className="h-6 w-6 mx-auto text-green-500 mb-1" />
+            <p className="text-2xl font-bold">{summary.totalSettled}</p>
+            <p className="text-xs text-muted-foreground">Settled</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <Clock className="h-6 w-6 mx-auto text-yellow-500 mb-1" />
+            <p className="text-2xl font-bold">{summary.totalPending}</p>
+            <p className="text-xs text-muted-foreground">Pending</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <AlertTriangle className="h-6 w-6 mx-auto text-orange-500 mb-1" />
+            <p className="text-2xl font-bold">{summary.totalProcessing}</p>
+            <p className="text-xs text-muted-foreground">Processing</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <p className="text-lg font-bold">{formatAmount(summary.todayVolume)}</p>
+            <p className="text-xs text-muted-foreground">Today's Volume</p>
+            <p className="text-xs text-muted-foreground">{summary.todayTransactions.toLocaleString()} transactions</p>
+          </CardContent></Card>
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Settled</p><p className="text-xl font-bold">₦{(totalSettled / 1e9).toFixed(2)}B</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Pending</p><p className="text-xl font-bold">₦{(totalPending / 1e9).toFixed(2)}B</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total Batches</p><p className="text-xl font-bold">{seedSettlements.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Success Rate</p><p className="text-xl font-bold">99.7%</p></CardContent></Card>
-      </div>
-
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by bank or ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" /></div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="all">All Status</option>
-          <option value="settled">Settled</option>
-          <option value="pending">Pending</option>
-        </select>
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by ID or bank..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+        <div className="flex gap-1">
+          {["all", "pending", "processing", "settled", "failed"].map((s) => (
+            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => { setStatusFilter(s); setPage(1); }}>
+              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                {[{ key: "id", label: "ID" }, { key: "date", label: "Date" }, { key: "bankName", label: "Bank" }, { key: "totalTransactions", label: "Transactions" }, { key: "totalAmount", label: "Total" }, { key: "netAmount", label: "Net" }, { key: "fees", label: "Fees" }, { key: "status", label: "Status" }].map(({ key, label }) => (
-                  <th key={key} className="text-left p-3 cursor-pointer hover:bg-muted" onClick={() => { if (sortField === key) setSortDir(sortDir === "asc" ? "desc" : "asc"); else { setSortField(key); setSortDir("desc"); } }}>
-                    <div className="flex items-center gap-1">{label}<ArrowUpDown className="h-3 w-3" /></div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id} className="border-b hover:bg-muted/30">
-                  <td className="p-3 font-mono text-xs">{s.id}</td>
-                  <td className="p-3">{s.date}</td>
-                  <td className="p-3">{s.bankName}</td>
-                  <td className="p-3">{s.totalTransactions.toLocaleString()}</td>
-                  <td className="p-3">₦{(s.totalAmount / 1e6).toFixed(1)}M</td>
-                  <td className="p-3">₦{(s.netAmount / 1e6).toFixed(1)}M</td>
-                  <td className="p-3">₦{(s.fees / 1e6).toFixed(1)}M</td>
-                  <td className="p-3"><Badge variant={s.status === "settled" ? "default" : "secondary"}>{s.status}</Badge></td>
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/50">
+                <tr>
+                  <th className="text-left p-3">ID</th>
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-left p-3">Bank</th>
+                  <th className="text-left p-3">Channel</th>
+                  <th className="text-right p-3">Transactions</th>
+                  <th className="text-right p-3">Gross</th>
+                  <th className="text-right p-3">Fees</th>
+                  <th className="text-right p-3">Net</th>
+                  <th className="text-left p-3">Window</th>
+                  <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((s: Record<string, any>) => (
+                  <tr key={s.id} className="border-b hover:bg-muted/30">
+                    <td className="p-3 font-mono text-xs">{s.id}</td>
+                    <td className="p-3">{s.date}</td>
+                    <td className="p-3">{s.bankName}</td>
+                    <td className="p-3"><Badge variant="outline">{s.channel}</Badge></td>
+                    <td className="p-3 text-right">{s.totalTransactions.toLocaleString()}</td>
+                    <td className="p-3 text-right font-mono">{formatAmount(s.grossAmount)}</td>
+                    <td className="p-3 text-right font-mono text-muted-foreground">{formatAmount(s.fees)}</td>
+                    <td className="p-3 text-right font-mono font-semibold">{formatAmount(s.netAmount)}</td>
+                    <td className="p-3"><Badge variant="secondary">{s.window}</Badge></td>
+                    <td className="p-3">
+                      <Badge variant={s.status === 'settled' ? 'default' : s.status === 'pending' ? 'secondary' : s.status === 'failed' ? 'destructive' : 'outline'}>
+                        {s.status}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      {s.status === 'pending' && (
+                        <Button size="sm" variant="outline" onClick={() => reconcileMutation.mutate({ id: s.id })}
+                          disabled={reconcileMutation.isPending}>
+                          Reconcile
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
+
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">{total} total settlements</p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+          <span className="text-sm py-1">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+        </div>
+      </div>
     </div>
   );
 }

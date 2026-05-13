@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import { HeadphonesIcon, Search, Plus, MessageSquare, Clock, CheckCircle, AlertCircle, User } from 'lucide-react';
 
 const tickets = [
@@ -15,8 +16,14 @@ const statusColors: Record<string, string> = { open: 'bg-yellow-100 text-yellow-
 const priorityColors: Record<string, string> = { low: 'text-gray-500', medium: 'text-yellow-600', high: 'text-orange-600', critical: 'text-red-600' };
 
 export function SupportCenter() {
+  const ticketFetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ tickets: typeof tickets }>('/api/v1/support/tickets')
+      .then(d => d.tickets)
+      .catch(() => tickets), []);
+  const { data: apiTickets } = useLakehouseData(ticketFetcher, 15000);
+  const activeTickets = apiTickets || tickets;
   const [search, setSearch] = useState('');
-  const filtered = tickets.filter(t => search === '' || t.subject.toLowerCase().includes(search.toLowerCase()) || t.customer.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase()));
+  const filtered = activeTickets.filter(t => search === '' || t.subject.toLowerCase().includes(search.toLowerCase()) || t.customer.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-6">

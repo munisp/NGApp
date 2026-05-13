@@ -1,10 +1,106 @@
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_TITLE, getLoginUrl } from "@/const";
-import { CreditCard, Shield, Zap, Globe, ArrowRight, CheckCircle2 } from "lucide-react";
+import { CreditCard, Shield, Zap, Globe, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+function MerchantDashboard() {
+  const [amount, setAmount] = useState("");
+  const [email, setEmail] = useState("");
+  const { data: config } = trpc.paymentGateway.getConfig.useQuery();
+  const { data: methods } = trpc.paymentGateway.getPaymentMethods.useQuery();
+  const { data: txns } = trpc.paymentGateway.getTransactions.useQuery();
+  const createSession = trpc.paymentGateway.createSession.useMutation({
+    onSuccess: (data) => toast.success(`Session created: ${data.sessionId}`),
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-4">
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-2xl font-bold">₦{((txns?.stats.totalVolume || 0) / 100).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Total Volume</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-2xl font-bold">{txns?.stats.successRate ?? 0}%</p>
+          <p className="text-xs text-muted-foreground">Success Rate</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-2xl font-bold">{txns?.total ?? 0}</p>
+          <p className="text-xs text-muted-foreground">Transactions</p>
+        </CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Create Payment Session</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Amount (Kobo)</label>
+              <Input type="number" placeholder="100000" value={amount} onChange={e => setAmount(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Customer Email</label>
+              <Input placeholder="customer@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+          </div>
+          <Button onClick={() => createSession.mutate({
+            amount: parseInt(amount) || 100000,
+            currency: 'NGN',
+            customerEmail: email || undefined,
+            redirectUrl: window.location.origin + '/payment-complete',
+          })} disabled={createSession.isPending} className="w-full">
+            {createSession.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
+            Create Session
+          </Button>
+        </CardContent>
+      </Card>
+
+      {methods && (
+        <Card>
+          <CardHeader><CardTitle>Enabled Payment Methods</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {methods.map(m => (
+                <Badge key={m.id} variant="outline">{m.name}</Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {txns && txns.transactions.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Recent Transactions</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {txns.transactions.slice(0, 10).map(t => (
+                <div key={t.id} className="flex items-center justify-between p-2 border rounded">
+                  <div>
+                    <p className="font-mono text-xs">{t.id}</p>
+                    <p className="text-xs text-muted-foreground">{t.paymentMethod || 'N/A'} • {new Date(t.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm">₦{(t.amount / 100).toLocaleString()}</span>
+                    <Badge variant={t.status === 'completed' ? 'default' : t.status === 'failed' ? 'destructive' : 'secondary'}>{t.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 export default function PaymentGateway() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -182,29 +278,42 @@ export default function PaymentGateway() {
               <p className="text-sm text-muted-foreground mt-1">Visa, Mastercard, Amex</p>
             </CardContent>
           </Card>
-          <Card className="opacity-60">
+          <Card>
             <CardContent className="pt-6 text-center">
-              <Globe className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+              <Globe className="h-8 w-8 mx-auto mb-3 text-green-600" />
               <p className="font-semibold">Bank Transfer</p>
-              <p className="text-sm text-muted-foreground mt-1">Coming Soon</p>
+              <p className="text-sm text-muted-foreground mt-1">NIP Direct Debit</p>
             </CardContent>
           </Card>
-          <Card className="opacity-60">
+          <Card>
             <CardContent className="pt-6 text-center">
-              <div className="h-8 w-8 mx-auto mb-3 bg-gray-200 rounded" />
-              <p className="font-semibold">QR Code</p>
-              <p className="text-sm text-muted-foreground mt-1">Coming Soon</p>
+              <CreditCard className="h-8 w-8 mx-auto mb-3 text-purple-600" />
+              <p className="font-semibold">USSD & QR Code</p>
+              <p className="text-sm text-muted-foreground mt-1">All networks supported</p>
             </CardContent>
           </Card>
-          <Card className="opacity-60">
+          <Card>
             <CardContent className="pt-6 text-center">
-              <div className="h-8 w-8 mx-auto mb-3 bg-gray-200 rounded" />
-              <p className="font-semibold">Digital Wallets</p>
-              <p className="text-sm text-muted-foreground mt-1">Coming Soon</p>
+              <Shield className="h-8 w-8 mx-auto mb-3 text-orange-600" />
+              <p className="font-semibold">Mobile Money</p>
+              <p className="text-sm text-muted-foreground mt-1">MTN, Airtel, Glo</p>
             </CardContent>
           </Card>
         </div>
       </section>
+
+      {/* Merchant Dashboard (authenticated) */}
+      {isAuthenticated && (
+        <section className="container mx-auto px-4 py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Merchant Dashboard</h2>
+            <p className="text-muted-foreground">Manage payment sessions and view transaction analytics</p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <MerchantDashboard />
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-20">

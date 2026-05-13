@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 
 interface Corridor {
   id: string;
@@ -70,6 +71,14 @@ const recentTransfers: Transfer[] = [
 type TabType = 'overview' | 'corridors' | 'providers' | 'transfers' | 'billing' | 'sanctions';
 
 export default function OutboundRemittanceDashboard() {
+  const fetcher = useCallback(() =>
+    lakehouseAPI.fetch<{ corridors: Corridor[]; providers: Provider[]; transfers: Transfer[] }>('/api/v1/remittances/outbound')
+      .then(d => ({ corridors: d.corridors, providers: d.providers, transfers: d.transfers }))
+      .catch(() => ({ corridors, providers, transfers: recentTransfers })), []);
+  const { data: apiData } = useLakehouseData(fetcher, 30000);
+  const activeCorridors = apiData?.corridors || corridors;
+  const activeProviders = apiData?.providers || providers;
+  const activeTransfers = apiData?.transfers || recentTransfers;
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs: { id: TabType; label: string }[] = [
@@ -183,7 +192,7 @@ function OverviewTab() {
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h3 className="text-lg font-medium text-white mb-4">Provider Health</h3>
           <div className="space-y-2">
-            {providers.slice(0, 5).map((p) => (
+            {activeProviders.slice(0, 5).map((p) => (
               <div key={p.id} className="flex items-center justify-between py-2">
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${p.status === 'active' ? 'bg-green-400' : 'bg-yellow-400'}`} />

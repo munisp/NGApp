@@ -56,6 +56,15 @@ import { cardProcessingRouter } from './routers/cardProcessingRouter';
 import { governmentPaymentsRouter } from './routers/governmentPaymentsRouter';
 import { openBankingRouter } from './routers/openBankingRouter';
 import { middlewareRouter } from './routers/middlewareRouter';
+import { sanctionsScreeningRouter } from './routers/sanctionsScreeningRouter';
+import { settlementRouter } from './routers/settlementRouter';
+import { developerPortalRouter } from './routers/developerPortalRouter';
+import { paymentGatewayRouter } from './routers/paymentGatewayRouter';
+import { billPaymentRouter } from './routers/billPaymentRouter';
+import { mobileMoneyRouter } from './routers/mobileMoneyRouter';
+import { reconciliationRouter } from './routers/reconciliationRouter';
+import { fxRiskRouter } from './routers/fxRiskRouter';
+import { agentCashRouter } from './routers/agentCashRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
 import { createChildLogger } from './lib/logger';
@@ -134,6 +143,15 @@ export const appRouter = router({
     governmentPayments: governmentPaymentsRouter,
     openBanking: openBankingRouter,
     middleware: middlewareRouter,
+    sanctionsScreening: sanctionsScreeningRouter,
+    settlements: settlementRouter,
+    developerPortal: developerPortalRouter,
+    paymentGateway: paymentGatewayRouter,
+    billPayments: billPaymentRouter,
+    mobileMoney: mobileMoneyRouter,
+    reconciliation: reconciliationRouter,
+    fxRisk: fxRiskRouter,
+    agentCash: agentCashRouter,
   
     // Rate Alerts
   rateAlerts: router({

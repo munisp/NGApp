@@ -211,7 +211,7 @@ export function calculateAgentFee(amount: number, provider: 'paga' | 'opay' | 'k
  */
 async function registerPagaCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call Paga API
-  log.info('[Paga] Registered collection code:', collectionCode.code);
+  log.info({ code: collectionCode.code }, '[Paga] Registered collection code');
 
   // Example Paga API call:
   // const response = await fetch('https://api.paga.com/v1/collection-codes', {
@@ -234,7 +234,7 @@ async function registerPagaCollectionCode(collectionCode: CollectionCode): Promi
  */
 async function registerOPayCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call OPay API
-  log.info('[OPay] Registered collection code:', collectionCode.code);
+  log.info({ code: collectionCode.code }, '[OPay] Registered collection code');
 
   // Example OPay API call:
   // const response = await fetch('https://api.opay.com/v1/cashout/create', {
@@ -259,7 +259,7 @@ async function registerOPayCollectionCode(collectionCode: CollectionCode): Promi
  */
 async function registerKudiCollectionCode(collectionCode: CollectionCode): Promise<void> {
   // In production, call Kudi API
-  log.info('[Kudi] Registered collection code:', collectionCode.code);
+  log.info({ code: collectionCode.code }, '[Kudi] Registered collection code');
 
   // Example Kudi API call:
   // const response = await fetch('https://api.kudi.com/v1/withdrawals', {
