@@ -20,7 +20,7 @@ export default function ARTDashboard() {
 
   const runTestMutation = trpc.art.runTest.useMutation({
     onSuccess: () => { toast.success("ART test queued — results will appear shortly"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const chartData = (Array.isArray(results) ? results : []).map((r: any) => ({

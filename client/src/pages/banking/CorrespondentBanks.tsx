@@ -61,12 +61,12 @@ export default function CorrespondentBanks() {
       setForm({ bankId: "1", correspondentName: "", correspondentBic: "", country: "", currency: "USD", relationshipType: "nostro", nostroAccount: "", vostroAccount: "", dailyLimit: "", monthlyLimit: "", kycCompleted: false, amlRiskRating: "low", notes: "" });
       refetch();
     },
-    onError: (e: { message: string }) => toast.error("Failed to add correspondent", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Failed to add correspondent", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const updateMutation = trpc.banking.correspondents.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated"); refetch(); },
-    onError: (e: { message: string }) => toast.error("Update failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Update failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = (data?.rows ?? []) as any[];

@@ -25,6 +25,7 @@ import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKERS_DIR = path.join(__dirname, "..", "workers");
@@ -741,7 +742,7 @@ export const WORKER_DEFS: WorkerDef[] = [
       WORKER_DATABASE_URL: DB_URL,
       RELAY_URL,
       NCC_API_BASE_URL: process.env.NCC_API_BASE_URL ?? "https://ncc.gov.ng/api/v1",
-      NCC_API_KEY: process.env.NCC_API_KEY ?? "ncc-api-key-placeholder",
+      NCC_API_KEY: process.env.NCC_API_KEY ?? "",
       KAFKA_BROKERS: process.env.KAFKA_BROKERS ?? "localhost:9092",
     },
     description: "Monitors NCC spectrum licence compliance, QoS violations, interconnect disputes, and type approval status. Publishes Kafka events for enforcement triggers.",
@@ -760,7 +761,7 @@ export const WORKER_DEFS: WorkerDef[] = [
       WORKER_DATABASE_URL: DB_URL,
       RELAY_URL,
       NHIA_API_BASE_URL: process.env.NHIA_API_BASE_URL ?? "https://nhia.gov.ng/api/v1",
-      NHIA_API_KEY: process.env.NHIA_API_KEY ?? "nhia-api-key-placeholder",
+      NHIA_API_KEY: process.env.NHIA_API_KEY ?? "",
       FMOH_API_BASE_URL: process.env.FMOH_API_BASE_URL ?? "https://health.gov.ng/api/v1",
       KAFKA_BROKERS: process.env.KAFKA_BROKERS ?? "localhost:9092",
     },
@@ -780,9 +781,9 @@ export const WORKER_DEFS: WorkerDef[] = [
       WORKER_DATABASE_URL: DB_URL,
       RELAY_URL,
       NERC_API_BASE_URL: process.env.NERC_API_BASE_URL ?? "https://nerc.gov.ng/api/v1",
-      NERC_API_KEY: process.env.NERC_API_KEY ?? "nerc-api-key-placeholder",
+      NERC_API_KEY: process.env.NERC_API_KEY ?? "",
       DPR_API_BASE_URL: process.env.DPR_API_BASE_URL ?? "https://dpr.gov.ng/api/v1",
-      DPR_API_KEY: process.env.DPR_API_KEY ?? "dpr-api-key-placeholder",
+      DPR_API_KEY: process.env.DPR_API_KEY ?? "",
       KAFKA_BROKERS: process.env.KAFKA_BROKERS ?? "localhost:9092",
     },
     description: "Monitors energy sector data sovereignty: NERC grid operational data localisation, DPR oil/gas exploration data residency, NBET power trading data compliance.",
@@ -801,7 +802,7 @@ export const WORKER_DEFS: WorkerDef[] = [
       WORKER_DATABASE_URL: DB_URL,
       RELAY_URL,
       NAICOM_API_BASE_URL: process.env.NAICOM_API_BASE_URL ?? "https://naicom.gov.ng/api/v1",
-      NAICOM_API_KEY: process.env.NAICOM_API_KEY ?? "naicom-api-key-placeholder",
+      NAICOM_API_KEY: process.env.NAICOM_API_KEY ?? "",
       KAFKA_BROKERS: process.env.KAFKA_BROKERS ?? "localhost:9092",
     },
     description: "Monitors NAICOM insurance data compliance: policyholder data localisation, claims data residency, reinsurance data sovereignty, actuarial data governance.",
@@ -820,7 +821,7 @@ export const WORKER_DEFS: WorkerDef[] = [
       WORKER_DATABASE_URL: DB_URL,
       RELAY_URL,
       CBN_FINTECH_API_BASE_URL: process.env.CBN_FINTECH_API_BASE_URL ?? "https://cbn.gov.ng/fintech/api/v1",
-      CBN_FINTECH_API_KEY: process.env.CBN_FINTECH_API_KEY ?? "cbn-fintech-api-key-placeholder",
+      CBN_FINTECH_API_KEY: process.env.CBN_FINTECH_API_KEY ?? "",
       KAFKA_BROKERS: process.env.KAFKA_BROKERS ?? "localhost:9092",
     },
     description: "Monitors CBN Fintech regulatory compliance: payment service data localisation, e-money issuer data residency, mobile money operator data sovereignty, open banking API data governance.",
@@ -1312,7 +1313,7 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
   state.status = "running";
   state.restarts = restartCount;
 
-  console.log(
+  logger.info(
     `[Workers] Started ${def.name} (${def.language}) PID=${proc.pid} port=${def.port}`
   );
 
@@ -1331,7 +1332,7 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
     const lines = data.toString().trim().split("\n");
     lines.forEach((line) => {
       if (line.trim()) {
-        console.log(`[${def.id}] ${line}`);
+        logger.info(`[${def.id}] ${line}`);
       }
     });
   });
@@ -1341,7 +1342,7 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
     const lines = data.toString().trim().split("\n");
     lines.forEach((line) => {
       if (line.trim()) {
-        console.error(`[${def.id}] ERR: ${line}`);
+        logger.error(`[${def.id}] ERR: ${line}`);
       }
     });
   });
@@ -1349,12 +1350,12 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
   // Handle spawn errors (e.g. binary not found) — prevents uncaught exception crash
   proc.on("error", (err: NodeJS.ErrnoException) => {
     const st = workerStates.get(def.id);
-    if (st) { st.status = "crashed"; st.process = null; st.lastError = err.message; }
+    if (st) { st.status = "crashed"; st.process = null; st.lastError = (err instanceof Error ? err.message : String(err)); }
     if (err.code === "ENOENT") {
-      console.warn(`[Workers] ${def.name}: binary not found at ${def.command} — skipping`);
+      logger.warn(`[Workers] ${def.name}: binary not found at ${def.command} — skipping`);
       return; // Do not restart if binary doesn't exist
     }
-    console.error(`[Workers] ${def.name} spawn error: ${err.message}`);
+    logger.error(`[Workers] ${def.name} spawn error: ${(err instanceof Error ? err.message : String(err))}`);
   });
 
   // Handle exit with auto-restart
@@ -1364,7 +1365,7 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
     st.process = null;
     st.lastError = `Exited with code=${code} signal=${signal}`;
 
-    console.error(`[Workers] ${def.name} exited (code=${code}). Restarting in ${Math.min(30, 5 * (restartCount + 1))}s...`);
+    logger.error(`[Workers] ${def.name} exited (code=${code}). Restarting in ${Math.min(30, 5 * (restartCount + 1))}s...`);
 
     broadcast("worker_crashed", {
       workerId: def.id,
@@ -1399,15 +1400,15 @@ function bootstrapPythonDeps() {
       if (v !== undefined && k !== "PYTHONHOME" && k !== "PYTHONPATH") baseEnv[k] = v;
     }
     execSync(`pip3 install -r "${requirementsPath}" --quiet 2>&1`, { env: baseEnv, stdio: "pipe" });
-    console.log("[Workers] Python dependencies installed from requirements.txt");
+    logger.info("[Workers] Python dependencies installed from requirements.txt");
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.warn("[Workers] pip install warning (non-fatal):", msg.slice(0, 200));
+    const msg = e instanceof Error ? (e instanceof Error ? e.message : String(e)) : String(e);
+    logger.warn({ err: msg.slice(0, 200) }, "[Workers] pip install warning (non-fatal)");
   }
 }
 
 export function startAllWorkers() {
-  console.log("[Workers] Starting all NDSEP background workers...");
+  logger.info("[Workers] Starting all NDSEP background workers...");
   bootstrapPythonDeps();
 
   for (const def of WORKER_DEFS) {
@@ -1427,13 +1428,13 @@ export function startAllWorkers() {
 }
 
 export function stopAllWorkers() {
-  console.log("[Workers] Stopping all workers...");
+  logger.info("[Workers] Stopping all workers...");
   for (const id of Array.from(workerStates.keys())) {
     const state = workerStates.get(id)!;
     state.status = "stopped";
     if (state.process) {
       state.process.kill("SIGTERM");
-      console.log(`[Workers] Sent SIGTERM to ${id}`);
+      logger.info(`[Workers] Sent SIGTERM to ${id}`);
     }
   }
 }

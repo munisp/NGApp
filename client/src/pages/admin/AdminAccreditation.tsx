@@ -162,7 +162,7 @@ export default function AdminAccreditation() {
 
   const startReview = trpc.accreditation.adminStartReview.useMutation({
     onSuccess: () => { toast.success("Review started"); refetchDetail(); refetchList(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const updateChecklist = trpc.accreditation.adminUpdateChecklist.useMutation({
@@ -171,12 +171,12 @@ export default function AdminAccreditation() {
 
   const requestInfo = trpc.accreditation.adminRequestInfo.useMutation({
     onSuccess: () => { toast.success("Information request sent"); setShowInfoRequest(false); setInfoNote(""); refetchDetail(); refetchList(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const scheduleCompetency = trpc.accreditation.adminScheduleCompetency.useMutation({
     onSuccess: () => { toast.success("Competency assessment scheduled"); setShowCompetency(false); refetchDetail(); refetchList(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const makeDecision = trpc.accreditation.adminMakeDecision.useMutation({
@@ -185,17 +185,17 @@ export default function AdminAccreditation() {
       setShowDecision(false); setDecisionReason(""); setDecisionConditions("");
       refetchDetail(); refetchList();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const suspend = trpc.accreditation.adminSuspend.useMutation({
     onSuccess: () => { toast.success("DPCO suspended"); setShowSuspend(false); setSanctionReason(""); refetchDetail(); refetchList(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const revoke = trpc.accreditation.adminRevoke.useMutation({
     onSuccess: () => { toast.success("DPCO accreditation revoked"); setShowRevoke(false); setSanctionReason(""); refetchDetail(); refetchList(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const checklist: Record<string, boolean> = (detail as any)?.review_checklist ?? {};

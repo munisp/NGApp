@@ -109,9 +109,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
       setIsSubscribed(true);
       setCurrentEndpoint(sub.endpoint);
       toast.success("Push notifications enabled! You'll receive alerts for overdue invoices and audit deadlines.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Push] Subscribe error:", err);
-      toast.error(`Failed to enable push notifications: ${err?.message ?? "Unknown error"}`);
+      toast.error(`Failed to enable push notifications: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
@@ -133,9 +133,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
       setIsSubscribed(false);
       setCurrentEndpoint(null);
       toast.success("Push notifications disabled.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Push] Unsubscribe error:", err);
-      toast.error(`Failed to disable push notifications: ${err?.message ?? "Unknown error"}`);
+      toast.error(`Failed to disable push notifications: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
@@ -149,8 +149,8 @@ export function usePushNotifications(): UsePushNotificationsResult {
       } else {
         toast.info("No active subscriptions found. Please subscribe first.");
       }
-    } catch (err: any) {
-      toast.error(`Failed to send test: ${err?.message ?? "Unknown error"}`);
+    } catch (err: unknown) {
+      toast.error(`Failed to send test: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   }, [sendTestMutation]);
 

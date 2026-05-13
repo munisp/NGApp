@@ -36,11 +36,11 @@ export default function Phase13PublicRegistry() {
       toast.success("Registry entry saved");
       setForm({ org_id: "", org_name: "", registration_number: "", sector: "", compliance_status: "pending", compliance_score: "0" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const publish = trpc.phase13.publicRegistry.publish.useMutation({
     onSuccess: () => { utils.phase13.publicRegistry.list.invalidate(); toast.success("Entry published to public registry"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (records as any[]) ?? [];

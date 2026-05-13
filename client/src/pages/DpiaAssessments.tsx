@@ -23,7 +23,7 @@ export default function DpiaAssessments() {
 
   const { data: assessments = [], refetch, isLoading } = trpc.dpia.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.dpia.create.useMutation({ onSuccess: () => { toast.success("DPIA created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.dpia.create.useMutation({ onSuccess: () => { toast.success("DPIA created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.dpia.update.useMutation({ onSuccess: () => { toast.success("DPIA updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -34,7 +34,7 @@ export default function DpiaAssessments() {
       utils.dpia.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete DPIA assessment"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (assessments as any[]).filter((r: any) => !searchQuery || r.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 

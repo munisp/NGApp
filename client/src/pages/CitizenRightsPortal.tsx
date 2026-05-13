@@ -63,7 +63,7 @@ export default function CitizenRightsPortal() {
       setForm({ requestType: "access", citizenName: "", citizenEmail: "", citizenNin: "", description: "", organizationId: "" });
       refetch();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const handleTrack = () => {
@@ -80,7 +80,7 @@ export default function CitizenRightsPortal() {
   });
   const updateMutation = trpc.citizenRights.update.useMutation({
     onSuccess: () => { toast.success("Request updated"); setShowReview(null); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const stats = {

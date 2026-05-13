@@ -36,7 +36,7 @@ export default function Phase13ConsentRecords() {
       toast.success("Consent record created");
       setForm({ data_subject_id: "", data_subject_email: "", org_id: "", purpose: "", legal_basis: "consent" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const withdraw = trpc.phase13.consentRecords.withdraw.useMutation({
     onSuccess: () => {
@@ -44,7 +44,7 @@ export default function Phase13ConsentRecords() {
       utils.phase13.consentRecords.getStats.invalidate();
       toast.success("Consent withdrawn");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const records = (result as any)?.records ?? (Array.isArray(result) ? result : []);

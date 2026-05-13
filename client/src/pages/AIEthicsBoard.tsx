@@ -46,7 +46,7 @@ export default function AIEthicsBoard() {
 
   const register = trpc.phase12.aiEthics.submitForReview.useMutation({
     onSuccess: () => { refetch(); setShowRegister(false); setForm(EMPTY_FORM); toast.success("AI system registered"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const review = trpc.phase12.aiEthics.completeReview.useMutation({
     onSuccess: () => { refetch(); toast.success("Review submitted"); },

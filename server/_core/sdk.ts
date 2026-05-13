@@ -14,6 +14,7 @@ import type {
   GetUserInfoWithJwtRequest,
   GetUserInfoWithJwtResponse,
 } from "./types/manusTypes";
+import { logger } from "../logger";
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
@@ -30,9 +31,9 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+    logger.info({ baseURL: ENV.oAuthServerUrl }, "[OAuth] Initialized");
     if (!ENV.oAuthServerUrl) {
-      console.error(
+      logger.error(
         "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
       );
     }
@@ -203,7 +204,7 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string; jti?: string; exp?: number } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      logger.warn("[Auth] Missing session cookie");
       return null;
     }
     try {
@@ -217,7 +218,7 @@ class SDKServer {
         try {
           const { isTokenRevoked } = await import("../sessionBlacklist");
           if (await isTokenRevoked(jti)) {
-            console.warn("[Auth] Revoked token presented — session blacklisted");
+            logger.warn("[Auth] Revoked token presented — session blacklisted");
             return null;
           }
         } catch { /* Redis unavailable — allow token (graceful degradation) */ }
@@ -228,7 +229,7 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        logger.warn("[Auth] Session payload missing required fields");
         return null;
       }
 
@@ -240,7 +241,7 @@ class SDKServer {
         exp: typeof exp === "number" ? exp : undefined,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      logger.warn({ err: error instanceof Error ? error.message : String(error) }, "[Auth] Session verification failed");
       return null;
     }
   }
@@ -296,7 +297,7 @@ class SDKServer {
         });
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
+        logger.error({ err: error instanceof Error ? error.message : String(error) }, "[Auth] Failed to sync user from OAuth:");
         throw ForbiddenError("Failed to sync user info");
       }
     }

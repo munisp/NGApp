@@ -19,12 +19,12 @@ export default function SectorManagement() {
 
   const createMutation = trpc.sectors.create.useMutation({
     onSuccess: () => { toast.success("Sector created"); setShowCreate(false); refetch(); setForm({ name: "", code: "", description: "", parentId: "", regulatoryFramework: "" }); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const deleteMutation = trpc.sectors.delete.useMutation({
     onSuccess: () => { toast.success("Sector deleted"); setDeleteId(null); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

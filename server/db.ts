@@ -62,6 +62,7 @@ let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: InstanceType<typeof Pool> | null = null;
 
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";
 const PG_URL = getDatabaseUrl();
 
 export async function getDb() {
@@ -80,7 +81,7 @@ export async function getDb() {
       });
       _db = drizzle(_pool);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      logger.warn({ data: error }, "[Database] Failed to connect:");
       _db = null;
     }
   }
@@ -92,7 +93,7 @@ export async function getDb() {
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) { console.warn("[Database] Cannot upsert user"); return; }
+  if (!db) { logger.warn("[Database] Cannot upsert user"); return; }
   try {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
@@ -109,7 +110,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
     await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
-  } catch (error) { console.error("[Database] Failed to upsert user:", error); throw error; }
+  } catch (error) { logger.error({ err: error instanceof Error ? error.message : String(error) }, "[Database] Failed to upsert user:"); throw error; }
 }
 
 export async function getUserByOpenId(openId: string) {

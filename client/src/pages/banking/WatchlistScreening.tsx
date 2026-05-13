@@ -62,7 +62,7 @@ export default function WatchlistScreening() {
       setForm({ primaryName: "", entityType: "individual", source: "cbn_internal", category: "sanctions", nationality: "", passportNumber: "", dateOfBirth: "", aliases: "", reason: "" });
       refetch();
     },
-    onError: (e: { message: string }) => toast.error("Failed to add entity", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Failed to add entity", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const screenMutation = trpc.banking.watchlist.screen.useMutation({
@@ -74,12 +74,12 @@ export default function WatchlistScreening() {
         toast.success("No watchlist matches found");
       }
     },
-    onError: (e: { message: string }) => toast.error("Screening failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Screening failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const delistMutation = trpc.banking.watchlist.delistEntry.useMutation({
     onSuccess: () => { toast.success("Entity delisted"); refetch(); },
-    onError: (e: { message: string }) => toast.error("Failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = (data?.rows ?? []) as any[];

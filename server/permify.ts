@@ -19,6 +19,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
+import { logger } from "./logger";
 
 const PERMIFY_URL = process.env.PERMIFY_URL ?? "http://localhost:3476";
 const PERMIFY_TENANT = process.env.PERMIFY_TENANT ?? "ndsep";
@@ -132,6 +133,6 @@ export async function permifyWriteRelationship(
     );
   } catch {
     // Non-critical — log but don't throw
-    console.warn("[permify] Failed to write relationship tuple");
+    logger.warn("[permify] Failed to write relationship tuple");
   }
 }

@@ -79,7 +79,7 @@ export default function DataFlowVisualization() {
       setLogOpen(false);
       setForm({ datasetName: "", sourceCountry: "Nigeria", destinationCountry: "", destinationEntity: "", volumeGb: "1", dataClassification: "confidential", businessJustification: "", transferMethod: "encrypted_api" });
     },
-    onError: (e) => toast.error(`Failed to log transfer: ${e.message}`),
+    onError: (e) => toast.error(`Failed to log transfer: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const { data: transfers = [], refetch, isLoading } = trpc.transfers.list.useQuery({ limit: 100 });

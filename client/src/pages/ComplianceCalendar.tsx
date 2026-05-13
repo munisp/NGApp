@@ -93,15 +93,15 @@ export default function ComplianceCalendar() {
 
   const createM = trpc.complianceCalendar.createEvent.useMutation({
     onSuccess: () => { toast.success("Event created"); setCreateOpen(false); utils.complianceCalendar.listCustom.invalidate(); utils.complianceCalendar.upcomingDeadlines.invalidate(); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onError: (e) => toast.error("Error", { description: (e instanceof Error ? e.message : String(e)) }),
   });
   const updateM = trpc.complianceCalendar.updateEvent.useMutation({
     onSuccess: () => { toast.success("Event updated"); setEditEvent(null); utils.complianceCalendar.listCustom.invalidate(); utils.complianceCalendar.upcomingDeadlines.invalidate(); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onError: (e) => toast.error("Error", { description: (e instanceof Error ? e.message : String(e)) }),
   });
   const deleteM = trpc.complianceCalendar.deleteEvent.useMutation({
     onSuccess: () => { toast.success("Event deleted"); utils.complianceCalendar.listCustom.invalidate(); utils.complianceCalendar.upcomingDeadlines.invalidate(); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onError: (e) => toast.error("Error", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const handleCreate = (form: any) => createM.mutate({ title: form.title, description: form.description||undefined, eventType: form.eventType, priority: form.priority, eventDate: new Date(form.eventDate).toISOString(), sector: form.sector||undefined, assignedTo: form.assignedTo||undefined, status: form.status, recurrence: form.recurrence!=="none"?form.recurrence:undefined, reminderDays: form.reminderDays, notes: form.notes||undefined });

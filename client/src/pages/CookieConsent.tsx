@@ -20,7 +20,7 @@ export default function CookieConsent() {
   const { data: records = [], refetch, isLoading } = trpc.cookieConsent.list.useQuery();
   const { data: stats = [] } = trpc.cookieConsent.stats.useQuery();
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.cookieConsent.create.useMutation({ onSuccess: () => { toast.success("Cookie consent recorded"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.cookieConsent.create.useMutation({ onSuccess: () => { toast.success("Cookie consent recorded"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const deleteMutation = trpc.cookieConsent.delete.useMutation({
     onSuccess: () => { toast.success("Cookie consent record deleted"); setDeleteId(null); utils.cookieConsent.list.invalidate().catch(() => {}); },
     onError: (err) => toast.error(err.message || "Failed to delete"),

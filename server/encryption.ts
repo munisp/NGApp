@@ -14,6 +14,7 @@
 
 import crypto from "crypto";
 import { getDataEncryptionKey, initializeKms } from "./kms";
+import { logger } from "./logger";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12; // GCM recommended IV length
@@ -32,9 +33,9 @@ export async function initializeEncryption(): Promise<void> {
     // KMS initialization failed — fall back to local key
     const hex = process.env.FIELD_ENCRYPTION_KEY ?? "";
     if (hex.length === 64) {
-      console.log("[Encryption] KMS unavailable, using FIELD_ENCRYPTION_KEY fallback");
+      logger.info("[Encryption] KMS unavailable, using FIELD_ENCRYPTION_KEY fallback");
     } else {
-      console.warn("[Encryption] No encryption key available — PII will be stored in plaintext");
+      logger.warn("[Encryption] No encryption key available — PII will be stored in plaintext");
     }
   }
 }
@@ -123,7 +124,7 @@ export function decryptField(encrypted: string | null | undefined): string | nul
     return decrypted.toString("utf8");
   } catch (err) {
     // If decryption fails (wrong key, corrupted data), return null to prevent data leaks
-    console.error("[Encryption] Decryption failed — possible key mismatch or data corruption");
+    logger.error("[Encryption] Decryption failed — possible key mismatch or data corruption");
     return null;
   }
 }

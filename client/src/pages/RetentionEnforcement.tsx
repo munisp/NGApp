@@ -13,7 +13,7 @@ export default function RetentionEnforcement() {
   const { data: stats } = trpc.retentionEnforcement.getStats.useQuery();
   const runMut = trpc.retentionEnforcement.runEnforcement.useMutation({
     onSuccess: (d) => { toast.success(d.message); refetchSchedule(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const statCards = [

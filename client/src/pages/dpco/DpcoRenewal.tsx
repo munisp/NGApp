@@ -25,7 +25,7 @@ export default function DpcoRenewal() {
       toast.success("Renewal application submitted successfully");
       setSubmitted(true);
     },
-    onError: (e) => toast.error(`Renewal failed: ${e.message}`),
+    onError: (e) => toast.error(`Renewal failed: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const licence = myLicence as any;

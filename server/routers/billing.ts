@@ -10,6 +10,7 @@ import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, flu
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
@@ -236,7 +237,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_invoices WHERE id = ?`,
         [result.id]
       );
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return invoice;
     }),
 
@@ -256,7 +257,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_invoices WHERE id = ?`,
         [input.id]
       );
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return invoice;
     }),
 
@@ -361,7 +362,7 @@ export const billingRouter = router({
           `SELECT * FROM dpco_payments WHERE id = ?`,
           [paymentId]
         );
-        emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return {
           payment,
           platformFeeAmount,
@@ -678,7 +679,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_subscriptions WHERE dpco_org_id = ?`,
         [input.dpcoOrgId]
       );
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return sub;
     }),
 
@@ -751,7 +752,7 @@ export const billingRouter = router({
         `UPDATE platform_revenue_splits SET dpco_paid_out = TRUE, dpco_paid_out_at = NOW() WHERE id IN (${placeholders})`,
         input.splitIds
       );
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, count: input.splitIds.length };
     }),
 
@@ -796,7 +797,7 @@ export const billingRouter = router({
         [session.sessionId, input.invoiceId]
       );
 
-       emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+       emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
        return { sessionId: session.sessionId, url: session.url };
     }),
 
@@ -846,7 +847,7 @@ export const billingRouter = router({
         [session.sessionId, input.dpcoOrgId]
       );
 
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { sessionId: session.sessionId, url: session.url };
     }),
 
@@ -917,7 +918,7 @@ export const billingRouter = router({
         [toEmail, input.invoiceId]
       );
 
-      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return {
         success: true,
         sentTo: toEmail,
@@ -948,7 +949,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
   // Test event passthrough (required for Stripe webhook verification)
   if (event.id.startsWith("evt_test_")) {
-    console.log("[Webhook] Test event detected, returning verification response");
+    logger.info("[Webhook] Test event detected, returning verification response");
     return res.json({ verified: true });
   }
 
@@ -1021,16 +1022,16 @@ export async function handleStripeWebhook(req: Request, res: Response) {
               [invoiceId]
             );
             await client.query("COMMIT");
-            console.log(`[Webhook] Invoice ${invoiceId} marked paid via Stripe session ${session.id}`);
+            logger.info(`[Webhook] Invoice ${invoiceId} marked paid via Stripe session ${session.id}`);
           } catch (txErr) {
             await client.query("ROLLBACK");
-            console.error("[Webhook] Payment recording failed:", txErr);
+            logger.error({ err: txErr instanceof Error ? txErr.message : String(txErr) }, "[Webhook] Payment recording failed");
           } finally {
             client.release();
           }
         }
       } catch (err) {
-        console.error("[Webhook] Error processing checkout.session.completed:", err);
+        logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing checkout.session.completed:");
       }
     }
   }
@@ -1102,10 +1103,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             `UPDATE dpco_organisations SET tier = $1, updated_at = NOW() WHERE id = $2`,
             [tier, dpcoOrgId]
           );
-          console.log(`[Webhook] DPCO org ${dpcoOrgId} upgraded to ${tier} via Stripe session ${session.id}`);
+          logger.info(`[Webhook] DPCO org ${dpcoOrgId} upgraded to ${tier} via Stripe session ${session.id}`);
         }
       } catch (err) {
-        console.error("[Webhook] Error processing subscription upgrade:", err);
+        logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing subscription upgrade:");
       }
     }
   }
@@ -1127,8 +1128,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
            WHERE dpco_org_id = $5`,
           [newStatus, periodStart, periodEnd, sub.id, dpcoOrgId]
         );
-        console.log(`[Webhook] DPCO org ${dpcoOrgId} subscription updated → ${newStatus}`);
-      } catch (err) { console.error("[Webhook] Error processing subscription.updated:", err); }
+        logger.info(`[Webhook] DPCO org ${dpcoOrgId} subscription updated → ${newStatus}`);
+      } catch (err) { logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing subscription.updated:"); }
     }
   }
 
@@ -1150,9 +1151,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             `UPDATE dpco_subscriptions SET status = 'past_due', grace_period_end = $1, updated_at = NOW() WHERE dpco_org_id = $2`,
             [gracePeriodEnd, dpcoOrgId]
           );
-          console.log(`[Webhook] DPCO org ${dpcoOrgId} payment failed — grace period until ${gracePeriodEnd.toISOString()}`);
+          logger.info(`[Webhook] DPCO org ${dpcoOrgId} payment failed — grace period until ${gracePeriodEnd.toISOString()}`);
         }
-      } catch (err) { console.error("[Webhook] Error processing invoice.payment_failed:", err); }
+      } catch (err) { logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing invoice.payment_failed:"); }
     }
   }
 
@@ -1173,9 +1174,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             `UPDATE dpco_subscriptions SET status = 'active', grace_period_end = NULL, updated_at = NOW() WHERE dpco_org_id = $1`,
             [dpcoOrgId]
           );
-          console.log(`[Webhook] DPCO org ${dpcoOrgId} invoice paid — subscription reactivated`);
+          logger.info(`[Webhook] DPCO org ${dpcoOrgId} invoice paid — subscription reactivated`);
         }
-      } catch (err) { console.error("[Webhook] Error processing invoice.paid:", err); }
+      } catch (err) { logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing invoice.paid:"); }
     }
   }
 
@@ -1192,9 +1193,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           `UPDATE dpco_subscriptions SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW() WHERE dpco_org_id = $1`,
           [dpcoOrgId]
         );
-        console.log(`[Webhook] DPCO org ${dpcoOrgId} subscription cancelled`);
+        logger.info(`[Webhook] DPCO org ${dpcoOrgId} subscription cancelled`);
       } catch (err) {
-        console.error("[Webhook] Error processing subscription cancellation:", err);
+        logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Webhook] Error processing subscription cancellation:");
       }
     }
   }

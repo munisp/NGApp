@@ -18,7 +18,7 @@ export default function DcpmiThresholds() {
 
   const utils = trpc.useUtils();
   const { data: thresholds = [], refetch, isLoading } = trpc.dcpmi.thresholds.useQuery();
-  const createMutation = trpc.dcpmi.create.useMutation({ onSuccess: () => { toast.success("DCPMI threshold created"); setShowCreate(false); refetch(); }, onError: (e: any) => toast.error(e.message) });
+  const createMutation = trpc.dcpmi.create.useMutation({ onSuccess: () => { toast.success("DCPMI threshold created"); setShowCreate(false); refetch(); }, onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))) });
   const deleteMutation = trpc.dcpmi.delete.useMutation({
     onSuccess: () => { toast.success("DCPMI threshold deleted"); setDeleteId(null); utils.dcpmi.thresholds.invalidate().catch(() => {}); },
     onError: (err) => toast.error(err.message || "Failed to delete"),

@@ -58,9 +58,9 @@ export async function fluvioHealth(): Promise<FluvioHealthResult> {
     if (!res.ok) return { healthy: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     return { healthy: true, version: data.version, topics: data.topics ?? 0 };
-  } catch (e: any) {
-    logger.warn(`[Fluvio] Health check failed: ${e.message}`);
-    return { healthy: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Fluvio] Health check failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { healthy: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -73,8 +73,8 @@ export async function fluvioListTopics(): Promise<FluvioTopicInfo[]> {
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data.topics) ? data.topics : [];
-  } catch (e: any) {
-    logger.warn(`[Fluvio] listTopics failed: ${e.message}`);
+  } catch (e: unknown) {
+    logger.warn(`[Fluvio] listTopics failed: ${(e instanceof Error ? e.message : String(e))}`);
     return [];
   }
 }
@@ -95,9 +95,9 @@ export async function fluvioCreateTopic(
     });
     if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
     return { success: true };
-  } catch (e: any) {
-    logger.warn(`[Fluvio] createTopic(${name}) failed: ${e.message}`);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Fluvio] createTopic(${name}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -122,9 +122,9 @@ export async function fluvioProduce(
     if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     return { success: true, offset: data.offset };
-  } catch (e: any) {
-    logger.warn(`[Fluvio] produce(${topic}) failed: ${e.message}`);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Fluvio] produce(${topic}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -145,9 +145,9 @@ export async function fluvioConsume(
     if (!res.ok) return { records: [], error: `HTTP ${res.status}` };
     const data = await res.json();
     return { records: Array.isArray(data.records) ? data.records : [] };
-  } catch (e: any) {
-    logger.warn(`[Fluvio] consume(${topic}) failed: ${e.message}`);
-    return { records: [], error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Fluvio] consume(${topic}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { records: [], error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -177,7 +177,7 @@ export async function fluvioSmokeTest(): Promise<{ success: boolean; latencyMs: 
     const latencyMs = Date.now() - start;
     if (!produceResult.success) return { success: false, latencyMs, error: produceResult.error };
     return { success: true, latencyMs };
-  } catch (e: any) {
-    return { success: false, latencyMs: Date.now() - start, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, latencyMs: Date.now() - start, error: (e instanceof Error ? e.message : String(e)) };
   }
 }

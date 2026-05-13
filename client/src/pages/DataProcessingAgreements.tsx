@@ -22,7 +22,7 @@ export default function DataProcessingAgreements() {
 
   const { data: agreements = [], refetch, isLoading } = trpc.dpa.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.dpa.create.useMutation({ onSuccess: () => { toast.success("DPA created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.dpa.create.useMutation({ onSuccess: () => { toast.success("DPA created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.dpa.update.useMutation({ onSuccess: () => { toast.success("DPA updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -33,7 +33,7 @@ export default function DataProcessingAgreements() {
       utils.dpa.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete DPA"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (agreements as any[]).filter((r: any) => !searchQuery || r.processor_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.org_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 

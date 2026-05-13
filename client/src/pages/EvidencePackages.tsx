@@ -34,7 +34,7 @@ export default function EvidencePackages() {
       setShowGenerate(false);
       refetch();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const { data: verifyResult, isFetching: isVerifying } = trpc.evidencePackages.verify.useQuery(

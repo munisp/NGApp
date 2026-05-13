@@ -9,6 +9,7 @@ import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
 import { encryptField } from "../encryption";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 
 const { Pool } = pg;
 let _dpcoPool: InstanceType<typeof Pool> | null = null;
@@ -596,7 +597,7 @@ export const dpcoRouter = router({
         });
         if (res.ok) return res.json();
       } catch {}
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: false, error: "notification-service-unavailable" };
     }),
 
@@ -687,7 +688,7 @@ export const dpcoRouter = router({
       const existing = await q("SELECT id, file_name FROM dpco_evidence_items WHERE sha256_hash = $1", [input.sha256_hash]);
       if (existing.length > 0) {
         const dup = existing[0] as any;
-        emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { id: dup.id, duplicate: true, message: `Identical file already exists: ${dup.file_name}` };
       }
       const id = crypto.randomUUID();
@@ -703,7 +704,7 @@ export const dpcoRouter = router({
           input.description ?? null, input.finding_ref ?? null,
         ]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { id, duplicate: false, message: "Evidence item added successfully" };
     }),
 
@@ -717,7 +718,7 @@ export const dpcoRouter = router({
         "UPDATE dpco_evidence_items SET is_tampered = $1, verified_at = NOW(), verified_by = $2 WHERE id = $3",
         [tampered, ctx.user.id, input.id]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { id: input.id, tampered, storedHash: item.sha256_hash, providedHash: input.sha256_hash };
     }),
 
@@ -725,7 +726,7 @@ export const dpcoRouter = router({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await q("DELETE FROM dpco_evidence_items WHERE id = $1", [input.id]);
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -819,7 +820,7 @@ export const dpcoRouter = router({
         `UPDATE dpco_organisations SET status = 'pending', updated_at = NOW() WHERE id = $1`,
         [input.dpcoOrgId]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, message: "Renewal application submitted to NDPC for review" };
     }),
   deleteOrganisation: deleteProcedure
@@ -907,7 +908,7 @@ export const dpcoRouter = router({
         });
       } catch (_) { /* non-fatal */ }
 
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return {
         success: true,
         organisationId: result.id,
@@ -975,7 +976,7 @@ export const dpcoRouter = router({
         });
       } catch (_) { /* non-fatal */ }
 
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, licenceNumber, org };
     }),
 
@@ -1001,7 +1002,7 @@ export const dpcoRouter = router({
         });
       } catch (_) { /* non-fatal */ }
 
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, org };
     }),
 
@@ -1068,7 +1069,7 @@ export const dpcoRouter = router({
           [score, input.engagementId]
         );
       }
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, saved: input.ratings.length, complianceScore: score };
     }),
 
@@ -1109,7 +1110,7 @@ export const dpcoRouter = router({
         [input.dpcoOrgId, input.clientId, input.templateId, input.templateTitle, input.notes ?? null, ctx.user?.name ?? "DPCO User"]
       );
       const [row] = await q<any>(`SELECT * FROM dpco_client_policies WHERE dpco_org_id = ? AND client_id = ? AND template_id = ?`, [input.dpcoOrgId, input.clientId, input.templateId]);
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, policy: row };
     }),
 
@@ -1124,7 +1125,7 @@ export const dpcoRouter = router({
         `UPDATE dpco_client_policies SET status = ?, notes = COALESCE(?, notes), updated_at = NOW() WHERE id = ?`,
         [input.status, input.notes ?? null, input.id]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -1139,7 +1140,7 @@ export const dpcoRouter = router({
         `UPDATE dpco_evidence_items SET control_ids = ?, updated_at = NOW() WHERE id = ?`,
         [JSON.stringify(input.controlIds), input.evidenceItemId]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, controlIds: input.controlIds };
     }),
 
@@ -1240,7 +1241,7 @@ export const dpcoRouter = router({
           token,
         ]
       );
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, referenceToken: token, dpcoName: dpco.name, request: row };
     }),
 
@@ -1328,7 +1329,7 @@ export const dpcoRouter = router({
         engagementId = result?.id ?? null;
       }
 
-      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, decision: input.decision, engagementId };
     }),
 

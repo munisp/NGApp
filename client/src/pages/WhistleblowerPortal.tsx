@@ -48,7 +48,7 @@ export default function WhistleblowerPortal() {
       setForm(EMPTY_FORM);
       toast.success(`Report submitted. Reference: ${data.report_ref}`);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const updateStatus = trpc.phase12.whistleblower.updateStatus.useMutation({

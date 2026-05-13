@@ -77,6 +77,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   }
 
   return (
+    // SECURITY AUDIT: Safe — renders CSS theme variables only, no user-controlled input
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)

@@ -37,7 +37,7 @@ export default function RegulatorySandbox() {
 
   const apply = trpc.phase12.regulatorySandbox.submitApplication.useMutation({
     onSuccess: () => { refetch(); setShowApply(false); setForm(EMPTY_FORM); toast.success("Application submitted"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const review = trpc.phase12.regulatorySandbox.review.useMutation({
     onSuccess: () => { refetch(); toast.success("Application reviewed"); },

@@ -23,7 +23,7 @@ export default function StaffTraining() {
 
   const { data: trainings = [], refetch, isLoading } = trpc.staffTraining.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.staffTraining.create.useMutation({ onSuccess: () => { toast.success("Training scheduled"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.staffTraining.create.useMutation({ onSuccess: () => { toast.success("Training scheduled"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.staffTraining.update.useMutation({ onSuccess: () => { toast.success("Training updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -34,7 +34,7 @@ export default function StaffTraining() {
       utils.staffTraining.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete training record"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (trainings as any[]).filter((r: any) => !searchQuery || r.training_title?.toLowerCase().includes(searchQuery.toLowerCase()));
 

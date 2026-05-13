@@ -48,15 +48,15 @@ export default function DataCatalog() {
 
   const createMutation = trpc.catalog.create.useMutation({
     onSuccess: () => { utils.catalog.entries.invalidate(); setShowCreate(false); setForm(EMPTY_CATALOG_FORM); toast.success("Catalog entry created"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateMutation = trpc.catalog.update.useMutation({
     onSuccess: () => { utils.catalog.entries.invalidate(); setEditEntry(null); toast.success("Catalog entry updated"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.catalog.delete.useMutation({
     onSuccess: () => { utils.catalog.entries.invalidate(); setDeleteEntry(null); toast.success("Catalog entry deleted"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const { data: entries } = trpc.catalog.entries.useQuery({ limit: 500 });

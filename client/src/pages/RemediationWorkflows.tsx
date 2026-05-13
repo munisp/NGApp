@@ -45,7 +45,7 @@ export default function RemediationWorkflows() {
       utils.remediation.list.invalidate().catch(() => {});
       utils.remediation.stats.invalidate().catch(() => {});
     },
-    onError: (e: any) => toast.error(e.message || "Failed to create"),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e)) || "Failed to create"),
   });
 
   const updateMutation = trpc.remediation.update.useMutation({
@@ -55,7 +55,7 @@ export default function RemediationWorkflows() {
       setUpdateForm({ status: "", notes: "" });
       refetch();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const deleteMutation = trpc.remediation.delete.useMutation({

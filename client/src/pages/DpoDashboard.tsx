@@ -12,7 +12,7 @@ export default function DpoDashboard() {
   const utils = trpc.useUtils();
   const requestReviewMutation = trpc.automatedDecisions.requestReview.useMutation({
     onSuccess: () => { toast.success("Human review requested"); utils.automatedDecisions.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const dsarQuery = trpc.dsar.listWithDeadlines.useQuery({ overdue: true, limit: 20 });

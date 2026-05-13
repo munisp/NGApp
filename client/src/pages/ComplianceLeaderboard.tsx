@@ -204,7 +204,7 @@ export default function ComplianceLeaderboard() {
       toast.success("Compliance recalculation triggered — scores will refresh in ~30 seconds");
       setTimeout(() => { utils.leaderboard.list.invalidate(); utils.leaderboard.stats.invalidate(); }, 30000);
     },
-    onError: (e) => toast.error(`Recalculation failed: ${e.message}`),
+    onError: (e) => toast.error(`Recalculation failed: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const sectors = stats?.sectors ?? [];

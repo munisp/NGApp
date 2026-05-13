@@ -37,7 +37,7 @@ export default function FinePayments() {
 
   const issueFine = trpc.phase12.fines.issueFine.useMutation({
     onSuccess: () => { refetch(); setShowIssue(false); setForm(EMPTY_FORM); toast.success("Fine issued"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const initiatePayment = trpc.phase12.fines.initiatePayment.useMutation({
     onSuccess: (data: any) => {
@@ -46,7 +46,7 @@ export default function FinePayments() {
         toast.success("Redirecting to payment portal...");
       }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const waiveFine = trpc.phase12.fines.waiveFine.useMutation({
     onSuccess: () => { refetch(); toast.success("Fine waived"); },

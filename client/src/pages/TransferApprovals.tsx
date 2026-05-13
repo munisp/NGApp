@@ -90,7 +90,7 @@ export default function TransferApprovals() {
       setForm({ organizationId: 1, datasetName: "", sourceCountry: "Nigeria", destinationCountry: "", destinationEntity: "", volumeGb: "", dataClassification: "tier1_pii", businessJustification: "", transferMethod: "", encryptionMethod: "AES-256-GCM" });
       utils.transfers.list.invalidate();
     },
-    onError: (e) => toast.error(`Submission failed: ${e.message}`),
+    onError: (e) => toast.error(`Submission failed: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -100,7 +100,7 @@ export default function TransferApprovals() {
       setDeleteId(null);
       utils.transfers.list.invalidate();
     },
-    onError: (e) => toast.error(`Delete failed: ${e.message}`),
+    onError: (e) => toast.error(`Delete failed: ${(e instanceof Error ? e.message : String(e))}`),
   });
   const reviewMutation = trpc.transfers.review.useMutation({
     onSuccess: (_, vars) => {
@@ -109,7 +109,7 @@ export default function TransferApprovals() {
       setReviewNotes("");
       utils.transfers.list.invalidate();
     },
-    onError: (e) => toast.error(`Review failed: ${e.message}`),
+    onError: (e) => toast.error(`Review failed: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const handleSubmit = () => {

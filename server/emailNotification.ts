@@ -9,6 +9,7 @@
 
 import { Resend } from "resend";
 import { ENV } from "./_core/env";
+import { logger } from "./logger";
 
 const _resend = ENV.resendApiKey ? new Resend(ENV.resendApiKey) : null;
 const FROM_ADDRESS = ENV.emailFrom;
@@ -35,13 +36,13 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
         replyTo: ENV.nitdaComplianceEmail,
       });
       if (error) {
-        console.warn(`[EmailNotification] Resend error for ${payload.to}: ${error.message}`);
+        logger.warn(`[EmailNotification] Resend error for ${payload.to}: ${error.message}`);
       } else {
-        console.log(`[EmailNotification] Sent via Resend id=${data?.id} to ${payload.to}`);
+        logger.info(`[EmailNotification] Sent via Resend id=${data?.id} to ${payload.to}`);
         return true;
       }
     } catch (err) {
-      console.error("[EmailNotification] Resend exception:", err);
+      logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[EmailNotification] Resend exception:");
     }
   }
   // ── Fallback: Manus Forge API ────────────────────────────────────────────
@@ -60,13 +61,13 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
       }),
     });
     if (!res.ok) {
-      console.warn(`[EmailNotification] Forge fallback failed for ${payload.to}: ${res.status}`);
+      logger.warn(`[EmailNotification] Forge fallback failed for ${payload.to}: ${res.status}`);
       return false;
     }
-    console.log(`[EmailNotification] Sent via Forge to ${payload.to}`);
+    logger.info(`[EmailNotification] Sent via Forge to ${payload.to}`);
     return true;
   } catch (err) {
-    console.error("[EmailNotification] Forge fallback error:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[EmailNotification] Forge fallback error:");
     return false;
   }
 }
@@ -338,7 +339,7 @@ export async function sendEnforcementCaseOpened(opts: {
       to: opts.officerEmail,
       subject: `[NDSEP] Case Assigned — ${opts.caseRef} — ${opts.orgName}`,
       html: baseTemplate("Enforcement Case Assigned", body, opts.portalUrl ? { label: "View Case", url: opts.portalUrl } : undefined),
-    }).catch(() => {});
+    }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
   }
 
   return sendEmail({

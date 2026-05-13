@@ -23,8 +23,8 @@ export default function BreachIncidentCenter() {
   const { data: stats } = trpc.breachIncidents.stats.useQuery();
   const { data: list, refetch } = trpc.breachIncidents.list.useQuery({ page, limit:20, status: statusFilter!=="all"?statusFilter:undefined, severity: sevFilter!=="all"?sevFilter:undefined });
   const orgs = trpc.organizations.list.useQuery({ limit:200 }).data ?? [];
-  const createM = trpc.breachIncidents.create.useMutation({ onSuccess:()=>{ toast.success("Breach reported — 72h timer started"); setOpen(false); refetch(); }, onError:(e)=>toast.error(e.message) });
-  const updateM = trpc.breachIncidents.updateStatus.useMutation({ onSuccess:()=>{ toast.success("Status updated"); refetch(); }, onError:(e)=>toast.error(e.message) });
+  const createM = trpc.breachIncidents.create.useMutation({ onSuccess:()=>{ toast.success("Breach reported — 72h timer started"); setOpen(false); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
+  const updateM = trpc.breachIncidents.updateStatus.useMutation({ onSuccess:()=>{ toast.success("Status updated"); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   const fmtH = (h:number) => h<0?`${Math.abs(Math.round(h))}h overdue`:h<1?`${Math.round(h*60)}m left`:`${Math.round(h)}h left`;
   return (
     <div className="p-6 space-y-6">

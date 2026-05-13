@@ -13,6 +13,7 @@
 
 import Redis from "ioredis";
 import fs from "fs";
+import { logger } from "./logger";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const REDIS_ENABLED = (process.env.REDIS_ENABLED ?? "true") === "true";
@@ -50,13 +51,13 @@ if (REDIS_ENABLED) {
 
   redis.on("connect", () => {
     connected = true;
-    console.log(`[Redis] Connected to ${REDIS_URL}`);
+    logger.info(`[Redis] Connected to ${REDIS_URL}`);
   });
 
   redis.on("ready", () => { connected = true; });
 
   redis.on("error", (err: Error) => {
-    if (connected) console.warn(`[Redis] Connection error: ${err.message}`);
+    if (connected) logger.warn(`[Redis] Connection error: ${err.message}`);
     connected = false;
     errors++;
   });
@@ -64,7 +65,7 @@ if (REDIS_ENABLED) {
   redis.on("close", () => { connected = false; });
 
   redis.connect().catch(() => {
-    console.warn(`[Redis] Could not connect — caching disabled (graceful degradation)`);
+    logger.warn(`[Redis] Could not connect — caching disabled (graceful degradation)`);
   });
 }
 

@@ -168,14 +168,14 @@ export default function OrgPortal() {
   const [auditSubmitted, setAuditSubmitted] = useState(false);
   const requestAuditMutation = trpc.portal.requestAudit.useMutation({
     onSuccess: () => { setAuditSubmitted(true); toast.success("Audit request submitted", { description: "Our compliance team will contact you within 5 business days to schedule your audit." }); },
-    onError: (e: { message: string }) => toast.error("Submission failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Submission failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
   // ── Payment form state ────────────────────────────────────────────────────
   const [payForm, setPayForm] = useState({ penaltyId: "", orgId: "", paymentMethod: "bank_transfer" as "bank_transfer" | "card" | "ussd" | "crypto" | "other", paymentRef: "", contactEmail: "" });
   const [paySubmitted, setPaySubmitted] = useState(false);
   const payPenaltyMutation = trpc.financial.payPenalty.useMutation({
     onSuccess: () => { setPaySubmitted(true); toast.success("Payment submitted", { description: "Your payment reference has been logged. Status will update to \"processing\" within 24 hours." }); },
-    onError: (e: { message: string }) => toast.error("Payment failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Payment failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const [appealForm, setAppealForm] = useState({
@@ -185,7 +185,7 @@ export default function OrgPortal() {
   const [appealSubmitted, setAppealSubmitted] = useState(false);
   const submitAppealMutation = trpc.portal.submitAppeal.useMutation({
     onSuccess: () => { setAppealSubmitted(true); toast.success("Appeal submitted", { description: "Your appeal has been logged and will be reviewed within 10 business days." }); },
-    onError: (e: { message: string }) => toast.error("Appeal failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Appeal failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   if (submitted && submissionToken) {

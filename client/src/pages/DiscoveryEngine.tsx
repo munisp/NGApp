@@ -93,15 +93,15 @@ export default function DiscoveryEngine() {
 
   const createAssetMutation = trpc.assets.create.useMutation({
     onSuccess: () => { utils.assets.list.invalidate(); utils.assets.byType.invalidate(); setShowCreateAsset(false); setAssetForm(EMPTY_ASSET_FORM); toast.success("Asset created"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateAssetMutation = trpc.assets.update.useMutation({
     onSuccess: () => { utils.assets.list.invalidate(); setEditAsset(null); toast.success("Asset updated"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteAssetMutation = trpc.assets.delete.useMutation({
     onSuccess: () => { utils.assets.list.invalidate(); utils.assets.byType.invalidate(); setDeleteAsset(null); toast.success("Asset deleted"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const { data: assets } = trpc.assets.list.useQuery({ limit: 500 });

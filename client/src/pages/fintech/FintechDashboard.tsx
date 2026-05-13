@@ -57,7 +57,7 @@ export default function FintechDashboard() {
       setReviewId(null);
       setReviewNote("");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const s = stats.data as any;

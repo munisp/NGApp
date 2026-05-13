@@ -37,7 +37,7 @@ export default function AccreditationStatus() {
   };
   const renewalMutation = trpc.accreditation.submitRenewal.useMutation({
     onSuccess: () => toast.success("Renewal application submitted — you will receive a confirmation email"),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const statusCfg = data ? (STATUS_CONFIG[data.status] ?? STATUS_CONFIG["submitted"]) : null;

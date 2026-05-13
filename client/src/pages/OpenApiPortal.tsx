@@ -118,8 +118,8 @@ export default function OpenApiPortal() {
       });
       const data = await resp.json();
       setTryResult(JSON.stringify(data, null, 2));
-    } catch (e: any) {
-      setTryResult(`Error: ${e.message}`);
+    } catch (e: unknown) {
+      setTryResult(`Error: ${(e instanceof Error ? e.message : String(e))}`);
     } finally {
       setTryLoading(false);
     }

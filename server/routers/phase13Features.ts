@@ -98,7 +98,7 @@ export const p13AdvancedAnalyticsRouter = router({
         `SELECT * FROM analytics_snapshots WHERE metric_name = ANY($1) ORDER BY snapshot_date DESC LIMIT 1000`,
         [input.metrics]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { format: input.format, rows: data.length, downloadUrl: `/api/export/analytics?format=${input.format}` };
     }),
 });
@@ -131,7 +131,7 @@ export const p13Article40Router = router({
          VALUES ($1, $2, $3, $4, $5, 'draft') RETURNING *`,
         [input.code_name, input.sector, input.description, input.submitted_by, input.document_url]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -142,7 +142,7 @@ export const p13Article40Router = router({
         `UPDATE article40_codes SET status = $1, approved_by = $2, approval_date = CASE WHEN $1 = 'approved' THEN CURRENT_DATE ELSE NULL END, updated_at = NOW() WHERE id = $3 RETURNING *`,
         [input.status, input.approved_by, input.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -150,7 +150,7 @@ export const p13Article40Router = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM article40_codes WHERE id = $1`, [input.id]);
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -194,7 +194,7 @@ export const p13ComplianceCalendarRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
         [input.title, input.event_type, input.due_date, input.priority, input.description, input.assigned_to, input.reminder_days, input.org_id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -205,7 +205,7 @@ export const p13ComplianceCalendarRouter = router({
         `UPDATE compliance_calendar_events SET status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *`,
         [input.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -226,7 +226,7 @@ export const p13ComplianceCalendarRouter = router({
         `UPDATE compliance_calendar_events SET ${sets.join(", ")}, updated_at = NOW() WHERE id = $1 RETURNING *`,
         [id, ...vals]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -234,7 +234,7 @@ export const p13ComplianceCalendarRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM compliance_calendar_events WHERE id = $1`, [input.id]);
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -291,7 +291,7 @@ export const p13ConsentRecordsRouter = router({
         [input.org_id, input.data_subject_id, input.data_subject_email, input.purpose, input.legal_basis, input.data_categories, input.third_party_sharing]
       );
       await logAudit('consent.create', 'consent_record', row?.id ?? null, String(ctx.user.id), { purpose: input.purpose, legal_basis: input.legal_basis, data_subject_email: input.data_subject_email });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -303,7 +303,7 @@ export const p13ConsentRecordsRouter = router({
         [input.id]
       );
       await logAudit('consent.withdraw', 'consent_record', input.id, String(ctx.user.id), { withdrawn_by: ctx.user.email });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -353,7 +353,7 @@ export const p13DpoRegistryRouter = router({
         [input.organization_id, input.dpo_name, input.dpo_email, input.dpo_phone, input.dpco_name, input.notes]
       );
       await logAudit('dpo.appoint', 'dpo_appointment', row?.id ?? null, String(ctx.user.id), { dpo_name: input.dpo_name, dpo_email: input.dpo_email, organization_id: input.organization_id });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -365,7 +365,7 @@ export const p13DpoRegistryRouter = router({
         [input.credential_status, input.id]
       );
       await logAudit('dpo.verify', 'dpo_appointment', input.id, String(ctx.user.id), { credential_status: input.credential_status });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -411,13 +411,13 @@ export const p13NotificationCenterRouter = router({
         `UPDATE notification_inbox SET is_read = true, read_at = NOW() WHERE id = $1 RETURNING *`,
         [input.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
   markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
     await exec(`UPDATE notification_inbox SET is_read = true, read_at = NOW() WHERE user_id = $1 AND is_read = false`, [ctx.user.id]);
-    emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+    emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return { success: true };
   }),
 
@@ -433,7 +433,7 @@ export const p13NotificationCenterRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM notification_inbox WHERE id = $1`, [input.id]);
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -486,7 +486,7 @@ export const p13PenaltyCalculatorRouter = router({
         [input.org_id, input.org_name, input.violation_type, input.violation_date, input.annual_turnover, base_penalty, input.aggravating_factors, input.mitigating_factors, aggravatingMultiplier, mitigatingReduction, Math.min(final_penalty, penalty_cap), penalty_cap, `NDPA 2023 Section 48: Base ${(baseRate * 100).toFixed(1)}% of NGN ${input.annual_turnover.toLocaleString()} turnover`]
       );
       await logAudit('penalty.calculate', 'penalty_calculation', row?.id ?? null, String(ctx.user.id), { org_name: input.org_name, violation_type: input.violation_type, final_penalty: Math.min(final_penalty, penalty_cap) });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -498,7 +498,7 @@ export const p13PenaltyCalculatorRouter = router({
         [input.approved_by, input.id]
       );
       await logAudit('penalty.approve', 'penalty_calculation', input.id, String(ctx.user.id), { approved_by: input.approved_by });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -609,7 +609,7 @@ export const p13PublicRegistryRouter = router({
         `UPDATE public_compliance_registry SET is_published = true, published_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *`,
         [input.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -631,14 +631,14 @@ export const p13PublicRegistryRouter = router({
         [input.org_id, input.org_name, input.registration_number, input.sector, input.compliance_status, input.compliance_score]
       ).catch(async () => {
         // If no unique constraint, just insert
-        emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return exec(
           `INSERT INTO public_compliance_registry (org_id, org_name, registration_number, sector, compliance_status, compliance_score, last_assessment_date)
            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE) RETURNING *`,
           [input.org_id, input.org_name, input.registration_number, input.sector, input.compliance_status, input.compliance_score]
         );
       });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return Array.isArray(row) ? row[0] : row;
     }),
 });
@@ -682,7 +682,7 @@ export const p13RiskScorecardRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [input.org_id, input.risk_category, input.risk_name, input.likelihood, input.impact, risk_level, input.owner, input.mitigation_plan, input.review_date]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -703,7 +703,7 @@ export const p13RiskScorecardRouter = router({
         `UPDATE risk_scorecard_entries SET ${sets.join(", ")}, updated_at = NOW() WHERE id = $1 RETURNING *`,
         [id, ...vals]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -757,7 +757,7 @@ export const dataResidencyRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
         [input.org_id, input.data_category, input.storage_country, input.storage_region, input.provider_name, input.provider_type, input.latitude, input.longitude, input.transfer_mechanism, input.volume_gb, input.adequacy_decision]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -775,7 +775,7 @@ export const dataResidencyRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM data_residency_locations WHERE id = $1`, [input.id]);
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -863,7 +863,7 @@ export const bulkDsarRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
         [input.org_id, input.job_name, input.job_type, input.total_subjects, input.input_file_url, ctx.user.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -883,7 +883,7 @@ export const bulkDsarRouter = router({
         `UPDATE bulk_dsar_jobs SET status = 'completed', processed_count = $1, completed_at = NOW(), updated_at = NOW() WHERE id = $2`,
         [processed, input.id]
       );
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, processed };
     }),
 
@@ -891,7 +891,7 @@ export const bulkDsarRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE bulk_dsar_jobs SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, [input.id]);
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -933,7 +933,7 @@ export const whistleblowerCasesRouter = router({
         [input.status, input.assigned_to, input.investigation_notes, input.resolution, input.id]
       );
       await logAudit('whistleblower.updateStatus', 'whistleblower_case', input.id, String(ctx.user.id), { new_status: input.status, assigned_to: input.assigned_to });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -992,7 +992,7 @@ export const crossBorderMonitorRouter = router({
         [input.org_id, input.org_name, input.destination_country, input.data_category, input.transfer_mechanism, input.volume_records, input.safeguards, risk_level]
       );
       await logAudit('crossBorder.create', 'cross_border_transfer', row?.id ?? null, String(ctx.user.id), { destination_country: input.destination_country, risk_level, transfer_mechanism: input.transfer_mechanism });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -1013,7 +1013,7 @@ export const crossBorderMonitorRouter = router({
         [input.id]
       );
       await logAudit('crossBorder.notifyNITDA', 'cross_border_transfer', input.id, String(ctx.user.id), { notified_by: ctx.user.email });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 });
@@ -1059,7 +1059,7 @@ export const regulatoryReportingRouter = router({
         [input.report_name, input.report_type, input.reporting_period_start, input.reporting_period_end, input.org_id, ctx.user.name || ctx.user.email, JSON.stringify(snapshot)]
       );
       await logAudit('report.generate', 'regulatory_report', row?.id ?? null, String(ctx.user.id), { report_name: input.report_name, report_type: input.report_type });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 
@@ -1071,7 +1071,7 @@ export const regulatoryReportingRouter = router({
         [input.submitted_to, input.id]
       );
       await logAudit('report.submit', 'regulatory_report', input.id, String(ctx.user.id), { submitted_to: input.submitted_to, submitted_by: ctx.user.email });
-      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
 });

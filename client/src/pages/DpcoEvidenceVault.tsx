@@ -87,7 +87,7 @@ export default function DpcoEvidenceVault() {
       refetch();
     },
     onError: (err: any) => {
-      toast.error(`Upload failed: ${err.message}`);
+      toast.error(`Upload failed: ${(err instanceof Error ? err.message : String(err))}`);
       setUploading(false);
     },
   });
@@ -102,7 +102,7 @@ export default function DpcoEvidenceVault() {
       setVerifyOpen(false);
       refetch();
     },
-    onError: (err: any) => toast.error(`Verification failed: ${err.message}`),
+    onError: (err: any) => toast.error(`Verification failed: ${(err instanceof Error ? err.message : String(err))}`),
   });
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export default function DpcoEvidenceVault() {
   const [tagControls, setTagControls] = useState<string[]>([]);
   const tagMutation = trpc.dpco.tagEvidenceControls.useMutation({
     onSuccess: () => { toast.success("Control tags saved"); setTagItem(null); refetch(); },
-    onError: (err: any) => toast.error(`Tag failed: ${err.message}`),
+    onError: (err: any) => toast.error(`Tag failed: ${(err instanceof Error ? err.message : String(err))}`),
   });
 
   const NDPA_CONTROLS = [
@@ -120,7 +120,7 @@ export default function DpcoEvidenceVault() {
 
   const deleteMutation = trpc.dpco.deleteEvidence.useMutation({
     onSuccess: () => { toast.success("Evidence item deleted"); setDeleteId(null); refetch(); },
-    onError: (err: any) => toast.error(`Delete failed: ${err.message}`),
+    onError: (err: any) => toast.error(`Delete failed: ${(err instanceof Error ? err.message : String(err))}`),
   });
 
   const handleFileUpload = useCallback(async () => {
@@ -168,8 +168,8 @@ export default function DpcoEvidenceVault() {
         finding_ref: uploadForm.finding_ref || undefined,
         engagement_id: uploadForm.engagement_id || undefined,
       });
-    } catch (err: any) {
-      toast.error(`Upload failed: ${err.message}`);
+    } catch (err: unknown) {
+      toast.error(`Upload failed: ${(err instanceof Error ? err.message : String(err))}`);
       setUploading(false);
       setUploadProgress(0);
     }

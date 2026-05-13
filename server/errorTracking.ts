@@ -118,7 +118,7 @@ export function captureError(
 
   // Forward to Sentry if configured
   if (SENTRY_DSN) {
-    forwardToSentry(event).catch(() => {});
+    forwardToSentry(event).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
   }
 }
 

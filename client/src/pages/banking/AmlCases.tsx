@@ -75,12 +75,12 @@ export default function AmlCases() {
       setForm({ subjectName: "", caseType: "suspicious_transaction", riskScore: "50", narrative: "", transactionRef: "", transactionAmount: "", bankId: "" });
       refetch();
     },
-    onError: (e) => toast.error("Create failed", { description: e.message }),
+    onError: (e) => toast.error("Create failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const updateStatusMutation = trpc.banking.aml.updateStatus.useMutation({
     onSuccess: () => { toast.success("Case status updated"); refetch(); setSelectedCase(null); },
-    onError: (e) => toast.error("Update failed", { description: e.message }),
+    onError: (e) => toast.error("Update failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = data?.rows ?? [];

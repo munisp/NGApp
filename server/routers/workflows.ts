@@ -9,6 +9,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getAvailableActions, executeTransition, WorkflowState } from "../workflows/complianceLifecycle";
 import { calculatePenalty, calculateComplianceScore, calculateRiskScore, checkSlaBreach, checkRenewalEligibility, checkCrossBorderAdequacy } from "../workflows/businessRules";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { logger } from "../logger";
 
 export const workflowRouter = router({
   // Get available workflow actions for an entity
@@ -44,7 +45,7 @@ export const workflowRouter = router({
       emitMutationEvent(EVENTS.WORKFLOW_TRANSITION, {
         entityType: input.entityType, entityId: input.entityId,
         action: input.action, userId, userRole,
-      }).catch(() => {});
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return result;
     }),
 

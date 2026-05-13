@@ -21,7 +21,7 @@ export default function DpoReports() {
 
   const { data: reports = [], refetch, isLoading } = trpc.dpoReports.list.useQuery();
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.dpoReports.create.useMutation({ onSuccess: () => { toast.success("DPO report created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.dpoReports.create.useMutation({ onSuccess: () => { toast.success("DPO report created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.dpoReports.update.useMutation({ onSuccess: () => { toast.success("Report updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -32,7 +32,7 @@ export default function DpoReports() {
       utils.dpoReports.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete DPO report"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (reports as any[]).filter((r: any) => !searchQuery || r.org_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 

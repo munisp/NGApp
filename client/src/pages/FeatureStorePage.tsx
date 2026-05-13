@@ -32,7 +32,7 @@ export default function FeatureStorePage() {
       setCreateForm({ featureName: "", featureType: "", description: "" });
       refetch();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const filteredFeatures = (Array.isArray(features) ? features : []).filter(

@@ -40,18 +40,18 @@ export default function Phase13BulkDsar() {
       toast.success("Bulk DSAR job created");
       setForm({ job_name: "", job_type: "data_export", total_subjects: "", input_file_url: "" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const process = trpc.phase13.bulkDsar.process.useMutation({
     onSuccess: (data: any) => {
       utils.phase13.bulkDsar.list.invalidate();
       toast.success(`Job processed: ${data.processed} subjects`);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const cancel = trpc.phase13.bulkDsar.cancel.useMutation({
     onSuccess: () => { utils.phase13.bulkDsar.list.invalidate(); toast.success("Job cancelled"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const statusColor: Record<string, "default" | "secondary" | "destructive"> = {

@@ -25,10 +25,10 @@ export default function PrivacyNotices() {
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
-  const createMutation = trpc.privacyNotices.create.useMutation({ onSuccess: () => { toast.success("Privacy notice created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.privacyNotices.create.useMutation({ onSuccess: () => { toast.success("Privacy notice created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.privacyNotices.update.useMutation({
     onSuccess: () => { toast.success("Notice status updated"); utils.privacyNotices.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.privacyNotices.delete.useMutation({
     onSuccess: () => { toast.success("Privacy notice deleted"); setDeleteId(null); utils.privacyNotices.list.invalidate().catch(() => {}); },

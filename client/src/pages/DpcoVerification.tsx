@@ -50,7 +50,7 @@ export default function DpcoVerification() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const create = trpc.dpco.createVerificationStatement.useMutation({
     onSuccess: () => { toast.success("Verification statement created"); setShowCreate(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const rows = statements ?? [];

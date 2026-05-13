@@ -18,15 +18,15 @@ export default function WebhookDelivery() {
   const { data: endpoints = [], refetch } = trpc.webhookDelivery.list.useQuery({});
   const registerMut = trpc.webhookDelivery.register.useMutation({
     onSuccess: (d) => { toast.success(`Webhook registered: ${d.endpointId}`); setCreateOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMut = trpc.webhookDelivery.delete.useMutation({
     onSuccess: () => { toast.success("Webhook endpoint deleted"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deliverMut = trpc.webhookDelivery.deliver.useMutation({
     onSuccess: (d) => { d.success ? toast.success("Test delivery successful") : toast.error(`Delivery failed: ${d.error ?? d.statusCode}`); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const toggleEvent = (evt: string) => setForm(f => ({ ...f, events: f.events.includes(evt) ? f.events.filter(e => e !== evt) : [...f.events, evt] }));

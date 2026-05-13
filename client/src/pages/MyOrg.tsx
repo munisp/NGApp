@@ -52,7 +52,7 @@ function OnboardingWizard({ orgId, onComplete }: { orgId: number; onComplete: ()
       setAssetCreated(true);
       setStep(2);
     },
-    onError: (e) => toast.error(`Failed to register asset: ${e.message}`),
+    onError: (e) => toast.error(`Failed to register asset: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const generateEvidence = trpc.evidencePackages.generate.useMutation({
@@ -62,7 +62,7 @@ function OnboardingWizard({ orgId, onComplete }: { orgId: number; onComplete: ()
       setEvidenceCreated(true);
       setStep(3);
     },
-    onError: (e) => toast.error(`Failed to generate evidence: ${e.message}`),
+    onError: (e) => toast.error(`Failed to generate evidence: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   const steps = [

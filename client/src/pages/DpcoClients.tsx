@@ -51,11 +51,11 @@ export default function DpcoClients() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const upsert = trpc.dpco.upsertClient.useMutation({
     onSuccess: () => { toast.success("Client engagement saved"); setShowAdd(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.dpco.upsertClient.useMutation({
     onSuccess: () => { toast.success("Client engagement removed"); setDeleteId(null); utils.dpco.listClients.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const rows = clients ?? [];

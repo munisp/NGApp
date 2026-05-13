@@ -19,11 +19,11 @@ export default function ApiKeyManagement() {
   const { data: stats } = trpc.apiKeyManagement.getStats.useQuery();
   const createMut = trpc.apiKeyManagement.create.useMutation({
     onSuccess: (d) => { setNewKey(d.rawKey); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const revokeMut = trpc.apiKeyManagement.revoke.useMutation({
     onSuccess: () => { toast.success("API key revoked"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const copyKey = (k: string) => { navigator.clipboard.writeText(k); toast.success("Copied to clipboard"); };

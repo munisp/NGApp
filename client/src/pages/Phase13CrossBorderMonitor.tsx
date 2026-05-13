@@ -34,11 +34,11 @@ export default function Phase13CrossBorderMonitor() {
       toast.success("Cross-border transfer recorded");
       setForm({ org_name: "", destination_country: "", data_category: "", transfer_mechanism: "", volume_records: "", safeguards: "" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const notifyNITDA = trpc.phase13.crossBorderMonitor.notifyNITDA.useMutation({
     onSuccess: () => { utils.phase13.crossBorderMonitor.list.invalidate(); toast.success("NITDA notified successfully"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (transfers as any[]) ?? [];

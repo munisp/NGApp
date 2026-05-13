@@ -19,8 +19,8 @@ export default function ConsentRecordManager() {
   const { data: stats } = trpc.consentRecords.stats.useQuery();
   const { data: list, refetch } = trpc.consentRecords.list.useQuery({ page, limit:20, status: statusFilter!=="all"?statusFilter:undefined, search: search||undefined });
   const orgs = trpc.organizations.list.useQuery({ limit:200 }).data ?? [];
-  const createM = trpc.consentRecords.create.useMutation({ onSuccess:()=>{ toast.success("Consent record created"); setOpen(false); refetch(); }, onError:(e)=>toast.error(e.message) });
-  const withdrawM = trpc.consentRecords.withdraw.useMutation({ onSuccess:()=>{ toast.success("Consent withdrawn"); refetch(); }, onError:(e)=>toast.error(e.message) });
+  const createM = trpc.consentRecords.create.useMutation({ onSuccess:()=>{ toast.success("Consent record created"); setOpen(false); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
+  const withdrawM = trpc.consentRecords.withdraw.useMutation({ onSuccess:()=>{ toast.success("Consent withdrawn"); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   const STATUS_COLORS: Record<string,string> = { active:"bg-green-100 text-green-800", withdrawn:"bg-red-100 text-red-800", expired:"bg-muted text-foreground", pending:"bg-yellow-100 text-yellow-800" };
   return (
     <div className="p-6 space-y-6">

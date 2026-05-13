@@ -13,6 +13,7 @@
  */
 
 import Redis from "ioredis";
+import { logger } from "./logger";
 
 const BLACKLIST_PREFIX = "session:blacklist:";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
@@ -49,7 +50,7 @@ export async function blacklistToken(jti: string, expiresAt: number): Promise<vo
     await r.set(`${BLACKLIST_PREFIX}${jti}`, "1", "EX", ttlSeconds);
   } catch {
     // Graceful degradation: if Redis is unavailable, log but don't fail logout
-    console.warn("[SessionBlacklist] Failed to blacklist token — Redis unavailable");
+    logger.warn("[SessionBlacklist] Failed to blacklist token — Redis unavailable");
   }
 }
 
@@ -83,7 +84,7 @@ export function generateJti(): string {
  */
 export async function disconnectBlacklistRedis(): Promise<void> {
   if (_blacklistRedis) {
-    await _blacklistRedis.quit().catch(() => {});
+    await _blacklistRedis.quit().catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     _blacklistRedis = null;
   }
 }

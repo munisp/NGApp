@@ -20,6 +20,7 @@ import { ENV } from "./_core/env";
 import { saveNdpaComplianceSnapshot } from "./db";
 import { getPgSslConfig } from "./dbSslConfig";
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";
 
 const PG_URL = getDatabaseUrl();
 
@@ -44,12 +45,12 @@ async function sendDigestEmail(payload: {
       }),
     });
     if (!res.ok) {
-      console.warn(`[DigestScheduler] Failed to send to ${payload.to}: ${res.status}`);
+      logger.warn(`[DigestScheduler] Failed to send to ${payload.to}: ${res.status}`);
       return false;
     }
     return true;
   } catch (err) {
-    console.error("[DigestScheduler] Error:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[DigestScheduler] Error:");
     return false;
   }
 }
@@ -194,13 +195,13 @@ export function buildDigestHtml(org: OrgDigestData, portalBaseUrl: string): stri
 
 // ─── Send digest to all registered orgs ──────────────────────────────────────
 export async function sendWeeklyDigest(portalBaseUrl: string): Promise<{ sent: number; failed: number }> {
-  console.log("[DigestScheduler] Starting weekly compliance digest run...");
+  logger.info("[DigestScheduler] Starting weekly compliance digest run...");
   let sent = 0;
   let failed = 0;
 
   try {
     const orgs = await fetchDigestData();
-    console.log(`[DigestScheduler] Found ${orgs.length} organisations to notify`);
+    logger.info(`[DigestScheduler] Found ${orgs.length} organisations to notify`);
 
     for (const org of orgs) {
       try {
@@ -212,20 +213,20 @@ export async function sendWeeklyDigest(portalBaseUrl: string): Promise<{ sent: n
         });
         if (ok) {
           sent++;
-          console.log(`[DigestScheduler] ✓ Sent digest to ${org.contactEmail} (${org.orgName})`);
+          logger.info(`[DigestScheduler] ✓ Sent digest to ${org.contactEmail} (${org.orgName})`);
         } else {
           failed++;
         }
       } catch (err) {
         failed++;
-        console.error(`[DigestScheduler] Error sending to ${org.contactEmail}:`, err);
+        logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, `[DigestScheduler] Error sending to ${org.contactEmail}:`);
       }
     }
   } catch (err) {
-    console.error("[DigestScheduler] Fatal error fetching digest data:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[DigestScheduler] Fatal error fetching digest data:");
   }
 
-  console.log(`[DigestScheduler] Digest run complete: ${sent} sent, ${failed} failed`);
+  logger.info(`[DigestScheduler] Digest run complete: ${sent} sent, ${failed} failed`);
   return { sent, failed };
 }
 
@@ -264,13 +265,13 @@ async function checkNdpaIndexTrend(): Promise<void> {
     `);
     const row = r.rows[0];
     if (!row || row.today_score == null || row.avg_30d == null) {
-      console.log("[NdpaSnapshot] Insufficient data for trend alert check");
+      logger.info("[NdpaSnapshot] Insufficient data for trend alert check");
       return;
     }
     const todayScore = Number(row.today_score);
     const avg30d = Number(row.avg_30d);
     const drop = avg30d - todayScore;
-    console.log(`[NdpaSnapshot] Trend check: today=${todayScore.toFixed(1)}, 30d_avg=${avg30d.toFixed(1)}, drop=${drop.toFixed(1)}`);
+    logger.info(`[NdpaSnapshot] Trend check: today=${todayScore.toFixed(1)}, 30d_avg=${avg30d.toFixed(1)}, drop=${drop.toFixed(1)}`);
     if (drop >= 10) {
       // Fetch sub-metric breakdown for the alert
       const metricR = await pool.query<Record<string, number>>(`
@@ -318,13 +319,13 @@ async function checkNdpaIndexTrend(): Promise<void> {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${ENV.forgeApiKey}` },
           body: JSON.stringify({ title: `🚨 NDPA Index dropped ${drop.toFixed(1)} pts (now ${todayScore.toFixed(1)}/100)`, content: alertContent }),
         });
-        console.log(`[NdpaSnapshot] Owner alert sent: NDPA Index dropped ${drop.toFixed(1)} pts`);
+        logger.info(`[NdpaSnapshot] Owner alert sent: NDPA Index dropped ${drop.toFixed(1)} pts`);
       } catch (alertErr) {
-        console.error("[NdpaSnapshot] Failed to send owner alert:", alertErr);
+        logger.error({ err: alertErr instanceof Error ? alertErr.message : String(alertErr) }, "[NdpaSnapshot] Failed to send owner alert");
       }
     }
   } catch (err) {
-    console.error("[NdpaSnapshot] Trend check error:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[NdpaSnapshot] Trend check error:");
   } finally {
     await pool.end();
   }
@@ -335,15 +336,15 @@ export function startNdpaSnapshotScheduler(): void {
   const scheduleNext = () => {
     const delay = msUntilMidnightWAT();
     const nextRun = new Date(Date.now() + delay);
-    console.log(`[NdpaSnapshot] Next daily snapshot at ${nextRun.toISOString()} (in ${Math.round(delay / 3600000)}h)`);
+    logger.info(`[NdpaSnapshot] Next daily snapshot at ${nextRun.toISOString()} (in ${Math.round(delay / 3600000)}h)`);
     snapshotTimer = setTimeout(async () => {
       try {
         const result = await saveNdpaComplianceSnapshot();
-        console.log(`[NdpaSnapshot] Snapshot saved: ${JSON.stringify(result)}`);
+        logger.info(`[NdpaSnapshot] Snapshot saved: ${JSON.stringify(result)}`);
         // Check trend and alert if score dropped significantly
         await checkNdpaIndexTrend();
       } catch (err) {
-        console.error("[NdpaSnapshot] Failed:", err);
+        logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[NdpaSnapshot] Failed:");
       }
       scheduleNext();
     }, delay);
@@ -355,7 +356,7 @@ export function stopNdpaSnapshotScheduler(): void {
   if (snapshotTimer) {
     clearTimeout(snapshotTimer);
     snapshotTimer = null;
-    console.log("[NdpaSnapshot] Stopped");
+    logger.info("[NdpaSnapshot] Stopped");
   }
 }
 
@@ -381,7 +382,7 @@ export function startDigestScheduler(portalBaseUrl: string): void {
   const scheduleNext = () => {
     const delay = msUntilNextMonday8amWAT();
     const nextRun = new Date(Date.now() + delay);
-    console.log(`[DigestScheduler] Next weekly digest scheduled for ${nextRun.toISOString()} (in ${Math.round(delay / 3600000)}h)`);
+    logger.info(`[DigestScheduler] Next weekly digest scheduled for ${nextRun.toISOString()} (in ${Math.round(delay / 3600000)}h)`);
 
     digestTimer = setTimeout(async () => {
       await sendWeeklyDigest(portalBaseUrl);
@@ -396,7 +397,7 @@ export function stopDigestScheduler(): void {
   if (digestTimer) {
     clearTimeout(digestTimer);
     digestTimer = null;
-    console.log("[DigestScheduler] Stopped");
+    logger.info("[DigestScheduler] Stopped");
   }
 }
 
@@ -431,14 +432,14 @@ async function sendDpcoRenewalReminders(): Promise<void> {
               content: `**${dpco.name}** (Licence: ${dpco.licence_number}) expires on **${expiry}**.\n\nPlease initiate the renewal process at /dpco/onboard or contact the DPCO directly at ${dpco.email || "N/A"}.\n\nAction required within ${days} days to avoid licence lapse.`,
             }),
           });
-          console.log(`[DpcoRenewal] Sent ${days}-day reminder for ${dpco.name} (${dpco.licence_number})`);
+          logger.info(`[DpcoRenewal] Sent ${days}-day reminder for ${dpco.name} (${dpco.licence_number})`);
         } catch (err) {
-          console.error(`[DpcoRenewal] Failed to notify for ${dpco.licence_number}:`, err);
+          logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, `[DpcoRenewal] Failed to notify for ${dpco.licence_number}:`);
         }
       }
     }
   } catch (err) {
-    console.error("[DpcoRenewal] Failed:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[DpcoRenewal] Failed:");
   } finally {
     await pool.end();
   }
@@ -461,7 +462,7 @@ export function startDpcoRenewalScheduler(): void {
   const scheduleNext = () => {
     const delay = msUntilNext9amWAT();
     const nextRun = new Date(Date.now() + delay);
-    console.log(`[DpcoRenewal] Next check scheduled for ${nextRun.toISOString()}`);
+    logger.info(`[DpcoRenewal] Next check scheduled for ${nextRun.toISOString()}`);
     renewalTimer = setTimeout(async () => {
       await sendDpcoRenewalReminders();
       scheduleNext();
@@ -474,6 +475,6 @@ export function stopDpcoRenewalScheduler(): void {
   if (renewalTimer) {
     clearTimeout(renewalTimer);
     renewalTimer = null;
-    console.log("[DpcoRenewal] Stopped");
+    logger.info("[DpcoRenewal] Stopped");
   }
 }

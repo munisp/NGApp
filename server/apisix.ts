@@ -72,9 +72,9 @@ async function adminRequest<T = unknown>(
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json() as T;
     return { ok: true, data };
-  } catch (e: any) {
-    logger.warn(`[APISIX] ${method} ${path} failed: ${e.message}`);
-    return { ok: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[APISIX] ${method} ${path} failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { ok: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -91,9 +91,9 @@ export async function apisixHealth(): Promise<ApisixHealthResult> {
     const data = await res.json() as any;
     const routeCount = data?.list?.length ?? data?.total ?? 0;
     return { healthy: true, routes: routeCount };
-  } catch (e: any) {
-    logger.warn(`[APISIX] Health check failed: ${e.message}`);
-    return { healthy: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[APISIX] Health check failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { healthy: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -224,7 +224,7 @@ export async function apisixSmokeTest(): Promise<{ success: boolean; latencyMs: 
     const health = await apisixHealth();
     const latencyMs = Date.now() - start;
     return { success: health.healthy, latencyMs, gatewayUrl: GATEWAY_URL, error: health.error };
-  } catch (e: any) {
-    return { success: false, latencyMs: Date.now() - start, gatewayUrl: GATEWAY_URL, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, latencyMs: Date.now() - start, gatewayUrl: GATEWAY_URL, error: (e instanceof Error ? e.message : String(e)) };
   }
 }

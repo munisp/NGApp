@@ -98,7 +98,7 @@ export default function DpcoAuditWorkspace() {
       setResponseNote("");
       refetchRequests();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const pendingCount = (incomingRequests?.rows ?? []).filter((r: any) => r.status === "pending").length;
@@ -137,17 +137,17 @@ export default function DpcoAuditWorkspace() {
 
   const create = trpc.dpco.upsertAuditEngagement.useMutation({
     onSuccess: () => { toast.success("Audit engagement created"); setShowCreate(false); refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const advance = trpc.dpco.upsertAuditEngagement.useMutation({
     onSuccess: (updated: any) => { toast.success("Audit stage advanced"); setSelectedAudit(updated); refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const saveRatings = trpc.dpco.saveControlRatings.useMutation({
     onSuccess: (data: any) => { toast.success(`${data.saved} control ratings saved`); setIsDirty(false); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const handleRatingChange = useCallback((controlId: string, value: string) => {

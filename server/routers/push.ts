@@ -18,6 +18,7 @@ import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getPool } from "../db";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { logger } from "../logger";
 
 // ─── VAPID Configuration ─────────────────────────────────────────────────────
 // Keys are set from env vars; fall back to the generated defaults for dev.
@@ -110,7 +111,7 @@ export const pushRouter = router({
         [ctx.user.id, input.endpoint, input.p256dh, input.auth, input.userAgent ?? null, Date.now()]
       );
 
-      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -126,7 +127,7 @@ export const pushRouter = router({
         [ctx.user.id, input.endpoint]
       );
 
-      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { removed: rowCount ?? 0 };
     }),
 
@@ -157,7 +158,7 @@ export const pushRouter = router({
       body: "You will now receive alerts for overdue invoices and audit deadlines.",
       url: "/dpco-app/dashboard",
     });
-    emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
+    emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return result;
   }),
 
@@ -184,7 +185,7 @@ export const pushRouter = router({
           ? `Invoice ${invoices[0].invoice_number} for ${invoices[0].client_name} is overdue.`
           : `${invoices.length} invoices are overdue. Oldest: ${invoices[0].invoice_number} (${invoices[0].client_name}).`;
 
-      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return sendPushToUser(ctx.user.id, {
         title: `⚠️ ${invoices.length} Overdue Invoice${invoices.length > 1 ? "s" : ""}`,
         body,

@@ -11,6 +11,7 @@ import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, c
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
+import { logger } from "../logger";
 
 // ─// ── Helper: execute raw SQL ───────────────────────────────────────────────
 async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, unknown>[]> {
@@ -86,7 +87,7 @@ export const changelogAdminRouter = router({
          VALUES ('${version}', '${title}', '${body}', '${category}', ${publishedAt})
          RETURNING id, version, title, body, category, published_at`
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0] as {
         id: number;
         version: string;
@@ -125,7 +126,7 @@ export const changelogAdminRouter = router({
          WHERE id = ${id}
          RETURNING id, version, title, body, category, published_at`
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0] as {
         id: number;
         version: string;
@@ -141,7 +142,7 @@ export const changelogAdminRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM changelogs WHERE id = ${input.id}`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: true };
     }),
 });

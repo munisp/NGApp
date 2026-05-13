@@ -68,7 +68,7 @@ export default function EnforcementCases() {
   const [createForm, setCreateForm] = useState({ penaltyId: "", organizationId: "", escalationReason: "", assignedOfficerId: "" });
   const createCase = trpc.enforcementCases.create.useMutation({
     onSuccess: () => { toast.success("Enforcement case created"); setShowCreate(false); setCreateForm({ penaltyId: "", organizationId: "", escalationReason: "", assignedOfficerId: "" }); utils.enforcementCases.list.invalidate(); },
-    onError: (e: any) => toast.error(e.message || "Failed to create case"),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e)) || "Failed to create case"),
   });
   const { data: cases, isLoading } = trpc.enforcementCases.list.useQuery({ limit: 100 }, { refetchInterval: 30_000 });
   const updateCase = trpc.enforcementCases.update.useMutation({
@@ -77,7 +77,7 @@ export default function EnforcementCases() {
       setModalOpen(false);
       toast.success("Enforcement case updated");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.enforcementCases.delete.useMutation({
     onSuccess: () => {

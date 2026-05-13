@@ -48,6 +48,7 @@
  */
 
 import { startWorkflow } from "./temporal";
+import { logger } from "./logger";
 // ─────────────────────────────────────────────────────────────────────────────
 // Service URLs
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,7 +117,7 @@ async function callService<T = unknown>(
   } catch (err: unknown) {
     const latencyMs = Date.now() - start;
     const message = err instanceof Error ? err.message : String(err);
-    console.warn(`[orchestration] Service unavailable: ${url} — ${message}`);
+    logger.warn(`[orchestration] Service unavailable: ${url} — ${message}`);
     return { ok: false, error: message, service: url, latencyMs };
   }
 }

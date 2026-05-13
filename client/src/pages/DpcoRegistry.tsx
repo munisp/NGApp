@@ -62,7 +62,7 @@ export default function DpcoRegistry() {
   });
   const upsert = trpc.dpco.upsertOrganisation.useMutation({
     onSuccess: () => { toast.success("DPCO saved"); setShowAdd(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const rows = data?.rows ?? [];

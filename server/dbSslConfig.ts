@@ -11,6 +11,7 @@
  */
 
 import fs from "fs";
+import { logger } from "./logger";
 
 export interface PgSslConfig {
   rejectUnauthorized: boolean;
@@ -41,7 +42,7 @@ export function getPgSslConfig(): PgSslConfig | false {
     try {
       config.ca = fs.readFileSync(caPath, "utf8");
     } catch (err) {
-      console.warn(`[DB SSL] Failed to read CA certificate from ${caPath}:`, err);
+      logger.warn({ data: err }, `[DB SSL] Failed to read CA certificate from ${caPath}:`);
     }
   }
 

@@ -32,11 +32,11 @@ export default function AiGovernance() {
 
   const createMutation = trpc.aiGovernance.create.useMutation({
     onSuccess: () => { toast.success("AI system registered"); setShowCreate(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateMutation = trpc.aiGovernance.update.useMutation({
     onSuccess: () => { toast.success("AI system updated"); setShowUpdate(null); utils.aiGovernance.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const deleteMutation = trpc.aiGovernance.delete.useMutation({

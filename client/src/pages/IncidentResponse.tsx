@@ -35,7 +35,7 @@ export default function IncidentResponse() {
 
   const activate = trpc.phase12.incidentResponse.activatePlaybook.useMutation({
     onSuccess: () => { refetch(); setShowActivate(false); toast.success("Incident response activated"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const advanceStep = trpc.phase12.incidentResponse.advanceStep.useMutation({
     onSuccess: () => { refetch(); toast.success("Step advanced"); },

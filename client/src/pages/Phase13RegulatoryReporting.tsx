@@ -37,7 +37,7 @@ export default function Phase13RegulatoryReporting() {
       toast.success("Report generated successfully");
       setForm({ report_name: "", report_type: "quarterly_national", reporting_period_start: "", reporting_period_end: "" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const submit = trpc.phase13.regulatoryReporting.submit.useMutation({
     onSuccess: () => {
@@ -46,7 +46,7 @@ export default function Phase13RegulatoryReporting() {
       setSelectedReport(null);
       toast.success("Report submitted to regulatory authority");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (reports as any[]) ?? [];

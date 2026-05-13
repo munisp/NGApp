@@ -29,11 +29,11 @@ export default function RopaRecords() {
 
   const createMutation = trpc.ropa.create.useMutation({
     onSuccess: () => { toast.success("ROPA entry created"); setShowCreate(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateMutation = trpc.ropa.update.useMutation({
     onSuccess: () => { toast.success("ROPA updated"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.ropa.delete.useMutation({
     onSuccess: () => {
@@ -48,7 +48,7 @@ export default function RopaRecords() {
       toast.success(`Exported ${data.count} records — opening download`);
       window.open(data.url, "_blank");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const filtered = (records as any[]).filter((r: any) =>

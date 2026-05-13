@@ -55,11 +55,11 @@ export default function ContinuousMonitoring() {
   const utils = trpc.useUtils();
   const resolveSla = trpc.monitoring.resolveSla.useMutation({
     onSuccess: () => { toast.success("SLA breach resolved"); utils.monitoring.slaBreaches.invalidate(); utils.monitoring.stats.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const resolveDrift = trpc.monitoring.resolveDrift.useMutation({
     onSuccess: () => { toast.success("Drift alert resolved"); utils.monitoring.driftAlerts.invalidate(); utils.monitoring.stats.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const { data: stats, isLoading: statsLoading } = trpc.monitoring.stats.useQuery(undefined, { refetchInterval: 30000 });

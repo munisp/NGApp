@@ -7,6 +7,7 @@
  */
 
 import { ENV } from "./_core/env";
+import { logger } from "./logger";
 
 export type SlackAlertSeverity = "critical" | "warning" | "info" | "resolved";
 
@@ -83,13 +84,13 @@ export async function sendSlackAlert(payload: SlackAlertPayload): Promise<boolea
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      console.warn(`[Slack] Webhook delivery failed: ${res.status} ${res.statusText}`);
+      logger.warn(`[Slack] Webhook delivery failed: ${res.status} ${res.statusText}`);
       return false;
     }
-    console.log(`[Slack] Alert sent: ${payload.title}`);
+    logger.info(`[Slack] Alert sent: ${payload.title}`);
     return true;
   } catch (err) {
-    console.error("[Slack] Webhook error:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[Slack] Webhook error:");
     return false;
   }
 }
@@ -129,13 +130,13 @@ export async function sendPagerDutyAlert(opts: {
       }),
     });
     if (!res.ok) {
-      console.warn(`[PagerDuty] Alert delivery failed: ${res.status}`);
+      logger.warn(`[PagerDuty] Alert delivery failed: ${res.status}`);
       return false;
     }
-    console.log(`[PagerDuty] Alert triggered: ${opts.summary}`);
+    logger.info(`[PagerDuty] Alert triggered: ${opts.summary}`);
     return true;
   } catch (err) {
-    console.error("[PagerDuty] Error:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[PagerDuty] Error:");
     return false;
   }
 }

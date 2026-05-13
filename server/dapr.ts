@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * NDSEP Dapr Sidecar Client (Node.js)
  * =====================================
@@ -38,8 +39,8 @@ async function checkDaprHealth(): Promise<boolean> {
       signal: AbortSignal.timeout(3000),
     });
     const ok = res.ok;
-    if (ok && !daprConnected) console.log(`[Dapr] Connected to sidecar on port ${DAPR_PORT}`);
-    if (!ok && daprConnected) console.warn(`[Dapr] Sidecar unhealthy`);
+    if (ok && !daprConnected) logger.info(`[Dapr] Connected to sidecar on port ${DAPR_PORT}`);
+    if (!ok && daprConnected) logger.warn(`[Dapr] Sidecar unhealthy`);
     daprConnected = ok;
     return ok;
   } catch {

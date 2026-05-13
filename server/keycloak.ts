@@ -16,6 +16,7 @@
  */
 
 import * as crypto from "crypto";
+import { logger } from "./logger";
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "ndsep";
@@ -154,7 +155,7 @@ export async function verifyKeycloakToken(token: string): Promise<KeycloakUser |
     if (!jwk) {
       // JWKS unavailable — degrade gracefully (accept in dev, reject in prod)
       if (process.env.NODE_ENV === "production") return null;
-      console.warn("[Keycloak] JWKS unavailable — accepting token in dev mode");
+      logger.warn("[Keycloak] JWKS unavailable — accepting token in dev mode");
     } else {
       const valid = await verifyRs256(token, jwk);
       if (!valid) return null;

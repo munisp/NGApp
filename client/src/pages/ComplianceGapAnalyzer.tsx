@@ -39,7 +39,7 @@ export default function ComplianceGapAnalyzer() {
   });
   const runAnalysis = trpc.phase12.complianceGap.runAssessment.useMutation({
     onSuccess: () => { refetch(); toast.success("Gap analysis complete"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const criticalCount = gaps?.filter((g: any) => g.priority === "critical").length ?? 0;

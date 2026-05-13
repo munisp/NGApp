@@ -32,7 +32,7 @@ export default function Phase13WhistleblowerCases() {
       setSelectedCase(null);
       toast.success("Case status updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (cases as any[]) ?? [];

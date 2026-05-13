@@ -6,6 +6,7 @@
  * All calls are fire-and-forget with graceful degradation.
  */
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "./middlewareExtensions";
+import { logger } from "./logger";
 
 // ── Event type constants ─────────────────────────────────────────────────────
 
@@ -134,15 +135,15 @@ export async function emitMutationEvent(
 
   // Fire all middleware calls in parallel, each with its own error handling
   const promises: Promise<void>[] = [
-    daprPublish(event, payload).catch(() => {}),
-    fluvioPublish(event, payload).catch(() => {}),
+    daprPublish(event, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")),
+    fluvioPublish(event, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")),
   ];
 
   if (!options?.skipOpenSearch) {
-    promises.push(opensearchIndex(indexName, payload).catch(() => {}));
+    promises.push(opensearchIndex(indexName, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")));
   }
   if (!options?.skipLakehouse) {
-    promises.push(lakehouseIngest(indexName, [payload]).catch(() => {}));
+    promises.push(lakehouseIngest(indexName, [payload]).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")));
   }
 
   await Promise.allSettled(promises);

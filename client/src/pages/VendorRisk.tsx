@@ -34,7 +34,7 @@ export default function VendorRisk() {
 
   const addVendor = trpc.phase12.vendorRisk.create.useMutation({
     onSuccess: () => { refetch(); setShowAdd(false); setForm(EMPTY_FORM); toast.success("Vendor added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const scoreVendor = trpc.phase12.vendorRisk.update.useMutation({
     onSuccess: () => { refetch(); toast.success("Vendor scored"); },

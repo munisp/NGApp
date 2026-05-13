@@ -48,7 +48,7 @@ export default function DpcoClientDashboard() {
 
   const renewalMutation = trpc.dpco.submitRenewalApplication.useMutation({
     onSuccess: () => toast.success("Renewal application submitted to NDPC"),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   if (clientId === 0) {

@@ -16,6 +16,7 @@ import { generateNationalReportPdf } from "./nationalReportPdf";
 import { notifyOwner } from "./_core/notification";
 import { getPgSslConfig } from "./dbSslConfig";
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";
 
 const PG_URL = getDatabaseUrl();
 
@@ -32,7 +33,7 @@ let lastSentAt: Date | null = null;
 
 // ─── Core job ─────────────────────────────────────────────────────────────────
 export async function runNationalReportJob(): Promise<{ sent: number; error?: string }> {
-  console.log("[NationalReportScheduler] Starting national report generation...");
+  logger.info("[NationalReportScheduler] Starting national report generation...");
   try {
     const pdfBuffer = await generateNationalReportPdf();
     const dateStr = new Date().toISOString().split("T")[0];
@@ -49,7 +50,7 @@ export async function runNationalReportJob(): Promise<{ sent: number; error?: st
       );
       pdfUrl = url;
     } catch (storageErr) {
-      console.warn("[NationalReportScheduler] Storage upload failed, continuing without archival:", storageErr);
+      logger.warn({ data: storageErr }, "[NationalReportScheduler] Storage upload failed, continuing without archival:");
     }
 
     // Send to government recipients
@@ -92,7 +93,7 @@ export async function runNationalReportJob(): Promise<{ sent: number; error?: st
         });
         if (res.ok) sent++;
       } catch (emailErr) {
-        console.warn(`[NationalReportScheduler] Failed to send to ${recipient}:`, emailErr);
+        logger.warn({ data: emailErr }, `[NationalReportScheduler] Failed to send to ${recipient}:`);
       }
     }
 
@@ -119,11 +120,11 @@ export async function runNationalReportJob(): Promise<{ sent: number; error?: st
       content: `Weekly national enforcement report generated and sent to ${sent} recipient(s). Report date: ${dateStr}.${pdfUrl ? ` Archive: ${pdfUrl}` : ""}`,
     });
 
-    console.log(`[NationalReportScheduler] Report sent to ${sent} recipients.`);
+    logger.info(`[NationalReportScheduler] Report sent to ${sent} recipients.`);
     return { sent };
-  } catch (err: any) {
-    console.error("[NationalReportScheduler] Error:", err);
-    return { sent: 0, error: err.message ?? "Unknown error" };
+  } catch (err: unknown) {
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[NationalReportScheduler] Error:");
+    return { sent: 0, error: (err instanceof Error ? err.message : String(err)) ?? "Unknown error" };
   }
 }
 
@@ -158,7 +159,7 @@ export function startNationalReportScheduler(): void {
   const scheduleNext = () => {
     const nextRun = getNextFriday17WAT();
     const delay = nextRun.getTime() - Date.now();
-    console.log(
+    logger.info(
       `[NationalReportScheduler] Next report scheduled for ${nextRun.toISOString()} (in ${Math.round(delay / 3600000)}h)`
     );
     reportTimer = setTimeout(async () => {

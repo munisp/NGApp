@@ -8,6 +8,7 @@ import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
 function getPool(): InstanceType<typeof Pool> {
@@ -104,7 +105,7 @@ export const telecomRouter = router({
          input.annualFeeNgn ?? null, input.issuedAt ?? null, input.expiresAt ?? null,
          input.dataLocalisationCompliant, input.lawfulInterceptEnabled]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -160,7 +161,7 @@ export const telecomRouter = router({
          input.measuredValue ?? null, input.thresholdValue ?? null, input.measurementUnit ?? null,
          input.affectedRegion ?? null, input.affectedSubscribers ?? null, input.penaltyNgn ?? null, input.notes ?? null]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -171,7 +172,7 @@ export const telecomRouter = router({
         `UPDATE qos_violations SET status='resolved', resolved_at=NOW(), notes=COALESCE($2,notes), updated_at=NOW() WHERE id=$1 RETURNING *`,
         [input.id, input.resolution ?? null]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 

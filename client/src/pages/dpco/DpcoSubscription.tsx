@@ -115,7 +115,7 @@ function UpgradeDialog({
       utils.billing.getSubscription.invalidate();
       onUpgraded();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   // For upgrades: Stripe Checkout session
@@ -125,7 +125,7 @@ function UpgradeDialog({
       setOpen(false);
       window.open(url, "_blank");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const isPending = downgradeMutation.isPending || checkoutMutation.isPending;

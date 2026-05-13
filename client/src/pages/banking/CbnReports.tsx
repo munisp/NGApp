@@ -49,12 +49,12 @@ export default function CbnReports() {
       setCreateOpen(false);      setForm({ bankId: "1", reportType: "ctr", reportingPeriod: "", filingDeadline: "", totalTransactions: "", totalAmount: "", preparedBy: "" });
       refetch();
     },
-    onError: (e: { message: string }) => toast.error("Failed to create report", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Failed to create report", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const submitMutation = trpc.banking.cbnReports.submit.useMutation({
     onSuccess: () => { toast.success("Report submitted to CBN"); refetch(); },
-    onError: (e: { message: string }) => toast.error("Submission failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Submission failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = (data?.rows ?? []) as any[];

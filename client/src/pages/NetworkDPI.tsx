@@ -35,7 +35,7 @@ export default function NetworkDPI() {
       setBlockReason("");
       toast.success("IP blocked and logged to audit trail");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const trafficData = (trafficRaw ?? []).map((r: any) => ({

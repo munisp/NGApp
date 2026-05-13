@@ -38,11 +38,11 @@ export default function PolicyTemplates() {
 
   const createMutation = trpc.policyTemplates.create.useMutation({
     onSuccess: () => { toast.success("Policy template created"); setShowCreate(false); refetch(); setNewTemplate({ name: "", framework: "NDPR", description: "", policyDefinition: "", version: "1.0" }); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const instantiateMutation = trpc.policyTemplates.instantiate.useMutation({
     onSuccess: () => { toast.success("Policy instantiated for organization"); setShowInstantiate(null); utils.policyTemplates.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);

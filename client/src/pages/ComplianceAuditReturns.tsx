@@ -22,10 +22,10 @@ export default function ComplianceAuditReturns() {
 
   const { data: returns = [], refetch, isLoading } = trpc.auditReturns.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.auditReturns.create.useMutation({ onSuccess: () => { toast.success("CAR filed successfully"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.auditReturns.create.useMutation({ onSuccess: () => { toast.success("CAR filed successfully"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const updateMutation = trpc.auditReturns.update.useMutation({ onSuccess: () => { toast.success("CAR updated"); refetch(); }, onError: (e) => toast.error(e.message) });
+  const updateMutation = trpc.auditReturns.update.useMutation({ onSuccess: () => { toast.success("CAR updated"); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const deleteMutation = trpc.auditReturns.delete.useMutation({ onSuccess: () => { toast.success("Audit return deleted"); setDeleteId(null); utils.auditReturns.list.invalidate().catch(() => {}); }, onError: (err) => toast.error(err.message || "Failed to delete") });
 
   const filtered = (returns as any[]).filter((r: any) => !searchQuery || r.org_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.dpco_name?.toLowerCase().includes(searchQuery.toLowerCase()));

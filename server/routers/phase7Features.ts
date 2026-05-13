@@ -9,6 +9,7 @@ import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, c
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
+import { logger } from "../logger";
 
 // ── Helper: execute raw SQL ───────────────────────────────────────────────────
 async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, unknown>[]> {
@@ -64,7 +65,7 @@ export const changelogRouter = router({
          ON CONFLICT (user_id) DO UPDATE
            SET last_seen_changelog_version = '${version}', updated_at = NOW()`
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: true };
     }),
 });
@@ -182,7 +183,7 @@ export const themePrefsRouter = router({
       } catch {
         // Silently ignore if table doesn't exist yet
       }
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: true };
     }),
 });

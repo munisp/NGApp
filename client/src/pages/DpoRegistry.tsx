@@ -21,7 +21,7 @@ export default function DpoRegistry() {
 
   const { data: appointments = [], refetch, isLoading } = trpc.dpoRegistry.list.useQuery();
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.dpoRegistry.create.useMutation({ onSuccess: () => { toast.success("DPO appointment registered"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.dpoRegistry.create.useMutation({ onSuccess: () => { toast.success("DPO appointment registered"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.dpoRegistry.update.useMutation({ onSuccess: () => { toast.success("DPO record updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -32,7 +32,7 @@ export default function DpoRegistry() {
       utils.dpoRegistry.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete DPO appointment"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (appointments as any[]).filter((r: any) => !searchQuery || r.dpo_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.org_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 

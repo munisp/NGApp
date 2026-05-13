@@ -665,7 +665,7 @@ export default function SectorComplianceDashboard() {
 function ResolveEventButton({ eventId, onResolved }: { eventId: number; onResolved: () => void }) {
   const resolveMutation = trpc.sectorEvents.resolve.useMutation({
     onSuccess: () => { toast.success("Event resolved"); onResolved(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   return (
     <Button

@@ -53,12 +53,12 @@ export default function FraudAlerts() {
       setForm({ bankId: "", transactionRef: "", transactionAmount: "", accountNumber: "", alertType: "velocity_breach", riskScore: "75", mlModel: "", mlConfidence: "", ruleTriggered: "" });
       refetch();
     },
-    onError: (e: { message: string }) => toast.error("Failed to create alert", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Failed to create alert", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const updateMutation = trpc.banking.fraud.investigate.useMutation({
     onSuccess: () => { toast.success("Alert status updated"); refetch(); },
-    onError: (e: { message: string }) => toast.error("Update failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("Update failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = (data?.rows ?? []) as any[];

@@ -31,15 +31,15 @@ export default function Phase13Article40() {
       toast.success("Article 40 framework record created");
       setForm({ code_name: "", sector: "", description: "", submitted_by: "", document_url: "" });
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateStatus = trpc.phase13.article40.updateStatus.useMutation({
     onSuccess: () => { utils.phase13.article40.list.invalidate(); toast.success("Status updated"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteRecord = trpc.phase13.article40.delete.useMutation({
     onSuccess: () => { utils.phase13.article40.list.invalidate(); toast.success("Record deleted"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (records as any[]) ?? [];

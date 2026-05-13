@@ -37,15 +37,15 @@ export default function CertificateLifecycle() {
 
   const renewMut = trpc.certLifecycle.renew.useMutation({
     onSuccess: () => { toast.success("Certificate renewed successfully"); setRenewOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const revokeMut = trpc.certLifecycle.revoke.useMutation({
     onSuccess: () => { toast.success("Certificate revoked"); setRevokeOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const issueMut = trpc.certLifecycle.renew.useMutation({
     onSuccess: () => { toast.success("Certificate issued"); setIssueOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const filtered = (certs ?? []).filter((c: any) =>

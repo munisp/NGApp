@@ -10,7 +10,7 @@ const timerColor: Record<string,string> = { completed:"bg-green-100 text-green-8
 export default function Article40Tracker() {
   const { data: timers, refetch } = trpc.article40Tracker.activeTimers.useQuery();
   const { data: sla } = trpc.article40Tracker.slaMetrics.useQuery();
-  const notifyM = trpc.article40Tracker.notifyNdpc.useMutation({ onSuccess:(r)=>{ toast.success(`NDPC notified — Ref: ${r.referenceNumber}`); refetch(); }, onError:(e)=>toast.error(e.message) });
+  const notifyM = trpc.article40Tracker.notifyNdpc.useMutation({ onSuccess:(r)=>{ toast.success(`NDPC notified — Ref: ${r.referenceNumber}`); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   const fmtH = (h:number) => h<0?`${Math.abs(Math.round(h))}h overdue`:h<1?`${Math.round(h*60)}m left`:`${Math.round(h)}h left`;
   const slaRate = sla ? Math.round((parseInt(sla.on_time??'0')/Math.max(1,parseInt(sla.notified??'0')))*100) : 0;
   return (

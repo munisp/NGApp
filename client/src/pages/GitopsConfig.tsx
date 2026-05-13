@@ -20,11 +20,11 @@ export default function GitopsConfig() {
 
   const createMutation = trpc.gitopsConfig.snapshot.useMutation({
     onSuccess: () => { toast.success("Config snapshot created"); setShowSnapshot(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const applyMutation = trpc.gitopsConfig.applySnapshot.useMutation({
     onSuccess: () => { toast.success("Config applied successfully"); setShowDetail(null); utils.gitopsConfig.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);

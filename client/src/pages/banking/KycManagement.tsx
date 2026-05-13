@@ -94,12 +94,12 @@ export default function KycManagement() {
       setForm({ bankId: "1", fullName: "", dateOfBirth: "", bvn: "", nationality: "NG", nin: "", phoneNumber: "", email: "", address: "", tier: "tier1" });
       refetch();
     },
-    onError: (e) => toast.error("Create failed", { description: e.message }),
+    onError: (e) => toast.error("Create failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const reviewMutation = trpc.banking.kyc.review.useMutation({
     onSuccess: () => { toast.success("KYC reviewed"); refetch(); },
-    onError: (e) => toast.error("Review failed", { description: e.message }),
+    onError: (e) => toast.error("Review failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const handleCreate = () => {

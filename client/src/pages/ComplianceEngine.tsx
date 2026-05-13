@@ -142,15 +142,15 @@ export default function ComplianceEngine() {
   const [deletePolicyId, setDeletePolicyId] = useState<number | null>(null);
   const deletePolicy = trpc.compliance.deletePolicy.useMutation({
     onSuccess: () => { utils.compliance.policies.invalidate(); toast.success("Policy deleted"); setDeletePolicyId(null); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const createViolation = trpc.compliance.createViolation.useMutation({
     onSuccess: () => { utils.compliance.violations.invalidate(); utils.dashboard.stats.invalidate(); setShowCreateViolation(false); setViolationForm({ organizationId: "", title: "", description: "", severity: "medium" }); toast.success("Violation logged"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const resolveViolation = trpc.compliance.resolveViolation.useMutation({
     onSuccess: () => { utils.compliance.violations.invalidate(); utils.dashboard.stats.invalidate(); toast.success("Violation resolved"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const [showCreateViolation, setShowCreateViolation] = useState(false);
   const [violationForm, setViolationForm] = useState({ organizationId: "", title: "", description: "", severity: "medium" });

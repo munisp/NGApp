@@ -21,7 +21,7 @@ export default function AiRiskEngine() {
   const orgScore = scoreOrgMut.data;
   const scoreAllMut = trpc.aiRiskScoring.scoreAll.useMutation({
     onSuccess: (d) => { toast.success(`Scored ${d.scored} organizations`); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const riskDist = (leaderboard as any[]).reduce((acc: Record<string, number>, o: any) => {

@@ -108,7 +108,7 @@ function CreateInvoiceDialog({ onCreated }: { onCreated: () => void }) {
       setOpen(false);
       onCreated();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -292,7 +292,7 @@ function RecordPaymentDialog({
       setOpen(false);
       onPaid();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (
@@ -409,7 +409,7 @@ function SendInvoiceEmailDialog({
       setOpen(false);
       onSent();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (
@@ -475,7 +475,7 @@ function StripePayButton({ invoiceId, onPaid }: { invoiceId: number; onPaid: () 
       toast.info("Redirecting to Stripe Checkout...");
       window.open(data.url, "_blank");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

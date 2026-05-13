@@ -56,11 +56,11 @@ export default function Phase13PenaltyCalculator() {
       utils.phase13.penaltyCalculator.list.invalidate();
       toast.success("Penalty calculated successfully");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const approve = trpc.phase13.penaltyCalculator.approve.useMutation({
     onSuccess: () => { utils.phase13.penaltyCalculator.list.invalidate(); toast.success("Penalty approved"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (calculations as any[]) ?? [];

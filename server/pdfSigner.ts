@@ -15,6 +15,7 @@
 import forge from "node-forge";
 import fs from "fs";
 import path from "path";
+import { logger } from "./logger";
 
 const CERT_PATH = path.resolve(process.cwd(), "certs/ndsep-signing.crt");
 const KEY_PATH  = path.resolve(process.cwd(), "certs/ndsep-signing.key");
@@ -63,7 +64,7 @@ export async function signPdf(pdfBuffer: Buffer): Promise<Buffer> {
   const contentsTag = `/Contents <${placeholder.slice(0, 12)}`;
   const contentsStart = combined.indexOf(Buffer.from(contentsTag));
   if (contentsStart === -1) {
-    console.warn("[PdfSigner] Placeholder not found — returning unsigned PDF");
+    logger.warn("[PdfSigner] Placeholder not found — returning unsigned PDF");
     return pdfBuffer;
   }
 
@@ -104,7 +105,7 @@ export async function signPdf(pdfBuffer: Buffer): Promise<Buffer> {
   ).toString("hex");
 
   if (derHex.length > PLACEHOLDER_LEN) {
-    console.warn(`[PdfSigner] Signature too large (${derHex.length} > ${PLACEHOLDER_LEN}) — unsigned`);
+    logger.warn(`[PdfSigner] Signature too large (${derHex.length} > ${PLACEHOLDER_LEN}) — unsigned`);
     return pdfBuffer;
   }
 
@@ -149,7 +150,7 @@ export async function rotateCertificate(): Promise<{ subject: string; issuer: st
   // Invalidate cache
   _cert = cert;
   _key  = keys.privateKey as forge.pki.rsa.PrivateKey;
-  console.log(`[PdfSigner] Certificate rotated. New serial: ${cert.serialNumber}`);
+  logger.info(`[PdfSigner] Certificate rotated. New serial: ${cert.serialNumber}`);
   return getSigningCertInfo();
 }
 

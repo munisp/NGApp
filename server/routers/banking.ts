@@ -15,6 +15,7 @@ import { TRPCError } from "@trpc/server";
 import pg from "pg";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
 function getPool(): InstanceType<typeof Pool> {
@@ -113,7 +114,7 @@ const bankingRouter = router({
           input.ceoName ?? null, input.totalAssets ?? null, input.capitalAdequacyRatio ?? null,
           input.nonPerformingLoanRatio ?? null, input.dataProtectionOfficer ?? null, input.dpcoOrgId ?? null]);
       await broadcastUpdate("banking_institution_created", { name: input.name, licenseType: input.licenseType });
-      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "institution_created", name: input.name, licenseType: input.licenseType, cbnCode: input.cbnCode }).catch(() => {});
+      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "institution_created", name: input.name, licenseType: input.licenseType, cbnCode: input.cbnCode }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -145,7 +146,7 @@ const bankingRouter = router({
       sets.push("updated_at = NOW()");
       params.push(id);
       await query(`UPDATE banking_institutions SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -256,7 +257,7 @@ const kycRouter = router({
           input.nationality, input.bvn ?? null, input.nin ?? null, input.phoneNumber ?? null,
           input.email ?? null, input.address ?? null, input.selfieUrl ?? null,
           input.idDocumentType ?? null, input.idDocumentUrl ?? null, input.tier, expiresAt.toISOString()]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, referenceId: refId };
     }),
 
@@ -335,7 +336,7 @@ const kycRouter = router({
           input.addressVerified !== undefined ? (input.addressVerified ? 1 : 0) : null,
           ctx.user.name ?? ctx.user.email ?? "System",
           input.notes ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, newStatus };
     }),
 
@@ -496,7 +497,7 @@ const amlRouter = router({
         await broadcastEvent("aml_case_escalated", { caseRef, caseType: input.caseType, riskScore: input.riskScore });
         await triggerWorkflow("AmlEscalationWorkflow", `aml-${caseRef}`, { caseRef, caseType: input.caseType, riskScore: input.riskScore });
       }
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, caseRef, status };
     }),
 
@@ -520,7 +521,7 @@ const amlRouter = router({
       if (input.status.startsWith("closed")) { sets.push("closed_at = NOW()"); }
       params.push(input.id);
       await query(`UPDATE aml_cases SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -598,7 +599,7 @@ const watchlistRouter = router({
         params.push(input.passportNumber);
       }
       const matches = await query(sql, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { matches, screeningRef: genRef("SCR"), matchCount: matches.length };
     }),
 
@@ -623,7 +624,7 @@ const watchlistRouter = router({
       `, [entityId, input.entityType, input.primaryName, JSON.stringify(input.aliases),
           input.dateOfBirth ?? null, input.nationality ?? null, input.passportNumber ?? null,
           input.source, input.category, input.reason]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, entityId };
     }),
 
@@ -631,7 +632,7 @@ const watchlistRouter = router({
     .input(z.object({ id: z.number(), reason: z.string().min(5) }))
     .mutation(async ({ input }) => {
       await query(`UPDATE watchlist_entries SET is_active = 0, delisting_date = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -721,7 +722,7 @@ const paymentsRouter = router({
       `, [sessionId, input.senderBankCode, null, input.senderAccountNumber, input.senderAccountName ?? null,
           input.receiverBankCode, null, input.receiverAccountNumber, input.receiverAccountName ?? null,
           input.amount, input.narration ?? null, nibssRef, input.channelCode ?? "API", amlFlagged ? 1 : 0]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, sessionId, nibssRef, amlFlagged };
     }),
 
@@ -778,7 +779,7 @@ const paymentsRouter = router({
       `, [reference, input.senderBankCode, input.senderAccountNumber ?? null, input.receiverBankCode,
           input.receiverAccountNumber ?? null, input.amount, input.narration ?? null,
           input.priority, settlementCycle, cbnRef]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, reference, cbnRef, settlementCycle };
     }),
 
@@ -860,7 +861,7 @@ const swiftRouter = router({
           input.orderingCustomer ?? null, input.beneficiaryCustomer ?? null,
           input.remittanceInfo ?? null, input.correspondentBic ?? null,
           sanctionsScreened ? 1 : 0, sanctionsFlagged ? 1 : 0]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, messageRef, sanctionsScreened, sanctionsFlagged };
     }),
 
@@ -873,7 +874,7 @@ const swiftRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Cannot send SWIFT message: sanctions flag is set. Escalate to compliance." });
       }
       await query(`UPDATE swift_messages SET status = 'sent', sent_at = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -947,7 +948,7 @@ const fraudRouter = router({
       `, [alertRef, input.bankId ?? null, input.transactionRef ?? null, input.transactionAmount ?? null,
           input.accountNumber ?? null, input.alertType, input.riskScore, input.mlModel ?? null,
           input.mlConfidence ?? null, input.ruleTriggered ?? null, autoBlocked ? new Date().toISOString() : null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, alertRef, autoBlocked };
     }),
 
@@ -976,7 +977,7 @@ const fraudRouter = router({
       if (newStatus === "resolved") { sets.push("resolved_at = NOW()"); }
       params.push(input.id);
       await query(`UPDATE fraud_alerts SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, newStatus };
     }),
 
@@ -1046,7 +1047,7 @@ const cbnReportsRouter = router({
       `, [reportRef, input.bankId, input.reportType, input.reportingPeriod,
           input.filingDeadline, input.totalTransactions ?? null, input.totalAmount ?? null,
           input.preparedBy ?? null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, reportRef };
     }),
 
@@ -1066,7 +1067,7 @@ const cbnReportsRouter = router({
           cbn_ack_ref = ?, approved_by = COALESCE(?, approved_by), updated_at = NOW() 
         WHERE id = ?
       `, [cbnAckRef, input.approvedBy ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, cbnAckRef };
     }),
 
@@ -1149,7 +1150,7 @@ const correspondentRouter = router({
           input.relationshipType, input.nostroAccount ?? null, input.vostroAccount ?? null,
           input.dailyLimit ?? null, input.monthlyLimit ?? null, input.kycCompleted ? 1 : 0,
           input.amlRiskRating, nextReview.toISOString(), input.notes ?? null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -1162,7 +1163,7 @@ const correspondentRouter = router({
     .mutation(async ({ input }) => {
       await query(`UPDATE correspondent_banks SET status = ?, notes = COALESCE(?, notes), updated_at = NOW() WHERE id = ?`,
         [input.status, input.notes ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 

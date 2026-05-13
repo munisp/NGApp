@@ -72,7 +72,7 @@ function UserManagementTable() {
   const { data: userList } = trpc.users.list.useQuery();
   const updateRole = trpc.users.updateRole.useMutation({
     onSuccess: () => { utils.users.list.invalidate(); toast.success("Role updated"); },
-    onError: (e) => toast.error("Failed: " + e.message),
+    onError: (e) => toast.error("Failed: " + (e instanceof Error ? e.message : String(e))),
   });
   if (!userList?.length) return <p className="text-xs text-muted-foreground p-4">No users found.</p>;
   return (
@@ -155,7 +155,7 @@ export default function OrchestrationDashboard() {
 
   const sendDigest = trpc.system.sendDigest.useMutation({
     onSuccess: (r) => toast.success(`Digest sent: ${r.sent} delivered, ${r.failed} failed`),
-    onError: (e) => toast.error("Send failed: " + e.message),
+    onError: (e) => toast.error("Send failed: " + (e instanceof Error ? e.message : String(e))),
   });
 
   const previewDigest = trpc.system.previewDigest.useMutation({
@@ -165,7 +165,7 @@ export default function OrchestrationDashboard() {
       setDigestOrgName(r.orgName);
       setShowDigestPreview(true);
     },
-    onError: (e) => toast.error("Preview failed: " + e.message),
+    onError: (e) => toast.error("Preview failed: " + (e instanceof Error ? e.message : String(e))),
   });
 
   const [tbOrgId, setTbOrgId] = useState("");
@@ -202,11 +202,11 @@ export default function OrchestrationDashboard() {
   // Action mutations
   const syncApiGateway = trpc.orchestration.apiGatewaySync.useMutation({
     onSuccess: (r) => { setApiGatewaySync(r); toast.success(r.success ? `Synced ${r.routesSynced ?? 0} routes` : `Sync failed: ${r.error}`); },
-    onError: (e) => toast.error("Sync failed: " + e.message),
+    onError: (e) => toast.error("Sync failed: " + (e instanceof Error ? e.message : String(e))),
   });
   const publishEvent = trpc.orchestration.eventBusPublish.useMutation({
     onSuccess: (r) => toast.success(r.success ? "Event published to " + ebTopic : "Publish failed: " + r.error),
-    onError: (e) => toast.error("Publish failed: " + e.message),
+    onError: (e) => toast.error("Publish failed: " + (e instanceof Error ? e.message : String(e))),
   });
 
   const serviceMap = Object.fromEntries(services.map((s) => [s.service, s]));

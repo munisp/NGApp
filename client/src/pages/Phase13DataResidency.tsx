@@ -32,11 +32,11 @@ export default function Phase13DataResidency() {
       toast.success("Data residency location added");
       setForm({ data_category: "", storage_country: "", storage_region: "", provider_name: "", provider_type: "", transfer_mechanism: "", volume_gb: "", adequacy_decision: false });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteRecord = trpc.phase13.dataResidency.delete.useMutation({
     onSuccess: () => { utils.phase13.dataResidency.list.invalidate(); utils.phase13.dataResidency.getByCountry.invalidate(); toast.success("Location deleted"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (records as any[]) ?? [];

@@ -97,7 +97,7 @@ export default function EngageDpco() {
         description: `Reference: ${data.referenceToken}`,
       });
     },
-    onError: (e) => toast.error("Submission failed", { description: e.message }),
+    onError: (e) => toast.error("Submission failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const canSubmit = form.orgName && form.contactName && form.contactEmail && selectedDpco;

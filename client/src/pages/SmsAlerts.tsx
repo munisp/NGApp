@@ -17,7 +17,7 @@ export default function SmsAlerts() {
   const { data: history = [], refetch } = trpc.smsAlerts.getAlertHistory.useQuery({ limit: 50 });
   const sendBreachMut = trpc.smsAlerts.sendBreachAlert.useMutation({
     onSuccess: (d) => { toast.success(d.sms.success ? `SMS sent successfully` : `SMS failed: ${d.sms.error ?? "unknown error"}`); setSendOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const statCards = [

@@ -19,15 +19,15 @@ export default function ModelRegistry() {
 
   const registerMutation = trpc.modelRegistry.register.useMutation({
     onSuccess: () => { toast.success("Model registered successfully"); setShowRegister(false); setForm({ name: "", version: "", algorithm: "", framework: "", accuracy: "", f1Score: "", aucRoc: "", description: "" }); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deployMutation = trpc.modelRegistry.deploy.useMutation({
     onSuccess: () => { toast.success("Model deployed"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const retireMutation = trpc.modelRegistry.retire.useMutation({
     onSuccess: () => { toast.success("Model retired"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const models = (Array.isArray(modelsRaw) ? modelsRaw : []).filter(

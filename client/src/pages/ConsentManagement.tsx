@@ -47,11 +47,11 @@ export default function ConsentManagement() {
 
   const createMutation = trpc.consent.create.useMutation({
     onSuccess: () => { toast.success("Consent record created"); setShowCreate(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateMutation = trpc.consent.update.useMutation({
     onSuccess: () => { toast.success("Consent updated"); setShowCreate(false); utils.consent.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);

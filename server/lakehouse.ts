@@ -76,9 +76,9 @@ export async function lakehouseHealth(): Promise<LakehouseHealthResult> {
     const catRes = await fetch(`${CATALOG_URL}/v1/config`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!catRes.ok) return { healthy: false, catalogUrl: CATALOG_URL, error: `HTTP ${catRes.status}` };
     return { healthy: true, catalogUrl: CATALOG_URL };
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] Health check failed: ${e.message}`);
-    return { healthy: false, catalogUrl: CATALOG_URL, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] Health check failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { healthy: false, catalogUrl: CATALOG_URL, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -91,8 +91,8 @@ export async function lakehouseListNamespaces(): Promise<string[]> {
     if (!res.ok) return [];
     const data = await res.json() as any;
     return Array.isArray(data.namespaces) ? data.namespaces.map((n: any) => Array.isArray(n) ? n.join(".") : String(n)) : [];
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] listNamespaces failed: ${e.message}`);
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] listNamespaces failed: ${(e instanceof Error ? e.message : String(e))}`);
     return [];
   }
 }
@@ -108,9 +108,9 @@ export async function lakehouseCreateNamespace(namespace: string, properties?: R
     });
     if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
     return { success: true };
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] createNamespace(${namespace}) failed: ${e.message}`);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] createNamespace(${namespace}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -129,8 +129,8 @@ export async function lakehouseListTables(namespace = "ndsep"): Promise<Lakehous
       name: t.name,
       fullName: `${namespace}.${t.name}`,
     }));
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] listTables(${namespace}) failed: ${e.message}`);
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] listTables(${namespace}) failed: ${(e instanceof Error ? e.message : String(e))}`);
     return [];
   }
 }
@@ -158,9 +158,9 @@ export async function lakehouseQuery(
       rowCount: data.rowCount ?? data.rows?.length ?? 0,
       executionMs,
     };
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] query failed: ${e.message}`);
-    return { rows: [], rowCount: 0, executionMs: Date.now() - start, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] query failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { rows: [], rowCount: 0, executionMs: Date.now() - start, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -182,9 +182,9 @@ export async function lakehouseIngest(
     if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
     const data = await res.json() as any;
     return { success: true, rowsIngested: data.rowsIngested ?? records.length, snapshotId: data.snapshotId };
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] ingest(${namespace}.${table}) failed: ${e.message}`);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] ingest(${namespace}.${table}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 
@@ -202,9 +202,9 @@ export async function lakehouseCompact(table: string, namespace = "ndsep"): Prom
     if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
     const data = await res.json() as any;
     return { success: true, filesCompacted: data.filesCompacted };
-  } catch (e: any) {
-    logger.warn(`[Lakehouse] compact(${namespace}.${table}) failed: ${e.message}`);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    logger.warn(`[Lakehouse] compact(${namespace}.${table}) failed: ${(e instanceof Error ? e.message : String(e))}`);
+    return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
 }
 

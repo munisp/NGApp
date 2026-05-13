@@ -20,7 +20,7 @@ export default function AdequacyRegistry() {
   const [form, setForm] = useState({ countryCode: "", countryName: "", status: "pending", dataProtectionLaw: "", supervisoryAuthority: "", requiresAdditionalSafeguards: false, notes: "" });
 
   const { data: determinations = [], refetch, isLoading } = trpc.adequacy.list.useQuery();
-  const createMutation = trpc.adequacy.create.useMutation({ onSuccess: () => { toast.success("Adequacy determination added"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.adequacy.create.useMutation({ onSuccess: () => { toast.success("Adequacy determination added"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.adequacy.update.useMutation({ onSuccess: () => { toast.success("Determination updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -31,7 +31,7 @@ export default function AdequacyRegistry() {
       utils.adequacy.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete adequacy determination"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (determinations as any[]).filter((r: any) => !searchQuery || r.country_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.country_code?.toLowerCase().includes(searchQuery.toLowerCase()));
 

@@ -51,15 +51,15 @@ function DpcoAiToolsInner() {
 
   const gapMutation = trpc.dpcoAi.runGapAnalysis.useMutation({
     onSuccess: () => toast.success("AI Gap Analysis complete"),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const carMutation = trpc.dpcoAi.generateCarNarrative.useMutation({
     onSuccess: () => toast.success("CAR Narrative generated"),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const riskMutation = trpc.dpcoAi.predictClientRisk.useMutation({
     onSuccess: () => toast.success("Risk prediction complete"),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); toast.success("Copied"); };

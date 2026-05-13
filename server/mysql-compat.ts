@@ -126,10 +126,11 @@ export class MySqlCompatPool {
         rowCount: result.affectedRows ?? 0,
         insertId: result.insertId,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Re-throw with original SQL for debugging
-      const e = new Error(`[MySQL] ${err.message}\nSQL: ${converted.substring(0, 200)}`);
-      (e as any).code = err.code;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const e = new Error(`[MySQL] ${errMsg}\nSQL: ${converted.substring(0, 200)}`);
+      (e as NodeJS.ErrnoException).code = (err as NodeJS.ErrnoException).code;
       throw e;
     }
   }

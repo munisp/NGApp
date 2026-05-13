@@ -21,8 +21,8 @@ export default function RetentionPolicies() {
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const createMutation = trpc.retention.create.useMutation({ onSuccess: () => { toast.success("Retention policy created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
-  const updateMutation = trpc.retention.update.useMutation({ onSuccess: () => { toast.success("Policy updated"); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.retention.create.useMutation({ onSuccess: () => { toast.success("Retention policy created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
+  const updateMutation = trpc.retention.update.useMutation({ onSuccess: () => { toast.success("Policy updated"); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const deleteMutation = trpc.retention.delete.useMutation({ onSuccess: () => { toast.success("Retention policy deleted"); setDeleteId(null); utils.retention.list.invalidate().catch(() => {}); }, onError: (err) => toast.error(err.message || "Failed to delete") });
 
   const filtered = (policies as any[]).filter((r: any) => !searchQuery || r.name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.data_category?.toLowerCase().includes(searchQuery.toLowerCase()));

@@ -31,11 +31,11 @@ export default function Phase13DpoRegistry() {
       toast.success("DPO registered successfully");
       setForm({ organization_id: "", dpo_name: "", dpo_email: "", dpo_phone: "", dpco_name: "", notes: "" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const verify = trpc.phase13.dpoRegistry.verify.useMutation({
     onSuccess: () => { utils.phase13.dpoRegistry.list.invalidate(); toast.success("DPO credential status updated"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (records as any[]) ?? [];

@@ -7,6 +7,7 @@ import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, flu
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 const { Pool } = pg;
 let _aiPool: InstanceType<typeof Pool> | null = null;
 function getPool() {
@@ -126,7 +127,7 @@ Assess compliance against all 15 NDPA 2023 controls. Return a JSON object with a
         [input.engagementId, result.overallScore, result.executiveSummary, JSON.stringify(result.ratings)]
       );
 
-      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return {
         success: true,
         overallScore: result.overallScore,
@@ -172,7 +173,7 @@ Assess compliance against all 15 NDPA 2023 controls. Return a JSON object with a
     .mutation(async ({ input }) => {
       const ratingsText = input.controlRatings.map(r => {
         const control = NDPA_CONTROLS.find(c => c.id === r.controlId);
-        emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return `${r.controlId} (${control?.name || r.controlId}): ${r.rating}${r.notes ? ` — ${r.notes}` : ""}`;
       }).join("\n");
 
@@ -254,7 +255,7 @@ Return as JSON with these section keys.`;
         ]
       );
 
-      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, narrative };
     }),
 
@@ -372,7 +373,7 @@ Provide a risk score (0-100), risk level, primary risk factors, and recommended 
         ]
       );
 
-      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, prediction };
     }),
 

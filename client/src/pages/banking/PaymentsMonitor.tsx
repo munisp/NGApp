@@ -63,7 +63,7 @@ export default function PaymentsMonitor() {
       setNipForm({ senderBankCode: "", senderAccountNumber: "", senderAccountName: "", receiverBankCode: "", receiverAccountNumber: "", receiverAccountName: "", amount: "", narration: "", channelCode: "API" });
       refetchNip();
     },
-    onError: (e: { message: string }) => toast.error("NIP initiation failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("NIP initiation failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rtgsMutation = trpc.banking.payments.initiateRtgs.useMutation({
@@ -73,7 +73,7 @@ export default function PaymentsMonitor() {
       setRtgsForm({ senderBankCode: "", senderAccountNumber: "", receiverBankCode: "", receiverAccountNumber: "", amount: "", narration: "", priority: "normal" });
       refetchRtgs();
     },
-    onError: (e: { message: string }) => toast.error("RTGS initiation failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("RTGS initiation failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const nipRows = (nipData?.rows ?? []) as any[];

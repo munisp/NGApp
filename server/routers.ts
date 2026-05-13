@@ -239,6 +239,7 @@ import {
 } from "./routers/phase11Features";
 import { phase12Router } from "./routers/phase12Features";
 import { phase13Router } from "./routers/phase13Features";
+import { logger } from "./logger";
 
 export const appRouter = router({
   dpco: dpcoRouter,
@@ -392,7 +393,7 @@ export const appRouter = router({
             ``,
             `Download the full report from the NDSEP Framework Dashboard.`,
           ].join("\n"),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return reportData;
       }),
   }),
@@ -417,7 +418,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createOrganization(input);
-        createAuditLog({ userId: ctx.user.id, action: "org.create", resourceType: "organization", resourceId: result?.id, details: `Created organization: ${input.name}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "org.create", resourceType: "organization", resourceId: result?.id, details: `Created organization: ${input.name}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -433,14 +434,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const result = await updateOrganization(id, data);
-        createAuditLog({ userId: ctx.user.id, action: "org.update", resourceType: "organization", resourceId: id, details: `Updated organization #${id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "org.update", resourceType: "organization", resourceId: id, details: `Updated organization #${id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteOrganization(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "org.delete", resourceType: "organization", resourceId: input.id, details: `Deleted organization #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "org.delete", resourceType: "organization", resourceId: input.id, details: `Deleted organization #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -467,7 +468,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createAsset(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "asset.create", resourceType: "asset", resourceId: result?.id, details: `Created asset: ${input.name}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "asset.create", resourceType: "asset", resourceId: result?.id, details: `Created asset: ${input.name}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -481,14 +482,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const result = await updateAsset(id, data);
-        createAuditLog({ userId: ctx.user.id, action: "asset.update", resourceType: "asset", resourceId: id, details: `Updated asset #${id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "asset.update", resourceType: "asset", resourceId: id, details: `Updated asset #${id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteAsset(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "asset.delete", resourceType: "asset", resourceId: input.id, details: `Deleted asset #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "asset.delete", resourceType: "asset", resourceId: input.id, details: `Deleted asset #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -539,7 +540,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { createComplianceViolation } = await import("./db");
         const result = await createComplianceViolation(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "violation.create", resourceType: "violation", resourceId: result?.id, details: `Manual violation: ${input.title}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "violation.create", resourceType: "violation", resourceId: result?.id, details: `Manual violation: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Publish violation event via Dapr pub/sub (Kafka topic: ndsep.violation.detected)
         daprPublish("ndsep.violation.detected", {
           violationId: result?.id,
@@ -548,9 +549,9 @@ export const appRouter = router({
           title: input.title,
           createdBy: ctx.user.id,
           ts: new Date().toISOString(),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Invalidate dashboard cache
-        invalidateComplianceCaches(input.organizationId).catch(() => {});
+        invalidateComplianceCaches(input.organizationId).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     resolveViolation: protectedProcedure
@@ -558,7 +559,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { resolveComplianceViolation } = await import("./db");
         const result = await resolveComplianceViolation(input.id, input.notes);
-        createAuditLog({ userId: ctx.user.id, action: "violation.resolve", resourceType: "violation", resourceId: input.id, details: input.notes ?? "Resolved" }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "violation.resolve", resourceType: "violation", resourceId: input.id, details: input.notes ?? "Resolved" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -580,7 +581,7 @@ export const appRouter = router({
         notifyOwner({
           title: `[NDSEP] Role change: User #${input.userId} → ${input.role}`,
           content: `Actor: User #${ctx.user.id} (${ctx.user.name ?? ctx.user.email ?? "unknown"}) changed User #${input.userId}'s role to "${input.role}" at ${new Date().toISOString()}.`,
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -602,7 +603,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createCatalogEntry(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "catalog.create", resourceType: "catalog_entry", resourceId: result?.id, details: `Created catalog entry: ${input.name}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "catalog.create", resourceType: "catalog_entry", resourceId: result?.id, details: `Created catalog entry: ${input.name}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -617,14 +618,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const result = await updateCatalogEntry(id, data);
-        createAuditLog({ userId: ctx.user.id, action: "catalog.update", resourceType: "catalog_entry", resourceId: id, details: `Updated catalog entry #${id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "catalog.update", resourceType: "catalog_entry", resourceId: id, details: `Updated catalog entry #${id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteCatalogEntry(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "catalog.delete", resourceType: "catalog_entry", resourceId: input.id, details: `Deleted catalog entry #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "catalog.delete", resourceType: "catalog_entry", resourceId: input.id, details: `Deleted catalog entry #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -638,14 +639,14 @@ export const appRouter = router({
       .input(z.object({ alertId: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await resolveSecurityAlert(input.alertId, ctx.user.id);
-        createAuditLog({ userId: ctx.user.id, action: "siem.resolveAlert", resourceType: "security_alert", resourceId: input.alertId, details: `Resolved security alert #${input.alertId}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "siem.resolveAlert", resourceType: "security_alert", resourceId: input.alertId, details: `Resolved security alert #${input.alertId}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     bulkResolveAlerts: protectedProcedure
       .input(z.object({ alertIds: z.array(z.number().int().positive()).min(1).max(100) }))
       .mutation(async ({ input, ctx }) => {
         await Promise.all(input.alertIds.map(id => resolveSecurityAlert(id, ctx.user.id)));
-        createAuditLog({ userId: ctx.user.id, action: "siem.bulkResolveAlerts", resourceType: "security_alert", resourceId: input.alertIds[0], details: `Bulk resolved ${input.alertIds.length} alerts: [${input.alertIds.join(", ")}]` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "siem.bulkResolveAlerts", resourceType: "security_alert", resourceId: input.alertIds[0], details: `Bulk resolved ${input.alertIds.length} alerts: [${input.alertIds.join(", ")}]` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { resolved: input.alertIds.length };
       }),
     createAlert: protectedProcedure
@@ -659,7 +660,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { createSecurityAlert } = await import("./db");
         const alert = await createSecurityAlert(input);
-        createAuditLog({ userId: ctx.user.id, action: "siem.createAlert", resourceType: "security_alert", resourceId: alert.id, details: `Manual alert created: ${input.alertType} (${input.severity})` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "siem.createAlert", resourceType: "security_alert", resourceId: alert.id, details: `Manual alert created: ${input.alertType} (${input.severity})` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return alert;
       }),
     threatIntel: protectedProcedure
@@ -703,8 +704,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await blockNetworkIp(input.orgId, input.ipAddress, input.reason, ctx.user.id);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.orgId, action: "network.blockIp", resourceType: "network_event", details: `Blocked IP ${input.ipAddress}: ${input.reason}` }).catch(() => {});
-        notifyOwner({ title: `[NDSEP] IP Blocked: ${input.ipAddress}`, content: `Org #${input.orgId} | Reason: ${input.reason} | By: User #${ctx.user.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.orgId, action: "network.blockIp", resourceType: "network_event", details: `Blocked IP ${input.ipAddress}: ${input.reason}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        notifyOwner({ title: `[NDSEP] IP Blocked: ${input.ipAddress}`, content: `Org #${input.orgId} | Reason: ${input.reason} | By: User #${ctx.user.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -746,14 +747,14 @@ export const appRouter = router({
               dueDate: input.dueDate ? new Date(input.dueDate) : new Date(Date.now() + 30 * 86_400_000),
               description: input.description,
               portalUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? ""}/portal`,
-            }).catch(() => {});
+            }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           }
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Notify platform owner
         notifyOwner({
           title: `[NDSEP] Penalty Issued: ${input.amount.toLocaleString()} ${input.currency}`,
           content: `Org #${input.organizationId} | Amount: ${input.amount} ${input.currency} | By: User #${ctx.user.id} | ${input.description}`,
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Publish penalty event via Dapr pub/sub (Kafka topic: ndsep.penalty.issued)
         daprPublish("ndsep.penalty.issued", {
           penaltyId: penalty?.id,
@@ -762,7 +763,7 @@ export const appRouter = router({
           currency: input.currency,
           issuedBy: ctx.user.id,
           ts: new Date().toISOString(),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Publish directly to Kafka (dual-write for reliability)
         publishPenaltyIssued({
           penaltyId: penalty?.id ?? 0,
@@ -771,7 +772,7 @@ export const appRouter = router({
           currency: input.currency,
           reason: input.description,
           issuedBy: String(ctx.user.id),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Create double-entry ledger record in TigerBeetle (fire-and-forget)
         createTigerBeetleTransaction({
           orgId: String(input.organizationId),
@@ -781,9 +782,9 @@ export const appRouter = router({
           type: "penalty",
           description: input.description,
           issuedBy: String(ctx.user.id),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Invalidate dashboard cache
-        invalidateCertificateCaches(input.organizationId).catch(() => {});
+        invalidateCertificateCaches(input.organizationId).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Create in-app notification (fire-and-forget)
         createInAppNotification({
           title: `Penalty Issued: ${input.currency} ${input.amount.toLocaleString()}`,
@@ -794,7 +795,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           actionUrl: "/financial",
           metadata: { penaltyId: penalty?.id, amount: input.amount, currency: input.currency },
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return penalty;
       }),
     updatePenaltyStatus: protectedProcedure
@@ -878,9 +879,9 @@ export const appRouter = router({
             type: "settlement",
             description: `Appeal ${input.appealId} upheld — penalty settled`,
             issuedBy: String(ctx.user.id),
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
-        createAuditLog({ userId: ctx.user.id, action: "financial.reviewAppeal", resourceType: "penalty_appeal", resourceId: input.appealId, details: `Appeal decision: ${input.decision}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "financial.reviewAppeal", resourceType: "penalty_appeal", resourceId: input.appealId, details: `Appeal decision: ${input.decision}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     payPenalty: protectedProcedure
@@ -901,7 +902,7 @@ export const appRouter = router({
           amountUsd: 0, // amount fetched inside orchestration from DB
           paymentMethod: input.paymentMethod,
           paymentRef: input.paymentRef,
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         if (input.contactEmail) {
           sendPenaltyNotice({
             to: input.contactEmail,
@@ -912,7 +913,7 @@ export const appRouter = router({
             dueDate: new Date(),
             description: "Payment received — processing",
             portalUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? ""}/portal`,
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return { success: true, status: "processing" };
       }),
@@ -947,9 +948,9 @@ export const appRouter = router({
                   dueDate: input.dueDate ? new Date(input.dueDate) : new Date(Date.now() + 30 * 86_400_000),
                   description: input.description,
                   portalUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? ""}/portal`,
-                }).catch(() => {});
+                }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
               }
-            }).catch(() => {});
+            }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
             results.push({ orgId, penaltyId: penalty?.id });
           } catch (e: any) {
             results.push({ orgId, error: e.message ?? "Failed" });
@@ -965,10 +966,10 @@ export const appRouter = router({
             type: "penalty",
             description: input.description,
             issuedBy: String(ctx.user.id),
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
-        createAuditLog({ userId: ctx.user.id, action: "financial.bulkIssuePenalties", resourceType: "penalty", resourceId: 0, details: `Bulk issued ${results.filter(r => r.penaltyId).length}/${input.organizationIds.length} penalties: ${input.description}` }).catch(() => {});
-        notifyOwner({ title: "Bulk Penalty Issuance", content: `${results.filter(r => r.penaltyId).length} penalties of ${input.currency} ${input.amount.toLocaleString()} issued by ${ctx.user.name ?? ctx.user.id}.` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "financial.bulkIssuePenalties", resourceType: "penalty", resourceId: 0, details: `Bulk issued ${results.filter(r => r.penaltyId).length}/${input.organizationIds.length} penalties: ${input.description}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        notifyOwner({ title: "Bulk Penalty Issuance", content: `${results.filter(r => r.penaltyId).length} penalties of ${input.currency} ${input.amount.toLocaleString()} issued by ${ctx.user.name ?? ctx.user.id}.` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { issued: results.filter(r => r.penaltyId).length, failed: results.filter(r => r.error).length, results };
       }),
   }),
@@ -1154,7 +1155,7 @@ export const appRouter = router({
               complianceScore: sub.complianceScore ?? 0,
               certifiedAt: new Date(),
               verifyBaseUrl: portalUrl.replace("/portal", ""),
-            }).catch(() => {});
+            }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           } else {
             sendPortalPhaseUpdate({
               to: sub.contactEmail,
@@ -1163,7 +1164,7 @@ export const appRouter = router({
               newPhase: result?.newPhase ?? input.decision,
               notes: input.notes || undefined,
               portalUrl,
-            }).catch(() => {});
+            }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           }
         }
         // Broadcast real-time portal update to org portal subscribers
@@ -1207,7 +1208,7 @@ export const appRouter = router({
             decision: input.decision,
             notes: input.notes,
             portalUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? ""}/portal`,
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // Broadcast real-time appeal update to org portal subscribers
         broadcast("org_portal", {
@@ -1316,7 +1317,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteTransferApproval(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "transfer.delete", resourceType: "transfer_approval", resourceId: input.id, details: `Deleted transfer approval #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "transfer.delete", resourceType: "transfer_approval", resourceId: input.id, details: `Deleted transfer approval #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -1504,7 +1505,7 @@ export const appRouter = router({
           resourceType: "temporal_workflow",
           resourceId: 0,
           details: `Started workflow type=${input.workflowType} id=${input.workflowId} via Temporal SDK (isCloud=${result.isCloud})`,
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     /** Describe a Temporal workflow execution by workflowId. */
@@ -1831,9 +1832,9 @@ export const appRouter = router({
             orgName: req.orgName ?? "Organization",
             message: input.responseNotes,
             portalUrl,
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
-        createAuditLog({ userId: ctx.user.id, action: "citizen_request.update", resourceType: "citizen_request", resourceId: id, details: `Status updated to ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "citizen_request.update", resourceType: "citizen_request", resourceId: id, details: `Status updated to ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Publish to Kafka
         const req2 = result as any;
         publishCitizenRightsRequest({
@@ -1842,14 +1843,14 @@ export const appRouter = router({
           requestType: req2?.requestType ?? "unknown",
           status: input.status,
           orgId: req2?.organizationId ?? 0,
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteCitizenRequest(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "citizen_request.delete", resourceType: "citizen_request", resourceId: input.id, details: `Deleted citizen_request #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "citizen_request.delete", resourceType: "citizen_request", resourceId: input.id, details: `Deleted citizen_request #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -1867,7 +1868,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createRemediationWorkflow(input);
-        createAuditLog({ userId: ctx.user.id, action: "remediation.create", resourceType: "remediation_workflow", resourceId: result?.id, details: `Created remediation workflow: ${input.actionType}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "remediation.create", resourceType: "remediation_workflow", resourceId: result?.id, details: `Created remediation workflow: ${input.actionType}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -1886,7 +1887,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteRemediationWorkflow(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "remediation.delete", resourceType: "remediation_workflow", resourceId: input.id, details: `Deleted remediation_workflow #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "remediation.delete", resourceType: "remediation_workflow", resourceId: input.id, details: `Deleted remediation_workflow #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -1965,7 +1966,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteTiaAssessment(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "tia.delete", resourceType: "tia_assessment", resourceId: input.id, details: `Deleted tia_assessment #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "tia.delete", resourceType: "tia_assessment", resourceId: input.id, details: `Deleted tia_assessment #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2005,7 +2006,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteConfigSnapshot(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "config_snapshot.delete", resourceType: "config_snapshot", resourceId: input.id, details: `Deleted config_snapshot #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "config_snapshot.delete", resourceType: "config_snapshot", resourceId: input.id, details: `Deleted config_snapshot #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2031,8 +2032,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createEnforcementCase(input);
-        createAuditLog({ userId: ctx.user.id, action: "enforcement.escalate", resourceType: "penalty", resourceId: input.penaltyId, details: `Escalated penalty #${input.penaltyId} to enforcement case` }).catch(() => {});
-        notifyOwner({ title: `[NDSEP] Penalty Escalated — Case Opened`, content: `Penalty #${input.penaltyId} for org #${input.organizationId} has been escalated. Case ref: ${result?.case_reference ?? 'N/A'}. Reason: ${input.escalationReason ?? 'Overdue payment'}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "enforcement.escalate", resourceType: "penalty", resourceId: input.penaltyId, details: `Escalated penalty #${input.penaltyId} to enforcement case` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        notifyOwner({ title: `[NDSEP] Penalty Escalated — Case Opened`, content: `Penalty #${input.penaltyId} for org #${input.organizationId} has been escalated. Case ref: ${result?.case_reference ?? 'N/A'}. Reason: ${input.escalationReason ?? 'Overdue payment'}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Fire-and-forget email to organization DPO
         getOrganizationById(input.organizationId).then(org => {
           const o = org as any;
@@ -2044,9 +2045,9 @@ export const appRouter = router({
               caseTitle: input.escalationReason ?? "Penalty Non-Payment — Enforcement Escalation",
               severity: "high",
               portalUrl: `${process.env.PLATFORM_URL ?? ""}/enforcement-cases`,
-            }).catch(() => {});
+            }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           }
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Publish to Kafka
         publishEnforcementCaseOpened({
           caseId: result?.id ?? 0,
@@ -2054,7 +2055,7 @@ export const appRouter = router({
           caseType: "penalty_escalation",
           severity: "high",
           openedBy: String(ctx.user.id),
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Create in-app notification (fire-and-forget)
         createInAppNotification({
           title: `Enforcement Case Opened: ${result?.case_reference ?? `NDSEP-CASE-${String(result?.id ?? 0).padStart(6, "0")}`}`,
@@ -2065,7 +2066,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           actionUrl: "/enforcement-cases",
           metadata: { caseId: result?.id, caseRef: result?.case_reference, penaltyId: input.penaltyId },
-        }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -2092,9 +2093,9 @@ export const appRouter = router({
             toStatus: input.status,
             note: input.note ?? input.resolutionNotes ?? null,
             nitdaRef: input.nitdaReferenceNumber ?? null,
-          }).catch(() => {});
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
-        createAuditLog({ userId: ctx.user.id, action: "enforcement.update", resourceType: "enforcement_case", resourceId: input.id, details: `Updated enforcement case #${input.id} status: ${input.status ?? 'unchanged'}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "enforcement.update", resourceType: "enforcement_case", resourceId: input.id, details: `Updated enforcement case #${input.id} status: ${input.status ?? 'unchanged'}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     timeline: protectedProcedure
@@ -2104,7 +2105,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteEnforcementCase(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "enforcement_case.delete", resourceType: "enforcement_case", resourceId: input.id, details: `Deleted enforcement_case #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "enforcement_case.delete", resourceType: "enforcement_case", resourceId: input.id, details: `Deleted enforcement_case #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2168,7 +2169,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { organizationId, ...settings } = input;
         canAccessOrg(ctx.user, organizationId);
-        createAuditLog({ userId: ctx.user.id, action: "settings.notification.update", resourceType: "organization", resourceId: organizationId, details: `Updated notification settings for org #${organizationId}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "settings.notification.update", resourceType: "organization", resourceId: organizationId, details: `Updated notification settings for org #${organizationId}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return upsertNotificationSettings(organizationId, settings);
       }),
   }),
@@ -2198,17 +2199,17 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         // BUSINESS RULE: Cross-border transfers require adequacy check
         if (input.crossBorderTransfer) {
-          kafkaProduce("ndsep.consent.cross_border_check", `consent-xb-${Date.now()}`, { orgId: input.organizationId, email: input.dataSubjectEmail, requiresAdequacy: true, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.consent.cross_border_check", `consent-xb-${Date.now()}`, { orgId: input.organizationId, email: input.dataSubjectEmail, requiresAdequacy: true, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Third-party sharing requires explicit consent basis
         if (input.thirdPartySharing && input.lawfulBasis !== "consent") {
-          kafkaProduce("ndsep.consent.third_party_warning", `consent-tp-${Date.now()}`, { orgId: input.organizationId, email: input.dataSubjectEmail, basis: input.lawfulBasis, warning: "Third-party sharing without explicit consent basis", ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.consent.third_party_warning", `consent-tp-${Date.now()}`, { orgId: input.organizationId, email: input.dataSubjectEmail, basis: input.lawfulBasis, warning: "Third-party sharing without explicit consent basis", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         const result = await createConsentRecord(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "consent.create", resourceType: "consent_record", resourceId: result?.id, details: `Consent recorded for ${input.dataSubjectEmail}` }).catch(() => {});
-        kafkaProduce("ndsep.consent.created", `consent-${result?.id}`, { consentId: result?.id, orgId: input.organizationId, email: input.dataSubjectEmail, basis: input.lawfulBasis, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
-        daprPublish("ndsep.consent.created", { consentId: result?.id, orgId: input.organizationId, basis: input.lawfulBasis }).catch(() => {});
-        daprStateSet(`consent:${input.organizationId}:${input.dataSubjectEmail}`, JSON.stringify({ status: "active", basis: input.lawfulBasis, id: result?.id }), 86400).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "consent.create", resourceType: "consent_record", resourceId: result?.id, details: `Consent recorded for ${input.dataSubjectEmail}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.consent.created", `consent-${result?.id}`, { consentId: result?.id, orgId: input.organizationId, email: input.dataSubjectEmail, basis: input.lawfulBasis, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.consent.created", { consentId: result?.id, orgId: input.organizationId, basis: input.lawfulBasis }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprStateSet(`consent:${input.organizationId}:${input.dataSubjectEmail}`, JSON.stringify({ status: "active", basis: input.lawfulBasis, id: result?.id }), 86400).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -2219,16 +2220,16 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const withdrawnAt = input.consentStatus === "withdrawn" ? new Date() : undefined;
         const result = await updateConsentRecord(input.id, { consentStatus: input.consentStatus, consentWithdrawnAt: withdrawnAt });
-        createAuditLog({ userId: ctx.user.id, action: "consent.update", resourceType: "consent_record", resourceId: input.id, details: `Consent status changed to ${input.consentStatus}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "consent.update", resourceType: "consent_record", resourceId: input.id, details: `Consent status changed to ${input.consentStatus}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         if (input.consentStatus === "withdrawn") {
           // BUSINESS RULE: Consent withdrawal triggers data deletion cascade (NDPA S.27)
-          kafkaProduce("ndsep.consent.withdrawn", `consent-${input.id}`, { consentId: input.id, status: input.consentStatus, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.consent.withdrawn", `consent-${input.id}`, { consentId: input.id, status: input.consentStatus, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           // Trigger data deletion workflow via Dapr
-          daprPublish("ndsep.consent.data_deletion_required", { consentId: input.id, withdrawnAt: new Date().toISOString(), slaDeadlineDays: getActiveJurisdiction().consentWithdrawalDays ?? 30 }).catch(() => {});
+          daprPublish("ndsep.consent.data_deletion_required", { consentId: input.id, withdrawnAt: new Date().toISOString(), slaDeadlineDays: getActiveJurisdiction().consentWithdrawalDays ?? 30 }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           // Notify third parties to cease processing
-          daprPublish("ndsep.consent.third_party_cease_processing", { consentId: input.id }).catch(() => {});
+          daprPublish("ndsep.consent.third_party_cease_processing", { consentId: input.id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           // Update Dapr state to revoked
-          daprStateSet(`consent:revoked:${input.id}`, JSON.stringify({ revokedAt: new Date().toISOString(), reason: "withdrawal" }), 2592000).catch(() => {});
+          daprStateSet(`consent:revoked:${input.id}`, JSON.stringify({ revokedAt: new Date().toISOString(), reason: "withdrawal" }), 2592000).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2236,7 +2237,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteConsentRecord(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "consent.delete", resourceType: "consent_record", resourceId: input.id, details: `Deleted consent_record #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "consent.delete", resourceType: "consent_record", resourceId: input.id, details: `Deleted consent_record #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2263,23 +2264,23 @@ export const appRouter = router({
         const jurisdiction = getActiveJurisdiction();
         const breachDeadlineHours = jurisdiction.breachNotificationHours ?? 72;
         const result = await createBreachIncident(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "breach.create", resourceType: "breach_incident", resourceId: result?.id, details: `Breach incident reported: ${input.title}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "breach.create", resourceType: "breach_incident", resourceId: result?.id, details: `Breach incident reported: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Start 72-hour NDPC notification countdown (NDPA S.47)
         kafkaProduce("ndsep.breach.detected", `breach-${result?.id}`, {
           breachId: result?.id, orgId: input.organizationId, severity: input.severity ?? "medium",
           title: input.title, deadlineHours: breachDeadlineHours,
           ndpcDeadline: new Date(Date.now() + breachDeadlineHours * 3600000).toISOString(),
           jurisdiction: jurisdiction.code, ts: new Date().toISOString(),
-        }).catch(() => {});
-        daprPublish("ndsep.breach.detected", { breachId: result?.id, organizationId: input.organizationId, severity: input.severity ?? "medium", title: input.title, ts: new Date().toISOString() }).catch(() => {});
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.breach.detected", { breachId: result?.id, organizationId: input.organizationId, severity: input.severity ?? "medium", title: input.title, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Critical/High severity triggers immediate escalation
         if (input.severity === "critical" || input.severity === "high") {
-          kafkaProduce("ndsep.breach.escalation", `breach-esc-${result?.id}`, { breachId: result?.id, severity: input.severity, orgId: input.organizationId, requiresImmediateAction: true, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.breach.escalation", `breach-esc-${result?.id}`, { breachId: result?.id, severity: input.severity, orgId: input.organizationId, requiresImmediateAction: true, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           daprPublish("ndsep.breach.escalation", { breachId: result?.id, severity: input.severity, orgId: input.organizationId });
         }
         // BUSINESS RULE: If affected individuals > 1000, auto-escalate to NDPC priority review
         if ((input.affectedIndividualsCount ?? 0) > 1000) {
-          kafkaProduce("ndsep.breach.mass_impact", `breach-mass-${result?.id}`, { breachId: result?.id, affected: input.affectedIndividualsCount, threshold: 1000, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.breach.mass_impact", `breach-mass-${result?.id}`, { breachId: result?.id, affected: input.affectedIndividualsCount, threshold: 1000, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         broadcast("org_portal", { type: "new_alert", payload: { id: result?.id ?? 0, title: input.title, severity: input.severity ?? "medium", source: "breach_notification", organizationId: input.organizationId, detectedAt: new Date() } });
         return result;
@@ -2299,21 +2300,21 @@ export const appRouter = router({
         const containedAt = input.status === "contained" ? new Date() : undefined;
         const resolvedAt = input.status === "resolved" || input.status === "closed" ? new Date() : undefined;
         const result = await updateBreachIncident(id, { ...data, ndpcNotifiedAt, individualsNotifiedAt, containedAt, resolvedAt });
-        createAuditLog({ userId: ctx.user.id, action: "breach.update", resourceType: "breach_incident", resourceId: id, details: `Breach #${id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "breach.update", resourceType: "breach_incident", resourceId: id, details: `Breach #${id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Status transition events
         if (input.status === "ndpc_notified") {
-          kafkaProduce("ndsep.breach.ndpc_notified", `breach-ndpc-${id}`, { breachId: id, ndpcRef: input.ndpcReferenceNumber, notifiedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch(() => {});
-          daprPublish("ndsep.breach.ndpc_notified", { breachId: id, ndpcRef: input.ndpcReferenceNumber }).catch(() => {});
+          kafkaProduce("ndsep.breach.ndpc_notified", `breach-ndpc-${id}`, { breachId: id, ndpcRef: input.ndpcReferenceNumber, notifiedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.breach.ndpc_notified", { breachId: id, ndpcRef: input.ndpcReferenceNumber }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         if (input.status === "individuals_notified") {
-          kafkaProduce("ndsep.breach.individuals_notified", `breach-ind-${id}`, { breachId: id, affectedCount: input.affectedIndividualsCount, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.breach.individuals_notified", `breach-ind-${id}`, { breachId: id, affectedCount: input.affectedIndividualsCount, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         if (input.status === "contained") {
-          kafkaProduce("ndsep.breach.contained", `breach-cont-${id}`, { breachId: id, containedAt: new Date().toISOString(), remediation: input.remediationActions }).catch(() => {});
+          kafkaProduce("ndsep.breach.contained", `breach-cont-${id}`, { breachId: id, containedAt: new Date().toISOString(), remediation: input.remediationActions }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         if (input.status === "resolved" || input.status === "closed") {
-          kafkaProduce("ndsep.breach.resolved", `breach-res-${id}`, { breachId: id, status: input.status, resolvedAt: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.breach.resolved", { breachId: id, status: input.status }).catch(() => {});
+          kafkaProduce("ndsep.breach.resolved", `breach-res-${id}`, { breachId: id, status: input.status, resolvedAt: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.breach.resolved", { breachId: id, status: input.status }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2321,7 +2322,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteBreachIncident(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "breach.delete", resourceType: "breach_incident", resourceId: input.id, details: `Deleted breach_incident #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "breach.delete", resourceType: "breach_incident", resourceId: input.id, details: `Deleted breach_incident #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2344,8 +2345,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createDpoAppointment(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpo.appoint", resourceType: "dpo_appointment", resourceId: result?.id, details: `DPO appointed: ${input.dpoName}` }).catch(() => {});
-        kafkaProduce("ndsep.dpo.appointed", `dpo-${result?.id}`, { dpoId: result?.id, orgId: input.organizationId, name: input.dpoName, email: input.dpoEmail, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpo.appoint", resourceType: "dpo_appointment", resourceId: result?.id, details: `DPO appointed: ${input.dpoName}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.dpo.appointed", `dpo-${result?.id}`, { dpoId: result?.id, orgId: input.organizationId, name: input.dpoName, email: input.dpoEmail, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -2360,16 +2361,16 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const result = await updateDpoAppointment(id, data);
-        createAuditLog({ userId: ctx.user.id, action: "dpo.update", resourceType: "dpo_appointment", resourceId: id, details: `DPO record #${id} updated` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpo.update", resourceType: "dpo_appointment", resourceId: id, details: `DPO record #${id} updated` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Credential status changes trigger compliance events
         if (data.credentialStatus === "expired" || data.credentialStatus === "revoked") {
-          kafkaProduce("ndsep.dpo.credential_alert", `dpo-cred-${id}`, { dpoId: id, credentialStatus: data.credentialStatus, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.dpo.credential_alert", { dpoId: id, status: data.credentialStatus, alert: "DPO credential no longer valid — organization compliance at risk" }).catch(() => {});
+          kafkaProduce("ndsep.dpo.credential_alert", `dpo-cred-${id}`, { dpoId: id, credentialStatus: data.credentialStatus, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.dpo.credential_alert", { dpoId: id, status: data.credentialStatus, alert: "DPO credential no longer valid — organization compliance at risk" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: DPO deactivation requires replacement check
         if (data.isActive === false) {
-          kafkaProduce("ndsep.dpo.deactivated", `dpo-deact-${id}`, { dpoId: id, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.dpo.replacement_required", { dpoId: id, alert: "Organization must appoint a replacement DPO per GAID Art. 11" }).catch(() => {});
+          kafkaProduce("ndsep.dpo.deactivated", `dpo-deact-${id}`, { dpoId: id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.dpo.replacement_required", { dpoId: id, alert: "Organization must appoint a replacement DPO per GAID Art. 11" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2377,7 +2378,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDpoAppointment(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "dpo.delete", resourceType: "dpo_appointment", resourceId: input.id, details: `Deleted dpo_appointment #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpo.delete", resourceType: "dpo_appointment", resourceId: input.id, details: `Deleted dpo_appointment #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2403,13 +2404,13 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         // BUSINESS RULE: Critical risk DPIAs automatically require NDPC consultation (GAID Art. 28)
         const result = await createDpiaAssessment(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpia.create", resourceType: "dpia_assessment", resourceId: result?.id, details: `DPIA created: ${input.title}` }).catch(() => {});
-        kafkaProduce("ndsep.dpia.submitted", `dpia-${result?.id}`, { dpiaId: result?.id, orgId: input.organizationId, title: input.title, riskLevel: input.riskLevel ?? "medium", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
-        daprPublish("ndsep.dpia.submitted", { dpiaId: result?.id, orgId: input.organizationId, riskLevel: input.riskLevel ?? "medium" }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpia.create", resourceType: "dpia_assessment", resourceId: result?.id, details: `DPIA created: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.dpia.submitted", `dpia-${result?.id}`, { dpiaId: result?.id, orgId: input.organizationId, title: input.title, riskLevel: input.riskLevel ?? "medium", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.dpia.submitted", { dpiaId: result?.id, orgId: input.organizationId, riskLevel: input.riskLevel ?? "medium" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: High/Critical DPIAs trigger compliance review workflow
         if (input.riskLevel === "high" || input.riskLevel === "critical") {
-          kafkaProduce("ndsep.dpia.high_risk", `dpia-hr-${result?.id}`, { dpiaId: result?.id, riskLevel: input.riskLevel, orgId: input.organizationId, requiresConsultation: input.riskLevel === "critical", ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.dpia.compliance_review_required", { dpiaId: result?.id, riskLevel: input.riskLevel, orgId: input.organizationId }).catch(() => {});
+          kafkaProduce("ndsep.dpia.high_risk", `dpia-hr-${result?.id}`, { dpiaId: result?.id, riskLevel: input.riskLevel, orgId: input.organizationId, requiresConsultation: input.riskLevel === "critical", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.dpia.compliance_review_required", { dpiaId: result?.id, riskLevel: input.riskLevel, orgId: input.organizationId }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2432,22 +2433,22 @@ export const appRouter = router({
         }
         // BUSINESS RULE: Rejected DPIAs trigger remediation workflow
         if (input.status === "rejected") {
-          kafkaProduce("ndsep.dpia.rejected", `dpia-rej-${id}`, { dpiaId: id, riskLevel: input.riskLevel, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.dpia.remediation_required", { dpiaId: id }).catch(() => {});
+          kafkaProduce("ndsep.dpia.rejected", `dpia-rej-${id}`, { dpiaId: id, riskLevel: input.riskLevel, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.dpia.remediation_required", { dpiaId: id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Approved DPIAs set next review date
         if (input.status === "approved") {
-          kafkaProduce("ndsep.dpia.approved", `dpia-app-${id}`, { dpiaId: id, approvedAt: new Date().toISOString(), reviewedBy: ctx.user.id }).catch(() => {});
+          kafkaProduce("ndsep.dpia.approved", `dpia-app-${id}`, { dpiaId: id, approvedAt: new Date().toISOString(), reviewedBy: ctx.user.id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         const result = await updateDpiaAssessment(id, { ...data, approvedAt });
-        createAuditLog({ userId: ctx.user.id, action: "dpia.update", resourceType: "dpia_assessment", resourceId: id, details: `DPIA #${id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpia.update", resourceType: "dpia_assessment", resourceId: id, details: `DPIA #${id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDpiaAssessment(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "dpia.delete", resourceType: "dpia_assessment", resourceId: input.id, details: `Deleted dpia_assessment #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpia.delete", resourceType: "dpia_assessment", resourceId: input.id, details: `Deleted dpia_assessment #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2475,8 +2476,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createRopaRecord(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "ropa.create", resourceType: "ropa_record", resourceId: result?.id, details: `ROPA entry: ${input.processingActivityName}` }).catch(() => {});
-        kafkaProduce("ndsep.ropa.updated", `ropa-${result?.id}`, { ropaId: result?.id, orgId: input.organizationId, activity: input.processingActivityName, basis: input.lawfulBasis, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "ropa.create", resourceType: "ropa_record", resourceId: result?.id, details: `ROPA entry: ${input.processingActivityName}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.ropa.updated", `ropa-${result?.id}`, { ropaId: result?.id, orgId: input.organizationId, activity: input.processingActivityName, basis: input.lawfulBasis, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -2491,15 +2492,15 @@ export const appRouter = router({
         const { id, ...data } = input;
         const lastReviewedAt = data.dpoReviewed ? new Date() : undefined;
         const result = await updateRopaRecord(id, { ...data, lastReviewedAt });
-        createAuditLog({ userId: ctx.user.id, action: "ropa.update", resourceType: "ropa_record", resourceId: id, details: `ROPA #${id} updated` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "ropa.update", resourceType: "ropa_record", resourceId: id, details: `ROPA #${id} updated` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: DPO review triggers compliance checkpoint event
         if (data.dpoReviewed) {
-          kafkaProduce("ndsep.ropa.dpo_reviewed", `ropa-rev-${id}`, { ropaId: id, reviewedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch(() => {});
+          kafkaProduce("ndsep.ropa.dpo_reviewed", `ropa-rev-${id}`, { ropaId: id, reviewedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Deactivating a ROPA entry triggers data handling review
         if (data.isActive === false) {
-          kafkaProduce("ndsep.ropa.deactivated", `ropa-deact-${id}`, { ropaId: id, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.ropa.cessation_review", { ropaId: id }).catch(() => {});
+          kafkaProduce("ndsep.ropa.deactivated", `ropa-deact-${id}`, { ropaId: id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.ropa.cessation_review", { ropaId: id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2507,7 +2508,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteRopaRecord(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "ropa.delete", resourceType: "ropa_record", resourceId: input.id, details: `Deleted ropa_record #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "ropa.delete", resourceType: "ropa_record", resourceId: input.id, details: `Deleted ropa_record #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     export: exportProcedure
@@ -2519,7 +2520,7 @@ export const appRouter = router({
           const json = JSON.stringify(records, null, 2);
           const key = `ropa-exports/${ctx.user.id}-${Date.now()}.json`;
           const { url } = await storagePut(key, Buffer.from(json), "application/json");
-          createAuditLog({ userId: ctx.user.id, action: "ropa.export", resourceType: "ropa_records", details: `Exported ${records.length} ROPA records as JSON` }).catch(() => {});
+          createAuditLog({ userId: ctx.user.id, action: "ropa.export", resourceType: "ropa_records", details: `Exported ${records.length} ROPA records as JSON` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
           return { url, format: "json", count: records.length };
         }
         const pdfData = {
@@ -2545,8 +2546,8 @@ export const appRouter = router({
         const filename = `NDSEP-ROPA-${orgName.replace(/[^a-zA-Z0-9]/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
         const key = `ropa-exports/${ctx.user.id}-${Date.now()}.pdf`;
         const { url } = await storagePut(key, pdfBuffer, "application/pdf");
-        createAuditLog({ userId: ctx.user.id, action: "ropa.export", resourceType: "ropa_records", details: `Exported ${records.length} ROPA records as PDF: ${filename}` }).catch(() => {});
-        kafkaProduce("ndsep.ropa.exported", `ropa-export-${ctx.user.id}`, { userId: ctx.user.id, orgId: input.orgId, count: records.length, format: "pdf", ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "ropa.export", resourceType: "ropa_records", details: `Exported ${records.length} ROPA records as PDF: ${filename}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.ropa.exported", `ropa-export-${ctx.user.id}`, { userId: ctx.user.id, orgId: input.orgId, count: records.length, format: "pdf", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { url, format: "pdf", count: records.length, filename };
       }),
   }),
@@ -2567,10 +2568,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createRetentionPolicy(input);
-        createAuditLog({ userId: ctx.user.id, action: "retention.create", resourceType: "retention_policy", resourceId: result?.id, details: `Retention policy: ${input.name}` }).catch(() => {});
-        kafkaProduce("ndsep.retention.created", `retention-${result?.id}`, { policyId: result?.id, name: input.name, retentionDays: input.retentionPeriodDays, action: input.archivalAction ?? "delete", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "retention.create", resourceType: "retention_policy", resourceId: result?.id, details: `Retention policy: ${input.name}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.retention.created", `retention-${result?.id}`, { policyId: result?.id, name: input.name, retentionDays: input.retentionPeriodDays, action: input.archivalAction ?? "delete", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Schedule retention execution via Dapr workflow
-        daprPublish("ndsep.retention.schedule_execution", { policyId: result?.id, retentionDays: input.retentionPeriodDays, archivalAction: input.archivalAction ?? "delete", dataCategory: input.dataCategory }).catch(() => {});
+        daprPublish("ndsep.retention.schedule_execution", { policyId: result?.id, retentionDays: input.retentionPeriodDays, archivalAction: input.archivalAction ?? "delete", dataCategory: input.dataCategory }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -2582,11 +2583,11 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const result = await updateRetentionPolicy(id, data);
-        createAuditLog({ userId: ctx.user.id, action: "retention.update", resourceType: "retention_policy", resourceId: id, details: `Retention policy #${id} updated` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "retention.update", resourceType: "retention_policy", resourceId: id, details: `Retention policy #${id} updated` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Deactivating a retention policy triggers compliance alert
         if (data.isActive === false) {
-          kafkaProduce("ndsep.retention.deactivated", `retention-deact-${id}`, { policyId: id, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.retention.compliance_alert", { policyId: id, alert: "Retention policy deactivated — data may exceed legal retention limits" }).catch(() => {});
+          kafkaProduce("ndsep.retention.deactivated", `retention-deact-${id}`, { policyId: id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.retention.compliance_alert", { policyId: id, alert: "Retention policy deactivated — data may exceed legal retention limits" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2594,7 +2595,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteRetentionPolicy(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "retention.delete", resourceType: "retention_policy", resourceId: input.id, details: `Deleted retention_policy #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "retention.delete", resourceType: "retention_policy", resourceId: input.id, details: `Deleted retention_policy #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2624,8 +2625,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createDpoReport(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpo_report.create", resourceType: "dpo_report", resourceId: result?.id, details: `DPO report for period ${input.reportPeriodStart} to ${input.reportPeriodEnd}` }).catch(() => {});
-        kafkaProduce("ndsep.dpo.report_due", `report-${result?.id}`, { reportId: result?.id, orgId: input.organizationId, periodStart: input.reportPeriodStart, periodEnd: input.reportPeriodEnd, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpo_report.create", resourceType: "dpo_report", resourceId: result?.id, details: `DPO report for period ${input.reportPeriodStart} to ${input.reportPeriodEnd}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.dpo.report_due", `report-${result?.id}`, { reportId: result?.id, orgId: input.organizationId, periodStart: input.reportPeriodStart, periodEnd: input.reportPeriodEnd, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -2636,15 +2637,15 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const submittedAt = input.status === "submitted" ? new Date() : undefined;
         const result = await updateDpoReport(input.id, { status: input.status, submittedAt });
-        createAuditLog({ userId: ctx.user.id, action: "dpo_report.update", resourceType: "dpo_report", resourceId: input.id, details: `DPO report #${input.id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpo_report.update", resourceType: "dpo_report", resourceId: input.id, details: `DPO report #${input.id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: DPO report submission triggers NDPC notification (GAID Art. 12)
         if (input.status === "submitted") {
-          kafkaProduce("ndsep.dpo.report_submitted", `report-sub-${input.id}`, { reportId: input.id, submittedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch(() => {});
-          daprPublish("ndsep.dpo.report_submitted", { reportId: input.id }).catch(() => {});
+          kafkaProduce("ndsep.dpo.report_submitted", `report-sub-${input.id}`, { reportId: input.id, submittedAt: new Date().toISOString(), jurisdiction: getActiveJurisdiction().code }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.dpo.report_submitted", { reportId: input.id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Rejected reports trigger remediation requirement
         if (input.status === "rejected") {
-          kafkaProduce("ndsep.dpo.report_rejected", `report-rej-${input.id}`, { reportId: input.id, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.dpo.report_rejected", `report-rej-${input.id}`, { reportId: input.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2652,7 +2653,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDpoReport(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "dpo_report.delete", resourceType: "dpo_report", resourceId: input.id, details: `Deleted dpo_report #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpo_report.delete", resourceType: "dpo_report", resourceId: input.id, details: `Deleted dpo_report #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2681,12 +2682,12 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createComplianceAuditReturn(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "car.create", resourceType: "compliance_audit_return", resourceId: result?.id, details: `CAR filed for period ${input.auditPeriodStart} to ${input.auditPeriodEnd}` }).catch(() => {});
-        kafkaProduce("ndsep.car.submitted", `car-${result?.id}`, { carId: result?.id, orgId: input.organizationId, periodStart: input.auditPeriodStart, periodEnd: input.auditPeriodEnd, score: input.complianceScore, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "car.create", resourceType: "compliance_audit_return", resourceId: result?.id, details: `CAR filed for period ${input.auditPeriodStart} to ${input.auditPeriodEnd}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.car.submitted", `car-${result?.id}`, { carId: result?.id, orgId: input.organizationId, periodStart: input.auditPeriodStart, periodEnd: input.auditPeriodEnd, score: input.complianceScore, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Low compliance scores auto-trigger enforcement review
         if (input.complianceScore !== undefined && input.complianceScore < 50) {
-          kafkaProduce("ndsep.car.low_score_alert", `car-low-${result?.id}`, { carId: result?.id, orgId: input.organizationId, score: input.complianceScore, threshold: 50, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.car.enforcement_review_required", { carId: result?.id, orgId: input.organizationId, score: input.complianceScore }).catch(() => {});
+          kafkaProduce("ndsep.car.low_score_alert", `car-low-${result?.id}`, { carId: result?.id, orgId: input.organizationId, score: input.complianceScore, threshold: 50, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.car.enforcement_review_required", { carId: result?.id, orgId: input.organizationId, score: input.complianceScore }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2698,16 +2699,16 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateComplianceAuditReturn(input.id, { status: input.status, reviewedBy: ctx.user.id, reviewNotes: input.reviewNotes });
-        createAuditLog({ userId: ctx.user.id, action: "car.review", resourceType: "compliance_audit_return", resourceId: input.id, details: `CAR #${input.id} reviewed: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "car.review", resourceType: "compliance_audit_return", resourceId: input.id, details: `CAR #${input.id} reviewed: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Rejected CARs trigger remediation workflow with deadline
         if (input.status === "rejected" || input.status === "requires_remediation") {
-          kafkaProduce("ndsep.car.remediation_required", `car-rem-${input.id}`, { carId: input.id, status: input.status, reviewNotes: input.reviewNotes, remediationDeadline: new Date(Date.now() + 30 * 24 * 3600000).toISOString(), ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.car.remediation_workflow", { carId: input.id, deadline: new Date(Date.now() + 30 * 24 * 3600000).toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.car.remediation_required", `car-rem-${input.id}`, { carId: input.id, status: input.status, reviewNotes: input.reviewNotes, remediationDeadline: new Date(Date.now() + 30 * 24 * 3600000).toISOString(), ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.car.remediation_workflow", { carId: input.id, deadline: new Date(Date.now() + 30 * 24 * 3600000).toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Accepted CARs update org compliance status
         if (input.status === "accepted") {
-          kafkaProduce("ndsep.car.accepted", `car-acc-${input.id}`, { carId: input.id, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.car.compliance_certified", { carId: input.id }).catch(() => {});
+          kafkaProduce("ndsep.car.accepted", `car-acc-${input.id}`, { carId: input.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.car.compliance_certified", { carId: input.id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2715,7 +2716,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteComplianceAuditReturn(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "audit_return.delete", resourceType: "audit_return", resourceId: input.id, details: `Deleted audit_return #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "audit_return.delete", resourceType: "audit_return", resourceId: input.id, details: `Deleted audit_return #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2738,9 +2739,9 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createAdequacyDetermination(input);
-        createAuditLog({ userId: ctx.user.id, action: "adequacy.create", resourceType: "adequacy_determination", resourceId: result?.id, details: `Adequacy determination for ${input.countryName}` }).catch(() => {});
-        kafkaProduce("ndsep.adequacy.evaluated", `adequacy-${result?.id}`, { id: result?.id, countryCode: input.countryCode, countryName: input.countryName, status: input.status ?? "pending", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
-        daprStateSet(`adequacy:${input.countryCode}`, JSON.stringify({ status: input.status ?? "pending", name: input.countryName }), 7200).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "adequacy.create", resourceType: "adequacy_determination", resourceId: result?.id, details: `Adequacy determination for ${input.countryName}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.adequacy.evaluated", `adequacy-${result?.id}`, { id: result?.id, countryCode: input.countryCode, countryName: input.countryName, status: input.status ?? "pending", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprStateSet(`adequacy:${input.countryCode}`, JSON.stringify({ status: input.status ?? "pending", name: input.countryName }), 7200).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -2751,14 +2752,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateAdequacyDetermination(input.id, { status: input.status, notes: input.notes });
-        createAuditLog({ userId: ctx.user.id, action: "adequacy.update", resourceType: "adequacy_determination", resourceId: input.id, details: `Adequacy status updated: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "adequacy.update", resourceType: "adequacy_determination", resourceId: input.id, details: `Adequacy status updated: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteAdequacyDetermination(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "adequacy.delete", resourceType: "adequacy_determination", resourceId: input.id, details: `Deleted adequacy_determination #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "adequacy.delete", resourceType: "adequacy_determination", resourceId: input.id, details: `Deleted adequacy_determination #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2784,8 +2785,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createDataProcessingAgreement(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpa.create", resourceType: "data_processing_agreement", resourceId: result?.id, details: `DPA with ${input.processorName}` }).catch(() => {});
-        kafkaProduce("ndsep.dpa.signed", `dpa-${result?.id}`, { dpaId: result?.id, orgId: input.organizationId, processor: input.processorName, crossBorder: input.crossBorderTransfer ?? false, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpa.create", resourceType: "data_processing_agreement", resourceId: result?.id, details: `DPA with ${input.processorName}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.dpa.signed", `dpa-${result?.id}`, { dpaId: result?.id, orgId: input.organizationId, processor: input.processorName, crossBorder: input.crossBorderTransfer ?? false, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -2795,14 +2796,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateDataProcessingAgreement(input.id, { status: input.status, reviewedBy: ctx.user.id });
-        createAuditLog({ userId: ctx.user.id, action: "dpa.update", resourceType: "data_processing_agreement", resourceId: input.id, details: `DPA #${input.id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpa.update", resourceType: "data_processing_agreement", resourceId: input.id, details: `DPA #${input.id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDataProcessingAgreement(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "dpa.delete", resourceType: "dpa", resourceId: input.id, details: `Deleted dpa #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dpa.delete", resourceType: "dpa", resourceId: input.id, details: `Deleted dpa #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2830,8 +2831,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createPrivacyNotice(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "privacy_notice.create", resourceType: "privacy_notice", resourceId: result?.id, details: `Privacy notice: ${input.title}` }).catch(() => {});
-        kafkaProduce("ndsep.privacy_notice.published", `notice-${result?.id}`, { noticeId: result?.id, orgId: input.organizationId, title: input.title, type: input.noticeType ?? "general", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "privacy_notice.create", resourceType: "privacy_notice", resourceId: result?.id, details: `Privacy notice: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.privacy_notice.published", `notice-${result?.id}`, { noticeId: result?.id, orgId: input.organizationId, title: input.title, type: input.noticeType ?? "general", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -2843,14 +2844,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const publishedAt = input.status === "published" ? new Date() : undefined;
         const result = await updatePrivacyNotice(input.id, { status: input.status, publishedAt, approvedBy: ctx.user.id, content: input.content });
-        createAuditLog({ userId: ctx.user.id, action: "privacy_notice.update", resourceType: "privacy_notice", resourceId: input.id, details: `Privacy notice #${input.id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "privacy_notice.update", resourceType: "privacy_notice", resourceId: input.id, details: `Privacy notice #${input.id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deletePrivacyNotice(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "privacy_notice.delete", resourceType: "privacy_notice", resourceId: input.id, details: `Deleted privacy_notice #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "privacy_notice.delete", resourceType: "privacy_notice", resourceId: input.id, details: `Deleted privacy_notice #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2877,14 +2878,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const result = await createCookieConsentRecord(input);
-        kafkaProduce("ndsep.cookie.consent_updated", `cookie-${result?.id}`, { recordId: result?.id, orgId: input.organizationId, domain: input.domain, consentGiven: input.consentGiven, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        kafkaProduce("ndsep.cookie.consent_updated", `cookie-${result?.id}`, { recordId: result?.id, orgId: input.organizationId, domain: input.domain, consentGiven: input.consentGiven, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteCookieConsentRecord(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "cookie_consent.delete", resourceType: "cookie_consent_record", resourceId: input.id, details: `Deleted cookie_consent_record #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "cookie_consent.delete", resourceType: "cookie_consent_record", resourceId: input.id, details: `Deleted cookie_consent_record #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2907,12 +2908,12 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createAutomatedDecision(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "automated_decision.create", resourceType: "automated_decision", resourceId: result?.id, details: `Decision: ${input.decisionType} → ${input.decisionOutcome}` }).catch(() => {});
-        kafkaProduce("ndsep.automated_decision.registered", `decision-${result?.id}`, { decisionId: result?.id, orgId: input.organizationId, type: input.decisionType, outcome: input.decisionOutcome, significantEffect: input.significantEffect ?? false, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "automated_decision.create", resourceType: "automated_decision", resourceId: result?.id, details: `Decision: ${input.decisionType} → ${input.decisionOutcome}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.automated_decision.registered", `decision-${result?.id}`, { decisionId: result?.id, orgId: input.organizationId, type: input.decisionType, outcome: input.decisionOutcome, significantEffect: input.significantEffect ?? false, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Significant-effect decisions MUST offer human review right (NDPA S.36)
         if (input.significantEffect) {
-          kafkaProduce("ndsep.automated_decision.significant_effect", `decision-sig-${result?.id}`, { decisionId: result?.id, orgId: input.organizationId, type: input.decisionType, requiresHumanReview: true, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.automated_decision.human_review_required", { decisionId: result?.id, orgId: input.organizationId, dataSubjectEmail: input.dataSubjectEmail }).catch(() => {});
+          kafkaProduce("ndsep.automated_decision.significant_effect", `decision-sig-${result?.id}`, { decisionId: result?.id, orgId: input.organizationId, type: input.decisionType, requiresHumanReview: true, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.automated_decision.human_review_required", { decisionId: result?.id, orgId: input.organizationId, dataSubjectEmail: input.dataSubjectEmail }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2928,16 +2929,16 @@ export const appRouter = router({
         const humanReviewCompletedAt = data.humanReviewOutcome ? new Date() : undefined;
         const optOutGrantedAt = data.optOutRequested ? new Date() : undefined;
         const result = await updateAutomatedDecision(id, { ...data, humanReviewCompletedAt, optOutGrantedAt });
-        createAuditLog({ userId: ctx.user.id, action: "automated_decision.update", resourceType: "automated_decision", resourceId: id, details: `Decision #${id} review updated` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "automated_decision.update", resourceType: "automated_decision", resourceId: id, details: `Decision #${id} review updated` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Human review completion triggers notification to data subject
         if (data.humanReviewOutcome) {
-          kafkaProduce("ndsep.automated_decision.review_completed", `decision-rev-${id}`, { decisionId: id, outcome: data.humanReviewOutcome, reviewedBy: ctx.user.id, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.automated_decision.notify_subject", { decisionId: id, outcome: data.humanReviewOutcome }).catch(() => {});
+          kafkaProduce("ndsep.automated_decision.review_completed", `decision-rev-${id}`, { decisionId: id, outcome: data.humanReviewOutcome, reviewedBy: ctx.user.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.automated_decision.notify_subject", { decisionId: id, outcome: data.humanReviewOutcome }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Opt-out triggers processing cessation workflow
         if (data.optOutRequested) {
-          kafkaProduce("ndsep.automated_decision.opt_out", `decision-opt-${id}`, { decisionId: id, optOutAt: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.automated_decision.cease_automated_processing", { decisionId: id }).catch(() => {});
+          kafkaProduce("ndsep.automated_decision.opt_out", `decision-opt-${id}`, { decisionId: id, optOutAt: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.automated_decision.cease_automated_processing", { decisionId: id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -2945,7 +2946,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteAutomatedDecision(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "automated_decision.delete", resourceType: "automated_decision", resourceId: input.id, details: `Deleted automated_decision #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "automated_decision.delete", resourceType: "automated_decision", resourceId: input.id, details: `Deleted automated_decision #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     requestReview: protectedProcedure
@@ -2955,9 +2956,9 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateAutomatedDecision(input.id, { humanReviewRequested: true });
-        createAuditLog({ userId: ctx.user.id, action: "automated_decision.request_review", resourceType: "automated_decision", resourceId: input.id, details: `Human review requested for decision #${input.id}` }).catch(() => {});
-        kafkaProduce("ndsep.automated_decision.review_requested", `decision-rev-req-${input.id}`, { decisionId: input.id, requestedBy: ctx.user.id, notes: input.reviewNotes, ts: new Date().toISOString() }).catch(() => {});
-        daprPublish("ndsep.automated_decision.human_review_required", { decisionId: input.id, requestedBy: ctx.user.id, notes: input.reviewNotes }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "automated_decision.request_review", resourceType: "automated_decision", resourceId: input.id, details: `Human review requested for decision #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.automated_decision.review_requested", `decision-rev-req-${input.id}`, { decisionId: input.id, requestedBy: ctx.user.id, notes: input.reviewNotes, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.automated_decision.human_review_required", { decisionId: input.id, requestedBy: ctx.user.id, notes: input.reviewNotes }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     completeReview: protectedProcedure
@@ -2968,9 +2969,9 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateAutomatedDecision(input.id, { humanReviewOutcome: input.outcome, humanReviewCompletedAt: new Date() });
-        createAuditLog({ userId: ctx.user.id, action: "automated_decision.complete_review", resourceType: "automated_decision", resourceId: input.id, details: `Human review completed for decision #${input.id}: ${input.outcome}` }).catch(() => {});
-        kafkaProduce("ndsep.automated_decision.review_completed", `decision-rev-done-${input.id}`, { decisionId: input.id, outcome: input.outcome, reviewedBy: ctx.user.id, ts: new Date().toISOString() }).catch(() => {});
-        daprPublish("ndsep.automated_decision.notify_subject", { decisionId: input.id, outcome: input.outcome }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "automated_decision.complete_review", resourceType: "automated_decision", resourceId: input.id, details: `Human review completed for decision #${input.id}: ${input.outcome}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.automated_decision.review_completed", `decision-rev-done-${input.id}`, { decisionId: input.id, outcome: input.outcome, reviewedBy: ctx.user.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.automated_decision.notify_subject", { decisionId: input.id, outcome: input.outcome }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -2992,8 +2993,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createParentalConsent(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "parental_consent.create", resourceType: "parental_consent", resourceId: result?.id, details: `Parental consent for ${input.childName ?? 'minor'}` }).catch(() => {});
-        kafkaProduce("ndsep.parental_consent.verified", `parental-${result?.id}`, { recordId: result?.id, orgId: input.organizationId, parentEmail: input.parentEmail, verificationMethod: input.verificationMethod ?? "email", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "parental_consent.create", resourceType: "parental_consent", resourceId: result?.id, details: `Parental consent for ${input.childName ?? 'minor'}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.parental_consent.verified", `parental-${result?.id}`, { recordId: result?.id, orgId: input.organizationId, parentEmail: input.parentEmail, verificationMethod: input.verificationMethod ?? "email", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -3007,15 +3008,15 @@ export const appRouter = router({
         const consentGivenAt = data.consentStatus === "granted" ? new Date() : undefined;
         const consentWithdrawnAt = data.consentStatus === "withdrawn" ? new Date() : undefined;
         const result = await updateParentalConsent(id, { ...data, consentGivenAt, consentWithdrawnAt });
-        createAuditLog({ userId: ctx.user.id, action: "parental_consent.update", resourceType: "parental_consent", resourceId: id, details: `Parental consent #${id} status: ${data.consentStatus}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "parental_consent.update", resourceType: "parental_consent", resourceId: id, details: `Parental consent #${id} status: ${data.consentStatus}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Denied/withdrawn parental consent blocks child data processing (NDPA S.35)
         if (data.consentStatus === "denied" || data.consentStatus === "withdrawn") {
-          kafkaProduce("ndsep.parental_consent.processing_blocked", `parental-block-${id}`, { consentId: id, status: data.consentStatus, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.parental_consent.cease_processing", { consentId: id, action: "block_all_processing" }).catch(() => {});
+          kafkaProduce("ndsep.parental_consent.processing_blocked", `parental-block-${id}`, { consentId: id, status: data.consentStatus, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.parental_consent.cease_processing", { consentId: id, action: "block_all_processing" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Granted consent with verified parent triggers processing approval
         if (data.consentStatus === "granted" && data.parentIdVerified) {
-          kafkaProduce("ndsep.parental_consent.processing_approved", `parental-app-${id}`, { consentId: id, verified: true, ts: new Date().toISOString() }).catch(() => {});
+          kafkaProduce("ndsep.parental_consent.processing_approved", `parental-app-${id}`, { consentId: id, verified: true, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -3023,7 +3024,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteParentalConsent(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "parental_consent.delete", resourceType: "parental_consent", resourceId: input.id, details: `Deleted parental_consent #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "parental_consent.delete", resourceType: "parental_consent", resourceId: input.id, details: `Deleted parental_consent #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -3048,8 +3049,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createStaffTraining(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "training.create", resourceType: "staff_training", resourceId: result?.id, details: `Training scheduled: ${input.trainingTitle}` }).catch(() => {});
-        kafkaProduce("ndsep.training.scheduled", `training-${result?.id}`, { trainingId: result?.id, orgId: input.organizationId, title: input.trainingTitle, type: input.trainingType, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "training.create", resourceType: "staff_training", resourceId: result?.id, details: `Training scheduled: ${input.trainingTitle}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.training.scheduled", `training-${result?.id}`, { trainingId: result?.id, orgId: input.organizationId, title: input.trainingTitle, type: input.trainingType, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -3063,15 +3064,15 @@ export const appRouter = router({
         const { id, ...data } = input;
         const completedDate = data.status === "completed" ? new Date() : undefined;
         const result = await updateStaffTraining(id, { ...data, completedDate });
-        createAuditLog({ userId: ctx.user.id, action: "training.update", resourceType: "staff_training", resourceId: id, details: `Training #${id} status: ${data.status}` }).catch(() => {});
-        if (data.status === "completed") kafkaProduce("ndsep.training.completed", `training-${id}`, { trainingId: id, status: "completed", participants: data.participantCount, passRate: data.passRate, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "training.update", resourceType: "staff_training", resourceId: id, details: `Training #${id} status: ${data.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        if (data.status === "completed") kafkaProduce("ndsep.training.completed", `training-${id}`, { trainingId: id, status: "completed", participants: data.participantCount, passRate: data.passRate, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteStaffTraining(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "staff_training.delete", resourceType: "staff_training_record", resourceId: input.id, details: `Deleted staff_training_record #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "staff_training.delete", resourceType: "staff_training_record", resourceId: input.id, details: `Deleted staff_training_record #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -3095,8 +3096,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createTransferInstrument(input);
-        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.create", resourceType: "transfer_instrument", resourceId: result?.id, details: `Transfer instrument: ${input.name} (${input.instrumentType})` }).catch(() => {});
-        kafkaProduce("ndsep.transfer_instrument.approved", `ti-${result?.id}`, { instrumentId: result?.id, type: input.instrumentType, name: input.name, countries: input.applicableCountries, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.create", resourceType: "transfer_instrument", resourceId: result?.id, details: `Transfer instrument: ${input.name} (${input.instrumentType})` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.transfer_instrument.approved", `ti-${result?.id}`, { instrumentId: result?.id, type: input.instrumentType, name: input.name, countries: input.applicableCountries, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: adminProcedure
@@ -3106,14 +3107,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await updateTransferInstrument(input.id, { status: input.status, approvedBy: ctx.user.id });
-        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.update", resourceType: "transfer_instrument", resourceId: input.id, details: `Transfer instrument #${input.id} status: ${input.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.update", resourceType: "transfer_instrument", resourceId: input.id, details: `Transfer instrument #${input.id} status: ${input.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     delete: deleteProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteTransferInstrument(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.delete", resourceType: "transfer_instrument", resourceId: input.id, details: `Deleted transfer_instrument #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.delete", resourceType: "transfer_instrument", resourceId: input.id, details: `Deleted transfer_instrument #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -3133,13 +3134,13 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createDataExportJob(input);
-        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "export.create", resourceType: "data_export_job", resourceId: result?.id, details: `Export job for ${input.dataSubjectEmail}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "export.create", resourceType: "data_export_job", resourceId: result?.id, details: `Export job for ${input.dataSubjectEmail}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Data export has 30-day SLA per NDPA S.46
         const slaDeadline = new Date(Date.now() + 30 * 24 * 3600000);
-        kafkaProduce("ndsep.export.requested", `export-${result?.id}`, { exportJobId: result?.id, orgId: input.organizationId, email: input.dataSubjectEmail, format: input.exportFormat ?? "json", slaDeadline: slaDeadline.toISOString(), jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
-        daprPublish("ndsep.export.requested", { exportJobId: result?.id, organizationId: input.organizationId, email: input.dataSubjectEmail, format: input.exportFormat ?? "json", ts: new Date().toISOString() }).catch(() => {});
+        kafkaProduce("ndsep.export.requested", `export-${result?.id}`, { exportJobId: result?.id, orgId: input.organizationId, email: input.dataSubjectEmail, format: input.exportFormat ?? "json", slaDeadline: slaDeadline.toISOString(), jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        daprPublish("ndsep.export.requested", { exportJobId: result?.id, organizationId: input.organizationId, email: input.dataSubjectEmail, format: input.exportFormat ?? "json", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // Schedule SLA deadline monitoring
-        daprPublish("ndsep.export.sla_monitor", { exportJobId: result?.id, slaDeadline: slaDeadline.toISOString() }).catch(() => {});
+        daprPublish("ndsep.export.sla_monitor", { exportJobId: result?.id, slaDeadline: slaDeadline.toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     update: protectedProcedure
@@ -3155,16 +3156,16 @@ export const appRouter = router({
         const processedAt = data.status === "completed" || data.status === "failed" ? new Date() : undefined;
         const downloadExpiresAt = data.status === "completed" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined;
         const result = await updateDataExportJob(id, { ...data, processedAt, downloadExpiresAt });
-        createAuditLog({ userId: ctx.user.id, action: "export.update", resourceType: "data_export_job", resourceId: id, details: `Export job #${id} status: ${data.status}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "export.update", resourceType: "data_export_job", resourceId: id, details: `Export job #${id} status: ${data.status}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: Completed exports notify data subject with download link
         if (data.status === "completed") {
-          kafkaProduce("ndsep.export.completed", `export-done-${id}`, { exportJobId: id, downloadUrl: data.downloadUrl, expiresAt: downloadExpiresAt?.toISOString(), ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.export.notify_subject", { exportJobId: id, downloadUrl: data.downloadUrl }).catch(() => {});
+          kafkaProduce("ndsep.export.completed", `export-done-${id}`, { exportJobId: id, downloadUrl: data.downloadUrl, expiresAt: downloadExpiresAt?.toISOString(), ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.export.notify_subject", { exportJobId: id, downloadUrl: data.downloadUrl }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         // BUSINESS RULE: Failed exports trigger retry or escalation
         if (data.status === "failed") {
-          kafkaProduce("ndsep.export.failed", `export-fail-${id}`, { exportJobId: id, error: data.errorMessage, ts: new Date().toISOString() }).catch(() => {});
-          daprPublish("ndsep.export.retry_or_escalate", { exportJobId: id, errorMessage: data.errorMessage }).catch(() => {});
+          kafkaProduce("ndsep.export.failed", `export-fail-${id}`, { exportJobId: id, error: data.errorMessage, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+          daprPublish("ndsep.export.retry_or_escalate", { exportJobId: id, errorMessage: data.errorMessage }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         }
         return result;
       }),
@@ -3172,7 +3173,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDataExportJob(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "data_export.delete", resourceType: "data_export_job", resourceId: input.id, details: `Deleted data_export_job #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "data_export.delete", resourceType: "data_export_job", resourceId: input.id, details: `Deleted data_export_job #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -3192,8 +3193,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await createDcpmiThreshold(input);
-        createAuditLog({ userId: ctx.user.id, action: "dcpmi.create", resourceType: "dcpmi_threshold", resourceId: result?.id, details: `DCPMI threshold: ${input.criterionName}` }).catch(() => {});
-        kafkaProduce("ndsep.dcpmi.threshold_breached", `dcpmi-${result?.id}`, { thresholdId: result?.id, sectorCode: input.sectorCode, criterion: input.criterionName, value: input.thresholdValue, unit: input.thresholdUnit, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dcpmi.create", resourceType: "dcpmi_threshold", resourceId: result?.id, details: `DCPMI threshold: ${input.criterionName}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        kafkaProduce("ndsep.dcpmi.threshold_breached", `dcpmi-${result?.id}`, { thresholdId: result?.id, sectorCode: input.sectorCode, criterion: input.criterionName, value: input.thresholdValue, unit: input.thresholdUnit, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
     evaluate: protectedProcedure
@@ -3203,7 +3204,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const result = await deleteDcpmiThreshold(input.id);
-        createAuditLog({ userId: ctx.user.id, action: "dcpmi.delete", resourceType: "dcpmi_threshold", resourceId: input.id, details: `Deleted DCPMI threshold #${input.id}` }).catch(() => {});
+        createAuditLog({ userId: ctx.user.id, action: "dcpmi.delete", resourceType: "dcpmi_threshold", resourceId: input.id, details: `Deleted DCPMI threshold #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
   }),
@@ -3216,7 +3217,7 @@ export const appRouter = router({
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
       const { rotateCertificate } = await import("./pdfSigner");
       const result = await rotateCertificate();
-      createAuditLog({ userId: ctx.user.id, action: "cert.rotate", resourceType: "signing_certificate", resourceId: 0, details: `Certificate rotated. New serial: ${result.serialNumber}` }).catch(() => {});
+      createAuditLog({ userId: ctx.user.id, action: "cert.rotate", resourceType: "signing_certificate", resourceId: 0, details: `Certificate rotated. New serial: ${result.serialNumber}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return result;
     }),
   }),

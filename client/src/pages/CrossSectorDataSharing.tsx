@@ -25,11 +25,11 @@ export default function CrossSectorDataSharing() {
   const { data: shares = [], refetch } = trpc.crossSectorSharing.getSharedData.useQuery({ sourceSector: "banking", targetSector: "telecom", dataType: "compliance_data", limit: 50 });
   const requestMut = trpc.crossSectorSharing.requestShare.useMutation({
     onSuccess: (d) => { toast.success(`Share request submitted: ${d.shareId}`); setRequestOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const approveMut = trpc.crossSectorSharing.approve.useMutation({
     onSuccess: (d) => { toast.success(`Request ${d.status}`); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

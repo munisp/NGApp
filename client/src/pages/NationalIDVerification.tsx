@@ -45,7 +45,7 @@ export default function NationalIDVerification() {
         toast.error(`Verification failed: ${data.failureReason}`);
       }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

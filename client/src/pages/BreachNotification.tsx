@@ -38,7 +38,7 @@ function BreachSlaHeatmap() {
   );
   const markNotifiedMutation = trpc.breaches.update.useMutation({
     onSuccess: () => { toast.success("Marked as NDPC Notified"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   if (heatmapData.length === 0) return null;
 
@@ -241,10 +241,10 @@ export default function BreachNotification() {
 
   const { data: incidents = [], refetch, isLoading } = trpc.breaches.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.breaches.create.useMutation({ onSuccess: () => { toast.success("Breach incident created — 72-hour NDPC notification countdown started"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.breaches.create.useMutation({ onSuccess: () => { toast.success("Breach incident created — 72-hour NDPC notification countdown started"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const utils = trpc.useUtils();
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const updateMutation = trpc.breaches.update.useMutation({ onSuccess: () => { toast.success("Breach status updated"); refetch(); }, onError: (e) => toast.error(e.message) });
+  const updateMutation = trpc.breaches.update.useMutation({ onSuccess: () => { toast.success("Breach status updated"); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const deleteMutation = trpc.breaches.delete.useMutation({ onSuccess: () => { toast.success("Breach incident deleted"); setDeleteId(null); utils.breaches.list.invalidate().catch(() => {}); }, onError: (err) => toast.error(err.message || "Failed to delete") });
 
   const filtered = (incidents as any[]).filter((r: any) => !searchQuery || r.title?.toLowerCase().includes(searchQuery.toLowerCase()));

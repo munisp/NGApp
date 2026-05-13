@@ -34,7 +34,7 @@ export async function cachedQuery<T>(
 
   // Cache result
   if (result !== null && result !== undefined) {
-    await cacheSet(key, JSON.stringify(result), ttl).catch(() => {});
+    await cacheSet(key, JSON.stringify(result), ttl).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
   }
 
   return result;

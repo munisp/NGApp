@@ -32,7 +32,7 @@ export default function DataExportJobs() {
       utils.dataExport.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete data export job"),
-  }); setShowCreate(false); refetch(); }, onError: (e: any) => toast.error(e.message) });
+  }); setShowCreate(false); refetch(); }, onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (jobs as any[]).filter((r: any) => !searchQuery || r.data_subject_email?.toLowerCase().includes(searchQuery.toLowerCase()) || r.requested_by?.toLowerCase().includes(searchQuery.toLowerCase()));
 

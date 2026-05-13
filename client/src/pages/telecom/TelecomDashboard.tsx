@@ -70,7 +70,7 @@ export default function TelecomDashboard() {
       setResolveId(null);
       setResolveNote("");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const s = stats.data as any;

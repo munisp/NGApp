@@ -287,9 +287,11 @@ async function startServer() {
       const rawReturn = req.query.returnTo as string | undefined;
       const returnTo = (rawReturn && /^\/[a-zA-Z0-9\-_/?=&#%]*$/.test(rawReturn)) ? rawReturn : defaultReturn;
       res.redirect(returnTo);
-    } catch (err: any) {
-      logger.error({ err, message: err?.message, stack: err?.stack?.split('\n').slice(0,5).join(' | ') }, "[demo-login] Failed to create demo session");
-      res.status(500).json({ error: "Demo login failed", detail: String(err?.message ?? err) });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const errStack = err instanceof Error ? err.stack?.split('\n').slice(0,5).join(' | ') : undefined;
+      logger.error({ err: errMsg, stack: errStack }, "[demo-login] Failed to create demo session");
+      res.status(500).json({ error: "Demo login failed", detail: errMsg });
     }
   });
 
@@ -443,9 +445,9 @@ async function startServer() {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="NDSEP-National-Enforcement-Report-${dateStr}.pdf"`);
       res.send(pdfBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "National report PDF generation failed");
-      res.status(500).json({ error: err.message ?? "PDF generation failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "PDF generation failed" });
     }
   });
 
@@ -468,9 +470,9 @@ async function startServer() {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="NDSEP-Certificate-${certData.certificateNumber}-${dateStr}.pdf"`);
       res.send(pdfBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "Certificate PDF generation failed");
-      res.status(500).json({ error: err.message ?? "Certificate generation failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "Certificate generation failed" });
     }
   });
 
@@ -482,9 +484,9 @@ async function startServer() {
     try {
       const result = await runNationalReportJob();
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "Manual national report trigger failed");
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) });
     }
   });
 
@@ -500,9 +502,9 @@ async function startServer() {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="NDSEP-Case-${id}-Report.pdf"`);
       res.send(pdfBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "Case report PDF generation failed");
-      res.status(500).json({ error: err.message ?? "PDF generation failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "PDF generation failed" });
     }
   });
 
@@ -529,9 +531,9 @@ async function startServer() {
       res.setHeader("Content-Disposition", `attachment; filename="NDSEP-Annual-Audit-Return-${year}-${dateStr}.pdf"`);
       res.setHeader("X-NDSEP-Signed", "true");
       res.send(finalBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "Audit return PDF generation failed");
-      res.status(500).json({ error: err.message ?? "PDF generation failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "PDF generation failed" });
     }
   });
 
@@ -588,9 +590,9 @@ async function startServer() {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="Invoice-${row.invoice_number}-${dateStr}.pdf"`);
       res.send(pdfBuffer);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "Invoice PDF generation failed");
-      res.status(500).json({ error: err.message ?? "PDF generation failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "PDF generation failed" });
     }
   });
 
@@ -637,9 +639,9 @@ async function startServer() {
       const { url: fileUrl } = await storagePut(fileKey, file.buffer, file.mimetype);
       logger.info({ userId, fileKey, size: file.size, category }, "[evidence-upload] File uploaded to S3");
       res.json({ fileKey, fileUrl, originalName: file.originalname, size: file.size, mimeType: file.mimetype });
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "[evidence-upload] Upload failed");
-      res.status(500).json({ error: err.message ?? "Upload failed" });
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "Upload failed" });
     }
   });
 
@@ -679,8 +681,8 @@ async function startServer() {
       const { getAllMiddlewareHealth } = await import("../middleware/healthIntegration");
       const health = await getAllMiddlewareHealth();
       res.json(health);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message ?? "Health check failed" });
+    } catch (err: unknown) {
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "Health check failed" });
     }
   });
 
@@ -726,8 +728,8 @@ async function startServer() {
         auditLogging: "enabled",
         checkedAt: new Date().toISOString(),
       });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message ?? "Security status check failed" });
+    } catch (err: unknown) {
+      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "Security status check failed" });
     }
   });
 
@@ -753,7 +755,7 @@ async function startServer() {
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error({ err }, "Unhandled Express error");
     res.status(err.status ?? 500).json({
-      error: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
+      error: process.env.NODE_ENV === "production" ? "Internal server error" : (err instanceof Error ? err.message : String(err)),
     });
   });
 

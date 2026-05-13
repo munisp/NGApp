@@ -82,7 +82,7 @@ export async function sendMail(opts: MailOptions): Promise<MailResult> {
       });
       log.info({ messageId: info.messageId, to: toList, subject: opts.subject }, "Email sent via SMTP");
       return { success: true, transport: "smtp", messageId: info.messageId };
-    } catch (err: any) {
+    } catch (err: unknown) {
       log.error({ err, subject: opts.subject }, "SMTP send failed — falling back to Resend");
     }
   }
@@ -110,7 +110,7 @@ export async function sendMail(opts: MailOptions): Promise<MailResult> {
         log.info({ messageId: data?.id, to: toList, subject: opts.subject }, "Email sent via Resend");
         return { success: true, transport: "resend", messageId: data?.id };
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       log.error({ err, subject: opts.subject }, "Resend exception — falling back to Forge relay");
     }
   }
@@ -125,7 +125,7 @@ export async function sendMail(opts: MailOptions): Promise<MailResult> {
       log.info({ to: toList, subject: opts.subject }, "Email relayed via Forge notification");
       return { success: true, transport: "forge" };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error({ err, subject: opts.subject }, "Forge relay failed");
   }
 
@@ -151,8 +151,8 @@ export async function testSmtpConnection(): Promise<{
   try {
     await smtp.verify();
     return { ok: true, transport: "smtp", host: ENV.smtpHost, port: ENV.smtpPort };
-  } catch (err: any) {
-    return { ok: false, transport: "smtp", host: ENV.smtpHost, port: ENV.smtpPort, error: err.message };
+  } catch (err: unknown) {
+    return { ok: false, transport: "smtp", host: ENV.smtpHost, port: ENV.smtpPort, error: (err instanceof Error ? err.message : String(err)) };
   }
 }
 

@@ -57,7 +57,7 @@ export default function SwiftTransactions() {
       setForm({ senderBic: "", receiverBic: "", messageType: "MT103", currency: "USD", amount: "", correspondentBic: "", remittanceInfo: "", orderingCustomer: "", beneficiaryCustomer: "" });
       refetch();
     },
-    onError: (e: { message: string }) => toast.error("SWIFT creation failed", { description: e.message }),
+    onError: (e: { message: string }) => toast.error("SWIFT creation failed", { description: (e instanceof Error ? e.message : String(e)) }),
   });
 
   const rows = (data?.rows ?? []) as any[];

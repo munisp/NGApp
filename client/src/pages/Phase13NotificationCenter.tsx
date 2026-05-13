@@ -22,15 +22,15 @@ export default function Phase13NotificationCenter() {
   const { data: unreadData } = trpc.phase13.notificationCenter.getUnreadCount.useQuery();
   const markRead = trpc.phase13.notificationCenter.markRead.useMutation({
     onSuccess: () => { utils.phase13.notificationCenter.list.invalidate(); utils.phase13.notificationCenter.getUnreadCount.invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const markAllRead = trpc.phase13.notificationCenter.markAllRead.useMutation({
     onSuccess: () => { utils.phase13.notificationCenter.list.invalidate(); utils.phase13.notificationCenter.getUnreadCount.invalidate(); toast.success("All notifications marked as read"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteNotif = trpc.phase13.notificationCenter.delete.useMutation({
     onSuccess: () => { utils.phase13.notificationCenter.list.invalidate(); toast.success("Notification deleted"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (notifications as any[]) ?? [];

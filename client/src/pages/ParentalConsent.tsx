@@ -22,7 +22,7 @@ export default function ParentalConsent() {
 
   const { data: consents = [], refetch, isLoading } = trpc.parentalConsent.list.useQuery();
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.parentalConsent.create.useMutation({ onSuccess: () => { toast.success("Parental consent request created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.parentalConsent.create.useMutation({ onSuccess: () => { toast.success("Parental consent request created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.parentalConsent.update.useMutation({ onSuccess: () => { toast.success("Consent updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -33,7 +33,7 @@ export default function ParentalConsent() {
       utils.parentalConsent.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete parental consent"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (consents as any[]).filter((r: any) => !searchQuery || r.child_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.parent_name?.toLowerCase().includes(searchQuery.toLowerCase()));
 

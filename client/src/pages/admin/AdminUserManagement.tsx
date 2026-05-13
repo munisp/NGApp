@@ -29,7 +29,7 @@ export default function AdminUserManagement() {
       setUpdatingId(null);
     },
     onError: (e) => {
-      toast.error("Failed to update role: " + e.message);
+      toast.error("Failed to update role: " + (e instanceof Error ? e.message : String(e)));
       setUpdatingId(null);
     },
   });

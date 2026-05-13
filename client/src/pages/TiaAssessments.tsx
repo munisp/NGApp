@@ -80,15 +80,15 @@ export default function TiaAssessments() {
 
   const submitMutation = trpc.tia.submit.useMutation({
     onSuccess: () => { toast.success("TIA submitted for review"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const approveMutation = trpc.tia.approve.useMutation({
     onSuccess: () => { toast.success("TIA approved — email notification sent"); setReviewTarget(null); setReviewNote(""); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const rejectMutation = trpc.tia.reject.useMutation({
     onSuccess: () => { toast.success("TIA rejected — email notification sent"); setReviewTarget(null); setReviewNote(""); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const createMutation = trpc.tia.create.useMutation({
@@ -109,7 +109,7 @@ export default function TiaAssessments() {
       setSelectedCategories([]);
       refetch();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const toggleCategory = (cat: string) => {

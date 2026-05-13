@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * TigerBeetle HTTP Client
  * ─────────────────────────────────────────────────────────────────────────────
@@ -71,19 +72,21 @@ export async function createTigerBeetleTransaction(tx: TbTransaction): Promise<T
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.warn(`[TigerBeetle] Transaction failed HTTP ${res.status}: ${body}`);
+      logger.warn(`[TigerBeetle] Transaction failed HTTP ${res.status}: ${body}`);
       return { success: false, error: `HTTP ${res.status}: ${body}`, degraded: true };
     }
     const data = await res.json();
     return { success: true, transactionId: data.transaction_id, ledgerEntryId: data.ledger_entry_id };
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Graceful degradation — TigerBeetle proxy not running in dev
-    if (err?.name === "TimeoutError" || err?.code === "ECONNREFUSED" || err?.cause?.code === "ECONNREFUSED") {
-      console.info("[TigerBeetle] Proxy unreachable — ledger entry skipped (graceful degradation)");
+    const errObj = err as Record<string, unknown>;
+    if ((err instanceof Error && err.name === "TimeoutError") || errObj?.code === "ECONNREFUSED" || (errObj?.cause as Record<string, unknown>)?.code === "ECONNREFUSED") {
+      logger.info("[TigerBeetle] Proxy unreachable — ledger entry skipped (graceful degradation)");
       return { success: false, error: "TigerBeetle proxy unreachable", degraded: true };
     }
-    console.error("[TigerBeetle] Unexpected error:", err?.message ?? err);
-    return { success: false, error: err?.message ?? "Unknown error", degraded: true };
+    const errMsg = err instanceof Error ? err.message : String(err);
+    logger.error({ err: errMsg }, "[TigerBeetle] Unexpected error");
+    return { success: false, error: errMsg || "Unknown error", degraded: true };
   }
 }
 

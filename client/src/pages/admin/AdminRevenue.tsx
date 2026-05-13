@@ -89,7 +89,7 @@ export default function AdminRevenue() {
       utils.billing.listRevenueSplits.invalidate();
       utils.billing.getPlatformRevenue.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const revenue = revenueQuery.data;

@@ -124,7 +124,7 @@ export default function FrameworkDashboard() {
       URL.revokeObjectURL(url);
       toast.success(`${data.framework} compliance report downloaded`);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * NDSEP Kafka Integration Module (Node.js)
  * ==========================================
@@ -37,12 +38,12 @@ async function checkKafkaHealth(): Promise<boolean> {
       signal: AbortSignal.timeout(3000),
     });
     const ok = res.ok;
-    if (ok && !kafkaConnected) console.log(`[Kafka] Connected via REST Proxy at ${KAFKA_REST_URL}`);
-    if (!ok && kafkaConnected) console.warn(`[Kafka] REST Proxy unhealthy`);
+    if (ok && !kafkaConnected) logger.info(`[Kafka] Connected via REST Proxy at ${KAFKA_REST_URL}`);
+    if (!ok && kafkaConnected) logger.warn(`[Kafka] REST Proxy unhealthy`);
     kafkaConnected = ok;
     return ok;
   } catch {
-    if (kafkaConnected) console.warn(`[Kafka] REST Proxy unreachable — degrading gracefully`);
+    if (kafkaConnected) logger.warn(`[Kafka] REST Proxy unreachable — degrading gracefully`);
     kafkaConnected = false;
     return false;
   }
@@ -50,7 +51,7 @@ async function checkKafkaHealth(): Promise<boolean> {
 
 if (KAFKA_ENABLED) {
   checkKafkaHealth().catch(() => {
-    console.warn(`[Kafka] Could not connect — event streaming disabled (graceful degradation)`);
+    logger.warn(`[Kafka] Could not connect — event streaming disabled (graceful degradation)`);
   });
   setInterval(checkKafkaHealth, 30_000);
 }
@@ -244,19 +245,19 @@ export { kafkaConnected, checkKafkaHealth };
 // ── Backward-compatible publish helpers (used by routers.ts) ──────────────────
 
 export async function publishPenaltyIssued(data: { penaltyId: string | number; orgId: string | number; amount: number; currency: string; reason: string; issuedBy: string }): Promise<void> {
-  await kafkaProduce("ndsep.penalties.issued", String(data.penaltyId), { event: "penalty.issued", ...data }).catch(() => {});
+  await kafkaProduce("ndsep.penalties.issued", String(data.penaltyId), { event: "penalty.issued", ...data }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 }
 export async function publishEnforcementCaseOpened(data: { caseId: string | number; orgId: string | number; caseType: string; severity: string; openedBy: string }): Promise<void> {
-  await kafkaProduce("ndsep.enforcement.cases", String(data.caseId), { event: "case.opened", ...data }).catch(() => {});
+  await kafkaProduce("ndsep.enforcement.cases", String(data.caseId), { event: "case.opened", ...data }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 }
 export async function publishCitizenRightsRequest(data: { requestId: string | number; citizenId: string; requestType: string; status: string; orgId: string | number }): Promise<void> {
-  await kafkaProduce("ndsep.citizen.rights", String(data.requestId), { event: "rights.request.updated", ...data }).catch(() => {});
+  await kafkaProduce("ndsep.citizen.rights", String(data.requestId), { event: "rights.request.updated", ...data }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 }
 export async function publishComplianceViolation(data: { violationId: string | number; orgId: string | number; violationType: string; severity: string }): Promise<void> {
-  await kafkaProduce("ndsep.compliance.violations", String(data.violationId), { event: "violation.detected", ...data }).catch(() => {});
+  await kafkaProduce("ndsep.compliance.violations", String(data.violationId), { event: "violation.detected", ...data }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 }
 export async function publishAuditEvent(data: { userId: string; action: string; resource: string; resourceId: string | number; orgId?: string | number }): Promise<void> {
-  await kafkaProduce("ndsep.audit.events", String(data.resourceId), { event: "audit.action", ...data }).catch(() => {});
+  await kafkaProduce("ndsep.audit.events", String(data.resourceId), { event: "audit.action", ...data }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 }
 export function isKafkaConnected(): boolean {
   return kafkaConnected;

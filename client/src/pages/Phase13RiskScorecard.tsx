@@ -36,7 +36,7 @@ export default function Phase13RiskScorecard() {
       toast.success("Risk entry created");
       setForm({ risk_category: "", risk_name: "", likelihood: "3", impact: "3", owner: "", mitigation_plan: "", review_date: "" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const update = trpc.phase13.riskScorecard.update.useMutation({
     onSuccess: () => {
@@ -45,7 +45,7 @@ export default function Phase13RiskScorecard() {
       setEditId(null);
       toast.success("Risk entry updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const list = (records as any[]) ?? [];

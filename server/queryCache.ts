@@ -20,6 +20,7 @@
  *   - Streaming stats:         10s  (live data)
  */
 import { cacheGetJson, cacheSetJson, cacheDel, cacheGet, cacheSet } from "./cache";
+import { logger } from "./logger";
 
 // ─── TTL Constants (seconds) ──────────────────────────────────────────────────
 export const TTL = {
@@ -84,7 +85,7 @@ export async function withCache<T>(
   const cached = await cacheGetJson<T>(key);
   if (cached !== null) return cached;
   const data = await fetch();
-  await cacheSetJson(key, data, ttl).catch(() => {}); // non-blocking, non-fatal
+  await cacheSetJson(key, data, ttl).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")); // non-blocking, non-fatal
   return data;
 }
 
@@ -111,7 +112,7 @@ export async function withSWR<T>(
         await cacheSetJson(key, data, ttl);
         await cacheSetJson(staleKey, data, staleTtl);
       })
-      .catch(() => {});
+      .catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return stale;
   }
   // Cache miss — fetch synchronously
@@ -119,7 +120,7 @@ export async function withSWR<T>(
   await Promise.all([
     cacheSetJson(key, data, ttl),
     cacheSetJson(staleKey, data, staleTtl),
-  ]).catch(() => {});
+  ]).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
   return data;
 }
 
@@ -196,7 +197,7 @@ export async function warmupCaches(
     cacheSetJson(CK.penaltyStats(), await fetchPenaltyStats().catch(() => null), TTL.PENALTY_STATS),
   ];
   await Promise.allSettled(tasks);
-  console.log("[QueryCache] Cache warmup complete");
+  logger.info("[QueryCache] Cache warmup complete");
 }
 
 // Re-export low-level helpers for convenience

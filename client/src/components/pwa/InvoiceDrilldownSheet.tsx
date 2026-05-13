@@ -68,7 +68,7 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
 
   const sendEmailMutation = trpc.billing.sendInvoiceEmail.useMutation({
     onSuccess: () => toast.success("Reminder sent successfully"),
-    onError: (e) => toast.error(`Failed to send: ${e.message}`),
+    onError: (e) => toast.error(`Failed to send: ${(e instanceof Error ? e.message : String(e))}`),
   });
 
   // Close on backdrop click

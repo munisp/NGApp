@@ -12,6 +12,7 @@ import { ExpressInstrumentation } from "@opentelemetry/instrumentation-express";
 import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 import type { IncomingMessage } from "http";
+import { logger } from "./logger";
 
 const OTLP_ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:4318";
 const SERVICE_NAME = process.env.OTEL_SERVICE_NAME ?? "ndsep-api";
@@ -26,7 +27,7 @@ let sdk: NodeSDK | null = null;
  */
 export function initTelemetry(): void {
   if (!ENABLED) {
-    console.log("[telemetry] OpenTelemetry disabled (OTEL_ENABLED=false)");
+    logger.info("[telemetry] OpenTelemetry disabled (OTEL_ENABLED=false)");
     return;
   }
 
@@ -55,10 +56,10 @@ export function initTelemetry(): void {
   });
 
   sdk.start();
-  console.log(`[telemetry] OpenTelemetry SDK started → ${OTLP_ENDPOINT}`);
+  logger.info(`[telemetry] OpenTelemetry SDK started → ${OTLP_ENDPOINT}`);
 
   process.on("SIGTERM", () => {
-    sdk?.shutdown().then(() => console.log("[telemetry] SDK shut down"));
+    sdk?.shutdown().then(() => logger.info("[telemetry] SDK shut down"));
   });
 }
 

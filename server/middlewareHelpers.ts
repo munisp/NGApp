@@ -43,7 +43,7 @@ export async function emitEvent(topic: string, payload: Record<string, unknown>)
   try {
     await kafkaResilience(() => kafkaProduce(topic, null, { ...payload, ts: new Date().toISOString() }));
   } catch (e) {
-    console.warn(`[Kafka] emitEvent ${topic} failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[Kafka] emitEvent ${topic} failed (non-fatal)`);
   }
 }
 export { getAllCircuitBreakerStates };
@@ -64,7 +64,7 @@ export async function logAuditEvent(
       [action, resourceType, String(resourceId), String(userId), JSON.stringify(details), ipAddress ?? null],
     );
   } catch (e) {
-    console.warn(`[Audit] logAuditEvent ${action} failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[Audit] logAuditEvent ${action} failed (non-fatal)`);
   }
 }
 
@@ -76,7 +76,7 @@ export function broadcastEvent(event: string, data: Record<string, unknown>): vo
   try {
     wsBroadcast(event, data);
   } catch (e) {
-    console.warn(`[WS] broadcastEvent ${event} failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[WS] broadcastEvent ${event} failed (non-fatal)`);
   }
 }
 
@@ -98,7 +98,7 @@ export async function recordFinancialTransaction(
       description,
     }));
   } catch (e) {
-    console.warn(`[TigerBeetle] recordFinancialTransaction failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[TigerBeetle] recordFinancialTransaction failed (non-fatal)`);
   }
 }
 
@@ -112,7 +112,7 @@ export async function triggerWorkflow(
   try {
     await temporalResilience(() => startWorkflow(workflowType, { workflowId, input, taskQueue }));
   } catch (e) {
-    console.warn(`[Temporal] triggerWorkflow ${workflowType} failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[Temporal] triggerWorkflow ${workflowType} failed (non-fatal)`);
   }
 }
 
@@ -126,7 +126,7 @@ export async function checkPermission(
   try {
     return await permifyCheck(subjectId, action, resourceType, resourceId);
   } catch (e) {
-    console.warn(`[Permify] checkPermission failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[Permify] checkPermission failed (non-fatal)`);
     return true; // fail-open for non-critical checks
   }
 }
@@ -152,7 +152,7 @@ export async function checkRateLimit(
     await cacheSet(countKey, String(count + 1), windowSecs);
     return true;
   } catch (e) {
-    console.warn(`[RateLimit] checkRateLimit ${key} failed (non-fatal):`, (e as Error).message);
+    logger.warn({ err: (e as Error).message }, `[RateLimit] checkRateLimit ${key} failed (non-fatal)`);
     return true; // fail-open
   }
 }
@@ -220,3 +220,4 @@ export const proxyRateLimit = checkRateLimitRust;
 // MIDDLEWARE_CACHE_URL alias
 import { getPgSslConfig } from "./dbSslConfig";
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";

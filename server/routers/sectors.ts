@@ -11,6 +11,7 @@ import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
 function getPool(): InstanceType<typeof Pool> {
@@ -94,7 +95,7 @@ export const healthcareRouter = router({
          input.lga ?? null, input.nhiaAccreditationNumber ?? null, input.fmohLicenceNumber ?? null,
          input.bedCapacity ?? null, input.emrSystem ?? null, input.dataLocalisationCompliant, input.ndpcRegistered]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -369,7 +370,7 @@ export const insuranceRouter = router({
          WHERE id=$1 RETURNING *`,
         [input.id, input.status, input.approvedAmountNgn ?? null, input.notes ?? null]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -478,7 +479,7 @@ export const fintechRouter = router({
         `UPDATE open_banking_consents SET consent_status='revoked', revoked_at=NOW(), updated_at=NOW() WHERE id=$1 RETURNING *`,
         [input.id]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 

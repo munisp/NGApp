@@ -23,14 +23,14 @@ export default function AutomatedDecisions() {
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
-  const createMutation = trpc.automatedDecisions.create.useMutation({ onSuccess: () => { toast.success("Decision recorded"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.automatedDecisions.create.useMutation({ onSuccess: () => { toast.success("Decision recorded"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const requestReviewMutation = trpc.automatedDecisions.requestReview.useMutation({
     onSuccess: () => { toast.success("Human review requested"); utils.automatedDecisions.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const completeReviewMutation = trpc.automatedDecisions.completeReview.useMutation({
     onSuccess: () => { toast.success("Review completed — data subject notified"); setReviewId(null); setReviewOutcome(""); utils.automatedDecisions.list.invalidate().catch(() => {}); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.automatedDecisions.delete.useMutation({
     onSuccess: () => { toast.success("Automated decision deleted"); setDeleteId(null); utils.automatedDecisions.list.invalidate().catch(() => {}); },

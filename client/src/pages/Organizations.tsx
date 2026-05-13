@@ -82,15 +82,15 @@ export default function Organizations() {
 
   const createMutation = trpc.organizations.create.useMutation({
     onSuccess: () => { utils.organizations.list.invalidate(); setShowCreate(false); setForm(EMPTY_FORM); toast.success("Organisation created"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const updateMutation = trpc.organizations.update.useMutation({
     onSuccess: () => { utils.organizations.list.invalidate(); setEditOrg(null); toast.success("Organisation updated"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMutation = trpc.organizations.delete.useMutation({
     onSuccess: () => { utils.organizations.list.invalidate(); setDeleteOrg(null); toast.success("Organisation deleted"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const [searchQuery, setSearchQuery] = useState("");

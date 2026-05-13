@@ -39,11 +39,11 @@ export default function ComplianceCalendarPage() {
 
   const addMut = trpc.complianceCalendarP11.createDeadline.useMutation({
     onSuccess: () => { toast.success("Deadline added"); setAddOpen(false); refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const completeMut = trpc.complianceCalendarP11.createDeadline.useMutation({
     onSuccess: () => { toast.success("Marked as complete"); refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const deadlinesData = (deadlines as any) ?? [];

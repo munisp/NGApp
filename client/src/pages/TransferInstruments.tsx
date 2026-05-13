@@ -23,7 +23,7 @@ export default function TransferInstruments() {
 
   const { data: instruments = [], refetch, isLoading } = trpc.transferInstruments.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter });
   const { data: orgs = [] } = trpc.organizations.list.useQuery({ limit: 200 });
-  const createMutation = trpc.transferInstruments.create.useMutation({ onSuccess: () => { toast.success("Transfer instrument created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error(e.message) });
+  const createMutation = trpc.transferInstruments.create.useMutation({ onSuccess: () => { toast.success("Transfer instrument created"); setShowCreate(false); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
   const updateMutation = trpc.transferInstruments.update.useMutation({ onSuccess: () => { toast.success("Instrument updated");
   const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -34,7 +34,7 @@ export default function TransferInstruments() {
       utils.transferInstruments.list.invalidate().catch(() => {});
     },
     onError: (err) => toast.error(err.message || "Failed to delete transfer instrument"),
-  }); refetch(); }, onError: (e) => toast.error(e.message) });
+  }); refetch(); }, onError: (e) => toast.error((e instanceof Error ? e.message : String(e))) });
 
   const filtered = (instruments as any[]).filter((r: any) => !searchQuery || r.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 

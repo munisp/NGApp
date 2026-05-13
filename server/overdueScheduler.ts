@@ -17,6 +17,7 @@ import { sendPenaltyNotice } from "./emailNotification";
 import { notifyOwner } from "./_core/notification";
 import { getPgSslConfig } from "./dbSslConfig";
 import { getDatabaseUrl } from "./config";
+import { logger } from "./logger";
 
 const PG_URL = getDatabaseUrl();
 
@@ -62,11 +63,11 @@ export async function runOverdueCheck(): Promise<{ marked: number; notified: num
     marked = overduePenalties.length;
 
     if (marked === 0) {
-      console.log("[OverdueScheduler] No newly overdue penalties found.");
+      logger.info("[OverdueScheduler] No newly overdue penalties found.");
       return { marked: 0, notified: 0 };
     }
 
-    console.log(`[OverdueScheduler] Marked ${marked} penalties as overdue.`);
+    logger.info(`[OverdueScheduler] Marked ${marked} penalties as overdue.`);
 
     // 2. Send reminder emails to orgs with a contact email
     const portalUrl = `${process.env.VITE_OAUTH_PORTAL_URL ?? ""}/portal`;
@@ -86,7 +87,7 @@ export async function runOverdueCheck(): Promise<{ marked: number; notified: num
         });
         notified++;
       } catch (err) {
-        console.warn(`[OverdueScheduler] Failed to email ${p.contact_email}:`, err);
+        logger.warn({ data: err }, `[OverdueScheduler] Failed to email ${p.contact_email}:`);
       }
     }
 
@@ -108,11 +109,11 @@ export async function runOverdueCheck(): Promise<{ marked: number; notified: num
       ]
         .filter(l => l !== undefined)
         .join("\n"),
-    }).catch(() => {});
+    }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 
     return { marked, notified };
   } catch (err) {
-    console.error("[OverdueScheduler] Error during overdue check:", err);
+    logger.error({ err: err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err) }, "[OverdueScheduler] Error during overdue check:");
     return { marked: 0, notified: 0 };
   } finally {
     await pool.end();
@@ -129,26 +130,26 @@ export function startOverdueScheduler(): void {
   // Run immediately on startup (after a short delay to let DB settle)
   const initialDelay = setTimeout(async () => {
     const result = await runOverdueCheck();
-    console.log(`[OverdueScheduler] Initial check: ${result.marked} marked, ${result.notified} notified.`);
+    logger.info(`[OverdueScheduler] Initial check: ${result.marked} marked, ${result.notified} notified.`);
   }, 15_000);
 
   // Then repeat every 6 hours
   overdueTimer = setInterval(async () => {
     const result = await runOverdueCheck();
-    console.log(`[OverdueScheduler] Periodic check: ${result.marked} marked, ${result.notified} notified.`);
+    logger.info(`[OverdueScheduler] Periodic check: ${result.marked} marked, ${result.notified} notified.`);
   }, INTERVAL_MS);
 
   // Prevent the initial timeout from keeping the process alive if server shuts down
   if (initialDelay.unref) initialDelay.unref();
   if (overdueTimer.unref) overdueTimer.unref();
 
-  console.log(`[OverdueScheduler] Started — checking every 6 hours (next run in ~15s for initial check).`);
+  logger.info(`[OverdueScheduler] Started — checking every 6 hours (next run in ~15s for initial check).`);
 }
 
 export function stopOverdueScheduler(): void {
   if (overdueTimer) {
     clearInterval(overdueTimer);
     overdueTimer = null;
-    console.log("[OverdueScheduler] Stopped.");
+    logger.info("[OverdueScheduler] Stopped.");
   }
 }

@@ -16,6 +16,7 @@ import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, flu
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
 import { getDatabaseUrl } from "../config";
+import { logger } from "../logger";
 
 const PG_URL = getDatabaseUrl();
 const { Pool } = pg;
@@ -70,7 +71,7 @@ export const dataPipelineRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           [input.flowId, input.flowName, input.engine, input.sourceSystem, input.targetSystem, input.scheduleExpression, input.orgId]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -84,7 +85,7 @@ export const dataPipelineRouter = router({
           "UPDATE data_pipeline_flows SET status = $1, updated_at = NOW() WHERE flow_id = $2",
           [input.status, input.flowId]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -114,7 +115,7 @@ export const dataPipelineRouter = router({
           "UPDATE airflow_dags SET is_paused = $1, updated_at = NOW() WHERE dag_id = $2",
           [input.isPaused, input.dagId]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -177,7 +178,7 @@ export const dataLineageRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
           [input.nodeId, input.nodeType, input.name, input.description, input.systemName, input.orgId, input.piiContained, input.classificationLevel]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -197,7 +198,7 @@ export const dataLineageRouter = router({
            VALUES ($1, $2, $3, $4) RETURNING *`,
           [input.sourceNodeId, input.targetNodeId, input.transformationType, input.transformationLogic]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -249,7 +250,7 @@ export const consentLifecycleRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
           [input.consentId, input.orgId, input.dataSubjectId, input.eventType, input.purposeCategory, input.legalBasis, JSON.stringify(input.dataCategories), input.retentionPeriodDays, input.ndpaArticle, input.expiresAt]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -316,7 +317,7 @@ export const regulatoryIntelligenceRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
           [input.itemType, input.title, input.summary, input.sourceUrl, input.sourceOrg, JSON.stringify(input.affectedSectors), JSON.stringify(input.ndpaArticles), input.complianceDeadline, input.impactLevel, input.actionRequired]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -378,7 +379,7 @@ export const incidentResponseRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
           [ref, input.playbookId, input.orgId, input.incidentTitle, input.assignedTo, input.affectedRecords]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -400,7 +401,7 @@ export const incidentResponseRouter = router({
            WHERE id = $3`,
           [input.stepNumber, input.ndpcNotified, input.activationId]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -414,7 +415,7 @@ export const incidentResponseRouter = router({
           "UPDATE incident_response_activations SET status = 'resolved', resolved_at = NOW() WHERE id = $1",
           [input.activationId]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -491,7 +492,7 @@ export const complianceGapRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
           [ref, input.orgId, input.assessmentType, Math.round(score), gapCount, criticalGaps, highGaps, mediumGaps, lowGaps, JSON.stringify(ndpaGaps), JSON.stringify([{ priority: 1, action: "Register DPO", deadline: "30 days" }])]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -543,7 +544,7 @@ export const vendorRiskRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
           [ref, input.vendorName, input.vendorType, input.country, input.orgId, riskScore, riskLevel, JSON.stringify(input.dataCategories), input.dpiaRequired, input.dpaExecuted, JSON.stringify(input.certifications)]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -570,7 +571,7 @@ export const vendorRiskRouter = router({
         updates.push("updated_at = NOW()");
         params.push(input.id);
         await p.query(`UPDATE vendor_risk_profiles SET ${updates.join(", ")} WHERE id = $${params.length}`, params);
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -612,7 +613,7 @@ export const whistleblowerRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, report_ref, status`,
           [ref, input.category, input.orgId, input.description, input.isAnonymous, input.reporterEmail, JSON.stringify(input.evidenceUrls), priority]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { ...q.rows[0], message: "Report submitted successfully. Reference: " + ref };
       } finally { await p.end(); }
     }),
@@ -650,7 +651,7 @@ export const whistleblowerRouter = router({
            WHERE id = $5`,
           [input.status, input.assignedTo, input.resolutionNotes, input.ndpcEscalated, input.id]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -688,7 +689,7 @@ export const regulatorySandboxRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           [ref, input.orgId, input.projectTitle, input.projectDescription, input.innovationType, JSON.stringify(input.dataTypesInvolved), input.proposedDuration]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -709,7 +710,7 @@ export const regulatorySandboxRouter = router({
            updated_at = NOW() WHERE id = $4`,
           [input.status, input.ndpcApprovalRef, JSON.stringify(input.conditions), input.id]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -747,7 +748,7 @@ export const aiEthicsRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           [ref, input.orgId, input.aiSystemName, input.aiSystemType, input.riskCategory, input.humanOversightEnabled, input.dataSubjectsInformed]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -774,7 +775,7 @@ export const aiEthicsRouter = router({
            WHERE id = $9`,
           [input.biasAssessmentScore, input.explainabilityScore, input.fairnessScore, overallScore, input.ndpaArticle24Compliant, input.reviewStatus, JSON.stringify(input.findings), JSON.stringify(input.recommendations), input.id]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true, overallScore };
       } finally { await p.end(); }
     }),
@@ -839,7 +840,7 @@ export const nationalIdRouter = router({
           [ref, input.orgId, input.idType, input.purpose, success ? 1 : 0, success ? 0 : 1]
         );
 
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return {
           success,
           verificationRef: ref,
@@ -905,7 +906,7 @@ export const crossAgencyRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
           [ref, input.requestingAgency, input.providingAgency, JSON.stringify(input.dataCategories), input.legalBasis, input.ndpaArticle, input.purpose, input.encryptionStandard]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -923,7 +924,7 @@ export const crossAgencyRouter = router({
           "UPDATE cross_agency_data_shares SET status = 'approved', approved_by = $1, ndpc_approval_ref = $2, updated_at = NOW() WHERE id = $3",
           [input.approvedBy, input.ndpcApprovalRef, input.id]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -948,7 +949,7 @@ export const crossAgencyRouter = router({
       const p = pool();
       try {
         await p.query(`UPDATE cross_agency_data_shares SET status = 'suspended' WHERE id = $1`, [input.agreementId]);
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -1002,7 +1003,7 @@ export const piaRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
           [ref, input.orgId, input.projectName, input.projectDescription, input.dataController, input.processingPurpose, JSON.stringify(input.dataCategories), input.dataSubjectCount, input.crossBorderTransfer, input.automatedDecisionMaking, riskLevel, riskScore, ndpcConsultationRequired]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -1022,7 +1023,7 @@ export const piaRouter = router({
            updated_at = NOW() WHERE id = $3`,
           [input.status, input.approvedBy, input.id]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -1071,7 +1072,7 @@ export const platformNotificationsRouter = router({
       const p = pool();
       try {
         await p.query("UPDATE platform_notifications SET is_read = TRUE WHERE id = $1", [input.id]);
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -1086,7 +1087,7 @@ export const platformNotificationsRouter = router({
         } else {
           await p.query("UPDATE platform_notifications SET is_read = TRUE WHERE user_id IS NULL");
         }
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),
@@ -1117,7 +1118,7 @@ export const platformNotificationsRouter = router({
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           [input.userId, input.orgId, input.notificationType, input.title, input.message, input.severity, input.actionUrl]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -1158,7 +1159,7 @@ export const stripePaymentsRouter = router({
            VALUES ($1, $2, $3, $4, $5, 'usd', 'pending') RETURNING *`,
           [intentId, input.penaltyId, input.orgId, input.amountNgn, amountUsd]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return {
           ...q.rows[0],
           clientSecret: `${intentId}_secret_${(await import('crypto')).randomBytes(16).toString('hex')}`,
@@ -1192,7 +1193,7 @@ export const stripePaymentsRouter = router({
         } catch (stripeErr: any) {
           // Fallback: mark as pending for manual review
           status = "pending_review";
-          console.warn("[Stripe] Payment confirmation error:", stripeErr.message);
+          logger.warn("[Stripe] Payment confirmation error:", stripeErr.message);
         }
         
         await p.query(
@@ -1212,7 +1213,7 @@ export const stripePaymentsRouter = router({
           );
         }
 
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success, status, receiptUrl };
       } finally { await p.end(); }
     }),
@@ -1297,7 +1298,7 @@ export const finesRouter = router({
            VALUES ($1, $2, 'NGN', 'pending', $3) RETURNING *`,
           [input.orgId, input.fineAmountNgn, dueDate]
         );
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return q.rows[0];
       } finally { await p.end(); }
     }),
@@ -1329,7 +1330,7 @@ export const finesRouter = router({
           cancel_url: `${ctx.req.headers.origin}/fine-payments`,
         });
         await p.query(`UPDATE enforcement_fines SET payment_reference = $1 WHERE id = $2`, [session.id, input.fineId]);
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { checkoutUrl: session.url, sessionId: session.id };
       } finally { await p.end(); }
     }),
@@ -1339,7 +1340,7 @@ export const finesRouter = router({
       const p = pool();
       try {
         await p.query(`UPDATE enforcement_fines SET status = 'waived' WHERE id = $1`, [input.fineId]);
-        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch(() => {});
+        emitMutationEvent("ndsep.data_pipeline.mutation", { action: "phase12Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: true };
       } finally { await p.end(); }
     }),

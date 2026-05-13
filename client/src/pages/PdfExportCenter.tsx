@@ -20,15 +20,15 @@ export default function PdfExportCenter() {
   const { data: orgs = [] } = trpc.organizations.list.useQuery();
   const certMut = trpc.pdfGeneration.generateComplianceCertificate.useMutation({
     onSuccess: (d) => { toast.success("PDF generated successfully"); if (d.downloadUrl) window.open(d.downloadUrl, "_blank"); setGenerating(false); },
-    onError: (e) => { toast.error(e.message); setGenerating(false); },
+    onError: (e) => { toast.error((e instanceof Error ? e.message : String(e))); setGenerating(false); },
   });
   const auditMut = trpc.pdfGeneration.generateAuditReturn.useMutation({
     onSuccess: (d) => { toast.success("Audit return PDF generated"); if (d.downloadUrl) window.open(d.downloadUrl, "_blank"); setGenerating(false); },
-    onError: (e) => { toast.error(e.message); setGenerating(false); },
+    onError: (e) => { toast.error((e instanceof Error ? e.message : String(e))); setGenerating(false); },
   });
   const penaltyMut = trpc.pdfGeneration.generatePenaltyNotice.useMutation({
     onSuccess: (d) => { toast.success("Penalty notice PDF generated"); if (d.downloadUrl) window.open(d.downloadUrl, "_blank"); setGenerating(false); },
-    onError: (e) => { toast.error(e.message); setGenerating(false); },
+    onError: (e) => { toast.error((e instanceof Error ? e.message : String(e))); setGenerating(false); },
   });
 
   const handleGenerate = () => {

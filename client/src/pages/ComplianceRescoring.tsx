@@ -13,7 +13,7 @@ export default function ComplianceRescoring() {
   const { data: history = [], refetch } = trpc.complianceRescoring.getHistory.useQuery({ orgId, limit: 12 });
   const runBatchMut = trpc.complianceRescoring.runBatch.useMutation({
     onSuccess: (d) => { toast.success(`Rescored ${d.updated} organizations`); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const scores = (history as any[]).map((h: any) => Number(h.score ?? 0));

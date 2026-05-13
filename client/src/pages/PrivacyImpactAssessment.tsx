@@ -43,7 +43,7 @@ export default function PrivacyImpactAssessment() {
 
   const create = trpc.phase12.pia.create.useMutation({
     onSuccess: () => { refetch(); setShowCreate(false); setForm(EMPTY_FORM); toast.success("PIA created"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const approve = trpc.phase12.pia.approve.useMutation({
     onSuccess: () => { refetch(); toast.success("PIA approved"); },

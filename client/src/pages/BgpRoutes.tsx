@@ -172,7 +172,7 @@ export default function BgpRoutes() {
       setReportPrefix(""); setReportAsn(""); setReportNotes("");
       refetch(); refetchStats();
     },
-    onError: (e: { message: string }) => toast.error(e.message),
+    onError: (e: { message: string }) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const openReport = useCallback((prefix = "", asn = "") => {

@@ -80,7 +80,7 @@ async function deliverWebhook(
       `INSERT INTO webhook_deliveries (subscription_id, event_type, event_id, status_code, success, attempt, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [subscription.id, event.type, event.id, response.status, success, attempt + 1]
-    ).catch(() => {});
+    ).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 
     if (success) {
       logger.info({ subscriptionId: subscription.id, eventType: event.type }, "[Webhook] Delivered");

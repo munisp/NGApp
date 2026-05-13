@@ -34,7 +34,7 @@ export default function FinePaymentGateway() {
 
   const payMut = trpc.finePayment.recordPayment.useMutation({
     onSuccess: () => { toast.success("Payment recorded"); setPayOpen(false); refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const finesData = (fines as any) ?? [];

@@ -21,7 +21,7 @@ export default function CertificateVerification() {
   const verifyQuery = trpc.certVerification.verify.useQuery({ certNumber: verifyNum }, { enabled: verifyNum.length > 10 });
   const issueMut = trpc.certVerification.issue.useMutation({
     onSuccess: (d) => { toast.success(`Certificate issued: ${d.certNumber}`); setIssueOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   return (

@@ -66,8 +66,8 @@ function EmailSettingsTab() {
       } else {
         toast.error(`Send failed: ${result.error}`);
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to send test email");
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : String(err)) ?? "Failed to send test email");
     }
   };
 

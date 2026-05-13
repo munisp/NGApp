@@ -65,7 +65,7 @@ export default function HealthcareDashboard() {
       setShowCreate(false);
       setForm({ facilityName: "", facilityCode: "", facilityType: "federal_hospital", state: "", lga: "", nhiaAccreditationNumber: "", fmohLicenceNumber: "", bedCapacity: "", emrSystem: "" });
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const s = stats.data as any;

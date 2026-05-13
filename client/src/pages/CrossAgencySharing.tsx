@@ -39,7 +39,7 @@ export default function CrossAgencySharing() {
 
   const create = trpc.phase12.crossAgency.create.useMutation({
     onSuccess: () => { refetch(); setShowCreate(false); setForm(EMPTY_FORM); toast.success("Data sharing agreement created"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const approve = trpc.phase12.crossAgency.approve.useMutation({
     onSuccess: () => { refetch(); toast.success("Agreement approved"); },

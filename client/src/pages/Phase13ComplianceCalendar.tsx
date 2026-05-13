@@ -25,15 +25,15 @@ export default function Phase13ComplianceCalendar() {
       toast.success("Compliance event created");
       setForm({ title: "", event_type: "deadline", due_date: "", description: "", priority: "medium", reminder_days: 14 });
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const complete = trpc.phase13.complianceCalendar.complete.useMutation({
     onSuccess: () => { utils.phase13.complianceCalendar.list.invalidate(); toast.success("Event marked complete"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteEvent = trpc.phase13.complianceCalendar.delete.useMutation({
     onSuccess: () => { utils.phase13.complianceCalendar.list.invalidate(); toast.success("Event deleted"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const eventList = (events as any[]) ?? [];

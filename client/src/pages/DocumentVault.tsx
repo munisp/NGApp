@@ -22,11 +22,11 @@ export default function DocumentVault() {
   const { data: stats } = trpc.documentVault.getStats.useQuery();
   const uploadMut = trpc.documentVault.upload.useMutation({
     onSuccess: (d) => { toast.success(`Document uploaded: ${d.docId}`); setUploadOpen(false); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
   const deleteMut = trpc.documentVault.delete.useMutation({
     onSuccess: () => { toast.success("Document deleted"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
   const filtered = docs.filter((d: any) =>

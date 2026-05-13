@@ -102,7 +102,7 @@ export async function runInvoiceOverdueCheck(): Promise<OverdueRunResult> {
     logger.info(result, "[invoice-overdue] Overdue check completed");
     return result;
   } catch (err: any) {
-    await client.query("ROLLBACK").catch(() => {});
+    await client.query("ROLLBACK").catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     logger.error({ err }, "[invoice-overdue] Overdue check failed — rolled back");
     throw err;
   } finally {
@@ -141,7 +141,7 @@ export function stopInvoiceOverdueScheduler(): void {
     logger.info("[invoice-overdue] Scheduler stopped");
   }
   if (pool) {
-    pool.end().catch(() => {});
+    pool.end().catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     pool = null;
   }
 }

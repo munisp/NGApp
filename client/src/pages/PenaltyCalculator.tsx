@@ -14,7 +14,7 @@ export default function PenaltyCalculator() {
   const [form, setForm] = useState({ violationType:"data_breach", sector:"banking", severity:"medium", organizationRevenue:"", affectedIndividuals:"0", isRepeatOffender:false, hasCooperated:true });
   const [result, setResult] = useState<any>(null);
   const { data: history } = trpc.penaltyCalculator.history.useQuery({ limit:10 });
-  const calcM = trpc.penaltyCalculator.calculate.useMutation({ onSuccess:(r)=>setResult(r), onError:(e)=>toast.error(e.message) });
+  const calcM = trpc.penaltyCalculator.calculate.useMutation({ onSuccess:(r)=>setResult(r), onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3"><Calculator className="h-7 w-7 text-primary"/><div><h1 className="text-2xl font-bold">Penalty Calculator</h1><p className="text-muted-foreground text-sm">NDPA 2023 Section 48 — Administrative fine estimation tool</p></div></div>

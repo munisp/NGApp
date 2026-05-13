@@ -149,7 +149,7 @@ export async function sendPushNotification(
     `INSERT INTO push_notification_log (user_id, notification_type, title, status)
      VALUES ($1, $2, $3, $4)`,
     [userId, payload.type, payload.title, failed === 0 ? "sent" : "partial"]
-  ).catch(() => {});
+  ).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
 
   return { sent, failed };
 }
