@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('OnboardingPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -26,6 +24,8 @@ const log = createLogger('OnboardingPortal');
   Check,
   X,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('OnboardingPortal');
 
 // Types
 interface OnboardingCase {

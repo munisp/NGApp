@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('ApplicantPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -17,6 +15,8 @@ const log = createLogger('ApplicantPortal');
   AlertCircle,
   Loader2,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ApplicantPortal');
 
 // Types
 interface ApplicationData {

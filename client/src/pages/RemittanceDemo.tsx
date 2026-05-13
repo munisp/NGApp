@@ -10,9 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import { 
 import { createLogger } from '@/lib/logger';
-const log = createLogger('RemittanceDemo');
+import { 
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
@@ -34,6 +33,8 @@ const log = createLogger('RemittanceDemo');
   Wallet,
   XCircle
 } from 'lucide-react';
+
+const log = createLogger('RemittanceDemo');
 
 export default function RemittanceDemo() {
   return (

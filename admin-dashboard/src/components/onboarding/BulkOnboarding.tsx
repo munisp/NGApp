@@ -2,8 +2,6 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('BulkOnboarding');
   Upload,
   FileSpreadsheet,
   CheckCircle,
@@ -15,6 +13,8 @@ const log = createLogger('BulkOnboarding');
   Eye,
   Trash2,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('BulkOnboarding');
 
 interface BulkOnboardingResult {
   rowNumber: number;

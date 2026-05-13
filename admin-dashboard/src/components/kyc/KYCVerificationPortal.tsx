@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('KYCVerificationPortal');
   User,
   FileText,
   CheckCircle,
@@ -33,6 +31,8 @@ const log = createLogger('KYCVerificationPortal');
   Maximize2,
   RotateCw,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('KYCVerificationPortal');
 
 // Types
 type KYCStatus = 'PENDING' | 'DOCUMENTS_PENDING' | 'IN_PROGRESS' | 'SCREENING' | 'MANUAL_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXPIRED';

@@ -2,8 +2,6 @@
 
 import React, { useState, useRef } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('ApplicantKYCPortal');
   User,
   FileText,
   CheckCircle,
@@ -26,6 +24,8 @@ const log = createLogger('ApplicantKYCPortal');
   Trash2,
   RefreshCw,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('ApplicantKYCPortal');
 
 // Types
 type DocumentType = 'PASSPORT' | 'NATIONAL_ID' | 'DRIVERS_LICENSE' | 'PROOF_OF_ADDRESS' | 'UTILITY_BILL' | 'SELFIE';

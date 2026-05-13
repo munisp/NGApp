@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('KYBVerificationPortal');
   Building2,
   FileText,
   CheckCircle,
@@ -34,6 +32,8 @@ const log = createLogger('KYBVerificationPortal');
   UserCheck,
   Briefcase,
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('KYBVerificationPortal');
 
 // Types
 type KYBStatus = 'DRAFT' | 'SUBMITTED' | 'DOCUMENTS_PENDING' | 'IN_PROGRESS' | 'KYC_PENDING' | 'SCREENING' | 'MANUAL_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXPIRED';

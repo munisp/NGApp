@@ -5,8 +5,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-import { createLogger } from '@/lib/logger';
-const log = createLogger('useLakehouse');
   lakehouseAPI,
   NOCMetrics,
   FraudMetrics,
@@ -15,6 +13,8 @@ const log = createLogger('useLakehouse');
   ReportsMetrics,
   DeveloperMetrics,
 } from '@/lib/api';
+import { createLogger } from '@/lib/logger';
+const log = createLogger('useLakehouse');
 
 // Generic hook for fetching lakehouse data with auto-refresh
 export function useLakehouseQuery<T>(
