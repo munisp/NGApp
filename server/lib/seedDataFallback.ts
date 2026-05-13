@@ -727,6 +727,9 @@ const FLAG_CATEGORIES = [
   "risk_compliance", "agent_banking", "microfinance", "islamic_banking",
   "diaspora_banking", "cooperative_banking", "agriculture_banking",
   "billing", "multi_tenant",
+  // Growth Features (Enhancements 13-20)
+  "chatbot", "smart_savings", "virtual_cards", "qr_payments",
+  "bnpl", "investments", "remittances", "gamification",
 ];
 
 // Route-to-flag mapping for API middleware
@@ -815,6 +818,16 @@ const ROUTE_FLAG_MAP: Record<string, string> = {
   "/api/billing": "billing",
   "/api/pricing": "billing",
   "/api/revenue": "billing",
+  // Growth Features (Enhancements 13-20)
+  "/api/enhancements/chatbot": "chatbot",
+  "/api/enhancements/smart-savings": "smart_savings",
+  "/api/enhancements/virtual-cards": "virtual_cards",
+  "/api/enhancements/qr-payments": "qr_payments",
+  "/api/enhancements/bnpl": "bnpl",
+  "/api/enhancements/investments": "investments",
+  "/api/enhancements/remittances": "remittances",
+  "/api/enhancements/gamification": "gamification",
+  "/api/growth": "chatbot",
 };
 
 // In-memory tenant flag store
@@ -915,11 +928,13 @@ export function registerFeatureFlagEngine(app: Express) {
     // Preset packages
     const PRESETS: Record<string, string[]> = {
       enterprise: FLAG_CATEGORIES,
-      standard: ["core_banking", "payments", "cards_digital", "mobile_money", "lending", "accounting", "risk_compliance", "billing"],
-      basic: ["core_banking", "payments", "mobile_money", "billing"],
-      microfinance: ["core_banking", "payments", "mobile_money", "lending", "microfinance", "accounting", "risk_compliance", "billing", "cooperative_banking"],
-      agent_banking: ["core_banking", "payments", "mobile_money", "agent_banking", "agriculture_banking", "billing"],
-      islamic: ["core_banking", "payments", "lending", "accounting", "risk_compliance", "islamic_banking", "billing"],
+      standard: ["core_banking", "payments", "cards_digital", "mobile_money", "lending", "accounting", "risk_compliance", "billing", "chatbot", "smart_savings", "virtual_cards", "qr_payments"],
+      basic: ["core_banking", "payments", "mobile_money", "billing", "chatbot"],
+      microfinance: ["core_banking", "payments", "mobile_money", "lending", "microfinance", "accounting", "risk_compliance", "billing", "cooperative_banking", "smart_savings", "gamification"],
+      agent_banking: ["core_banking", "payments", "mobile_money", "agent_banking", "agriculture_banking", "billing", "qr_payments", "chatbot"],
+      islamic: ["core_banking", "payments", "lending", "accounting", "risk_compliance", "islamic_banking", "billing", "smart_savings", "investments"],
+      digital_bank: ["core_banking", "payments", "cards_digital", "mobile_money", "lending", "accounting", "risk_compliance", "billing", "chatbot", "smart_savings", "virtual_cards", "qr_payments", "bnpl", "investments", "remittances", "gamification"],
+      fintech: ["payments", "cards_digital", "mobile_money", "billing", "chatbot", "virtual_cards", "qr_payments", "bnpl", "gamification"],
     };
 
     const enabledKeys = customFlags ?? PRESETS[pkg] ?? PRESETS.basic;
@@ -944,6 +959,8 @@ export function registerFeatureFlagEngine(app: Express) {
         "configure_redis_cache", "register_dapr_components",
         "setup_temporal_workflows", "assign_feature_flags",
         "configure_billing", "deploy_white_label",
+        "provision_growth_features", "setup_growth_kafka_topics",
+        "configure_growth_temporal_workflows",
       ],
       flags,
     });
