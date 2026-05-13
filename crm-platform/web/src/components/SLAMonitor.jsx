@@ -44,8 +44,8 @@ export default function SLAMonitor() {
       <div className="flex items-center gap-3 mb-6">
         <Timer className="w-8 h-8 text-orange-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SLA Monitor</h1>
-          <p className="text-sm text-gray-500">Service Level Agreement tracking across all operational categories</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SLA Monitor</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Service Level Agreement tracking across all operational categories</p>
         </div>
       </div>
 
@@ -58,15 +58,15 @@ export default function SLAMonitor() {
             <p className="text-sm opacity-80 mt-1">{totalTasks.toLocaleString()} tasks tracked | {totalBreached} breaches this period</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/10 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold">{totalTasks.toLocaleString()}</p>
               <p className="text-xs opacity-80">Total Tasks</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold">{totalBreached}</p>
               <p className="text-xs opacity-80">SLA Breaches</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold">{data.categories.length}</p>
               <p className="text-xs opacity-80">SLA Categories</p>
             </div>
@@ -75,34 +75,34 @@ export default function SLAMonitor() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
         {['dashboard', 'breaches'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition capitalize ${activeTab === tab ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+            className={`px-4 py-2 rounded-md text-sm font-medium transition capitalize ${activeTab === tab ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
             {tab}
           </button>
         ))}
       </div>
 
       {activeTab === 'dashboard' && (
-        <div className="bg-white rounded-xl border">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Category</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Target</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Avg Time</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Compliance</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Tasks</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Breached</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Trend</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Category</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Target</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Avg Time</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Compliance</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Tasks</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Breached</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Trend</th>
               </tr>
             </thead>
             <tbody>
               {data.categories.map(cat => (
-                <tr key={cat.name} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{cat.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{cat.target_hours}h</td>
+                <tr key={cat.name} className="border-b hover:bg-gray-50 dark:bg-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{cat.name}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{cat.target_hours}h</td>
                   <td className="px-4 py-3">
                     <span className={cat.avg_hours > cat.target_hours ? 'text-red-600 font-medium' : 'text-green-600'}>{cat.avg_hours}h</span>
                   </td>
@@ -115,7 +115,7 @@ export default function SLAMonitor() {
                       <span className="text-xs">{cat.compliance}%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{cat.total}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{cat.total}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs ${cat.breached > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>{cat.breached}</span>
                   </td>
@@ -132,15 +132,15 @@ export default function SLAMonitor() {
       )}
 
       {activeTab === 'breaches' && (
-        <div className="bg-white rounded-xl border">
-          <div className="px-4 py-3 border-b"><h3 className="font-medium text-gray-900">Recent SLA Breaches</h3></div>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border">
+          <div className="px-4 py-3 border-b"><h3 className="font-medium text-gray-900 dark:text-gray-100">Recent SLA Breaches</h3></div>
           {data.recent_breaches.map(breach => (
-            <div key={breach.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0 hover:bg-gray-50">
+            <div key={breach.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0 hover:bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{breach.task}</p>
-                  <p className="text-xs text-gray-500">{breach.type} | Assigned to {breach.assignee} | {breach.date}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{breach.task}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{breach.type} | Assigned to {breach.assignee} | {breach.date}</p>
                 </div>
               </div>
               <div className="text-right">

@@ -64,8 +64,8 @@ export default function SecurityDashboard() {
       <div className="flex items-center gap-3 mb-6">
         <ShieldAlert className="w-8 h-8 text-red-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Security Dashboard</h1>
-          <p className="text-sm text-gray-500">DDoS protection, WAF, PBAC, encryption, and threat monitoring</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Security Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">DDoS protection, WAF, PBAC, encryption, and threat monitoring</p>
         </div>
       </div>
 
@@ -78,15 +78,15 @@ export default function SecurityDashboard() {
             <p className="text-sm opacity-80 mt-1">OWASP Top 10: 10/10 covered | PCI-DSS compliant | NDPR certified</p>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-white/10 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3">
               <p className="text-2xl font-bold">{data.threats_blocked_24h}</p>
               <p className="text-xs opacity-80">Threats Blocked (24h)</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3">
               <p className="text-2xl font-bold">{data.waf_rules}</p>
               <p className="text-xs opacity-80">WAF Rules Active</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3">
               <p className="text-2xl font-bold">{data.pbac_policies}</p>
               <p className="text-xs opacity-80">PBAC Policies</p>
             </div>
@@ -95,10 +95,10 @@ export default function SecurityDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition ${activeTab === tab.id ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition ${activeTab === tab.id ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'}`}>
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}
@@ -114,11 +114,11 @@ export default function SecurityDashboard() {
             { label: 'Banned IPs', value: data.banned_ips, icon: Ban, color: 'text-orange-600' },
             { label: 'Rate Limited (24h)', value: data.rate_limited_24h.toLocaleString(), icon: Activity, color: 'text-blue-600' },
           ].map(item => (
-            <div key={item.label} className="bg-white rounded-xl p-4 border flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-gray-50 ${item.color}`}><item.icon className="w-5 h-5" /></div>
+            <div key={item.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 border flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-800 ${item.color}`}><item.icon className="w-5 h-5" /></div>
               <div>
-                <p className="text-sm text-gray-500">{item.label}</p>
-                <p className="text-lg font-bold text-gray-900 capitalize">{item.value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 capitalize">{item.value}</p>
               </div>
             </div>
           ))}
@@ -126,25 +126,25 @@ export default function SecurityDashboard() {
       )}
 
       {activeTab === 'threats' && (
-        <div className="bg-white rounded-xl border">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border">
           <div className="px-4 py-3 border-b">
-            <h3 className="font-medium text-gray-900">Recent Threats (Last 24h)</h3>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">Recent Threats (Last 24h)</h3>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Time</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Type</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Severity</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Source IP</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Target</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Status</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Time</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Type</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Severity</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Source IP</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Target</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Status</th>
               </tr>
             </thead>
             <tbody>
               {data.recent_threats.map(t => (
-                <tr key={t.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.time}</td>
+                <tr key={t.id} className="border-b hover:bg-gray-50 dark:bg-gray-800">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{t.time}</td>
                   <td className="px-4 py-3 font-medium">{t.type}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs ${t.severity === 'critical' ? 'bg-red-100 text-red-600' : t.severity === 'high' ? 'bg-orange-100 text-orange-600' : 'bg-yellow-100 text-yellow-600'}`}>{t.severity}</span>
@@ -164,8 +164,8 @@ export default function SecurityDashboard() {
       )}
 
       {activeTab === 'owasp' && (
-        <div className="bg-white rounded-xl border p-4">
-          <h3 className="font-medium text-gray-900 mb-4">OWASP Top 10 (2021) Coverage</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">OWASP Top 10 (2021) Coverage</h3>
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(OWASP_LABELS).map(([key, label]) => (
               <div key={key} className="flex items-center gap-3 p-3 rounded-lg border">
@@ -173,7 +173,7 @@ export default function SecurityDashboard() {
                   {data.owasp_coverage[key] ? <ShieldCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{key.toUpperCase()}: {label}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{key.toUpperCase()}: {label}</p>
                   <p className={`text-xs ${data.owasp_coverage[key] ? 'text-green-600' : 'text-red-600'}`}>
                     {data.owasp_coverage[key] ? 'Protected' : 'Not Covered'}
                   </p>
@@ -188,24 +188,24 @@ export default function SecurityDashboard() {
       )}
 
       {activeTab === 'ips' && (
-        <div className="bg-white rounded-xl border">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border">
           <div className="px-4 py-3 border-b">
-            <h3 className="font-medium text-gray-900">IP Reputation Database</h3>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">IP Reputation Database</h3>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">IP Address</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Country</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Score</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Violations</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Threat Level</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">Status</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">IP Address</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Country</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Score</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Violations</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Threat Level</th>
+                <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Status</th>
               </tr>
             </thead>
             <tbody>
               {data.ip_reputation.map(ip => (
-                <tr key={ip.ip} className="border-b hover:bg-gray-50">
+                <tr key={ip.ip} className="border-b hover:bg-gray-50 dark:bg-gray-800">
                   <td className="px-4 py-3 font-mono">{ip.ip}</td>
                   <td className="px-4 py-3">{ip.country}</td>
                   <td className="px-4 py-3">

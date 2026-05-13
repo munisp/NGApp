@@ -25,15 +25,15 @@ const SEED_DOCS = {
 const CATEGORY_COLORS = {
   kyc: 'bg-blue-100 text-blue-700', compliance: 'bg-green-100 text-green-700', audit: 'bg-purple-100 text-purple-700',
   contract: 'bg-orange-100 text-orange-700', financial: 'bg-yellow-100 text-yellow-700', legal: 'bg-red-100 text-red-700',
-  operational: 'bg-gray-100 text-gray-700', onboarding: 'bg-indigo-100 text-indigo-700', campaign: 'bg-pink-100 text-pink-700', report: 'bg-teal-100 text-teal-700',
+  operational: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300', onboarding: 'bg-indigo-100 text-indigo-700', campaign: 'bg-pink-100 text-pink-700', report: 'bg-teal-100 text-teal-700',
 };
 
 const STATUS_CONFIG = {
   approved: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100' },
   pending_approval: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-  draft: { icon: FileText, color: 'text-gray-600', bg: 'bg-gray-100' },
+  draft: { icon: FileText, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' },
   rejected: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
-  archived: { icon: FolderOpen, color: 'text-gray-400', bg: 'bg-gray-50' },
+  archived: { icon: FolderOpen, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800' },
 };
 
 export default function DocumentManager() {
@@ -68,8 +68,8 @@ export default function DocumentManager() {
         <div className="flex items-center gap-3">
           <FileText className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Document Management</h1>
-            <p className="text-sm text-gray-500">KYC documents, contracts, compliance certificates, and reports</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Document Management</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">KYC documents, contracts, compliance certificates, and reports</p>
           </div>
         </div>
         <button onClick={() => setShowUpload(!showUpload)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
@@ -80,21 +80,21 @@ export default function DocumentManager() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Documents', value: stats.total, color: 'text-gray-900' },
+          { label: 'Total Documents', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Approved', value: stats.approved, color: 'text-green-600' },
           { label: 'Pending Approval', value: stats.pending, color: 'text-yellow-600' },
           { label: 'Expiring Soon', value: stats.expiring, color: 'text-orange-600' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 border">
-            <p className="text-sm text-gray-500">{s.label}</p>
+          <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 border">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{s.label}</p>
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {showUpload && (
-        <div className="bg-white rounded-xl border p-4 mb-6">
-          <h3 className="font-medium text-gray-900 mb-3">Upload New Document</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Upload New Document</h3>
           <div className="grid grid-cols-3 gap-4">
             <input type="text" placeholder="Document title" className="px-3 py-2 border rounded-lg text-sm" />
             <select className="px-3 py-2 border rounded-lg text-sm">
@@ -127,23 +127,23 @@ export default function DocumentManager() {
       </div>
 
       {/* Document List */}
-      <div className="bg-white rounded-xl border">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border">
         {filtered.map(doc => {
           const statusCfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.draft;
           const StatusIcon = statusCfg.icon;
           return (
-            <div key={doc.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0 hover:bg-gray-50">
+            <div key={doc.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0 hover:bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center gap-3 flex-1">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <FileText className="w-5 h-5 text-gray-500" />
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">{doc.title}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{doc.title}</p>
                     <span className="text-xs text-gray-400">v{doc.version}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${CATEGORY_COLORS[doc.category] || 'bg-gray-100 text-gray-600'}`}>{doc.category}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${CATEGORY_COLORS[doc.category] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>{doc.category}</span>
                     <span className="text-xs text-gray-400">{doc.size} • {doc.mime}</span>
                     <span className="text-xs text-gray-400">by {doc.uploaded_by}</span>
                     {doc.expires && <span className="text-xs text-orange-500">Expires: {doc.expires}</span>}
@@ -154,9 +154,9 @@ export default function DocumentManager() {
                 <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded ${statusCfg.bg} ${statusCfg.color}`}>
                   <StatusIcon className="w-3 h-3" /> {doc.status.replace(/_/g, ' ')}
                 </span>
-                <button className="p-1 hover:bg-gray-100 rounded"><Eye className="w-4 h-4 text-gray-400" /></button>
-                <button className="p-1 hover:bg-gray-100 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
-                <button className="p-1 hover:bg-gray-100 rounded"><Trash2 className="w-4 h-4 text-gray-400" /></button>
+                <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Eye className="w-4 h-4 text-gray-400" /></button>
+                <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
+                <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Trash2 className="w-4 h-4 text-gray-400" /></button>
               </div>
             </div>
           );

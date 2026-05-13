@@ -25,7 +25,7 @@ const SEED_EVENTS = {
 };
 
 const SEVERITY_STYLES = {
-  low: { bg: 'bg-gray-100', text: 'text-gray-600', icon: CheckCircle },
+  low: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-400', icon: CheckCircle },
   medium: { bg: 'bg-blue-100', text: 'text-blue-600', icon: Eye },
   high: { bg: 'bg-orange-100', text: 'text-orange-600', icon: AlertTriangle },
   critical: { bg: 'bg-red-100', text: 'text-red-600', icon: XCircle },
@@ -75,15 +75,15 @@ export default function AuditLog() {
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
-            <p className="text-sm text-gray-500">Tamper-evident event trail with hash chain integrity</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Audit Log</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Tamper-evident event trail with hash chain integrity</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${chainValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {chainValid ? 'Chain Valid' : 'Chain Broken'}
           </span>
-          <button className="flex items-center gap-1 px-3 py-2 bg-white border rounded-lg text-sm hover:bg-gray-50">
+          <button className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-900 border rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-800">
             <Download className="w-4 h-4" /> Export
           </button>
         </div>
@@ -92,13 +92,13 @@ export default function AuditLog() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Events', value: stats.total, color: 'text-gray-900' },
+          { label: 'Total Events', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Critical', value: stats.critical, color: 'text-red-600' },
           { label: 'High Severity', value: stats.high, color: 'text-orange-600' },
           { label: 'Failed Actions', value: stats.failed, color: 'text-red-500' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 border">
-            <p className="text-sm text-gray-500">{s.label}</p>
+          <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 border">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{s.label}</p>
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -125,8 +125,8 @@ export default function AuditLog() {
       </div>
 
       {/* Event List */}
-      <div className="bg-white rounded-xl border">
-        <div className="grid grid-cols-[140px_1fr_120px_100px_100px_80px] gap-2 px-4 py-3 border-b text-xs font-medium text-gray-500 uppercase">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border">
+        <div className="grid grid-cols-[140px_1fr_120px_100px_100px_80px] gap-2 px-4 py-3 border-b text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
           <span>Timestamp</span><span>Event</span><span>Actor</span><span>Category</span><span>Severity</span><span>Status</span>
         </div>
         {filtered.map(event => {
@@ -135,15 +135,15 @@ export default function AuditLog() {
           const expanded = expandedEvent === event.id;
           return (
             <div key={event.id} className="border-b last:border-0">
-              <div className="grid grid-cols-[140px_1fr_120px_100px_100px_80px] gap-2 px-4 py-3 items-center cursor-pointer hover:bg-gray-50"
+              <div className="grid grid-cols-[140px_1fr_120px_100px_100px_80px] gap-2 px-4 py-3 items-center cursor-pointer hover:bg-gray-50 dark:bg-gray-800"
                 onClick={() => setExpandedEvent(expanded ? null : event.id)}>
-                <span className="text-xs text-gray-500 font-mono">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{new Date(event.timestamp).toLocaleTimeString()}</span>
                 <div className="flex items-center gap-2">
                   {expanded ? <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />}
-                  <span className="text-sm text-gray-900 truncate">{event.description}</span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate">{event.description}</span>
                 </div>
-                <span className="text-xs text-gray-600">{event.actor_name}</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 w-fit">{CATEGORY_LABELS[event.category] || event.category}</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">{event.actor_name}</span>
+                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 w-fit">{CATEGORY_LABELS[event.category] || event.category}</span>
                 <span className={`text-xs px-2 py-0.5 rounded ${sev.bg} ${sev.text} flex items-center gap-1 w-fit`}>
                   <SevIcon className="w-3 h-3" /> {event.severity}
                 </span>
@@ -152,7 +152,7 @@ export default function AuditLog() {
                 </span>
               </div>
               {expanded && (
-                <div className="px-4 py-3 bg-gray-50 grid grid-cols-3 gap-4 text-xs">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 grid grid-cols-3 gap-4 text-xs">
                   <div><span className="text-gray-400">Event ID:</span> <span className="font-mono">{event.id}</span></div>
                   <div><span className="text-gray-400">Action:</span> <span className="font-mono">{event.action}</span></div>
                   <div><span className="text-gray-400">Resource:</span> <span className="font-mono">{event.resource_type}/{event.resource_id}</span></div>

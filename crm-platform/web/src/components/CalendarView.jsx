@@ -55,8 +55,8 @@ export default function CalendarView() {
         <div className="flex items-center gap-3">
           <Calendar className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-            <p className="text-sm text-gray-500">Compliance deadlines, meetings, campaigns, and training schedules</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Calendar</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Compliance deadlines, meetings, campaigns, and training schedules</p>
           </div>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
@@ -65,8 +65,8 @@ export default function CalendarView() {
       </div>
 
       {showCreate && (
-        <div className="bg-white rounded-xl border p-4 mb-6">
-          <h3 className="font-medium text-gray-900 mb-3">Create Event</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Create Event</h3>
           <div className="grid grid-cols-4 gap-3">
             <input type="text" placeholder="Event title" className="px-3 py-2 border rounded-lg text-sm col-span-2" />
             <input type="date" className="px-3 py-2 border rounded-lg text-sm" />
@@ -82,11 +82,11 @@ export default function CalendarView() {
 
       <div className="grid grid-cols-3 gap-6">
         {/* Calendar Grid */}
-        <div className="col-span-2 bg-white rounded-xl border">
+        <div className="col-span-2 bg-white dark:bg-gray-900 rounded-xl border">
           <div className="flex items-center justify-between px-4 py-3 border-b">
-            <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded"><ChevronLeft className="w-5 h-5" /></button>
-            <h3 className="font-medium text-gray-900">{MONTHS[month]} {year}</h3>
-            <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded"><ChevronRight className="w-5 h-5" /></button>
+            <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><ChevronLeft className="w-5 h-5" /></button>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">{MONTHS[month]} {year}</h3>
+            <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><ChevronRight className="w-5 h-5" /></button>
           </div>
           <div className="grid grid-cols-7">
             {DAYS.map(d => <div key={d} className="px-2 py-2 text-center text-xs font-medium text-gray-400 border-b">{d}</div>)}
@@ -99,7 +99,7 @@ export default function CalendarView() {
                   className={`min-h-[80px] p-1 border-b border-r cursor-pointer transition ${day ? 'hover:bg-blue-50' : ''} ${isSelected ? 'bg-blue-50' : ''}`}>
                   {day && (
                     <>
-                      <span className={`text-xs font-medium inline-block w-6 h-6 text-center leading-6 rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`}>{day}</span>
+                      <span className={`text-xs font-medium inline-block w-6 h-6 text-center leading-6 rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300'}`}>{day}</span>
                       <div className="space-y-0.5 mt-0.5">
                         {events.slice(0, 2).map(evt => (
                           <div key={evt.id} className={`${evt.color} text-white text-[10px] px-1 py-0.5 rounded truncate`}>{evt.title}</div>
@@ -116,15 +116,15 @@ export default function CalendarView() {
 
         {/* Sidebar — Selected Day or Upcoming */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="font-medium text-gray-900 mb-3">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
               {selectedDate ? `${MONTHS[month]} ${selectedDate}, ${year}` : 'Upcoming Events'}
             </h3>
             {(selectedDate ? selectedEvents : SEED_EVENTS.slice(0, 5)).map(event => (
               <div key={event.id} className="flex items-start gap-2 py-2 border-b last:border-0">
                 <div className={`w-2 h-2 rounded-full mt-1.5 ${event.color}`} />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{event.title}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{event.title}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                     <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {event.time}</span>
                     {event.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {event.location}</span>}
@@ -142,8 +142,8 @@ export default function CalendarView() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Event Types</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Event Types</h3>
             {[
               { type: 'Meeting', color: 'bg-blue-500', count: SEED_EVENTS.filter(e => e.type === 'meeting').length },
               { type: 'Compliance', color: 'bg-red-500', count: SEED_EVENTS.filter(e => e.type === 'compliance').length },
@@ -153,7 +153,7 @@ export default function CalendarView() {
               { type: 'Training', color: 'bg-teal-500', count: SEED_EVENTS.filter(e => e.type === 'training').length },
             ].map(t => (
               <div key={t.type} className="flex items-center justify-between py-1">
-                <span className="flex items-center gap-2 text-xs text-gray-600"><span className={`w-2 h-2 rounded-full ${t.color}`} /> {t.type}</span>
+                <span className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400"><span className={`w-2 h-2 rounded-full ${t.color}`} /> {t.type}</span>
                 <span className="text-xs text-gray-400">{t.count}</span>
               </div>
             ))}

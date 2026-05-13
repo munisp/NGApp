@@ -1,0 +1,107 @@
+groups:
+  - name: crm-platform-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(crm_http_requests_total{status=~"5.."}[5m]) / rate(crm_http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.path }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.method }} {{ $labels.path }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(crm_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.path }}"
+          description: "p95 latency is {{ $value }}s for {{ $labels.method }} {{ $labels.path }}"
+
+      - alert: HighActiveRequests
+        expr: crm_active_requests > 100
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High concurrent requests"
+          description: "{{ $value }} active requests"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: crm_db_pool_available_connections == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool exhausted"
+
+      - alert: RedisConnectionFailure
+        expr: crm_redis_connection_errors_total > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis connection errors detected"
+
+      - alert: KafkaConsumerLag
+        expr: crm_kafka_consumer_lag > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag is high"
+          description: "Consumer group {{ $labels.group }} has {{ $value }} messages behind"
+
+      - alert: HighChurnRate
+        expr: crm_customer_churn_rate > 0.1
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Customer churn rate exceeds 10%"
+
+      - alert: TelcoNetworkDegraded
+        expr: count(crm_cell_site_status{status="degraded"}) / count(crm_cell_site_status) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+          vertical: telco
+        annotations:
+          summary: "More than 10% of cell sites degraded"
+
+      - alert: CommoditySettlementDelay
+        expr: crm_commodity_settlement_pending_hours > 48
+        for: 30m
+        labels:
+          severity: warning
+          vertical: commodity
+        annotations:
+          summary: "Commodity settlements delayed beyond 48 hours"
+
+      - alert: CPaaSDeliveryRateLow
+        expr: crm_cpaas_delivery_rate < 0.95
+        for: 15m
+        labels:
+          severity: warning
+          vertical: cpaas
+        annotations:
+          summary: "CPaaS message delivery rate below 95%"
+
+  - name: crm-sla-alerts
+    rules:
+      - alert: SLABreach
+        expr: crm_sla_compliance_rate < 0.95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SLA compliance below 95%"
+
+      - alert: APIAvailabilityLow
+        expr: avg_over_time(up{job="crm-api"}[5m]) < 0.999
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API availability below 99.9%"

@@ -46,8 +46,8 @@ export default function ComplianceDashboard() {
         <div className="flex items-center gap-3">
           <ClipboardCheck className="w-8 h-8 text-emerald-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Compliance Dashboard</h1>
-            <p className="text-sm text-gray-500">NDPR, CBN, PCI-DSS, AML/CFT regulatory compliance monitoring</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Compliance Dashboard</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">NDPR, CBN, PCI-DSS, AML/CFT regulatory compliance monitoring</p>
           </div>
         </div>
         <button className="flex items-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
@@ -65,7 +65,7 @@ export default function ComplianceDashboard() {
           </div>
           <div className="grid grid-cols-4 gap-3">
             {FRAMEWORKS.map(fw => (
-              <div key={fw.id} className="bg-white/10 rounded-lg p-3 text-center min-w-[100px]">
+              <div key={fw.id} className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center min-w-[100px]">
                 <p className="text-xl font-bold">{fw.score}%</p>
                 <p className="text-xs opacity-80">{fw.name}</p>
               </div>
@@ -75,10 +75,10 @@ export default function ComplianceDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition ${activeTab === tab.id ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition ${activeTab === tab.id ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'}`}>
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}
@@ -87,18 +87,18 @@ export default function ComplianceDashboard() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-2 gap-4">
           {FRAMEWORKS.map(fw => (
-            <div key={fw.id} className="bg-white rounded-xl border p-4">
+            <div key={fw.id} className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="font-medium text-gray-900">{fw.name}</h3>
-                  <p className="text-xs text-gray-500">{fw.full}</p>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{fw.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{fw.full}</p>
                 </div>
                 <span className={`text-2xl font-bold ${fw.score >= 95 ? 'text-green-600' : fw.score >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>{fw.score}%</span>
               </div>
               <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
                 <div className={`h-full ${fw.color} rounded-full`} style={{ width: `${fw.score}%` }} />
               </div>
-              <div className="flex justify-between text-xs text-gray-500">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> {fw.compliant} Compliant</span>
                 <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-yellow-500" /> {fw.partial} Partial</span>
                 <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-red-500" /> {fw.non} Non-compliant</span>
@@ -112,23 +112,23 @@ export default function ComplianceDashboard() {
       {activeTab === 'frameworks' && (
         <div className="space-y-4">
           {FRAMEWORKS.map(fw => (
-            <div key={fw.id} className="bg-white rounded-xl border overflow-hidden">
-              <div className="px-4 py-3 border-b flex items-center justify-between cursor-pointer hover:bg-gray-50"
+            <div key={fw.id} className="bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
+              <div className="px-4 py-3 border-b flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:bg-gray-800"
                 onClick={() => setSelectedFramework(selectedFramework === fw.id ? null : fw.id)}>
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-8 rounded ${fw.color}`} />
                   <div>
-                    <h3 className="font-medium text-gray-900">{fw.full}</h3>
-                    <p className="text-xs text-gray-500">{fw.total} controls | {fw.compliant} compliant</p>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{fw.full}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{fw.total} controls | {fw.compliant} compliant</p>
                   </div>
                 </div>
-                <span className="text-xl font-bold text-gray-900">{fw.score}%</span>
+                <span className="text-xl font-bold text-gray-900 dark:text-gray-100">{fw.score}%</span>
               </div>
               {selectedFramework === fw.id && (
-                <div className="p-4 bg-gray-50 text-sm">
-                  <p className="text-gray-600 mb-2">All {fw.compliant} compliant controls are monitored continuously. {fw.partial > 0 ? `${fw.partial} control(s) require remediation.` : 'Full compliance achieved.'}</p>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 text-sm">
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">All {fw.compliant} compliant controls are monitored continuously. {fw.partial > 0 ? `${fw.partial} control(s) require remediation.` : 'Full compliance achieved.'}</p>
                   <div className="flex gap-2">
-                    <button className="px-3 py-1 bg-white border rounded text-xs hover:bg-gray-50">View Details</button>
+                    <button className="px-3 py-1 bg-white dark:bg-gray-900 border rounded text-xs hover:bg-gray-50 dark:bg-gray-800">View Details</button>
                     <button className="px-3 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700">Download Report</button>
                   </div>
                 </div>
@@ -140,18 +140,18 @@ export default function ComplianceDashboard() {
 
       {activeTab === 'kyc' && (
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="font-medium text-gray-900 mb-4">KYC Verification Status</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">KYC Verification Status</h3>
             <div className="space-y-3">
               {[
-                { label: 'Total Customers', value: KYC_DATA.total.toLocaleString(), color: 'text-gray-900' },
+                { label: 'Total Customers', value: KYC_DATA.total.toLocaleString(), color: 'text-gray-900 dark:text-gray-100' },
                 { label: 'BVN Verified', value: KYC_DATA.bvn_verified.toLocaleString(), pct: ((KYC_DATA.bvn_verified / KYC_DATA.total) * 100).toFixed(1), color: 'text-green-600' },
                 { label: 'NIN Verified', value: KYC_DATA.nin_verified.toLocaleString(), pct: ((KYC_DATA.nin_verified / KYC_DATA.total) * 100).toFixed(1), color: 'text-green-600' },
                 { label: 'PEP Screened', value: KYC_DATA.pep_screened.toLocaleString(), pct: '100.0', color: 'text-green-600' },
                 { label: 'Sanctions Screened', value: KYC_DATA.sanctions_screened.toLocaleString(), pct: '100.0', color: 'text-green-600' },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <span className="text-sm text-gray-500">{item.label}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
                   <span className={`text-sm font-medium ${item.color}`}>{item.value} {item.pct && <span className="text-xs text-gray-400">({item.pct}%)</span>}</span>
                 </div>
               ))}
@@ -159,14 +159,14 @@ export default function ComplianceDashboard() {
             <div className="mt-4">
               <h4 className="text-xs text-gray-400 uppercase mb-2">By KYC Level</h4>
               <div className="flex gap-2">
-                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_1.toLocaleString()}</p><p className="text-xs text-gray-500">Level 1</p></div>
-                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_2.toLocaleString()}</p><p className="text-xs text-gray-500">Level 2</p></div>
-                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_3.toLocaleString()}</p><p className="text-xs text-gray-500">Level 3</p></div>
+                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_1.toLocaleString()}</p><p className="text-xs text-gray-500 dark:text-gray-400">Level 1</p></div>
+                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_2.toLocaleString()}</p><p className="text-xs text-gray-500 dark:text-gray-400">Level 2</p></div>
+                <div className="flex-1 bg-blue-50 rounded p-2 text-center"><p className="text-lg font-bold text-blue-600">{KYC_DATA.by_level.level_3.toLocaleString()}</p><p className="text-xs text-gray-500 dark:text-gray-400">Level 3</p></div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="font-medium text-gray-900 mb-4">AML/CFT Monitoring</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">AML/CFT Monitoring</h3>
             <div className="space-y-3">
               {[
                 { label: 'Total Transactions', value: AML_DATA.total_txns.toLocaleString() },
@@ -178,8 +178,8 @@ export default function ComplianceDashboard() {
                 { label: 'Total Flagged Amount', value: `₦${(AML_DATA.flagged_amount / 1000000).toFixed(0)}M`, color: 'text-red-600' },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <span className="text-sm text-gray-500">{item.label}</span>
-                  <span className={`text-sm font-medium ${item.color || 'text-gray-900'}`}>{item.value}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                  <span className={`text-sm font-medium ${item.color || 'text-gray-900 dark:text-gray-100'}`}>{item.value}</span>
                 </div>
               ))}
             </div>
@@ -188,8 +188,8 @@ export default function ComplianceDashboard() {
       )}
 
       {activeTab === 'reports' && (
-        <div className="bg-white rounded-xl border p-4">
-          <h3 className="font-medium text-gray-900 mb-4">Compliance Reports</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Compliance Reports</h3>
           <div className="space-y-3">
             {[
               { name: 'NDPR Annual Compliance Report', date: '2025-04-01', status: 'Generated', framework: 'NDPR' },
@@ -198,17 +198,17 @@ export default function ComplianceDashboard() {
               { name: 'AML/CFT Risk Assessment', date: '2025-01-31', status: 'Filed', framework: 'AML/CFT' },
               { name: 'Monthly Transaction Monitoring', date: '2025-04-30', status: 'Generated', framework: 'CBN' },
             ].map((report, i) => (
-              <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:bg-gray-800">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{report.name}</p>
-                    <p className="text-xs text-gray-500">{report.framework} | {report.date}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{report.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{report.framework} | {report.date}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-600">{report.status}</span>
-                  <button className="p-1 hover:bg-gray-100 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
+                  <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
                 </div>
               </div>
             ))}

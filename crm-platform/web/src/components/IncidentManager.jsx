@@ -16,8 +16,8 @@ const SEED_INCIDENTS = {
   ],
 };
 
-const SEVERITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-100 text-orange-700', medium: 'bg-yellow-100 text-yellow-700', low: 'bg-gray-100 text-gray-600' };
-const STATUS_COLORS = { open: 'bg-blue-100 text-blue-700', investigating: 'bg-purple-100 text-purple-700', resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-100 text-gray-500' };
+const SEVERITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-100 text-orange-700', medium: 'bg-yellow-100 text-yellow-700', low: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' };
+const STATUS_COLORS = { open: 'bg-blue-100 text-blue-700', investigating: 'bg-purple-100 text-purple-700', resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' };
 
 export default function IncidentManager() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('incidentmanager', () => apiClient.dashboard.metrics(), { fallback: SEED_INCIDENTS })
@@ -50,8 +50,8 @@ export default function IncidentManager() {
         <div className="flex items-center gap-3">
           <AlertOctagon className="w-8 h-8 text-red-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Incident Management</h1>
-            <p className="text-sm text-gray-500">Security incidents, outages, compliance alerts, and escalations</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Incident Management</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Security incidents, outages, compliance alerts, and escalations</p>
           </div>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
@@ -62,15 +62,15 @@ export default function IncidentManager() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Incidents', value: stats.total, icon: AlertOctagon, color: 'text-gray-900' },
+          { label: 'Total Incidents', value: stats.total, icon: AlertOctagon, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Active', value: stats.open, icon: AlertTriangle, color: 'text-orange-600' },
           { label: 'Critical', value: stats.critical, icon: Shield, color: 'text-red-600' },
           { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-green-600' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 border flex items-center gap-3">
-            <div className="p-2 bg-gray-50 rounded-lg"><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+          <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 border flex items-center gap-3">
+            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"><s.icon className={`w-5 h-5 ${s.color}`} /></div>
             <div>
-              <p className="text-sm text-gray-500">{s.label}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{s.label}</p>
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
             </div>
           </div>
@@ -78,8 +78,8 @@ export default function IncidentManager() {
       </div>
 
       {showCreate && (
-        <div className="bg-white rounded-xl border p-4 mb-6">
-          <h3 className="font-medium text-gray-900 mb-3">Report New Incident</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Report New Incident</h3>
           <div className="grid grid-cols-3 gap-3">
             <input type="text" placeholder="Incident title" className="px-3 py-2 border rounded-lg text-sm col-span-2" />
             <select className="px-3 py-2 border rounded-lg text-sm">
@@ -101,10 +101,10 @@ export default function IncidentManager() {
           <input type="text" placeholder="Search incidents..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm" />
         </div>
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {['all', 'open', 'investigating', 'resolved'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded text-xs font-medium capitalize ${statusFilter === s ? 'bg-white shadow' : 'text-gray-500'}`}>{s}</button>
+              className={`px-3 py-1 rounded text-xs font-medium capitalize ${statusFilter === s ? 'bg-white dark:bg-gray-900 shadow' : 'text-gray-500 dark:text-gray-400'}`}>{s}</button>
           ))}
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function IncidentManager() {
       {/* Incident List */}
       <div className="space-y-2">
         {filtered.map(incident => (
-          <div key={incident.id} className="bg-white rounded-xl border p-4 hover:shadow-sm transition cursor-pointer"
+          <div key={incident.id} className="bg-white dark:bg-gray-900 rounded-xl border p-4 hover:shadow-sm transition cursor-pointer"
             onClick={() => setSelectedIncident(selectedIncident === incident.id ? null : incident.id)}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -121,7 +121,7 @@ export default function IncidentManager() {
                   <span className={`text-xs px-2 py-0.5 rounded ${STATUS_COLORS[incident.status]}`}>{incident.status}</span>
                   <span className="text-xs text-gray-400">{incident.category}</span>
                 </div>
-                <p className="text-sm font-medium text-gray-900">{incident.title}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{incident.title}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   Reported by {incident.reported_by} | Assigned to {incident.assigned_to} | {new Date(incident.created).toLocaleString()}
                 </p>
@@ -129,9 +129,9 @@ export default function IncidentManager() {
             </div>
             {selectedIncident === incident.id && (
               <div className="mt-3 pt-3 border-t space-y-2 text-sm">
-                <div><span className="text-gray-400">Impact:</span> <span className="text-gray-700">{incident.impact}</span></div>
-                {incident.resolution && <div><span className="text-gray-400">Resolution:</span> <span className="text-gray-700">{incident.resolution}</span></div>}
-                {incident.resolved && <div><span className="text-gray-400">Resolved:</span> <span className="text-gray-700">{new Date(incident.resolved).toLocaleString()}</span></div>}
+                <div><span className="text-gray-400">Impact:</span> <span className="text-gray-700 dark:text-gray-300">{incident.impact}</span></div>
+                {incident.resolution && <div><span className="text-gray-400">Resolution:</span> <span className="text-gray-700 dark:text-gray-300">{incident.resolution}</span></div>}
+                {incident.resolved && <div><span className="text-gray-400">Resolved:</span> <span className="text-gray-700 dark:text-gray-300">{new Date(incident.resolved).toLocaleString()}</span></div>}
               </div>
             )}
           </div>

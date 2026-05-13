@@ -52,16 +52,16 @@ export default function DataExport() {
         <div className="flex items-center gap-3">
           <Download className="w-8 h-8 text-teal-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Data Export</h1>
-            <p className="text-sm text-gray-500">Export customer data, transactions, audit logs in CSV, JSON, or Parquet</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Data Export</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Export customer data, transactions, audit logs in CSV, JSON, or Parquet</p>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
         {['new', 'history'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition ${activeTab === tab ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>{tab === 'new' ? 'New Export' : 'Export History'}</button>
+            className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition ${activeTab === tab ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>{tab === 'new' ? 'New Export' : 'Export History'}</button>
         ))}
       </div>
 
@@ -69,14 +69,14 @@ export default function DataExport() {
         <div className="grid grid-cols-3 gap-6">
           {/* Step 1: Data Type */}
           <div className="col-span-2 space-y-4">
-            <div className="bg-white rounded-xl border p-4">
-              <h3 className="font-medium text-gray-900 mb-3">1. Select Data Type</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">1. Select Data Type</h3>
               <div className="grid grid-cols-3 gap-3">
                 {EXPORT_TYPES.map(type => (
                   <button key={type.id} onClick={() => handleTypeSelect(type)}
-                    className={`p-3 rounded-lg border text-left transition ${selectedType?.id === type.id ? 'border-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}>
+                    className={`p-3 rounded-lg border text-left transition ${selectedType?.id === type.id ? 'border-teal-500 bg-teal-50' : 'hover:bg-gray-50 dark:bg-gray-800'}`}>
                     <span className="text-2xl">{type.icon}</span>
-                    <p className="text-sm font-medium text-gray-900 mt-1">{type.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{type.name}</p>
                     <p className="text-xs text-gray-400">{type.estimated}</p>
                   </button>
                 ))}
@@ -84,12 +84,12 @@ export default function DataExport() {
             </div>
 
             {selectedType && (
-              <div className="bg-white rounded-xl border p-4">
-                <h3 className="font-medium text-gray-900 mb-3">2. Select Fields</h3>
+              <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">2. Select Fields</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedType.fields.map(field => (
                     <button key={field} onClick={() => toggleField(field)}
-                      className={`px-3 py-1 rounded-full text-xs font-mono transition ${selectedFields.includes(field) ? 'bg-teal-100 text-teal-700 border border-teal-300' : 'bg-gray-100 text-gray-500 border border-transparent'}`}>
+                      className={`px-3 py-1 rounded-full text-xs font-mono transition ${selectedFields.includes(field) ? 'bg-teal-100 text-teal-700 border border-teal-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-transparent'}`}>
                       {field}
                     </button>
                   ))}
@@ -98,15 +98,15 @@ export default function DataExport() {
               </div>
             )}
 
-            <div className="bg-white rounded-xl border p-4">
-              <h3 className="font-medium text-gray-900 mb-3">3. Date Range</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">3. Date Range</h3>
               <div className="flex gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">From</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">From</label>
                   <input type="date" value={dateRange.from} onChange={e => setDateRange({ ...dateRange, from: e.target.value })} className="px-3 py-2 border rounded-lg text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">To</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">To</label>
                   <input type="date" value={dateRange.to} onChange={e => setDateRange({ ...dateRange, to: e.target.value })} className="px-3 py-2 border rounded-lg text-sm" />
                 </div>
               </div>
@@ -115,15 +115,15 @@ export default function DataExport() {
 
           {/* Sidebar: Format + Export */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl border p-4">
-              <h3 className="font-medium text-gray-900 mb-3">4. Export Format</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">4. Export Format</h3>
               <div className="space-y-2">
                 {FORMATS.map(fmt => (
                   <button key={fmt.id} onClick={() => setSelectedFormat(fmt.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition ${selectedFormat === fmt.id ? 'border-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}>
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition ${selectedFormat === fmt.id ? 'border-teal-500 bg-teal-50' : 'hover:bg-gray-50 dark:bg-gray-800'}`}>
                     <fmt.icon className="w-5 h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{fmt.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{fmt.name}</p>
                       <p className="text-xs text-gray-400">{fmt.desc}</p>
                     </div>
                   </button>
@@ -139,32 +139,32 @@ export default function DataExport() {
       )}
 
       {activeTab === 'history' && (
-        <div className="bg-white rounded-xl border">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Data Type</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Format</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Records</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Size</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Date</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Duration</th>
-                <th className="px-4 py-3 text-left text-xs text-gray-500">Actions</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Data Type</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Format</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Records</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Size</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Date</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Duration</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {RECENT_EXPORTS.map(exp => (
-                <tr key={exp.id} className="border-b hover:bg-gray-50">
+                <tr key={exp.id} className="border-b hover:bg-gray-50 dark:bg-gray-800">
                   <td className="px-4 py-3 font-medium">{exp.type}</td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{exp.format}</span></td>
+                  <td className="px-4 py-3"><span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">{exp.format}</span></td>
                   <td className="px-4 py-3">{exp.records.toLocaleString()}</td>
                   <td className="px-4 py-3">{exp.size}</td>
-                  <td className="px-4 py-3 text-gray-500">{exp.date}</td>
-                  <td className="px-4 py-3 text-gray-500">{exp.duration}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{exp.date}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{exp.duration}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button className="p-1 hover:bg-gray-100 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
-                      <button className="p-1 hover:bg-gray-100 rounded"><Trash2 className="w-4 h-4 text-gray-400" /></button>
+                      <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Download className="w-4 h-4 text-gray-400" /></button>
+                      <button className="p-1 hover:bg-gray-100 dark:bg-gray-700 rounded"><Trash2 className="w-4 h-4 text-gray-400" /></button>
                     </div>
                   </td>
                 </tr>

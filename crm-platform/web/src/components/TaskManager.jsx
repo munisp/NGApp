@@ -22,8 +22,8 @@ const SEED_TASKS = {
   ],
 };
 
-const PRIORITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-100 text-orange-700', medium: 'bg-blue-100 text-blue-700', low: 'bg-gray-100 text-gray-600' };
-const STATUS_COLORS = { open: 'bg-blue-50 text-blue-700', in_progress: 'bg-yellow-50 text-yellow-700', review: 'bg-purple-50 text-purple-700', done: 'bg-green-50 text-green-700', blocked: 'bg-red-50 text-red-700', cancelled: 'bg-gray-50 text-gray-400' };
+const PRIORITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-100 text-orange-700', medium: 'bg-blue-100 text-blue-700', low: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' };
+const STATUS_COLORS = { open: 'bg-blue-50 text-blue-700', in_progress: 'bg-yellow-50 text-yellow-700', review: 'bg-purple-50 text-purple-700', done: 'bg-green-50 text-green-700', blocked: 'bg-red-50 text-red-700', cancelled: 'bg-gray-50 dark:bg-gray-800 text-gray-400' };
 
 export default function TaskManager() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('taskmanager', () => apiClient.dashboard.metrics(), { fallback: SEED_TASKS })
@@ -67,8 +67,8 @@ export default function TaskManager() {
         <div className="flex items-center gap-3">
           <CheckSquare className="w-8 h-8 text-purple-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Task Manager</h1>
-            <p className="text-sm text-gray-500">KYC reviews, approvals, escalations, and SLA tracking</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Task Manager</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">KYC reviews, approvals, escalations, and SLA tracking</p>
           </div>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
@@ -79,22 +79,22 @@ export default function TaskManager() {
       {/* Stats */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         {[
-          { label: 'Total', value: stats.total, color: 'text-gray-900' },
+          { label: 'Total', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Open', value: stats.open, color: 'text-blue-600' },
           { label: 'In Progress', value: stats.in_progress, color: 'text-yellow-600' },
           { label: 'SLA Breached', value: stats.overdue, color: 'text-red-600' },
           { label: 'Completed', value: stats.done, color: 'text-green-600' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 border">
-            <p className="text-sm text-gray-500">{s.label}</p>
+          <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl p-4 border">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{s.label}</p>
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {showCreate && (
-        <div className="bg-white rounded-xl border p-4 mb-6">
-          <h3 className="font-medium text-gray-900 mb-3">Create New Task</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Create New Task</h3>
           <div className="grid grid-cols-4 gap-3">
             <input type="text" placeholder="Task title" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })}
               className="px-3 py-2 border rounded-lg text-sm col-span-2" />
@@ -113,10 +113,10 @@ export default function TaskManager() {
           <input type="text" placeholder="Search tasks..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm" />
         </div>
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {['all', 'open', 'in_progress', 'review', 'done'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded text-xs font-medium ${statusFilter === s ? 'bg-white shadow' : 'text-gray-500'}`}>
+              className={`px-3 py-1 rounded text-xs font-medium ${statusFilter === s ? 'bg-white dark:bg-gray-900 shadow' : 'text-gray-500 dark:text-gray-400'}`}>
               {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
             </button>
           ))}
@@ -126,14 +126,14 @@ export default function TaskManager() {
       {/* Task List */}
       <div className="space-y-2">
         {filtered.map(task => (
-          <div key={task.id} className={`bg-white rounded-xl border p-4 hover:shadow-sm transition ${task.sla_breached ? 'border-red-200 bg-red-50/30' : ''}`}>
+          <div key={task.id} className={`bg-white dark:bg-gray-900 rounded-xl border p-4 hover:shadow-sm transition ${task.sla_breached ? 'border-red-200 bg-red-50/30' : ''}`}>
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3 flex-1">
                 <input type="checkbox" checked={task.status === 'done'} onChange={() => updateStatus(task.id, task.status === 'done' ? 'open' : 'done')}
-                  className="mt-1 w-4 h-4 rounded border-gray-300" />
+                  className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className={`text-sm font-medium ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</p>
+                    <p className={`text-sm font-medium ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'}`}>{task.title}</p>
                     {task.sla_breached && <span className="flex items-center gap-0.5 text-xs text-red-600"><AlertTriangle className="w-3 h-3" /> SLA Breached</span>}
                   </div>
                   <div className="flex items-center gap-2 mt-1">

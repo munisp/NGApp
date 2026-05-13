@@ -68,15 +68,15 @@ export default function DashboardCustomization() {
     <div role="region" aria-label="DashboardCustomization"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <LayoutGrid className="w-8 h-8 text-gray-700" />
+          <LayoutGrid className="w-8 h-8 text-gray-700 dark:text-gray-300" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Customization</h1>
-            <p className="text-sm text-gray-500">Configure widgets, layout, and role-based dashboard presets</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Customization</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Configure widgets, layout, and role-based dashboard presets</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button onClick={() => { setLayout(DEFAULT_LAYOUT); setHasChanges(false); }}
-            className="flex items-center gap-1 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50">
+            className="flex items-center gap-1 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-800">
             <RotateCcw className="w-4 h-4" /> Reset
           </button>
           <button disabled={!hasChanges}
@@ -86,10 +86,10 @@ export default function DashboardCustomization() {
         </div>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
         {['layout', 'presets'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition ${activeTab === tab ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+            className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition ${activeTab === tab ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
             {tab === 'presets' ? 'Role Presets' : tab}
           </button>
         ))}
@@ -98,9 +98,9 @@ export default function DashboardCustomization() {
       {activeTab === 'layout' && (
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
-            <div className="bg-white rounded-xl border p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Widget Configuration</h3>
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Widget Configuration</h3>
                 <span className="text-xs text-gray-400">{visibleCount} of {AVAILABLE_WIDGETS.length} widgets active</span>
               </div>
               <div className="space-y-2">
@@ -108,19 +108,19 @@ export default function DashboardCustomization() {
                   const widget = AVAILABLE_WIDGETS.find(w => w.id === item.widgetId);
                   if (!widget) return null;
                   return (
-                    <div key={item.widgetId} className={`flex items-center justify-between p-3 rounded-lg border transition ${item.visible ? 'bg-white' : 'bg-gray-50 opacity-60'}`}>
+                    <div key={item.widgetId} className={`flex items-center justify-between p-3 rounded-lg border transition ${item.visible ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800 opacity-60'}`}>
                       <div className="flex items-center gap-3">
                         <GripVertical className="w-4 h-4 text-gray-300 cursor-grab" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{widget.name}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{widget.name}</p>
                           <p className="text-xs text-gray-400">{widget.desc}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">{widget.size}</span>
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{widget.size}</span>
                         <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded">{widget.category}</span>
                         <button onClick={() => toggleWidget(item.widgetId)}
-                          className={`p-1 rounded ${item.visible ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-400 hover:bg-gray-100'}`}>
+                          className={`p-1 rounded ${item.visible ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-400 hover:bg-gray-100 dark:bg-gray-700'}`}>
                           {item.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
                       </div>
@@ -132,8 +132,8 @@ export default function DashboardCustomization() {
           </div>
 
           {/* Preview */}
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="font-medium text-gray-900 mb-3">Layout Preview</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Layout Preview</h3>
             <div className="grid grid-cols-4 gap-1">
               {layout.filter(l => l.visible).map(item => {
                 const widget = AVAILABLE_WIDGETS.find(w => w.id === item.widgetId);
@@ -153,15 +153,15 @@ export default function DashboardCustomization() {
       {activeTab === 'presets' && (
         <div className="grid grid-cols-2 gap-4">
           {ROLE_PRESETS.map(preset => (
-            <div key={preset.role} className="bg-white rounded-xl border p-4">
+            <div key={preset.role} className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-gray-900">{preset.role}</h3>
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">{preset.role}</h3>
                 <button onClick={() => applyPreset(preset)} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Apply</button>
               </div>
               <div className="flex flex-wrap gap-1">
                 {preset.widgets.map(wId => {
                   const widget = AVAILABLE_WIDGETS.find(w => w.id === wId);
-                  return <span key={wId} className="px-2 py-0.5 bg-gray-100 rounded text-xs">{widget?.name}</span>;
+                  return <span key={wId} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">{widget?.name}</span>;
                 })}
               </div>
               <p className="text-xs text-gray-400 mt-2">{preset.widgets.length} widgets</p>
