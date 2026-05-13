@@ -345,3 +345,131 @@ async fn main() {
     tracing::info!("WAF engine listening on :8085");
     axum::serve(listener, app).await.unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_threat_category_variants() {
+        let cat = ThreatCategory::SQLInjection;
+        assert!(matches!(cat, ThreatCategory::SQLInjection));
+        let cat2 = ThreatCategory::XSS;
+        assert!(matches!(cat2, ThreatCategory::XSS));
+    }
+
+    #[test]
+    fn test_severity_ordering() {
+        let _low = Severity::Low;
+        let _medium = Severity::Medium;
+        let _high = Severity::High;
+        let critical = Severity::Critical;
+        assert!(matches!(critical, Severity::Critical));
+    }
+
+    #[test]
+    fn test_rule_action_variants() {
+        let block = RuleAction::Block;
+        assert!(matches!(block, RuleAction::Block));
+        let log = RuleAction::Log;
+        assert!(matches!(log, RuleAction::Log));
+    }
+
+    #[test]
+    fn test_waf_rule_creation() {
+        let rule = WAFRule {
+            id: "R001".to_string(),
+            name: "SQL Injection".to_string(),
+            category: ThreatCategory::SQLInjection,
+            severity: Severity::Critical,
+            pattern: r"(?i)(union\s+select|drop\s+table)".to_string(),
+            action: RuleAction::Block,
+            enabled: true,
+            hit_count: 0,
+            description: "Detects SQL injection attempts".to_string(),
+        };
+        assert_eq!(rule.id, "R001");
+        assert!(rule.enabled);
+        assert_eq!(rule.hit_count, 0);
+    }
+
+    #[test]
+    fn test_scan_result_creation() {
+        let result = ScanResult {
+            allowed: true,
+            threats: vec![],
+            risk_score: 0.0,
+            processing_time_us: 42,
+            request_id: "req-1".to_string(),
+        };
+        assert!(result.allowed);
+        assert!(result.threats.is_empty());
+        assert_eq!(result.risk_score, 0.0);
+    }
+
+    #[test]
+    fn test_scan_result_blocked() {
+        let result = ScanResult {
+            allowed: false,
+            threats: vec![ThreatMatch {
+                rule_id: "R001".to_string(),
+                rule_name: "SQL Injection".to_string(),
+                category: ThreatCategory::SQLInjection,
+                severity: Severity::Critical,
+                matched_pattern: "UNION SELECT".to_string(),
+                location: "body".to_string(),
+            }],
+            risk_score: 95.0,
+            processing_time_us: 150,
+            request_id: "req-2".to_string(),
+        };
+        assert!(!result.allowed);
+        assert_eq!(result.threats.len(), 1);
+        assert!(result.risk_score > 90.0);
+    }
+
+    #[test]
+    fn test_threat_match_fields() {
+        let threat = ThreatMatch {
+            rule_id: "R005".to_string(),
+            rule_name: "XSS Detection".to_string(),
+            category: ThreatCategory::XSS,
+            severity: Severity::High,
+            matched_pattern: "<script>".to_string(),
+            location: "query".to_string(),
+        };
+        assert_eq!(threat.rule_id, "R005");
+        assert!(matches!(threat.category, ThreatCategory::XSS));
+        assert_eq!(threat.location, "query");
+    }
+
+    #[test]
+    fn test_waf_stats_defaults() {
+        let stats = WAFStats {
+            total_requests: 0,
+            blocked_requests: 0,
+            threats_detected: 0,
+            avg_scan_time_us: 0,
+            top_threats: vec![],
+        };
+        assert_eq!(stats.total_requests, 0);
+        assert_eq!(stats.blocked_requests, 0);
+    }
+
+    #[test]
+    fn test_sql_injection_pattern() {
+        let pattern = Regex::new(r"(?i)(union\s+select|drop\s+table|;\s*delete|'\s*or\s*'1'\s*=\s*'1)").unwrap();
+        assert!(pattern.is_match("UNION SELECT * FROM users"));
+        assert!(pattern.is_match("'; DELETE FROM customers --"));
+        assert!(!pattern.is_match("SELECT name FROM customers WHERE id = 1"));
+    }
+
+    #[test]
+    fn test_xss_pattern() {
+        let pattern = Regex::new(r"(?i)(<script|javascript:|on\w+\s*=)").unwrap();
+        assert!(pattern.is_match("<script>alert('xss')</script>"));
+        assert!(pattern.is_match("javascript:void(0)"));
+        assert!(pattern.is_match("onerror=alert(1)"));
+        assert!(!pattern.is_match("Hello World"));
+    }
+}
