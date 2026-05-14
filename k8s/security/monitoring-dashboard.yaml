@@ -513,11 +513,11 @@ metadata:
 type: Opaque
 data:
   # Base64 encoded values - replace with actual values
-  postgres-password: Z3JhZmFuYV9wYXNzd29yZA==  # grafana_password
-  admin-password: c2VjdXJpdHlfYWRtaW5fcGFzc3dvcmQ=  # security_admin_password
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   secret-key: c2VjdXJpdHlfZGFzaGJvYXJkX3NlY3JldF9rZXk=  # security_dashboard_secret_key
   oauth-client-secret: c2VjdXJpdHlfZGFzaGJvYXJkX2NsaWVudF9zZWNyZXQ=  # security_dashboard_client_secret
-  smtp-password: c210cF9wYXNzd29yZA==  # smtp_password
+  smtp-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
 ---
 apiVersion: apps/v1
 kind: Deployment

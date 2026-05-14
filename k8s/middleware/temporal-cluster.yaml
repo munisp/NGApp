@@ -412,5 +412,5 @@ metadata:
     app.kubernetes.io/component: secrets
 type: Opaque
 data:
-  postgres-password: dGVtcG9yYWxfcGFzcw== # temporal_pass
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
 

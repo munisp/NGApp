@@ -27,10 +27,12 @@ metadata:
   namespace: security
 type: Opaque
 data:
-  # Base64 encoded values - replace with actual values
-  postgres-password: a2V5Y2xvYWtfcGFzc3dvcmQ=  # keycloak_password
-  keycloak-admin-password: YWRtaW5fcGFzc3dvcmQ=    # admin_password
-  keycloak-management-password: bWFuYWdlbWVudF9wYXNzd29yZA==  # management_password
+  # IMPORTANT: Replace these placeholder values with real base64-encoded secrets before deployment.
+  # Generate with: echo -n 'your-strong-password' | base64
+  # Do NOT commit real passwords to version control.
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD
+  keycloak-admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD
+  keycloak-management-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD
 ---
 apiVersion: v1
 kind: ConfigMap

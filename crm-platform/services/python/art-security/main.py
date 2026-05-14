@@ -1,3 +1,4 @@
+import os
 """
 ART Security — Adversarial Robustness Toolbox for ML Model Protection
 ======================================================================
@@ -243,7 +244,10 @@ class ARTHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed = os.environ.get("CORS_ALLOWED_ORIGINS", "https://crm.example.com,https://admin.example.com").split(",")
+        origin = self.headers.get("Origin", "")
+        if origin in [o.strip() for o in allowed]:
+            self.send_header("Access-Control-Allow-Origin", origin)
         self.end_headers()
 
         path = self.path.split("?")[0]
@@ -267,7 +271,10 @@ class ARTHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed = os.environ.get("CORS_ALLOWED_ORIGINS", "https://crm.example.com,https://admin.example.com").split(",")
+        origin = self.headers.get("Origin", "")
+        if origin in [o.strip() for o in allowed]:
+            self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Tenant-ID")
         self.end_headers()

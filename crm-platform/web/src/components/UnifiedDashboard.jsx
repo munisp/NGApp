@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Users, Building2, Landmark, Globe, TrendingUp, ArrowUpRight, ArrowDownRight,
@@ -12,6 +12,7 @@ import { eventBus } from '../services/eventBus'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { apiClient } from '@/lib/apiClient'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
@@ -94,6 +95,14 @@ const EventFeed = ({ events }) => (
 
 const UnifiedDashboard = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('unifieddashboard', () => apiClient.dashboard.metrics(), { fallback: COLORS })
+
+  const handleWsMessage = useCallback((msg) => {
+    if (msg.type === 'customer.created' || msg.type === 'customer.updated' || msg.type === 'deal.stage_changed') {
+      setRecentEvents(prev => [{ id: `ws-${Date.now()}`, type: msg.type, ...msg.payload, timestamp: msg.timestamp }, ...prev].slice(0, 20))
+    }
+  }, [])
+  const { connected: wsConnected } = useWebSocket(['customer.created', 'customer.updated', 'deal.stage_changed', 'deal.won'], handleWsMessage)
+
   const [metrics, setMetrics] = useState(null)
   const [segments, setSegments] = useState([])
   const [sourceDistribution, setSourceDistribution] = useState([])

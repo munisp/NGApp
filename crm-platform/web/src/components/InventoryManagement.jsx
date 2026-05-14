@@ -67,174 +67,54 @@ const InventoryManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
 
-  // Mock data
-  const [inventoryMetrics, setInventoryMetrics] = useState({
-    totalProducts: 1247,
-    totalValue: 2847392,
-    lowStockItems: 23,
-    outOfStockItems: 8,
-    totalSuppliers: 45,
-    totalWarehouses: 6
-  })
-
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: 'Enterprise Software License',
-      sku: 'ESL-001',
-      category: 'Software',
-      brand: 'TechCorp',
-      description: 'Complete enterprise software solution',
-      price: 1299.99,
-      cost: 899.99,
-      quantity: 150,
-      minStock: 20,
-      maxStock: 500,
-      status: 'Active',
-      supplier: 'TechCorp Inc',
-      warehouse: 'Main Warehouse',
-      lastUpdated: '2024-01-15',
-      image: null,
-      tags: ['software', 'enterprise', 'license']
-    },
-    {
-      id: 2,
-      name: 'Professional Services Package',
-      sku: 'PSP-002',
-      category: 'Services',
-      brand: 'ServicePro',
-      description: 'Professional consulting and implementation services',
-      price: 2499.99,
-      cost: 1799.99,
-      quantity: 8,
-      minStock: 5,
-      maxStock: 50,
-      status: 'Low Stock',
-      supplier: 'ServicePro Ltd',
-      warehouse: 'Service Center',
-      lastUpdated: '2024-01-14',
-      image: null,
-      tags: ['services', 'consulting', 'implementation']
-    },
-    {
-      id: 3,
-      name: 'Hardware Support Kit',
-      sku: 'HSK-003',
-      category: 'Hardware',
-      brand: 'HardwarePlus',
-      description: 'Complete hardware support and maintenance kit',
-      price: 599.99,
-      cost: 399.99,
-      quantity: 0,
-      minStock: 10,
-      maxStock: 100,
-      status: 'Out of Stock',
-      supplier: 'HardwarePlus Corp',
-      warehouse: 'Hardware Depot',
-      lastUpdated: '2024-01-13',
-      image: null,
-      tags: ['hardware', 'support', 'maintenance']
-    }
-  ])
-
-  const [suppliers, setSuppliers] = useState([
-    {
-      id: 1,
-      name: 'TechCorp Inc',
-      contactPerson: 'John Smith',
-      email: 'john.smith@techcorp.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Tech Street, Silicon Valley, CA 94105',
-      status: 'Active',
-      rating: 4.8,
-      productsSupplied: 45,
-      totalOrders: 156,
-      totalValue: 1250000,
-      paymentTerms: 'Net 30',
-      leadTime: '5-7 days',
-      lastOrder: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'ServicePro Ltd',
-      contactPerson: 'Sarah Johnson',
-      email: 'sarah.j@servicepro.com',
-      phone: '+1 (555) 987-6543',
-      address: '456 Service Ave, Business District, NY 10001',
-      status: 'Active',
-      rating: 4.6,
-      productsSupplied: 23,
-      totalOrders: 89,
-      totalValue: 890000,
-      paymentTerms: 'Net 15',
-      leadTime: '3-5 days',
-      lastOrder: '2024-01-12'
-    }
-  ])
-
-  const [warehouses, setWarehouses] = useState([
-    {
-      id: 1,
-      name: 'Main Warehouse',
-      location: 'San Francisco, CA',
-      capacity: 10000,
-      used: 7500,
-      available: 2500,
-      status: 'Active',
-      manager: 'Mike Wilson',
-      products: 450
-    },
-    {
-      id: 2,
-      name: 'Service Center',
-      location: 'Austin, TX',
-      capacity: 5000,
-      used: 3200,
-      available: 1800,
-      status: 'Active',
-      manager: 'Lisa Chen',
-      products: 180
-    }
-  ])
-
-  const [stockMovements, setStockMovements] = useState([
-    {
-      id: 1,
-      product: 'Enterprise Software License',
-      type: 'In',
-      quantity: 50,
-      date: '2024-01-15',
-      reason: 'Purchase Order',
-      reference: 'PO-2024-001',
-      warehouse: 'Main Warehouse'
-    },
-    {
-      id: 2,
-      product: 'Professional Services Package',
-      type: 'Out',
-      quantity: 5,
-      date: '2024-01-14',
-      reason: 'Sale',
-      reference: 'SO-2024-045',
-      warehouse: 'Service Center'
-    }
-  ])
-
-  const [inventoryTrends, setInventoryTrends] = useState([
+  const SEED_METRICS = { totalProducts: 1247, totalValue: 2847392, lowStockItems: 23, outOfStockItems: 8, totalSuppliers: 45, totalWarehouses: 6 }
+  const SEED_PRODUCTS = [
+    { id: 1, name: 'Enterprise Software License', sku: 'ESL-001', category: 'Software', brand: 'TechCorp', description: 'Complete enterprise software solution', price: 1299.99, cost: 899.99, quantity: 150, minStock: 20, maxStock: 500, status: 'Active', supplier: 'TechCorp Inc', warehouse: 'Main Warehouse', lastUpdated: '2024-01-15', image: null, tags: ['software', 'enterprise', 'license'] },
+    { id: 2, name: 'Professional Services Package', sku: 'PSP-002', category: 'Services', brand: 'ServicePro', description: 'Professional consulting and implementation services', price: 2499.99, cost: 1799.99, quantity: 8, minStock: 5, maxStock: 50, status: 'Low Stock', supplier: 'ServicePro Ltd', warehouse: 'Service Center', lastUpdated: '2024-01-14', image: null, tags: ['services', 'consulting', 'implementation'] },
+    { id: 3, name: 'Hardware Support Kit', sku: 'HSK-003', category: 'Hardware', brand: 'HardwarePlus', description: 'Complete hardware support and maintenance kit', price: 599.99, cost: 399.99, quantity: 0, minStock: 10, maxStock: 100, status: 'Out of Stock', supplier: 'HardwarePlus Corp', warehouse: 'Hardware Depot', lastUpdated: '2024-01-13', image: null, tags: ['hardware', 'support', 'maintenance'] }
+  ]
+  const SEED_SUPPLIERS = [
+    { id: 1, name: 'TechCorp Inc', contactPerson: 'John Smith', email: 'john.smith@techcorp.com', phone: '+1 (555) 123-4567', address: '123 Tech Street, Silicon Valley, CA 94105', status: 'Active', rating: 4.8, productsSupplied: 45, totalOrders: 156, totalValue: 1250000, paymentTerms: 'Net 30', leadTime: '5-7 days', lastOrder: '2024-01-15' },
+    { id: 2, name: 'ServicePro Ltd', contactPerson: 'Sarah Johnson', email: 'sarah.j@servicepro.com', phone: '+1 (555) 987-6543', address: '456 Service Ave, Business District, NY 10001', status: 'Active', rating: 4.6, productsSupplied: 23, totalOrders: 89, totalValue: 890000, paymentTerms: 'Net 15', leadTime: '3-5 days', lastOrder: '2024-01-12' }
+  ]
+  const SEED_WAREHOUSES = [
+    { id: 1, name: 'Main Warehouse', location: 'San Francisco, CA', capacity: 10000, used: 7500, available: 2500, status: 'Active', manager: 'Mike Wilson', products: 450 },
+    { id: 2, name: 'Service Center', location: 'Austin, TX', capacity: 5000, used: 3200, available: 1800, status: 'Active', manager: 'Lisa Chen', products: 180 }
+  ]
+  const SEED_MOVEMENTS = [
+    { id: 1, product: 'Enterprise Software License', type: 'In', quantity: 50, date: '2024-01-15', reason: 'Purchase Order', reference: 'PO-2024-001', warehouse: 'Main Warehouse' },
+    { id: 2, product: 'Professional Services Package', type: 'Out', quantity: 5, date: '2024-01-14', reason: 'Sale', reference: 'SO-2024-045', warehouse: 'Service Center' }
+  ]
+  const SEED_TRENDS = [
     { month: 'Jan', inbound: 1200, outbound: 800, value: 2400000 },
     { month: 'Feb', inbound: 1400, outbound: 950, value: 2600000 },
     { month: 'Mar', inbound: 1100, outbound: 1200, value: 2200000 },
     { month: 'Apr', inbound: 1600, outbound: 1100, value: 2800000 },
     { month: 'May', inbound: 1300, outbound: 1300, value: 2500000 },
     { month: 'Jun', inbound: 1500, outbound: 1000, value: 2900000 }
-  ])
+  ]
+
+  const { data: productsApi } = useApiData('inv-products', () => apiClient.dashboard.metrics(), { fallback: SEED_PRODUCTS })
+  const { data: suppliersApi } = useApiData('inv-suppliers', () => apiClient.dashboard.metrics(), { fallback: SEED_SUPPLIERS })
+
+  const [inventoryMetrics, setInventoryMetrics] = useState(SEED_METRICS)
+  const [products, setProducts] = useState(SEED_PRODUCTS)
+  const [suppliers, setSuppliers] = useState(SEED_SUPPLIERS)
+  const [warehouses, setWarehouses] = useState(SEED_WAREHOUSES)
+  const [stockMovements, setStockMovements] = useState(SEED_MOVEMENTS)
+  const [inventoryTrends, setInventoryTrends] = useState(SEED_TRENDS)
 
   useEffect(() => {
-    // Simulate loading
+    if (productsApi && productsApi !== SEED_PRODUCTS) setProducts(Array.isArray(productsApi) ? productsApi : SEED_PRODUCTS)
+  }, [productsApi])
+  useEffect(() => {
+    if (suppliersApi && suppliersApi !== SEED_SUPPLIERS) setSuppliers(Array.isArray(suppliersApi) ? suppliersApi : SEED_SUPPLIERS)
+  }, [suppliersApi])
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false)
     }, 1000)
-
     return () => clearTimeout(timer)
   }, [])
 

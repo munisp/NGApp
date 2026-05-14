@@ -19,7 +19,7 @@ metadata:
 type: Opaque
 data:
   # Base64 encoded values - replace with actual values
-  postgres-password: cGVybWlmeV9wYXNzd29yZA==  # permify_password
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   permify-secret-key: cGVybWlmeV9zZWNyZXRfa2V5XzEyMw==  # permify_secret_key_123
 ---
 apiVersion: v1

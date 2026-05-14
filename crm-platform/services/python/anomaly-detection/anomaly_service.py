@@ -76,7 +76,10 @@ class AnomalyHandler(BaseHTTPRequestHandler):
     def _send(self, code, body):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed = os.environ.get("CORS_ALLOWED_ORIGINS", "https://crm.example.com,https://admin.example.com").split(",")
+        origin = self.headers.get("Origin", "")
+        if origin in [o.strip() for o in allowed]:
+            self.send_header("Access-Control-Allow-Origin", origin)
         self.end_headers()
         self.wfile.write(json.dumps(body).encode())
 

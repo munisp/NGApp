@@ -577,7 +577,7 @@ metadata:
   namespace: enterprise-crm
 type: Opaque
 data:
-  admin-password: "T3BlblNlYXJjaEFkbWluMjAyNA=="  # Base64 encoded: OpenSearchAdmin2024
+  admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
 
 ---
 # OpenSearch Ingress

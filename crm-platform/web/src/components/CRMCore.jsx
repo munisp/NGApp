@@ -59,104 +59,48 @@ const CRMCore = () => {
   const [selectedLead, setSelectedLead] = useState(null)
   const [selectedOpportunity, setSelectedOpportunity] = useState(null)
 
-  // Mock data
-  const [pipelineData, setPipelineData] = useState([
+  const SEED_PIPELINE = [
     { stage: 'Prospecting', count: 45, value: 450000, color: '#3B82F6' },
     { stage: 'Qualification', count: 32, value: 640000, color: '#10B981' },
     { stage: 'Proposal', count: 18, value: 720000, color: '#F59E0B' },
     { stage: 'Negotiation', count: 12, value: 480000, color: '#EF4444' },
     { stage: 'Closed Won', count: 8, value: 320000, color: '#8B5CF6' }
-  ])
+  ]
+  const SEED_LEADS = [
+    { id: 1, name: 'John Smith', company: 'Tech Solutions Inc', title: 'CTO', email: 'john.smith@techsolutions.com', phone: '+1 (555) 123-4567', source: 'Website', status: 'New', score: 85, lastActivity: '2024-01-15', createdAt: '2024-01-10', notes: 'Interested in enterprise solution' },
+    { id: 2, name: 'Sarah Johnson', company: 'Global Corp', title: 'VP Sales', email: 'sarah.j@globalcorp.com', phone: '+1 (555) 987-6543', source: 'Referral', status: 'Qualified', score: 92, lastActivity: '2024-01-14', createdAt: '2024-01-08', notes: 'Ready for demo presentation' }
+  ]
+  const SEED_OPPORTUNITIES = [
+    { id: 1, name: 'Enterprise Software License', account: 'Tech Solutions Inc', stage: 'Proposal', amount: 125000, probability: 75, closeDate: '2024-02-15', owner: 'Alice Cooper', source: 'Inbound Lead', lastActivity: '2024-01-15', createdAt: '2024-01-05', products: ['Enterprise Suite', 'Support Package'], competitors: ['Competitor A', 'Competitor B'] },
+    { id: 2, name: 'Professional Services Contract', account: 'Global Corp', stage: 'Negotiation', amount: 85000, probability: 60, closeDate: '2024-02-28', owner: 'Bob Wilson', source: 'Referral', lastActivity: '2024-01-14', createdAt: '2024-01-12', products: ['Professional Services', 'Training'], competitors: ['Competitor C'] }
+  ]
+  const SEED_ACTIVITIES = [
+    { id: 1, type: 'call', title: 'Discovery Call with Tech Solutions', description: 'Initial needs assessment and product demo', date: '2024-01-15', time: '14:00', duration: 60, status: 'completed', relatedTo: 'Lead', relatedId: 1 },
+    { id: 2, type: 'email', title: 'Proposal Follow-up', description: 'Sent detailed proposal and pricing', date: '2024-01-14', time: '10:30', status: 'completed', relatedTo: 'Opportunity', relatedId: 1 }
+  ]
 
-  const [leads, setLeads] = useState([
-    {
-      id: 1,
-      name: 'John Smith',
-      company: 'Tech Solutions Inc',
-      title: 'CTO',
-      email: 'john.smith@techsolutions.com',
-      phone: '+1 (555) 123-4567',
-      source: 'Website',
-      status: 'New',
-      score: 85,
-      lastActivity: '2024-01-15',
-      createdAt: '2024-01-10',
-      notes: 'Interested in enterprise solution'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      company: 'Global Corp',
-      title: 'VP Sales',
-      email: 'sarah.j@globalcorp.com',
-      phone: '+1 (555) 987-6543',
-      source: 'Referral',
-      status: 'Qualified',
-      score: 92,
-      lastActivity: '2024-01-14',
-      createdAt: '2024-01-08',
-      notes: 'Ready for demo presentation'
-    }
-  ])
+  const { data: pipelineApiData } = useApiData('crm-pipeline', () => apiClient.deals.list(), { fallback: SEED_PIPELINE })
+  const { data: leadsApiData } = useApiData('crm-leads', () => apiClient.customers.list({ segment: 'leads' }), { fallback: SEED_LEADS })
+  const { data: oppsApiData } = useApiData('crm-opportunities', () => apiClient.deals.list(), { fallback: SEED_OPPORTUNITIES })
+  const { data: activitiesApiData } = useApiData('crm-activities', () => apiClient.dashboard.activities(), { fallback: SEED_ACTIVITIES })
 
-  const [opportunities, setOpportunities] = useState([
-    {
-      id: 1,
-      name: 'Enterprise Software License',
-      account: 'Tech Solutions Inc',
-      stage: 'Proposal',
-      amount: 125000,
-      probability: 75,
-      closeDate: '2024-02-15',
-      owner: 'Alice Cooper',
-      source: 'Inbound Lead',
-      lastActivity: '2024-01-15',
-      createdAt: '2024-01-05',
-      products: ['Enterprise Suite', 'Support Package'],
-      competitors: ['Competitor A', 'Competitor B']
-    },
-    {
-      id: 2,
-      name: 'Professional Services Contract',
-      account: 'Global Corp',
-      stage: 'Negotiation',
-      amount: 85000,
-      probability: 60,
-      closeDate: '2024-02-28',
-      owner: 'Bob Wilson',
-      source: 'Referral',
-      lastActivity: '2024-01-14',
-      createdAt: '2024-01-12',
-      products: ['Professional Services', 'Training'],
-      competitors: ['Competitor C']
-    }
-  ])
+  const [pipelineData, setPipelineData] = useState(SEED_PIPELINE)
+  const [leads, setLeads] = useState(SEED_LEADS)
+  const [opportunities, setOpportunities] = useState(SEED_OPPORTUNITIES)
+  const [activities, setActivities] = useState(SEED_ACTIVITIES)
 
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      type: 'call',
-      title: 'Discovery Call with Tech Solutions',
-      description: 'Initial needs assessment and product demo',
-      date: '2024-01-15',
-      time: '14:00',
-      duration: 60,
-      status: 'completed',
-      relatedTo: 'Lead',
-      relatedId: 1
-    },
-    {
-      id: 2,
-      type: 'email',
-      title: 'Proposal Follow-up',
-      description: 'Sent detailed proposal and pricing',
-      date: '2024-01-14',
-      time: '10:30',
-      status: 'completed',
-      relatedTo: 'Opportunity',
-      relatedId: 1
-    }
-  ])
+  useEffect(() => {
+    if (pipelineApiData && pipelineApiData !== SEED_PIPELINE) setPipelineData(pipelineApiData)
+  }, [pipelineApiData])
+  useEffect(() => {
+    if (leadsApiData && leadsApiData !== SEED_LEADS) setLeads(Array.isArray(leadsApiData) ? leadsApiData : leadsApiData.data || SEED_LEADS)
+  }, [leadsApiData])
+  useEffect(() => {
+    if (oppsApiData && oppsApiData !== SEED_OPPORTUNITIES) setOpportunities(Array.isArray(oppsApiData) ? oppsApiData : SEED_OPPORTUNITIES)
+  }, [oppsApiData])
+  useEffect(() => {
+    if (activitiesApiData && activitiesApiData !== SEED_ACTIVITIES) setActivities(Array.isArray(activitiesApiData) ? activitiesApiData : SEED_ACTIVITIES)
+  }, [activitiesApiData])
 
   useEffect(() => {
     // Simulate loading

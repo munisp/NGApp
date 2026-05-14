@@ -40,110 +40,22 @@ const NotificationCenter = () => {
   const [showSettings, setShowSettings] = useState(false)
   const panelRef = useRef(null)
 
-  // Mock notifications with Novu-style structure
-  const [mockNotifications, setMockNotifications] = useState([
-    {
-      id: '1',
-      title: 'New Customer Registration',
-      message: 'Acme Corporation has successfully registered for Enterprise Suite',
-      type: 'success',
-      category: 'customer',
-      priority: 'normal',
-      read: false,
-      starred: false,
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      actions: [
-        { label: 'View Customer', action: 'view_customer', primary: true },
-        { label: 'Send Welcome Email', action: 'send_email', primary: false }
-      ],
-      metadata: {
-        customerId: 'cust_123',
-        customerName: 'Acme Corporation',
-        plan: 'Enterprise Suite'
-      }
-    },
-    {
-      id: '2',
-      title: 'Deal Closed Successfully',
-      message: '$45,000 deal with TechStart Inc. has been marked as closed won',
-      type: 'success',
-      category: 'sales',
-      priority: 'high',
-      read: false,
-      starred: true,
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      actions: [
-        { label: 'View Deal', action: 'view_deal', primary: true },
-        { label: 'Generate Invoice', action: 'generate_invoice', primary: false }
-      ],
-      metadata: {
-        dealId: 'deal_456',
-        amount: 45000,
-        customer: 'TechStart Inc.'
-      }
-    },
-    {
-      id: '3',
-      title: 'Low Stock Alert',
-      message: 'Professional licenses are running low (8 remaining)',
-      type: 'warning',
-      category: 'inventory',
-      priority: 'high',
-      read: true,
-      starred: false,
-      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      actions: [
-        { label: 'Reorder Stock', action: 'reorder_stock', primary: true },
-        { label: 'View Inventory', action: 'view_inventory', primary: false }
-      ],
-      metadata: {
-        productId: 'prod_789',
-        productName: 'Professional Licenses',
-        currentStock: 8,
-        minStock: 10
-      }
-    },
-    {
-      id: '4',
-      title: 'System Maintenance Scheduled',
-      message: 'Scheduled maintenance window: Tonight 2:00 AM - 4:00 AM EST',
-      type: 'info',
-      category: 'system',
-      priority: 'normal',
-      read: true,
-      starred: false,
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      actions: [
-        { label: 'View Details', action: 'view_maintenance', primary: true }
-      ],
-      metadata: {
-        maintenanceId: 'maint_101',
-        startTime: '2024-01-16T02:00:00Z',
-        endTime: '2024-01-16T04:00:00Z'
-      }
-    },
-    {
-      id: '5',
-      title: 'Payment Failed',
-      message: 'Payment for Global Corp subscription failed. Please update payment method.',
-      type: 'error',
-      category: 'billing',
-      priority: 'high',
-      read: false,
-      starred: false,
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      actions: [
-        { label: 'Update Payment', action: 'update_payment', primary: true },
-        { label: 'Contact Customer', action: 'contact_customer', primary: false }
-      ],
-      metadata: {
-        customerId: 'cust_456',
-        customerName: 'Global Corp',
-        amount: 2499.99,
-        invoiceId: 'inv_789'
-      }
+  const SEED_NOTIFICATIONS = [
+    { id: '1', title: 'New Customer Registration', message: 'Acme Corporation has successfully registered for Enterprise Suite', type: 'success', category: 'customer', priority: 'normal', read: false, starred: false, timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), actions: [{ label: 'View Customer', action: 'view_customer', primary: true }, { label: 'Send Welcome Email', action: 'send_email', primary: false }], metadata: { customerId: 'cust_123', customerName: 'Acme Corporation', plan: 'Enterprise Suite' } },
+    { id: '2', title: 'Deal Closed Successfully', message: '$45,000 deal with TechStart Inc. has been marked as closed won', type: 'success', category: 'sales', priority: 'high', read: false, starred: true, timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(), actions: [{ label: 'View Deal', action: 'view_deal', primary: true }, { label: 'Generate Invoice', action: 'generate_invoice', primary: false }], metadata: { dealId: 'deal_456', amount: 45000, customer: 'TechStart Inc.' } },
+    { id: '3', title: 'Low Stock Alert', message: 'Professional licenses are running low (8 remaining)', type: 'warning', category: 'inventory', priority: 'high', read: true, starred: false, timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(), actions: [{ label: 'Reorder Stock', action: 'reorder_stock', primary: true }, { label: 'View Inventory', action: 'view_inventory', primary: false }], metadata: { productId: 'prod_789', productName: 'Professional Licenses', currentStock: 8, minStock: 10 } },
+    { id: '4', title: 'System Maintenance Scheduled', message: 'Scheduled maintenance window: Tonight 2:00 AM - 4:00 AM EST', type: 'info', category: 'system', priority: 'normal', read: true, starred: false, timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), actions: [{ label: 'View Details', action: 'view_maintenance', primary: true }], metadata: { maintenanceId: 'maint_101', startTime: '2024-01-16T02:00:00Z', endTime: '2024-01-16T04:00:00Z' } },
+    { id: '5', title: 'Payment Failed', message: 'Payment for Global Corp subscription failed. Please update payment method.', type: 'error', category: 'billing', priority: 'high', read: false, starred: false, timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), actions: [{ label: 'Update Payment', action: 'update_payment', primary: true }, { label: 'Contact Customer', action: 'contact_customer', primary: false }], metadata: { customerId: 'cust_456', customerName: 'Global Corp', amount: 2499.99, invoiceId: 'inv_789' } }
+  ]
+
+  const { data: notificationsApi } = useApiData('notifications', () => apiClient.dashboard.activities(), { fallback: SEED_NOTIFICATIONS })
+  const [mockNotifications, setMockNotifications] = useState(SEED_NOTIFICATIONS)
+
+  useEffect(() => {
+    if (notificationsApi && notificationsApi !== SEED_NOTIFICATIONS) {
+      setMockNotifications(Array.isArray(notificationsApi) ? notificationsApi : SEED_NOTIFICATIONS)
     }
-  ])
+  }, [notificationsApi])
 
   // Close panel when clicking outside
   useEffect(() => {

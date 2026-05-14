@@ -19,7 +19,7 @@ metadata:
 type: Opaque
 data:
   # Base64 encoded values - replace with actual values
-  postgres-password: YmFsbGVyaW5lX3Bhc3N3b3Jk  # ballerine_password
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   jwt-secret: YmFsbGVyaW5lX2p3dF9zZWNyZXRfa2V5XzEyMw==  # ballerine_jwt_secret_key_123
   encryption-key: YmFsbGVyaW5lX2VuY3J5cHRpb25fa2V5XzEyMw==  # ballerine_encryption_key_123
   webhook-secret: YmFsbGVyaW5lX3dlYmhvb2tfc2VjcmV0  # ballerine_webhook_secret

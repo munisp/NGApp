@@ -575,7 +575,7 @@ type: Opaque
 data:
   kubecost-token: "a3ViZWNvc3QtdG9rZW4tMjAyNA=="  # Base64 encoded
   db-username: "a3ViZWNvc3Q="  # Base64 encoded "kubecost"
-  db-password: "a3ViZWNvc3QtcGFzc3dvcmQtMjAyNA=="  # Base64 encoded
+  db-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   aws-access-key-id: ""  # Set your AWS access key
   aws-secret-access-key: ""  # Set your AWS secret key
   slack-webhook: ""  # Set your Slack webhook URL

@@ -32,10 +32,10 @@ metadata:
 type: Opaque
 data:
   # Base64 encoded values - replace with actual values
-  wazuh-admin-password: d2F6dWhfYWRtaW5fcGFzc3dvcmQ=  # wazuh_admin_password
-  wazuh-api-password: d2F6dWhfYXBpX3Bhc3N3b3Jk  # wazuh_api_password
-  indexer-admin-password: aW5kZXhlcl9hZG1pbl9wYXNzd29yZA==  # indexer_admin_password
-  dashboard-password: ZGFzaGJvYXJkX3Bhc3N3b3Jk  # dashboard_password
+  wazuh-admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  wazuh-api-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  indexer-admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  dashboard-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   ssl-cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # SSL certificate
   ssl-key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # SSL private key
 ---

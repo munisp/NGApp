@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApiData } from '@/hooks/useApiData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Wifi, WifiOff, Zap, Send, MessageSquare, Phone, Mail,
@@ -42,6 +43,14 @@ function generateEvent(campaigns) {
 export default function RealTimeDashboard() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('realtimedashboard', () => apiClient.dashboard.metrics(), { fallback: CHANNELS })
   const { t } = useTranslation()
+
+  const handleWsMessage = useCallback((msg) => {
+    if (msg.type === 'cpaas.message_delivered' || msg.type === 'notification') {
+      setEvents(prev => [{ id: `ws-${Date.now()}`, ...msg.payload, timestamp: msg.timestamp }, ...prev].slice(0, 100))
+    }
+  }, [])
+  const { connected: wsConnected } = useWebSocket(['cpaas.message_delivered', 'notification', 'alert.triggered'], handleWsMessage)
+
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({

@@ -65,7 +65,7 @@ metadata:
 type: Opaque
 data:
   # Base64 encoded values - replace with actual values
-  keycloak-admin-password: YWRtaW5fcGFzc3dvcmQ=  # admin_password
+  keycloak-admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
   permify-api-key: cGVybWlmeV9zZWNyZXRfa2V5XzEyMw==  # permify_secret_key_123
   integration-client-secret: cGVybWlmeS1pbnRlZ3JhdGlvbi1zZWNyZXQ=  # permify-integration-secret
 ---
