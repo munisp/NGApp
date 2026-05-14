@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Workflow, Plus, Play, Pause, Trash2, Copy, Settings, ArrowRight, CheckCircle, AlertTriangle, Clock, Zap, GitBranch, Mail, MessageSquare, Filter } from 'lucide-react'
+import { Workflow, Plus, Play, Pause, Trash2, Copy, Settings, ArrowRight, CheckCircle, AlertTriangle, Clock, Zap, GitBranch, Mail, MessageSquare, Filter, Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'

@@ -1,0 +1,152 @@
+# CRM Platform Helm Values
+# Override these for staging/production environments
+
+global:
+  environment: production
+  domain: crm.example.com
+  imageRegistry: ghcr.io/munisp/ngapp
+
+replicaCount: 2
+
+image:
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+services:
+  api:
+    name: crm-api
+    port: 8080
+    replicas: 3
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+  frontend:
+    name: crm-frontend
+    port: 3000
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  semanticSearch:
+    name: semantic-search
+    port: 8082
+    replicas: 2
+
+  workflowRuntime:
+    name: workflow-runtime
+    port: 8083
+    replicas: 2
+
+  salesAgent:
+    name: sales-agent
+    port: 8084
+    replicas: 2
+
+  analyticsEngine:
+    name: analytics-engine
+    port: 8085
+    replicas: 1
+
+# Middleware
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: crm-db-credentials
+  primary:
+    persistence:
+      size: 50Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+redis:
+  enabled: true
+  auth:
+    existingSecret: crm-redis-credentials
+  master:
+    persistence:
+      size: 10Gi
+
+kafka:
+  enabled: true
+  persistence:
+    size: 50Gi
+
+keycloak:
+  enabled: true
+  auth:
+    existingSecret: crm-keycloak-credentials
+
+opensearch:
+  enabled: true
+  persistence:
+    size: 100Gi
+
+temporal:
+  enabled: true
+
+apisix:
+  enabled: true
+
+tigerbeetle:
+  enabled: true
+  replicas: 3
+
+monitoring:
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+  otelCollector:
+    enabled: true
+  jaeger:
+    enabled: true
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: crm.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: crm-frontend
+        - path: /api
+          pathType: Prefix
+          service: crm-api
+  tls:
+    - secretName: crm-tls
+      hosts:
+        - crm.example.com
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+secrets:
+  # All secrets should be provided via external secret manager
+  # Do NOT put actual values here
+  externalSecrets:
+    enabled: true
+    provider: vault
+    path: secret/data/crm-platform
