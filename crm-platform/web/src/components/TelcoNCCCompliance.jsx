@@ -34,7 +34,7 @@ export default function TelcoNCCCompliance() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Compliance Score', v: '94.2%', c: 'text-emerald-600' }, { l: 'Open Violations', v: '3', c: 'text-red-600' }, { l: 'Pending Audits', v: '2', c: 'text-amber-600' }, { l: 'Last NCC Inspection', v: '12 days ago' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

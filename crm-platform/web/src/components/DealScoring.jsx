@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApiData } from '@/hooks/useApiData'
-import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone, Search } from 'lucide-react'
+import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone, Search, Plus, } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -61,12 +61,21 @@ export default function DealScoring() {
   const [search, setSearch] = useState('')
   const [riskFilter, setRiskFilter] = useState('all')
   const [selectedDeal, setSelectedDeal] = useState(null)
+  const [showCreateDeal, setShowCreateDeal] = useState(false)
+  const [formData, setFormData] = useState({})
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   const filteredDeals = data.deals.filter(d => {
     const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase())
     const matchRisk = riskFilter === 'all' || d.risk === riskFilter
     return matchSearch && matchRisk
   })
+
+  const handleCreateDeal = (e) => {
+    e.preventDefault()
+    const newDeal = { id: 'deal-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateDeal(false)
+  }
 
   return (
     <div role="region" aria-label="DealScoring"  className="space-y-6">

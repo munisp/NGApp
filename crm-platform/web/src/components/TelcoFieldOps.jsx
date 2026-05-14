@@ -157,8 +157,9 @@ const TelcoFieldOps = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredTasks.length === 0 ? <tr><td colSpan="7" className="text-center py-8 text-gray-500 dark:text-gray-400">No results found</td></tr> : null}
                 {filteredTasks.map((task, i) => (
-                  <tr key={i} onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                  <tr key={i} onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)} onKeyDown={e => e.key === "Enter" && setSelectedTask(selectedTask === task.id ? null : task.id)} tabIndex={0} role="button" className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <td className="px-6 py-4 font-mono text-sm text-blue-600 dark:text-blue-400">{task.id}</td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{task.type}</td>
                     <td className="px-6 py-4">

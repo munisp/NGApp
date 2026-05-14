@@ -33,7 +33,7 @@ export default function TelcoNumberPortability() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Port-In (MTD)', v: '1,247', c: 'text-emerald-600' }, { l: 'Port-Out (MTD)', v: '892', c: 'text-red-600' }, { l: 'Net Gain', v: '+355', c: 'text-emerald-600' }, { l: 'Avg Processing', v: '36 hrs' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

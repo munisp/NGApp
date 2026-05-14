@@ -87,7 +87,7 @@ export default function AcquisitionEngine() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Leads', value: totalLeads.toLocaleString(), icon: Users, color: 'text-blue-600' },
           { label: 'Conversions', value: totalConversions.toLocaleString(), icon: Target, color: 'text-green-600' },
@@ -224,7 +224,7 @@ export default function AcquisitionEngine() {
       )}
 
       {activeTab === 'scoring' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Lead Scoring Model</h3>
             <div className="space-y-3">

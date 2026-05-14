@@ -34,7 +34,7 @@ export default function BankingNIPPayments() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Transactions (24h)', v: '48,291' }, { l: 'Volume', v: '₦12.8B' }, { l: 'Success Rate', v: '99.4%', c: 'text-emerald-600' }, { l: 'Avg Response', v: '1.2 sec' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

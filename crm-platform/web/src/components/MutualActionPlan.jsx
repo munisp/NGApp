@@ -38,12 +38,21 @@ export default function MutualActionPlan() {
   const [search, setSearch] = useState('')
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [showCreateAction, setShowCreateAction] = useState(false)
+  const [formData, setFormData] = useState({})
 
   const filtered = plans.filter(p => {
     const matchesSearch = !search || p.deal.toLowerCase().includes(search.toLowerCase()) || p.owner.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  const handleCreateAction = (e) => {
+    e.preventDefault()
+    const newAction = { id: 'action-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateAction(false)
+  }
 
   return (
     <div role="region" aria-label="MutualActionPlan" className="space-y-6">
@@ -52,7 +61,7 @@ export default function MutualActionPlan() {
         <div className="flex gap-2"><button className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-teal-700"><Plus className="w-4 h-4" /> New Plan</button><FallbackBadge /></div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Plans', v: plans.length }, { l: 'On Track', v: plans.filter(p => p.status === 'on-track').length, c: 'text-emerald-600' }, { l: 'At Risk', v: plans.filter(p => p.status === 'at-risk').length, c: 'text-red-600' }, { l: 'Overdue Tasks', v: plans.reduce((s, p) => s + p.overdue, 0), c: plans.reduce((s, p) => s + p.overdue, 0) > 0 ? 'text-red-600' : 'text-emerald-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

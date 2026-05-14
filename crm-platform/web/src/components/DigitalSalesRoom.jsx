@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Presentation, Search, Users, FileText, Calendar, MessageSquare, Video, ExternalLink } from 'lucide-react'
+import { Presentation, Search, Users, FileText, Calendar, MessageSquare, Video, ExternalLink, Plus, } from 'lucide-react'
 import { FallbackBadge } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
@@ -16,8 +16,17 @@ export default function DigitalSalesRoom() {
   const [search, setSearch] = useState('')
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [activeTab, setActiveTab] = useState('rooms')
+  const [showCreateRoom, setShowCreateRoom] = useState(false)
+  const [formData, setFormData] = useState({})
 
   const filtered = rooms.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.owner.toLowerCase().includes(search.toLowerCase()))
+
+  const handleCreateRoom = (e) => {
+    e.preventDefault()
+    const newRoom = { id: 'room-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateRoom(false)
+  }
 
   return (
     <div role="region" aria-label="DigitalSalesRoom" className="space-y-6">
@@ -26,7 +35,7 @@ export default function DigitalSalesRoom() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Rooms', v: rooms.length }, { l: 'Total Stakeholders', v: rooms.reduce((s, r) => s + r.stakeholders, 0) }, { l: 'Avg Engagement', v: Math.round(rooms.reduce((s, r) => s + r.engagementScore, 0) / rooms.length) + '%', c: 'text-emerald-600' }, { l: 'Pipeline Value', v: '₦5.0B' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -52,7 +61,7 @@ export default function DigitalSalesRoom() {
               </div>
               {selectedRoom === r.id && (
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="grid grid-cols-4 gap-4 text-xs mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs mb-3">
                     <div><span className="text-gray-500">Owner</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{r.owner}</p></div>
                     <div><span className="text-gray-500">Views</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{r.views} ({r.avgTimeSpent} avg)</p></div>
                     <div><span className="text-gray-500">Top Document</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{r.topDoc}</p></div>

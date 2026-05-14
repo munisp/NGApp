@@ -45,7 +45,7 @@ export default function TelcoCellSiteMap() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Total Sites', v: stats.totalSites }, { l: 'Operational', v: stats.operational, c: 'text-emerald-600' }, { l: 'Degraded', v: stats.degraded, c: 'text-amber-600' }, { l: 'Down', v: stats.down, c: 'text-red-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -71,7 +71,7 @@ export default function TelcoCellSiteMap() {
             </select>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Site', 'Region', 'Type', 'Status', 'Uptime', 'Subscribers', 'Traffic', 'Alerts'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
+            <div className="overflow-x-auto"><table className="min-w-full w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Site', 'Region', 'Type', 'Status', 'Uptime', 'Subscribers', 'Traffic', 'Alerts'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filtered.map(s => (
                 <>
@@ -87,7 +87,7 @@ export default function TelcoCellSiteMap() {
                   </tr>
                   {expandedSite === s.id && (
                     <tr key={`${s.id}-detail`}><td colSpan={8} className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
-                      <div className="grid grid-cols-4 gap-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                         <div><span className="text-gray-500">Power Source</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.power}</p></div>
                         <div><span className="text-gray-500">Backhaul</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.backhaul}</p></div>
                         <div><span className="text-gray-500">Last Maintenance</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.lastMaint}</p></div>
@@ -100,7 +100,7 @@ export default function TelcoCellSiteMap() {
                   )}
                 </>
               ))}
-            </tbody></table>
+            </tbody></table></div>
           </div>
         </div>
       )}

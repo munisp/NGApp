@@ -60,7 +60,7 @@ export default function SLAMonitor() {
             <p className="text-5xl font-bold">{data.overall}%</p>
             <p className="text-sm opacity-80 mt-1">{totalTasks.toLocaleString()} tasks tracked | {totalBreached} breaches this period</p>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold">{totalTasks.toLocaleString()}</p>
               <p className="text-xs opacity-80">Total Tasks</p>
@@ -89,7 +89,7 @@ export default function SLAMonitor() {
 
       {activeTab === 'dashboard' && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Category</th>
@@ -130,7 +130,7 @@ export default function SLAMonitor() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 

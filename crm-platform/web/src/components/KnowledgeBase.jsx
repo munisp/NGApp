@@ -21,12 +21,21 @@ export default function KnowledgeBase() {
   const [category, setCategory] = useState('All')
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateArticle, setShowCreateArticle] = useState(false)
+  const [formData, setFormData] = useState({})
 
   const filtered = articles.filter(a => {
     const matchesSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.tags.some(t => t.includes(search.toLowerCase()))
     const matchesCategory = category === 'All' || a.category === category
     return matchesSearch && matchesCategory
   })
+
+  const handleCreateArticle = (e) => {
+    e.preventDefault()
+    const newArticle = { id: 'article-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateArticle(false)
+  }
 
   return (
     <div role="region" aria-label="KnowledgeBase" className="space-y-6">
@@ -35,7 +44,7 @@ export default function KnowledgeBase() {
         <div className="flex gap-2"><button onClick={() => setShowCreateForm(!showCreateForm)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-violet-700"><Plus className="w-4 h-4" /> New Article</button><FallbackBadge /></div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Total Articles', v: articles.length }, { l: 'Published', v: articles.filter(a => a.status === 'published').length, c: 'text-emerald-600' }, { l: 'Total Views', v: articles.reduce((s, a) => s + a.views, 0).toLocaleString() }, { l: 'Avg Helpful', v: Math.round(articles.filter(a => a.helpful > 0).reduce((s, a) => s + a.helpful, 0) / articles.filter(a => a.helpful > 0).length) + '%', c: 'text-emerald-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -44,7 +53,7 @@ export default function KnowledgeBase() {
       {showCreateForm && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-violet-200 dark:border-violet-900/50 p-4 space-y-3">
           <h3 className="font-semibold text-gray-900 dark:text-white">Create New Article</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><label className="text-xs text-gray-500 block mb-1">Title</label><input type="text" placeholder="Article title" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
             <div><label className="text-xs text-gray-500 block mb-1">Category</label><select className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">{categories.filter(c => c !== 'All').map(c => `<option>${c}</option>`).join('')}<option>Banking</option><option>Telco</option><option>Commodity</option><option>Developer</option><option>Admin</option></select></div>
           </div>

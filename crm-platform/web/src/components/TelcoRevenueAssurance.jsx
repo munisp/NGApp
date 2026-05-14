@@ -38,7 +38,7 @@ export default function TelcoRevenueAssurance() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><BarChart3 className="w-7 h-7 text-orange-600" /> Revenue Assurance</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Detect and recover revenue leakage for {tenant?.name || 'telco'}</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Total Leakage', v: totalLeakage, c: 'text-red-600' }, { l: 'Active Cases', v: leakagePoints.filter(l => l.status !== 'resolved').length, c: 'text-amber-600' }, { l: 'Recovered (MTD)', v: '₦89.4M', c: 'text-emerald-600' }, { l: 'Recovery Rate', v: '16.3%' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

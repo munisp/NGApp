@@ -52,7 +52,7 @@ export default function RevOpsPipeline() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[{ l: 'Pipeline Value', v: '₦9.1B', icon: DollarSign }, { l: 'Active Deals', v: stages.reduce((s, st) => s + st.deals, 0), icon: Target }, { l: 'Weighted Forecast', v: '₦3.2B', icon: TrendingUp }, { l: 'Avg Cycle', v: '45 days', icon: Clock }, { l: 'Win Rate', v: '32%', icon: Users }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <div className="flex items-center gap-2"><s.icon className="w-4 h-4 text-gray-400" /><p className="text-xs text-gray-500">{s.l}</p></div>
@@ -105,8 +105,9 @@ export default function RevOpsPipeline() {
             </select>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Deal', 'Value', 'Stage', 'Probability', 'Owner', 'Days', 'Vertical'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
+            <div className="overflow-x-auto"><table className="min-w-full w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Deal', 'Value', 'Stage', 'Probability', 'Owner', 'Days', 'Vertical'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredDeals.length === 0 ? <tr><td colSpan="7" className="text-center py-8 text-gray-500 dark:text-gray-400">No results found</td></tr> : null}
               {filteredDeals.map(d => (
                 <>
                   <tr key={d.id} onClick={() => setExpandedDeal(expandedDeal === d.id ? null : d.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
@@ -120,7 +121,7 @@ export default function RevOpsPipeline() {
                   </tr>
                   {expandedDeal === d.id && (
                     <tr key={`${d.id}-details`}><td colSpan={7} className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
-                      <div className="grid grid-cols-3 gap-4 text-xs">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                         <div><span className="text-gray-500">Next Action:</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{d.nextAction}</p></div>
                         <div><span className="text-gray-500">Last Activity:</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{d.lastActivity}</p></div>
                         <div className="flex gap-2 items-start">
@@ -133,7 +134,7 @@ export default function RevOpsPipeline() {
                   )}
                 </>
               ))}
-            </tbody></table>
+            </tbody></table></div>
           </div>
         </div>
       )}
@@ -142,7 +143,7 @@ export default function RevOpsPipeline() {
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Monte Carlo Forecast — Q2 2026</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {forecastScenarios.map(scenario => (
                 <div key={scenario.name} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-3"><div className={`w-3 h-3 rounded-full ${scenario.color}`} /><span className="text-sm font-medium text-gray-900 dark:text-white">{scenario.name}</span></div>

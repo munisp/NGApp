@@ -38,7 +38,7 @@ export default function TelcoSIMLifecycle() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><CreditCard className="w-7 h-7 text-teal-600" /> SIM Lifecycle Management</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Track SIM provisioning, activation, and deactivation for {tenant?.name || 'telco'}</p></div>
         <div className="flex gap-2"><button className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-teal-700"><Plus className="w-4 h-4" /> Provision SIM</button><FallbackBadge /></div>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Total SIMs', v: '142,847' }, { l: 'Active', v: sims.filter(s => s.status === 'Active').length.toLocaleString() + ' (sample)', c: 'text-emerald-600' }, { l: 'Suspended', v: sims.filter(s => s.status === 'Suspended').length, c: 'text-amber-600' }, { l: 'eSIM Ratio', v: Math.round(sims.filter(s => s.type === 'eSIM').length / sims.length * 100) + '%' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -55,7 +55,7 @@ export default function TelcoSIMLifecycle() {
           <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Types</option><option value="eSIM">eSIM</option><option value="Physical">Physical</option></select>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['MSISDN', 'Status', 'Type', 'Customer', 'Network', 'Data Used', 'Revenue/mo'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
+          <div className="overflow-x-auto"><table className="min-w-full w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['MSISDN', 'Status', 'Type', 'Customer', 'Network', 'Data Used', 'Revenue/mo'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {filtered.map(s => (<>
               <tr key={s.id} onClick={() => setExpandedSim(expandedSim === s.id ? null : s.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
@@ -68,7 +68,7 @@ export default function TelcoSIMLifecycle() {
                 <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{s.monthlyRevenue}</td>
               </tr>
               {expandedSim === s.id && (<tr key={`${s.id}-x`}><td colSpan={7} className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
-                <div className="grid grid-cols-4 gap-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                   <div><span className="text-gray-500">Plan</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.plan}</p></div>
                   <div><span className="text-gray-500">Activated</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.activated}</p></div>
                   <div><span className="text-gray-500">Last Activity</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{s.lastActivity}</p></div>
@@ -81,12 +81,12 @@ export default function TelcoSIMLifecycle() {
                 </div>
               </td></tr>)}
             </>))}
-          </tbody></table>
+          </tbody></table></div>
         </div>
       </div>)}
       {activeTab === 'provisioning' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
         <h3 className="font-semibold text-gray-900 dark:text-white">Bulk SIM Provisioning</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><label className="text-xs text-gray-500 block mb-1">SIM Type</label><select className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>eSIM</option><option>Physical</option></select></div>
           <div><label className="text-xs text-gray-500 block mb-1">Quantity</label><input type="number" defaultValue={100} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
           <div><label className="text-xs text-gray-500 block mb-1">Network Type</label><select className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>5G SA</option><option>5G NSA</option><option>4G</option><option>3G</option></select></div>

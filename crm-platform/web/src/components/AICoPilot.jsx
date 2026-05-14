@@ -42,7 +42,7 @@ export default function AICoPilot() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Brain className="w-7 h-7 text-purple-600" /> AI Co-Pilot</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Intelligent assistant for {tenant?.name || 'Platform'}</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Queries Today', v: '142' }, { l: 'Avg Response', v: '1.8s' }, { l: 'Accuracy', v: '94%', c: 'text-emerald-600' }, { l: 'Actions Taken', v: '28' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -55,7 +55,7 @@ export default function AICoPilot() {
       {activeTab === 'chat' && (<div className="space-y-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-2 mb-4"><input type="text" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Ask anything about your CRM data..." className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /><button onClick={handleSend} className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"><Send className="w-4 h-4" /></button></div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {filteredSuggestions.slice(0, 6).map(s => (
               <button key={s.id} onClick={() => setQuery(s.text)} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2"><s.icon className="w-3 h-3 mt-0.5 text-purple-500 shrink-0" />{s.text}</button>
             ))}

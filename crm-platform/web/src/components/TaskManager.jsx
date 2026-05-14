@@ -61,6 +61,13 @@ export default function TaskManager() {
     setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t));
   };
 
+  const handleCreateTask = (e) => {
+    e.preventDefault()
+    const newTask = { id: 'task-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateTask(false)
+  }
+
   return (
     <div role="region" aria-label="TaskManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
@@ -77,7 +84,7 @@ export default function TaskManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         {[
           { label: 'Total', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Open', value: stats.open, color: 'text-blue-600' },
@@ -95,7 +102,7 @@ export default function TaskManager() {
       {showCreate && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
           <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Create New Task</h3>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <input type="text" placeholder="Task title" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })}
               className="px-3 py-2 border rounded-lg text-sm col-span-2" />
             <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value })} className="px-3 py-2 border rounded-lg text-sm">

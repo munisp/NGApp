@@ -28,6 +28,13 @@ export default function BulkOperations() {
   const [activeTab, setActiveTab] = useState('operations');
   const [uploadFile, setUploadFile] = useState(null);
 
+  const handleCreateOperation = (e) => {
+    e.preventDefault()
+    const newOperation = { id: 'operation-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateOperation(false)
+  }
+
   return (
     <div role="region" aria-label="BulkOperations"  className="p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
@@ -46,7 +53,7 @@ export default function BulkOperations() {
       </div>
 
       {activeTab === 'operations' && (
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-1 space-y-2">
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Available Operations</h3>
             {OPERATIONS.map(op => (
@@ -94,7 +101,7 @@ export default function BulkOperations() {
                 {selectedOp.id === 'bulk_approve' && (
                   <div className="space-y-4">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Approve pending KYC applications in bulk. Only Level 1 and Level 2 KYC can be bulk-approved.</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">KYC Level</label>
                         <select className="w-full px-3 py-2 border rounded-lg text-sm">
@@ -116,7 +123,7 @@ export default function BulkOperations() {
 
                 {selectedOp.id === 'bulk_notify' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Channel</label>
                         <select className="w-full px-3 py-2 border rounded-lg text-sm">
@@ -140,7 +147,7 @@ export default function BulkOperations() {
                 {(selectedOp.id === 'bulk_update' || selectedOp.id === 'bulk_deactivate') && (
                   <div className="space-y-4">
                     <p className="text-sm text-gray-500 dark:text-gray-400">{selectedOp.desc}</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Entity Type</label>
                         <select className="w-full px-3 py-2 border rounded-lg text-sm">
@@ -173,7 +180,7 @@ export default function BulkOperations() {
 
       {activeTab === 'history' && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Operation</th>
@@ -196,7 +203,7 @@ export default function BulkOperations() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

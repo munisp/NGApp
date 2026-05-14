@@ -86,7 +86,7 @@ const SalesAgentDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { l: 'Actions Today', v: data.stats.actionsToday, icon: Activity, color: 'text-blue-500' },
           { l: 'Leads Scored', v: data.stats.leadsScored, icon: Star, color: 'text-amber-500' },

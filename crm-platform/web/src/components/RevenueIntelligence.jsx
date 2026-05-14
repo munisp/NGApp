@@ -42,7 +42,7 @@ export default function RevenueIntelligence() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><DollarSign className="w-7 h-7 text-emerald-600" /> Revenue Intelligence</h1><p className="text-gray-500 dark:text-gray-400 mt-1">AI-driven revenue insights, deal analytics, and forecasting</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { l: "Q1 Revenue", v: "₦3.48B" },
           { l: "Pipeline", v: "₦5.1B" },
@@ -88,7 +88,7 @@ export default function RevenueIntelligence() {
               <div className="flex items-center gap-4"><div className="text-right"><p className="text-xs text-gray-400">Closed</p><p className="text-sm font-medium text-gray-900 dark:text-white">{r.closed}</p></div><span className={`text-xs px-2 py-0.5 rounded-full ${r.attainment >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.attainment}%</span></div>
             </div>
             {selectedRep === r.name && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-3 gap-3 mb-3">{[{ l: 'Quota', v: r.quota }, { l: 'Gap', v: r.attainment >= 100 ? 'Exceeded' : `₦${((parseFloat(r.quota.replace(/[₦B]/g, '')) - parseFloat(r.closed.replace(/[₦B]/g, ''))) * 1).toFixed(2)}B` }, { l: 'Win Rate', v: Math.round(r.deals / (r.deals * 1.4) * 100) + '%' }].map(s => <div key={s.l} className="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2"><p className="text-xs text-gray-400">{s.l}</p><p className="text-sm font-bold text-gray-900 dark:text-white">{s.v}</p></div>)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">{[{ l: 'Quota', v: r.quota }, { l: 'Gap', v: r.attainment >= 100 ? 'Exceeded' : `₦${((parseFloat(r.quota.replace(/[₦B]/g, '')) - parseFloat(r.closed.replace(/[₦B]/g, ''))) * 1).toFixed(2)}B` }, { l: 'Win Rate', v: Math.round(r.deals / (r.deals * 1.4) * 100) + '%' }].map(s => <div key={s.l} className="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2"><p className="text-xs text-gray-400">{s.l}</p><p className="text-sm font-bold text-gray-900 dark:text-white">{s.v}</p></div>)}</div>
               <div className="flex gap-2"><button className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs">View Pipeline</button><button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">Schedule 1:1</button></div>
             </div>)}
           </div>

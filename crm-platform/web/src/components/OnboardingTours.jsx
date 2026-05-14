@@ -34,7 +34,7 @@ export default function OnboardingTours() {
         <div className="flex gap-2"><button onClick={() => setShowCreateForm(!showCreateForm)} className="px-3 py-2 bg-sky-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-sky-700"><Plus className="w-4 h-4" /> Create Tour</button><FallbackBadge /></div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Tours', v: tours.filter(t => t.status === 'active').length }, { l: 'Total Started', v: tours.reduce((s, t) => s + t.startedBy, 0).toLocaleString() }, { l: 'Avg Completion', v: Math.round(tours.filter(t => t.status === 'active').reduce((s, t) => s + t.completionRate, 0) / tours.filter(t => t.status === 'active').length) + '%', c: 'text-emerald-600' }, { l: 'Avg Time', v: (tours.filter(t => t.startedBy > 0).reduce((s, t) => s + parseFloat(t.avgTime), 0) / tours.filter(t => t.startedBy > 0).length).toFixed(1) + ' min' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -43,7 +43,7 @@ export default function OnboardingTours() {
       {showCreateForm && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-sky-200 dark:border-sky-900/50 p-4 space-y-3">
           <h3 className="font-semibold text-gray-900 dark:text-white">Create New Tour</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><label className="text-xs text-gray-500 block mb-1">Tour Name</label><input type="text" placeholder="e.g., Feature Discovery" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
             <div><label className="text-xs text-gray-500 block mb-1">Target Audience</label><select className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>All Users</option><option>Sales Users</option><option>Admins</option><option>Developers</option><option>Banking Vertical</option></select></div>
             <div><label className="text-xs text-gray-500 block mb-1">Trigger</label><select className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>First Login</option><option>Feature Access</option><option>Manual Start</option><option>After N Logins</option></select></div>
@@ -84,7 +84,7 @@ export default function OnboardingTours() {
                 </div>
                 {selectedTour === tour.id && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-3 gap-4 text-xs mb-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs mb-3">
                       <div><span className="text-gray-500">Target</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{tour.target}</p></div>
                       <div><span className="text-gray-500">Trigger</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{tour.trigger}</p></div>
                       <div><span className="text-gray-500">Steps</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{tour.steps}</p></div>

@@ -44,6 +44,13 @@ export default function IncidentManager() {
     resolved: incidents.filter(i => i.status === 'resolved').length,
   };
 
+  const handleCreateIncident = (e) => {
+    e.preventDefault()
+    const newIncident = { id: 'incident-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateIncident(false)
+  }
+
   return (
     <div role="region" aria-label="IncidentManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
@@ -60,7 +67,7 @@ export default function IncidentManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Incidents', value: stats.total, icon: AlertOctagon, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Active', value: stats.open, icon: AlertTriangle, color: 'text-orange-600' },
@@ -80,7 +87,7 @@ export default function IncidentManager() {
       {showCreate && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
           <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Report New Incident</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <input type="text" placeholder="Incident title" className="px-3 py-2 border rounded-lg text-sm col-span-2" />
             <select className="px-3 py-2 border rounded-lg text-sm">
               <option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>

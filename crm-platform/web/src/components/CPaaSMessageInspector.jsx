@@ -33,7 +33,7 @@ export default function CPaaSMessageInspector() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Messages (24h)', v: '2.4M' }, { l: 'Delivered', v: '98.2%', c: 'text-emerald-600' }, { l: 'Failed', v: '1.1%', c: 'text-red-600' }, { l: 'Queued', v: '0.7%', c: 'text-amber-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

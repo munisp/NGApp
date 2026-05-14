@@ -97,7 +97,7 @@ export default function DashboardCustomization() {
       </div>
 
       {activeTab === 'layout' && (
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-2">
             <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-4">
@@ -135,7 +135,7 @@ export default function DashboardCustomization() {
           {/* Preview */}
           <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
             <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Layout Preview</h3>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1">
               {layout.filter(l => l.visible).map(item => {
                 const widget = AVAILABLE_WIDGETS.find(w => w.id === item.widgetId);
                 const cols = widget?.size.startsWith('2') ? 'col-span-2' : 'col-span-1';
@@ -152,7 +152,7 @@ export default function DashboardCustomization() {
       )}
 
       {activeTab === 'presets' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ROLE_PRESETS.map(preset => (
             <div key={preset.role} className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-3">

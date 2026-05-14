@@ -33,7 +33,7 @@ export default function WhiteLabelConfig() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Palette className="w-7 h-7 text-pink-600" /> White Label Configuration</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Customize branding for {tenant?.name || 'Platform'}</p></div>
         <div className="flex gap-2"><button onClick={() => setPreviewMode(!previewMode)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300"><Eye className="w-4 h-4" /> {previewMode ? 'Edit' : 'Preview'}</button><button className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-pink-700"><Save className="w-4 h-4" /> Save</button><FallbackBadge /></div>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Custom Domain', v: config.domain.customDomain, c: 'text-emerald-600' }, { l: 'SSL Status', v: config.domain.sslStatus === 'active' ? 'Active' : 'Pending', c: 'text-emerald-600' }, { l: 'Features Enabled', v: config.features.filter(f => f.enabled).length + '/' + config.features.length }, { l: 'Theme', v: config.theme.mode }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -45,7 +45,7 @@ export default function WhiteLabelConfig() {
       </div>
       {activeTab === 'branding' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
         <h3 className="font-semibold text-gray-900 dark:text-white">Brand Settings</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><label className="text-xs text-gray-500 block mb-1">App Name</label><input type="text" defaultValue={config.branding.appName} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
           <div><label className="text-xs text-gray-500 block mb-1">Logo URL</label><input type="text" defaultValue={config.branding.logoUrl} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div>
           <div><label className="text-xs text-gray-500 block mb-1">Primary Color</label><div className="flex gap-2"><input type="color" defaultValue={config.branding.primaryColor} className="w-10 h-10 rounded border-0 cursor-pointer" /><input type="text" defaultValue={config.branding.primaryColor} className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></div></div>
@@ -54,7 +54,7 @@ export default function WhiteLabelConfig() {
       </div>)}
       {activeTab === 'theme' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
         <h3 className="font-semibold text-gray-900 dark:text-white">Theme Settings</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><label className="text-xs text-gray-500 block mb-1">Theme Mode</label><select defaultValue={config.theme.mode} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>auto</option><option>light</option><option>dark</option></select></div>
           <div><label className="text-xs text-gray-500 block mb-1">Font</label><select defaultValue={config.theme.font} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>Inter</option><option>Roboto</option><option>Open Sans</option><option>Lato</option></select></div>
           <div><label className="text-xs text-gray-500 block mb-1">Border Radius</label><select defaultValue={config.theme.borderRadius} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option>rounded-none</option><option>rounded-sm</option><option>rounded-lg</option><option>rounded-xl</option></select></div>

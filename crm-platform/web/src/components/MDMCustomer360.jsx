@@ -89,7 +89,7 @@ export default function MDMCustomer360() {
       </div>
 
       {/* MDM KPIs */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { label: 'Source Records', value: MDM_STATS.totalSourceRecords.toLocaleString(), icon: Layers, color: 'text-blue-600' },
           { label: 'Golden Records', value: MDM_STATS.goldenRecords.toLocaleString(), icon: Star, color: 'text-yellow-600' },
@@ -117,7 +117,7 @@ export default function MDMCustomer360() {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Source System Coverage</h3>
             <div className="space-y-3">
@@ -193,7 +193,7 @@ export default function MDMCustomer360() {
                 </div>
                 {selectedRecord?.id === record.id && (
                   <div className="mt-3 pt-3 border-t">
-                    <div className="grid grid-cols-5 gap-4 mb-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-3">
                       <div><div className="text-xs text-gray-500">BVN</div><div className="text-sm font-mono">{record.bvn}</div></div>
                       <div><div className="text-xs text-gray-500">Email</div><div className="text-sm">{record.email || 'N/A'}</div></div>
                       <div><div className="text-xs text-gray-500">Risk Score</div><div className="text-sm font-bold">{record.riskScore}/100</div></div>
@@ -214,7 +214,7 @@ export default function MDMCustomer360() {
       {activeTab === 'quality' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
           <h3 className="font-semibold mb-4">Field-Level Data Quality</h3>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
             <thead>
               <tr className="border-b"><th className="text-left p-3">Field</th><th className="text-right p-3">Completeness</th><th className="text-right p-3">Accuracy</th><th className="text-right p-3">Overall</th></tr>
             </thead>
@@ -241,7 +241,7 @@ export default function MDMCustomer360() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -272,7 +272,7 @@ export default function MDMCustomer360() {
       {activeTab === 'affinity' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
           <h3 className="font-semibold mb-4">Product Affinity Analysis (Market Basket)</h3>
-          <table className="w-full text-sm">
+          <table className="min-w-full w-full text-sm">
             <thead>
               <tr className="border-b"><th className="text-left p-3">Product A</th><th className="text-left p-3">Product B</th><th className="text-right p-3">Support</th><th className="text-right p-3">Confidence</th><th className="text-right p-3">Lift</th></tr>
             </thead>

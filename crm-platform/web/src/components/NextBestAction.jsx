@@ -37,7 +37,7 @@ export default function NextBestAction() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Recommendations', v: actions.filter(a => a.status !== 'completed').length }, { l: 'Critical Priority', v: actions.filter(a => a.priority === 'critical').length, c: 'text-red-600' }, { l: 'Avg Confidence', v: Math.round(actions.reduce((s, a) => s + a.confidence, 0) / actions.length) + '%', c: 'text-emerald-600' }, { l: 'Completed Today', v: actions.filter(a => a.status === 'completed').length }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -66,7 +66,7 @@ export default function NextBestAction() {
             </div>
             {expandedAction === a.id && (
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-4 gap-4 text-xs mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs mb-3">
                   <div><span className="text-gray-500">Impact</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.impact}</p></div>
                   <div><span className="text-gray-500">Source</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.source}</p></div>
                   <div><span className="text-gray-500">Assignee</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.assignee}</p></div>

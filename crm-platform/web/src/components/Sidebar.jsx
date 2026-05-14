@@ -554,6 +554,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-2">
+          {filteredNavItems.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No results found</div>}
           {filteredNavItems.map((section) => (
             <div key={section.section} className="px-3">
               {isOpen && (

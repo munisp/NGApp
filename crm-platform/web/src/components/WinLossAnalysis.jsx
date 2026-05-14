@@ -35,7 +35,7 @@ export default function WinLossAnalysis() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Target className="w-7 h-7 text-rose-600" /> Win/Loss Analysis</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Analyze deal outcomes for {tenant?.name || 'Platform'}</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[{ l: 'Total Deals', v: deals.length }, { l: 'Won', v: wins.length, c: 'text-emerald-600' }, { l: 'Lost', v: losses.length, c: 'text-red-600' }, { l: 'Win Rate', v: Math.round(wins.length / deals.length * 100) + '%' }, { l: 'Avg Cycle', v: Math.round(deals.reduce((s, d) => s + parseInt(d.cycle), 0) / deals.length) + 'd' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -61,7 +61,7 @@ export default function WinLossAnalysis() {
             <div className="flex items-center gap-3 mb-2"><span className="text-xs text-gray-400">Competitors:</span>{d.competitors.map(c => <span key={c} className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{c}</span>)}</div>
             <div className="flex flex-wrap gap-1">{d.factors.map(f => <span key={f.f} className={`text-xs px-2 py-0.5 rounded ${f.impact === '+' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>{f.impact === '+' ? '✓' : '✗'} {f.f}</span>)}</div>
             {selected === d.id && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-3 gap-4 text-xs mb-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs mb-3">
                 <div><span className="text-gray-500">Decision Maker</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{d.decisionMaker}</p></div>
                 <div><span className="text-gray-500">Cycle Length</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{d.cycle}</p></div>
                 {d.lostReason && <div><span className="text-gray-500">Lost Reason</span><p className="font-medium text-red-600 mt-0.5">{d.lostReason}</p></div>}

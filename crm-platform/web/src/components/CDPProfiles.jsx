@@ -45,7 +45,7 @@ export default function CDPProfiles() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Unified Profiles', v: profiles.length }, { l: 'Total Identities', v: profiles.reduce((s, p) => s + p.identities, 0) }, { l: 'Events Tracked', v: (profiles.reduce((s, p) => s + p.events, 0) / 1000).toFixed(1) + 'K' }, { l: 'At-Risk', v: profiles.filter(p => p.churnRisk > 40).length, c: 'text-red-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -85,11 +85,11 @@ export default function CDPProfiles() {
                 </div>
                 {selected === p.id && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div><h5 className="text-xs font-medium text-gray-500 mb-1">Data Sources ({p.sources.length})</h5><div className="flex gap-1 flex-wrap">{p.sources.map(s => <span key={s} className="text-xs px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400">{s}</span>)}</div></div>
                       <div><h5 className="text-xs font-medium text-gray-500 mb-1">Segments ({p.segments.length})</h5><div className="flex gap-1 flex-wrap">{p.segments.map(s => <span key={s} className="text-xs px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400">{s}</span>)}</div></div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                       <div><span className="text-gray-500">Contacts</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{p.contacts} stakeholders</p></div>
                       <div><span className="text-gray-500">Last Seen</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{p.lastSeen}</p></div>
                       <div><span className="text-gray-500">Next Action</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{p.nextAction}</p></div>

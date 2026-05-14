@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { FileText, Upload, Search, Filter, Download, Trash2, Eye, CheckCircle, Clock, XCircle, FolderOpen } from 'lucide-react';
+import { FileText, Upload, Search, Filter, Download, Trash2, Eye, CheckCircle, Clock, XCircle, FolderOpen, Plus, } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -62,6 +62,13 @@ export default function DocumentManager() {
     expiring: docs.filter(d => d.expires).length,
   };
 
+  const handleCreateDocument = (e) => {
+    e.preventDefault()
+    const newDocument = { id: 'document-' + Date.now(), ...formData, createdAt: new Date().toISOString(), status: 'active' }
+    setFormData({})
+    setShowCreateDocument(false)
+  }
+
   return (
     <div role="region" aria-label="DocumentManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
@@ -78,7 +85,7 @@ export default function DocumentManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Documents', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Approved', value: stats.approved, color: 'text-green-600' },
@@ -95,7 +102,7 @@ export default function DocumentManager() {
       {showUpload && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
           <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Upload New Document</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <input type="text" placeholder="Document title" className="px-3 py-2 border rounded-lg text-sm" />
             <select className="px-3 py-2 border rounded-lg text-sm">
               <option>Select category</option>

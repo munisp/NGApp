@@ -34,7 +34,7 @@ export default function SmartTaskAutomation() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Zap className="w-7 h-7 text-amber-600" /> Smart Task Automation</h1><p className="text-gray-500 dark:text-gray-400 mt-1">AI-powered workflow automation for {tenant?.name || 'Platform'}</p></div>
         <div className="flex gap-2"><button className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-amber-700"><Plus className="w-4 h-4" /> New Automation</button><FallbackBadge /></div>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Automations', v: automations.filter(a => a.status === 'active').length }, { l: 'Total Runs', v: automations.reduce((s, a) => s + a.runs, 0).toLocaleString() }, { l: 'Avg Success Rate', v: (automations.reduce((s, a) => s + a.success, 0) / automations.length).toFixed(1) + '%', c: 'text-emerald-600' }, { l: 'Time Saved', v: '~420 hrs/mo' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -56,7 +56,7 @@ export default function SmartTaskAutomation() {
               <div className="text-right"><p className="text-lg font-bold text-gray-900 dark:text-white">{a.runs.toLocaleString()}</p><p className="text-xs text-gray-400">runs ({a.success}% success)</p></div>
             </div>
             {selected === a.id && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-4 gap-4 text-xs mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs mb-3">
                 <div><span className="text-gray-500">Last Run</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.lastRun}</p></div>
                 <div><span className="text-gray-500">Avg Duration</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.avgTime}</p></div>
                 <div><span className="text-gray-500">Owner</span><p className="font-medium text-gray-900 dark:text-white mt-0.5">{a.owner}</p></div>
@@ -80,7 +80,7 @@ export default function SmartTaskAutomation() {
       </div>)}
       {activeTab === 'templates' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
         <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" /><h3 className="font-semibold text-gray-900 dark:text-white mb-1">Automation Templates</h3><p className="text-sm text-gray-500 mb-4">Pre-built automation workflows for common use cases.</p>
-        <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">{['Lead Routing', 'Follow-up Sequence', 'Health Alerts', 'Invoice Reminders', 'Onboarding', 'Reporting'].map(t => <button key={t} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">{t}</button>)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg mx-auto">{['Lead Routing', 'Follow-up Sequence', 'Health Alerts', 'Invoice Reminders', 'Onboarding', 'Reporting'].map(t => <button key={t} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">{t}</button>)}</div>
       </div>)}
     </div>
   )

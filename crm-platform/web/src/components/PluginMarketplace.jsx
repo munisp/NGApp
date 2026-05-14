@@ -37,7 +37,7 @@ export default function PluginMarketplace() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Store className="w-7 h-7 text-emerald-600" /> Plugin Marketplace</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Extend {tenant?.name || 'Platform'} with plugins</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Available Plugins', v: plugins.length }, { l: 'Installed', v: plugins.filter(p => p.status === 'installed').length, c: 'text-emerald-600' }, { l: 'Total Installs', v: plugins.reduce((s, p) => s + p.installs, 0).toLocaleString() }, { l: 'Avg Rating', v: (plugins.reduce((s, p) => s + p.rating, 0) / plugins.length).toFixed(1) + ' ★' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}
@@ -49,7 +49,7 @@ export default function PluginMarketplace() {
         ))}</div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All</option><option value="installed">Installed</option><option value="available">Available</option></select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filtered.map(p => (
           <div key={p.id} onClick={() => setSelected(selected === p.id ? null : p.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === p.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-start justify-between mb-2">

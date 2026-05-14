@@ -97,7 +97,7 @@ export default function AgenticAI() {
       </div>
 
       {/* System KPIs */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { label: 'Active Agents', value: '7', icon: Bot, color: 'text-violet-600' },
           { label: 'Decisions Today', value: totalDecisions.toLocaleString(), icon: Zap, color: 'text-blue-600' },
@@ -155,7 +155,7 @@ export default function AgenticAI() {
                   {expanded && (
                     <div className="mt-4 pt-4 border-t">
                       <p className="text-sm text-gray-600 mb-4">{agent.description}</p>
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="text-sm font-semibold mb-2">Capabilities</h4>
                           <ul className="space-y-1">
@@ -168,7 +168,7 @@ export default function AgenticAI() {
                         </div>
                         <div>
                           <h4 className="text-sm font-semibold mb-2">Performance Metrics</h4>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {Object.entries(agent.metrics).map(([key, val]) => (
                               <div key={key} className={`p-2 rounded-lg ${agent.bgLight}`}>
                                 <div className="text-xs text-gray-500 capitalize">{key.replace(/_/g, ' ')}</div>
@@ -222,7 +222,7 @@ export default function AgenticAI() {
       )}
 
       {activeTab === 'performance' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Agent Accuracy Comparison</h3>
             <div className="space-y-3">
@@ -263,7 +263,7 @@ export default function AgenticAI() {
       )}
 
       {activeTab === 'governance' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Autonomy Levels</h3>
             <div className="space-y-4">

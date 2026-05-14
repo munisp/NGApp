@@ -66,12 +66,12 @@ export default function DataExport() {
       </div>
 
       {activeTab === 'new' && (
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Step 1: Data Type */}
           <div className="col-span-2 space-y-4">
             <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">1. Select Data Type</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {EXPORT_TYPES.map(type => (
                   <button key={type.id} onClick={() => handleTypeSelect(type)}
                     className={`p-3 rounded-lg border text-left transition ${selectedType?.id === type.id ? 'border-teal-500 bg-teal-50' : 'hover:bg-gray-50 dark:bg-gray-800'}`}>
@@ -140,7 +140,7 @@ export default function DataExport() {
 
       {activeTab === 'history' && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-3 text-left text-xs text-gray-500 dark:text-gray-400">Data Type</th>
@@ -170,7 +170,7 @@ export default function DataExport() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

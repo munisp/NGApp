@@ -69,7 +69,7 @@ export default function SocialMediaHub() {
       </div>
 
       {/* Platform Overview Cards */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {PLATFORMS.map(p => (
           <div key={p.id} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-3 text-center">
             <div className={`w-8 h-8 ${p.color} rounded-lg flex items-center justify-center mx-auto mb-2`}>
@@ -83,7 +83,7 @@ export default function SocialMediaHub() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Ad Spend', value: `₦${(totalSpend / 1000000).toFixed(1)}M`, icon: DollarSign, color: 'text-orange-600' },
           { label: 'Total Impressions', value: `${(totalImpressions / 1000000).toFixed(1)}M`, icon: Eye, color: 'text-blue-600' },
@@ -110,7 +110,7 @@ export default function SocialMediaHub() {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Platform Performance</h3>
             <div className="space-y-3">
@@ -210,7 +210,7 @@ export default function SocialMediaHub() {
       )}
 
       {activeTab === 'analytics' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold mb-4">Channel ROI Comparison</h3>
             <div className="space-y-3">

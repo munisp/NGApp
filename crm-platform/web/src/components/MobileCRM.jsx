@@ -29,7 +29,7 @@ export default function MobileCRM() {
         <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Smartphone className="w-7 h-7 text-sky-600" /> Mobile CRM</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Mobile experience for {tenant?.name || 'Platform'} field teams</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Active Users', v: '142' }, { l: 'Synced Devices', v: '186' }, { l: 'Offline Records', v: '3' }, { l: 'Daily Actions', v: '312' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
         ))}

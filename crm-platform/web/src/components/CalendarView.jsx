@@ -67,7 +67,7 @@ export default function CalendarView() {
       {showCreate && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border p-4 mb-6">
           <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Create Event</h3>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <input type="text" placeholder="Event title" className="px-3 py-2 border rounded-lg text-sm col-span-2" />
             <input type="date" className="px-3 py-2 border rounded-lg text-sm" />
             <input type="time" className="px-3 py-2 border rounded-lg text-sm" />
@@ -80,7 +80,7 @@ export default function CalendarView() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Calendar Grid */}
         <div className="col-span-2 bg-white dark:bg-gray-900 rounded-xl border">
           <div className="flex items-center justify-between px-4 py-3 border-b">

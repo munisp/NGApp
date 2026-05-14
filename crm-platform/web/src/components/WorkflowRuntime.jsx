@@ -77,7 +77,7 @@ const WorkflowRuntime = () => {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { l: 'Total Workflows', v: workflows.length, icon: Workflow },
           { l: 'Running', v: runningCount, icon: RefreshCw },

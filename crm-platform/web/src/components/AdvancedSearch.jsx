@@ -139,7 +139,7 @@ export default function AdvancedSearch() {
               <div className="px-4 py-3 border-b flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">{results.length} results found</span>
               </div>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Name</th>
@@ -164,7 +164,7 @@ export default function AdvancedSearch() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 

@@ -33,7 +33,7 @@ export default function CPaaSA2PCompliance() {
         <FallbackBadge />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'Registered Senders', v: '842' }, { l: 'Compliance Rate', v: '97.8%', c: 'text-emerald-600' }, { l: 'Blocked (24h)', v: '1,247', c: 'text-red-600' }, { l: 'Pending Review', v: '12', c: 'text-amber-600' }].map(s => (
           <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className={`text-xl font-bold ${s.c || 'text-gray-900 dark:text-white'}`}>{s.v}</p></div>
         ))}

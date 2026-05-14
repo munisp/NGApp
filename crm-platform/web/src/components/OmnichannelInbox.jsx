@@ -69,7 +69,7 @@ export default function OmnichannelInbox() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Unread', value: data.stats.unread, color: 'text-red-600' },
           { label: 'Avg Response', value: data.stats.avgResponse, color: 'text-blue-600' },
@@ -184,7 +184,7 @@ export default function OmnichannelInbox() {
               <h3 className="font-semibold text-gray-900 dark:text-white mt-2">{data.customerContext.name}</h3>
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{data.customerContext.segment}</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <p className="text-lg font-bold text-blue-600">{data.customerContext.healthScore}</p>
                 <p className="text-xs text-gray-500">Health</p>

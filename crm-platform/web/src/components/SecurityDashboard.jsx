@@ -77,7 +77,7 @@ export default function SecurityDashboard() {
             <p className="text-5xl font-bold">{data.vulnerability_score}%</p>
             <p className="text-sm opacity-80 mt-1">OWASP Top 10: 10/10 covered | PCI-DSS compliant | NDPR certified</p>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
             <div className="bg-white dark:bg-gray-900/10 rounded-lg p-3">
               <p className="text-2xl font-bold">{data.threats_blocked_24h}</p>
               <p className="text-xs opacity-80">Threats Blocked (24h)</p>
@@ -105,7 +105,7 @@ export default function SecurityDashboard() {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { label: 'DDoS Protection', value: data.ddos_protection, icon: Zap, color: 'text-green-600' },
             { label: 'Circuit Breaker', value: data.circuit_breaker, icon: Cpu, color: 'text-green-600' },
@@ -130,7 +130,7 @@ export default function SecurityDashboard() {
           <div className="px-4 py-3 border-b">
             <h3 className="font-medium text-gray-900 dark:text-gray-100">Recent Threats (Last 24h)</h3>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="min-w-full w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">Time</th>
@@ -159,14 +159,14 @@ export default function SecurityDashboard() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
       {activeTab === 'owasp' && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
           <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">OWASP Top 10 (2021) Coverage</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Object.entries(OWASP_LABELS).map(([key, label]) => (
               <div key={key} className="flex items-center gap-3 p-3 rounded-lg border">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${data.owasp_coverage[key] ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
@@ -192,7 +192,7 @@ export default function SecurityDashboard() {
           <div className="px-4 py-3 border-b">
             <h3 className="font-medium text-gray-900 dark:text-gray-100">IP Reputation Database</h3>
           </div>
-          <table className="w-full text-sm">
+          <table className="min-w-full w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-2 text-left text-xs text-gray-500 dark:text-gray-400">IP Address</th>

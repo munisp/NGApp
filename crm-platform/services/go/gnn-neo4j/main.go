@@ -1096,10 +1096,23 @@ func handleFraudRings(w http.ResponseWriter, r *http.Request) {
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000": true,
+		"http://localhost:5173": true,
+	}
+	if extra := os.Getenv("CORS_ALLOWED_ORIGINS"); extra != "" {
+		for _, o := range strings.Split(extra, ",") {
+			allowedOrigins[strings.TrimSpace(o)] = true
+		}
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Tenant-ID")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Tenant-ID, X-Request-ID")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return

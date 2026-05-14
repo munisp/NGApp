@@ -63,7 +63,7 @@ export default function ComplianceDashboard() {
             <p className="text-5xl font-bold">{overallScore}%</p>
             <p className="text-sm opacity-80 mt-1">Across {FRAMEWORKS.length} regulatory frameworks</p>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {FRAMEWORKS.map(fw => (
               <div key={fw.id} className="bg-white dark:bg-gray-900/10 rounded-lg p-3 text-center min-w-[100px]">
                 <p className="text-xl font-bold">{fw.score}%</p>
@@ -85,7 +85,7 @@ export default function ComplianceDashboard() {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {FRAMEWORKS.map(fw => (
             <div key={fw.id} className="bg-white dark:bg-gray-900 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-3">
@@ -139,7 +139,7 @@ export default function ComplianceDashboard() {
       )}
 
       {activeTab === 'kyc' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl border p-4">
             <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">KYC Verification Status</h3>
             <div className="space-y-3">

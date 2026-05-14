@@ -116,7 +116,7 @@ export default function ChannelValueAnalysis() {
       </div>
 
       {/* Channel Selector */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Object.entries(CHANNELS).map(([key, ch]) => {
           const ChIcon = ch.icon;
           const active = selectedChannel === key;
@@ -135,7 +135,7 @@ export default function ChannelValueAnalysis() {
         <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-6">
           <h2 className="text-lg font-bold mb-4">Channel Comparison Matrix</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-full w-full text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium text-gray-500">Metric</th>
@@ -175,7 +175,7 @@ export default function ChannelValueAnalysis() {
               </div>
             </div>
             <p className="text-sm text-white/90 mb-4">{channel.description}</p>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white/10 rounded-lg p-3">
                 <div className="text-white/70 text-xs">Market Size</div>
                 <div className="font-bold text-lg">{channel.market_size}</div>
@@ -195,7 +195,7 @@ export default function ChannelValueAnalysis() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* ROI Metrics */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-600" /> ROI Metrics</h3>
@@ -273,7 +273,7 @@ export default function ChannelValueAnalysis() {
           {/* Current Performance */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border p-5">
             <h3 className="font-semibold text-gray-900 mb-3">Current Performance Metrics</h3>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(channel.metrics).map(([key, val]) => (
                 <div key={key} className="text-center p-3 bg-gray-50 rounded-lg">
                   <div className="text-xs text-gray-500 capitalize">{key.replace(/_/g, ' ')}</div>

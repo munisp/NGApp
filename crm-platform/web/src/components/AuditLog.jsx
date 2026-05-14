@@ -90,7 +90,7 @@ export default function AuditLog() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Events', value: stats.total, color: 'text-gray-900 dark:text-gray-100' },
           { label: 'Critical', value: stats.critical, color: 'text-red-600' },
