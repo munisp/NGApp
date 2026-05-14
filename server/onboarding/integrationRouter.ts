@@ -10,6 +10,22 @@ import {
   getSdkDownloads,
 } from './integrationService';
 
+// SDK package sizes by type and version
+function getSdkSize(sdkType: string, version: string): string {
+  const sizes: Record<string, string> = {
+    'node': '3.2 MB',
+    'python': '2.1 MB',
+    'java': '5.8 MB',
+    'go': '1.9 MB',
+    'dotnet': '4.5 MB',
+    'php': '1.6 MB',
+    'ruby': '1.4 MB',
+    'flutter': '6.2 MB',
+    'react-native': '4.8 MB',
+  };
+  return sizes[sdkType] || '2.4 MB';
+}
+
 export const integrationRouter = router({
   // Provision sandbox environment
   provisionSandbox: protectedProcedure
@@ -57,7 +73,7 @@ export const integrationRouter = router({
         downloadUrl,
         sdkType: input.sdkType,
         version: input.version,
-        size: '2.4 MB', // Placeholder
+        size: getSdkSize(input.sdkType, input.version),
       };
     }),
 

@@ -303,7 +303,7 @@ impl SettlementPostingEngine {
             transfers.push(SettlementTransfer {
                 id: self.id_counter,
                 debit_account_id: self.accounts.reversal_suspense,
-                credit_account_id: 0x1000_0000_0000_0000, // fintech_prefund_ngn (placeholder)
+                credit_account_id: derive_prefund_account_id(participant_id),
                 amount: *amount,
                 pending: false,
                 linked: i < participant_count - 1,
@@ -475,4 +475,27 @@ mod tests {
         assert_eq!(SettlementLedger::from_currency("GHS"), Some(SettlementLedger::GHS));
         assert_eq!(SettlementLedger::from_currency("INVALID"), None);
     }
+
+    #[test]
+    fn test_derive_prefund_account_id() {
+        let id1 = derive_prefund_account_id("firstbank");
+        let id2 = derive_prefund_account_id("gtbank");
+        assert_ne!(id1, id2);
+        // Verify deterministic
+        assert_eq!(id1, derive_prefund_account_id("firstbank"));
+        // Verify in prefund range (0x1000...)
+        assert!(id1 >= 0x1000_0000_0000_0000);
+    }
+}
+
+/// Derive a deterministic TigerBeetle prefund account ID from participant FSP ID.
+/// Uses a simple hash to map participant names to the 0x1000 account range.
+fn derive_prefund_account_id(participant_id: &str) -> u128 {
+    let base: u128 = 0x1000_0000_0000_0000;
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325; // FNV-1a offset basis
+    for byte in participant_id.as_bytes() {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(0x0100_0000_01b3); // FNV prime
+    }
+    base + (hash as u128)
 }

@@ -152,19 +152,29 @@ export const remittanceRouter = router({
       remittanceId: z.string(),
     }))
     .query(async ({ input, ctx }) => {
-      // In production, fetch from database
-      // For now, return mock data
-      return {
-        remittanceId: input.remittanceId,
-        status: 'pending_recipient_info',
-        senderCurrency: 'USDC',
-        senderAmount: 500,
-        recipientCurrency: 'NGN',
-        estimatedRecipientAmount: 825000,
-        exchangeRate: 1650,
-        deliveryOption: 'EXISTING_ACCOUNT',
-        createdAt: new Date().toISOString(),
-      };
+      const { getDb } = await import('../db');
+      const { remittances } = await import('../../drizzle/remittance-schema');
+      const { eq } = await import('drizzle-orm');
+
+      const db = await getDb();
+      if (db) {
+        const [row] = await db.select().from(remittances).where(eq(remittances.remittanceId, input.remittanceId)).limit(1);
+        if (row) {
+          return {
+            remittanceId: row.remittanceId,
+            status: row.status,
+            senderCurrency: row.senderCurrency,
+            senderAmount: parseFloat(row.senderAmount),
+            recipientCurrency: row.recipientCurrency,
+            estimatedRecipientAmount: parseFloat(row.estimatedRecipientAmount),
+            exchangeRate: parseFloat(row.exchangeRate),
+            deliveryOption: row.deliveryOption,
+            createdAt: row.createdAt.toISOString(),
+          };
+        }
+      }
+
+      throw new TRPCError({ code: 'NOT_FOUND', message: `Remittance ${input.remittanceId} not found` });
     }),
 
   /**
@@ -177,13 +187,49 @@ export const remittanceRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input, ctx }) => {
-      // In production, fetch from database with filters
-      return {
-        remittances: [],
-        total: 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
+      const { getDb } = await import('../db');
+      const { remittances } = await import('../../drizzle/remittance-schema');
+      const { eq, desc, sql, and } = await import('drizzle-orm');
+
+      const db = await getDb();
+      if (db) {
+        const conditions = [];
+        if ((ctx as any).user?.id) {
+          conditions.push(eq(remittances.senderUserId, (ctx as any).user.id));
+        }
+        if (input.status) {
+          conditions.push(eq(remittances.status, input.status as any));
+        }
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        const rows = await db.select().from(remittances)
+          .where(whereClause)
+          .orderBy(desc(remittances.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        const [countResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(remittances)
+          .where(whereClause);
+
+        return {
+          remittances: rows.map(r => ({
+            remittanceId: r.remittanceId,
+            status: r.status,
+            senderCurrency: r.senderCurrency,
+            senderAmount: parseFloat(r.senderAmount),
+            recipientCurrency: r.recipientCurrency,
+            estimatedRecipientAmount: parseFloat(r.estimatedRecipientAmount),
+            deliveryOption: r.deliveryOption,
+            createdAt: r.createdAt.toISOString(),
+          })),
+          total: Number(countResult?.count ?? 0),
+          limit: input.limit,
+          offset: input.offset,
+        };
+      }
+
+      return { remittances: [], total: 0, limit: input.limit, offset: input.offset };
     }),
 
   /**

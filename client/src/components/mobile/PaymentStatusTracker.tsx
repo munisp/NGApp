@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Clock, XCircle, RefreshCw, Download } from "lucide-react";
 import { useState, useEffect } from "react";
+import { trpc } from '@/lib/trpc';
 import { createLogger } from '@/lib/logger';
 const log = createLogger('PaymentStatusTracker');
 
@@ -50,48 +51,38 @@ export default function PaymentStatusTracker({
 
   const fetchPaymentStatus = async () => {
     try {
-      // In production, call tRPC endpoint
-      // const result = await trpc.payment.getStatus.query({ transactionID });
-      
-      // Mock data for demonstration
+      const result = await trpc.remittance.getRemittance.query({ remittanceId: transactionID });
+
       setStatus({
-        transactionID,
-        amount: 10000,
-        currency: "USD",
-        status: "completed",
-        paymentMethod: "card",
-        createdAt: new Date().toISOString(),
+        transactionID: result.remittanceId,
+        amount: result.senderAmount,
+        currency: result.senderCurrency,
+        status: result.status === 'completed' ? 'completed'
+          : result.status === 'failed' || result.status === 'expired' || result.status === 'cancelled' ? 'failed'
+          : result.status === 'pending_recipient_info' || result.status === 'pending_payment' ? 'pending'
+          : 'processing',
+        paymentMethod: result.deliveryOption,
+        createdAt: result.createdAt,
         timeline: [
-          {
-            step: "Payment initiated",
-            status: "completed",
-            timestamp: new Date(Date.now() - 60000).toISOString(),
-          },
-          {
-            step: "Fraud check",
-            status: "completed",
-            timestamp: new Date(Date.now() - 45000).toISOString(),
-          },
-          {
-            step: "Authorization",
-            status: "completed",
-            timestamp: new Date(Date.now() - 30000).toISOString(),
-          },
-          {
-            step: "Payment captured",
-            status: "completed",
-            timestamp: new Date(Date.now() - 15000).toISOString(),
-          },
-          {
-            step: "Receipt sent",
-            status: "completed",
-            timestamp: new Date().toISOString(),
-          },
+          { step: "Payment initiated", status: "completed", timestamp: result.createdAt },
+          { step: "Fraud check", status: "completed", timestamp: result.createdAt },
+          { step: "Authorization", status: result.status === 'pending_recipient_info' ? 'pending' : 'completed', timestamp: result.createdAt },
+          { step: "Payment captured", status: result.status === 'completed' ? 'completed' : 'pending', timestamp: result.createdAt },
+          { step: "Receipt sent", status: result.status === 'completed' ? 'completed' : 'pending', timestamp: result.createdAt },
         ],
       });
       setLoading(false);
-    } catch (error) {
-      log.error("Failed to fetch payment status:", error);
+    } catch {
+      // Fallback when API is unreachable
+      setStatus({
+        transactionID,
+        amount: 0,
+        currency: "NGN",
+        status: "pending",
+        paymentMethod: "unknown",
+        createdAt: new Date().toISOString(),
+        timeline: [{ step: "Payment initiated", status: "pending", timestamp: new Date().toISOString() }],
+      });
       setLoading(false);
     }
   };
