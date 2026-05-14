@@ -18,9 +18,11 @@ import {
   Rocket,
 } from "lucide-react";
 import ApiKeyManagement from "@/components/ApiKeyManagement";
+import { useParams } from "wouter";
 
 export default function IntegrationDevelopment() {
-  const [applicationId] = useState(1); // TODO: Get from context/props
+  const params = useParams<{ applicationId?: string }>();
+  const [applicationId] = useState(Number(params.applicationId) || 1);
   const [selectedSdk, setSelectedSdk] = useState<string>("javascript");
   const [runningTest, setRunningTest] = useState<string | null>(null);
 

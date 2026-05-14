@@ -44,10 +44,10 @@ import {
 } from '@/components/ui/dialog';
 
 interface ProductionGoLiveProps {
-  applicationId: number;
+  applicationId?: number;
 }
 
-export default function ProductionGoLive({ applicationId }: ProductionGoLiveProps) {
+export default function ProductionGoLive({ applicationId = 1 }: ProductionGoLiveProps) {
   const [currentView, setCurrentView] = useState<'checklist' | 'credentials' | 'monitoring' | 'incidents' | 'alerts'>('checklist');
   const [productionEndpoint, setProductionEndpoint] = useState('');
   const [productionWebhookUrl, setProductionWebhookUrl] = useState('');

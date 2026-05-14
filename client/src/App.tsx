@@ -44,6 +44,11 @@ const MiddlewareMonitoring = lazy(() => import("@/pages/MiddlewareMonitoring"));
 const SecurityDashboard = lazy(() => import("@/pages/SecurityDashboard"));
 const Settlements = lazy(() => import("@/pages/Settlements"));
 const SanctionsScreening = lazy(() => import("@/pages/SanctionsScreening"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const OnboardingPortal = lazy(() => import("@/pages/onboarding/OnboardingPortal"));
+const TechnicalOnboarding = lazy(() => import("@/pages/onboarding/TechnicalOnboarding"));
+const TestingCertification = lazy(() => import("@/pages/onboarding/TestingCertification"));
+const ProductionGoLive = lazy(() => import("@/pages/onboarding/ProductionGoLive"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
@@ -98,6 +103,11 @@ function Router() {
         <Route path="/security" component={SecurityDashboard} />
         <Route path="/settlements" component={Settlements} />
         <Route path="/sanctions" component={SanctionsScreening} />
+        <Route path="/analytics">{() => <Analytics />}</Route>
+        <Route path="/onboarding/portal" component={OnboardingPortal} />
+        <Route path="/onboarding/technical">{() => <TechnicalOnboarding />}</Route>
+        <Route path="/onboarding/certification">{() => <TestingCertification />}</Route>
+        <Route path="/onboarding/go-live">{() => <ProductionGoLive />}</Route>
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

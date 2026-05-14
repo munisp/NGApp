@@ -1,1 +1,0 @@
--- Migration 0003: Already applied

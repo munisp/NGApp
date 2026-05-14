@@ -27,10 +27,10 @@ import ScheduleTestDialog from "@/components/ScheduleTestDialog";
 import { SavedComparisonsTab } from "@/components/SavedComparisonsTab";
 
 interface TestingCertificationProps {
-  credentialId: number;
+  credentialId?: number;
 }
 
-export default function TestingCertification({ credentialId }: TestingCertificationProps) {
+export default function TestingCertification({ credentialId = 1 }: TestingCertificationProps) {
   const [runningTests, setRunningTests] = useState<Set<number>>(new Set());
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<{ id: number; name: string } | null>(null);

@@ -30,10 +30,10 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 interface AnalyticsProps {
-  merchantId: number;
+  merchantId?: number;
 }
 
-export default function Analytics({ merchantId }: AnalyticsProps) {
+export default function Analytics({ merchantId = 1 }: AnalyticsProps) {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "custom">("30d");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("day");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();

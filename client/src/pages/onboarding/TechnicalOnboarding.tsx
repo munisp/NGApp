@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useParams } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +12,12 @@ import { toast } from 'sonner';
 import { Loader2, CheckCircle2, XCircle, AlertCircle, Upload } from 'lucide-react';
 
 interface TechnicalOnboardingProps {
-  applicationId: number;
+  applicationId?: number;
 }
 
-export default function TechnicalOnboarding({ applicationId }: TechnicalOnboardingProps) {
+export default function TechnicalOnboarding({ applicationId: propApplicationId }: TechnicalOnboardingProps) {
+  const params = useParams<{ applicationId?: string }>();
+  const applicationId = propApplicationId ?? Number(params.applicationId) || 1;
   const [, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
