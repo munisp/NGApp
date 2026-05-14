@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart3,
@@ -49,10 +49,13 @@ import {
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { apiClient } from '@/lib/apiClient'
 
 const Analytics = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('analytics', () => apiClient.dashboard.metrics(), { fallback: [] })
+  const handleWsMsg = useCallback(() => {}, [])
+  const { connected: wsConnected } = useWebSocket(['deal.won', 'customer.created', 'deal.stage_changed'], handleWsMsg)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('30d')
   const [activeMetric, setActiveMetric] = useState('revenue')

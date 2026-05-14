@@ -63,7 +63,7 @@ export default function AdvancedSearch() {
   };
 
   return (
-    <div role="region" aria-label="AdvancedSearch"  className="p-6 max-w-full">
+    <div role="region" aria-label="AdvancedSearch"  className="p-4 md:p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
         <Search className="w-8 h-8 text-indigo-600" />
         <div>
@@ -84,7 +84,7 @@ export default function AdvancedSearch() {
       {activeTab === 'search' && (
         <>
           {/* Quick Search */}
-          <div className="flex gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
               <input type="text" placeholder="Quick search — name, phone, email, BVN, account number..." value={searchQuery}

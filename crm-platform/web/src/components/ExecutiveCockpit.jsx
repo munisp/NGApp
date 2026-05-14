@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Monitor, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Activity, Target, AlertTriangle, ArrowUpRight, ArrowDownRight, Globe, Briefcase } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { apiClient } from '@/lib/apiClient'
 
 const tenantCockpitData = {
@@ -37,6 +38,8 @@ export default function ExecutiveCockpit() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('executivecockpit', () => apiClient.dashboard.metrics(), { fallback: tenantCockpitData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
+  const handleWsMessage = useCallback(() => {}, [])
+  const { connected: wsConnected } = useWebSocket(['deal.won', 'deal.stage_changed', 'alert.triggered', 'health.changed'], handleWsMessage)
   const [showNarrative, setShowNarrative] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedSegment, setSelectedSegment] = useState(null)

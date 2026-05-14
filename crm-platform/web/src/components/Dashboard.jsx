@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Users,
@@ -39,10 +39,13 @@ import {
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { apiClient } from '@/lib/apiClient'
 
 const Dashboard = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('dashboard', () => apiClient.dashboard.metrics(), { fallback: [] })
+  const handleWsMsg = useCallback(() => {}, [])
+  const { connected: wsConnected } = useWebSocket(['customer.created', 'deal.won', 'deal.stage_changed'], handleWsMsg)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
   const [refreshing, setRefreshing] = useState(false)

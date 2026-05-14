@@ -433,7 +433,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
       }}
       className={cn(
         'sidebar relative flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-lg',
-        'h-full overflow-hidden'
+        'h-full overflow-hidden',
+        'max-md:absolute max-md:z-40 md:relative'
       )}
     >
       {/* Header */}
