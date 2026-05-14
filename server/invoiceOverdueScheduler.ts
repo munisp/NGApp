@@ -88,7 +88,7 @@ export async function runInvoiceOverdueCheck(): Promise<OverdueRunResult> {
             `Overdue invoices:\n${invoiceList}\n\n` +
             `Action required: Review the DPCO Billing Dashboard at /dpco/billing and follow up with the respective DPCOs.`,
         });
-      } catch (notifyErr: any) {
+      } catch (notifyErr: unknown) {
         logger.warn({ err: notifyErr }, "Invoice overdue owner notification failed");
       }
     }
@@ -101,7 +101,7 @@ export async function runInvoiceOverdueCheck(): Promise<OverdueRunResult> {
 
     logger.info(result, "[invoice-overdue] Overdue check completed");
     return result;
-  } catch (err: any) {
+  } catch (err: unknown) {
     await client.query("ROLLBACK").catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     logger.error({ err }, "[invoice-overdue] Overdue check failed — rolled back");
     throw err;

@@ -23,7 +23,7 @@ function getPool(): InstanceType<typeof Pool> {
 }
 
 // Helper: raw query with runtime ? -> $N conversion
-async function q<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+async function q<T = any>(sql: string, params: unknown[] = []): Promise<T[]> {
   let idx = 0;
   const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
   const result = await getPool().query(pgSql, params);
@@ -111,7 +111,7 @@ export const billingRouter = router({
     )
     .query(async ({ input }) => {
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input?.dpcoOrgId) {
         conditions.push("i.dpco_org_id = ?");
         params.push(input.dpcoOrgId);
@@ -392,7 +392,7 @@ export const billingRouter = router({
     )
     .query(async ({ input }) => {
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input?.dpcoOrgId) {
         conditions.push("p.dpco_org_id = ?");
         params.push(input.dpcoOrgId);
@@ -706,7 +706,7 @@ export const billingRouter = router({
     )
     .query(async ({ input }) => {
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input?.dpcoOrgId) {
         conditions.push("s.dpco_org_id = ?");
         params.push(input.dpcoOrgId);

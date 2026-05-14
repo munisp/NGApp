@@ -22,7 +22,7 @@ function getPool(): InstanceType<typeof Pool> {
 }
 
 // ─── Helper: raw query ────────────────────────────────────────────────────────
-async function q<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+async function q<T = any>(sql: string, params: unknown[] = []): Promise<T[]> {
   // Convert MySQL-style ? to PostgreSQL $N placeholders at runtime
   let idx = 0;
   const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
@@ -40,7 +40,7 @@ async function listDpcoOrganisations(opts: {
   offset?: number;
 }) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts.status) { conditions.push("status = ?"); params.push(opts.status); }
   if (opts.state) { conditions.push("state = ?"); params.push(opts.state); }
   if (opts.type) { conditions.push("organisation_type = ?"); params.push(opts.type); }
@@ -63,13 +63,13 @@ async function getDpcoOrganisation(id: number) {
   return row;
 }
 
-async function upsertDpcoOrganisation(data: any) {
+async function upsertDpcoOrganisation(data: Record<string, unknown>) {
   if (data.id) {
     await q(
       `UPDATE dpco_organisations SET name=?, licence_number=?, licence_date=?, licence_expires_at=?, status=?, organisation_type=?, email=?, phone=?, website=?, state=?, address=?, services=?, staff_count=?, ndpc_reference=?, cac_number=?, tax_clearance_verified=?, ng_domain_verified=?, updated_at=NOW() WHERE id=?`,
       [data.name, data.licenceNumber, data.licenceDate, data.licenceExpiresAt, data.status, data.organisationType, data.email, data.phone, data.website, data.state, data.address, JSON.stringify(data.services ?? []), data.staffCount ?? 0, data.ndpcReference, data.cacNumber, data.taxClearanceVerified ? 1 : 0, data.ngDomainVerified ? 1 : 0, data.id]
     );
-    return getDpcoOrganisation(data.id);
+    return getDpcoOrganisation(Number(data.id));
   }
   const [result] = await q<any>(
     `INSERT INTO dpco_organisations (name, licence_number, licence_date, licence_expires_at, status, organisation_type, email, phone, website, state, address, services, staff_count, ndpc_reference, cac_number, tax_clearance_verified, ng_domain_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id`,
@@ -86,7 +86,7 @@ async function deleteDpcoOrganisation(id: number) {
 // ─── DPCO Clients ─────────────────────────────────────────────────────────────
 async function listDpcoClients(dpcoOrgId?: number, status?: string) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (dpcoOrgId) { conditions.push("c.dpco_org_id = ?"); params.push(dpcoOrgId); }
   if (status) { conditions.push("c.status = ?"); params.push(status); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -99,18 +99,18 @@ async function listDpcoClients(dpcoOrgId?: number, status?: string) {
   `, params);
 }
 
-async function upsertDpcoClient(data: any) {
+async function upsertDpcoClient(data: Record<string, unknown>) {
   if (data.id) {
     await q(
       `UPDATE dpco_clients SET org_name=COALESCE(?,org_name), org_sector=COALESCE(?,org_sector), org_location=COALESCE(?,org_location), contact_name=COALESCE(?,contact_name), contact_email=COALESCE(?,contact_email), contact_phone=COALESCE(?,contact_phone), status=COALESCE(?,status), risk_level=COALESCE(?,risk_level), updated_at=NOW() WHERE id=?`,
-      [data.orgName, data.orgSector, data.orgLocation, data.contactName ? encryptField(data.contactName) : data.contactName, data.contactEmail ? encryptField(data.contactEmail) : data.contactEmail, data.contactPhone ? encryptField(data.contactPhone) : data.contactPhone, data.status, data.riskLevel, data.id]
+      [data.orgName, data.orgSector, data.orgLocation, data.contactName ? encryptField(String(data.contactName)) : data.contactName, data.contactEmail ? encryptField(String(data.contactEmail)) : data.contactEmail, data.contactPhone ? encryptField(String(data.contactPhone)) : data.contactPhone, data.status, data.riskLevel, data.id]
     );
     const [row] = await q("SELECT * FROM dpco_clients WHERE id = ?", [data.id]);
     return row;
   }
   const [result] = await q<any>(
     `INSERT INTO dpco_clients (dpco_org_id, org_name, org_sector, org_location, contact_name, contact_email, contact_phone, status, risk_level) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id`,
-    [data.dpcoOrganisationId ?? data.dpcoOrgId, data.orgName ?? data.organisationName ?? 'New Client', data.orgSector, data.orgLocation, data.contactName ? encryptField(data.contactName) : null, data.contactEmail ? encryptField(data.contactEmail) : null, data.contactPhone ? encryptField(data.contactPhone) : null, data.status ?? 'active', data.riskLevel ?? 'medium']
+    [data.dpcoOrganisationId ?? data.dpcoOrgId, data.orgName ?? data.organisationName ?? 'New Client', data.orgSector, data.orgLocation, data.contactName ? encryptField(String(data.contactName)) : null, data.contactEmail ? encryptField(String(data.contactEmail)) : null, data.contactPhone ? encryptField(String(data.contactPhone)) : null, data.status ?? 'active', data.riskLevel ?? 'medium']
   );
   const [row] = await q("SELECT * FROM dpco_clients WHERE id = ?", [result.id]);
   return row;
@@ -119,7 +119,7 @@ async function upsertDpcoClient(data: any) {
 // ─── DPCO Verification Statements ────────────────────────────────────────────
 async function listVerificationStatements(opts: { dpcoOrgId?: number; orgId?: number; status?: string }) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts.dpcoOrgId) { conditions.push("v.dpco_org_id = ?"); params.push(opts.dpcoOrgId); }
   if (opts.orgId) { conditions.push("v.org_id = ?"); params.push(opts.orgId); }
   if (opts.status) { conditions.push("v.status = ?"); params.push(opts.status); }
@@ -135,7 +135,7 @@ async function listVerificationStatements(opts: { dpcoOrgId?: number; orgId?: nu
   `, params);
 }
 
-async function createVerificationStatement(data: any) {
+async function createVerificationStatement(data: Record<string, unknown>) {
   const [result] = await q<any>(
     `INSERT INTO dpco_verification_statements (dpco_id, dpco_org_id, filing_type, filing_reference_id, organisation_id, statement_date, audit_scope, findings_summary, compliance_score, non_conformities, corrective_actions, dpco_licence_number, dpco_signatory_name, dpco_signatory_role, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id`,
     [data.dpcoId ?? 0, data.dpcoOrganisationId, data.filingType ?? "compliance_audit_return", data.filingReferenceId, data.organisationId, data.statementDate, data.auditScope, data.findingsSummary, data.complianceScore, JSON.stringify(data.nonConformities ?? []), JSON.stringify(data.correctiveActions ?? []), data.dpcoLicenceNumber, data.dpcoSignatoryName, data.dpcoSignatoryRole, "draft"]
@@ -153,7 +153,7 @@ async function submitVerificationStatement(id: number, signatureHash: string) {
 // ─── DPCO Audit Engagements ───────────────────────────────────────────────────
 async function listAuditEngagements(opts: { dpcoOrgId?: number; clientOrgId?: number; status?: string }) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts.dpcoOrgId) { conditions.push("e.dpco_org_id = ?"); params.push(opts.dpcoOrgId); }
   if (opts.clientOrgId) { conditions.push("e.client_id = ?"); params.push(opts.clientOrgId); }
   if (opts.status) { conditions.push("e.current_stage = ?"); params.push(opts.status); }
@@ -169,7 +169,7 @@ async function listAuditEngagements(opts: { dpcoOrgId?: number; clientOrgId?: nu
   `, params);
 }
 
-async function upsertAuditEngagement(data: any) {
+async function upsertAuditEngagement(data: Record<string, unknown>) {
   if (data.id) {
     await q(
       `UPDATE dpco_audit_engagements SET current_stage=COALESCE(?,current_stage), critical_findings=COALESCE(?,critical_findings), high_findings=COALESCE(?,high_findings), medium_findings=COALESCE(?,medium_findings), low_findings=COALESCE(?,low_findings), compliance_score=COALESCE(?,compliance_score), lead_auditor=COALESCE(?,lead_auditor), actual_start=COALESCE(?,actual_start), actual_end=COALESCE(?,actual_end), notes=COALESCE(?,notes), updated_at=NOW() WHERE id=?`,
@@ -189,7 +189,7 @@ async function upsertAuditEngagement(data: any) {
 // ─── DPCO Training ────────────────────────────────────────────────────────────
 async function listTrainingSessions(opts: { dpcoOrgId?: number; clientOrgId?: number; status?: string }) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts.dpcoOrgId) { conditions.push("t.dpco_org_id = ?"); params.push(opts.dpcoOrgId); }
   if (opts.clientOrgId) { conditions.push("t.client_id = ?"); params.push(opts.clientOrgId); }
   if (opts.status) { conditions.push("t.status = ?"); params.push(opts.status); }
@@ -205,7 +205,7 @@ async function listTrainingSessions(opts: { dpcoOrgId?: number; clientOrgId?: nu
   `, params);
 }
 
-async function upsertTrainingSession(data: any) {
+async function upsertTrainingSession(data: Record<string, unknown>) {
   if (data.id) {
     await q(
       `UPDATE dpco_training_sessions SET title=?, training_type=?, delivery_mode=?, status=?, scheduled_date=?, duration_hours=?, max_participants=?, venue=?, meeting_link=?, trainer_name=?, description=?, ndpc_accredited=?, cpe_credits=?, updated_at=NOW() WHERE id=?`,
@@ -222,7 +222,7 @@ async function upsertTrainingSession(data: any) {
   return row;
 }
 
-async function enrollParticipant(data: any) {
+async function enrollParticipant(data: Record<string, unknown>) {
   const [result] = await q<any>(
     `INSERT INTO dpco_training_participants (session_id, participant_name, participant_email, organisation_id, role_title) VALUES (?,?,?,?,?) RETURNING id`,
     [data.sessionId, data.participantName, data.participantEmail, data.organisationId, data.roleTitle]
@@ -245,7 +245,7 @@ async function issueCertificate(participantId: number) {
 // ─── DPCO Policy Drafts ───────────────────────────────────────────────────────
 async function listPolicyDrafts(opts: { dpcoOrgId?: number; clientOrgId?: number; docType?: string; status?: string }) {
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts.dpcoOrgId) { conditions.push("p.dpco_org_id = ?"); params.push(opts.dpcoOrgId); }
   if (opts.clientOrgId) { conditions.push("p.client_organisation_id = ?"); params.push(opts.clientOrgId); }
   if (opts.docType) { conditions.push("p.document_type = ?"); params.push(opts.docType); }
@@ -262,7 +262,7 @@ async function listPolicyDrafts(opts: { dpcoOrgId?: number; clientOrgId?: number
   `, params);
 }
 
-async function upsertPolicyDraft(data: any) {
+async function upsertPolicyDraft(data: Record<string, unknown>) {
   if (data.id) {
     await q(
       `UPDATE dpco_policy_drafts SET title=?, document_type=?, status=?, version=?, content=?, effective_date=?, review_date=?, approved_by=?, notes=?, ndpc_filed=?, ndpc_reference=?, updated_at=NOW() WHERE id=?`,
@@ -545,7 +545,7 @@ export const dpcoRouter = router({
       try {
         const res = await fetch(`http://localhost:${process.env.DPCO_ANALYTICS_PORT ?? 8330}/api/dpco/analytics/trends`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) return res.json();
-      } catch {}
+      } catch (e: unknown) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "DPCO analytics trends service unavailable, falling back to DB"); }
       const rows = await q("SELECT TO_CHAR(snapshot_date, 'IYYY-IW') as week, ROUND(AVG(composite_score)::numeric,1) as avg_score, COUNT(*) as audits FROM ndpa_compliance_snapshots GROUP BY week ORDER BY week DESC LIMIT 26", []);
       return { weeks: rows, total_weeks: rows.length, source: "db-fallback" };
     }),
@@ -555,7 +555,7 @@ export const dpcoRouter = router({
       try {
         const res = await fetch(`http://localhost:${process.env.DPCO_ANALYTICS_PORT ?? 8330}/api/dpco/analytics/portfolio`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) return res.json();
-      } catch {}
+      } catch (e: unknown) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "DPCO analytics portfolio service unavailable, falling back to DB"); }
       const rows = await q("SELECT dpco_org_id, COUNT(*) as total_clients, SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) as active_clients FROM dpco_clients GROUP BY dpco_org_id", []);
       return { dpcos: rows, source: "db-fallback" };
     }),
@@ -565,7 +565,7 @@ export const dpcoRouter = router({
       try {
         const res = await fetch(`http://localhost:${process.env.DPCO_ANALYTICS_PORT ?? 8330}/api/dpco/analytics/heatmap`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) return res.json();
-      } catch {}
+      } catch (e: unknown) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "DPCO analytics heatmap service unavailable, falling back to DB"); }
       const rows = await q("SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count FROM dpco_audit_engagements WHERE created_at >= NOW() - INTERVAL '365 days' GROUP BY date ORDER BY date", []);
       return { heatmap: rows, days: rows.length, source: "db-fallback" };
     }),
@@ -581,7 +581,7 @@ export const dpcoRouter = router({
         if (severity) url.searchParams.set("severity", severity);
         const res = await fetch(url.toString(), { signal: AbortSignal.timeout(5000) });
         if (res.ok) return res.json();
-      } catch {}
+      } catch (e: unknown) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "DPCO notification service unavailable"); }
       return { notifications: [], total: 0, source: "service-unavailable" };
     }),
 
@@ -596,7 +596,7 @@ export const dpcoRouter = router({
           signal: AbortSignal.timeout(5000),
         });
         if (res.ok) return res.json();
-      } catch {}
+      } catch (e: unknown) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "DPCO notification send service unavailable"); }
       emitMutationEvent("ndsep.dpco.mutation", { action: "dpco", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: false, error: "notification-service-unavailable" };
     }),
@@ -613,8 +613,8 @@ export const dpcoRouter = router({
         });
         if (res.ok) return res.json();
         const err = await res.json().catch(() => ({}));
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: (err as any).error ?? "Signing failed" });
-      } catch (e: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: (err as Record<string, unknown>).error ? String((err as Record<string, unknown>).error) : "Signing failed" });
+      } catch (e: unknown) {
         if (e instanceof TRPCError) throw e;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "dpco-verification-service unavailable" });
       }
@@ -655,7 +655,7 @@ export const dpcoRouter = router({
     }))
     .query(async ({ input }) => {
       const conditions: string[] = ["1=1"];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.engagement_id) { conditions.push("engagement_id = $" + (params.length + 1)); params.push(input.engagement_id); }
       if (input.dpco_org_id)   { conditions.push("dpco_org_id = $" + (params.length + 1));   params.push(input.dpco_org_id); }
       if (input.category)      { conditions.push("category = $" + (params.length + 1));       params.push(input.category); }
@@ -711,7 +711,7 @@ export const dpcoRouter = router({
   verifyEvidence: protectedProcedure
     .input(z.object({ id: z.string(), sha256_hash: z.string().length(64) }))
     .mutation(async ({ input, ctx }) => {
-      const [item] = await q("SELECT * FROM dpco_evidence_items WHERE id = $1", [input.id]) as any[];
+      const [item] = await q("SELECT * FROM dpco_evidence_items WHERE id = $1", [input.id]) as Record<string, unknown>[];
       if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Evidence item not found" });
       const tampered = item.sha256_hash !== input.sha256_hash;
       await q(
@@ -1081,7 +1081,7 @@ export const dpcoRouter = router({
     }))
     .query(async ({ input }) => {
       const conditions = ["dpco_org_id = ?"];
-      const params: any[] = [input.dpcoOrgId];
+      const params: unknown[] = [input.dpcoOrgId];
       if (input.clientId) { conditions.push("client_id = ?"); params.push(input.clientId); }
       const rows = await q<any>(
         `SELECT p.*, c.org_name AS client_name
@@ -1175,7 +1175,7 @@ export const dpcoRouter = router({
     }))
     .query(async ({ input }) => {
       const conditions: string[] = ["status = 'active'"];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) {
         conditions.push("(name ILIKE ? OR email ILIKE ?)");
         const s = `%${input.search}%`;
@@ -1268,10 +1268,10 @@ export const dpcoRouter = router({
       offset: z.number().int().min(0).default(0),
     }))
     .query(async ({ ctx, input }) => {
-      const dpcoOrgId = (ctx.user as any).dpcoOrgId;
+      const dpcoOrgId = (ctx.user as Record<string, unknown>).dpcoOrgId;
       if (!dpcoOrgId) throw new TRPCError({ code: "FORBIDDEN", message: "Not a DPCO user" });
       const conditions = ["dpco_org_id = ?"];
-      const params: any[] = [dpcoOrgId];
+      const params: unknown[] = [dpcoOrgId];
       if (input.status) { conditions.push("status = ?"); params.push(input.status); }
       const where = `WHERE ${conditions.join(" AND ")}`;
       const rows = await q(
@@ -1292,7 +1292,7 @@ export const dpcoRouter = router({
       responseNote: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const dpcoOrgId = (ctx.user as any).dpcoOrgId;
+      const dpcoOrgId = (ctx.user as Record<string, unknown>).dpcoOrgId;
       if (!dpcoOrgId) throw new TRPCError({ code: "FORBIDDEN", message: "Not a DPCO user" });
       const [req] = await q(
         "SELECT * FROM dpco_engagement_requests WHERE id = ? AND dpco_org_id = ?",

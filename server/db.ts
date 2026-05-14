@@ -1228,20 +1228,20 @@ export async function getLeaderboard(sector?: string, limit = 50, anonymise = fa
        LIMIT $1`,
       params
     );
-    return result.rows.map((r: any, idx: number) => ({
+    return result.rows.map((r: Record<string, unknown>, idx: number) => ({
       rank: idx + 1,
-      id: r.id,
+      id: Number(r.id),
       name: anonymise
         ? `Organisation ${String.fromCharCode(65 + (idx % 26))}${Math.floor(idx / 26) || ""}`
-        : r.name,
-      sector: r.sector ?? "Unknown",
-      country: r.country ?? "Nigeria",
+        : String(r.name),
+      sector: String(r.sector ?? "Unknown"),
+      country: String(r.country ?? "Nigeria"),
       complianceScore: Number(r.complianceScore ?? 0),
-      complianceStatus: r.complianceStatus ?? "under_review",
+      complianceStatus: String(r.complianceStatus ?? "under_review"),
       riskScore: Number(r.riskScore ?? 50),
-      agentInstalled: r.agentInstalled ?? false,
+      agentInstalled: Boolean(r.agentInstalled ?? false),
       certified: Number(r.complianceScore ?? 0) >= 85,
-      lastRescored: r.lastRescored ?? null,
+      lastRescored: r.lastRescored ? String(r.lastRescored) : null,
     }));
   } finally {
     // pool is shared — no pool.end()
@@ -2115,7 +2115,7 @@ export async function getBgpRouteHistory() {
 
 export async function getEnforcementCases(limit = 50, organizationId?: number) {
   const pool = getSharedPool();
-  const params: any[] = [limit];
+  const params: unknown[] = [limit];
   const orgFilter = organizationId ? `AND ec.organization_id = $2` : "";
   if (organizationId) params.push(organizationId);
   const result = await pool.query(
@@ -3319,8 +3319,8 @@ export async function getSectorBenchmark(): Promise<{
     GROUP BY COALESCE(o.sector, 'Unknown')
     ORDER BY avg_compliance_score DESC
   `);
-  return result.rows.map((r: any) => ({
-    sector: r.sector, orgCount: Number(r.org_count),
+  return result.rows.map((r: Record<string, unknown>) => ({
+    sector: String(r.sector), orgCount: Number(r.org_count),
     avgComplianceScore: Number(r.avg_compliance_score),
     certifiedCount: Number(r.certified_count),
     totalPenaltyAmount: Number(r.total_penalty_amount),
@@ -3390,7 +3390,7 @@ export async function getBreachTimeline(limit = 20) {
     ORDER BY b.detected_at DESC
     LIMIT $1
   `, [limit]);
-  return result.rows.map((r: any) => ({
+  return result.rows.map((r: Record<string, unknown>) => ({
     id: Number(r.id), title: r.title, severity: r.severity, status: r.status,
     detectedAt: r.detected_at, ndpcDeadline: r.ndpc_notification_deadline,
     ndpcNotifiedAt: r.ndpc_notified_at, individualsNotifiedAt: r.individuals_notified_at,
@@ -3415,7 +3415,7 @@ export async function getNdpaComplianceTrend(days = 180) {
     WHERE snapshot_date >= NOW() - INTERVAL '1 day' * $1
     ORDER BY snapshot_date ASC
   `, [days]);
-  return result.rows.map((r: any) => ({
+  return result.rows.map((r: Record<string, unknown>) => ({
     date: r.snapshot_date,
     ndpaIndex: Number(r.ndpa_index),
     breachResolutionRate: Number(r.breach_resolution_rate),
@@ -3467,7 +3467,7 @@ export async function getBreachSlaHeatmap(days = 365) {
     GROUP BY DATE_TRUNC('day', detected_at)
     ORDER BY day ASC
   `, [days]);
-  return result.rows.map((r: any) => ({
+  return result.rows.map((r: Record<string, unknown>) => ({
     day: r.day,
     totalBreaches: Number(r.total_breaches),
     slaMet: Number(r.sla_met),
@@ -3539,7 +3539,7 @@ export async function getBreachesForDay(date: string) {
     WHERE DATE(b.detected_at) = $1::date
     ORDER BY b.detected_at DESC
   `, [date]);
-  return result.rows.map((r: any) => ({
+  return result.rows.map((r: Record<string, unknown>) => ({
     id: Number(r.id),
     title: r.title,
     severity: r.severity,
@@ -3552,7 +3552,7 @@ export async function getBreachesForDay(date: string) {
     ndpcRef: r.ndpc_reference_number,
     orgName: r.org_name,
     slaBreached: r.ndpc_notification_deadline && !r.ndpc_notified_at
-      ? new Date(r.ndpc_notification_deadline) < new Date()
+      ? new Date(String(r.ndpc_notification_deadline)) < new Date()
       : false,
   }));
 }

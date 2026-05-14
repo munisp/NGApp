@@ -47,7 +47,7 @@ function BreachSlaHeatmap() {
   const startDate = new Date(today); startDate.setDate(today.getDate() - 364);
   const dayMap = new Map<string, typeof heatmapData[0]>();
   heatmapData.forEach(d => {
-    const key = new Date(d.day).toISOString().slice(0,10);
+    const key = new Date(String(d.day)).toISOString().slice(0,10);
     dayMap.set(key, d);
   });
   const weeks: Array<Array<{ date: Date; key: string; data: typeof heatmapData[0] | null }>> = [];

@@ -56,7 +56,7 @@ export const p13AdvancedAnalyticsRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM analytics_snapshots WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.metric) { params.push(input.metric); sql += ` AND metric_name = $${params.length}`; }
       if (input.dimension) { params.push(input.dimension); sql += ` AND dimension = $${params.length}`; }
       if (input.from) { params.push(input.from); sql += ` AND snapshot_date >= $${params.length}`; }
@@ -109,7 +109,7 @@ export const p13Article40Router = router({
     .input(z.object({ search: z.string().optional(), sector: z.string().optional(), status: z.string().optional() }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM article40_codes WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (code_name ILIKE $${params.length} OR description ILIKE $${params.length})`; }
       if (input.sector) { params.push(input.sector); sql += ` AND sector = $${params.length}`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
@@ -167,7 +167,7 @@ export const p13ComplianceCalendarRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM compliance_calendar_events WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND title ILIKE $${params.length}`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
       if (input.priority) { params.push(input.priority); sql += ` AND priority = $${params.length}`; }
@@ -261,7 +261,7 @@ export const p13ConsentRecordsRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM consent_records_v2 WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (data_subject_email ILIKE $${params.length} OR purpose ILIKE $${params.length})`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
       if (input.org_id) { params.push(input.org_id); sql += ` AND org_id = $${params.length}`; }
@@ -330,7 +330,7 @@ export const p13DpoRegistryRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT da.*, o.name as org_name FROM dpo_appointments da LEFT JOIN organizations o ON da.organization_id = o.id WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (da.dpo_name ILIKE $${params.length} OR da.dpo_email ILIKE $${params.length})`; }
       if (input.status) { params.push(input.status); sql += ` AND da.credential_status = $${params.length}`; }
       sql += ` ORDER BY da.appointed_at DESC`;
@@ -394,7 +394,7 @@ export const p13NotificationCenterRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       let sql = `SELECT * FROM notification_inbox WHERE (user_id = $1 OR user_id IS NULL)`;
-      const params: any[] = [ctx.user.id];
+      const params: unknown[] = [ctx.user.id];
       if (input.is_read !== undefined) { params.push(input.is_read); sql += ` AND is_read = $${params.length}`; }
       if (input.notification_type) { params.push(input.notification_type); sql += ` AND notification_type = $${params.length}`; }
       if (input.priority) { params.push(input.priority); sql += ` AND priority = $${params.length}`; }
@@ -444,7 +444,7 @@ export const p13PenaltyCalculatorRouter = router({
     .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM penalty_calculations WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (org_name ILIKE $${params.length} OR violation_type ILIKE $${params.length})`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
       sql += ` ORDER BY created_at DESC`;
@@ -581,7 +581,7 @@ export const p13PublicRegistryRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM public_compliance_registry WHERE is_published = true`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (org_name ILIKE $${params.length} OR registration_number ILIKE $${params.length})`; }
       if (input.sector) { params.push(input.sector); sql += ` AND sector = $${params.length}`; }
       if (input.status) { params.push(input.status); sql += ` AND compliance_status = $${params.length}`; }
@@ -654,7 +654,7 @@ export const p13RiskScorecardRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM risk_scorecard_entries WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (risk_name ILIKE $${params.length} OR risk_category ILIKE $${params.length})`; }
       if (input.org_id) { params.push(input.org_id); sql += ` AND org_id = $${params.length}`; }
       if (input.risk_category) { params.push(input.risk_category); sql += ` AND risk_category = $${params.length}`; }
@@ -728,7 +728,7 @@ export const dataResidencyRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM data_residency_locations WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (data_category ILIKE $${params.length} OR provider_name ILIKE $${params.length})`; }
       if (input.country) { params.push(input.country); sql += ` AND storage_country = $${params.length}`; }
       if (input.org_id) { params.push(input.org_id); sql += ` AND org_id = $${params.length}`; }
@@ -800,7 +800,7 @@ export const rateLimitRouter = router({
     .query(async ({ input }) => {
       let sql = `SELECT DATE_TRUNC('hour', window_start) as hour, SUM(requests_count) as requests, SUM(blocked_count) as blocked
                  FROM api_rate_limit_stats WHERE window_start >= NOW() - INTERVAL '1 hour' * $1`;
-      const params: any[] = [input.hours];
+      const params: unknown[] = [input.hours];
       if (input.endpoint) { params.push(input.endpoint); sql += ` AND endpoint = $${params.length}`; }
       sql += ` GROUP BY hour ORDER BY hour ASC`;
       return exec(sql, params);
@@ -832,7 +832,7 @@ export const bulkDsarRouter = router({
     }))
     .query(async ({ input }) => {
       let baseSql = `SELECT * FROM bulk_dsar_jobs WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.status) { params.push(input.status); baseSql += ` AND status = $${params.length}`; }
       if (input.org_id) { params.push(input.org_id); baseSql += ` AND org_id = $${params.length}`; }
       if (input.search) { params.push(`%${input.search}%`); baseSql += ` AND job_name ILIKE $${params.length}`; }
@@ -907,7 +907,7 @@ export const whistleblowerCasesRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM whistleblower_cases WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (case_reference ILIKE $${params.length} OR description ILIKE $${params.length})`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
       if (input.severity) { params.push(input.severity); sql += ` AND severity = $${params.length}`; }
@@ -962,7 +962,7 @@ export const crossBorderMonitorRouter = router({
     }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM cross_border_transfers WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND (org_name ILIKE $${params.length} OR destination_country ILIKE $${params.length})`; }
       if (input.country) { params.push(input.country); sql += ` AND destination_country = $${params.length}`; }
       if (input.risk_level) { params.push(input.risk_level); sql += ` AND risk_level = $${params.length}`; }
@@ -1024,7 +1024,7 @@ export const regulatoryReportingRouter = router({
     .input(z.object({ search: z.string().optional(), status: z.string().optional(), report_type: z.string().optional() }))
     .query(async ({ input }) => {
       let sql = `SELECT * FROM regulatory_reports WHERE 1=1`;
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.search) { params.push(`%${input.search}%`); sql += ` AND report_name ILIKE $${params.length}`; }
       if (input.status) { params.push(input.status); sql += ` AND status = $${params.length}`; }
       if (input.report_type) { params.push(input.report_type); sql += ` AND report_type = $${params.length}`; }
@@ -1042,7 +1042,7 @@ export const regulatoryReportingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Gather data snapshot based on report type
-      let snapshot: any = {};
+      let snapshot: Record<string, unknown> = {};
       if (input.report_type === "quarterly_national") {
         const [data] = await exec(`
           SELECT

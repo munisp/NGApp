@@ -32,8 +32,8 @@ async function exec(query: string, params: unknown[] = []): Promise<any[]> {
     const result = await pool.query(query, params);
     const rows = result.rows ?? [];
     return autoDecryptRows(query, rows);
-  } catch (err: any) {
-    logger.error("[aiml] DB query error:", err.message);
+  } catch (err: unknown) {
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, "[aiml] DB query error");
     return [];
   }
 }
@@ -58,9 +58,9 @@ async function safeFetch(url: string, options?: RequestInit, timeoutMs = 5000): 
     clearTimeout(timer);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
     return await resp.json();
-  } catch (err: any) {
+  } catch (err: unknown) {
     clearTimeout(timer);
-    return { error: err.message || "worker_unavailable", available: false };
+    return { error: err instanceof Error ? err.message : "worker_unavailable", available: false };
   }
 }
 
@@ -340,7 +340,7 @@ export const ollamaRouter = router({
 
         if (!ragResult.error && ragResult.results?.length > 0) {
           context = ragResult.results
-            .map((r: any) => r.payload?.content || r.payload?.text || "")
+            .map((r: Record<string, unknown>) => { const p = r.payload as Record<string, unknown> | undefined; return p?.content || p?.text || ""; })
             .filter(Boolean)
             .join("\n\n");
         }

@@ -67,9 +67,10 @@ async function sendPushToUser(
         [Date.now(), sub.id]
       );
       sent++;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 410 Gone = subscription expired; remove it
-      if (err?.statusCode === 410 || err?.statusCode === 404) {
+      const statusCode = err instanceof Error && "statusCode" in err ? (err as Error & { statusCode: number }).statusCode : undefined;
+      if (statusCode === 410 || statusCode === 404) {
         await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [sub.id]);
       }
       failed++;

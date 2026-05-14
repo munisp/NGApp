@@ -1190,10 +1190,10 @@ export const stripePaymentsRouter = router({
             const charge = await stripeClient.charges.retrieve(intent.latest_charge as string);
             receiptUrl = charge.receipt_url ?? null;
           }
-        } catch (stripeErr: any) {
+        } catch (stripeErr: unknown) {
           // Fallback: mark as pending for manual review
           status = "pending_review";
-          logger.warn("[Stripe] Payment confirmation error:", stripeErr.message);
+          logger.warn({ err: stripeErr instanceof Error ? stripeErr.message : String(stripeErr) }, "[Stripe] Payment confirmation error");
         }
         
         await p.query(

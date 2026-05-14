@@ -34,13 +34,13 @@ export const rssFeedRouter = router({
        FROM changelogs ORDER BY published_at DESC LIMIT 20`
     );
     const now = new Date().toISOString();
-    const items = entries.map((e: any) => `
+    const items = entries.map((e: Record<string, unknown>) => `
   <entry>
     <id>urn:ndsep:changelog:${e.id}</id>
     <title><![CDATA[${e.title} (v${e.version})]]></title>
     <summary><![CDATA[${e.body}]]></summary>
     <category term="${e.category}" />
-    <updated>${new Date(e.published_at).toISOString()}</updated>
+    <updated>${new Date(String(e.published_at)).toISOString()}</updated>
     <link href="https://ndsep.ndpc.gov.ng/changelog#${e.id}" />
   </entry>`).join("\n");
     return {

@@ -192,6 +192,10 @@ const ComplianceCalendarPage = lazy(() => import("@/pages/ComplianceCalendarPage
 const SBOMViewer = lazy(() => import("@/pages/SBOMViewer"));
 const KnowledgeGraphVisualiser = lazy(() => import("@/pages/KnowledgeGraphVisualiser"));
 const RAGAdvisor = lazy(() => import("@/pages/RAGAdvisor"));
+const VectorSearchPage = lazy(() => import("@/pages/ai/VectorSearchPage"));
+const LLMStudioPage = lazy(() => import("@/pages/ai/LLMStudioPage"));
+const CocoIndexPage = lazy(() => import("@/pages/ai/CocoIndexPage"));
+const AnomalyAlertsPage = lazy(() => import("@/pages/ai/AnomalyAlertsPage"));
 const DataPipeline = lazy(() => import("@/pages/DataPipeline"));
 const DataLineage = lazy(() => import("@/pages/DataLineage"));
 const RegulatoryIntelligence = lazy(() => import("@/pages/RegulatoryIntelligence"));
@@ -406,6 +410,10 @@ function Router() {
         <Route path="/ai/model-registry" component={ModelRegistry} />
         <Route path="/ai/art-dashboard" component={ARTDashboard} />
         <Route path="/ai/feature-store" component={FeatureStorePage} />
+        <Route path="/ai/vector-search" component={VectorSearchPage} />
+        <Route path="/ai/llm-studio" component={LLMStudioPage} />
+        <Route path="/ai/cocoindex" component={CocoIndexPage} />
+        <Route path="/ai/anomaly-alerts" component={AnomalyAlertsPage} />
         <Route path="/404" component={NotFound} />
         <Route path="/certificates" component={CertificateLifecycle} />
               <Route path="/sector-benchmarks" component={SectorBenchmarkDashboard} />

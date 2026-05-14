@@ -14,7 +14,7 @@ import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { logger } from "../logger";
 
-async function exec(sql: string, params: any[] = []): Promise<any[]> {
+async function exec(sql: string, params: unknown[] = []): Promise<any[]> {
   const db = await getDb();
   const [rows] = await (db as any).execute(sql, params);
   return autoDecryptRows(sql, rows as any[]);

@@ -30,19 +30,21 @@ function useCrossSectorAlerts() {
   const violations = trpc.compliance.violations.useQuery({ limit: 500 }, { refetchInterval: 30000 });
   const orgs = trpc.organizations.list.useQuery();
 
-  const orgMap = new Map((orgs.data ?? []).map((o: any) => [o.id, o]));
+  const orgMap = new Map((orgs.data ?? []).map(o => [o.id, o]));
 
   // Build cross-sector alerts: orgs with violations in multiple sectors
-  const orgViolations = new Map<number, { sectors: Set<string>; violations: any[]; highestSeverity: string }>();
+  type ViolationItem = NonNullable<typeof violations.data>[number];
+  const orgViolations = new Map<number, { sectors: Set<string>; violations: ViolationItem[]; highestSeverity: string }>();
   for (const v of violations.data ?? []) {
-    const orgId = v.organizationId;
+    const orgId = Number(v.organizationId);
     if (!orgId) continue;
     if (!orgViolations.has(orgId)) {
       orgViolations.set(orgId, { sectors: new Set(), violations: [], highestSeverity: "low" });
     }
     const entry = orgViolations.get(orgId)!;
     entry.violations.push(v);
-    const sector = (orgMap.get(orgId) as any)?.sector ?? "ndpa";
+    const orgEntry = orgMap.get(orgId);
+    const sector = orgEntry ? String((orgEntry as Record<string, unknown>).sector ?? "ndpa") : "ndpa";
     entry.sectors.add(sector);
     if (v.severity === "critical") entry.highestSeverity = "critical";
     else if (v.severity === "high" && entry.highestSeverity !== "critical") entry.highestSeverity = "high";
@@ -98,7 +100,7 @@ export default function CrossSectorAlerts() {
       "Highest Severity": a.highestSeverity,
       "Cross-Sector": a.isCrossSector ? "Yes" : "No",
       "Latest Violation": a.latestViolation?.title ?? "",
-      "Latest Violation Date": a.latestViolation?.createdAt ? new Date(a.latestViolation.createdAt).toLocaleDateString() : "",
+      "Latest Violation Date": a.latestViolation?.createdAt ? new Date(String(a.latestViolation.createdAt)).toLocaleDateString() : "",
     }));
     exportToCsv(rows, `cross-sector-alerts-${new Date().toISOString().split("T")[0]}`);
     toast.success("Export complete");
@@ -222,7 +224,7 @@ export default function CrossSectorAlerts() {
                     </div>
                     {alert.latestViolation && (
                       <p className="text-sm text-muted-foreground mt-1 truncate">
-                        Latest: {alert.latestViolation.title} — {new Date(alert.latestViolation.createdAt).toLocaleDateString()}
+                        Latest: {String(alert.latestViolation.title)} — {new Date(String(alert.latestViolation.createdAt)).toLocaleDateString()}
                       </p>
                     )}
                   </div>

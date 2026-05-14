@@ -15,7 +15,7 @@ const SECTOR_COLORS: Record<string, string> = {
   fintech: "text-pink-400 bg-pink-500/10 border-pink-500/30",
 };
 
-const ACTION_ICONS: Record<string, any> = {
+const ACTION_ICONS: Record<string, typeof AlertCircle> = {
   warning: AlertCircle,
   fine: Gavel,
   suspension: Clock,

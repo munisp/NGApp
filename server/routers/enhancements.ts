@@ -153,7 +153,7 @@ export const dsarRouter = router({
     .query(async ({ input }) => {
       const pool = getPool();
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let idx = 1;
       if (input?.status) {
         conditions.push(`status = $${idx++}`);
@@ -207,7 +207,7 @@ export const dpiaRouter = router({
     .query(async ({ input }) => {
       const pool = getPool();
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let idx = 1;
       if (input?.orgId) { conditions.push(`org_id = $${idx++}`); params.push(input.orgId); }
       if (input?.status) { conditions.push(`status = $${idx++}`); params.push(input.status); }
@@ -281,7 +281,7 @@ export const dpiaRouter = router({
       const pool = getPool();
       const { id, ...fields } = input;
       const setClauses: string[] = ["updated_at = NOW()"];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let idx = 1;
       if (fields.title !== undefined) { setClauses.push(`title = $${idx++}`); params.push(fields.title); }
       if (fields.processingPurpose !== undefined) { setClauses.push(`processing_purpose = $${idx++}`); params.push(fields.processingPurpose); }
@@ -505,7 +505,7 @@ export const sectorBenchmarkRouter = router({
     const { rows } = await pool.query(
       `SELECT DISTINCT sector FROM sector_benchmarks ORDER BY sector`
     );
-    return rows.map((r: any) => r.sector);
+    return rows.map((r: Record<string, unknown>) => r.sector);
   }),
 });
 
@@ -516,7 +516,7 @@ export const webhookRouter = router({
     .query(async ({ input }) => {
       const pool = getPool();
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let idx = 1;
       if (input?.orgId) { conditions.push(`org_id = $${idx++}`); params.push(input.orgId); }
       if (input?.dpcoOrgId) { conditions.push(`dpco_org_id = $${idx++}`); params.push(input.dpcoOrgId); }
@@ -618,7 +618,7 @@ export const searchRouter = router({
            ORDER BY rank DESC LIMIT $2`,
           [q, Math.ceil(input.limit / types.length)]
         );
-        rows.forEach((r: any) => results.push({ type: "organization", ...r }));
+        rows.forEach((r: Record<string, unknown>) => results.push({ type: "organization", ...r }));
       }
 
       if (types.includes("enforcement")) {
@@ -632,7 +632,7 @@ export const searchRouter = router({
            ORDER BY rank DESC LIMIT $2`,
           [q, Math.ceil(input.limit / types.length)]
         );
-        rows.forEach((r: any) => results.push({ type: "enforcement_case", ...r }));
+        rows.forEach((r: Record<string, unknown>) => results.push({ type: "enforcement_case", ...r }));
       }
 
       if (types.includes("citizen_requests")) {
@@ -644,7 +644,7 @@ export const searchRouter = router({
            ORDER BY rank DESC LIMIT $2`,
           [q, Math.ceil(input.limit / types.length)]
         );
-        rows.forEach((r: any) => results.push({ type: "citizen_request", ...r }));
+        rows.forEach((r: Record<string, unknown>) => results.push({ type: "citizen_request", ...r }));
       }
 
       if (types.includes("dpco")) {
@@ -656,7 +656,7 @@ export const searchRouter = router({
            ORDER BY rank DESC LIMIT $2`,
           [q, Math.ceil(input.limit / types.length)]
         );
-        rows.forEach((r: any) => results.push({ type: "dpco", ...r }));
+        rows.forEach((r: Record<string, unknown>) => results.push({ type: "dpco", ...r }));
       }
 
       // Sort all results by rank descending
@@ -682,7 +682,7 @@ export const i18nRouter = router({
         [input.locale, input.namespace]
       );
       const translations: Record<string, string> = {};
-      rows.forEach((r: any) => { translations[r.key] = r.value; });
+      rows.forEach((r: Record<string, unknown>) => { translations[String(r.key)] = String(r.value ?? ""); });
       return translations;
     }),
 
@@ -907,7 +907,7 @@ export const openApiRouter = router({
 // ─────────────────────────────────────────────────────────────────────────────
 // ORPHANED TABLE CRUD ROUTERS — remediation sprint 2026-04-11
 // ─────────────────────────────────────────────────────────────────────────────
-async function query(sql: string, params: any[] = []): Promise<any[]> {
+async function query(sql: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();
   const { rows } = await pool.query(sql, params);
   return rows;
@@ -1105,7 +1105,7 @@ export const policyTemplatesRouter = router({
   instantiate: protectedProcedure.input(z.object({ templateId: z.number(), orgId: z.number() })).mutation(async ({ input }) => {
     const tmpl = await query("SELECT * FROM policy_templates WHERE id=$1",[input.templateId]);
     if (!tmpl[0]) throw new Error("Template not found");
-    const t = tmpl[0] as any;
+    const t = tmpl[0] as Record<string, unknown>;
     const r = await query(`INSERT INTO compliance_policies (name,framework,description,policy_text,status,created_at) VALUES ($1,$2,$3,$4,'active',NOW()) RETURNING *`,[`${t.name} (Org ${input.orgId})`,t.framework??'NDPR',t.category??null,t.template_text??null]);
     await query("UPDATE policy_templates SET instantiated_count=COALESCE(instantiated_count,0)+1 WHERE id=$1",[input.templateId]);
     emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));

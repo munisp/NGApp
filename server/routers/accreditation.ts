@@ -19,7 +19,7 @@ function getPool() {
   }
   return _pool;
 }
-async function q<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+async function q<T = any>(sql: string, params: unknown[] = []): Promise<T[]> {
   let idx = 0;
   const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
   const result = await getPool().query(pgSql, params);
@@ -140,7 +140,7 @@ export const accreditationRouter = router({
     }))
     .query(async ({ input }) => {
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input.status) { conditions.push("status = ?"); params.push(input.status); }
       if (input.search) {
         conditions.push("(org_name ILIKE ? OR email ILIKE ? OR rc_number ILIKE ? OR reference_token ILIKE ?)");
@@ -463,7 +463,7 @@ export const accreditationRouter = router({
     }).optional())
     .query(async ({ input }) => {
       const conditions: string[] = ["status = 'active'"];
-      const params: any[] = [];
+      const params: unknown[] = [];
       if (input?.search) {
         conditions.push("(name ILIKE ? OR email ILIKE ?)");
         params.push(`%${input.search}%`, `%${input.search}%`);

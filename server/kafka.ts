@@ -270,8 +270,8 @@ export async function kafkaSmokeTest(): Promise<{ ok: boolean; topic: string; me
   try {
     const ok = await kafkaProduce("ndsep.smoke.test", `smoke-${Date.now()}`, { event: "smoke.test", ts: new Date().toISOString() });
     return { ok, topic: "ndsep.smoke.test", message: ok ? "Smoke test message produced" : "Kafka not connected (graceful degradation)", latencyMs: Date.now() - t0 };
-  } catch (e: any) {
-    return { ok: false, topic: "ndsep.smoke.test", message: e?.message ?? "Unknown error", latencyMs: Date.now() - t0 };
+  } catch (e: unknown) {
+    return { ok: false, topic: "ndsep.smoke.test", message: e instanceof Error ? e.message : "Unknown error", latencyMs: Date.now() - t0 };
   }
 }
 

@@ -500,7 +500,7 @@ export const dsarLifecycleRouter = router({
     if (overdue.length > 0) {
       await notifyOwner({
         title: `⚠️ ${overdue.length} DSAR(s) Auto-Escalated`,
-        content: `${overdue.length} Data Subject Access Requests have been automatically escalated due to exceeding the 30-day NDPA response deadline. IDs: ${overdue.map((r: any) => r.id).join(", ")}`,
+        content: `${overdue.length} Data Subject Access Requests have been automatically escalated due to exceeding the 30-day NDPA response deadline. IDs: ${overdue.map((r: Record<string, unknown>) => r.id).join(", ")}`,
       });
     }
 
@@ -1109,7 +1109,7 @@ export const nipReconciliationRouter = router({
       const searchClause = input.search
         ? `AND (session_id ILIKE $4 OR sender_account_number ILIKE $4 OR receiver_account_number ILIKE $4 OR narration ILIKE $4)`
         : "";
-      const params: any[] = [targetDate, input.limit, input.offset];
+      const params: unknown[] = [targetDate, input.limit, input.offset];
       if (input.search) params.push(`%${input.search}%`);
       const transactions = await exec(
         `SELECT * FROM nip_transactions WHERE DATE(created_at) = $1::date ${searchClause} ORDER BY initiated_at DESC LIMIT $2 OFFSET $3`,

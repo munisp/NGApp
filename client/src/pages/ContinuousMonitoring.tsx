@@ -336,7 +336,7 @@ export default function ContinuousMonitoring() {
                       <div className="border-t border-border bg-muted/10 p-3">
                         <p className="text-xs text-muted-foreground mb-2 font-medium">Snapshot Data</p>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {Object.entries(s.snapshot_data as Record<string, any>).slice(0, 12).map(([key, val]) => (
+                          {Object.entries(s.snapshot_data as Record<string, unknown>).slice(0, 12).map(([key, val]) => (
                             <div key={key} className="text-xs">
                               <span className="text-muted-foreground">{key.replace(/_/g, " ")}: </span>
                               <span className="text-foreground font-medium">{String(val)}</span>

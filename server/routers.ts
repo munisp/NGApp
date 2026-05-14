@@ -323,16 +323,16 @@ export const appRouter = router({
         const stats = await getDashboardStats();
         const violations = await getComplianceViolations(500);
         const orgs = await getOrganizations(100);
-        const complianceRate = (stats as any)?.orgStats?.avgScore ?? 72;
-        const criticalCount = (violations as any[]).filter((v: any) => v.severity === "critical").length;
-        const highCount = (violations as any[]).filter((v: any) => v.severity === "high").length;
+        const complianceRate = ((stats as Record<string, Record<string, unknown>> | null)?.orgStats?.avgScore as number) ?? 72;
+        const criticalCount = (violations as Record<string, unknown>[]).filter((v: Record<string, unknown>) => v.severity === "critical").length;
+        const highCount = (violations as Record<string, unknown>[]).filter((v: Record<string, unknown>) => v.severity === "high").length;
         const now = new Date().toISOString().split("T")[0];
         const reportData = {
           framework: input.framework,
           generatedAt: now,
           complianceRate: Math.round(complianceRate),
-          totalOrganizations: (orgs as any[]).length,
-          totalViolations: (violations as any[]).length,
+          totalOrganizations: (orgs as Record<string, unknown>[]).length,
+          totalViolations: (violations as Record<string, unknown>[]).length,
           criticalFindings: criticalCount,
           highFindings: highCount,
           markdownReport: [
@@ -345,13 +345,13 @@ export const appRouter = router({
             ``,
             `## Executive Summary`,
             ``,
-            `This report presents the compliance posture of **${(orgs as any[]).length} registered organizations** against the **${input.framework}** framework as of ${now}.`,
+            `This report presents the compliance posture of **${(orgs as Record<string, unknown>[]).length} registered organizations** against the **${input.framework}** framework as of ${now}.`,
             ``,
             `| Metric | Value |`,
             `|--------|-------|`,
             `| Overall Compliance Rate | ${Math.round(complianceRate)}% |`,
-            `| Organizations Monitored | ${(orgs as any[]).length} |`,
-            `| Open Violations | ${(violations as any[]).length} |`,
+            `| Organizations Monitored | ${(orgs as Record<string, unknown>[]).length} |`,
+            `| Open Violations | ${(violations as Record<string, unknown>[]).length} |`,
             `| Critical Findings | ${criticalCount} |`,
             `| High Severity Findings | ${highCount} |`,
             ``,
@@ -385,8 +385,8 @@ export const appRouter = router({
             `Framework: ${input.framework}`,
             `Generated: ${now}`,
             `Overall Compliance Rate: ${Math.round(complianceRate)}%`,
-            `Organizations Monitored: ${(orgs as any[]).length}`,
-            `Open Violations: ${(violations as any[]).length}`,
+            `Organizations Monitored: ${(orgs as Record<string, unknown>[]).length}`,
+            `Open Violations: ${(violations as Record<string, unknown>[]).length}`,
             `Critical Findings: ${criticalCount}`,
             `High Severity Findings: ${highCount}`,
             `Status: ${complianceRate >= 80 ? 'COMPLIANT' : complianceRate >= 60 ? 'PARTIALLY COMPLIANT' : 'NON-COMPLIANT'}`,
@@ -501,7 +501,7 @@ export const appRouter = router({
         // Org admins only see their own org's violations
         if (ctx.user && ctx.user.role === 'org_admin' && ctx.user.organizationId) {
           const all = await getComplianceViolations(input?.limit ?? 50, input?.severity);
-          return (all as any[]).filter((v: any) => v.organizationId === ctx.user!.organizationId);
+          return (all as Record<string, unknown>[]).filter((v: Record<string, unknown>) => v.organizationId === ctx.user!.organizationId);
         }
         return getComplianceViolations(input?.limit, input?.severity);
       }),
@@ -690,9 +690,9 @@ export const appRouter = router({
         const events = await getNetworkEvents(input?.limit, input?.crossBorderOnly);
         // Org admins only see their own org's network events
         if (ctx.user && ctx.user.role === 'org_admin' && ctx.user.organizationId) {
-          return (events as any[]).filter((e: any) => e.organizationId === ctx.user!.organizationId);
+          return (events as Record<string, unknown>[]).filter((e: Record<string, unknown>) => e.organizationId === ctx.user!.organizationId);
         }
-        if (input?.orgId) return (events as any[]).filter((e: any) => e.organizationId === input.orgId);
+        if (input?.orgId) return (events as Record<string, unknown>[]).filter((e: Record<string, unknown>) => e.organizationId === input.orgId);
         return events;
       }),
     stats: protectedProcedure.query(async () => getNetworkStats()),
@@ -737,10 +737,11 @@ export const appRouter = router({
         });
         // Fire-and-forget email notification to org contact
         getOrganizationById(input.organizationId).then(org => {
-          if ((org as any)?.contactEmail) {
+          const orgRec = (org ?? {}) as Record<string, unknown>;
+          if (orgRec.contactEmail) {
             sendPenaltyNotice({
-              to: (org as any).contactEmail,
-              orgName: (org as any).name,
+              to: String(orgRec.contactEmail),
+              orgName: String(orgRec.name),
               penaltyId: penalty?.id ?? 0,
               amount: input.amount,
               currency: input.currency,
@@ -870,12 +871,13 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const result = await reviewPenaltyAppeal(input.appealId, input.decision, ctx.user.id, input.reviewNotes);
         // TigerBeetle: if appeal upheld, create a settlement (refund) ledger entry
-        if (input.decision === "upheld" && (result as any)?.penaltyId) {
+        const resRec = (result ?? {}) as Record<string, unknown>;
+        if (input.decision === "upheld" && resRec.penaltyId) {
           createTigerBeetleTransaction({
-            orgId: String((result as any).organizationId ?? 0),
-            penaltyId: String((result as any).penaltyId),
-            amountUsd: (result as any).amount ?? 0,
-            currency: (result as any).currency ?? "USD",
+            orgId: String(resRec.organizationId ?? 0),
+            penaltyId: String(resRec.penaltyId),
+            amountUsd: Number(resRec.amount ?? 0),
+            currency: String(resRec.currency ?? "USD"),
             type: "settlement",
             description: `Appeal ${input.appealId} upheld — penalty settled`,
             issuedBy: String(ctx.user.id),
@@ -938,10 +940,11 @@ export const appRouter = router({
               dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
             });
             getOrganizationById(orgId).then(org => {
-              if ((org as any)?.contactEmail) {
+              const orgBulk = (org ?? {}) as Record<string, unknown>;
+              if (orgBulk.contactEmail) {
                 sendPenaltyNotice({
-                  to: (org as any).contactEmail,
-                  orgName: (org as any).name,
+                  to: String(orgBulk.contactEmail),
+                  orgName: String(orgBulk.name),
                   penaltyId: penalty?.id ?? 0,
                   amount: input.amount,
                   currency: input.currency,
@@ -952,8 +955,8 @@ export const appRouter = router({
               }
             }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
             results.push({ orgId, penaltyId: penalty?.id });
-          } catch (e: any) {
-            results.push({ orgId, error: e.message ?? "Failed" });
+          } catch (e: unknown) {
+            results.push({ orgId, error: e instanceof Error ? e.message : "Failed" });
           }
         }
         // TigerBeetle: create ledger entries for all successfully issued penalties
@@ -1348,9 +1351,9 @@ export const appRouter = router({
         const orgs = await getOrganizations(8);
         const violations = await getComplianceViolations(5);
         const alerts = await getSecurityAlerts(5, false);
-                const orgLines = orgs.slice(0, 5).map((o: any) => `- ${o.name}: Risk ${Number(o.riskScore ?? 0).toFixed(1)}, Compliance ${Number(o.complianceScore ?? 0).toFixed(1)}, Status: ${o.complianceStatus}`).join("\n");
-        const violLines = violations.filter((v: any) => v.severity === "critical").slice(0, 3).map((v: any) => `- ${v.title}: ${v.description?.substring(0, 100)}`).join("\n");
-        const alertLines = alerts.slice(0, 3).map((a: any) => `- [${a.severity?.toUpperCase()}] ${a.title} (${a.source})`).join("\n");
+                const orgLines = orgs.slice(0, 5).map((o: Record<string, unknown>) => `- ${o.name}: Risk ${Number(o.riskScore ?? 0).toFixed(1)}, Compliance ${Number(o.complianceScore ?? 0).toFixed(1)}, Status: ${o.complianceStatus}`).join("\n");
+        const violLines = violations.filter((v: Record<string, unknown>) => v.severity === "critical").slice(0, 3).map((v: Record<string, unknown>) => `- ${v.title}: ${String(v.description ?? "").substring(0, 100)}`).join("\n");
+        const alertLines = alerts.slice(0, 3).map((a: Record<string, unknown>) => `- [${String(a.severity ?? "").toUpperCase()}] ${a.title} (${a.source})`).join("\n");
         const context = [
           "You are the NDSEP AI Compliance Advisor for the National Data Sovereignty Enforcement Platform.",
           "",
@@ -1439,13 +1442,13 @@ export const appRouter = router({
         } catch { /* worker not running, fall through to DB */ }
         // Fallback: return remediation workflows from DB as workflow runs
         const dbWorkflows = await listRemediationWorkflows(undefined, input?.status as any);
-        const runs = dbWorkflows.slice(0, input?.limit ?? 50).map((w: any) => ({
+        const runs = dbWorkflows.slice(0, input?.limit ?? 50).map((w: Record<string, unknown>) => ({
           workflowId: `remediation-${w.id}`,
           type: { id: "remediation", name: "Remediation Workflow", steps: ["detect", "assign", "remediate", "verify", "close"] },
           status: w.status === "resolved" ? "COMPLETED" : w.status === "in_progress" ? "RUNNING" : w.status === "open" ? "RUNNING" : "COMPLETED",
           currentStep: w.status === "resolved" ? 5 : w.status === "in_progress" ? 2 : 1,
           startedAt: w.createdAt,
-          duration: w.resolvedAt ? Math.round((new Date(w.resolvedAt).getTime() - new Date(w.createdAt).getTime()) / 1000) : null,
+          duration: w.resolvedAt ? Math.round((new Date(String(w.resolvedAt)).getTime() - new Date(String(w.createdAt)).getTime()) / 1000) : null,
           orgName: w.orgName ?? "Unknown Org",
         }));
         return { runs };
@@ -1533,7 +1536,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8130/sync", { method: "POST", signal: AbortSignal.timeout(5000) });
         if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
         return await res.json();
-      } catch (e: any) { return { success: false, error: e.message }; }
+      } catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : String(e) }; }
     }),
     eventBusStatus: protectedProcedure.query(async () => {
       try {
@@ -1554,7 +1557,7 @@ export const appRouter = router({
           });
           if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
           return await res.json();
-        } catch (e: any) { return { success: false, error: e.message }; }
+        } catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : String(e) }; }
       }),
     iamServiceStatus: protectedProcedure.query(async () => {
       try {
@@ -1575,7 +1578,7 @@ export const appRouter = router({
           });
           if (!res.ok) return { valid: false, error: `HTTP ${res.status}` };
           return await res.json();
-        } catch (e: any) { return { valid: false, error: e.message }; }
+        } catch (e: unknown) { return { valid: false, error: e instanceof Error ? e.message : String(e) }; }
       }),
     tigerbeetleStatus: protectedProcedure.query(async () => {
       try {
@@ -1601,7 +1604,7 @@ export const appRouter = router({
           });
           if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
           return await res.json();
-        } catch (e: any) { return { success: false, error: e.message }; }
+        } catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : String(e) }; }
       }),
     workflowEngineStatus: protectedProcedure.query(async () => {
       try {
@@ -1878,9 +1881,9 @@ export const appRouter = router({
       const workflows = await listRemediationWorkflows();
       return {
         total: workflows.length,
-        open: workflows.filter((w: any) => w.status === "open").length,
-        in_progress: workflows.filter((w: any) => w.status === "in_progress").length,
-        resolved: workflows.filter((w: any) => w.status === "resolved").length,
+        open: workflows.filter((w: Record<string, unknown>) => w.status === "open").length,
+        in_progress: workflows.filter((w: Record<string, unknown>) => w.status === "in_progress").length,
+        resolved: workflows.filter((w: Record<string, unknown>) => w.status === "resolved").length,
       };
     }),
     delete: deleteProcedure
@@ -1915,9 +1918,9 @@ export const appRouter = router({
       const assessments = await listTiaAssessments();
       return {
         total: assessments.length,
-        high_risk: assessments.filter((a: any) => a.riskLevel === "high" || a.riskLevel === "critical").length,
-        approved: assessments.filter((a: any) => a.status === "approved").length,
-        pending: assessments.filter((a: any) => a.status === "draft" || a.status === "submitted").length,
+        high_risk: assessments.filter((a: Record<string, unknown>) => a.riskLevel === "high" || a.riskLevel === "critical").length,
+        approved: assessments.filter((a: Record<string, unknown>) => a.status === "approved").length,
+        pending: assessments.filter((a: Record<string, unknown>) => a.status === "draft" || a.status === "submitted").length,
       };
     }),
     submit: protectedProcedure
@@ -1930,7 +1933,7 @@ export const appRouter = router({
         // Notify owner and attempt email to org
         try {
           const assessments = await listTiaAssessments();
-          const assessment = assessments.find((a: any) => a.id === input.id);
+          const assessment = assessments.find((a: Record<string, unknown>) => a.id === input.id);
           if (assessment) {
             const { getOrganizationById } = await import("./db");
             const org = await getOrganizationById((assessment as any).organizationId);
@@ -1949,7 +1952,7 @@ export const appRouter = router({
         const result = await updateTiaAssessment(input.id, { status: "rejected", reviewedBy: ctx.user.id });
         try {
           const assessments = await listTiaAssessments();
-          const assessment = assessments.find((a: any) => a.id === input.id);
+          const assessment = assessments.find((a: Record<string, unknown>) => a.id === input.id);
           if (assessment) {
             const { getOrganizationById } = await import("./db");
             const org = await getOrganizationById((assessment as any).organizationId);
@@ -1998,8 +2001,8 @@ export const appRouter = router({
       const snaps = await listConfigSnapshots(1000);
       return {
         total: snaps.length,
-        applied: snaps.filter((s: any) => s.status === "applied").length,
-        pending: snaps.filter((s: any) => s.status === "pending").length,
+        applied: snaps.filter((s: Record<string, unknown>) => s.status === "applied").length,
+        pending: snaps.filter((s: Record<string, unknown>) => s.status === "pending").length,
       };
     }),
     delete: deleteProcedure

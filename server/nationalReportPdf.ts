@@ -11,10 +11,10 @@ const PG_URL =
 export async function generateNationalReportPdf(): Promise<Buffer> {
   const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
 
-  let orgs: any[] = [];
-  let penalties: any[] = [];
-  let cases: any[] = [];
-  let stats: any = {};
+  let orgs: Record<string, unknown>[] = [];
+  let penalties: Record<string, unknown>[] = [];
+  let cases: Record<string, unknown>[] = [];
+  let stats: Record<string, unknown> = {};
 
   try {
     const [orgRes, penaltyRes, caseRes, statsRes] = await Promise.all([
@@ -92,8 +92,10 @@ export async function generateNationalReportPdf(): Promise<Buffer> {
       .text("1. EXECUTIVE SUMMARY", 50, doc.y);
     doc.moveDown(0.4);
 
-    const complianceRate = stats.total_orgs > 0
-      ? ((stats.compliant_orgs / stats.total_orgs) * 100).toFixed(1)
+    const totalOrgs = Number(stats.total_orgs ?? 0);
+    const compliantOrgs = Number(stats.compliant_orgs ?? 0);
+    const complianceRate = totalOrgs > 0
+      ? ((compliantOrgs / totalOrgs) * 100).toFixed(1)
       : "0.0";
 
     const summaryLines = [
@@ -154,7 +156,7 @@ export async function generateNationalReportPdf(): Promise<Buffer> {
       doc.fillColor("#1e293b").fontSize(7.5).font("Helvetica");
       doc.text(String(org.name ?? "").substring(0, 28), x + 3, rowY + 2, { width: orgCols[0].width - 4 }); x += orgCols[0].width;
       doc.text(String(org.sector ?? "").substring(0, 12), x + 3, rowY + 2, { width: orgCols[1].width - 4 }); x += orgCols[1].width;
-      doc.fillColor(statusColor[org.compliance_status] ?? "#475569")
+      doc.fillColor(statusColor[String(org.compliance_status ?? "")] ?? "#475569")
         .text(String(org.compliance_status ?? "").replace("_", " "), x + 3, rowY + 2, { width: orgCols[2].width - 4 }); x += orgCols[2].width;
       doc.fillColor("#1e293b")
         .text(Number(org.compliance_score ?? 0).toFixed(0), x + 3, rowY + 2, { width: orgCols[3].width - 4 }); x += orgCols[3].width;

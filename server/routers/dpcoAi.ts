@@ -17,7 +17,7 @@ function getPool() {
   return _aiPool;
 }
 
-const q = async (sql: string, params: any[] = []) => {
+const q = async (sql: string, params: unknown[] = []) => {
   const res = await getPool().query(sql, params);
   return res.rows;
 };

@@ -269,7 +269,7 @@ export const complianceTrendRouter = router({
          ORDER BY recorded_at DESC LIMIT 50`,
         [input.orgId]
       ).catch(() => []);
-      return rows.map((r: any) => ({
+      return rows.map((r: Record<string, unknown>) => ({
         id: r.id,
         orgId: r.org_id,
         type: r.anomaly_type || 'score_drop',

@@ -118,9 +118,9 @@ async function loadTemporalSdk(): Promise<boolean> {
 // Connection factory (cached per process)
 // ─────────────────────────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _connection: any = null;
+let _connection: unknown = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _client: any = null;
+let _client: unknown = null;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getTemporalClient(): Promise<any> {
@@ -151,7 +151,8 @@ async function getTemporalClient(): Promise<any> {
 
     _connection = await _Connection.connect(connectionOptions as Parameters<typeof _Connection.connect>[0]);
     _client = new _Client({
-      connection: _connection,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      connection: _connection as any,
       namespace: TEMPORAL_NAMESPACE,
     });
 
