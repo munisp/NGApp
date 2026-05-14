@@ -42,6 +42,10 @@ import {
   Cpu,
   Home,
   ArrowDownLeft,
+  Banknote,
+  Landmark,
+  Network,
+  Ship,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, ROLES } from '@/lib/auth';
@@ -280,6 +284,42 @@ const navItems: NavItem[] = [
     label: 'Reports',
     icon: <FileText className="h-5 w-5" />,
     allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.COMPLIANCE_OFFICER, ROLES.AUDITOR, 'cbn', 'admin', 'participant'],
+  },
+  // Payment Modules
+  {
+    id: 'domestic-payments',
+    label: 'Domestic Payments',
+    icon: <Banknote className="h-5 w-5" />,
+    section: 'Payment Modules',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.SETTLEMENT_OFFICER, 'admin', 'participant'],
+  },
+  {
+    id: 'card-processing',
+    label: 'Card Processing',
+    icon: <CreditCard className="h-5 w-5" />,
+    section: 'Payment Modules',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.SETTLEMENT_OFFICER, 'admin', 'participant'],
+  },
+  {
+    id: 'open-banking',
+    label: 'Open Banking',
+    icon: <Network className="h-5 w-5" />,
+    section: 'Payment Modules',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.DEVELOPER, 'admin', 'participant'],
+  },
+  {
+    id: 'government-payments',
+    label: 'Government Payments',
+    icon: <Landmark className="h-5 w-5" />,
+    section: 'Payment Modules',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.COMPLIANCE_OFFICER, 'admin', 'cbn'],
+  },
+  {
+    id: 'trade-payments',
+    label: 'Trade Payments',
+    icon: <Ship className="h-5 w-5" />,
+    section: 'Payment Modules',
+    allowedRoles: [ROLES.SUPER_ADMIN, ROLES.NOC_OPERATOR, ROLES.SETTLEMENT_OFFICER, 'admin', 'participant'],
   },
   // Outbound Remittance
   {

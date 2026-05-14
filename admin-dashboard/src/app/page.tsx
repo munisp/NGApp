@@ -44,6 +44,11 @@ const MaintenanceDashboard = dynamic(() => import('@/components/maintenance-mode
 const RustServices = dynamic(() => import('@/components/infrastructure/RustServices').then(m => ({ default: m.RustServices })), { loading: () => <PageSpinner /> });
 const OutboundRemittanceDashboard = dynamic(() => import('@/components/outbound/OutboundRemittanceDashboard'), { loading: () => <PageSpinner /> });
 const InboundRemittanceDashboard = dynamic(() => import('@/components/inbound/InboundRemittanceDashboard'), { loading: () => <PageSpinner /> });
+const DomesticPaymentsDashboard = dynamic(() => import('@/components/domestic/DomesticPaymentsDashboard'), { loading: () => <PageSpinner /> });
+const CardProcessingDashboard = dynamic(() => import('@/components/cards/CardProcessingDashboard'), { loading: () => <PageSpinner /> });
+const OpenBankingDashboard = dynamic(() => import('@/components/openbanking/OpenBankingDashboard'), { loading: () => <PageSpinner /> });
+const GovernmentPaymentsDashboard = dynamic(() => import('@/components/government/GovernmentPaymentsDashboard'), { loading: () => <PageSpinner /> });
+const TradePaymentsDashboard = dynamic(() => import('@/components/trade/TradePaymentsDashboard'), { loading: () => <PageSpinner /> });
 const GoServices = dynamic(() => import('@/components/infrastructure/GoServices').then(m => ({ default: m.GoServices })), { loading: () => <PageSpinner /> });
 const MiddlewareDashboard = dynamic(() => import('@/components/infrastructure/MiddlewareDashboard').then(m => ({ default: m.MiddlewareDashboard })), { loading: () => <PageSpinner /> });
 const DashboardHub = dynamic(() => import('@/components/hub/DashboardHub').then(m => ({ default: m.DashboardHub })), { loading: () => <PageSpinner /> });
@@ -157,6 +162,16 @@ export default function Home() {
           return <MaintenanceDashboard />;
         case 'reports':
           return <ReportsInterface />;
+        case 'domestic-payments':
+          return <DomesticPaymentsDashboard />;
+        case 'card-processing':
+          return <CardProcessingDashboard />;
+        case 'open-banking':
+          return <OpenBankingDashboard />;
+        case 'government-payments':
+          return <GovernmentPaymentsDashboard />;
+        case 'trade-payments':
+          return <TradePaymentsDashboard />;
         case 'outbound-remittance':
           return <OutboundRemittanceDashboard />;
         case 'inbound-remittance':
