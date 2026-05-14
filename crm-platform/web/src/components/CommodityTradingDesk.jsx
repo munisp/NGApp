@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, DollarSign, BarChart3, Activity, AlertTriangle,
   ArrowUpRight, ArrowDownRight, Layers, Shield, Clock, Zap
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -90,7 +90,15 @@ const CommodityTradingDesk = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('positions')
+  const [search, setSearch] = useState('')
+  const [commodityFilter, setCommodityFilter] = useState('all')
+  const [selectedPosition, setSelectedPosition] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
+  const filteredPositions = data.positions ? data.positions.filter(p => {
+    const matchSearch = !search || (p.commodity && p.commodity.toLowerCase().includes(search.toLowerCase())) || (p.trader && p.trader.toLowerCase().includes(search.toLowerCase()))
+    const matchCommodity = commodityFilter === 'all' || (p.commodity && p.commodity.toLowerCase().includes(commodityFilter))
+    return matchSearch && matchCommodity
+  }) : []
 
   const varPct = (data.currentVar.replace(/[^0-9.]/g, '') / data.varLimit.replace(/[^0-9.]/g, '') * 100).toFixed(1)
 

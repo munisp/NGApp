@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Users, Code2, Key, CheckCircle, Clock, AlertTriangle, TrendingUp,
   ArrowUpRight, Play, FileText, Globe, Zap
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -78,7 +78,15 @@ const CPaaSDeveloperOnboarding = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('funnel')
+  const [search, setSearch] = useState('')
+  const [stageFilter, setStageFilter] = useState('all')
+  const [selectedDev, setSelectedDev] = useState(null)
   const data = seedData[tenant?.slug] || seedData['messageflow']
+  const filteredDevs = data.developers ? data.developers.filter(d => {
+    const matchSearch = !search || (d.name && d.name.toLowerCase().includes(search.toLowerCase())) || (d.email && d.email.toLowerCase().includes(search.toLowerCase()))
+    const matchStage = stageFilter === 'all' || (d.stage && d.stage.toLowerCase() === stageFilter)
+    return matchSearch && matchStage
+  }) : []
 
   return (
     <div role="region" aria-label="CPaaSDeveloperOnboarding" className="space-y-6">

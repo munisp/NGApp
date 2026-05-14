@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Users, DollarSign, Shield, TrendingUp, Activity, AlertTriangle,
   CheckCircle, Clock, FileText, Globe, ArrowUpRight
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -70,7 +70,15 @@ const CommodityBrokerPortal = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('counterparties')
+  const [search, setSearch] = useState('')
+  const [ratingFilter, setRatingFilter] = useState('all')
+  const [selectedCP, setSelectedCP] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
+  const filteredCPs = data.counterparties ? data.counterparties.filter(c => {
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase())
+    const matchRating = ratingFilter === 'all' || c.rating === ratingFilter
+    return matchSearch && matchRating
+  }) : []
 
   return (
     <div role="region" aria-label="CommodityBrokerPortal" className="space-y-6">

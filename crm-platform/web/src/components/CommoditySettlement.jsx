@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   DollarSign, Clock, CheckCircle, AlertTriangle, ArrowRight, Activity,
   Shield, FileText, TrendingUp, BarChart3
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -68,7 +68,15 @@ const CommoditySettlement = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('settlements')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedSettlement, setSelectedSettlement] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
+  const filteredSettlements = data.settlements ? data.settlements.filter(s => {
+    const matchSearch = !search || (s.tradeId && s.tradeId.toLowerCase().includes(search.toLowerCase())) || (s.counterparty && s.counterparty.toLowerCase().includes(search.toLowerCase()))
+    const matchStatus = statusFilter === 'all' || s.status === statusFilter
+    return matchSearch && matchStatus
+  }) : []
 
   return (
     <div role="region" aria-label="CommoditySettlement" className="space-y-6">

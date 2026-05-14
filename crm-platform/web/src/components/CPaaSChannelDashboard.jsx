@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   MessageSquare, Phone, Video, Shield, TrendingUp, ArrowUpRight,
   ArrowDownRight, BarChart3, Activity, Globe, Zap, AlertTriangle
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -104,7 +104,15 @@ const CPaaSChannelDashboard = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
+  const [search, setSearch] = useState('')
+  const [channelFilter, setChannelFilter] = useState('all')
+  const [selectedCampaign, setSelectedCampaign] = useState(null)
   const data = seedData[tenant?.slug] || seedData['messageflow']
+  const filteredCampaigns = data.campaigns ? data.campaigns.filter(c => {
+    const matchSearch = !search || (c.name && c.name.toLowerCase().includes(search.toLowerCase()))
+    const matchChannel = channelFilter === 'all' || (c.channel && c.channel.toLowerCase() === channelFilter)
+    return matchSearch && matchChannel
+  }) : []
 
   const tabs = ['overview', 'channels', 'consumers', 'alerts']
 

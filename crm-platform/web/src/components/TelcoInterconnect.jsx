@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Globe, ArrowRight, DollarSign, TrendingUp, Activity, AlertTriangle,
   CheckCircle, Clock, BarChart3, ArrowUpRight, ArrowDownRight
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -76,7 +76,15 @@ const TelcoInterconnect = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('partners')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedPartner, setSelectedPartner] = useState(null)
   const data = seedData[tenant?.slug] || seedData['aerotel']
+  const filteredPartners = data.partners.filter(p => {
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = statusFilter === 'all' || p.status === statusFilter
+    return matchSearch && matchStatus
+  })
 
   return (
     <div role="region" aria-label="TelcoInterconnect" className="space-y-6">

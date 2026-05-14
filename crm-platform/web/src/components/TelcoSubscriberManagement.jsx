@@ -98,7 +98,15 @@ const TelcoSubscriberManagement = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
+  const [search, setSearch] = useState('')
+  const [planFilter, setPlanFilter] = useState('all')
+  const [selectedSub, setSelectedSub] = useState(null)
   const data = seedData[tenant?.slug] || seedData['aerotel']
+  const filteredSubs = data.subscribers ? data.subscribers.filter(s => {
+    const matchSearch = !search || (s.name && s.name.toLowerCase().includes(search.toLowerCase())) || (s.msisdn && s.msisdn.includes(search))
+    const matchPlan = planFilter === 'all' || (s.plan && s.plan.toLowerCase() === planFilter)
+    return matchSearch && matchPlan
+  }) : []
 
   return (
     <div role="region" aria-label="TelcoSubscriberManagement" className="space-y-6">

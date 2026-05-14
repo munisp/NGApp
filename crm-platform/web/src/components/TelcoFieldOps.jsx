@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   MapPin, Wrench, Signal, Users, CheckCircle, Clock, AlertTriangle,
   TrendingUp, Truck, Radio, Activity, Shield
-} from 'lucide-react'
+, Search } from 'lucide-react'
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -77,7 +77,15 @@ const TelcoFieldOps = () => {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('tasks')
+  const [search, setSearch] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [selectedTask, setSelectedTask] = useState(null)
   const data = seedData[tenant?.slug] || seedData['aerotel']
+  const filteredTasks = data.tasks.filter(task => {
+    const matchSearch = !search || task.location.toLowerCase().includes(search.toLowerCase()) || task.technician.toLowerCase().includes(search.toLowerCase()) || task.id.toLowerCase().includes(search.toLowerCase())
+    const matchPriority = priorityFilter === 'all' || task.priority === priorityFilter
+    return matchSearch && matchPriority
+  })
 
   const priorityColors = { critical: 'red', high: 'orange', medium: 'yellow', low: 'gray' }
   const statusColors = { in_progress: 'blue', assigned: 'purple', completed: 'green', scheduled: 'gray' }
@@ -133,7 +141,11 @@ const TelcoFieldOps = () => {
         ))}
       </div>
 
-      {activeTab === 'tasks' && (
+      {activeTab === 'tasks' && (<>
+        <div className="flex gap-2">
+          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks, locations, technicians..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
+          <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"><option value="all">All Priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+        </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -145,8 +157,8 @@ const TelcoFieldOps = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {data.tasks.map((task, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                {filteredTasks.map((task, i) => (
+                  <tr key={i} onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <td className="px-6 py-4 font-mono text-sm text-blue-600 dark:text-blue-400">{task.id}</td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{task.type}</td>
                     <td className="px-6 py-4">
@@ -168,7 +180,7 @@ const TelcoFieldOps = () => {
             </table>
           </div>
         </div>
-      )}
+      </>)}
 
       {activeTab === 'by-type' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
