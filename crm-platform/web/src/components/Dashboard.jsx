@@ -46,8 +46,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
   const [refreshing, setRefreshing] = useState(false)
-
-  // Mock data - in real app, this would come from API
+  const [search, setSearch] = useState('')
+  const [selectedMetric, setSelectedMetric] = useState(null)
   const [dashboardData, setDashboardData] = useState({
     metrics: {
       totalCustomers: 12847,

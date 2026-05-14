@@ -75,6 +75,8 @@ const UsageMetering = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('usagemetering', () => apiClient.dashboard.metrics(), { fallback: TIER_QUOTAS })
   const { tenant, tenantId } = useTenant()
   const [tab, setTab] = useState('overview')
+  const [search, setSearch] = useState('')
+  const [selectedEndpoint, setSelectedEndpoint] = useState(null)
   const usage = TENANT_USAGE[tenantId] || TENANT_USAGE['tenant-nextgen-mfb']
   const quota = TIER_QUOTAS[usage.tier]
   const dailyData = genDaily(usage.calls)
@@ -83,6 +85,7 @@ const UsageMetering = () => {
   const overage = Math.max(0, usage.calls - quota.monthly)
   const overageCost = (overage / 1000) * quota.overage
   const totalCost = quota.price + overageCost
+  const filteredEndpoints = endpoints.filter(ep => !search || ep.endpoint.toLowerCase().includes(search.toLowerCase()) || ep.method.toLowerCase().includes(search.toLowerCase()))
 
   const statusData = [
     { name: '2xx', value: Math.round(usage.calls * (1 - usage.errorRate / 100)) },

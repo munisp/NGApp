@@ -100,6 +100,9 @@ const UnifiedDashboard = () => {
   const [recentEvents, setRecentEvents] = useState([])
   const [crossSell, setCrossSell] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [segmentFilter, setSegmentFilter] = useState('all')
+  const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
     loadData()

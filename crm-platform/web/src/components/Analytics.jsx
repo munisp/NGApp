@@ -57,6 +57,8 @@ const Analytics = () => {
   const [timeRange, setTimeRange] = useState('30d')
   const [activeMetric, setActiveMetric] = useState('revenue')
   const [refreshing, setRefreshing] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedSegment, setSelectedSegment] = useState(null)
 
   // Mock analytics data
   const [analyticsData, setAnalyticsData] = useState({

@@ -23,6 +23,9 @@ const IntegrationHub = () => {
   const [topicStats, setTopicStats] = useState({})
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [topicFilter, setTopicFilter] = useState('all')
+  const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
     loadData()
