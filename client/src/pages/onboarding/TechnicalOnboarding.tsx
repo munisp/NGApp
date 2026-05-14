@@ -17,7 +17,7 @@ interface TechnicalOnboardingProps {
 
 export default function TechnicalOnboarding({ applicationId: propApplicationId }: TechnicalOnboardingProps) {
   const params = useParams<{ applicationId?: string }>();
-  const applicationId = propApplicationId ?? Number(params.applicationId) || 1;
+  const applicationId = propApplicationId ?? (Number(params.applicationId) || 1);
   const [, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
