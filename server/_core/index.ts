@@ -58,6 +58,11 @@ import { getPool, closeDb, getUserByOpenId, getDb } from "../db";
 import { getAllCircuitBreakerStates } from "../resilience";
 import { logger } from "../logger";
 import { validateEnvironment } from "../envValidation";
+import { initReadReplica, closeReadReplica, isReplicaAvailable } from "../readReplica";
+import { verifyMigrations } from "../migrationVerifier";
+import { regenerateSession, generateSessionNonce } from "../sessionSecurity";
+import { traceMiddleware } from "../telemetry";
+import { initWebhookSystem, deliverWebhookEvent } from "../webhookSystem";
 import { sdk } from "./sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
@@ -782,8 +787,37 @@ async function startServer() {
 
   initWebSocketServer(server);
 
+  // ── Wire orphan modules: Read Replica, Migration Verifier, Telemetry, Webhooks ──
+  const replicaEnabled = initReadReplica();
+  if (replicaEnabled) {
+    logger.info("[Startup] Read replica enabled — heavy queries will use replica");
+  }
+
+  app.use(traceMiddleware());
+
+  try {
+    const pool = getPool();
+    if (pool) await initWebhookSystem(pool);
+  } catch (err) {
+    logger.warn({ err }, "[Startup] Webhook system init failed — webhooks disabled");
+  }
+
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const report = await verifyMigrations();
+      if (report.passed) {
+        logger.info({ checks: report.checks.length, durationMs: report.duration }, "[Startup] Migration verification passed");
+      } else {
+        const failures = report.checks.filter(c => c.status === "fail");
+        logger.error({ failures }, "[Startup] Migration verification FAILED — %d checks failed", failures.length);
+      }
+    } catch (err) {
+      logger.warn({ err }, "[Startup] Migration verification skipped — database not available");
+    }
+  }
+
   server.listen(port, () => {
-    logger.info({ port, env: process.env.NODE_ENV }, "🚀 NDSEP API server started");
+    logger.info({ port, env: process.env.NODE_ENV, replicaEnabled }, "🚀 NDSEP API server started");
     logEncryptionStatus();
   });
 
@@ -853,10 +887,14 @@ async function startServer() {
       logger.info("[Shutdown] Kafka producer disconnected");
     } catch { /* kafka not available */ }
 
-    // 4. Shutdown OTel SDK (flush pending spans)
+    // 4. Close read replica pool
+    await closeReadReplica();
+    logger.info("[Shutdown] Read replica pool closed");
+
+    // 5. Shutdown OTel SDK (flush pending spans)
     try { await otelSdk.shutdown(); logger.info("[Shutdown] OTel SDK shut down"); } catch { /* non-fatal */ }
 
-    // 5. Close DB pool last (after all in-flight queries complete)
+    // 6. Close DB pool last (after all in-flight queries complete)
     await closeDb();
     logger.info("[Shutdown] Database pool closed — shutdown complete");
 

@@ -1,8 +1,9 @@
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Star, TrendingUp, Clock, CheckCircle2, AlertTriangle, Search, Award } from "lucide-react";
+import { Star, TrendingUp, Clock, CheckCircle2, AlertTriangle, Search, Award, BarChart3, Activity } from "lucide-react";
 
 type DpcoRow = {
   id: number;
@@ -66,6 +67,16 @@ export default function DpcoPerformanceScorecard() {
     { refetchInterval: 120000 }
   );
 
+  // Wire orphan DPCO analytics procedures into the UI
+  const { data: trendsData } = trpc.dpco.analyticsComplianceTrends.useQuery(undefined, { refetchInterval: 300_000 });
+  const { data: portfolioData } = trpc.dpco.analyticsPortfolio.useQuery(undefined, { refetchInterval: 300_000 });
+  const { data: heatmapData } = trpc.dpco.analyticsHeatmap.useQuery(undefined, { refetchInterval: 300_000 });
+
+  const trendWeeks = ((trendsData as Record<string, unknown>)?.weeks ?? []) as Array<Record<string, unknown>>;
+  const portfolioDpcos = ((portfolioData as Record<string, unknown>)?.dpcos ?? []) as Array<Record<string, unknown>>;
+  const totalActiveClients = portfolioDpcos.reduce((s, d) => s + Number(d.active_clients ?? 0), 0);
+  const auditDays = Number((heatmapData as Record<string, unknown>)?.days ?? 0);
+
   const dpcos: DpcoRow[] = (data as any)?.rows ?? [];
   const metricsMap: Record<number, Record<string, number>> = (metricsData as any)?.metrics ?? {};
 
@@ -96,6 +107,27 @@ export default function DpcoPerformanceScorecard() {
               Public performance metrics for all accredited DPCOs — updated after each CAR filing
             </p>
           </div>
+        </div>
+        {/* Analytics Summary Cards — wired from dpco.analyticsComplianceTrends, analyticsPortfolio, analyticsHeatmap */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+          <Card><CardContent className="pt-3 pb-2">
+            <div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-blue-500"/><div><p className="text-xs text-muted-foreground">Trend Weeks</p><p className="text-lg font-bold">{trendWeeks.length}</p></div></div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-3 pb-2">
+            <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-green-500"/><div><p className="text-xs text-muted-foreground">Active Clients</p><p className="text-lg font-bold">{totalActiveClients.toLocaleString()}</p></div></div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-3 pb-2">
+            <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-purple-500"/><div><p className="text-xs text-muted-foreground">Avg Score (Latest)</p><p className="text-lg font-bold">{trendWeeks.length > 0 ? String(trendWeeks[0].avg_score ?? '—') : '—'}</p></div></div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-3 pb-2">
+            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-orange-500"/><div><p className="text-xs text-muted-foreground">Audit Days (12mo)</p><p className="text-lg font-bold">{auditDays}</p></div></div>
+          </CardContent></Card>
+        </div>
+      </div>
+      {/* Search and filters */}
+      <div className="bg-background border-b border-border px-6 py-3">
+        <div className="flex items-center justify-between">
+          <div></div>
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />

@@ -221,4 +221,63 @@ export const telecomRouter = router({
     `);
     return rows[0];
   }),
+
+  /** NCC compliance scoring for telecom operators — incorporates QoS thresholds, data localisation, and lawful intercept readiness */
+  calculateOperatorCompliance: protectedProcedure
+    .input(z.object({ operatorId: z.number() }))
+    .query(async ({ input }) => {
+      const oRows = await q(`SELECT * FROM telecom_operators WHERE id = $1`, [input.operatorId]);
+      const op = oRows[0];
+      if (!op) return { score: 0, grade: "F", breakdown: {} };
+      const openViolations = await q(`SELECT COUNT(*) as cnt FROM qos_violations WHERE operator_id = $1 AND status = 'open'`, [input.operatorId]);
+      const violationCount = parseInt(openViolations[0]?.cnt ?? '0');
+      const criticalViolations = await q(`SELECT COUNT(*) as cnt FROM qos_violations WHERE operator_id = $1 AND status = 'open' AND severity IN ('critical', 'high')`, [input.operatorId]);
+      const criticalCount = parseInt(criticalViolations[0]?.cnt ?? '0');
+      const licences = await q(`SELECT COUNT(*) as total, SUM(CASE WHEN data_localisation_compliant THEN 1 ELSE 0 END) as compliant, SUM(CASE WHEN lawful_intercept_enabled THEN 1 ELSE 0 END) as li_enabled FROM spectrum_licences WHERE operator_id = $1`, [input.operatorId]);
+      const totalLicences = parseInt(licences[0]?.total ?? '0');
+      const compliantLicences = parseInt(licences[0]?.compliant ?? '0');
+      const liEnabled = parseInt(licences[0]?.li_enabled ?? '0');
+      const breakdown: Record<string, number> = {
+        dataLocalisation: op.data_localisation_compliant ? 20 : 0,
+        ndpcRegistered: op.ndpc_registered ? 10 : 0,
+        licenceCompliance: totalLicences > 0 ? Math.round((compliantLicences / totalLicences) * 15) : 0,
+        lawfulIntercept: totalLicences > 0 ? Math.round((liEnabled / totalLicences) * 15) : 0,
+        qosPerformance: Math.max(0, 20 - violationCount * 3),
+        criticalIncidentPenalty: Math.max(0, 20 - criticalCount * 7),
+      };
+      const score = Math.min(100, Object.values(breakdown).reduce((s, v) => s + v, 0));
+      const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
+      return { score, grade, breakdown, operatorName: op.operator_name };
+    }),
+
+  /** NCC QoS threshold enforcement — auto-escalate violations exceeding penalty thresholds */
+  escalateQosViolations: adminProcedure
+    .input(z.object({ operatorId: z.number().optional(), penaltyThresholdNgn: z.number().default(50_000_000) }))
+    .mutation(async ({ input }) => {
+      const rows = await q(
+        `UPDATE qos_violations SET severity = 'critical', notes = COALESCE(notes, '') || ' [AUTO-ESCALATED: NCC penalty threshold exceeded]', updated_at = NOW()
+         WHERE status = 'open' AND severity NOT IN ('critical')
+         AND penalty_ngn >= $1
+         ${input.operatorId ? 'AND operator_id = $2' : ''}
+         RETURNING id, violation_ref, operator_id, penalty_ngn`,
+        input.operatorId ? [input.penaltyThresholdNgn, input.operatorId] : [input.penaltyThresholdNgn]
+      );
+      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom.escalateQos", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return { escalated: rows.length, violations: rows };
+    }),
+
+  /** NCC spectrum renewal check — flag licences expiring within N days */
+  expiringLicences: protectedProcedure
+    .input(z.object({ daysAhead: z.number().default(90) }))
+    .query(async ({ input }) => {
+      const rows = await q(
+        `SELECT s.*, o.operator_name FROM spectrum_licences s
+         LEFT JOIN telecom_operators o ON s.operator_id = o.id
+         WHERE s.status = 'active' AND s.expires_at IS NOT NULL
+         AND s.expires_at <= NOW() + make_interval(days => $1)
+         ORDER BY s.expires_at ASC`,
+        [input.daysAhead]
+      );
+      return rows;
+    }),
 });

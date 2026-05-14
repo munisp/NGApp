@@ -363,10 +363,10 @@ function Router() {
         <Route path="/admin/users" component={AdminUserManagement} />
         <Route path="/admin/system-health" component={SystemHealthDashboard} />
         <Route path="/breach-incidents" component={BreachIncidentCenter} />
-        <Route path="/consent-records" component={ConsentRecordManager} />
+        <Route path="/consent-records-legacy" component={ConsentRecordManager} />
         <Route path="/dpo-appointment-registry" component={DpoAppointmentRegistry} />
-        <Route path="/public-registry" component={PublicComplianceRegistry} />
-        <Route path="/penalty-calculator" component={PenaltyCalculator} />
+        <Route path="/public-registry-legacy" component={PublicComplianceRegistry} />
+        <Route path="/penalty-calculator-legacy" component={PenaltyCalculator} />
         <Route path="/risk-scorecard-legacy" component={RiskScorecard} />
         <Route path="/article-40-tracker" component={Article40Tracker} />
         <Route path="/advanced-analytics" component={AdvancedAnalytics} />

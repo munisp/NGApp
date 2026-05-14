@@ -271,11 +271,13 @@ export default function SectorComplianceDetail() {
   const workerId = `${sector}-monitor`;
   const workerStatus = workerMap.get(workerId) ?? "stopped";
 
-  // ── Compliance score (deterministic per sector) ──────────────────────────
-  const scores: Record<string, number> = {
-    fintech: 87, healthcare: 92, energy: 78, insurance: 84, telecom: 81,
-  };
-  const score = scores[sector] ?? 80;
+  // ── Compliance score — computed from real entity data ─────────────────────
+  const compliantCount = entities.filter((e) => e.data_localisation_compliant === true || e.data_localisation_compliant === "true").length;
+  const ndpcRegistered = entities.filter((e) => e.ndpc_registered === true || e.ndpc_registered === "true").length;
+  const entityCount = entities.length || 1;
+  const complianceRate = Math.round((compliantCount / entityCount) * 60);
+  const registrationRate = Math.round((ndpcRegistered / entityCount) * 40);
+  const score = Math.min(100, complianceRate + registrationRate);
 
   if (!meta) {
     return (

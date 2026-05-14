@@ -47,8 +47,14 @@ export default function Phase13ConsentRecords() {
     onError: (e: any) => toast.error((e instanceof Error ? e.message : String(e))),
   });
 
+  // Wire orphan consentAnalytics procedures for richer analytics
+  const { data: caStats } = trpc.consentAnalytics.getStats.useQuery();
+  const { data: withdrawalRates } = trpc.consentAnalytics.getWithdrawalRates.useQuery();
+
   const records = (result as any)?.records ?? (Array.isArray(result) ? result : []);
   const statsData = stats as any;
+  const purposeBreakdown = ((caStats as Record<string, unknown>)?.byPurpose ?? []) as Array<Record<string, unknown>>;
+  const topWithdrawals = ((withdrawalRates ?? []) as Array<Record<string, unknown>>).slice(0, 5);
 
   return (
     <>
@@ -113,6 +119,45 @@ export default function Phase13ConsentRecords() {
             </Card>
           ))}
         </div>
+
+        {/* Consent Analytics — wired from consentAnalytics.getStats & getWithdrawalRates */}
+        {(purposeBreakdown.length > 0 || topWithdrawals.length > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {purposeBreakdown.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Consent by Purpose</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-1.5">
+                    {purposeBreakdown.slice(0, 6).map((p) => (
+                      <div key={String(p.purpose)} className="flex items-center justify-between text-xs">
+                        <span className="truncate max-w-48">{String(p.purpose ?? 'Unknown')}</span>
+                        <div className="flex gap-3">
+                          <span className="text-green-600">{String(p.active ?? 0)} active</span>
+                          <span className="text-red-600">{String(p.withdrawn ?? 0)} withdrawn</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {topWithdrawals.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Highest Withdrawal Rates</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-1.5">
+                    {topWithdrawals.map((w) => (
+                      <div key={String(w.id)} className="flex items-center justify-between text-xs">
+                        <span className="truncate max-w-48">{String(w.name ?? '—')}</span>
+                        <Badge variant="outline" className={Number(w.withdrawal_rate ?? 0) > 30 ? "border-red-300 text-red-700" : ""}>{String(w.withdrawal_rate ?? 0)}%</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3">
           <div className="relative flex-1">

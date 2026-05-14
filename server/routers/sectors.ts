@@ -153,6 +153,44 @@ export const healthcareRouter = router({
     `);
     return rows[0];
   }),
+
+  /** NDPA S.30 — Compute weighted compliance score for a healthcare facility */
+  calculateFacilityCompliance: protectedProcedure
+    .input(z.object({ facilityId: z.number() }))
+    .query(async ({ input }) => {
+      const fRows = await q(`SELECT * FROM health_facilities WHERE id = $1`, [input.facilityId]);
+      const facility = fRows[0];
+      if (!facility) return { score: 0, grade: "F", breakdown: {} };
+      const violations = await q(`SELECT COUNT(*) as cnt FROM patient_data_localisation_checks WHERE facility_id = $1 AND status = 'violation'`, [input.facilityId]);
+      const violationCount = parseInt(violations[0]?.cnt ?? '0');
+      const breakdown: Record<string, number> = {
+        dataLocalisation: facility.data_localisation_compliant ? 20 : 0,
+        ndpcRegistered: facility.ndpc_registered ? 15 : 0,
+        dpiaCompleted: facility.dpia_completed ? 15 : 0,
+        emrSystem: facility.emr_system ? 10 : 0,
+        nhiaAccreditation: facility.nhia_accreditation_number ? 10 : 0,
+        fmohLicence: facility.fmoh_licence_number ? 10 : 0,
+        violationPenalty: Math.max(0, 20 - violationCount * 5),
+      };
+      const score = Math.min(100, Object.values(breakdown).reduce((s, v) => s + v, 0));
+      const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
+      return { score, grade, breakdown, facilityName: facility.facility_name };
+    }),
+
+  /** NDPA S.26 — Flag non-compliant clinical trials with foreign sponsors */
+  flagNonCompliantTrials: adminProcedure
+    .input(z.object({ facilityId: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const rows = await q(
+        `UPDATE clinical_trials SET status = 'suspended', notes = COALESCE(notes, '') || ' [AUTO-SUSPENDED: NDPA S.26 violation — foreign sponsor with non-local data]', updated_at = NOW()
+         WHERE foreign_sponsor = true AND data_localisation_compliant = false AND status NOT IN ('suspended', 'closed')
+         ${input.facilityId ? 'AND facility_id = $1' : ''}
+         RETURNING id, trial_name, facility_id`,
+        input.facilityId ? [input.facilityId] : []
+      );
+      emitMutationEvent("ndsep.sector.mutation", { action: "healthcare.flagTrials", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return { suspended: rows.length, trials: rows };
+    }),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -268,6 +306,30 @@ export const energyRouter = router({
     `);
     return rows[0];
   }),
+
+  /** NERC compliance scoring for energy companies */
+  calculateCompanyCompliance: protectedProcedure
+    .input(z.object({ companyId: z.number() }))
+    .query(async ({ input }) => {
+      const cRows = await q(`SELECT * FROM energy_companies WHERE id = $1`, [input.companyId]);
+      const company = cRows[0];
+      if (!company) return { score: 0, grade: "F", breakdown: {} };
+      const violations = await q(`SELECT COUNT(*) as cnt FROM grid_monitoring_events WHERE company_id = $1 AND data_localisation_violation = true`, [input.companyId]);
+      const violationCount = parseInt(violations[0]?.cnt ?? '0');
+      const cyberIncidents = await q(`SELECT COUNT(*) as cnt FROM grid_monitoring_events WHERE company_id = $1 AND event_type = 'cyber_incident'`, [input.companyId]);
+      const cyberCount = parseInt(cyberIncidents[0]?.cnt ?? '0');
+      const breakdown: Record<string, number> = {
+        dataLocalisation: company.data_localisation_compliant ? 25 : 0,
+        ndpcRegistered: company.ndpc_registered ? 15 : 0,
+        licenceActive: company.status === 'active' ? 10 : 0,
+        scadaSecurity: company.scada_security_audit ? 15 : 0,
+        cyberPenalty: Math.max(0, 15 - cyberCount * 5),
+        violationPenalty: Math.max(0, 20 - violationCount * 4),
+      };
+      const score = Math.min(100, Object.values(breakdown).reduce((s, v) => s + v, 0));
+      const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
+      return { score, grade, breakdown, companyName: company.company_name };
+    }),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -388,6 +450,30 @@ export const insuranceRouter = router({
     `);
     return rows[0];
   }),
+
+  /** NAICOM compliance scoring for insurance companies */
+  calculateCompanyCompliance: protectedProcedure
+    .input(z.object({ companyId: z.number() }))
+    .query(async ({ input }) => {
+      const cRows = await q(`SELECT * FROM insurance_companies WHERE id = $1`, [input.companyId]);
+      const company = cRows[0];
+      if (!company) return { score: 0, grade: "F", breakdown: {} };
+      const fraudClaims = await q(`SELECT COUNT(*) as cnt FROM insurance_claims WHERE company_id = $1 AND fraud_flag = true`, [input.companyId]);
+      const fraudCount = parseInt(fraudClaims[0]?.cnt ?? '0');
+      const crossBorder = await q(`SELECT COUNT(*) as cnt FROM insurance_policies WHERE company_id = $1 AND cross_border_reinsurance = true`, [input.companyId]);
+      const crossBorderCount = parseInt(crossBorder[0]?.cnt ?? '0');
+      const breakdown: Record<string, number> = {
+        dataLocalisation: company.data_localisation_compliant ? 25 : 0,
+        ndpcRegistered: company.ndpc_registered ? 15 : 0,
+        licenceActive: company.status === 'active' ? 10 : 0,
+        dpiaCompleted: company.dpia_completed ? 10 : 0,
+        fraudPenalty: Math.max(0, 20 - fraudCount * 4),
+        crossBorderCompliance: Math.max(0, 20 - crossBorderCount * 3),
+      };
+      const score = Math.min(100, Object.values(breakdown).reduce((s, v) => s + v, 0));
+      const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
+      return { score, grade, breakdown, companyName: company.company_name };
+    }),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -497,4 +583,44 @@ export const fintechRouter = router({
     `);
     return rows[0];
   }),
+
+  /** CBN compliance scoring for fintech companies */
+  calculateCompanyCompliance: protectedProcedure
+    .input(z.object({ companyId: z.number() }))
+    .query(async ({ input }) => {
+      const cRows = await q(`SELECT * FROM fintech_companies WHERE id = $1`, [input.companyId]);
+      const company = cRows[0];
+      if (!company) return { score: 0, grade: "F", breakdown: {} };
+      const violations = await q(`SELECT COUNT(*) as cnt FROM fintech_data_events WHERE company_id = $1 AND violation_detected = true`, [input.companyId]);
+      const violationCount = parseInt(violations[0]?.cnt ?? '0');
+      const crossBorderConsents = await q(`SELECT COUNT(*) as cnt FROM open_banking_consents WHERE company_id = $1 AND cross_border_transfer = true AND consent_status = 'active'`, [input.companyId]);
+      const crossBorderCount = parseInt(crossBorderConsents[0]?.cnt ?? '0');
+      const breakdown: Record<string, number> = {
+        dataLocalisation: company.data_localisation_compliant ? 25 : 0,
+        ndpcRegistered: company.ndpc_registered ? 15 : 0,
+        cbnLicence: company.status === 'active' ? 10 : 0,
+        dpiaCompleted: company.dpia_completed ? 10 : 0,
+        violationPenalty: Math.max(0, 20 - violationCount * 4),
+        crossBorderRisk: crossBorderCount > 0 ? Math.max(0, 20 - crossBorderCount * 2) : 20,
+      };
+      const score = Math.min(100, Object.values(breakdown).reduce((s, v) => s + v, 0));
+      const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
+      return { score, grade, breakdown, companyName: company.company_name };
+    }),
+
+  /** CBN regulation — Bulk revoke expired or non-compliant open banking consents */
+  revokeNonCompliantConsents: adminProcedure
+    .input(z.object({ companyId: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const rows = await q(
+        `UPDATE open_banking_consents SET consent_status = 'revoked', revoked_at = NOW(), updated_at = NOW()
+         WHERE consent_status = 'active' AND cross_border_transfer = true
+         AND company_id IN (SELECT id FROM fintech_companies WHERE data_localisation_compliant = false)
+         ${input.companyId ? 'AND company_id = $1' : ''}
+         RETURNING id, company_id`,
+        input.companyId ? [input.companyId] : []
+      );
+      emitMutationEvent("ndsep.sector.mutation", { action: "fintech.revokeConsents", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return { revoked: rows.length, consents: rows };
+    }),
 });
