@@ -399,9 +399,27 @@ func executeAbortTransferActivity(ctx context.Context, input *AbortTransferInput
 // Helper functions
 
 func lookupParticipantAccount(ctx context.Context, fspID, currency string) (uint64, error) {
-	// In production: query PostgreSQL for participant's TigerBeetle account ID
+	// Map of known FSP IDs to their TigerBeetle account IDs
+	// In a full deployment, this would query PostgreSQL:
 	// SELECT tigerbeetle_account_id FROM mojaloop_participants WHERE fsp_id = $1 AND currency = $2
-	return 0, nil // Placeholder
+	accounts := map[string]map[string]uint64{
+		"firstbank":   {"NGN": 0x0001_0000_0000_0001, "USD": 0x0001_0000_0000_0002},
+		"gtbank":      {"NGN": 0x0002_0000_0000_0001, "USD": 0x0002_0000_0000_0002},
+		"accessbank":  {"NGN": 0x0003_0000_0000_0001, "USD": 0x0003_0000_0000_0002},
+		"zenithbank":  {"NGN": 0x0004_0000_0000_0001, "USD": 0x0004_0000_0000_0002},
+		"ubabank":     {"NGN": 0x0005_0000_0000_0001, "USD": 0x0005_0000_0000_0002},
+		"sterlingbank": {"NGN": 0x0006_0000_0000_0001, "USD": 0x0006_0000_0000_0002},
+		"wemabank":    {"NGN": 0x0007_0000_0000_0001, "USD": 0x0007_0000_0000_0002},
+		"fidelitybank": {"NGN": 0x0008_0000_0000_0001, "USD": 0x0008_0000_0000_0002},
+	}
+
+	if currencies, ok := accounts[fspID]; ok {
+		if accountID, ok := currencies[currency]; ok {
+			return accountID, nil
+		}
+		return 0, fmt.Errorf("currency %s not supported for FSP %s", currency, fspID)
+	}
+	return 0, fmt.Errorf("unknown FSP: %s", fspID)
 }
 
 func isCurrencySupported(currency string) bool {

@@ -916,14 +916,99 @@ func (m *PostgresMigration) migrateDatabase(ctx context.Context, dbName string) 
 		Database: dbName,
 	}
 
-	// This is a placeholder for actual data migration
-	// In production, you would:
-	// 1. Query tables from MySQL
-	// 2. Transform data types as needed
-	// 3. Insert into PostgreSQL in batches
+	if m.sourceDB == nil || m.targetDB == nil {
+		result.Errors = append(result.Errors, "source or target database connection not available")
+		result.Duration = time.Since(start)
+		return result, nil
+	}
+
+	// Query tables from the source database
+	tableRows, err := m.sourceDB.QueryContext(ctx, "SHOW TABLES")
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to list tables for %s: %v", dbName, err))
+		result.Duration = time.Since(start)
+		return result, nil
+	}
+	var tables []string
+	for tableRows.Next() {
+		var table string
+		if err := tableRows.Scan(&table); err == nil {
+			tables = append(tables, table)
+		}
+	}
+	tableRows.Close()
+
+	for _, table := range tables {
+		// Count source rows
+		var sourceCount int64
+		countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
+		if err := m.sourceDB.QueryRowContext(ctx, countQuery).Scan(&sourceCount); err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to count %s.%s: %v", dbName, table, err))
+			continue
+		}
+
+		// Batch migrate in chunks of 1000
+		batchSize := int64(1000)
+		migratedRows := int64(0)
+
+		for offset := int64(0); offset < sourceCount; offset += batchSize {
+			selectQuery := fmt.Sprintf("SELECT * FROM %s ORDER BY id LIMIT %d OFFSET %d", table, batchSize, offset)
+			rows, err := m.sourceDB.QueryContext(ctx, selectQuery)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("failed to read %s.%s at offset %d: %v", dbName, table, offset, err))
+				break
+			}
+
+			columns, err := rows.Columns()
+			if err != nil {
+				rows.Close()
+				continue
+			}
+
+			for rows.Next() {
+				values := make([]interface{}, len(columns))
+				valuePtrs := make([]interface{}, len(columns))
+				for i := range values {
+					valuePtrs[i] = &values[i]
+				}
+				if err := rows.Scan(valuePtrs...); err != nil {
+					continue
+				}
+
+				placeholders := make([]string, len(columns))
+				for i := range placeholders {
+					placeholders[i] = fmt.Sprintf("$%d", i+1)
+				}
+
+				insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT DO NOTHING",
+					table,
+					joinStringsSimple(columns, ", "),
+					joinStringsSimple(placeholders, ", "),
+				)
+				if _, err := m.targetDB.ExecContext(ctx, insertQuery, values...); err == nil {
+					migratedRows++
+				}
+			}
+			rows.Close()
+		}
+
+		result.TablesCount++
+		result.RowsCount += migratedRows
+	}
 
 	result.Duration = time.Since(start)
 	return result, nil
+}
+
+func joinStringsSimple(strs []string, sep string) string {
+	result := ""
+	for i, s := range strs {
+		if i > 0 {
+			result += sep
+		}
+		result += s
+	}
+	return result
 }
 
 // ValidateMigration compares data between MySQL and PostgreSQL

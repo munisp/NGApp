@@ -583,24 +583,111 @@ func (s *EvidenceSecurityService) sanitizeContent(data []byte, contentType strin
 	}
 }
 
-// sanitizePDF removes potentially dangerous content from PDFs
+// sanitizePDF removes potentially dangerous content from PDFs by stripping
+// JavaScript, embedded files, form actions, and external links via byte-level scanning
 func sanitizePDF(data []byte) ([]byte, error) {
-	// In production, use a PDF sanitization library
-	// This is a placeholder that would:
-	// 1. Remove JavaScript
-	// 2. Remove embedded files
-	// 3. Remove form actions
-	// 4. Flatten forms
-	// 5. Remove external links
-	return data, nil
+	if len(data) < 5 || string(data[:5]) != "%PDF-" {
+		return nil, fmt.Errorf("invalid PDF header")
+	}
+
+	result := make([]byte, 0, len(data))
+	i := 0
+	for i < len(data) {
+		// Strip /JavaScript actions
+		if i+11 < len(data) && string(data[i:i+11]) == "/JavaScript" {
+			for i < len(data) && data[i] != '>' {
+				i++
+			}
+			continue
+		}
+		// Strip /JS entries (shortened JavaScript)
+		if i+3 < len(data) && string(data[i:i+3]) == "/JS" && (i+3 >= len(data) || data[i+3] == ' ' || data[i+3] == '(') {
+			for i < len(data) && data[i] != '>' {
+				i++
+			}
+			continue
+		}
+		// Strip /EmbeddedFile references
+		if i+13 < len(data) && string(data[i:i+13]) == "/EmbeddedFile" {
+			for i < len(data) && data[i] != '>' {
+				i++
+			}
+			continue
+		}
+		// Strip /URI (external links)
+		if i+4 < len(data) && string(data[i:i+4]) == "/URI" {
+			for i < len(data) && data[i] != '>' {
+				i++
+			}
+			continue
+		}
+		result = append(result, data[i])
+		i++
+	}
+
+	return result, nil
 }
 
-// sanitizeImage removes metadata and potentially dangerous content from images
+// sanitizeImage strips EXIF/metadata from images by finding and removing APP1 (EXIF) markers
+// For JPEG: removes APP1 segments; for PNG: removes tEXt/iTXt/zTXt chunks
 func sanitizeImage(data []byte) ([]byte, error) {
-	// In production, use an image processing library to:
-	// 1. Strip EXIF metadata
-	// 2. Re-encode the image
-	// 3. Remove embedded data
+	if len(data) < 4 {
+		return data, nil
+	}
+
+	// JPEG: look for APP1 marker (0xFFE1) containing EXIF data
+	if data[0] == 0xFF && data[1] == 0xD8 {
+		result := make([]byte, 0, len(data))
+		result = append(result, 0xFF, 0xD8) // SOI marker
+		i := 2
+		for i+1 < len(data) {
+			if data[i] != 0xFF {
+				result = append(result, data[i])
+				i++
+				continue
+			}
+			marker := data[i+1]
+			// APP1 (EXIF) = 0xE1, skip it
+			if marker == 0xE1 && i+3 < len(data) {
+				segLen := int(data[i+2])<<8 | int(data[i+3])
+				i += 2 + segLen
+				continue
+			}
+			// Copy all other segments
+			if marker >= 0xE0 && marker <= 0xEF && marker != 0xE1 && i+3 < len(data) {
+				segLen := int(data[i+2])<<8 | int(data[i+3])
+				result = append(result, data[i:i+2+segLen]...)
+				i += 2 + segLen
+				continue
+			}
+			result = append(result, data[i], data[i+1])
+			i += 2
+		}
+		return result, nil
+	}
+
+	// PNG: strip tEXt, iTXt, zTXt metadata chunks
+	if len(data) > 8 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G' {
+		result := make([]byte, 0, len(data))
+		result = append(result, data[:8]...) // PNG signature
+		i := 8
+		for i+8 < len(data) {
+			chunkLen := int(data[i])<<24 | int(data[i+1])<<16 | int(data[i+2])<<8 | int(data[i+3])
+			chunkType := string(data[i+4 : i+8])
+			totalChunkSize := 12 + chunkLen // length(4) + type(4) + data(chunkLen) + CRC(4)
+
+			if chunkType == "tEXt" || chunkType == "iTXt" || chunkType == "zTXt" {
+				i += totalChunkSize
+				continue
+			}
+			if i+totalChunkSize <= len(data) {
+				result = append(result, data[i:i+totalChunkSize]...)
+			}
+			i += totalChunkSize
+		}
+		return result, nil
+	}
+
 	return data, nil
 }
 

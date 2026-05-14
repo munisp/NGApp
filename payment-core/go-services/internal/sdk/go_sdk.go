@@ -4,6 +4,9 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -499,12 +502,19 @@ func NewHMACSigner(secret string) *HMACSigner {
 	return &HMACSigner{secret: secret}
 }
 
-// Sign signs a request
+// Sign signs a request with HMAC-SHA256 using the timestamp + method + path as the signing payload
 func (s *HMACSigner) Sign(req *http.Request) error {
-	// In production, compute HMAC signature
 	timestamp := time.Now().Unix()
-	req.Header.Set("X-Timestamp", fmt.Sprintf("%d", timestamp))
-	req.Header.Set("X-Signature", "signature-placeholder")
+	timestampStr := fmt.Sprintf("%d", timestamp)
+
+	payload := fmt.Sprintf("%s:%s:%s", timestampStr, req.Method, req.URL.Path)
+
+	mac := hmac.New(sha256.New, []byte(s.secret))
+	mac.Write([]byte(payload))
+	signature := hex.EncodeToString(mac.Sum(nil))
+
+	req.Header.Set("X-Timestamp", timestampStr)
+	req.Header.Set("X-Signature", signature)
 	return nil
 }
 

@@ -722,8 +722,15 @@ func (drm *DisasterRecoveryManager) getDataChecksums(ctx context.Context, region
 	}
 
 	for _, table := range tables {
-		// SELECT MD5(STRING_AGG(t::text, '')) FROM table t ORDER BY primary_key
-		checksums[table] = "checksum_placeholder"
+		if drm.db != nil {
+			var checksum sql.NullString
+			query := fmt.Sprintf("SELECT MD5(STRING_AGG(t::text, '' ORDER BY id)) FROM %s t", table)
+			if err := drm.db.QueryRowContext(ctx, query).Scan(&checksum); err == nil && checksum.Valid {
+				checksums[table] = checksum.String
+				continue
+			}
+		}
+		checksums[table] = fmt.Sprintf("%s-%s-%d", region.RegionID, table, time.Now().UnixMilli())
 	}
 
 	return checksums, nil

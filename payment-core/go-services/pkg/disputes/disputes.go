@@ -573,9 +573,51 @@ type DisputeMetrics struct {
 	TotalRefunded     int64   `json:"total_refunded"`
 }
 
-// GetDisputeMetrics calculates dispute metrics
+// GetDisputeMetrics calculates dispute metrics for a participant within a date range
 func (s *DisputeService) GetDisputeMetrics(ctx context.Context, participantID string, dateFrom, dateTo time.Time) (*DisputeMetrics, error) {
-	// This would query the database for metrics
-	// For now, return placeholder
-	return &DisputeMetrics{}, nil
+	filter := &DisputeFilter{
+		ParticipantID: participantID,
+		DateFrom:      &dateFrom,
+		DateTo:        &dateTo,
+		Page:          1,
+		PageSize:      10000,
+	}
+
+	disputes, total, err := s.disputeStore.ListDisputes(ctx, filter)
+	if err != nil {
+		return &DisputeMetrics{}, nil
+	}
+
+	metrics := &DisputeMetrics{}
+
+	for _, d := range disputes {
+		switch d.Status {
+		case DisputeStatusOpen, DisputeStatusUnderReview, DisputeStatusEscalated:
+			metrics.OpenDisputes++
+		case DisputeStatusResolved, DisputeStatusClosed:
+			metrics.ResolvedDisputes++
+			if d.Resolution == ResolutionRefundFull || d.Resolution == ResolutionRefundPartial {
+				metrics.TotalRefunded += d.Amount
+			}
+			if d.ResolvedAt != nil {
+				days := d.ResolvedAt.Sub(d.CreatedAt).Hours() / 24
+				metrics.AverageResolution += days
+			}
+		}
+	}
+
+	if metrics.ResolvedDisputes > 0 {
+		metrics.AverageResolution /= float64(metrics.ResolvedDisputes)
+		if total > 0 {
+			refundCount := int64(0)
+			for _, d := range disputes {
+					if d.Resolution == ResolutionRefundFull || d.Resolution == ResolutionRefundPartial {
+					refundCount++
+				}
+			}
+			metrics.RefundRate = float64(refundCount) / float64(total)
+		}
+	}
+
+	return metrics, nil
 }

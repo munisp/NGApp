@@ -3,6 +3,9 @@ package certification
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"sync"
@@ -401,9 +404,19 @@ func (m *ParticipantCertificationManager) issueCertificate(cert *Certification) 
 		Level:           cert.Level,
 		IssuedAt:        time.Now(),
 		ExpiresAt:       *cert.ExpiresAt,
-		Signature:       "signature-placeholder", // Would be signed with HSM
+		Signature:       signCertificate(cert.ParticipantID, cert.Level, cert.ID),
 		PublicURL:       fmt.Sprintf("https://certs.payment-switch.local/%s", cert.ID),
 	}
+}
+
+// signCertificate generates an HMAC-SHA256 signature for certification issuance
+func signCertificate(participantID, level, certID string) string {
+	// In production, the signing key would come from HSM/Vault
+	signingKey := []byte("payment-switch-cert-signing-key-v1")
+	payload := fmt.Sprintf("%s:%s:%s:%d", participantID, level, certID, time.Now().Unix())
+	mac := hmac.New(sha256.New, signingKey)
+	mac.Write([]byte(payload))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // GetCertification retrieves a certification

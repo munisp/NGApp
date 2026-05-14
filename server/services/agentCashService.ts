@@ -45,48 +45,34 @@ export async function findNearbyAgents(params: {
   const radius = params.radius || 5;
   const limit = params.limit || 20;
 
-  // Mock agent data - in production, call Paga/OPay/Kudi APIs
-  const mockAgents: AgentLocation[] = [
-    {
-      agentId: 'paga_001',
-      agentName: 'Paga Agent - Ikeja',
-      address: '45 Allen Avenue, Ikeja',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.5944,
-      longitude: 3.3417,
-      distance: 1.2,
-      operatingHours: '8:00 AM - 8:00 PM',
-      services: ['cash_pickup', 'bill_payment'],
-    },
-    {
-      agentId: 'opay_002',
-      agentName: 'OPay Agent - Victoria Island',
-      address: '12 Akin Adesola Street, VI',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.4281,
-      longitude: 3.4219,
-      distance: 2.5,
-      operatingHours: '7:00 AM - 10:00 PM',
-      services: ['cash_pickup', 'mobile_money'],
-    },
-    {
-      agentId: 'kudi_003',
-      agentName: 'Kudi Agent - Lekki',
-      address: '78 Admiralty Way, Lekki Phase 1',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.4474,
-      longitude: 3.4708,
-      distance: 3.8,
-      operatingHours: '9:00 AM - 7:00 PM',
-      services: ['cash_pickup'],
-    },
+  // Agent network data — in production, this queries the Paga/OPay/Kudi partner APIs
+  // with geospatial filtering. Here we use seeded data covering major Nigerian cities.
+  log.info(params, '[Agent Cash] Finding nearby agents');
+
+  const allAgents: AgentLocation[] = [
+    { agentId: 'paga_001', agentName: 'Paga Agent - Ikeja', address: '45 Allen Avenue, Ikeja', city: 'Lagos', state: 'Lagos', latitude: 6.5944, longitude: 3.3417, distance: 0, operatingHours: '8:00 AM - 8:00 PM', services: ['cash_pickup', 'bill_payment', 'airtime'] },
+    { agentId: 'paga_002', agentName: 'Paga Agent - Surulere', address: '22 Adeniran Ogunsanya St', city: 'Lagos', state: 'Lagos', latitude: 6.4969, longitude: 3.3560, distance: 0, operatingHours: '8:00 AM - 8:00 PM', services: ['cash_pickup', 'bill_payment'] },
+    { agentId: 'opay_001', agentName: 'OPay Agent - Victoria Island', address: '12 Akin Adesola Street, VI', city: 'Lagos', state: 'Lagos', latitude: 6.4281, longitude: 3.4219, distance: 0, operatingHours: '7:00 AM - 10:00 PM', services: ['cash_pickup', 'mobile_money', 'transfers'] },
+    { agentId: 'opay_002', agentName: 'OPay Agent - Wuse 2', address: '34 Aminu Kano Crescent, Wuse 2', city: 'Abuja', state: 'FCT', latitude: 9.0765, longitude: 7.4898, distance: 0, operatingHours: '7:00 AM - 9:00 PM', services: ['cash_pickup', 'mobile_money'] },
+    { agentId: 'kudi_001', agentName: 'Kudi Agent - Lekki', address: '78 Admiralty Way, Lekki Phase 1', city: 'Lagos', state: 'Lagos', latitude: 6.4474, longitude: 3.4708, distance: 0, operatingHours: '9:00 AM - 7:00 PM', services: ['cash_pickup'] },
+    { agentId: 'kudi_002', agentName: 'Kudi Agent - Garki', address: '15 Gana Street, Garki Area 11', city: 'Abuja', state: 'FCT', latitude: 9.0579, longitude: 7.4951, distance: 0, operatingHours: '9:00 AM - 6:00 PM', services: ['cash_pickup', 'bill_payment'] },
+    { agentId: 'paga_003', agentName: 'Paga Agent - Ring Road', address: '45 Ring Road, Challenge', city: 'Ibadan', state: 'Oyo', latitude: 7.3776, longitude: 3.9470, distance: 0, operatingHours: '8:00 AM - 7:00 PM', services: ['cash_pickup', 'airtime'] },
+    { agentId: 'opay_003', agentName: 'OPay Agent - Sabon Gari', address: '12 Kano Road, Sabon Gari', city: 'Kano', state: 'Kano', latitude: 12.0022, longitude: 8.5920, distance: 0, operatingHours: '8:00 AM - 8:00 PM', services: ['cash_pickup', 'mobile_money', 'transfers'] },
+    { agentId: 'paga_004', agentName: 'Paga Agent - GRA', address: '8 Okigwe Road, GRA', city: 'Port Harcourt', state: 'Rivers', latitude: 4.8156, longitude: 7.0498, distance: 0, operatingHours: '8:00 AM - 7:00 PM', services: ['cash_pickup', 'bill_payment'] },
+    { agentId: 'opay_004', agentName: 'OPay Agent - New Haven', address: '23 Zik Avenue, New Haven', city: 'Enugu', state: 'Enugu', latitude: 6.4584, longitude: 7.5464, distance: 0, operatingHours: '8:00 AM - 8:00 PM', services: ['cash_pickup', 'mobile_money'] },
   ];
 
-  // Filter by provider if specified
-  let agents = mockAgents;
+  // Calculate Haversine distance from user's coordinates
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  for (const agent of allAgents) {
+    const dLat = toRad(agent.latitude - params.latitude);
+    const dLon = toRad(agent.longitude - params.longitude);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(params.latitude)) * Math.cos(toRad(agent.latitude)) * Math.sin(dLon / 2) ** 2;
+    agent.distance = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+  }
+
+  // Filter by provider if specified, then by radius
+  let agents = allAgents.filter(a => a.distance <= radius);
   if (params.provider && params.provider !== 'all') {
     agents = agents.filter(a => a.agentId.startsWith(params.provider!));
   }

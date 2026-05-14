@@ -3,7 +3,9 @@ package highperf
 
 import (
 	"context"
+	"crypto"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -269,23 +271,20 @@ func (c *JWTCache) getSigningKey(kid string) *CachedKey {
 	return key
 }
 
-// verifySignature verifies the JWT signature
+// verifySignature verifies the JWT signature using RSA PKCS1v15 with SHA-256
 func (c *JWTCache) verifySignature(message, signature string, key *CachedKey) bool {
-	// Simplified verification - in production use crypto/rsa.VerifyPKCS1v15
-	// This is a placeholder for the actual signature verification
 	if key == nil || key.PublicKey == nil {
 		return false
 	}
 
-	// Decode signature
-	_, err := base64.RawURLEncoding.DecodeString(signature)
+	sigBytes, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
 		return false
 	}
 
-	// In production: use crypto/rsa.VerifyPKCS1v15 or crypto/rsa.VerifyPSS
-	// For now, return true if we have a valid key (placeholder)
-	return true
+	hash := sha256.Sum256([]byte(message))
+	err = rsa.VerifyPKCS1v15(key.PublicKey, crypto.SHA256, hash[:], sigBytes)
+	return err == nil
 }
 
 // jwksRefreshLoop periodically refreshes JWKS

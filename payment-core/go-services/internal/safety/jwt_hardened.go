@@ -3,11 +3,16 @@ package safety
 
 import (
 	"context"
+	"crypto"
 	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -602,48 +607,67 @@ func (v *HardenedJWTValidator) Close() error {
 type HashFunc func([]byte) []byte
 
 func SHA256Hash(data []byte) []byte {
-	// In production, use crypto/sha256
-	return data // Placeholder
+	h := sha256.Sum256(data)
+	return h[:]
 }
 
 func SHA384Hash(data []byte) []byte {
-	// In production, use crypto/sha512.Sum384
-	return data // Placeholder
+	h := sha512.Sum384(data)
+	return h[:]
 }
 
 func SHA512Hash(data []byte) []byte {
-	// In production, use crypto/sha512
-	return data // Placeholder
+	h := sha512.Sum512(data)
+	return h[:]
 }
 
 func verifyRSASignature(pubKey *rsa.PublicKey, hash, signature []byte, algorithm string) bool {
-	// In production, use crypto/rsa.VerifyPKCS1v15
-	// This is a placeholder that should be replaced with actual verification
 	if pubKey == nil || len(signature) == 0 {
 		return false
 	}
-	return true // Placeholder - MUST be replaced with real verification
+
+	var hashFunc crypto.Hash
+	switch algorithm {
+	case "RS256":
+		hashFunc = crypto.SHA256
+	case "RS384":
+		hashFunc = crypto.SHA384
+	case "RS512":
+		hashFunc = crypto.SHA512
+	default:
+		return false
+	}
+
+	err := rsa.VerifyPKCS1v15(pubKey, hashFunc, hash, signature)
+	return err == nil
 }
 
 func parseRSAPublicKey(n, e string) (*rsa.PublicKey, error) {
-	// Decode modulus
 	nBytes, err := base64URLDecode(n)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode modulus: %w", err)
 	}
 
-	// Decode exponent
 	eBytes, err := base64URLDecode(e)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode exponent: %w", err)
 	}
 
-	// Convert to big.Int
-	// In production, use math/big
-	_ = nBytes
-	_ = eBytes
+	modulus := new(big.Int).SetBytes(nBytes)
 
-	return &rsa.PublicKey{}, nil // Placeholder
+	var exponent int
+	for _, b := range eBytes {
+		exponent = exponent<<8 + int(b)
+	}
+
+	if exponent <= 0 {
+		return nil, fmt.Errorf("invalid RSA exponent")
+	}
+
+	return &rsa.PublicKey{
+		N: modulus,
+		E: exponent,
+	}, nil
 }
 
 func splitJWT(token string) []string {
@@ -662,21 +686,12 @@ func splitJWT(token string) []string {
 }
 
 func base64URLDecode(s string) ([]byte, error) {
-	// Add padding if needed
-	switch len(s) % 4 {
-	case 2:
-		s += "=="
-	case 3:
-		s += "="
-	}
-
-	// In production, use encoding/base64.RawURLEncoding
-	return []byte(s), nil // Placeholder
+	return base64.RawURLEncoding.DecodeString(s)
 }
 
 func hashToken(token string) string {
-	// In production, use crypto/sha256
-	return token[:min(64, len(token))]
+	h := sha256.Sum256([]byte(token))
+	return fmt.Sprintf("%x", h)
 }
 
 func hashToShard(hash string, numShards int) int {

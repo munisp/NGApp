@@ -251,8 +251,26 @@ func (m *MigrationCutover) getTablesForDatabase(dbName string) []string {
 }
 
 func (m *MigrationCutover) countRows(ctx context.Context, dbType, dbName, table string) (int64, error) {
-	// This is a placeholder - actual implementation would query the databases
-	return 0, nil
+	var db *sql.DB
+	switch dbType {
+	case "mysql":
+		db = m.mysqlDB
+	case "postgres":
+		db = m.postgresDB
+	default:
+		return 0, fmt.Errorf("unsupported database type: %s", dbType)
+	}
+
+	if db == nil {
+		return 0, fmt.Errorf("%s database connection not available", dbType)
+	}
+
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
+	var count int64
+	if err := db.QueryRowContext(ctx, query).Scan(&count); err != nil {
+		return 0, fmt.Errorf("failed to count rows in %s.%s: %w", dbName, table, err)
+	}
+	return count, nil
 }
 
 // ExecuteCutover performs the final cutover from MySQL to PostgreSQL

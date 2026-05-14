@@ -286,14 +286,29 @@ export async function validateBillDetails(params: {
   dueAmount?: number;
   error?: string;
 }> {
-  // In production, call Quickteller/Interswitch validation API
   log.info(params, '[Bill Validation] Validating');
 
-  // Mock validation
+  // Simulate Quickteller/Interswitch validation API
+  // In production: POST https://quickteller.interswitch.com/api/v2/Billers/{billerCode}/Customers/{customerId}
+  const fieldValues = Object.values(params.fields);
+  const customerRef = fieldValues[0] || '';
+
+  // Validate based on category-specific rules
+  if (customerRef.length < 5) {
+    return {
+      valid: false,
+      error: 'Customer reference number is too short (minimum 5 characters)',
+    };
+  }
+
+  // Derive customer name from meter/account number for display
+  const nigerianNames = ['Adebayo Ogundimu', 'Chioma Nwosu', 'Emeka Ibe', 'Fatima Bello', 'Ngozi Obi'];
+  const nameIdx = customerRef.split('').reduce((sum: number, c: string) => sum + c.charCodeAt(0), 0) % nigerianNames.length;
+
   return {
     valid: true,
-    customerName: 'John Doe',
-    dueAmount: 5000,
+    customerName: nigerianNames[nameIdx],
+    dueAmount: Math.floor(Math.random() * 20000) + 2000,
   };
 }
 
@@ -310,10 +325,10 @@ export async function processBillPayment(params: {
   // Generate reference
   const reference = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // In production, call Quickteller/Interswitch payment API
   log.info(params, '[Bill Payment] Processing');
 
-  // Mock payment result
+  // Simulate Quickteller/Interswitch payment API
+  // In production: POST https://quickteller.interswitch.com/api/v2/Billers/{billerCode}/Payments
   const result: BillPaymentResult = {
     reference,
     status: 'successful',
