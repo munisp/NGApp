@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApiData } from '@/hooks/useApiData'
-import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone } from 'lucide-react'
+import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone, Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -58,7 +58,15 @@ export default function DealScoring() {
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('pipeline')
+  const [search, setSearch] = useState('')
+  const [riskFilter, setRiskFilter] = useState('all')
+  const [selectedDeal, setSelectedDeal] = useState(null)
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
+  const filteredDeals = data.deals.filter(d => {
+    const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase())
+    const matchRisk = riskFilter === 'all' || d.risk === riskFilter
+    return matchSearch && matchRisk
+  })
 
   return (
     <div role="region" aria-label="DealScoring"  className="space-y-6">
@@ -113,10 +121,11 @@ export default function DealScoring() {
         </div>
       </div>
 
-      {activeTab === 'pipeline' && (
+      {activeTab === 'pipeline' && (<>
+        <div className="flex gap-2"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search deals or owners..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div><select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"><option value="all">All Risks</option><option value="none">No Risk</option><option value="competitor">Competitor</option><option value="slow">Slow</option><option value="stalled">Stalled</option><option value="dead">Dead</option></select></div>
         <div className="space-y-3">
-          {data.deals.map(deal => (
-            <div key={deal.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          {filteredDeals.map(deal => (
+            <div key={deal.id} onClick={() => setSelectedDeal(selectedDeal === deal.id ? null : deal.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedDeal === deal.id ? 'border-purple-500 ring-1 ring-purple-500' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-white">{deal.name}</h4>
@@ -140,7 +149,7 @@ export default function DealScoring() {
             </div>
           ))}
         </div>
-      )}
+      </>)}
 
       {activeTab === 'insights' && (
         <div className="space-y-3">

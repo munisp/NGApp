@@ -42,6 +42,8 @@ const CrossSystemAnalytics = () => {
   const [remTrends, setRemTrends] = useState([])
   const [agentPerf, setAgentPerf] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
     loadData()

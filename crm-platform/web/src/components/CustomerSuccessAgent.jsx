@@ -52,6 +52,8 @@ const CustomerSuccessAgent = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('customersuccessagent', () => apiClient.dashboard.metrics(), { fallback: tenantCSData })
   const { tenant } = useTenant()
   const { t } = useTranslation()
+  const [search, setSearch] = useState('')
+  const [riskFilter, setRiskFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('at-risk')
   const [agentStatus, setAgentStatus] = useState('active')
   const [expandedAccount, setExpandedAccount] = useState(null)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DollarSign, TrendingUp, TrendingDown, Target, BarChart3, Users, ArrowUpRight, ArrowDownRight, Activity, Calendar, AlertTriangle, CheckCircle, Settings } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, Target, BarChart3, Users, ArrowUpRight, ArrowDownRight, Activity, Calendar, AlertTriangle, CheckCircle, Settings, Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -32,6 +32,9 @@ export default function RevenueIntelligence() {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('forecast')
   const [search, setSearch] = useState('')
+  const [selectedRep, setSelectedRep] = useState(null)
+  const [selectedQuarter, setSelectedQuarter] = useState(null)
+  const filteredReps = revenueData.repPerformance.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div role="region" aria-label="RevenueIntelligence" className="space-y-6">
@@ -58,11 +61,11 @@ export default function RevenueIntelligence() {
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`pb-3 text-sm font-medium border-b-2 ${activeTab === tab.id ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500'}`}>{tab.label}</button>
         ))}
       </div></div>
-      {activeTab === "forecast" && (
-
-        <div className="space-y-2">
-          {revenueData.forecast.map(q => (
-            <div key={q.quarter} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+      {(activeTab === 'reps' || activeTab === 'forecast') && <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={activeTab === 'reps' ? 'Search reps...' : 'Search quarters...'} className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>}
+      {activeTab === 'forecast' && (<div className="space-y-2">
+        {revenueData.forecast.filter(q => !search || q.quarter.toLowerCase().includes(search.toLowerCase())).map(q => (
+          <div key={q.quarter} onClick={() => setSelectedQuarter(selectedQuarter === q.quarter ? null : q.quarter)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedQuarter === q.quarter ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
+            <div className="flex items-center justify-between">
               <div><h4 className="font-semibold text-gray-900 dark:text-white">{q.quarter}</h4><span className="text-xs text-gray-400">{q.deals} deals</span></div>
               <div className="flex items-center gap-6">
                 <div className="text-right"><p className="text-xs text-gray-400">Target</p><p className="text-sm font-medium text-gray-900 dark:text-white">{q.target}</p></div>
@@ -70,37 +73,35 @@ export default function RevenueIntelligence() {
                 <div className={`px-3 py-1 rounded-lg text-sm font-bold ${q.attainment >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{q.attainment}%</div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-      {activeTab === "reps" && (
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Rep', 'Quota', 'Closed', 'Attainment', 'Deals', 'Avg Cycle'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {revenueData.repPerformance.map(r => (
-              <tr key={r.name} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{r.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{r.quota}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{r.closed}</td>
-                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${r.attainment >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.attainment}%</span></td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{r.deals}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{r.avgCycle}</td>
-              </tr>
-            ))}
-          </tbody></table>
-        </div>
-      )}
-      {activeTab === "insights" && (
-
-        <div className="space-y-3">
-          {revenueData.insights.map((ins, i) => (
-            <div key={i} className={`rounded-xl border p-4 ${ins.type === 'opportunity' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800' : ins.type === 'risk' ? 'bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800'}`}>
-              <div className="flex items-start justify-between"><p className="text-sm text-gray-800 dark:text-gray-200">{ins.message}</p><span className={`text-sm font-bold ml-4 whitespace-nowrap ${ins.type === 'risk' ? 'text-red-600' : 'text-emerald-600'}`}>{ins.impact}</span></div>
+            {selectedQuarter === q.quarter && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2"><div className={`h-3 rounded-full ${q.attainment >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(q.attainment, 120)}%` }} /></div>
+              <div className="flex gap-2 mt-3"><button className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700"><BarChart3 className="w-3 h-3 inline mr-1" />View Deals</button><button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300"><Calendar className="w-3 h-3 inline mr-1" />Schedule Review</button></div>
+            </div>)}
+          </div>
+        ))}
+      </div>)}
+      {activeTab === 'reps' && (<div className="space-y-2">
+        {filteredReps.map(r => (
+          <div key={r.name} onClick={() => setSelectedRep(selectedRep === r.name ? null : r.name)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedRep === r.name ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
+            <div className="flex items-center justify-between">
+              <div><h4 className="font-semibold text-gray-900 dark:text-white">{r.name}</h4><p className="text-xs text-gray-500">{r.deals} deals · {r.avgCycle} avg cycle</p></div>
+              <div className="flex items-center gap-4"><div className="text-right"><p className="text-xs text-gray-400">Closed</p><p className="text-sm font-medium text-gray-900 dark:text-white">{r.closed}</p></div><span className={`text-xs px-2 py-0.5 rounded-full ${r.attainment >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.attainment}%</span></div>
             </div>
-          ))}
-        </div>
-      )}
+            {selectedRep === r.name && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-3 gap-3 mb-3">{[{ l: 'Quota', v: r.quota }, { l: 'Gap', v: r.attainment >= 100 ? 'Exceeded' : `₦${((parseFloat(r.quota.replace(/[₦B]/g, '')) - parseFloat(r.closed.replace(/[₦B]/g, ''))) * 1).toFixed(2)}B` }, { l: 'Win Rate', v: Math.round(r.deals / (r.deals * 1.4) * 100) + '%' }].map(s => <div key={s.l} className="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2"><p className="text-xs text-gray-400">{s.l}</p><p className="text-sm font-bold text-gray-900 dark:text-white">{s.v}</p></div>)}</div>
+              <div className="flex gap-2"><button className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs">View Pipeline</button><button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">Schedule 1:1</button></div>
+            </div>)}
+          </div>
+        ))}
+      </div>)}
+      {activeTab === 'insights' && (<div className="space-y-3">
+        {revenueData.insights.map((ins, i) => (
+          <div key={i} className={`rounded-xl border p-4 ${ins.type === 'opportunity' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800' : ins.type === 'risk' ? 'bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800'}`}>
+            <div className="flex items-start justify-between"><p className="text-sm text-gray-800 dark:text-gray-200">{ins.message}</p><span className={`text-sm font-bold ml-4 whitespace-nowrap ${ins.type === 'risk' ? 'text-red-600' : 'text-emerald-600'}`}>{ins.impact}</span></div>
+            <button className="mt-2 px-3 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300">Take Action</button>
+          </div>
+        ))}
+      </div>)}
     </div>
   )
 }

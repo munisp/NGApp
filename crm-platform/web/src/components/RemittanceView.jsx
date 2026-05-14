@@ -30,6 +30,9 @@ const RemittanceView = () => {
   const [trends, setTrends] = useState([])
   const [compliance, setCompliance] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [corridorFilter, setCorridorFilter] = useState('all')
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
 
   useEffect(() => {
     loadData()

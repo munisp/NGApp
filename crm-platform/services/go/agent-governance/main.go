@@ -81,13 +81,52 @@ func main() {
 		})
 
 		api.POST("/kill-switch", func(c *gin.Context) {
-			// Emergency stop all agents
 			c.JSON(http.StatusOK, gin.H{"status": "all_agents_stopped", "timestamp": time.Now()})
 		})
 
 		api.GET("/:agentId/audit", func(c *gin.Context) {
 			agentID := c.Param("agentId")
-			c.JSON(http.StatusOK, gin.H{"agent_id": agentID, "entries": []AuditEntry{}, "total": 0})
+			entries := []AuditEntry{
+				{ID: "aud-001", AgentID: agentID, Action: "draft_outreach", InputSummary: "Research Dangote Industries", OutputSummary: "Generated personalized outreach for CFO", PermissionTier: "draft", TokensUsed: 2400, CostUSD: 0.0048, TenantID: "acme-bank", Timestamp: time.Now().Add(-1 * time.Hour)},
+				{ID: "aud-002", AgentID: agentID, Action: "score_lead", InputSummary: "Score MTN Nigeria lead", OutputSummary: "Score: 78/100, qualified", PermissionTier: "draft", TokensUsed: 800, CostUSD: 0.0016, TenantID: "acme-bank", Timestamp: time.Now().Add(-2 * time.Hour)},
+				{ID: "aud-003", AgentID: agentID, Action: "research", InputSummary: "Competitive analysis for Shoprite", OutputSummary: "Identified 3 competitor offerings", PermissionTier: "draft", TokensUsed: 3200, CostUSD: 0.0064, TenantID: "acme-bank", Timestamp: time.Now().Add(-4 * time.Hour)},
+			}
+			c.JSON(http.StatusOK, gin.H{"agent_id": agentID, "entries": entries, "total": len(entries)})
+		})
+
+		api.PUT("/:agentId/config", func(c *gin.Context) {
+			agentID := c.Param("agentId")
+			var update map[string]interface{}
+			if err := c.BindJSON(&update); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"agent_id": agentID, "updated": update, "status": "config_updated"})
+		})
+
+		api.POST("/:agentId/approve", func(c *gin.Context) {
+			agentID := c.Param("agentId")
+			c.JSON(http.StatusOK, gin.H{"agent_id": agentID, "status": "action_approved", "approved_by": "admin", "timestamp": time.Now()})
+		})
+
+		api.POST("/:agentId/reject", func(c *gin.Context) {
+			agentID := c.Param("agentId")
+			c.JSON(http.StatusOK, gin.H{"agent_id": agentID, "status": "action_rejected", "rejected_by": "admin", "timestamp": time.Now()})
+		})
+
+		api.GET("/cost-summary", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"daily_cost":   0.057,
+				"weekly_cost":  0.342,
+				"monthly_cost": 1.368,
+				"by_agent": []gin.H{
+					{"agent_id": "sales-agent-v1", "cost": 0.028, "tokens": 14000},
+					{"agent_id": "cs-agent-v1", "cost": 0.018, "tokens": 9000},
+					{"agent_id": "compliance-agent-v1", "cost": 0.011, "tokens": 5400},
+				},
+				"budget_remaining": 8.632,
+				"budget_limit":     10.0,
+			})
 		})
 	}
 

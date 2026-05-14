@@ -17,6 +17,7 @@ const EmbeddedAnalytics = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('embeddedanalytics', () => apiClient.dashboard.metrics(), { fallback: dashboards })
   const { tenant } = useTenant()
   const { t } = useTranslation()
+  const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('dashboards')
   const [selectedDashboard, setSelectedDashboard] = useState(null)
   const [copied, setCopied] = useState(false)

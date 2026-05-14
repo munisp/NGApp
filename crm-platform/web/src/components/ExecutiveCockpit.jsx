@@ -38,6 +38,9 @@ export default function ExecutiveCockpit() {
   const { tenant } = useTenant()
   const { t } = useTranslation()
   const [showNarrative, setShowNarrative] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedSegment, setSelectedSegment] = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
   const tenantSlug = tenant?.slug || 'acme-bank'
   const data = tenantCockpitData[tenantSlug] || tenantCockpitData['acme-bank']
 

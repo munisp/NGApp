@@ -49,6 +49,7 @@ export default function DashboardCustomization() {
   const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
+  const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('layout');
   const [hasChanges, setHasChanges] = useState(false);
 

@@ -46,7 +46,15 @@ export default function ConversationIntelligence() {
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('calls')
+  const [search, setSearch] = useState('')
+  const [sentimentFilter, setSentimentFilter] = useState('all')
+  const [selectedCall, setSelectedCall] = useState(null)
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
+  const filteredCalls = data.calls.filter(c => {
+    const matchSearch = !search || c.customer.toLowerCase().includes(search.toLowerCase()) || c.agent.toLowerCase().includes(search.toLowerCase())
+    const matchSentiment = sentimentFilter === 'all' || c.outcome === sentimentFilter
+    return matchSearch && matchSentiment
+  })
 
   return (
     <div role="region" aria-label="ConversationIntelligence"  className="space-y-6">
@@ -84,43 +92,22 @@ export default function ConversationIntelligence() {
         </div>
       </div>
 
-      {activeTab === 'calls' && (
-        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                {['Customer', 'Agent', 'Duration', 'Sentiment', 'Topics', 'Actions', 'Date'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {data.calls.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-sm">{c.customer}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{c.agent}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{c.duration}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
-                        <div className={`h-full rounded-full ${c.sentiment >= 70 ? 'bg-emerald-500' : c.sentiment >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${c.sentiment}%` }} />
-                      </div>
-                      <span className="text-xs font-medium">{c.sentiment}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {c.topics.map(t => <span key={t} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{t}</span>)}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-purple-600 font-medium">{c.actionItems}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{c.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {activeTab === 'calls' && (<>
+        <div className="flex gap-2"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers or agents..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div><select value={sentimentFilter} onChange={e => setSentimentFilter(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"><option value="all">All Outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option></select></div>
+        <div className="space-y-2">{filteredCalls.map(c => (
+          <div key={c.id} onClick={() => setSelectedCall(selectedCall === c.id ? null : c.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedCall === c.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-gray-200 dark:border-gray-700'}`}>
+            <div className="flex items-center justify-between">
+              <div><h4 className="font-semibold text-gray-900 dark:text-white">{c.customer}</h4><p className="text-xs text-gray-500">{c.agent} · {c.channel} · {c.date}</p></div>
+              <div className="flex items-center gap-3"><span className="text-xs text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" />{c.duration}</span><div className="flex items-center gap-1"><div className="w-12 h-2 bg-gray-200 dark:bg-gray-600 rounded-full"><div className={`h-full rounded-full ${c.sentiment >= 70 ? 'bg-emerald-500' : c.sentiment >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${c.sentiment}%` }} /></div><span className="text-xs font-medium">{c.sentiment}%</span></div></div>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">{c.topics.map(t => <span key={t} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{t}</span>)}</div>
+            {selectedCall === c.id && (<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-3 gap-3 mb-3">{[{ l: 'Action Items', v: c.actionItems }, { l: 'Outcome', v: c.outcome }, { l: 'Channel', v: c.channel }].map(s => <div key={s.l} className="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2"><p className="text-xs text-gray-400">{s.l}</p><p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{s.v}</p></div>)}</div>
+              <div className="flex gap-2"><button className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 flex items-center gap-1"><Play className="w-3 h-3" /> Replay</button><button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">View Transcript</button><button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">Share</button></div>
+            </div>)}
+          </div>
+        ))}</div>
+      </>)}
 
       {activeTab === 'insights' && (
         <div className="space-y-3">

@@ -33,6 +33,9 @@ export default function SLAMonitor() {
   const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SLA_DATA[tenantId] || SLA_DATA['tenant-acme-bank']);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const filteredCategories = data.categories.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
 
   useEffect(() => { setData(SLA_DATA[tenantId] || SLA_DATA['tenant-acme-bank']); }, [tenantId]);
 

@@ -41,6 +41,8 @@ export default function RelationshipMapping() {
   const { t } = useTranslation()
   const { tenant } = useTenant()
   const [selectedAccount, setSelectedAccount] = useState(0)
+  const [search, setSearch] = useState('')
+  const [selectedStakeholder, setSelectedStakeholder] = useState(null)
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   const account = data.accounts[selectedAccount]
   return (

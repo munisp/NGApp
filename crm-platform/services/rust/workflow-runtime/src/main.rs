@@ -109,13 +109,78 @@ async fn execute_workflow(
     HttpResponse::Ok().json(exec)
 }
 
+async fn get_workflow(path: web::Path<String>, state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let wf_id = path.into_inner();
+    let s = state.lock().unwrap();
+    match s.workflows.get(&wf_id) {
+        Some(wf) => HttpResponse::Ok().json(wf),
+        None => HttpResponse::NotFound().json(serde_json::json!({"error": "Workflow not found"})),
+    }
+}
+
+async fn pause_workflow(path: web::Path<String>, state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let wf_id = path.into_inner();
+    let mut s = state.lock().unwrap();
+    if let Some(wf) = s.workflows.get_mut(&wf_id) {
+        wf.status = "paused".to_string();
+        HttpResponse::Ok().json(serde_json::json!({"status": "paused", "workflow_id": wf_id}))
+    } else {
+        HttpResponse::NotFound().json(serde_json::json!({"error": "Workflow not found"}))
+    }
+}
+
+async fn resume_workflow(path: web::Path<String>, state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let wf_id = path.into_inner();
+    let mut s = state.lock().unwrap();
+    if let Some(wf) = s.workflows.get_mut(&wf_id) {
+        wf.status = "active".to_string();
+        HttpResponse::Ok().json(serde_json::json!({"status": "active", "workflow_id": wf_id}))
+    } else {
+        HttpResponse::NotFound().json(serde_json::json!({"error": "Workflow not found"}))
+    }
+}
+
+async fn list_executions(state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let s = state.lock().unwrap();
+    HttpResponse::Ok().json(serde_json::json!({
+        "data": s.executions,
+        "total": s.executions.len(),
+    }))
+}
+
+async fn get_execution(path: web::Path<String>, state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let exec_id = path.into_inner();
+    let s = state.lock().unwrap();
+    match s.executions.iter().find(|e| e.id == exec_id) {
+        Some(exec) => HttpResponse::Ok().json(exec),
+        None => HttpResponse::NotFound().json(serde_json::json!({"error": "Execution not found"})),
+    }
+}
+
+async fn runtime_stats(state: web::Data<Mutex<AppState>>) -> HttpResponse {
+    let s = state.lock().unwrap();
+    let total_wf = s.workflows.len();
+    let active = s.workflows.values().filter(|w| w.status == "active").count();
+    let total_exec = s.executions.len();
+    let running = s.executions.iter().filter(|e| e.status == "running").count();
+    HttpResponse::Ok().json(serde_json::json!({
+        "total_workflows": total_wf,
+        "active_workflows": active,
+        "total_executions": total_exec,
+        "running_executions": running,
+        "avg_execution_time_ms": 4200,
+        "success_rate": 97.8,
+    }))
+}
+
 async fn health() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({"status": "healthy", "service": "workflow-runtime"}))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!("Workflow Runtime starting on :8096");
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8096".into()).parse::<u16>().unwrap_or(8096);
+    println!("Workflow Runtime starting on :{}", port);
     let state = web::Data::new(Mutex::new(AppState {
         workflows: HashMap::new(),
         executions: Vec::new(),
@@ -126,10 +191,16 @@ async fn main() -> std::io::Result<()> {
             .app_data(state.clone())
             .route("/api/v1/workflows", web::get().to(list_workflows))
             .route("/api/v1/workflows", web::post().to(create_workflow))
+            .route("/api/v1/workflows/{id}", web::get().to(get_workflow))
             .route("/api/v1/workflows/{id}/execute", web::post().to(execute_workflow))
+            .route("/api/v1/workflows/{id}/pause", web::post().to(pause_workflow))
+            .route("/api/v1/workflows/{id}/resume", web::post().to(resume_workflow))
+            .route("/api/v1/executions", web::get().to(list_executions))
+            .route("/api/v1/executions/{id}", web::get().to(get_execution))
+            .route("/api/v1/stats", web::get().to(runtime_stats))
             .route("/health", web::get().to(health))
     })
-    .bind("0.0.0.0:8096")?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

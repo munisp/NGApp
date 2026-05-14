@@ -24,6 +24,8 @@ export default function WhiteLabelConfig() {
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('branding')
   const [previewMode, setPreviewMode] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedFeature, setSelectedFeature] = useState(null)
 
   return (
     <div role="region" aria-label="WhiteLabelConfig" className="space-y-6">

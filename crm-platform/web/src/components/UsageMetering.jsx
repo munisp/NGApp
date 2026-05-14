@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   BarChart3, Activity, DollarSign, Zap, TrendingUp, Clock, AlertTriangle,
-  Download, FileText, ArrowUp, ArrowDown
+  Download, FileText, ArrowUp, ArrowDown, Search
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'

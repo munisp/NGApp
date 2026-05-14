@@ -42,6 +42,8 @@ const PredictiveAnalytics = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('predictiveanalytics', () => apiClient.dashboard.metrics(), { fallback: tenantPredictions })
   const { tenant } = useTenant()
   const { t } = useTranslation()
+  const [search, setSearch] = useState('')
+  const [selectedDeal, setSelectedDeal] = useState(null)
   const [activeTab, setActiveTab] = useState('win')
 
   const tenantSlug = tenant?.slug || 'acme-bank'

@@ -41,6 +41,13 @@ export default function MultiTouchAttribution() {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('journeys')
   const [search, setSearch] = useState('')
+  const [selectedJourney, setSelectedJourney] = useState(null)
+  const [outcomeFilter, setOutcomeFilter] = useState('all')
+  const filteredJourneys = journeys.filter(j => {
+    const matchSearch = !search || j.deal.toLowerCase().includes(search.toLowerCase())
+    const matchOutcome = outcomeFilter === 'all' || j.outcome === outcomeFilter
+    return matchSearch && matchOutcome
+  })
 
   return (
     <div role="region" aria-label="MultiTouchAttribution" className="space-y-6">

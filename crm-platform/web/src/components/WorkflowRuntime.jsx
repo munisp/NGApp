@@ -45,6 +45,7 @@ const WorkflowRuntime = () => {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('workflowruntime', () => apiClient.dashboard.metrics(), { fallback: workflows })
   const { tenant } = useTenant()
   const { t } = useTranslation()
+  const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('workflows')
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 

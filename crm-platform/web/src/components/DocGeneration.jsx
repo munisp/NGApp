@@ -27,6 +27,13 @@ export default function DocGeneration() {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('templates')
   const [search, setSearch] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [typeFilter, setTypeFilter] = useState('all')
+  const filteredTemplates = templates.filter(t => {
+    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase())
+    const matchType = typeFilter === 'all' || t.type === typeFilter
+    return matchSearch && matchType
+  })
 
   return (
     <div role="region" aria-label="DocGeneration" className="space-y-6">

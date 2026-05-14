@@ -34,6 +34,13 @@ export default function JourneyReplay() {
   const { data: _apiData, isLoading: _apiLoading, isUsingFallback } = useApiData('journeyreplay', () => apiClient.dashboard.metrics(), { fallback: journeys })
   const { t } = useTranslation()
   const [selectedJourney, setSelectedJourney] = useState('J-001')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const filteredJourneys = journeys.filter(j => {
+    const matchSearch = !search || j.customer.toLowerCase().includes(search.toLowerCase()) || j.type.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = statusFilter === 'all' || j.status === statusFilter
+    return matchSearch && matchStatus
+  })
   const journey = journeys.find(j => j.id === selectedJourney)
   return (
     <div role="region" aria-label="JourneyReplay"  className="space-y-6">

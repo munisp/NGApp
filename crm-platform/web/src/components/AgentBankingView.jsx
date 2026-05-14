@@ -29,6 +29,9 @@ const AgentBankingView = () => {
   const [performance, setPerformance] = useState([])
   const [regionalData, setRegionalData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [regionFilter, setRegionFilter] = useState('all')
+  const [selectedAgent, setSelectedAgent] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -152,7 +155,16 @@ const AgentBankingView = () => {
 
       {/* Agent Leaderboard */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Agent Leaderboard</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agent Leaderboard</h3>
+          <div className="flex gap-2">
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search agents..." className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" />
+            <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)} className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              <option value="all">All Regions</option>
+              {[...new Set(agents.map(a => a.region))].map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -168,8 +180,12 @@ const AgentBankingView = () => {
               </tr>
             </thead>
             <tbody>
-              {agents.map((agent, i) => (
-                <tr key={agent.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              {agents.filter(a => {
+                const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
+                const matchRegion = regionFilter === 'all' || a.region === regionFilter
+                return matchSearch && matchRegion
+              }).map((agent, i) => (
+                <tr key={agent.id} onClick={() => setSelectedAgent(selectedAgent === agent.id ? null : agent.id)} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer">
                   <td className="py-3 px-4">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">{agent.name}</p>
