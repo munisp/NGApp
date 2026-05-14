@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BookOpen, Search, Plus, Tag, Clock, ThumbsUp, Eye } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -23,6 +23,7 @@ export default function KnowledgeBase() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showCreateArticle, setShowCreateArticle] = useState(false)
   const [formData, setFormData] = useState({})
+  const [error, setError] = useState(null)
 
   const filtered = articles.filter(a => {
     const matchesSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.tags.some(t => t.includes(search.toLowerCase()))
@@ -36,6 +37,8 @@ export default function KnowledgeBase() {
     setFormData({})
     setShowCreateArticle(false)
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="KnowledgeBase" className="space-y-6">
@@ -70,7 +73,8 @@ export default function KnowledgeBase() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map(a => (
+        {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(a => (
           <div key={a.id} onClick={() => setSelectedArticle(selectedArticle === a.id ? null : a.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedArticle === a.id ? 'border-violet-500 ring-1 ring-violet-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">

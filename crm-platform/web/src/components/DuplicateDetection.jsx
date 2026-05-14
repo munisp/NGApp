@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Copy, Search, CheckCircle, AlertTriangle, Merge, Trash2, Eye, Filter } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -21,12 +21,15 @@ export default function DuplicateDetection() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selected, setSelected] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = duplicates.filter(d => {
     const matchesSearch = !search || d.primary.toLowerCase().includes(search.toLowerCase()) || d.duplicate.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || d.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="DuplicateDetection" className="space-y-6">
@@ -43,7 +46,8 @@ export default function DuplicateDetection() {
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search records..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Status</option><option value="pending">Pending</option><option value="reviewing">Reviewing</option><option value="merged">Merged</option></select>
       </div>
-      <div className="space-y-2">{filtered.map(d => (
+      <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(d => (
         <div key={d.id} onClick={() => setSelected(selected === d.id ? null : d.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === d.id ? 'border-orange-500 ring-1 ring-orange-500' : 'border-gray-200 dark:border-gray-700'}`}>
           <div className="flex items-center justify-between">
             <div className="flex-1">

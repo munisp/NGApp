@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { Search, Brain, Clock, Filter, X, Users, Building2, MapPin, TrendingUp, TrendingDown, AlertTriangle, Star, ChevronDown, Sparkles, ArrowRight, Tag, RefreshCw } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -95,6 +95,7 @@ const SemanticSearch = () => {
   const [filters, setFilters] = useState({ segment: 'all', risk: 'all', minHealth: 0 })
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [error, setError] = useState(null)
 
   const tenantSlug = tenant?.slug || 'acme-bank'
   const customers = customerDB[tenantSlug] || customerDB['acme-bank']
@@ -125,6 +126,8 @@ const SemanticSearch = () => {
   const riskColor = (risk) => ({ critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' })[risk] || 'bg-gray-100 text-gray-600'
   const healthColor = (h) => h >= 80 ? 'text-emerald-600' : h >= 50 ? 'text-amber-600' : 'text-red-600'
   const segments = [...new Set(customers.map(c => c.segment))]
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="SemanticSearch" className="space-y-6">

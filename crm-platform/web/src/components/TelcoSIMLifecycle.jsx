@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CreditCard, Search, Filter, Plus, RefreshCw, Smartphone, Wifi } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -24,6 +24,7 @@ export default function TelcoSIMLifecycle() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [expandedSim, setExpandedSim] = useState(null)
   const [activeTab, setActiveTab] = useState('inventory')
+  const [error, setError] = useState(null)
 
   const filtered = sims.filter(s => {
     const matchesSearch = !search || s.customer.toLowerCase().includes(search.toLowerCase()) || s.msisdn.includes(search) || s.iccid.includes(search)
@@ -31,6 +32,8 @@ export default function TelcoSIMLifecycle() {
     const matchesType = typeFilter === 'all' || s.type === typeFilter
     return matchesSearch && matchesStatus && matchesType
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="TelcoSIMLifecycle" className="space-y-6">
@@ -57,7 +60,8 @@ export default function TelcoSIMLifecycle() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="overflow-x-auto"><table className="min-w-full w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['MSISDN', 'Status', 'Type', 'Customer', 'Network', 'Data Used', 'Revenue/mo'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filtered.map(s => (<>
+            {filtered.length === 0 && <tr><td colSpan="99" className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</td></tr>}
+          {filtered.map(s => (<>
               <tr key={s.id} onClick={() => setExpandedSim(expandedSim === s.id ? null : s.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                 <td className="px-4 py-3"><div className="text-sm font-medium text-gray-900 dark:text-white">{s.msisdn}</div><div className="text-xs text-gray-400 font-mono">{s.iccid}</div></td>
                 <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded ${statusColors[s.status] || 'bg-gray-100 text-gray-600'}`}>{s.status}</span></td>

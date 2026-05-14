@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Users, TrendingUp, BarChart3, Calendar, Target, Search, Filter } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -19,8 +19,11 @@ export default function CohortStudio() {
   const [activeTab, setActiveTab] = useState('cohorts')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = cohorts.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.source.toLowerCase().includes(search.toLowerCase()))
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CohortStudio" className="space-y-6">
@@ -40,7 +43,8 @@ export default function CohortStudio() {
       </div>
       {activeTab === 'cohorts' && (<div className="space-y-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search cohorts..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
-        <div className="space-y-2">{filtered.map(c => (
+        <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(c => (
           <div key={c.id} onClick={() => setSelected(selected === c.id ? null : c.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === c.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3"><div className={`w-3 h-3 rounded-full ${c.color}`} /><div><h4 className="font-semibold text-gray-900 dark:text-white">{c.name}</h4><div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5"><span>{c.size.toLocaleString()} users</span><span>{c.source}</span><span>{c.topProduct}</span></div></div></div>

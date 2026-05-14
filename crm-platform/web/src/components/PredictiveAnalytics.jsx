@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Brain, TrendingUp, TrendingDown, Target, Users, DollarSign, AlertTriangle, BarChart3, Activity, Clock, Percent, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -45,9 +45,12 @@ const PredictiveAnalytics = () => {
   const [search, setSearch] = useState('')
   const [selectedDeal, setSelectedDeal] = useState(null)
   const [activeTab, setActiveTab] = useState('win')
+  const [error, setError] = useState(null)
 
   const tenantSlug = tenant?.slug || 'acme-bank'
   const data = tenantPredictions[tenantSlug] || tenantPredictions['acme-bank']
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="PredictiveAnalytics" className="space-y-6">

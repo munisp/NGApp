@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Database, Activity, Link, Search, Filter, Users, TrendingUp, Eye } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -27,6 +27,7 @@ export default function CDPProfiles() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [sortBy, setSortBy] = useState('health')
+  const [error, setError] = useState(null)
 
   const filtered = profiles.filter(p => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
@@ -37,6 +38,8 @@ export default function CDPProfiles() {
     if (sortBy === 'risk') return b.churnRisk - a.churnRisk
     return b.events - a.events
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CDPProfiles" className="space-y-6">
@@ -65,7 +68,8 @@ export default function CDPProfiles() {
             <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="health">Sort: Health</option><option value="risk">Sort: Risk</option><option value="events">Sort: Activity</option></select>
           </div>
           <div className="space-y-2">
-            {filtered.map(p => (
+            {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(p => (
               <div key={p.id} onClick={() => setSelected(selected === p.id ? null : p.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === p.id ? 'border-cyan-500 ring-1 ring-cyan-500' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

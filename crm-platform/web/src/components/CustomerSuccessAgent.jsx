@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Heart, Shield, Activity, AlertTriangle, TrendingDown, TrendingUp, Users, Mail, Phone, CheckCircle, Clock, Zap, BarChart3, Play, Pause, Eye, RefreshCw, Brain, MessageSquare } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -57,6 +57,7 @@ const CustomerSuccessAgent = () => {
   const [activeTab, setActiveTab] = useState('at-risk')
   const [agentStatus, setAgentStatus] = useState('active')
   const [expandedAccount, setExpandedAccount] = useState(null)
+  const [error, setError] = useState(null)
 
   const tenantSlug = tenant?.slug || 'acme-bank'
   const data = tenantCSData[tenantSlug] || tenantCSData['acme-bank']
@@ -69,6 +70,8 @@ const CustomerSuccessAgent = () => {
   const statusColor = (s) => ({ executing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', ready: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' })[s] || 'bg-gray-100 text-gray-600'
   const actionStatusIcon = (s) => ({ sent: CheckCircle, completed: CheckCircle, confirmed: CheckCircle, pending: Clock, scheduled: Clock, draft: Eye })[s] || Clock
   const actionTypeIcon = (type) => ({ email: Mail, call: Phone, sms: MessageSquare, meeting: Users })[type] || Zap
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CustomerSuccessAgent" className="space-y-6">

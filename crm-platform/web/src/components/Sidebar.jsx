@@ -63,6 +63,7 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation()
@@ -99,6 +100,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     system: false
   })
   const [showTenantSwitcher, setShowTenantSwitcher] = useState(false)
+  const [error, setError] = useState(null)
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -419,6 +421,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
     growth: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     trial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <motion.div

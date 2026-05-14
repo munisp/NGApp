@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Store, Download, Star, CheckCircle, Shield, Code, Users, Search, ExternalLink } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -23,6 +23,7 @@ export default function PluginMarketplace() {
   const [category, setCategory] = useState('All')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selected, setSelected] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = plugins.filter(p => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.desc.toLowerCase().includes(search.toLowerCase())
@@ -30,6 +31,8 @@ export default function PluginMarketplace() {
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter
     return matchesSearch && matchesCategory && matchesStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="PluginMarketplace" className="space-y-6">
@@ -50,7 +53,8 @@ export default function PluginMarketplace() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All</option><option value="installed">Installed</option><option value="available">Available</option></select>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {filtered.map(p => (
+        {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(p => (
           <div key={p.id} onClick={() => setSelected(selected === p.id ? null : p.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === p.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-start justify-between mb-2">
               <div><div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{p.name}</h4>{p.verified && <Shield className="w-4 h-4 text-emerald-500" />}{p.status === 'installed' && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div><p className="text-xs text-gray-500 mt-0.5">{p.desc}</p></div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FileText, Download, Eye, Copy, Clock, CheckCircle, Settings, Plus, Star, BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
@@ -29,11 +29,14 @@ export default function DocGeneration() {
   const [search, setSearch] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [typeFilter, setTypeFilter] = useState('all')
+  const [error, setError] = useState(null)
   const filteredTemplates = templates.filter(t => {
     const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase())
     const matchType = typeFilter === 'all' || t.type === typeFilter
     return matchSearch && matchType
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="DocGeneration" className="space-y-6">

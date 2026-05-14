@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const seedData = {
   'aerotel': {
@@ -80,6 +81,7 @@ const TelcoFieldOps = () => {
   const [search, setSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [selectedTask, setSelectedTask] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['aerotel']
   const filteredTasks = data.tasks.filter(task => {
     const matchSearch = !search || task.location.toLowerCase().includes(search.toLowerCase()) || task.technician.toLowerCase().includes(search.toLowerCase()) || task.id.toLowerCase().includes(search.toLowerCase())
@@ -89,6 +91,8 @@ const TelcoFieldOps = () => {
 
   const priorityColors = { critical: 'red', high: 'orange', medium: 'yellow', low: 'gray' }
   const statusColors = { in_progress: 'blue', assigned: 'purple', completed: 'green', scheduled: 'gray' }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="TelcoFieldOps" className="space-y-6">

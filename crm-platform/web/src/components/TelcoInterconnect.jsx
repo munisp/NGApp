@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const seedData = {
   'aerotel': {
@@ -79,12 +80,15 @@ const TelcoInterconnect = () => {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedPartner, setSelectedPartner] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['aerotel']
   const filteredPartners = data.partners.filter(p => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'all' || p.status === statusFilter
     return matchSearch && matchStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="TelcoInterconnect" className="space-y-6">

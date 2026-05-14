@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Brain, Activity, Shield, Target, Users, Mail, Phone, MessageSquare, TrendingUp, Clock, Star, ChevronRight, Play, Pause, CheckCircle, AlertTriangle, Zap, BarChart3, Send, Eye, RefreshCw, Sparkles } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -57,6 +57,7 @@ const SalesAgentDashboard = () => {
   const [agentStatus, setAgentStatus] = useState('active')
   const [selectedDeal, setSelectedDeal] = useState(null)
   const [selectedOutreach, setSelectedOutreach] = useState(null)
+  const [error, setError] = useState(null)
 
   const tenantSlug = tenant?.slug || 'acme-bank'
   const data = tenantAgentData[tenantSlug] || tenantAgentData['acme-bank']
@@ -68,6 +69,8 @@ const SalesAgentDashboard = () => {
 
   const actionIcon = (type) => ({ score: Star, draft: Mail, research: Eye, meeting: Users, signal: Zap, alert: AlertTriangle })[type] || Activity
   const actionColor = (type) => ({ score: 'text-amber-500', draft: 'text-blue-500', research: 'text-purple-500', meeting: 'text-emerald-500', signal: 'text-cyan-500', alert: 'text-red-500' })[type] || 'text-gray-500'
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="SalesAgentDashboard" className="space-y-6">

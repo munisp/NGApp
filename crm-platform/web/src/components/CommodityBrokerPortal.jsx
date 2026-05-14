@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const seedData = {
   'petromark': {
@@ -73,12 +74,15 @@ const CommodityBrokerPortal = () => {
   const [search, setSearch] = useState('')
   const [ratingFilter, setRatingFilter] = useState('all')
   const [selectedCP, setSelectedCP] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
   const filteredCPs = data.counterparties ? data.counterparties.filter(c => {
     const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase())
     const matchRating = ratingFilter === 'all' || c.rating === ratingFilter
     return matchSearch && matchRating
   }) : []
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CommodityBrokerPortal" className="space-y-6">

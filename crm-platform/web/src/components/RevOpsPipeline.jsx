@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { TrendingUp, ArrowRight, Search, Filter, ChevronDown, ChevronUp, DollarSign, Users, Clock, Target } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -34,6 +34,7 @@ export default function RevOpsPipeline() {
   const [expandedDeal, setExpandedDeal] = useState(null)
   const [stageFilter, setStageFilter] = useState('all')
   const [sortBy, setSortBy] = useState('value')
+  const [error, setError] = useState(null)
 
   const filteredDeals = topDeals.filter(d => {
     const matchesSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase())
@@ -44,6 +45,8 @@ export default function RevOpsPipeline() {
     if (sortBy === 'probability') return b.probability - a.probability
     return a.daysInStage - b.daysInStage
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="RevOpsPipeline" className="space-y-6">

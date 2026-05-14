@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BarChart3, Search, AlertTriangle, DollarSign, TrendingUp, Shield } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -23,6 +23,7 @@ export default function TelcoRevenueAssurance() {
   const [severityFilter, setSeverityFilter] = useState('all')
   const [expandedItem, setExpandedItem] = useState(null)
   const [activeTab, setActiveTab] = useState('leakages')
+  const [error, setError] = useState(null)
 
   const filtered = leakagePoints.filter(l => {
     const matchesSearch = !search || l.category.toLowerCase().includes(search.toLowerCase()) || l.description.toLowerCase().includes(search.toLowerCase())
@@ -31,6 +32,8 @@ export default function TelcoRevenueAssurance() {
   })
 
   const totalLeakage = '₦549.8M'
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="TelcoRevenueAssurance" className="space-y-6">
@@ -54,6 +57,7 @@ export default function TelcoRevenueAssurance() {
           <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Severity</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option></select>
         </div>
         <div className="space-y-2">
+          {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
           {filtered.map(l => (
             <div key={l.id} onClick={() => setExpandedItem(expandedItem === l.id ? null : l.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${expandedItem === l.id ? 'border-orange-500 ring-1 ring-orange-500' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center justify-between">

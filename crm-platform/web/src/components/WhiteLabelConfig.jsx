@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Palette, Globe, Eye, CheckCircle, Settings, Image, Type, Save } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -26,6 +26,9 @@ export default function WhiteLabelConfig() {
   const [previewMode, setPreviewMode] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedFeature, setSelectedFeature] = useState(null)
+  const [error, setError] = useState(null)
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="WhiteLabelConfig" className="space-y-6">

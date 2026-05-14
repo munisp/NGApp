@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const seedData = {
   'petromark': {
@@ -71,12 +72,15 @@ const CommoditySettlement = () => {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedSettlement, setSelectedSettlement] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
   const filteredSettlements = data.settlements ? data.settlements.filter(s => {
     const matchSearch = !search || (s.tradeId && s.tradeId.toLowerCase().includes(search.toLowerCase())) || (s.counterparty && s.counterparty.toLowerCase().includes(search.toLowerCase()))
     const matchStatus = statusFilter === 'all' || s.status === statusFilter
     return matchSearch && matchStatus
   }) : []
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CommoditySettlement" className="space-y-6">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Smartphone, Wifi, WifiOff, MapPin, Mic, Zap, Download, Camera, Search, BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -20,8 +20,11 @@ export default function MobileCRM() {
   const [expanded, setExpanded] = useState(null)
   const [activeTab, setActiveTab] = useState('features')
   const [search, setSearch] = useState('')
+  const [error, setError] = useState(null)
 
   const filtered = features.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="MobileCRM" className="space-y-6">
@@ -41,7 +44,8 @@ export default function MobileCRM() {
       </div>
       {activeTab === 'features' && (<div className="space-y-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search features..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
-        <div className="space-y-2">{filtered.map(f => (
+        <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(f => (
           <div key={f.id} onClick={() => setExpanded(expanded === f.id ? null : f.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${expanded === f.id ? 'border-sky-500 ring-1 ring-sky-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3"><f.icon className={`w-5 h-5 ${f.color}`} /><div><div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{f.name}</h4>{f.status === 'beta' && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">beta</span>}</div><p className="text-sm text-gray-500">{f.desc}</p></div></div>

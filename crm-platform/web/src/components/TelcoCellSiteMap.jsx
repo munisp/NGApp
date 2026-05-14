@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MapPin, AlertTriangle, CheckCircle, WifiOff, Search, Filter, RefreshCw, Signal, Wifi } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -30,6 +30,7 @@ export default function TelcoCellSiteMap() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [expandedSite, setExpandedSite] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = sites.filter(s => {
     const matchesSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.region.toLowerCase().includes(search.toLowerCase())
@@ -37,6 +38,8 @@ export default function TelcoCellSiteMap() {
     const matchesType = typeFilter === 'all' || s.type.includes(typeFilter)
     return matchesSearch && matchesStatus && matchesType
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CellSiteMap" className="space-y-6">
@@ -73,7 +76,8 @@ export default function TelcoCellSiteMap() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="overflow-x-auto"><table className="min-w-full w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Site', 'Region', 'Type', 'Status', 'Uptime', 'Subscribers', 'Traffic', 'Alerts'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filtered.map(s => (
+              {filtered.length === 0 && <tr><td colSpan="99" className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</td></tr>}
+          {filtered.map(s => (
                 <>
                   <tr key={s.id} onClick={() => setExpandedSite(expandedSite === s.id ? null : s.id)} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <td className="px-4 py-3"><div className="text-sm font-medium text-gray-900 dark:text-white">{s.name}</div><div className="text-xs text-gray-400">{s.id}</div></td>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BarChart3, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -18,11 +18,14 @@ export default function CPaaSChannelAnalytics() {
   const [activeTab, setActiveTab] = useState('overview')
   const [search, setSearch] = useState('')
   const [expandedItem, setExpandedItem] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = items.filter(item => {
     const matchesSearch = !search || item.channel.toLowerCase().includes(search.toLowerCase()) || item.volume.toLowerCase().includes(search.toLowerCase()) || item.deliveryRate.toLowerCase().includes(search.toLowerCase())
     return matchesSearch
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CPaaSChannelAnalytics" className="space-y-6">
@@ -51,7 +54,8 @@ export default function CPaaSChannelAnalytics() {
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
           </div>
           <div className="space-y-2">
-            {filtered.map(item => (
+            {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(item => (
               <div key={item.id} onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md transition-shadow ${expandedItem === item.id ? 'border-purple-500 ring-1 ring-purple-500' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center justify-between">
                   <div>

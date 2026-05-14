@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { MessageCircle, Star, ThumbsUp, ThumbsDown, Search, Filter, TrendingUp, BarChart3 } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -21,6 +21,7 @@ export default function FeedbackLoop() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedItem, setSelectedItem] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = feedback.filter(f => {
     const matchesSearch = !search || f.customer.toLowerCase().includes(search.toLowerCase()) || f.comment.toLowerCase().includes(search.toLowerCase())
@@ -31,6 +32,8 @@ export default function FeedbackLoop() {
   const avgNPS = Math.round(feedback.filter(f => f.type === 'NPS').reduce((s, f) => s + f.score, 0) / feedback.filter(f => f.type === 'NPS').length * 10)
   const promoters = feedback.filter(f => f.type === 'NPS' && f.score >= 9).length
   const detractors = feedback.filter(f => f.type === 'NPS' && f.score <= 6).length
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="FeedbackLoop" className="space-y-6">
@@ -57,6 +60,7 @@ export default function FeedbackLoop() {
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Status</option><option value="open">Open</option><option value="escalated">Escalated</option><option value="addressed">Addressed</option></select>
         </div>
         <div className="space-y-2">
+          {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
           {filtered.map(f => (
             <div key={f.id} onClick={() => setSelectedItem(selectedItem === f.id ? null : f.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedItem === f.id ? 'border-rose-500 ring-1 ring-rose-500' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center justify-between">

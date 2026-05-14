@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
 
@@ -93,6 +94,7 @@ const CommodityTradingDesk = () => {
   const [search, setSearch] = useState('')
   const [commodityFilter, setCommodityFilter] = useState('all')
   const [selectedPosition, setSelectedPosition] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['petromark']
   const filteredPositions = data.positions ? data.positions.filter(p => {
     const matchSearch = !search || (p.commodity && p.commodity.toLowerCase().includes(search.toLowerCase())) || (p.trader && p.trader.toLowerCase().includes(search.toLowerCase()))
@@ -101,6 +103,8 @@ const CommodityTradingDesk = () => {
   }) : []
 
   const varPct = (data.currentVar.replace(/[^0-9.]/g, '') / data.varLimit.replace(/[^0-9.]/g, '') * 100).toFixed(1)
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CommodityTradingDesk" className="space-y-6">

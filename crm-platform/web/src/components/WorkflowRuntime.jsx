@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Workflow, Play, Pause, CheckCircle, XCircle, Clock, AlertTriangle, Activity, Settings, Eye, RefreshCw, ChevronRight, Zap, BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -48,6 +48,7 @@ const WorkflowRuntime = () => {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('workflows')
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
+  const [error, setError] = useState(null)
 
   const statusConfig = {
     running: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: RefreshCw, animate: true },
@@ -66,6 +67,8 @@ const WorkflowRuntime = () => {
   const totalExec = workflows.reduce((s, w) => s + w.executions, 0)
   const runningCount = workflows.filter(w => w.status === 'running').length
   const failedCount = workflows.filter(w => w.status === 'failed').length
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="WorkflowRuntime" className="space-y-6">

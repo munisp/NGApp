@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DollarSign, TrendingUp, TrendingDown, RefreshCw, Search, AlertTriangle, Clock } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -27,12 +27,15 @@ export default function BankingFXRateManager() {
   const [search, setSearch] = useState('')
   const [selectedPair, setSelectedPair] = useState(null)
   const [sourceFilter, setSourceFilter] = useState('all')
+  const [error, setError] = useState(null)
 
   const filtered = rates.filter(r => {
     const matchesSearch = !search || r.pair.toLowerCase().includes(search.toLowerCase())
     const matchesSource = sourceFilter === 'all' || r.source === sourceFilter
     return matchesSearch && matchesSource
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="BankingFXRateManager" className="space-y-6">
@@ -65,7 +68,8 @@ export default function BankingFXRateManager() {
             <button className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center gap-1 hover:bg-emerald-700"><RefreshCw className="w-4 h-4" /> Refresh</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map(r => (
+            {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(r => (
               <div key={r.pair} onClick={() => setSelectedPair(selectedPair === r.pair ? null : r.pair)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedPair === r.pair ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-lg font-bold text-gray-900 dark:text-white">{r.pair}</span>

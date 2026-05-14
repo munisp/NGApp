@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Sparkles, Search, RefreshCw, CheckCircle, Clock, AlertTriangle, Database } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -19,8 +19,11 @@ export default function DataEnrichment() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [activeTab, setActiveTab] = useState('records')
+  const [error, setError] = useState(null)
 
   const filtered = enrichments.filter(e => !search || e.company.toLowerCase().includes(search.toLowerCase()))
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="DataEnrichment" className="space-y-6">
@@ -40,7 +43,8 @@ export default function DataEnrichment() {
       </div>
       {activeTab === 'records' && (<div className="space-y-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
-        <div className="space-y-2">{filtered.map(e => (
+        <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(e => (
           <div key={e.id} onClick={() => setSelected(selected === e.id ? null : e.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === e.id ? 'border-violet-500 ring-1 ring-violet-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1"><div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{e.company}</h4><span className={`text-xs px-2 py-0.5 rounded ${e.status === 'complete' ? 'bg-emerald-100 text-emerald-700' : e.status === 'enriching' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{e.status}</span></div><div className="flex items-center gap-3 text-xs text-gray-500 mt-1"><span>{e.industry}</span><span>{e.employees} employees</span><span>Source: {e.source}</span></div></div>

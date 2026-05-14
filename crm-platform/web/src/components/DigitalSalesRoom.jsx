@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Presentation, Search, Users, FileText, Calendar, MessageSquare, Video, ExternalLink, Plus, } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -18,6 +18,7 @@ export default function DigitalSalesRoom() {
   const [activeTab, setActiveTab] = useState('rooms')
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [formData, setFormData] = useState({})
+  const [error, setError] = useState(null)
 
   const filtered = rooms.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.owner.toLowerCase().includes(search.toLowerCase()))
 
@@ -27,6 +28,8 @@ export default function DigitalSalesRoom() {
     setFormData({})
     setShowCreateRoom(false)
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="DigitalSalesRoom" className="space-y-6">
@@ -50,6 +53,7 @@ export default function DigitalSalesRoom() {
       {activeTab === 'rooms' && (<div className="space-y-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rooms..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
         <div className="space-y-2">
+          {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
           {filtered.map(r => (
             <div key={r.id} onClick={() => setSelectedRoom(selectedRoom === r.id ? null : r.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedRoom === r.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-center justify-between">

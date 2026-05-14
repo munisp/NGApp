@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useNotification } from '../contexts/NotificationContext'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth()
@@ -29,6 +30,7 @@ const Header = ({ onMenuClick }) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [error, setError] = useState(null)
   const userMenuRef = useRef(null)
   const notificationRef = useRef(null)
   const themeMenuRef = useRef(null)
@@ -71,6 +73,8 @@ const Header = ({ onMenuClick }) => {
   }
 
   const CurrentThemeIcon = getCurrentThemeIcon()
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">

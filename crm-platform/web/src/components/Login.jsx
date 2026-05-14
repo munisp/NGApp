@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotification } from '../contexts/NotificationContext'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -194,6 +195,8 @@ const Login = () => {
       </div>
     )
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">

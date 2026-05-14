@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { BarChart3, Code, Eye, Copy, Check, ExternalLink, Palette, Settings, Layout, RefreshCw, Users, Globe, Lock, Activity } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -21,6 +21,7 @@ const EmbeddedAnalytics = () => {
   const [activeTab, setActiveTab] = useState('dashboards')
   const [selectedDashboard, setSelectedDashboard] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState(null)
 
   const copyEmbed = (id) => {
     setCopied(true)
@@ -28,6 +29,8 @@ const EmbeddedAnalytics = () => {
   }
 
   const embedCode = (d) => `<iframe src="https://${tenant?.slug || 'app'}.crm.io/embed/${d.id}" width="100%" height="600" frameborder="0" allow="fullscreen" />`
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="EmbeddedAnalytics" className="space-y-6">

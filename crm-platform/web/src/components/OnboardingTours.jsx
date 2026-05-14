@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigation, Play, Plus, Search, Edit, Trash2, Eye, BarChart3, GripVertical } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -20,12 +20,15 @@ export default function OnboardingTours() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedTour, setSelectedTour] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [error, setError] = useState(null)
 
   const filtered = tours.filter(t => {
     const matchesSearch = !search || t.name.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || t.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="OnboardingTours" className="space-y-6">
@@ -66,7 +69,8 @@ export default function OnboardingTours() {
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Status</option><option value="active">Active</option><option value="draft">Draft</option></select>
           </div>
           <div className="space-y-2">
-            {filtered.map(tour => (
+            {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(tour => (
               <div key={tour.id} onClick={() => setSelectedTour(selectedTour === tour.id ? null : tour.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedTour === tour.id ? 'border-sky-500 ring-1 ring-sky-500' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

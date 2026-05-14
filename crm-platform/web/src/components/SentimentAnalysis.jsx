@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Heart, TrendingUp, TrendingDown, Minus, Search, Filter, BarChart3, MessageSquare } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -28,6 +28,7 @@ export default function SentimentAnalysis() {
   const [search, setSearch] = useState('')
   const [trendFilter, setTrendFilter] = useState('all')
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = sentimentData.filter(s => {
     const matchesSearch = !search || s.customer.toLowerCase().includes(search.toLowerCase())
@@ -38,6 +39,8 @@ export default function SentimentAnalysis() {
   const avgScore = Math.round(sentimentData.reduce((s, d) => s + d.score, 0) / sentimentData.length)
   const atRisk = sentimentData.filter(d => d.score < 40).length
   const promoters = sentimentData.filter(d => d.nps >= 9).length
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="SentimentAnalysis" className="space-y-6">
@@ -69,7 +72,8 @@ export default function SentimentAnalysis() {
             </select>
           </div>
           <div className="space-y-2">
-            {filtered.map(s => (
+            {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(s => (
               <div key={s.id} onClick={() => setSelectedCustomer(selectedCustomer === s.id ? null : s.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md transition-shadow ${selectedCustomer === s.id ? 'border-pink-500 ring-1 ring-pink-500' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

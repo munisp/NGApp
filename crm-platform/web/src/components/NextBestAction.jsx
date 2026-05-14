@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Zap, Target, TrendingUp, Clock, CheckCircle, X, Search, Filter } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -22,6 +22,7 @@ export default function NextBestAction() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [expandedAction, setExpandedAction] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = actions.filter(a => {
     const matchesSearch = !search || a.customer.toLowerCase().includes(search.toLowerCase()) || a.action.toLowerCase().includes(search.toLowerCase())
@@ -29,6 +30,8 @@ export default function NextBestAction() {
     const matchesStatus = statusFilter === 'all' || a.status === statusFilter
     return matchesSearch && matchesType && matchesStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="NextBestAction" className="space-y-6">
@@ -50,7 +53,8 @@ export default function NextBestAction() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map(a => (
+        {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(a => (
           <div key={a.id} onClick={() => setExpandedAction(expandedAction === a.id ? null : a.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${expandedAction === a.id ? 'border-amber-500 ring-1 ring-amber-500' : 'border-gray-200 dark:border-gray-700'} ${a.status === 'completed' ? 'opacity-60' : ''}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">

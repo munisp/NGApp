@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Shield, Activity, AlertTriangle, CheckCircle, XCircle, Eye, Clock, Users, DollarSign, Settings, Lock, Unlock, Brain, Zap, BarChart3, Power, RefreshCw } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -43,6 +43,7 @@ const AgentGovernanceDashboard = () => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('agents')
   const [agents, setAgents] = useState(governanceData.agents)
+  const [error, setError] = useState(null)
 
   const toggleAgent = (id) => {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, status: a.status === 'active' ? 'paused' : 'active' } : a))
@@ -50,6 +51,8 @@ const AgentGovernanceDashboard = () => {
 
   const resultColor = (r) => ({ approved: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20', rejected: 'text-red-600 bg-red-50 dark:bg-red-900/20', pending_review: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20', human_override: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' })[r] || 'text-gray-600 bg-gray-50'
   const tierColor = (tier) => ({ Execute: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', Suggest: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', Observe: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' })[tier] || 'bg-gray-100 text-gray-600'
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="AgentGovernanceDashboard" className="space-y-6">

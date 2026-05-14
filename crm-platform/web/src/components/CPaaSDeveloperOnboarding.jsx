@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const seedData = {
   'messageflow': {
@@ -81,12 +82,15 @@ const CPaaSDeveloperOnboarding = () => {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('all')
   const [selectedDev, setSelectedDev] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['messageflow']
   const filteredDevs = data.developers ? data.developers.filter(d => {
     const matchSearch = !search || (d.name && d.name.toLowerCase().includes(search.toLowerCase())) || (d.email && d.email.toLowerCase().includes(search.toLowerCase()))
     const matchStage = stageFilter === 'all' || (d.stage && d.stage.toLowerCase() === stageFilter)
     return matchSearch && matchStage
   }) : []
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CPaaSDeveloperOnboarding" className="space-y-6">

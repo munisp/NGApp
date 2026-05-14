@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Layout, Plus, Eye, Settings, Code, CheckCircle, Clock, Globe, Users, Layers, Search } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
@@ -29,6 +29,9 @@ export default function CustomerAppBuilder() {
   const [selected, setSelected] = useState(null)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('apps')
+  const [error, setError] = useState(null)
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CustomerAppBuilder" className="space-y-6">

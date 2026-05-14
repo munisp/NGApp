@@ -9,6 +9,7 @@ import { useTenant } from '../contexts/TenantContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
+import { ErrorState } from '@/components/ui/DataStates'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4']
 
@@ -107,6 +108,7 @@ const CPaaSChannelDashboard = () => {
   const [search, setSearch] = useState('')
   const [channelFilter, setChannelFilter] = useState('all')
   const [selectedCampaign, setSelectedCampaign] = useState(null)
+  const [error, setError] = useState(null)
   const data = seedData[tenant?.slug] || seedData['messageflow']
   const filteredCampaigns = data.campaigns ? data.campaigns.filter(c => {
     const matchSearch = !search || (c.name && c.name.toLowerCase().includes(search.toLowerCase()))
@@ -115,6 +117,8 @@ const CPaaSChannelDashboard = () => {
   }) : []
 
   const tabs = ['overview', 'channels', 'consumers', 'alerts']
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CPaaSChannelDashboard" className="space-y-6">

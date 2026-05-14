@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Brain, MessageSquare, Sparkles, Send, CheckCircle, AlertTriangle, TrendingUp, Lightbulb, Search, History, Settings } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -27,6 +27,7 @@ export default function AICoPilot() {
   const [activeTab, setActiveTab] = useState('chat')
   const [search, setSearch] = useState('')
   const [chatHistory, setChatHistory] = useState(history)
+  const [error, setError] = useState(null)
 
   const filteredSuggestions = suggestions.filter(s => !search || s.text.toLowerCase().includes(search.toLowerCase()))
 
@@ -35,6 +36,8 @@ export default function AICoPilot() {
     setChatHistory(prev => [{ query, response: 'Processing your request...', time: 'Just now' }, ...prev])
     setQuery('')
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="AICoPilot" className="space-y-6">
@@ -56,7 +59,8 @@ export default function AICoPilot() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-2 mb-4"><input type="text" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Ask anything about your CRM data..." className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /><button onClick={handleSend} className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"><Send className="w-4 h-4" /></button></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {filteredSuggestions.slice(0, 6).map(s => (
+            {filteredSuggestions.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filteredSuggestions.slice(0, 6).map(s => (
               <button key={s.id} onClick={() => setQuery(s.text)} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-600 text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2"><s.icon className="w-3 h-3 mt-0.5 text-purple-500 shrink-0" />{s.text}</button>
             ))}
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Clock, Mail, Phone, AlertTriangle, DollarSign, Calendar, MessageSquare, CreditCard, FileText, Star, Filter, Search, ChevronDown, ChevronUp } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -40,6 +40,7 @@ export default function CustomerTimeline() {
   const [search, setSearch] = useState('')
   const [expandedEvents, setExpandedEvents] = useState(new Set())
   const [impactFilter, setImpactFilter] = useState('all')
+  const [error, setError] = useState(null)
 
   const toggleExpand = (key) => {
     setExpandedEvents(prev => {
@@ -62,6 +63,8 @@ export default function CustomerTimeline() {
   const totalEvents = timeline.reduce((s, d) => s + d.events.length, 0)
   const criticalCount = timeline.reduce((s, d) => s + d.events.filter(e => e.impact === 'critical').length, 0)
   const todayCount = timeline[0]?.events.length || 0
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="CustomerTimeline" className="space-y-6">

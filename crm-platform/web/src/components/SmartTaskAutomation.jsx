@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Zap, Search, Plus, CheckCircle, Clock, AlertTriangle, Filter, Play, Pause, Settings } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -21,12 +21,15 @@ export default function SmartTaskAutomation() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selected, setSelected] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = automations.filter(a => {
     const matchesSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.trigger.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || a.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="SmartTaskAutomation" className="space-y-6">
@@ -49,7 +52,8 @@ export default function SmartTaskAutomation() {
           <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search automations..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white" /></div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"><option value="all">All Status</option><option value="active">Active</option><option value="paused">Paused</option></select>
         </div>
-        <div className="space-y-2">{filtered.map(a => (
+        <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(a => (
           <div key={a.id} onClick={() => setSelected(selected === a.id ? null : a.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selected === a.id ? 'border-amber-500 ring-1 ring-amber-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1"><div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{a.name}</h4><span className={`text-xs px-2 py-0.5 rounded ${a.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>{a.status}</span><span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">{a.category}</span></div><p className="text-xs text-gray-500 mt-0.5">Trigger: {a.trigger} → {a.actions} actions</p></div>

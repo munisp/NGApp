@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Target, TrendingUp, TrendingDown, Search, BarChart3, CheckCircle, XCircle } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -20,6 +20,7 @@ export default function WinLossAnalysis() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('deals')
   const [selected, setSelected] = useState(null)
+  const [error, setError] = useState(null)
 
   const filtered = deals.filter(d => {
     const matchesFilter = filter === 'all' || d.outcome === filter
@@ -28,6 +29,8 @@ export default function WinLossAnalysis() {
   })
   const wins = deals.filter(d => d.outcome === 'won')
   const losses = deals.filter(d => d.outcome === 'lost')
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="WinLossAnalysis" className="space-y-6">
@@ -52,7 +55,8 @@ export default function WinLossAnalysis() {
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${filter === f ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>{f}</button>
           ))}</div>
         </div>
-        <div className="space-y-2">{filtered.map(d => (
+        <div className="space-y-2">{filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(d => (
           <div key={d.id} onClick={() => setSelected(selected === d.id ? null : d.id)} className={`bg-white dark:bg-gray-800 rounded-xl border-l-4 ${d.outcome === 'won' ? 'border-l-emerald-500' : 'border-l-red-500'} border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md ${selected === d.id ? 'ring-1 ring-rose-500' : ''}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{d.deal}</h4><span className={`text-xs px-2 py-0.5 rounded ${d.outcome === 'won' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{d.outcome}</span></div>

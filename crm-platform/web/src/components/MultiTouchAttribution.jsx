@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { GitBranch, TrendingUp, DollarSign, Users, BarChart3, Mail, Globe, Phone, Megaphone, Calendar, ArrowRight } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
@@ -43,11 +43,14 @@ export default function MultiTouchAttribution() {
   const [search, setSearch] = useState('')
   const [selectedJourney, setSelectedJourney] = useState(null)
   const [outcomeFilter, setOutcomeFilter] = useState('all')
+  const [error, setError] = useState(null)
   const filteredJourneys = journeys.filter(j => {
     const matchSearch = !search || j.deal.toLowerCase().includes(search.toLowerCase())
     const matchOutcome = outcomeFilter === 'all' || j.outcome === outcomeFilter
     return matchSearch && matchOutcome
   })
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="MultiTouchAttribution" className="space-y-6">

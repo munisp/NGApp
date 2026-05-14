@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListChecks, Search, Plus, CheckCircle, Clock, AlertTriangle, Users } from 'lucide-react'
-import { FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge , ErrorState } from '@/components/ui/DataStates'
 import { useApiData } from '@/hooks/useApiData'
 import { apiClient } from '@/lib/apiClient'
 
@@ -40,6 +40,7 @@ export default function MutualActionPlan() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [showCreateAction, setShowCreateAction] = useState(false)
   const [formData, setFormData] = useState({})
+  const [error, setError] = useState(null)
 
   const filtered = plans.filter(p => {
     const matchesSearch = !search || p.deal.toLowerCase().includes(search.toLowerCase()) || p.owner.toLowerCase().includes(search.toLowerCase())
@@ -53,6 +54,8 @@ export default function MutualActionPlan() {
     setFormData({})
     setShowCreateAction(false)
   }
+
+  if (error) return <ErrorState message={error} />
 
   return (
     <div role="region" aria-label="MutualActionPlan" className="space-y-6">
@@ -73,7 +76,8 @@ export default function MutualActionPlan() {
       </div>
 
       <div className="space-y-3">
-        {filtered.map(p => (
+        {filtered.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No records found</div>}
+          {filtered.map(p => (
           <div key={p.id} onClick={() => setSelectedPlan(selectedPlan === p.id ? null : p.id)} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 cursor-pointer hover:shadow-md ${selectedPlan === p.id ? 'border-teal-500 ring-1 ring-teal-500' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex-1">
