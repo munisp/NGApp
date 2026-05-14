@@ -616,13 +616,13 @@ export const consentAnalyticsRouter = router({
   /** Get consent statistics by purpose and sector */
   getStats: protectedProcedure.query(async () => {
     const byPurpose = await exec(
-      `SELECT consent_purpose AS purpose,
+      `SELECT purpose,
               COUNT(*) AS total,
               COUNT(*) FILTER (WHERE consent_status = 'active') AS active,
               COUNT(*) FILTER (WHERE consent_status = 'withdrawn') AS withdrawn,
               COUNT(*) FILTER (WHERE consent_status = 'expired') AS expired
        FROM consent_records
-       GROUP BY consent_purpose
+       GROUP BY purpose
        ORDER BY total DESC
        LIMIT 20`
     );
