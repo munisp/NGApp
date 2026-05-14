@@ -160,7 +160,26 @@ type SyncBalanceResponse struct {
 	Message string
 }
 
-// RegisterLedgerServiceServer registers the LedgerServiceServer with the gRPC server
+// ServiceRegistrar abstracts gRPC server registration (matches grpc.ServiceRegistrar)
+type ServiceRegistrar interface {
+	RegisterService(desc *ServiceDesc, impl interface{})
+}
+
+// ServiceDesc describes a gRPC service (matches grpc.ServiceDesc)
+type ServiceDesc struct {
+	ServiceName string
+	HandlerType interface{}
+}
+
+// LedgerServiceDesc is the gRPC service descriptor for LedgerService
+var LedgerServiceDesc = ServiceDesc{
+	ServiceName: "ledger.LedgerService",
+	HandlerType: (*LedgerServiceServer)(nil),
+}
+
+// RegisterLedgerServiceServer registers the LedgerServiceServer with a gRPC server
 func RegisterLedgerServiceServer(s interface{}, srv LedgerServiceServer) {
-	// This is a placeholder - in production, this would use grpc.ServiceRegistrar
+	if registrar, ok := s.(ServiceRegistrar); ok {
+		registrar.RegisterService(&LedgerServiceDesc, srv)
+	}
 }

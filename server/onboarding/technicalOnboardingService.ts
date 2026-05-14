@@ -33,7 +33,6 @@ export async function validateCertificate(certificate: string): Promise<{
     // For now, we'll do basic validation
     const certData = match[0];
     
-    // Extract basic info (simplified - in production use x509 library)
     const lines = certData.split('\n').filter(line => 
       !line.includes('BEGIN') && !line.includes('END') && line.trim()
     );
@@ -42,12 +41,13 @@ export async function validateCertificate(certificate: string): Promise<{
       return { valid: false, error: "Empty certificate" };
     }
 
-    // Basic validation passed
+    // Parse X.509 certificate using Node.js crypto
+    const x509 = new crypto.X509Certificate(certData);
     return {
-      valid: true,
-      expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Placeholder
-      issuer: "Certificate Authority",
-      subject: "Participant",
+      valid: new Date(x509.validTo) > new Date(),
+      expiryDate: new Date(x509.validTo),
+      issuer: x509.issuer,
+      subject: x509.subject,
     };
   } catch (error) {
     return {

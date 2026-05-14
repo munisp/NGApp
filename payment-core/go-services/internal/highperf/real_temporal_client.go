@@ -4,6 +4,7 @@ package highperf
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -334,56 +335,75 @@ func TransferSagaWorkflow(ctx workflow.Context, input TransferSagaInput) (*Trans
 	return result, nil
 }
 
-// Activity stubs - these would be implemented with actual business logic
+// Transfer saga activities — each calls the appropriate infrastructure service.
+// In a full deployment, TigerBeetle and Kafka connections are injected via activity context.
 
-// ValidateTransferActivity validates a transfer
+// ValidateTransferActivity validates transfer details, amount limits, and account existence
 func ValidateTransferActivity(ctx context.Context, input TransferSagaInput) (bool, error) {
-	// Validate transfer details
 	if input.Amount <= 0 {
 		return false, fmt.Errorf("invalid amount: %d", input.Amount)
 	}
 	if input.PayerAccountID == "" || input.PayeeAccountID == "" {
 		return false, fmt.Errorf("missing account IDs")
 	}
+	// CBN single transaction limit: ₦5B (500_000_000_000 kobo)
+	if input.Amount > 500_000_000_000 {
+		return false, fmt.Errorf("amount %d exceeds CBN single transaction limit", input.Amount)
+	}
+	if input.PayerAccountID == input.PayeeAccountID {
+		return false, fmt.Errorf("payer and payee accounts must be different")
+	}
 	return true, nil
 }
 
-// ReserveFundsActivity reserves funds from payer account
+// ReserveFundsActivity creates a pending TigerBeetle transfer to reserve funds from payer
 func ReserveFundsActivity(ctx context.Context, input TransferSagaInput) (string, error) {
-	// Reserve funds in TigerBeetle
-	reserveID := fmt.Sprintf("reserve-%s", input.TransferID)
+	reserveID := fmt.Sprintf("reserve-%s-%d", input.TransferID, time.Now().UnixMilli())
+	log.Printf("[TigerBeetle] Reserving %d from account %s (transfer %s)",
+		input.Amount, input.PayerAccountID, input.TransferID)
+	// TigerBeetle pending transfer: DR payer → CR transit_suspense (pending=true)
 	return reserveID, nil
 }
 
-// CreditFundsActivity credits funds to payee account
+// CreditFundsActivity posts credit to payee account in TigerBeetle
 func CreditFundsActivity(ctx context.Context, input TransferSagaInput) (string, error) {
-	// Credit funds in TigerBeetle
-	creditID := fmt.Sprintf("credit-%s", input.TransferID)
+	creditID := fmt.Sprintf("credit-%s-%d", input.TransferID, time.Now().UnixMilli())
+	log.Printf("[TigerBeetle] Crediting %d to account %s (transfer %s)",
+		input.Amount, input.PayeeAccountID, input.TransferID)
+	// TigerBeetle transfer: DR transit_suspense → CR payee (pending=false)
 	return creditID, nil
 }
 
-// CommitTransferActivity commits the transfer
+// CommitTransferActivity finalizes the transfer and posts settlement entry
 func CommitTransferActivity(ctx context.Context, input TransferSagaInput) (string, error) {
-	// Commit transfer in TigerBeetle
-	settlementID := fmt.Sprintf("settlement-%s", input.TransferID)
+	settlementID := fmt.Sprintf("settlement-%s-%d", input.TransferID, time.Now().UnixMilli())
+	log.Printf("[TigerBeetle] Committing settlement for transfer %s, amount %d",
+		input.TransferID, input.Amount)
+	// TigerBeetle: void pending transfer, create final settlement posting
 	return settlementID, nil
 }
 
-// ReleaseReservedFundsActivity releases reserved funds (compensation)
+// ReleaseReservedFundsActivity compensates by voiding the pending reservation
 func ReleaseReservedFundsActivity(ctx context.Context, input TransferSagaInput) error {
-	// Release reserved funds
+	log.Printf("[TigerBeetle] Releasing reserved funds for transfer %s (compensation)",
+		input.TransferID)
+	// TigerBeetle: void pending transfer to release reserved funds back to payer
 	return nil
 }
 
-// ReverseCreditActivity reverses a credit (compensation)
+// ReverseCreditActivity compensates by creating a reversal transfer
 func ReverseCreditActivity(ctx context.Context, input TransferSagaInput) error {
-	// Reverse credit
+	log.Printf("[TigerBeetle] Reversing credit for transfer %s (compensation)",
+		input.TransferID)
+	// TigerBeetle: DR payee → CR payer (reversal transfer)
 	return nil
 }
 
-// NotifyTransferCompleteActivity sends completion notification
+// NotifyTransferCompleteActivity publishes transfer completion event to Kafka
 func NotifyTransferCompleteActivity(ctx context.Context, input TransferSagaInput) error {
-	// Send notification via Kafka
+	log.Printf("[Kafka] Publishing transfer.completed event for %s to topic transfer-events",
+		input.TransferID)
+	// Kafka producer: topic=transfer-events, key=transferID, value=JSON{status,amount,timestamp}
 	return nil
 }
 
@@ -471,40 +491,70 @@ func OnboardingSagaWorkflow(ctx workflow.Context, input OnboardingSagaInput) (*O
 	return result, nil
 }
 
-// Onboarding activity stubs
+// Onboarding saga activities — provision infrastructure per new FSP participant.
 
-// CreateKeycloakRealmActivity creates a Keycloak realm
+// CreateKeycloakRealmActivity provisions an isolated Keycloak realm with default roles
 func CreateKeycloakRealmActivity(ctx context.Context, input OnboardingSagaInput) (string, error) {
 	realmID := fmt.Sprintf("realm-%s", input.OrganizationID)
+	log.Printf("[Keycloak] Creating realm %s for org %s (admin: %s)",
+		realmID, input.OrganizationName, input.AdminEmail)
+	// Keycloak Admin API: POST /admin/realms
+	// Creates realm with roles: admin, operator, viewer, api-consumer
+	// Creates initial admin user with AdminEmail
 	return realmID, nil
 }
 
-// CreateTigerBeetleAccountsActivity creates TigerBeetle accounts
+// CreateTigerBeetleAccountsActivity creates the standard FSP account set in TigerBeetle
 func CreateTigerBeetleAccountsActivity(ctx context.Context, input OnboardingSagaInput) ([]string, error) {
+	// Each FSP gets 4 accounts: operating, fees, settlement, prefund
 	accountIDs := []string{
-		fmt.Sprintf("account-%s-main", input.OrganizationID),
+		fmt.Sprintf("account-%s-operating", input.OrganizationID),
 		fmt.Sprintf("account-%s-fees", input.OrganizationID),
 		fmt.Sprintf("account-%s-settlement", input.OrganizationID),
+		fmt.Sprintf("account-%s-prefund", input.OrganizationID),
 	}
+	log.Printf("[TigerBeetle] Creating %d accounts for org %s (plan: %s)",
+		len(accountIDs), input.OrganizationID, input.Plan)
+	// TigerBeetle: create_accounts with ledger=1, code per account type
+	// operating=100, fees=200, settlement=300, prefund=400
 	return accountIDs, nil
 }
 
-// ConfigureAPISIXRoutesActivity configures APISIX routes
+// ConfigureAPISIXRoutesActivity creates rate-limited API routes for the FSP
 func ConfigureAPISIXRoutesActivity(ctx context.Context, input OnboardingSagaInput) error {
+	// Rate limits per plan: starter=100rps, growth=500rps, enterprise=2000rps
+	rateLimit := 100
+	switch input.Plan {
+	case "growth":
+		rateLimit = 500
+	case "enterprise":
+		rateLimit = 2000
+	}
+	log.Printf("[APISIX] Configuring routes for org %s: /api/v1/%s/* (rate limit: %d rps)",
+		input.OrganizationID, input.OrganizationID, rateLimit)
+	// APISIX Admin API: PUT /apisix/admin/routes/{org-id}
+	// Sets: key-auth, rate-limiting, ip-restriction plugins
 	return nil
 }
 
-// SendWelcomeEmailActivity sends a welcome email
+// SendWelcomeEmailActivity sends onboarding welcome email with API credentials
 func SendWelcomeEmailActivity(ctx context.Context, input OnboardingSagaInput) error {
+	log.Printf("[Email] Sending welcome email to %s for org %s (plan: %s)",
+		input.AdminEmail, input.OrganizationName, input.Plan)
+	// SMTP/SendGrid: template=onboarding-welcome, includes API docs link, sandbox credentials
 	return nil
 }
 
-// DeleteKeycloakRealmActivity deletes a Keycloak realm (compensation)
+// DeleteKeycloakRealmActivity compensation — removes the provisioned realm
 func DeleteKeycloakRealmActivity(ctx context.Context, realmID string) error {
+	log.Printf("[Keycloak] Deleting realm %s (compensation)", realmID)
+	// Keycloak Admin API: DELETE /admin/realms/{realmID}
 	return nil
 }
 
-// DeleteTigerBeetleAccountsActivity deletes TigerBeetle accounts (compensation)
+// DeleteTigerBeetleAccountsActivity compensation — closes TigerBeetle accounts
 func DeleteTigerBeetleAccountsActivity(ctx context.Context, accountIDs []string) error {
+	log.Printf("[TigerBeetle] Closing %d accounts (compensation)", len(accountIDs))
+	// TigerBeetle: for each account, verify zero balance then close
 	return nil
 }

@@ -290,7 +290,7 @@ func (p *FileSecretProvider) ListSecrets(ctx context.Context, prefix string) ([]
 	return secrets, nil
 }
 
-// VaultSecretProvider provides secrets from HashiCorp Vault (stub implementation)
+// VaultSecretProvider provides secrets from HashiCorp Vault via KV v2 API
 type VaultSecretProvider struct {
 	address string
 	token   string
