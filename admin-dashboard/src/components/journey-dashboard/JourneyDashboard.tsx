@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/lib/toast';
 import { useState, useEffect, useCallback } from 'react';
 
 interface Journey {
@@ -243,7 +244,7 @@ export default function JourneyDashboard() {
   const handleRunJourney = async (journeyId: number) => {
     // API call to trigger journey workflow
     console.info(`Running journey ${journeyId}`);
-    alert(`Journey ${journeyId} triggered successfully!`);
+    toast.success(`Journey ${journeyId} triggered successfully!`);
   };
 
   return (

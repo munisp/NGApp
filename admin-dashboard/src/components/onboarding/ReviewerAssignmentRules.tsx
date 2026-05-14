@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/lib/toast';
 import React, { useState, useEffect, useCallback } from 'react';
 import { lakehouseAPI, useLakehouseData } from '@/lib/api';
 import {
@@ -256,7 +257,7 @@ export function ReviewerAssignmentRules() {
 
   const saveRule = () => {
     if (!newRule.name || !newRule.conditions?.length || !newRule.assignees?.length) {
-      alert('Please fill in all required fields');
+      toast.warning('Please fill in all required fields');
       return;
     }
 

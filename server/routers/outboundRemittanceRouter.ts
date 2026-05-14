@@ -1699,6 +1699,76 @@ export const outboundRemittanceRouter = router({
       _source: 'SEED DATA — Python AI/ML service not available (outbound remittance)',
     };
   }),
+
+  // ==========================================================================
+  // APPLICATION SUBMISSION (from /outbound/apply)
+  // ==========================================================================
+
+  submitApplication: protectedProcedure
+    .input(z.object({
+      type: z.enum(['participant', 'provider', 'regulator', 'ops']),
+      companyName: z.string().min(1),
+      registrationNumber: z.string().min(1),
+      licenseNumber: z.string().optional(),
+      licenseType: z.string().optional(),
+      contactName: z.string().min(1),
+      contactEmail: z.string().email(),
+      contactPhone: z.string().min(1),
+      country: z.string().min(1),
+      address: z.string().min(1),
+      corridors: z.array(z.string()).optional(),
+      capitalAmount: z.string().optional(),
+      complianceOfficer: z.string().optional(),
+      amlPolicy: z.boolean().optional(),
+      settlementPreference: z.string().optional(),
+      documents: z.array(z.object({
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+      })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const applicationRef = `APP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      // In production: persist to DB, trigger onboarding workflow, send confirmation email
+      // For now: validate business rules and return reference
+      const validationErrors: string[] = [];
+
+      if (input.type === 'participant') {
+        if (!input.licenseNumber) validationErrors.push('CBN license number is required for participants');
+        if (!input.capitalAmount || parseFloat(input.capitalAmount) < 2_000_000_000) {
+          validationErrors.push('Minimum paid-up capital of ₦2B required for participants');
+        }
+        if (!input.amlPolicy) validationErrors.push('AML/CFT policy certification is required');
+      }
+
+      if (input.type === 'provider') {
+        if (!input.licenseNumber) validationErrors.push('PSP license number is required for providers');
+      }
+
+      if (validationErrors.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Validation failed: ${validationErrors.join('; ')}`,
+        });
+      }
+
+      return {
+        applicationRef,
+        status: 'submitted',
+        submittedAt: new Date().toISOString(),
+        submittedBy: ctx.user.id,
+        applicantType: input.type,
+        companyName: input.companyName,
+        estimatedReviewDays: input.type === 'participant' ? 5 : input.type === 'provider' ? 3 : 2,
+        nextSteps: [
+          'Application will be reviewed by the Compliance team',
+          'Dual-approval process by CBN and Platform Admin',
+          input.type === 'participant' ? 'Capital verification and AML policy audit' : 'License verification',
+          'You will receive email updates at ' + input.contactEmail,
+        ],
+      };
+    }),
 });
 
 // =============================================================================

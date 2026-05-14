@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Globe, Building2, Server, Landmark, Users, CheckCircle2, ArrowRight,
-  FileText, Upload, Shield, Clock, ChevronRight, ArrowLeft,
+  FileText, Upload, Shield, Clock, ChevronRight, ArrowLeft, Loader2,
 } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 
 // --- Types ---
 type ApplicantType = 'participant' | 'provider' | 'regulator' | 'ops' | null;
@@ -126,10 +128,39 @@ export default function OutboundApply() {
     setStep('review');
   }
 
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitApplication = trpc.outboundRemittance.submitApplication.useMutation({
+    onSuccess: (data) => {
+      setApplicationRef(data.applicationRef);
+      setStep('submitted');
+      toast.success(`Application ${data.applicationRef} submitted successfully!`);
+    },
+    onError: (err) => {
+      setSubmitting(false);
+      toast.error(err.message);
+    },
+  });
+
   function handleFinalSubmit() {
-    const ref = `APP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    setApplicationRef(ref);
-    setStep('submitted');
+    if (!formData.type) return;
+    setSubmitting(true);
+    submitApplication.mutate({
+      type: formData.type,
+      companyName: formData.companyName,
+      registrationNumber: formData.registrationNumber,
+      licenseNumber: formData.licenseNumber || undefined,
+      licenseType: formData.licenseType || undefined,
+      contactName: formData.contactName,
+      contactEmail: formData.contactEmail,
+      contactPhone: formData.contactPhone,
+      country: formData.country,
+      address: formData.address,
+      corridors: formData.corridors.length > 0 ? formData.corridors : undefined,
+      capitalAmount: formData.capitalAmount || undefined,
+      complianceOfficer: formData.complianceOfficer || undefined,
+      documents: uploadedDocs.map(name => ({ name, type: 'application/pdf', size: 0 })),
+    });
   }
 
   // --- Step: Select Type ---

@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/lib/toast';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   User,
@@ -558,13 +559,13 @@ export function KYCVerificationPortal() {
       if (response.ok) {
         setSelectedPerson({ ...selectedPerson, status: 'APPROVED' });
         await refetchCases();
-        alert('KYC case approved successfully!');
+        toast.success('KYC case approved successfully!');
       } else {
-        alert('Failed to approve KYC case. Please try again.');
+        toast.error('Failed to approve KYC case. Please try again.');
       }
     } catch (error) {
       log.error('Error approving KYC case:', error);
-      alert('Error approving KYC case. Please try again.');
+      toast.error('Error approving KYC case. Please try again.');
     }
   };
 
@@ -579,24 +580,24 @@ export function KYCVerificationPortal() {
       if (response.ok) {
         setSelectedPerson({ ...selectedPerson, status: 'REJECTED' });
         await refetchCases();
-        alert('KYC case rejected.');
+        toast.warning('KYC case rejected.');
       } else {
-        alert('Failed to reject KYC case. Please try again.');
+        toast.error('Failed to reject KYC case. Please try again.');
       }
     } catch (error) {
       log.error('Error rejecting KYC case:', error);
-      alert('Error rejecting KYC case. Please try again.');
+      toast.error('Error rejecting KYC case. Please try again.');
     }
   };
 
   const handleRequestDocuments = async () => {
     if (!selectedPerson) return;
-    alert('Document request sent to ' + selectedPerson.email);
+    toast.info('Document request sent to ' + selectedPerson.email);
   };
 
   const handleRerunScreening = async () => {
     if (!selectedPerson) return;
-    alert('Re-running screening checks...');
+    toast.info('Re-running screening checks...');
   };
 
   // Detail View
@@ -1250,13 +1251,13 @@ export function KYCVerificationPortal() {
                 if (response.ok) {
                   setShowNewCaseModal(false);
                   await refetchCases();
-                  alert('KYC case created successfully!');
+                  toast.success('KYC case created successfully!');
                 } else {
-                  alert('Failed to create KYC case. Please try again.');
+                  toast.error('Failed to create KYC case. Please try again.');
                 }
               } catch (error) {
                 log.error('Error creating KYC case:', error);
-                alert('Error creating KYC case. Please try again.');
+                toast.error('Error creating KYC case. Please try again.');
               }
             }}>
               <div className="space-y-4">

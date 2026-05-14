@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/lib/toast';
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
@@ -335,13 +336,13 @@ export function OnboardingPortal() {
           ),
         });
         await refetchCases();
-        alert('Requirement approved successfully!');
+        toast.success('Requirement approved successfully!');
       } else {
-        alert('Failed to approve requirement. Please try again.');
+        toast.error('Failed to approve requirement. Please try again.');
       }
     } catch (error) {
       log.error('Error approving requirement:', error);
-      alert('Error approving requirement. Please try again.');
+      toast.error('Error approving requirement. Please try again.');
     }
   };
 
@@ -360,13 +361,13 @@ export function OnboardingPortal() {
           ),
         });
         await refetchCases();
-        alert('Requirement rejected.');
+        toast.warning('Requirement rejected.');
       } else {
-        alert('Failed to reject requirement. Please try again.');
+        toast.error('Failed to reject requirement. Please try again.');
       }
     } catch (error) {
       log.error('Error rejecting requirement:', error);
-      alert('Error rejecting requirement. Please try again.');
+      toast.error('Error rejecting requirement. Please try again.');
     }
   };
 
@@ -380,13 +381,13 @@ export function OnboardingPortal() {
       if (response.ok) {
         setSelectedCase({ ...selectedCase, status: newStatus });
         await refetchCases();
-        alert(`Case transitioned to ${newStatus.replace(/_/g, ' ')} successfully!`);
+        toast.success(`Case transitioned to ${newStatus.replace(/_/g, ' ')} successfully!`);
       } else {
-        alert('Failed to transition case. Please try again.');
+        toast.error('Failed to transition case. Please try again.');
       }
     } catch (error) {
       log.error('Error transitioning case:', error);
-      alert('Error transitioning case. Please try again.');
+      toast.error('Error transitioning case. Please try again.');
     }
   };
 
@@ -426,22 +427,14 @@ export function OnboardingPortal() {
         // Refetch cases to update the list
         await refetchCases();
         
-        alert(
-          `Successfully provisioned ${environment.toUpperCase()} environment!\n\n` +
-          `Resources created:\n` +
-          `- Keycloak Client: ${result.provisioned_resources.keycloak_client_id}\n` +
-          `- APISIX Route: ${result.provisioned_resources.apisix_route_id}\n` +
-          `- TigerBeetle Account: ${result.provisioned_resources.tigerbeetle_account_id}\n` +
-          `- KYB Case: ${result.provisioned_resources.kyb_case_id}\n\n` +
-          `Status updated to: ${result.new_status.replace(/_/g, ' ')}`
-        );
+        toast.success(`Successfully provisioned ${environment.toUpperCase()} environment! Resources: Keycloak=${result.provisioned_resources.keycloak_client_id}, APISIX=${result.provisioned_resources.apisix_route_id}, TigerBeetle=${result.provisioned_resources.tigerbeetle_account_id}`);
       } else {
         const error = await response.json();
-        alert(`Failed to provision: ${error.detail || 'Unknown error'}`);
+        toast.error(`Failed to provision: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
       log.error('Error provisioning:', error);
-      alert('Error provisioning resources. Please try again.');
+      toast.error('Error provisioning resources. Please try again.');
     } finally {
       setProvisioning(false);
     }

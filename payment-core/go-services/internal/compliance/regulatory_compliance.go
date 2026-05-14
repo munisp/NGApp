@@ -662,13 +662,83 @@ func (s *SARWorkflowService) persistSAR(ctx context.Context, sar *SuspiciousActi
 }
 
 func (s *SARWorkflowService) loadSAR(ctx context.Context, sarID string) (*SuspiciousActivityReport, error) {
-	// Implementation would load from database
-	return nil, fmt.Errorf("not implemented")
+	if s.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
+	query := `
+		SELECT sar_id, status, priority, customer_id, customer_name,
+			account_numbers, suspicious_activity, activity_type, total_amount,
+			currency, date_range_start, date_range_end, transactions, narrative,
+			indicators, trigger_reason, trigger_decision_id, assigned_to,
+			created_at, created_by, filing_deadline, attachments, audit_trail, metadata
+		FROM suspicious_activity_reports WHERE sar_id = $1
+	`
+
+	sar := &SuspiciousActivityReport{}
+	var accountsJSON, transactionsJSON, indicatorsJSON, attachmentsJSON, auditTrailJSON, metadataJSON []byte
+
+	err := s.db.QueryRowContext(ctx, query, sarID).Scan(
+		&sar.SARID, &sar.Status, &sar.Priority, &sar.CustomerID, &sar.CustomerName,
+		&accountsJSON, &sar.SuspiciousActivity, &sar.ActivityType, &sar.TotalAmount,
+		&sar.Currency, &sar.DateRange.Start, &sar.DateRange.End, &transactionsJSON, &sar.Narrative,
+		&indicatorsJSON, &sar.TriggerReason, &sar.TriggerDecisionID, &sar.AssignedTo,
+		&sar.CreatedAt, &sar.CreatedBy, &sar.FilingDeadline, &attachmentsJSON, &auditTrailJSON, &metadataJSON,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("SAR %s not found", sarID)
+		}
+		return nil, fmt.Errorf("failed to load SAR %s: %w", sarID, err)
+	}
+
+	if len(accountsJSON) > 0 {
+		json.Unmarshal(accountsJSON, &sar.AccountNumbers)
+	}
+	if len(transactionsJSON) > 0 {
+		json.Unmarshal(transactionsJSON, &sar.Transactions)
+	}
+	if len(indicatorsJSON) > 0 {
+		json.Unmarshal(indicatorsJSON, &sar.Indicators)
+	}
+	if len(attachmentsJSON) > 0 {
+		json.Unmarshal(attachmentsJSON, &sar.Attachments)
+	}
+	if len(auditTrailJSON) > 0 {
+		json.Unmarshal(auditTrailJSON, &sar.AuditTrail)
+	}
+	if len(metadataJSON) > 0 {
+		json.Unmarshal(metadataJSON, &sar.Metadata)
+	}
+
+	return sar, nil
 }
 
 func (s *SARWorkflowService) updateSAR(ctx context.Context, sar *SuspiciousActivityReport) error {
-	// Implementation would update in database
-	return nil
+	if s.db == nil {
+		return nil
+	}
+
+	transactionsJSON, _ := json.Marshal(sar.Transactions)
+	indicatorsJSON, _ := json.Marshal(sar.Indicators)
+	attachmentsJSON, _ := json.Marshal(sar.Attachments)
+	auditTrailJSON, _ := json.Marshal(sar.AuditTrail)
+	metadataJSON, _ := json.Marshal(sar.Metadata)
+
+	query := `
+		UPDATE suspicious_activity_reports SET
+			status = $2, priority = $3, assigned_to = $4,
+			narrative = $5, transactions = $6, indicators = $7,
+			attachments = $8, audit_trail = $9, metadata = $10
+		WHERE sar_id = $1
+	`
+
+	_, err := s.db.ExecContext(ctx, query,
+		sar.SARID, sar.Status, sar.Priority, sar.AssignedTo,
+		sar.Narrative, transactionsJSON, indicatorsJSON,
+		attachmentsJSON, auditTrailJSON, metadataJSON,
+	)
+	return err
 }
 
 // =============================================================================

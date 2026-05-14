@@ -531,18 +531,128 @@ func (s *CaseManagementService) persistCase(ctx context.Context, c *Case) error 
 }
 
 func (s *CaseManagementService) loadCase(ctx context.Context, caseID string) (*Case, error) {
-	// Implementation would load from database
-	return nil, fmt.Errorf("not implemented")
+	if s.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
+	query := `
+		SELECT case_id, case_type, priority, status, customer_id, transaction_id,
+			subject, description, risk_score, assigned_to, assigned_at, queue,
+			tags, sla_deadline, escalation_level, created_at, updated_at,
+			first_response_at, resolved_at, resolution, resolution_notes,
+			qa_status, qa_score, metadata, audit_trail
+		FROM cases WHERE case_id = $1
+	`
+
+	c := &Case{}
+	var tagsJSON, metadataJSON, auditTrailJSON []byte
+
+	err := s.db.QueryRowContext(ctx, query, caseID).Scan(
+		&c.CaseID, &c.CaseType, &c.Priority, &c.Status, &c.CustomerID, &c.TransactionID,
+		&c.Subject, &c.Description, &c.RiskScore, &c.AssignedTo, &c.AssignedAt, &c.Queue,
+		&tagsJSON, &c.SLADeadline, &c.EscalationLevel, &c.CreatedAt, &c.UpdatedAt,
+		&c.FirstResponseAt, &c.ResolvedAt, &c.Resolution, &c.ResolutionNotes,
+		&c.QAStatus, &c.QAScore, &metadataJSON, &auditTrailJSON,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("case %s not found", caseID)
+		}
+		return nil, fmt.Errorf("failed to load case %s: %w", caseID, err)
+	}
+
+	if len(tagsJSON) > 0 {
+		json.Unmarshal(tagsJSON, &c.Tags)
+	}
+	if len(metadataJSON) > 0 {
+		json.Unmarshal(metadataJSON, &c.Metadata)
+	}
+	if len(auditTrailJSON) > 0 {
+		json.Unmarshal(auditTrailJSON, &c.AuditTrail)
+	}
+
+	return c, nil
 }
 
 func (s *CaseManagementService) updateCase(ctx context.Context, c *Case) error {
-	// Implementation would update in database
-	return nil
+	if s.db == nil {
+		return nil
+	}
+
+	tagsJSON, _ := json.Marshal(c.Tags)
+	metadataJSON, _ := json.Marshal(c.Metadata)
+	auditTrailJSON, _ := json.Marshal(c.AuditTrail)
+	c.UpdatedAt = time.Now().UTC()
+
+	query := `
+		UPDATE cases SET
+			status = $2, priority = $3, assigned_to = $4, assigned_at = $5,
+			escalation_level = $6, updated_at = $7, first_response_at = $8,
+			resolved_at = $9, resolution = $10, resolution_notes = $11,
+			qa_status = $12, qa_score = $13, tags = $14, metadata = $15, audit_trail = $16
+		WHERE case_id = $1
+	`
+
+	_, err := s.db.ExecContext(ctx, query,
+		c.CaseID, c.Status, c.Priority, c.AssignedTo, c.AssignedAt,
+		c.EscalationLevel, c.UpdatedAt, c.FirstResponseAt,
+		c.ResolvedAt, c.Resolution, c.ResolutionNotes,
+		c.QAStatus, c.QAScore, tagsJSON, metadataJSON, auditTrailJSON,
+	)
+	return err
 }
 
 func (s *CaseManagementService) findSLABreachingCases(ctx context.Context) ([]*Case, error) {
-	// Implementation would query database
-	return nil, nil
+	if s.db == nil {
+		return nil, nil
+	}
+
+	query := `
+		SELECT case_id, case_type, priority, status, customer_id, transaction_id,
+			subject, description, risk_score, assigned_to, assigned_at, queue,
+			tags, sla_deadline, escalation_level, created_at, updated_at,
+			first_response_at, resolved_at, resolution, resolution_notes,
+			qa_status, qa_score, metadata, audit_trail
+		FROM cases
+		WHERE status NOT IN ('RESOLVED', 'CLOSED')
+		  AND sla_deadline < NOW()
+		ORDER BY sla_deadline ASC
+		LIMIT 100
+	`
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query SLA-breaching cases: %w", err)
+	}
+	defer rows.Close()
+
+	var cases []*Case
+	for rows.Next() {
+		c := &Case{}
+		var tagsJSON, metadataJSON, auditTrailJSON []byte
+		err := rows.Scan(
+			&c.CaseID, &c.CaseType, &c.Priority, &c.Status, &c.CustomerID, &c.TransactionID,
+			&c.Subject, &c.Description, &c.RiskScore, &c.AssignedTo, &c.AssignedAt, &c.Queue,
+			&tagsJSON, &c.SLADeadline, &c.EscalationLevel, &c.CreatedAt, &c.UpdatedAt,
+			&c.FirstResponseAt, &c.ResolvedAt, &c.Resolution, &c.ResolutionNotes,
+			&c.QAStatus, &c.QAScore, &metadataJSON, &auditTrailJSON,
+		)
+		if err != nil {
+			continue
+		}
+		if len(tagsJSON) > 0 {
+			json.Unmarshal(tagsJSON, &c.Tags)
+		}
+		if len(metadataJSON) > 0 {
+			json.Unmarshal(metadataJSON, &c.Metadata)
+		}
+		if len(auditTrailJSON) > 0 {
+			json.Unmarshal(auditTrailJSON, &c.AuditTrail)
+		}
+		cases = append(cases, c)
+	}
+
+	return cases, nil
 }
 
 // =============================================================================

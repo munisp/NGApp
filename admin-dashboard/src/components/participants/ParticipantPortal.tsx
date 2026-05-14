@@ -1,3 +1,4 @@
+import { toast } from '@/lib/toast';
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
@@ -273,13 +274,13 @@ export function ParticipantPortal() {
             if (response.ok) {
               setShowOnboardingModal(false);
               await refetchParticipants();
-              alert('Participant onboarded successfully!');
+              toast.success('Participant onboarded successfully!');
             } else {
-              alert('Failed to onboard participant. Please try again.');
+              toast.error('Failed to onboard participant. Please try again.');
             }
           } catch (error) {
             log.error('Error onboarding participant:', error);
-            alert('Error onboarding participant. Please try again.');
+            toast.error('Error onboarding participant. Please try again.');
           }
         }}
       />
@@ -299,13 +300,13 @@ export function ParticipantPortal() {
               });
               if (response.ok) {
                 await refetchParticipants();
-                alert(`Participant ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'} successfully!`);
+                toast.success(`Participant ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'} successfully!`);
               } else {
-                alert('Failed to update participant status. Please try again.');
+                toast.error('Failed to update participant status. Please try again.');
               }
             } catch (error) {
               log.error('Error updating participant status:', error);
-              alert('Error updating participant status. Please try again.');
+              toast.error('Error updating participant status. Please try again.');
             }
           }
           setShowSuspendModal(false);
@@ -335,13 +336,13 @@ export function ParticipantPortal() {
               });
               if (response.ok) {
                 await refetchParticipants();
-                alert('Participant limits updated successfully!');
+                toast.success('Participant limits updated successfully!');
               } else {
-                alert('Failed to update participant limits. Please try again.');
+                toast.error('Failed to update participant limits. Please try again.');
               }
             } catch (error) {
               log.error('Error updating participant limits:', error);
-              alert('Error updating participant limits. Please try again.');
+              toast.error('Error updating participant limits. Please try again.');
             }
           }
           setShowLimitsModal(false);

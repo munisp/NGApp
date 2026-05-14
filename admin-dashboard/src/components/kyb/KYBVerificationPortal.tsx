@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/lib/toast';
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
@@ -577,13 +578,13 @@ export function KYBVerificationPortal() {
       if (response.ok) {
         setSelectedCase({ ...selectedCase, status: 'APPROVED' });
         await refetchCases();
-        alert('KYB case approved successfully!');
+        toast.success('KYB case approved successfully!');
       } else {
-        alert('Failed to approve KYB case. Please try again.');
+        toast.error('Failed to approve KYB case. Please try again.');
       }
     } catch (error) {
       log.error('Error approving KYB case:', error);
-      alert('Error approving KYB case. Please try again.');
+      toast.error('Error approving KYB case. Please try again.');
     }
   };
 
@@ -597,28 +598,28 @@ export function KYBVerificationPortal() {
       if (response.ok) {
         setSelectedCase({ ...selectedCase, status: 'REJECTED' });
         await refetchCases();
-        alert('KYB case rejected.');
+        toast.warning('KYB case rejected.');
       } else {
-        alert('Failed to reject KYB case. Please try again.');
+        toast.error('Failed to reject KYB case. Please try again.');
       }
     } catch (error) {
       log.error('Error rejecting KYB case:', error);
-      alert('Error rejecting KYB case. Please try again.');
+      toast.error('Error rejecting KYB case. Please try again.');
     }
   };
 
   const handleRequestDocuments = async () => {
     if (!selectedCase) return;
-    alert('Document request sent to ' + selectedCase.organizationName);
+    toast.info('Document request sent to ' + selectedCase.organizationName);
   };
 
   const handleRerunScreening = async () => {
     if (!selectedCase) return;
-    alert('Re-running screening checks...');
+    toast.info('Re-running screening checks...');
   };
 
   const handleInitiateKYC = async (personId: string) => {
-    alert('Initiating KYC for person ' + personId);
+    toast.info('Initiating KYC for person ' + personId);
   };
 
   // Detail View
@@ -1303,13 +1304,13 @@ export function KYBVerificationPortal() {
                 if (response.ok) {
                   setShowNewCaseModal(false);
                   await refetchCases();
-                  alert('KYB case created successfully!');
+                  toast.success('KYB case created successfully!');
                 } else {
-                  alert('Failed to create KYB case. Please try again.');
+                  toast.error('Failed to create KYB case. Please try again.');
                 }
               } catch (error) {
                 log.error('Error creating KYB case:', error);
-                alert('Error creating KYB case. Please try again.');
+                toast.error('Error creating KYB case. Please try again.');
               }
             }}>
               <div className="space-y-4">

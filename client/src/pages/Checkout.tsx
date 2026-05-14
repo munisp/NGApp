@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,7 @@ export default function Checkout() {
     },
     onError: (err) => {
       setProcessing(false);
-      alert(`Payment failed: ${err.message}`);
+      toast.error(`Payment failed: ${err.message}`);
     },
   });
 

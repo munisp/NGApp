@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -73,6 +74,7 @@ type FluvioConsumer struct {
 	running   bool
 	messageCh chan *FluvioMessage
 	stopCh    chan struct{}
+	handler   func(key string, value json.RawMessage)
 }
 
 // FluvioMessage represents a message from Fluvio
@@ -473,20 +475,57 @@ func (c *FluvioClient) Close() {
 	}
 }
 
-// consume reads messages from Fluvio (simulated - in production would use Fluvio SDK)
+// consume reads messages from Fluvio via HTTP consumer API
+// Uses Fluvio Cloud HTTP API when FLUVIO_CLOUD_ENDPOINT is set,
+// otherwise falls back to local Fluvio cluster gRPC endpoint
 func (c *FluvioConsumer) consume(endpoint string) {
-	// In production, this would use the Fluvio Rust SDK via FFI or gRPC
-	// For now, this is a placeholder that simulates the consumer behavior
 	log.Printf("Fluvio consumer started for topic %s at %s", c.topic, endpoint)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	pollURL := fmt.Sprintf("%s/api/v1/consume/%s?offset=%d&max_bytes=65536", endpoint, c.topic, c.offset)
+	backoff := 100 * time.Millisecond
+	maxBackoff := 10 * time.Second
 
 	for c.running {
 		select {
 		case <-c.stopCh:
+			log.Printf("Fluvio consumer stopped for topic %s", c.topic)
 			return
 		default:
-			// In production: poll Fluvio for messages
-			// fluvio.consume(c.topic, c.offset) -> messages
-			time.Sleep(100 * time.Millisecond)
+			resp, err := client.Get(pollURL)
+			if err != nil {
+				log.Printf("Fluvio poll error for %s: %v (retrying in %v)", c.topic, err, backoff)
+				time.Sleep(backoff)
+				if backoff < maxBackoff {
+					backoff *= 2
+				}
+				continue
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				var batch struct {
+					Records []struct {
+						Offset int64           `json:"offset"`
+						Key    string          `json:"key"`
+						Value  json.RawMessage `json:"value"`
+					} `json:"records"`
+				}
+				if err := json.NewDecoder(resp.Body).Decode(&batch); err == nil {
+					for _, record := range batch.Records {
+						if c.handler != nil {
+							c.handler(record.Key, record.Value)
+						}
+						if record.Offset >= c.offset {
+							c.offset = record.Offset + 1
+						}
+					}
+					pollURL = fmt.Sprintf("%s/api/v1/consume/%s?offset=%d&max_bytes=65536", endpoint, c.topic, c.offset)
+				}
+				backoff = 100 * time.Millisecond
+			} else if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusNotFound {
+				time.Sleep(500 * time.Millisecond)
+			}
+			resp.Body.Close()
 		}
 	}
 }

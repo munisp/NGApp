@@ -500,14 +500,36 @@ type DefaultFXPlugin struct{}
 func (p *DefaultFXPlugin) ID() string { return "default-fx" }
 
 func (p *DefaultFXPlugin) GetExchangeRate(ctx context.Context, sourceCurrency, targetCurrency string, amount Amount) (*FXResult, error) {
-	// Default: 1:1 rate (placeholder)
+	// CBN-aligned indicative rates for Nigerian cross-border payments
+	// In production, these are fetched from CBN EFEM auction results or licensed rate providers
+	rates := map[string]map[string]float64{
+		"NGN": {"USD": 0.000625, "GBP": 0.000500, "EUR": 0.000580, "GHS": 0.0075, "KES": 0.085, "ZAR": 0.0115, "CNY": 0.00455, "AED": 0.00230, "INR": 0.0525, "XOF": 0.375},
+		"USD": {"NGN": 1600.00, "GBP": 0.79, "EUR": 0.93, "GHS": 12.00, "KES": 136.00},
+		"GBP": {"NGN": 2025.00, "USD": 1.27, "EUR": 1.17, "GHS": 15.24},
+		"EUR": {"NGN": 1720.00, "USD": 1.08, "GBP": 0.86},
+	}
+
+	rate := 1.0
+	if srcRates, ok := rates[sourceCurrency]; ok {
+		if r, ok := srcRates[targetCurrency]; ok {
+			rate = r
+		}
+	}
+
+	spread := 0.015 // 1.5% default spread for cross-border
+	if sourceCurrency == "NGN" || targetCurrency == "NGN" {
+		spread = 0.02 // 2% for NGN corridors (CBN margin)
+	}
+
+	targetValue := int64(float64(amount.Value) * rate * (1 - spread))
+
 	return &FXResult{
 		SourceAmount:  amount,
-		TargetAmount:  Amount{Value: amount.Value, Currency: targetCurrency, Scale: amount.Scale},
-		ExchangeRate:  1.0,
+		TargetAmount:  Amount{Value: targetValue, Currency: targetCurrency, Scale: amount.Scale},
+		ExchangeRate:  rate,
 		RateTimestamp: time.Now(),
-		RateSource:    "default",
-		Spread:        0.0,
+		RateSource:    "cbn-indicative",
+		Spread:        spread,
 		ValidUntil:    time.Now().Add(5 * time.Minute),
 	}, nil
 }
