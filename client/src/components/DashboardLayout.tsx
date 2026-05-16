@@ -188,6 +188,7 @@ const menuSections: MenuSection[] = [
       { icon: Shuffle, label: "Payments Monitor", path: "/banking/payments" },
       { icon: Globe, label: "SWIFT Transactions", path: "/banking/swift" },
       { icon: FileWarning, label: "Fraud Alerts", path: "/banking/fraud" },
+      { icon: Fingerprint, label: "Liveness Verification", path: "/banking/liveness" },
       { icon: FileSpreadsheet, label: "CBN Reports", path: "/banking/cbn-reports" },
       { icon: Building, label: "Correspondent Banks", path: "/banking/correspondents" },
       { icon: Radio, label: "Telecom (NCC)", path: "/telecom" },

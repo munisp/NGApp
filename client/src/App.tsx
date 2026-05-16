@@ -133,6 +133,7 @@ const WatchlistScreening = lazy(() => import("@/pages/banking/WatchlistScreening
 const PaymentsMonitor = lazy(() => import("@/pages/banking/PaymentsMonitor"));
 const SwiftTransactions = lazy(() => import("@/pages/banking/SwiftTransactions"));
 const FraudAlerts = lazy(() => import("@/pages/banking/FraudAlerts"));
+const LivenessVerification = lazy(() => import("@/pages/banking/LivenessVerification"));
 const CbnReports = lazy(() => import("@/pages/banking/CbnReports"));
 const CorrespondentBanks = lazy(() => import("@/pages/banking/CorrespondentBanks"));
 const TelecomDashboard = lazy(() => import("@/pages/telecom/TelecomDashboard"));
@@ -353,6 +354,7 @@ function Router() {
         <Route path="/banking/payments" component={PaymentsMonitor} />
         <Route path="/banking/swift" component={SwiftTransactions} />
         <Route path="/banking/fraud" component={FraudAlerts} />
+        <Route path="/banking/liveness" component={LivenessVerification} />
         <Route path="/banking/cbn-reports" component={CbnReports} />
         <Route path="/banking/correspondents" component={CorrespondentBanks} />
         {/* Sector Modules */}

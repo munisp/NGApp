@@ -159,6 +159,7 @@ import {
   ndpaSnapshotsRouter,
 } from "./routers/newFeatures";
 import { telecomRouter } from "./routers/telecom";
+import { livenessRouter } from "./routers/liveness";
 import {
   smsAlertsRouter,
   pdfGenerationRouter,
@@ -276,6 +277,7 @@ export const appRouter = router({
   system: systemRouter,
   banking: bankingServicesRouter,
   telecom: telecomRouter,
+  liveness: livenessRouter,
   healthcare: healthcareRouter,
   energy: energyRouter,
   insurance: insuranceRouter,
