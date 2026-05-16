@@ -5,6 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"mobile-money-service/internal/handlers"
+	"mobile-money-service/internal/repository"
+	"mobile-money-service/internal/service"
 )
 
 func main() {
@@ -13,19 +17,18 @@ func main() {
 		port = "8092"
 	}
 
-	mux := http.NewServeMux()
-	handler := NewPaymentHandler()
+	repo := repository.NewMoMoRepository()
+	svc := service.NewMoMoService(repo)
+	h := handlers.NewHandler(svc)
 
-	mux.HandleFunc("/api/v1/payments/initiate", handler.InitiatePayment)
-	mux.HandleFunc("/api/v1/payments/callback", handler.PaymentCallback)
-	mux.HandleFunc("/api/v1/payments/status/", handler.GetPaymentStatus)
-	mux.HandleFunc("/api/v1/payments/recurring", handler.SetupRecurring)
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"healthy","service":"mobile-money-service"}`))
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"healthy","service":"mobile-money-service","version":"2.0.0"}`))
 	})
 
-	log.Printf("Mobile Money Service starting on port %s", port)
+	log.Printf("Mobile Money Service v2.0 starting on port %s", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), mux); err != nil {
 		log.Fatal(err)
 	}
