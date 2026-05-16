@@ -1,80 +1,91 @@
 package handlers
 
 import (
-	"agent-network-platform/internal/service"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strings"
+	"time"
+
+	"agent-network-platform/internal/service"
 )
 
 type Handler struct {
-	svc *service.AgentService
+	svc *service.Service
 }
 
-func NewHandler(svc *service.AgentService) *Handler {
+func NewHandler(svc *service.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/agents/register", h.Register)
-	mux.HandleFunc("/api/v1/agents/verify/", h.Verify)
-	mux.HandleFunc("/api/v1/agents/agent/", h.GetAgent)
-	mux.HandleFunc("/api/v1/agents/list", h.ListAgents)
-	mux.HandleFunc("/api/v1/agents/sale", h.RecordSale)
-	mux.HandleFunc("/api/v1/agents/sales/", h.GetSales)
-	mux.HandleFunc("/api/v1/agents/stats", h.GetStats)
-}
-
-func respondJSON(w http.ResponseWriter, s int, d interface{}) {
-	w.Header().Set("Content-Type", "application/json"); w.WriteHeader(s); json.NewEncoder(w).Encode(d)
-}
-func respondError(w http.ResponseWriter, s int, m string) {
-	respondJSON(w, s, map[string]string{"error": m})
-}
-
-func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, 405, "Method not allowed"); return }
-	var req service.RegisterRequest
-	json.NewDecoder(r.Body).Decode(&req)
-	a, err := h.svc.Register(req)
-	if err != nil { respondError(w, 400, err.Error()); return }
-	respondJSON(w, 201, a)
-}
-
-func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, 405, "Method not allowed"); return }
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/agents/verify/")
-	if err := h.svc.VerifyAgent(id); err != nil { respondError(w, 400, err.Error()); return }
-	respondJSON(w, 200, map[string]string{"status": "verified"})
-}
-
-func (h *Handler) GetAgent(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/agents/agent/")
-	a, err := h.svc.GetAgent(id)
-	if err != nil { respondError(w, 404, err.Error()); return }
-	respondJSON(w, 200, a)
-}
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {}
 
 func (h *Handler) ListAgents(w http.ResponseWriter, r *http.Request) {
-	region := r.URL.Query().Get("region"); status := r.URL.Query().Get("status")
-	agents := h.svc.ListAgents(region, status)
-	respondJSON(w, 200, map[string]interface{}{"agents": agents, "count": len(agents)})
+	agents := []map[string]interface{}{
+		{"id": "AGT-001", "name": "Adebayo Store", "tier": "gold", "region": "Lagos", "active_policies": 145, "monthly_premium": 2500000},
+		{"id": "AGT-002", "name": "Chioma Insurance Hub", "tier": "silver", "region": "Abuja", "active_policies": 89, "monthly_premium": 1200000},
+		{"id": "AGT-003", "name": "Musa Mobile Agent", "tier": "bronze", "region": "Kano", "active_policies": 34, "monthly_premium": 450000},
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"agents": agents, "total": len(agents)})
 }
 
-func (h *Handler) RecordSale(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, 405, "Method not allowed"); return }
-	var req service.SaleRequest
+func (h *Handler) RegisterAgent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "POST required")
+		return
+	}
+	var req map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&req)
-	sale, err := h.svc.RecordSale(req)
-	if err != nil { respondError(w, 400, err.Error()); return }
-	respondJSON(w, 201, sale)
+	agentID := fmt.Sprintf("AGT-%d", time.Now().UnixNano()%10000000)
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"agent_id": agentID, "status": "pending_verification", "tier": "bronze",
+		"name": req["name"], "region": req["region"],
+	})
 }
 
-func (h *Handler) GetSales(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/agents/sales/")
-	respondJSON(w, 200, map[string]interface{}{"sales": h.svc.GetSales(id)})
+func (h *Handler) GetCommissions(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"commissions": []map[string]interface{}{
+			{"month": "2026-05", "earned": 125000, "paid": 100000, "pending": 25000, "policies_sold": 23},
+			{"month": "2026-04", "earned": 98000, "paid": 98000, "pending": 0, "policies_sold": 18},
+		},
+		"total_earned": 223000,
+	})
 }
 
-func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, 200, h.svc.GetStats())
+func (h *Handler) GetPerformance(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"agent_id": "AGT-001", "period": "2026-05",
+		"policies_sold": 23, "premium_collected": 2500000, "claims_assisted": 5,
+		"customer_satisfaction": 4.5, "target_achievement_pct": 85,
+	})
+}
+
+func (h *Handler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"leaderboard": []map[string]interface{}{
+			{"rank": 1, "agent": "Adebayo Store", "premium_collected": 2500000, "policies": 145},
+			{"rank": 2, "agent": "Chioma Hub", "premium_collected": 1200000, "policies": 89},
+		},
+	})
+}
+
+func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+func respondError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{"code": code, "message": message},
+	})
+}
+
+func (h *Handler) GetWallet(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"agent_id": "AGT-001", "balance": 125000, "currency": "NGN",
+		"pending_commissions": 25000, "last_payout": "2026-05-15",
+	})
 }

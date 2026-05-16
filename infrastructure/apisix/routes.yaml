@@ -1,0 +1,238 @@
+routes:
+  # ── Financial Services ──
+  - uri: /api/v1/payouts/*
+    name: instant-payout
+    upstream:
+      type: roundrobin
+      nodes:
+        "instant-payout-service:8101": 1
+    plugins:
+      jwt-auth: {}
+      limit-req:
+        rate: 100
+        burst: 50
+        key_type: "var"
+        key: "remote_addr"
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET, POST, PUT, DELETE, OPTIONS"
+
+  - uri: /api/v1/mobile-money/*
+    name: mobile-money
+    upstream:
+      type: roundrobin
+      nodes:
+        "mobile-money-service:8092": 1
+    plugins:
+      jwt-auth: {}
+      limit-req:
+        rate: 200
+        burst: 100
+        key_type: "var"
+        key: "remote_addr"
+
+  - uri: /api/v1/currency/*
+    name: multi-currency
+    upstream:
+      type: roundrobin
+      nodes:
+        "multi-currency-service:8102": 1
+    plugins:
+      jwt-auth: {}
+      limit-count:
+        count: 1000
+        time_window: 60
+        key_type: "var"
+        key: "remote_addr"
+
+  - uri: /api/v1/premium-finance/*
+    name: premium-finance
+    upstream:
+      type: roundrobin
+      nodes:
+        "premium-finance-service:8099": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/blockchain/*
+    name: blockchain
+    upstream:
+      type: roundrobin
+      nodes:
+        "blockchain-transparency:8103": 1
+    plugins:
+      jwt-auth: {}
+
+  # ── Insurance Products ──
+  - uri: /api/v1/microinsurance/*
+    name: microinsurance
+    upstream:
+      type: roundrobin
+      nodes:
+        "microinsurance-engine:8094": 1
+    plugins:
+      jwt-auth: {}
+      limit-req:
+        rate: 500
+        burst: 200
+
+  - uri: /api/v1/ubi/*
+    name: usage-based-insurance
+    upstream:
+      type: roundrobin
+      nodes:
+        "usage-based-insurance:8095": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/takaful/*
+    name: takaful
+    upstream:
+      type: roundrobin
+      nodes:
+        "takaful-module:8097": 1
+    plugins:
+      jwt-auth: {}
+
+  # ── Access & Identity ──
+  - uri: /api/v1/ussd/*
+    name: ussd-gateway
+    upstream:
+      type: roundrobin
+      nodes:
+        "ussd-gateway:8090": 1
+    plugins:
+      limit-req:
+        rate: 1000
+        burst: 500
+
+  - uri: /api/v1/ekyc/*
+    name: pan-african-ekyc
+    upstream:
+      type: roundrobin
+      nodes:
+        "pan-african-ekyc:8106": 1
+    plugins:
+      jwt-auth: {}
+      limit-req:
+        rate: 50
+        burst: 20
+
+  # ── Platform Services ──
+  - uri: /api/v1/agents/*
+    name: agent-network
+    upstream:
+      type: roundrobin
+      nodes:
+        "agent-network-platform:8093": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/notifications/*
+    name: notifications
+    upstream:
+      type: roundrobin
+      nodes:
+        "notification-service:8109": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/i18n/*
+    name: multi-language
+    upstream:
+      type: roundrobin
+      nodes:
+        "multi-language-service:8108": 1
+    plugins:
+      limit-count:
+        count: 5000
+        time_window: 60
+
+  - uri: /api/v1/gamification/*
+    name: gamification
+    upstream:
+      type: roundrobin
+      nodes:
+        "gamification-service:8100": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/tenants/*
+    name: multi-tenant
+    upstream:
+      type: roundrobin
+      nodes:
+        "multi-tenant-platform:8112": 1
+    plugins:
+      jwt-auth: {}
+      limit-req:
+        rate: 50
+        burst: 20
+
+  - uri: /api/v1/regulatory/*
+    name: regulatory
+    upstream:
+      type: roundrobin
+      nodes:
+        "multi-country-regulatory:8104": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/marketplace/*
+    name: api-marketplace
+    upstream:
+      type: roundrobin
+      nodes:
+        "api-marketplace:8113": 1
+    plugins:
+      key-auth: {}
+      limit-count:
+        count: 10000
+        time_window: 3600
+
+  # ── AI & Analytics ──
+  - uri: /api/v1/claims-ai/*
+    name: ai-claims
+    upstream:
+      type: roundrobin
+      nodes:
+        "ai-claims-engine:8116": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/underwriting-ai/*
+    name: ai-underwriting
+    upstream:
+      type: roundrobin
+      nodes:
+        "ai-underwriting-engine:8117": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/fraud/*
+    name: fraud-detection
+    upstream:
+      type: roundrobin
+      nodes:
+        "fraud-detection-neural:8118": 1
+    plugins:
+      jwt-auth: {}
+
+  # ── Infrastructure ──
+  - uri: /api/v1/dr/*
+    name: dr-ha
+    upstream:
+      type: roundrobin
+      nodes:
+        "dr-ha-service:8110": 1
+    plugins:
+      jwt-auth: {}
+
+  - uri: /api/v1/devops/*
+    name: devops
+    upstream:
+      type: roundrobin
+      nodes:
+        "devops-platform:8111": 1
+    plugins:
+      jwt-auth: {}

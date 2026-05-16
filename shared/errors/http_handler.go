@@ -86,20 +86,6 @@ func WriteTooManyRequests(w http.ResponseWriter) {
 	WriteError(w, http.StatusTooManyRequests, "RATE_LIMITED", "Too many requests, please try again later")
 }
 
-// FromAppError converts an AppError to a standard HTTP error response
-func FromAppError(w http.ResponseWriter, err *AppError) {
-	details := make([]ErrorDetail, 0)
-	if err.Details != nil {
-		for k, v := range err.Details {
-			details = append(details, ErrorDetail{
-				Field:  k,
-				Reason: formatDetail(v),
-			})
-		}
-	}
-	WriteError(w, err.HTTPStatus, string(err.Code), err.Message, details...)
-}
-
 func formatDetail(v interface{}) string {
 	switch val := v.(type) {
 	case string:

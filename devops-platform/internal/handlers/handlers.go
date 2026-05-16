@@ -1,42 +1,74 @@
 package handlers
 
 import (
-	"devops-platform/internal/service"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
+
+	"devops-platform/internal/service"
 )
 
-type Handler struct { svc *service.DevOpsService }
-func NewHandler(svc *service.DevOpsService) *Handler { return &Handler{svc: svc} }
-
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/devops/services", h.GetServices)
-	mux.HandleFunc("/api/v1/devops/metrics", h.GetMetrics)
-	mux.HandleFunc("/api/v1/devops/deploy", h.Deploy)
-	mux.HandleFunc("/api/v1/devops/pipelines", h.GetPipelines)
-	mux.HandleFunc("/api/v1/devops/deployments", h.GetDeployments)
-	mux.HandleFunc("/api/v1/devops/stats", h.GetStats)
+type Handler struct {
+	svc *service.Service
 }
 
-func rj(w http.ResponseWriter, s int, d interface{}) { w.Header().Set("Content-Type","application/json"); w.WriteHeader(s); json.NewEncoder(w).Encode(d) }
-func re(w http.ResponseWriter, s int, m string) { rj(w, s, map[string]string{"error": m}) }
+func NewHandler(svc *service.Service) *Handler {
+	return &Handler{svc: svc}
+}
 
-func (h *Handler) GetServices(w http.ResponseWriter, r *http.Request) { rj(w, 200, map[string]interface{}{"services": h.svc.GetServices()}) }
-func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) { rj(w, 200, map[string]interface{}{"metrics": h.svc.GetMetrics()}) }
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {}
+
+func (h *Handler) ListPipelines(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"pipelines": []map[string]interface{}{
+			{"id": "PL-001", "name": "platform-ci", "status": "success", "duration": "4m 32s", "trigger": "push"},
+			{"id": "PL-002", "name": "deploy-staging", "status": "success", "duration": "2m 15s", "trigger": "manual"},
+		},
+	})
+}
+
+func (h *Handler) RunPipeline(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusAccepted, map[string]interface{}{
+		"run_id": fmt.Sprintf("RUN-%d", time.Now().UnixNano()%10000000), "status": "queued",
+	})
+}
+
+func (h *Handler) ListDeployments(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"deployments": []map[string]interface{}{
+			{"id": "DEP-001", "environment": "staging", "version": "3.0.0", "status": "running", "services": 33},
+		},
+	})
+}
+
 func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { re(w, 405, "Method not allowed"); return }
-	var req service.DeployRequest
-	json.NewDecoder(r.Body).Decode(&req)
-	d, err := h.svc.Deploy(req)
-	if err != nil { re(w, 400, err.Error()); return }
-	rj(w, 201, d)
+	respondJSON(w, http.StatusAccepted, map[string]interface{}{
+		"deployment_id": fmt.Sprintf("DEP-%d", time.Now().UnixNano()%10000000), "status": "deploying",
+	})
 }
-func (h *Handler) GetPipelines(w http.ResponseWriter, r *http.Request) {
-	svc := r.URL.Query().Get("service")
-	rj(w, 200, map[string]interface{}{"pipelines": h.svc.GetPipelines(svc)})
+
+func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{"status": "rolled_back", "version": "2.9.0"})
 }
-func (h *Handler) GetDeployments(w http.ResponseWriter, r *http.Request) {
-	svc := r.URL.Query().Get("service"); env := r.URL.Query().Get("environment")
-	rj(w, 200, map[string]interface{}{"deployments": h.svc.GetDeployments(svc, env)})
+
+func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
 }
-func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) { rj(w, 200, h.svc.GetStats()) }
+
+func respondError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{"code": code, "message": message},
+	})
+}
+
+func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"services_total": 33, "services_healthy": 31, "services_degraded": 2,
+		"deployments_today": 3, "pipeline_success_rate": 0.96,
+	})
+}

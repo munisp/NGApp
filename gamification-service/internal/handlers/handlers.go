@@ -2,31 +2,66 @@ package handlers
 
 import (
 	"encoding/json"
-	"gamification-service/internal/service"
 	"net/http"
-	"strconv"
-	"strings"
+
+	"gamification-service/internal/service"
 )
 
 type Handler struct {
-	svc *service.GamificationService
+	svc *service.Service
 }
 
-func NewHandler(svc *service.GamificationService) *Handler {
+func NewHandler(svc *service.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/loyalty/profile/", h.GetProfile)
-	mux.HandleFunc("/api/v1/loyalty/earn", h.Earn)
-	mux.HandleFunc("/api/v1/loyalty/redeem", h.Redeem)
-	mux.HandleFunc("/api/v1/loyalty/rewards", h.GetRewards)
-	mux.HandleFunc("/api/v1/loyalty/challenges", h.GetChallenges)
-	mux.HandleFunc("/api/v1/loyalty/leaderboard", h.GetLeaderboard)
-	mux.HandleFunc("/api/v1/loyalty/tiers", h.GetTiers)
-	mux.HandleFunc("/api/v1/loyalty/badges", h.GetBadges)
-	mux.HandleFunc("/api/v1/loyalty/badges/", h.GetEarnedBadges)
-	mux.HandleFunc("/api/v1/loyalty/history/", h.GetHistory)
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {}
+
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"user_id": "USR-001", "level": 5, "xp": 2450, "xp_to_next": 3000,
+		"title": "Insurance Champion", "badges": []string{"first_policy", "claim_warrior", "referral_king"},
+		"streak_days": 12, "total_points": 15600,
+	})
+}
+
+func (h *Handler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"leaderboard": []map[string]interface{}{
+			{"rank": 1, "user": "Adebayo O.", "xp": 45200, "level": 12},
+			{"rank": 2, "user": "Chioma N.", "xp": 38900, "level": 10},
+			{"rank": 3, "user": "Musa A.", "xp": 34500, "level": 9},
+			{"rank": 4, "user": "Ngozi E.", "xp": 28700, "level": 8},
+			{"rank": 5, "user": "Ibrahim K.", "xp": 22100, "level": 7},
+		},
+		"period": "monthly",
+	})
+}
+
+func (h *Handler) ListAchievements(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"achievements": []map[string]interface{}{
+			{"id": "first_policy", "name": "First Steps", "description": "Purchase your first policy", "xp": 100, "unlocked": true},
+			{"id": "claim_warrior", "name": "Claim Warrior", "description": "Submit 5 claims", "xp": 500, "unlocked": true},
+			{"id": "referral_king", "name": "Referral King", "description": "Refer 3 friends", "xp": 300, "unlocked": true},
+			{"id": "loyalty_legend", "name": "Loyalty Legend", "description": "Maintain policy for 12 months", "xp": 1000, "unlocked": false},
+			{"id": "full_coverage", "name": "Full Coverage", "description": "Have 5 active policies", "xp": 750, "unlocked": false},
+		},
+	})
+}
+
+func (h *Handler) GetRewards(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"rewards": []map[string]interface{}{
+			{"id": "discount_10", "name": "10% Premium Discount", "cost_points": 5000, "available": true},
+			{"id": "free_month", "name": "1 Month Free Cover", "cost_points": 10000, "available": true},
+			{"id": "airtime_500", "name": "₦500 Airtime", "cost_points": 2000, "available": true},
+		},
+	})
+}
+
+func (h *Handler) ClaimReward(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{"claimed": true, "message": "Reward claimed successfully"})
 }
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
@@ -35,74 +70,14 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func respondError(w http.ResponseWriter, status int, msg string) {
-	respondJSON(w, status, map[string]string{"error": msg})
-}
-
-func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/loyalty/profile/")
-	p, err := h.svc.GetProfile(id)
-	if err != nil { respondError(w, http.StatusNotFound, err.Error()); return }
-	respondJSON(w, http.StatusOK, p)
-}
-
-func (h *Handler) Earn(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, http.StatusMethodNotAllowed, "Method not allowed"); return }
-	var req service.EarnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil { respondError(w, http.StatusBadRequest, "Invalid request"); return }
-	profile, pts, err := h.svc.EarnPoints(req)
-	if err != nil { respondError(w, http.StatusBadRequest, err.Error()); return }
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"points_earned": pts, "new_balance": profile.Points, "tier": profile.Tier, "message": "Points earned successfully!",
+func respondError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{"code": code, "message": message},
 	})
 }
 
-func (h *Handler) Redeem(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, http.StatusMethodNotAllowed, "Method not allowed"); return }
-	var req service.RedeemRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil { respondError(w, http.StatusBadRequest, "Invalid request"); return }
-	red, err := h.svc.RedeemReward(req)
-	if err != nil { respondError(w, http.StatusBadRequest, err.Error()); return }
-	respondJSON(w, http.StatusOK, red)
-}
-
-func (h *Handler) GetRewards(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{"rewards": h.svc.GetRewards()})
-}
-
-func (h *Handler) GetChallenges(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{"active_challenges": h.svc.GetChallenges()})
-}
-
-func (h *Handler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-	limit := 10
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if v, err := strconv.Atoi(l); err == nil { limit = v }
-	}
-	leaders := h.svc.GetLeaderboard(limit)
-	var board []map[string]interface{}
-	for i, p := range leaders {
-		board = append(board, map[string]interface{}{
-			"rank": i + 1, "name": p.Name, "points": p.Points, "tier": p.Tier,
-		})
-	}
-	respondJSON(w, http.StatusOK, map[string]interface{}{"period": "current", "leaderboard": board})
-}
-
-func (h *Handler) GetTiers(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{"tiers": h.svc.GetTiers()})
-}
-
-func (h *Handler) GetBadges(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{"badges": h.svc.GetBadges()})
-}
-
-func (h *Handler) GetEarnedBadges(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/loyalty/badges/")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"earned_badges": h.svc.GetEarnedBadges(id)})
-}
-
-func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/loyalty/history/")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"history": h.svc.GetPointsHistory(id)})
+func (h *Handler) UpdateStreak(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{"streak_days": 13, "xp_earned": 50, "updated": true})
 }

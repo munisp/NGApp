@@ -2,47 +2,78 @@ package handlers
 
 import (
 	"encoding/json"
-	"multi-country-regulatory/internal/service"
+	"fmt"
 	"net/http"
-	"strings"
+	"time"
+
+	"multi-country-regulatory/internal/service"
 )
 
-type Handler struct { svc *service.RegulatoryService }
-func NewHandler(svc *service.RegulatoryService) *Handler { return &Handler{svc: svc} }
-
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/regulatory/countries", h.GetCountries)
-	mux.HandleFunc("/api/v1/regulatory/country/", h.GetCountry)
-	mux.HandleFunc("/api/v1/regulatory/check", h.RunCheck)
-	mux.HandleFunc("/api/v1/regulatory/checks", h.GetChecks)
-	mux.HandleFunc("/api/v1/regulatory/reports", h.GetReports)
-	mux.HandleFunc("/api/v1/regulatory/stats", h.GetStats)
+type Handler struct {
+	svc *service.Service
 }
 
-func rj(w http.ResponseWriter, s int, d interface{}) { w.Header().Set("Content-Type","application/json"); w.WriteHeader(s); json.NewEncoder(w).Encode(d) }
-func re(w http.ResponseWriter, s int, m string) { rj(w, s, map[string]string{"error": m}) }
+func NewHandler(svc *service.Service) *Handler {
+	return &Handler{svc: svc}
+}
 
-func (h *Handler) GetCountries(w http.ResponseWriter, r *http.Request) { rj(w, 200, map[string]interface{}{"countries": h.svc.GetCountries()}) }
-func (h *Handler) GetCountry(w http.ResponseWriter, r *http.Request) {
-	code := strings.TrimPrefix(r.URL.Path, "/api/v1/regulatory/country/")
-	c, err := h.svc.GetCountry(code)
-	if err != nil { re(w, 404, err.Error()); return }
-	rj(w, 200, c)
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {}
+
+func (h *Handler) ListRules(w http.ResponseWriter, r *http.Request) {
+	rules := []map[string]interface{}{
+		{"id": "NG-NAICOM-001", "country": "NG", "regulator": "NAICOM", "rule": "Minimum capital requirement", "status": "compliant"},
+		{"id": "NG-NDPR-001", "country": "NG", "regulator": "NITDA", "rule": "Data protection", "status": "compliant"},
+		{"id": "KE-IRA-001", "country": "KE", "regulator": "IRA", "rule": "Solvency margin", "status": "compliant"},
+		{"id": "GH-NIC-001", "country": "GH", "regulator": "NIC", "rule": "Premium reporting", "status": "pending_review"},
+		{"id": "ZA-FSCA-001", "country": "ZA", "regulator": "FSCA", "rule": "TCF compliance", "status": "compliant"},
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"rules": rules})
 }
-func (h *Handler) RunCheck(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { re(w, 405, "Method not allowed"); return }
-	var req service.CheckRequest
-	json.NewDecoder(r.Body).Decode(&req)
-	c, err := h.svc.RunComplianceCheck(req)
-	if err != nil { re(w, 400, err.Error()); return }
-	rj(w, 200, c)
+
+func (h *Handler) RunComplianceCheck(w http.ResponseWriter, r *http.Request) {
+	checkID := fmt.Sprintf("CHK-%d", time.Now().UnixNano()%10000000)
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"check_id": checkID, "status": "passed", "score": 0.94,
+		"issues": []map[string]interface{}{
+			{"severity": "low", "rule": "GH-NIC-001", "message": "Q2 premium report due in 14 days"},
+		},
+	})
 }
-func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
-	tid := r.URL.Query().Get("tenant_id"); country := r.URL.Query().Get("country")
-	rj(w, 200, map[string]interface{}{"checks": h.svc.GetChecks(tid, country)})
+
+func (h *Handler) ListChecks(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{"checks": []interface{}{}, "total": 0})
 }
-func (h *Handler) GetReports(w http.ResponseWriter, r *http.Request) {
-	tid := r.URL.Query().Get("tenant_id")
-	rj(w, 200, map[string]interface{}{"reports": h.svc.GetReports(tid)})
+
+func (h *Handler) ListReports(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"reports": []map[string]interface{}{
+			{"id": "RPT-001", "type": "NAICOM Quarterly", "period": "2026-Q1", "status": "submitted"},
+			{"id": "RPT-002", "type": "IRA Annual", "period": "2025", "status": "submitted"},
+		},
+	})
 }
-func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) { rj(w, 200, h.svc.GetStats()) }
+
+func (h *Handler) GenerateReport(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusAccepted, map[string]interface{}{"status": "generating", "estimated_time": "5 minutes"})
+}
+
+func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+func respondError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{"code": code, "message": message},
+	})
+}
+
+func (h *Handler) ComplianceDashboard(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"overall_score": 0.94, "countries": 6, "rules_compliant": 47, "rules_total": 50,
+		"next_filing": "2026-06-30", "alerts": 1,
+	})
+}

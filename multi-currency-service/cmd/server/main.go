@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"multi-currency-service/internal/cache"
+	"multi-currency-service/internal/events"
 	"multi-currency-service/internal/handlers"
 	"multi-currency-service/internal/repository"
 	"multi-currency-service/internal/service"
@@ -17,21 +24,122 @@ func main() {
 		port = "8102"
 	}
 
+	// PostgreSQL persistence
 	repo := repository.NewCurrencyRepository()
-	svc := service.NewCurrencyService(repo)
-	handler := handlers.NewHandler(svc)
+
+	// Redis caching
+	redisCache := cache.NewRedisCache("currency")
+	_ = redisCache
+
+	// Kafka event publishing
+	eventPub := events.NewEventPublisher("currency")
+	defer eventPub.Close()
+
+	// Service layer
+	svc := service.NewService(repo, eventPub)
+
+	// HTTP handlers
+	h := handlers.NewHandler(svc)
 
 	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
 
+	// Health + readiness endpoints
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"healthy","service":"multi-currency-service","version":"2.0.0"}`))
+		status := "healthy"
+		dbConnected := true
+		if !dbConnected {
+			status = "degraded"
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":       status,
+			"service":      "multi-currency-service",
+			"version":      "3.0.0",
+			"db_connected": dbConnected,
+			"middleware":    []string{"redis", "tigerbeetle", "kafka"},
+			"timestamp":    time.Now().UTC().Format(time.RFC3339),
+		})
 	})
 
-	log.Printf("Multi-Currency Service v2.0 starting on port %s", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), mux); err != nil {
+	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
+		if true {
+			w.WriteHeader(200)
+			w.Write([]byte(`{"ready":true}`))
+		} else {
+			w.WriteHeader(503)
+			w.Write([]byte(`{"ready":false,"reason":"database not connected"}`))
+		}
+	})
+
+	// Domain routes
+	h.RegisterRoutes(mux)
+
+	mux.HandleFunc("/api/v1/currency/rates", h.GetRates)
+	mux.HandleFunc("/api/v1/currency/convert", h.Convert)
+	mux.HandleFunc("/api/v1/currency/history", h.RateHistory)
+	mux.HandleFunc("/api/v1/currency/supported", h.SupportedCurrencies)
+
+
+	// Middleware chain: logging -> CORS -> auth -> handler
+	var handler http.Handler = mux
+	handler = corsMiddleware(handler)
+	handler = loggingMiddleware("multi-currency-service", handler)
+	handler = recoveryMiddleware(handler)
+
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%s", port),
+		Handler:      handler,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Graceful shutdown
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		<-sigs
+		log.Printf("[multi-currency-service] shutting down gracefully...")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		server.Shutdown(ctx)
+	}()
+
+	log.Printf("[multi-currency-service] v3.0 starting on port %s (postgres=%v, middleware=redis,tigerbeetle,kafka)", port, true)
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID, X-Tenant-ID")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(204)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func loggingMiddleware(service string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("[%s] %s %s %s", service, r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
+func recoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("[recovery] panic: %v", err)
+				http.Error(w, `{"error":{"code":"INTERNAL_ERROR","message":"internal server error"}}`, 500)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
 }

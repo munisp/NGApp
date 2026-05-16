@@ -1,0 +1,43 @@
+apiVersion: openappsec.io/v1
+kind: Policy
+metadata:
+  name: ngapp-waf-policy
+spec:
+  default:
+    mode: prevent
+    log:
+      min-event-severity: high
+      cef-severity-mapping:
+        high: 7
+        medium: 5
+        low: 3
+  practices:
+    - name: financial-api-protection
+      mode: prevent
+      web-attacks:
+        minimum-confidence: medium
+        max-url-size: 8192
+        max-body-size: 1048576
+      anti-bot:
+        injected-URIs:
+          - /api/v1/payouts/*
+          - /api/v1/mobile-money/*
+          - /api/v1/currency/*
+    - name: identity-protection
+      mode: prevent
+      web-attacks:
+        minimum-confidence: low
+      anti-bot:
+        injected-URIs:
+          - /api/v1/ekyc/*
+          - /api/v1/ussd/*
+    - name: general-api-protection
+      mode: detect
+      web-attacks:
+        minimum-confidence: high
+  exceptions:
+    - name: health-checks
+      match:
+        sourceip: 10.0.0.0/8
+      action: skip
+      comment: "Internal health check traffic"

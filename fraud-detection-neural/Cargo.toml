@@ -1,15 +1,15 @@
 [package]
 name = "fraud-detection-neural"
-version = "0.1.0"
+version = "3.0.0"
 edition = "2021"
-description = "Neural network fraud detection with graph analysis and anomaly detection"
 
 [dependencies]
 actix-web = "4"
+actix-cors = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["full"] }
-uuid = { version = "1", features = ["v4", "serde"] }
-tracing = "0.1"
-tracing-subscriber = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+env_logger = "0.11"
+log = "0.4"

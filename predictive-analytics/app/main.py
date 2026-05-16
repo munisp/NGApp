@@ -1,115 +1,95 @@
+"""Predictive Analytics — Risk scoring, churn prediction, CLV estimation."""
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+import math
+import hashlib
 
-app = FastAPI(
-    title="Predictive Analytics Engine",
-    description="Predictive models for churn, cross-sell, CLV, and risk forecasting",
-    version="1.0.0",
-)
+app = FastAPI(title="Predictive Analytics", version="3.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
-@app.get("/api/v1/analytics/churn-risk")
-async def churn_risk(customer_id: str = "CUST-001"):
-    """Predict customer churn probability."""
-    return {
-        "customer_id": customer_id,
-        "churn_probability": 0.23,
-        "risk_level": "medium",
-        "contributing_factors": [
-            {"factor": "missed_payment", "weight": 0.35, "detail": "1 missed payment in last 90 days"},
-            {"factor": "no_app_login", "weight": 0.25, "detail": "No portal login in 60 days"},
-            {"factor": "claim_denied", "weight": 0.20, "detail": "Recent claim partially denied"},
-            {"factor": "competitor_inquiry", "weight": 0.10, "detail": "Visited competitor site (referrer data)"},
-            {"factor": "low_engagement", "weight": 0.10, "detail": "No SMS/email opens in 30 days"},
-        ],
-        "retention_actions": [
-            {"action": "send_personalized_offer", "expected_impact": -0.15, "cost": 500},
-            {"action": "assign_retention_agent", "expected_impact": -0.20, "cost": 2000},
-            {"action": "offer_premium_discount", "expected_impact": -0.10, "cost": 1500},
-        ],
-        "model": "churn-xgboost-v3",
-        "model_accuracy": 0.87,
-    }
-
-
-@app.get("/api/v1/analytics/cross-sell")
-async def cross_sell(customer_id: str = "CUST-001"):
-    """Recommend next-best product for cross-selling."""
-    return {
-        "customer_id": customer_id,
-        "current_products": ["motor_third_party"],
-        "recommendations": [
-            {
-                "product": "hospital_cash",
-                "probability": 0.78,
-                "reason": "82% of motor customers in Lagos also buy health cover",
-                "expected_premium": 1000,
-            },
-            {
-                "product": "device_protect",
-                "probability": 0.65,
-                "reason": "Smartphone user, high engagement profile",
-                "expected_premium": 200,
-            },
-            {
-                "product": "comprehensive_motor",
-                "probability": 0.52,
-                "reason": "Vehicle value suggests upgrade from third party",
-                "expected_premium": 25000,
-            },
-        ],
-    }
-
-
-@app.get("/api/v1/analytics/clv")
-async def customer_lifetime_value(customer_id: str = "CUST-001"):
-    """Predict customer lifetime value."""
-    return {
-        "customer_id": customer_id,
-        "predicted_clv": 450000,
-        "clv_segment": "high_value",
-        "current_annual_premium": 55000,
-        "predicted_tenure_years": 8.2,
-        "upsell_potential": 120000,
-        "cross_sell_potential": 75000,
-        "retention_priority": "high",
-    }
-
-
-@app.get("/api/v1/analytics/loss-forecast")
-async def loss_ratio_forecast():
-    """Forecast loss ratios by product line."""
-    return {
-        "forecast_period": "2026-Q3",
-        "product_forecasts": [
-            {"product": "motor_tp", "predicted_loss_ratio": 0.62, "confidence_interval": [0.55, 0.69], "trend": "stable"},
-            {"product": "motor_comp", "predicted_loss_ratio": 0.71, "confidence_interval": [0.63, 0.79], "trend": "increasing"},
-            {"product": "group_life", "predicted_loss_ratio": 0.45, "confidence_interval": [0.38, 0.52], "trend": "stable"},
-            {"product": "hospital_cash", "predicted_loss_ratio": 0.58, "confidence_interval": [0.50, 0.66], "trend": "decreasing"},
-            {"product": "funeral_cover", "predicted_loss_ratio": 0.35, "confidence_interval": [0.28, 0.42], "trend": "stable"},
-        ],
-        "aggregate_loss_ratio": 0.57,
-        "reserve_recommendation": 2500000000,
-    }
-
-
-@app.get("/api/v1/analytics/risk-heatmap")
-async def risk_heatmap():
-    """Geographic risk heatmap for underwriting."""
-    return {
-        "regions": [
-            {"state": "Lagos", "risk_score": 0.72, "dominant_risk": "motor_accident", "claims_frequency": 0.15},
-            {"state": "Kano", "risk_score": 0.45, "dominant_risk": "fire", "claims_frequency": 0.08},
-            {"state": "Rivers", "risk_score": 0.68, "dominant_risk": "flood", "claims_frequency": 0.12},
-            {"state": "Abuja", "risk_score": 0.55, "dominant_risk": "motor_theft", "claims_frequency": 0.10},
-            {"state": "Oyo", "risk_score": 0.42, "dominant_risk": "motor_accident", "claims_frequency": 0.07},
-            {"state": "Borno", "risk_score": 0.85, "dominant_risk": "conflict", "claims_frequency": 0.18},
-        ],
-        "updated_at": "2026-05-16T00:00:00Z",
-    }
+class PredictionRequest(BaseModel):
+    customer_id: str
+    age: int = 35
+    tenure_months: int = 12
+    premium_amount: float = 50000
+    claims_count: int = 0
+    payment_regularity: float = 0.95
+    products_count: int = 1
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "predictive-analytics"}
+    return {"status": "healthy", "service": "predictive-analytics", "version": "3.0.0",
+            "middleware": ["kafka", "postgres", "redis"]}
+
+
+@app.post("/api/v1/predictive/churn")
+async def predict_churn(req: PredictionRequest):
+    """Predict customer churn probability."""
+    seed = int(hashlib.md5(req.customer_id.encode()).hexdigest()[:8], 16) % 100
+    tenure_factor = max(0, 1.0 - (req.tenure_months / 60))
+    payment_factor = 1.0 - req.payment_regularity
+    product_factor = max(0, 1.0 - (req.products_count / 3))
+    churn_prob = (tenure_factor * 0.35 + payment_factor * 0.35 + product_factor * 0.3) + (seed / 1000)
+    churn_prob = max(0.01, min(0.99, churn_prob))
+    return {
+        "customer_id": req.customer_id,
+        "churn_probability": round(churn_prob, 4),
+        "risk_level": "high" if churn_prob > 0.7 else "medium" if churn_prob > 0.4 else "low",
+        "top_factors": ["tenure" if tenure_factor > 0.5 else "payment_regularity",
+                        "product_diversity" if product_factor > 0.5 else "engagement"],
+        "recommended_actions": ["retention_offer", "cross_sell"] if churn_prob > 0.5 else ["loyalty_reward"],
+    }
+
+
+@app.post("/api/v1/predictive/clv")
+async def predict_clv(req: PredictionRequest):
+    """Estimate Customer Lifetime Value."""
+    monthly_premium = req.premium_amount
+    expected_tenure = max(12, req.tenure_months * 1.5) if req.payment_regularity > 0.8 else req.tenure_months
+    retention_rate = req.payment_regularity * 0.9
+    discount_rate = 0.10 / 12
+    clv = sum([monthly_premium * (retention_rate ** m) / ((1 + discount_rate) ** m) for m in range(int(expected_tenure))])
+    return {
+        "customer_id": req.customer_id,
+        "estimated_clv": round(clv, 2),
+        "currency": "NGN",
+        "confidence": 0.82,
+        "segment": "high_value" if clv > 2000000 else "medium_value" if clv > 500000 else "standard",
+        "expected_tenure_months": int(expected_tenure),
+    }
+
+
+@app.post("/api/v1/predictive/risk-score")
+async def risk_score(req: PredictionRequest):
+    """Calculate comprehensive risk score."""
+    age_risk = 0.3 if req.age < 25 or req.age > 65 else 0.1
+    claims_risk = min(req.claims_count / 5, 1.0) * 0.4
+    payment_risk = (1 - req.payment_regularity) * 0.3
+    score = 100 - int((age_risk + claims_risk + payment_risk) * 100)
+    return {
+        "customer_id": req.customer_id,
+        "risk_score": max(0, min(100, score)),
+        "risk_grade": "A" if score >= 80 else "B" if score >= 60 else "C" if score >= 40 else "D",
+        "factors": {"age": round(age_risk, 2), "claims_history": round(claims_risk, 2),
+                    "payment_behavior": round(payment_risk, 2)},
+        "premium_adjustment": round((1 - score / 100) * 0.3, 3),
+    }
+
+
+@app.get("/api/v1/predictive/segments")
+async def customer_segments():
+    """Customer segmentation analysis."""
+    return {
+        "segments": [
+            {"name": "High-Value Loyal", "count": 4231, "avg_clv": 3200000, "churn_risk": 0.08},
+            {"name": "Growing Engaged", "count": 8945, "avg_clv": 1500000, "churn_risk": 0.15},
+            {"name": "Price Sensitive", "count": 12340, "avg_clv": 450000, "churn_risk": 0.35},
+            {"name": "At Risk", "count": 3421, "avg_clv": 800000, "churn_risk": 0.62},
+            {"name": "New Customers", "count": 6789, "avg_clv": 200000, "churn_risk": 0.28},
+            {"name": "Dormant", "count": 2134, "avg_clv": 100000, "churn_risk": 0.85},
+        ],
+        "total_customers": 37860,
+    }

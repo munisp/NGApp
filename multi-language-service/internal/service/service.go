@@ -1,35 +1,26 @@
 package service
 
 import (
-	"multi-language-service/internal/models"
+	"multi-language-service/internal/events"
 	"multi-language-service/internal/repository"
-	"strings"
 )
 
-type I18nService struct {
-	repo *repository.I18nRepository
+type Service struct {
+	repo   *repository.I18nRepository
+	events *events.EventPublisher
 }
 
-func NewI18nService(repo *repository.I18nRepository) *I18nService {
-	return &I18nService{repo: repo}
-}
-
-func (s *I18nService) GetLanguages() []models.Language { return s.repo.GetLanguages() }
-
-func (s *I18nService) GetBundle(lang string) *models.TranslationBundle {
-	return s.repo.GetBundle(lang)
-}
-
-func (s *I18nService) Translate(key, lang string, vars map[string]string) string {
-	text := s.repo.Translate(key, lang)
-	for k, v := range vars {
-		text = strings.ReplaceAll(text, "{{"+k+"}}", v)
+func NewService(repo *repository.I18nRepository, events *events.EventPublisher) *Service {
+	return &Service{
+		repo:   repo,
+		events: events,
 	}
-	return text
 }
 
-func (s *I18nService) SetTranslation(t models.Translation) {
-	s.repo.SetTranslation(t)
+func (s *Service) Repo() *repository.I18nRepository {
+	return s.repo
 }
 
-func (s *I18nService) GetStats() map[string]interface{} { return s.repo.GetStats() }
+func (s *Service) Events() *events.EventPublisher {
+	return s.events
+}

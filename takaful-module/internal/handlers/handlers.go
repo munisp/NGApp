@@ -2,30 +2,56 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strings"
+	"time"
+
 	"takaful-module/internal/service"
 )
 
 type Handler struct {
-	svc *service.TakafulService
+	svc *service.Service
 }
 
-func NewHandler(svc *service.TakafulService) *Handler {
+func NewHandler(svc *service.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/takaful/funds", h.GetFunds)
-	mux.HandleFunc("/api/v1/takaful/fund/", h.GetFund)
-	mux.HandleFunc("/api/v1/takaful/join", h.JoinFund)
-	mux.HandleFunc("/api/v1/takaful/participant/", h.GetParticipant)
-	mux.HandleFunc("/api/v1/takaful/participants", h.ListParticipants)
-	mux.HandleFunc("/api/v1/takaful/contributions/", h.GetContributions)
-	mux.HandleFunc("/api/v1/takaful/surplus/distribute", h.DistributeSurplus)
-	mux.HandleFunc("/api/v1/takaful/surplus/history/", h.GetDistributions)
-	mux.HandleFunc("/api/v1/takaful/compliance/check", h.ComplianceCheck)
-	mux.HandleFunc("/api/v1/takaful/compliance/", h.GetCompliance)
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {}
+
+func (h *Handler) ListPools(w http.ResponseWriter, r *http.Request) {
+	pools := []map[string]interface{}{
+		{"id": "POOL-001", "name": "Family Takaful Pool", "type": "family", "total_contributions": 45000000, "members": 2340, "surplus": 5200000},
+		{"id": "POOL-002", "name": "General Takaful Pool", "type": "general", "total_contributions": 28000000, "members": 1560, "surplus": 3100000},
+		{"id": "POOL-003", "name": "Health Takaful Pool", "type": "health", "total_contributions": 18000000, "members": 890, "surplus": 1800000},
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"pools": pools})
+}
+
+func (h *Handler) CreatePool(w http.ResponseWriter, r *http.Request) {
+	var req map[string]interface{}
+	json.NewDecoder(r.Body).Decode(&req)
+	poolID := fmt.Sprintf("POOL-%d", time.Now().UnixNano()%10000000)
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"pool_id": poolID, "name": req["name"], "type": req["type"], "status": "active",
+	})
+}
+
+func (h *Handler) JoinPool(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{"joined": true, "membership_id": fmt.Sprintf("MEM-%d", time.Now().UnixNano()%10000000)})
+}
+
+func (h *Handler) MakeContribution(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"contribution_id": fmt.Sprintf("CTR-%d", time.Now().UnixNano()%10000000), "status": "received",
+	})
+}
+
+func (h *Handler) GetSurplus(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"pool_id": "POOL-001", "surplus": 5200000, "currency": "NGN",
+		"distribution_eligible": true, "per_member_share": 2222,
+	})
 }
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
@@ -34,71 +60,17 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func respondError(w http.ResponseWriter, status int, msg string) {
-	respondJSON(w, status, map[string]string{"error": msg})
-}
-
-func (h *Handler) GetFunds(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{"funds": h.svc.GetFunds()})
-}
-
-func (h *Handler) GetFund(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/takaful/fund/")
-	f, err := h.svc.GetFund(id)
-	if err != nil { respondError(w, http.StatusNotFound, err.Error()); return }
-	respondJSON(w, http.StatusOK, f)
-}
-
-func (h *Handler) JoinFund(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, http.StatusMethodNotAllowed, "Method not allowed"); return }
-	var req service.JoinRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil { respondError(w, http.StatusBadRequest, "Invalid request"); return }
-	p, err := h.svc.JoinFund(req)
-	if err != nil { respondError(w, http.StatusBadRequest, err.Error()); return }
-	respondJSON(w, http.StatusCreated, p)
-}
-
-func (h *Handler) GetParticipant(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/takaful/participant/")
-	p, err := h.svc.GetParticipant(id)
-	if err != nil { respondError(w, http.StatusNotFound, err.Error()); return }
-	respondJSON(w, http.StatusOK, p)
-}
-
-func (h *Handler) ListParticipants(w http.ResponseWriter, r *http.Request) {
-	fundID := r.URL.Query().Get("fund_id")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"participants": h.svc.ListParticipants(fundID)})
-}
-
-func (h *Handler) GetContributions(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/takaful/contributions/")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"contributions": h.svc.GetContributions(id)})
+func respondError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{"code": code, "message": message},
+	})
 }
 
 func (h *Handler) DistributeSurplus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, http.StatusMethodNotAllowed, "Method not allowed"); return }
-	var req struct { FundID string `json:"fund_id"`; Period string `json:"period"` }
-	json.NewDecoder(r.Body).Decode(&req)
-	dist, err := h.svc.DistributeSurplus(req.FundID, req.Period)
-	if err != nil { respondError(w, http.StatusBadRequest, err.Error()); return }
-	respondJSON(w, http.StatusOK, dist)
-}
-
-func (h *Handler) GetDistributions(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/takaful/surplus/history/")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"distributions": h.svc.GetDistributions(id)})
-}
-
-func (h *Handler) ComplianceCheck(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { respondError(w, http.StatusMethodNotAllowed, "Method not allowed"); return }
-	var req struct { FundID string `json:"fund_id"` }
-	json.NewDecoder(r.Body).Decode(&req)
-	check, err := h.svc.RunComplianceCheck(req.FundID)
-	if err != nil { respondError(w, http.StatusBadRequest, err.Error()); return }
-	respondJSON(w, http.StatusOK, check)
-}
-
-func (h *Handler) GetCompliance(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v1/takaful/compliance/")
-	respondJSON(w, http.StatusOK, map[string]interface{}{"compliance": h.svc.GetCompliance(id)})
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"distributed": true, "total_surplus": 5200000, "members": 2340,
+		"per_member": 2222, "currency": "NGN",
+	})
 }

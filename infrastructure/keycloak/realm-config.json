@@ -1,0 +1,64 @@
+{
+  "realm": "ngapp",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      { "name": "customer", "description": "Insurance customer" },
+      { "name": "agent", "description": "Insurance agent" },
+      { "name": "underwriter", "description": "Underwriting staff" },
+      { "name": "claims_officer", "description": "Claims processing staff" },
+      { "name": "admin", "description": "Platform administrator" },
+      { "name": "super_admin", "description": "Super administrator" },
+      { "name": "compliance_officer", "description": "Regulatory compliance" },
+      { "name": "finance_officer", "description": "Financial operations" },
+      { "name": "api_consumer", "description": "External API consumer" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ngapp-portal",
+      "name": "NGApp Customer Portal",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:5000/*", "https://app.ngapp.io/*"],
+      "webOrigins": ["http://localhost:5000", "https://app.ngapp.io"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "ngapp-api",
+      "name": "NGApp API Services",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true
+    },
+    {
+      "clientId": "ngapp-mobile",
+      "name": "NGApp Mobile App",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["ngapp://callback", "http://localhost:8080/callback"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "ngapp-portal",
+      "roles": ["customer", "agent", "underwriter", "admin"]
+    }
+  ]
+}
