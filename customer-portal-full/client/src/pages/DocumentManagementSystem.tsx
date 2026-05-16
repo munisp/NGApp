@@ -59,7 +59,7 @@ const DocumentManagementSystem: React.FC = () => {
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const DEMO_MODE = !isAuthenticated;
+  const DEMO_MODE = false;
 
   const { data: documents, isLoading, isError, error, refetch } = trpc.documents.list.useQuery(
     undefined,

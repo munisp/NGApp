@@ -8,7 +8,7 @@ const plugins = [react(), tailwindcss()];
 export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    'process.env.NEXT_PUBLIC_DEMO_MODE': JSON.stringify('true'),
+    'process.env.NEXT_PUBLIC_DEMO_MODE': JSON.stringify('false'),
     'process.env.NEXT_PUBLIC_TRPC_URL': JSON.stringify(''),
   },
   plugins,

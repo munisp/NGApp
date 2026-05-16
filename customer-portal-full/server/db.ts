@@ -1193,3 +1193,134 @@ export async function getDBScalingRecommendations() {
     { id: 2, recommendation: 'Enable connection pooling (PgBouncer)', priority: 'High', estimatedImpact: '50% connection overhead reduction' },
   ];
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MICROSERVICE PROXY FALLBACK DATA (new functions only)
+// Functions that don't already exist above, used by the proxy router layer.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── USSD Gateway (new) ─────────────────────────────────────────────────────
+export async function initiateUSSDSession(userId: number, phoneNumber: string, serviceCode: string) {
+  return { id: `USSD-${Date.now()}`, phoneNumber, serviceCode, status: 'active', menu: 'Welcome', message: 'Welcome to NGApp Insurance\n1. Buy Insurance\n2. Check Policy\n3. File Claim\n4. Check Balance', startedAt: new Date() };
+}
+export async function respondUSSDSession(userId: number, sessionId: string, input: string) {
+  return { sessionId, input, response: 'Processing your request...', status: 'active', menu: 'Processing' };
+}
+
+// ─── Mobile Money (new) ─────────────────────────────────────────────────────
+export async function getMobileMoneyProviders() {
+  return [
+    { id: 'opay', name: 'OPay', logo: '/logos/opay.png', supportedCurrencies: ['NGN'], minAmount: 100, maxAmount: 5000000 },
+    { id: 'paystack', name: 'Paystack', logo: '/logos/paystack.png', supportedCurrencies: ['NGN', 'GHS', 'ZAR', 'KES'], minAmount: 100, maxAmount: 10000000 },
+    { id: 'flutterwave', name: 'Flutterwave', logo: '/logos/flutterwave.png', supportedCurrencies: ['NGN', 'GHS', 'KES', 'TZS', 'UGX'], minAmount: 100, maxAmount: 10000000 },
+    { id: 'nibss', name: 'NIBSS (NIP)', logo: '/logos/nibss.png', supportedCurrencies: ['NGN'], minAmount: 1000, maxAmount: 50000000 },
+  ];
+}
+export async function initiateMobileMoneyPayment(userId: number, input: { provider: string; phoneNumber: string; amount: number; currency: string }) {
+  return { id: `MM-${Date.now()}`, userId, ...input, status: 'pending', reference: `REF-${Date.now()}`, createdAt: new Date() };
+}
+export async function getMobileMoneyTransactions(userId: number) {
+  return [
+    { id: 'MM-001', provider: 'OPay', amount: 25000, currency: 'NGN', status: 'completed', reference: 'REF-OPY-001', phoneNumber: '+2348012345678', createdAt: new Date(Date.now() - 86400000) },
+    { id: 'MM-002', provider: 'Paystack', amount: 45000, currency: 'NGN', status: 'completed', reference: 'REF-PSK-002', phoneNumber: '+2348012345678', createdAt: new Date(Date.now() - 172800000) },
+  ];
+}
+
+// ─── Agent Network (new) ────────────────────────────────────────────────────
+export async function getAgentNetwork(region?: string, status?: string) {
+  const agents = [
+    { id: 'AGT-001', name: 'Chinedu Okonkwo', region: 'Lagos', status: 'Active', totalPoliciesSold: 156, totalPremiumCollected: 4500000, rating: 4.7, commission: 675000, phoneNumber: '+2348012345678' },
+    { id: 'AGT-002', name: 'Amina Bello', region: 'Abuja', status: 'Active', totalPoliciesSold: 203, totalPremiumCollected: 6100000, rating: 4.9, commission: 915000, phoneNumber: '+2348023456789' },
+    { id: 'AGT-003', name: 'Oluwaseun Adeyemi', region: 'Ibadan', status: 'Active', totalPoliciesSold: 89, totalPremiumCollected: 2300000, rating: 4.3, commission: 345000, phoneNumber: '+2348034567890' },
+    { id: 'AGT-004', name: 'Fatima Hassan', region: 'Kano', status: 'Inactive', totalPoliciesSold: 45, totalPremiumCollected: 1200000, rating: 4.1, commission: 180000, phoneNumber: '+2348045678901' },
+  ];
+  return agents.filter(a => (!region || a.region === region) && (!status || a.status === status));
+}
+
+// ─── Fraud Detection Patterns (new) ─────────────────────────────────────────
+export async function getFraudPatterns() {
+  return [
+    { id: 'FP-001', name: 'Velocity Anomaly', description: 'Multiple claims filed within short timeframe', severity: 'High', detectedCount: 23, lastDetected: new Date(Date.now() - 86400000) },
+    { id: 'FP-002', name: 'Duplicate Claim Pattern', description: 'Similar claims across different policies', severity: 'Medium', detectedCount: 12, lastDetected: new Date(Date.now() - 172800000) },
+    { id: 'FP-003', name: 'Geographic Anomaly', description: 'Claims from unusual geographic locations', severity: 'Low', detectedCount: 45, lastDetected: new Date() },
+  ];
+}
+
+// ─── AI Claims Assessment (new) ─────────────────────────────────────────────
+export async function aiAssessClaim(userId: number, claimId: number) {
+  return { claimId, assessment: 'approve', confidence: 0.91, estimatedAmount: 150000, riskScore: 0.18, recommendation: 'Auto-approve: claim within normal parameters', processingTime: 2.3, factors: ['valid_policy', 'consistent_documentation', 'normal_claim_amount'] };
+}
+export async function getAIClaimsQueue(userId: number) {
+  return [
+    { id: 1, claimId: 101, status: 'pending_review', priority: 'High', estimatedSTP: true, submittedAt: new Date(Date.now() - 7200000) },
+    { id: 2, claimId: 102, status: 'auto_approved', priority: 'Low', estimatedSTP: true, submittedAt: new Date(Date.now() - 14400000) },
+    { id: 3, claimId: 103, status: 'flagged', priority: 'Critical', estimatedSTP: false, submittedAt: new Date(Date.now() - 3600000) },
+  ];
+}
+
+// ─── Predictive Analytics (new) ─────────────────────────────────────────────
+export async function getPredictiveChurnRisk(userId: number) {
+  return { userId, churnProbability: 0.12, riskLevel: 'Low', factors: ['regular_payments', 'active_engagement', 'recent_claim_satisfaction'], retentionScore: 88, nextBestAction: 'Send loyalty reward' };
+}
+export async function getClaimForecast(policyType: string, timeRange: string) {
+  return { policyType, timeRange, expectedClaims: 45, expectedAmount: 6750000, confidence: 0.82, trend: 'stable', seasonalFactor: 1.05 };
+}
+
+// ─── IFRS 17 (new) ──────────────────────────────────────────────────────────
+export async function calculateIFRS17(portfolioId: string, approach: string) {
+  return { portfolioId, approach, csm: 12500000, lrc: 45000000, lic: 8500000, insuranceRevenue: 32000000, insuranceServiceExpense: 24000000, calculatedAt: new Date() };
+}
+export async function getIFRS17Reports(userId: number) {
+  return [
+    { id: 'IFRS-001', portfolioId: 'PF-MOTOR', approach: 'PAA', period: '2026-Q1', status: 'Final', csm: 12500000, generatedAt: new Date(Date.now() - 604800000) },
+    { id: 'IFRS-002', portfolioId: 'PF-HEALTH', approach: 'BBA', period: '2026-Q1', status: 'Draft', csm: 8900000, generatedAt: new Date(Date.now() - 86400000) },
+  ];
+}
+
+// ─── Multi-Language (new) ───────────────────────────────────────────────────
+export async function getSupportedLanguages() {
+  return [
+    { code: 'en', name: 'English', nativeName: 'English', supported: true },
+    { code: 'yo', name: 'Yoruba', nativeName: 'Èdè Yorùbá', supported: true },
+    { code: 'ha', name: 'Hausa', nativeName: 'Harshen Hausa', supported: true },
+    { code: 'ig', name: 'Igbo', nativeName: 'Asụsụ Igbo', supported: true },
+    { code: 'pcm', name: 'Nigerian Pidgin', nativeName: 'Naija', supported: true },
+    { code: 'fr', name: 'French', nativeName: 'Français', supported: true },
+    { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', supported: true },
+    { code: 'am', name: 'Amharic', nativeName: 'አማርኛ', supported: true },
+    { code: 'zu', name: 'Zulu', nativeName: 'isiZulu', supported: true },
+    { code: 'ar', name: 'Arabic', nativeName: 'العربية', supported: true },
+  ];
+}
+
+// ─── Gamification (new) ─────────────────────────────────────────────────────
+export async function getGamificationLeaderboard() {
+  return [
+    { rank: 1, userId: 2, name: 'Amina Bello', points: 15200, badges: 12, level: 'Platinum' },
+    { rank: 2, userId: 1, name: 'John Doe', points: 12800, badges: 9, level: 'Gold' },
+    { rank: 3, userId: 3, name: 'Chinedu Okonkwo', points: 10500, badges: 7, level: 'Gold' },
+    { rank: 4, userId: 4, name: 'Fatima Hassan', points: 8200, badges: 5, level: 'Silver' },
+  ];
+}
+export async function getUserAchievements(userId: number) {
+  return [
+    { id: 'ACH-001', name: 'First Policy', description: 'Purchased your first insurance policy', icon: 'shield', earnedAt: new Date(Date.now() - 2592000000), points: 500 },
+    { id: 'ACH-002', name: 'Quick Claimer', description: 'Filed a claim within 24 hours of incident', icon: 'zap', earnedAt: new Date(Date.now() - 1296000000), points: 300 },
+    { id: 'ACH-003', name: 'Referral King', description: 'Referred 5 friends who purchased policies', icon: 'users', earnedAt: new Date(Date.now() - 604800000), points: 1000 },
+  ];
+}
+export async function getUserGamificationPoints(userId: number) {
+  return { userId, totalPoints: 12800, level: 'Gold', nextLevel: 'Platinum', pointsToNextLevel: 2200, monthlyPoints: 1500, streak: 15 };
+}
+
+// ─── Tenants (new) ──────────────────────────────────────────────────────────
+export async function getTenants() {
+  return [
+    { id: 'TEN-001', name: 'NGApp Insurance', plan: 'Enterprise', status: 'Active', users: 245, policies: 12500, createdAt: new Date('2024-01-15') },
+    { id: 'TEN-002', name: 'AXA Mansard Nigeria', plan: 'Enterprise', status: 'Active', users: 180, policies: 8900, createdAt: new Date('2024-03-20') },
+    { id: 'TEN-003', name: 'Leadway Assurance', plan: 'Professional', status: 'Active', users: 95, policies: 4200, createdAt: new Date('2024-06-10') },
+  ];
+}
+export async function getCurrentTenant(userId: number) {
+  return { id: 'TEN-001', name: 'NGApp Insurance', plan: 'Enterprise', status: 'Active', role: 'Admin', joinedAt: new Date('2024-01-15') };
+}

@@ -25,7 +25,7 @@ interface Notification {
   createdAt: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or based on a feature flag
+const DEMO_MODE = false;
 
 const demoNotifications: Notification[] = [
   {

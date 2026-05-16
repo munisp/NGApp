@@ -42,7 +42,7 @@ interface Scheme {
   applicationDeadline: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 const DEMO_SCHEMES: Scheme[] = [
   {

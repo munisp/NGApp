@@ -75,7 +75,7 @@ const DEMO_COMMISSIONS: AgentCommission[] = [
   },
 ];
 
-const DEMO_MODE = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 const AgentCommissionManagement: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();

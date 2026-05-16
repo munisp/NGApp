@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 // DEMO_MODE fallback data
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 const DEMO_QUOTE_RESULT = {
   premium: 125000.00,
   currency: 'NGN',

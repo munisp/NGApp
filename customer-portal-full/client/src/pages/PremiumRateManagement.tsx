@@ -21,7 +21,7 @@ interface PremiumRate {
   status: 'Active' | 'Inactive' | 'Pending';
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 const demoPremiumRates: PremiumRate[] = [
   {

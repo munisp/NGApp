@@ -17,7 +17,7 @@ interface Bank {
   status: 'active' | 'inactive';
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 const demoBanks: Bank[] = [
   { id: '1', name: 'Access Bank Plc', code: '044', status: 'active' },

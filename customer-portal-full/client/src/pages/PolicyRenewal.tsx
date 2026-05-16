@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = false; // Set to true to use demo data
+const DEMO_MODE = false;
 
 interface Policy {
   id: string;

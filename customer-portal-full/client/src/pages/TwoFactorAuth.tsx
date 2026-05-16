@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 
 const TwoFactorAuth: React.FC = () => {
   const [, navigate] = useLocation();

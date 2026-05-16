@@ -90,7 +90,7 @@ const DEMO_APPLICATIONS: Application[] = [
   },
 ];
 
-const DEMO_MODE = process.env.NODE_ENV !== "production"; // Simple demo mode check
+const DEMO_MODE = false;
 
 export default function MyApplications() {
   const { isAuthenticated, user } = useAuth();

@@ -40,7 +40,7 @@ interface Document {
   size: string;
 }
 
-const DEMO_MODE = false; // Set to true to use demo data
+const DEMO_MODE = false;
 
 const DEMO_DOCUMENTS: Document[] = [
   {

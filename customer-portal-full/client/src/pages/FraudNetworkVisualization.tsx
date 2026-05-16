@@ -37,7 +37,7 @@ interface AnalysisResult {
   recommendations: string[];
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 const DEMO_FRAUD_NETWORK_DATA: FraudNetworkData = {
   nodes: [

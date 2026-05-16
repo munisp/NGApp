@@ -25,7 +25,7 @@ const DEMO_PREMIUM_RATES = [
   { id: 'rate-003', productType: 'Life Assurance', minAge: 18, maxAge: 70, baseRate: 0.01, effectiveDate: '2024-01-01' },
 ];
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 interface Policy {
   id: string;

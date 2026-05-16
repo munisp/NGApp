@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 
 // DEMO_MODE fallback data
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or any other condition for demo mode
+const DEMO_MODE = false;
 
 const demoCustomerProfile = {
   id: 'cust-001',

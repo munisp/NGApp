@@ -49,7 +49,7 @@ interface USSDSession {
   menuPath: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or any other suitable condition
+const DEMO_MODE = false;
 
 const DEMO_SESSIONS: USSDSession[] = [
   {

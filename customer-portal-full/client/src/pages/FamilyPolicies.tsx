@@ -44,7 +44,7 @@ interface FamilyMember {
   policyId: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === "development";
+const DEMO_MODE = false;
 
 const DEMO_FAMILY_MEMBERS: FamilyMember[] = [
   {

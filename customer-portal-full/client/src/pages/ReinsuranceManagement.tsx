@@ -27,7 +27,7 @@ interface Cession {
   date: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 const demoTreaties: Treaty[] = [
   { id: '1', name: 'Facultative Treaty A', type: 'Facultative', status: 'Active', effectiveDate: '2023-01-01', expiryDate: '2024-01-01' },
