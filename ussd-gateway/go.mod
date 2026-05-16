@@ -1,3 +1,3 @@
-module github.com/ag-insurance/ussd-gateway
+module github.com/munisp/ngapp/ussd-gateway
 
-go 1.21
+go 1.22.0
