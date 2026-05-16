@@ -13,7 +13,7 @@ import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
 // Demo mode data
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 const DEMO_CLAIMS = [
   { id: 1, claimNumber: "CLM-2026-001", policyId: 1, amount: "45000", status: "Under Review", incidentDate: new Date("2026-01-10"), description: "Medical expenses for hospital visit and prescribed medications following an accident.", createdAt: new Date("2026-01-12"), updatedAt: new Date() },
   { id: 2, claimNumber: "CLM-2025-002", policyId: 2, amount: "120000", status: "Approved", incidentDate: new Date("2025-11-20"), description: "Vehicle repair costs after minor collision at intersection.", createdAt: new Date("2025-11-22"), updatedAt: new Date() },

@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 interface Feedback {
   id: string;

@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Demo mode data
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 const DEMO_POLICIES = [
   { id: 1, policyNumber: "POL-2026-001", name: "Comprehensive Health Plan", type: "Health", premium: "150000", status: "Active", startDate: new Date("2025-01-15"), expiryDate: new Date("2026-01-15"), createdAt: new Date(), updatedAt: new Date() },
   { id: 2, policyNumber: "POL-2026-002", name: "Auto Protection Plus", type: "Auto", premium: "85000", status: "Active", startDate: new Date("2025-03-01"), expiryDate: new Date("2026-03-01"), createdAt: new Date(), updatedAt: new Date() },

@@ -11,7 +11,7 @@ import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
 // Demo mode data
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 const DEMO_USER = { 
   id: "demo-user-001", 
   name: "Demo User", 

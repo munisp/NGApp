@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a specific environment variable
+const DEMO_MODE = false;
 
 interface KycStatus {
   id: string;

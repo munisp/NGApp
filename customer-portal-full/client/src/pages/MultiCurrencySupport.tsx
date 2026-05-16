@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 interface CurrencyRate {
   currency: string;

@@ -20,7 +20,7 @@ interface LiteracyModule {
   isCompleted: boolean;
 }
 
-const DEMO_MODE = false; // Set to true to use demo data
+const DEMO_MODE = false;
 
 const DEMO_LITERACY_CONTENT: LiteracyModule[] = [
   {

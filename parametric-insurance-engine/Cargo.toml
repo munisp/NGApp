@@ -1,0 +1,16 @@
+[package]
+name = "parametric-insurance-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Parametric insurance engine with satellite data triggers for automatic payouts"
+
+[dependencies]
+actix-web = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+reqwest = { version = "0.11", features = ["json"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"

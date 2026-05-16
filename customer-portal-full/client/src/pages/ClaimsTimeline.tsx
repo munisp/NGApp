@@ -85,7 +85,7 @@ const ClaimsTimeline: React.FC = () => {
   const [claimsPerPage] = useState<number>(5);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
 
-  const DEMO_MODE = !isAuthenticated; // Simple demo mode toggle
+  const DEMO_MODE = false;
 
   const { data: claimsData, isLoading: isClaimsLoading, error: claimsError } = trpc.claims.list.useQuery(
     undefined, // No input needed for list, assuming it returns all claims for the authenticated user

@@ -50,7 +50,7 @@ interface Application {
   submissionDate: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a specific environment variable
+const DEMO_MODE = false;
 
 const DEMO_POLICIES: Policy[] = [
   {

@@ -34,7 +34,7 @@ interface Evidence {
   url: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 const demoEvidence: Evidence[] = [
   {
@@ -67,7 +67,7 @@ const demoEvidence: Evidence[] = [
   },
 ];
 
-export function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
+export default function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
 

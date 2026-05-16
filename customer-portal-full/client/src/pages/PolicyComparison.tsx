@@ -81,7 +81,7 @@ const PolicyComparison: React.FC = () => {
   const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false);
 
   // DEMO_MODE fallback
-  const DEMO_MODE = !isAuthenticated; // Or based on an environment variable
+  const DEMO_MODE = false;
 
   const { data: availablePolicies, isLoading: policiesLoading, error: policiesError } = trpc.policies.list.useQuery(undefined, {
     enabled: !DEMO_MODE,

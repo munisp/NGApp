@@ -12,7 +12,7 @@ import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
 // Demo mode data
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 const DEMO_PAYMENTS = [
   { id: 1, policyId: 1, amount: "12500", status: "Pending", dueDate: new Date("2026-02-15"), paidDate: null, paymentMethod: null, createdAt: new Date(), updatedAt: new Date() },
   { id: 2, policyId: 2, amount: "7083", status: "Completed", dueDate: new Date("2026-01-01"), paidDate: new Date("2025-12-28"), paymentMethod: "Card ending in 4242", createdAt: new Date(), updatedAt: new Date() },

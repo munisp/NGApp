@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or any other condition for demo mode
+const DEMO_MODE = false;
 
 interface FinancialScore {
   score: number;

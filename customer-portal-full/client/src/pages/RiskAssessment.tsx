@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 interface MCMCParams {
   modelType: string;
@@ -30,30 +30,28 @@ const RiskAssessment: React.FC = () => {
   const [geospatialLng, setGeospatialLng] = useState<string>('');
   const [geospatialRadius, setGeospatialRadius] = useState<string>('');
 
-  // tRPC mutations
-  const { data: mcmcResults, isLoading: mcmcResultsLoading, isError: mcmcResultsError } = trpc.mcmc.results.useQuery(undefined, { enabled: mcmcSimulateMutation.isSuccess || DEMO_MODE });
+  // tRPC mutations (mutations declared before queries that reference them)
   const mcmcSimulateMutation = trpc.mcmc.simulate.useMutation({
     onSuccess: (data) => {
       toast.success('MCMC Simulation initiated successfully!');
       console.log('MCMC Simulation Results:', data);
-      trpc.useUtils().mcmc.results.invalidate(); // Invalidate MCMC results cache
     },
     onError: (error) => {
       toast.error(`MCMC Simulation failed: ${error.message}`);
     },
   });
+  const { data: mcmcResults, isLoading: mcmcResultsLoading, isError: mcmcResultsError } = trpc.mcmc.results.useQuery(undefined, { enabled: mcmcSimulateMutation.isSuccess || DEMO_MODE });
 
-  const { data: geospatialRiskMap, isLoading: geospatialRiskMapLoading, isError: geospatialRiskMapError } = trpc.geospatial.riskMap.useQuery({ lat: parseFloat(geospatialLat) || 0, lng: parseFloat(geospatialLng) || 0, radius: parseFloat(geospatialRadius) || 0 }, { enabled: geospatialAnalyzeMutation.isSuccess || DEMO_MODE });
   const geospatialAnalyzeMutation = trpc.geospatial.analyze.useMutation({
     onSuccess: (data) => {
       toast.success('Geospatial Analysis initiated successfully!');
       console.log('Geospatial Analysis Results:', data);
-      trpc.useUtils().geospatial.riskMap.invalidate(); // Invalidate Geospatial risk map cache
     },
     onError: (error) => {
       toast.error(`Geospatial Analysis failed: ${error.message}`);
     },
   });
+  const { data: geospatialRiskMap, isLoading: geospatialRiskMapLoading, isError: geospatialRiskMapError } = trpc.geospatial.riskMap.useQuery({ lat: parseFloat(geospatialLat) || 0, lng: parseFloat(geospatialLng) || 0, radius: parseFloat(geospatialRadius) || 0 }, { enabled: geospatialAnalyzeMutation.isSuccess || DEMO_MODE });
 
   const handleMCMCSimulate = () => {
     if (!isAuthenticated && !DEMO_MODE) {
@@ -130,16 +128,16 @@ const RiskAssessment: React.FC = () => {
                 type="text"
                 value={mcmcInputParams}
                 onChange={(e) => setMcmcInputParams(e.target.value)}
-                placeholder="e.g., {\"age\": 30, \"income\": 50000}"
+                placeholder={'e.g., {"age": 30, "income": 50000}'}
               />
             </div>
           </div>
           <Button
             onClick={handleMCMCSimulate}
             className="mt-4"
-            disabled={mcmcSimulateMutation.isLoading || !mcmcModelType || !mcmcInputParams}
+            disabled={mcmcSimulateMutation.isPending || !mcmcModelType || !mcmcInputParams}
           >
-            {mcmcSimulateMutation.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {mcmcSimulateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Run MCMC Simulation
           </Button>
           {mcmcResultsLoading && (
@@ -201,9 +199,9 @@ const RiskAssessment: React.FC = () => {
           <Button
             onClick={handleGeospatialAnalyze}
             className="mt-4"
-            disabled={geospatialAnalyzeMutation.isLoading || !geospatialLat || !geospatialLng || !geospatialRadius}
+            disabled={geospatialAnalyzeMutation.isPending || !geospatialLat || !geospatialLng || !geospatialRadius}
           >
-            {geospatialAnalyzeMutation.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {geospatialAnalyzeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Run Geospatial Analysis
           </Button>
           {geospatialRiskMapLoading && (

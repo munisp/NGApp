@@ -17,7 +17,7 @@ interface SimulationParams {
   thinning: number;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 const MCMCRiskModeling: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

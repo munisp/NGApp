@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or any other condition for demo mode
+const DEMO_MODE = false;
 
 interface UserProfile {
   name: string;

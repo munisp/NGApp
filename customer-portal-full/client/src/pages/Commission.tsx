@@ -61,7 +61,7 @@ const DEMO_COMMISSIONS: Commission[] = [
   },
 ];
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = false;
 
 export default function CommissionPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

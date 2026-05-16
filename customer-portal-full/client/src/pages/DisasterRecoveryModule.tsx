@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = false;
 
 interface DisasterRecoveryStatus {
   status: 'Operational' | 'Degraded' | 'Failed';

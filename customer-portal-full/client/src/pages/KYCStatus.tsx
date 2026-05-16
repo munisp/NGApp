@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a specific environment variable
+const DEMO_MODE = false;
 
 interface KYCStatusData {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_REVIEW';
