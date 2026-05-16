@@ -236,17 +236,17 @@ async def passive_liveness(req: Base64ImageRequest):
     result = scorer.passive_liveness(image)
 
     return PassiveLivenessResponse(
-        is_live=result.is_live,
-        liveness_score=result.liveness_score,
-        face_detected=result.face_detected,
-        face_count=result.face_count,
-        face_quality=result.face_quality,
+        is_live=bool(result.is_live),
+        liveness_score=float(result.liveness_score),
+        face_detected=bool(result.face_detected),
+        face_count=int(result.face_count),
+        face_quality=float(result.face_quality),
         anti_spoof=_serialize_anti_spoof(result.anti_spoof) if result.anti_spoof else None,
         deepfake=_serialize_deepfake(result.deepfake) if result.deepfake else None,
         landmarks_68=result.landmarks_68,
         landmark_features=result.landmark_features,
-        processing_time_ms=round(result.processing_time_ms, 2),
-        details=result.details,
+        processing_time_ms=round(float(result.processing_time_ms), 2),
+        details=str(result.details),
     )
 
 
@@ -258,19 +258,19 @@ async def active_liveness(req: ActiveLivenessRequest):
     result = scorer.active_liveness(frames, challenges=req.challenges)
 
     return ActiveLivenessResponse(
-        is_live=result.is_live,
-        liveness_score=result.liveness_score,
-        challenges_passed=result.challenges_passed,
-        challenges_total=result.challenges_total,
-        blink_detected=result.blink_detected,
-        head_movement_detected=result.head_movement_detected,
-        motion_consistency=result.motion_consistency,
-        frame_count=result.frame_count,
+        is_live=bool(result.is_live),
+        liveness_score=float(result.liveness_score),
+        challenges_passed=int(result.challenges_passed),
+        challenges_total=int(result.challenges_total),
+        blink_detected=bool(result.blink_detected),
+        head_movement_detected=bool(result.head_movement_detected),
+        motion_consistency=float(result.motion_consistency),
+        frame_count=int(result.frame_count),
         anti_spoof=_serialize_anti_spoof(result.anti_spoof) if result.anti_spoof else None,
         deepfake=_serialize_deepfake(result.deepfake) if result.deepfake else None,
-        processing_time_ms=round(result.processing_time_ms, 2),
-        details=result.details,
-        challenge_results=result.challenge_results,
+        processing_time_ms=round(float(result.processing_time_ms), 2),
+        details=str(result.details),
+        challenge_results={k: bool(v) for k, v in result.challenge_results.items()},
     )
 
 
@@ -284,8 +284,8 @@ async def face_detect(req: Base64ImageRequest):
     faces = []
     for face in result.faces:
         face_data = {
-            "bbox": {"x": face.bbox[0], "y": face.bbox[1], "w": face.bbox[2], "h": face.bbox[3]},
-            "confidence": round(face.confidence, 4),
+            "bbox": {"x": int(face.bbox[0]), "y": int(face.bbox[1]), "w": int(face.bbox[2]), "h": int(face.bbox[3])},
+            "confidence": round(float(face.confidence), 4),
         }
         if face.landmarks_68 is not None:
             face_data["landmarks_68"] = face.landmarks_68.tolist()
@@ -295,9 +295,9 @@ async def face_detect(req: Base64ImageRequest):
     return FaceDetectionResponse(
         face_count=result.face_count,
         faces=faces,
-        image_width=result.image_width,
-        image_height=result.image_height,
-        processing_time_ms=round(result.processing_time_ms, 2),
+        image_width=int(result.image_width),
+        image_height=int(result.image_height),
+        processing_time_ms=round(float(result.processing_time_ms), 2),
     )
 
 
@@ -323,12 +323,12 @@ async def face_match(req: TwoImageRequest):
     result = matcher.match(face_a, face_b, threshold=req.threshold)
 
     return FaceMatchResponse(
-        is_match=result.is_match,
-        similarity=result.similarity,
-        distance=result.distance,
-        confidence=result.confidence,
-        threshold=result.threshold,
-        embedding_model=result.embedding_model,
+        is_match=bool(result.is_match),
+        similarity=float(result.similarity),
+        distance=float(result.distance),
+        confidence=float(result.confidence),
+        threshold=float(result.threshold),
+        embedding_model=str(result.embedding_model),
     )
 
 
@@ -389,28 +389,28 @@ async def deepfake_detect(req: Base64ImageRequest):
 
 def _serialize_anti_spoof(r) -> dict:
     return {
-        "is_real": r.is_real,
-        "overall_score": r.overall_score,
+        "is_real": bool(r.is_real),
+        "overall_score": float(r.overall_score),
         "spoof_type": r.spoof_type.value if hasattr(r.spoof_type, "value") else str(r.spoof_type),
-        "spoof_probability": r.spoof_probability,
+        "spoof_probability": float(r.spoof_probability),
         "checks": [
-            {"name": c.check_name, "score": round(c.score, 4), "weight": c.weight, "details": c.details}
+            {"name": str(c.check_name), "score": round(float(c.score), 4), "weight": float(c.weight), "details": str(c.details)}
             for c in r.checks
         ],
-        "attack_details": r.attack_details,
+        "attack_details": {str(k): float(v) if isinstance(v, (int, float, np.floating, np.integer)) else str(v) for k, v in r.attack_details.items()},
     }
 
 
 def _serialize_deepfake(r) -> dict:
     return {
-        "is_deepfake": r.is_deepfake,
-        "confidence": r.confidence,
-        "deepfake_probability": r.deepfake_probability,
-        "frequency_score": r.frequency_score,
-        "blending_score": r.blending_score,
-        "lighting_score": r.lighting_score,
-        "texture_score": r.texture_score,
-        "details": r.details,
+        "is_deepfake": bool(r.is_deepfake),
+        "confidence": float(r.confidence),
+        "deepfake_probability": float(r.deepfake_probability),
+        "frequency_score": float(r.frequency_score),
+        "blending_score": float(r.blending_score),
+        "lighting_score": float(r.lighting_score),
+        "texture_score": float(r.texture_score),
+        "details": str(r.details),
     }
 
 

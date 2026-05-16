@@ -78,25 +78,44 @@ class FaceDetector:
     def __init__(self, min_confidence: float = 0.5, max_faces: int = 5):
         self.min_confidence = min_confidence
         self.max_faces = max_faces
-        self._mp_face_mesh = None
+        self._mp_landmarker = None
         self._haar_cascade = None
         self._backend = "none"
         self._init_backends()
 
     def _init_backends(self):
-        # Try MediaPipe first
+        # Try MediaPipe Tasks API first (0.10.14+)
         try:
             import mediapipe as mp
-            self._mp_face_mesh = mp.solutions.face_mesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=self.max_faces,
-                refine_landmarks=True,
-                min_detection_confidence=self.min_confidence,
+            import os
+
+            model_path = os.environ.get(
+                "FACE_LANDMARKER_MODEL",
+                os.path.expanduser("~/.mediapipe/face_landmarker.task"),
             )
+            if not os.path.exists(model_path):
+                # Try to download the model
+                import urllib.request
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                url = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
+                urllib.request.urlretrieve(url, model_path)
+                logger.info(f"[FaceDetector] Downloaded face_landmarker model to {model_path}")
+
+            base_options = mp.tasks.BaseOptions(model_asset_path=model_path)
+            options = mp.tasks.vision.FaceLandmarkerOptions(
+                base_options=base_options,
+                running_mode=mp.tasks.vision.RunningMode.IMAGE,
+                num_faces=self.max_faces,
+                min_face_detection_confidence=self.min_confidence,
+                min_face_presence_confidence=self.min_confidence,
+                output_face_blendshapes=False,
+                output_facial_transformation_matrixes=False,
+            )
+            self._mp_landmarker = mp.tasks.vision.FaceLandmarker.create_from_options(options)
             self._backend = "mediapipe"
-            logger.info("[FaceDetector] Using MediaPipe FaceMesh backend (468 landmarks)")
-        except ImportError:
-            logger.warning("[FaceDetector] MediaPipe not available, trying OpenCV Haar")
+            logger.info("[FaceDetector] Using MediaPipe FaceLandmarker Tasks API (478 landmarks)")
+        except (ImportError, Exception) as e:
+            logger.warning(f"[FaceDetector] MediaPipe not available ({e}), trying OpenCV Haar")
 
         # Fallback to OpenCV Haar cascade
         if self._backend == "none":
@@ -124,23 +143,26 @@ class FaceDetector:
         return result
 
     def _detect_mediapipe(self, image: np.ndarray, w: int, h: int) -> List[FaceDetection]:
+        import mediapipe as mp
+
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self._mp_face_mesh.process(rgb)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        results = self._mp_landmarker.detect(mp_image)
         faces = []
 
-        if not results.multi_face_landmarks:
+        if not results.face_landmarks:
             return faces
 
-        for face_landmarks in results.multi_face_landmarks:
-            # Extract all 478 landmarks as pixel coordinates
-            pts_478 = np.array([
+        for face_landmarks in results.face_landmarks:
+            # Extract all landmarks as pixel coordinates
+            pts_all = np.array([
                 (int(lm.x * w), int(lm.y * h))
-                for lm in face_landmarks.landmark
+                for lm in face_landmarks
             ], dtype=np.int32)
 
             # Compute bounding box from landmarks
-            x_min, y_min = pts_478.min(axis=0)
-            x_max, y_max = pts_478.max(axis=0)
+            x_min, y_min = pts_all.min(axis=0)
+            x_max, y_max = pts_all.max(axis=0)
             pad = int(max(x_max - x_min, y_max - y_min) * 0.1)
             x_min = max(0, x_min - pad)
             y_min = max(0, y_min - pad)
@@ -150,7 +172,7 @@ class FaceDetector:
 
             # Extract 68-point landmarks (IBUG convention)
             pts_68 = np.array([
-                pts_478[min(idx, len(pts_478) - 1)]
+                pts_all[min(idx, len(pts_all) - 1)]
                 for idx in MEDIAPIPE_TO_68[:68]
             ], dtype=np.int32)
 
@@ -159,9 +181,9 @@ class FaceDetector:
 
             faces.append(FaceDetection(
                 bbox=bbox,
-                confidence=0.95,  # MediaPipe doesn't expose per-face confidence
+                confidence=0.95,
                 landmarks_68=pts_68,
-                landmarks_478=pts_478,
+                landmarks_478=pts_all,
                 face_crop=face_crop,
             ))
 
@@ -184,8 +206,8 @@ class FaceDetector:
         return faces
 
     def close(self):
-        if self._mp_face_mesh:
-            self._mp_face_mesh.close()
+        if hasattr(self, '_mp_landmarker') and self._mp_landmarker:
+            self._mp_landmarker.close()
 
 
 def compute_landmark_features(landmarks_68: np.ndarray) -> dict:
