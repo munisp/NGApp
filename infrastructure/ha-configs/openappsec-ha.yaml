@@ -1,0 +1,305 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openappsec
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openappsec-config
+  namespace: openappsec
+data:
+  local_policy.yaml: |
+    policies:
+      - name: insurance-platform-policy
+        mode: prevent-learn
+        practices:
+          - web-attacks
+          - api-attacks
+          - bot-detection
+          - rate-limiting
+        triggers:
+          - log
+          - block
+        exceptions: []
+        custom-response:
+          mode: response-code-only
+          http-response-code: 403
+    practices:
+      - name: web-attacks
+        web-attacks:
+          override-mode: prevent-learn
+          minimum-confidence: medium
+          max-body-size-kb: 1000000
+          max-header-size-kb: 100
+          max-object-depth: 40
+          max-url-size-kb: 32
+          protections:
+            csrf-enabled: true
+            error-disclosure-enabled: true
+            open-redirect-enabled: true
+            non-valid-http-methods: true
+      - name: api-attacks
+        api-attacks:
+          override-mode: prevent-learn
+          minimum-confidence: medium
+      - name: bot-detection
+        anti-bot:
+          override-mode: prevent-learn
+          injected-uris: []
+          validated-uris: []
+      - name: rate-limiting
+        rate-limit:
+          rules:
+            - uri: /api/*
+              limit: 1000
+              scope: minute
+            - uri: /auth/*
+              limit: 100
+              scope: minute
+    log-triggers:
+      - name: log
+        verbosity: extended
+        access-logging: true
+        affected-assets-logging: true
+        log-destination:
+          cloud: false
+          syslog:
+            - address: syslog.observability.svc.cluster.local
+              port: 514
+          cef-service:
+            - address: siem.observability.svc.cluster.local
+              port: 9000
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openappsec-agent
+  namespace: openappsec
+spec:
+  selector:
+    matchLabels:
+      app: openappsec-agent
+  template:
+    metadata:
+      labels:
+        app: openappsec-agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: openappsec
+      containers:
+        - name: openappsec-agent
+          image: ghcr.io/openappsec/agent:1.0.0
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_PTRACE
+          ports:
+            - containerPort: 8117
+              name: http
+              hostPort: 8117
+            - containerPort: 8118
+              name: metrics
+              hostPort: 8118
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPENAPPSEC_MODE
+              value: "inline"
+            - name: OPENAPPSEC_LOG_LEVEL
+              value: "info"
+            - name: OPENAPPSEC_LEARNING_MODE
+              value: "true"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cp/conf/local_policy.yaml
+              subPath: local_policy.yaml
+            - name: data
+              mountPath: /var/lib/openappsec
+            - name: logs
+              mountPath: /var/log/openappsec
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8117
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8117
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: openappsec-config
+        - name: data
+          hostPath:
+            path: /var/lib/openappsec
+            type: DirectoryOrCreate
+        - name: logs
+          hostPath:
+            path: /var/log/openappsec
+            type: DirectoryOrCreate
+      tolerations:
+        - operator: Exists
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openappsec-management
+  namespace: openappsec
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openappsec-management
+  template:
+    metadata:
+      labels:
+        app: openappsec-management
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - openappsec-management
+              topologyKey: kubernetes.io/hostname
+      serviceAccountName: openappsec
+      containers:
+        - name: management
+          image: ghcr.io/openappsec/management:1.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8443
+              name: https
+          env:
+            - name: OPENAPPSEC_MANAGEMENT_MODE
+              value: "kubernetes"
+            - name: OPENAPPSEC_DB_HOST
+              value: "openappsec-postgresql"
+            - name: OPENAPPSEC_DB_PORT
+              value: "5432"
+            - name: OPENAPPSEC_DB_NAME
+              value: "openappsec"
+            - name: OPENAPPSEC_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: openappsec-db-credentials
+                  key: username
+            - name: OPENAPPSEC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openappsec-db-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cp/conf/local_policy.yaml
+              subPath: local_policy.yaml
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: openappsec-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-management
+  namespace: openappsec
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+    - port: 8443
+      targetPort: 8443
+      name: https
+  selector:
+    app: openappsec-management
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openappsec
+  namespace: openappsec
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openappsec-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "namespaces", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openappsec-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: openappsec
+    namespace: openappsec
+roleRef:
+  kind: ClusterRole
+  name: openappsec-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-management-pdb
+  namespace: openappsec
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: openappsec-management

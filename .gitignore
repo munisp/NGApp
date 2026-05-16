@@ -1,0 +1,62 @@
+
+# === Platform-wide ignores ===
+
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+/vendor/
+
+# Go SDK tarballs (should never be committed)
+go*.linux-amd64.tar.gz
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large binary archives
+*.tar.gz
+*.tar.bz2
+*.zip
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# Node modules
+node_modules/
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+htmlcov/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+*/server

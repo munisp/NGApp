@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: underwriting-consumer
+  labels:
+    app: underwriting-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: underwriting-consumer
+  template:
+    metadata:
+      labels:
+        app: underwriting-consumer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9093"
+    spec:
+      containers:
+      - name: consumer
+        image: underwriting-consumer:latest # Replace with your actual image
+        ports:
+        - containerPort: 9093
+          name: metrics
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker:9092" # Replace with your Kafka service address
+        - name: TEMPORAL_HOST_PORT
+          value: "temporal-frontend:7233" # Replace with your Temporal service address
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: underwriting-consumer-metrics
+spec:
+  selector:
+    app: underwriting-consumer
+  ports:
+    - protocol: TCP
+      port: 9093
+      targetPort: metrics
+      name: metrics

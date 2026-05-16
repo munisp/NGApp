@@ -1,0 +1,380 @@
+---
+# =============================================================================
+# Prometheus — Unified Insurance Platform
+# Scrapes all 54 microservices + infrastructure components
+# Retention: 30 days local, long-term in Thanos/Cortex
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: insurance-platform
+        environment: production
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager.observability.svc.cluster.local:9093']
+          tls_config:
+            ca_file: /etc/ssl/certs/ca.crt
+
+    rule_files:
+      - /etc/prometheus/rules/*.yaml
+
+    scrape_configs:
+      # ---- Kubernetes API server ----
+      - job_name: kubernetes-apiservers
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: default;kubernetes;https
+
+      # ---- Kubernetes nodes ----
+      - job_name: kubernetes-nodes
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      # ---- Kubernetes pods (auto-discovery) ----
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      # ---- Insurance Platform services (explicit) ----
+      - job_name: insurance-platform
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [insurance-platform]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            action: keep
+            regex: (openimis-consumer|claims-producer|underwriting-risk-integrator|unified-analytics|etherisc-gif|cession-management|reinsurance-accounting|payment-service|insurance-radar|customer-portal)
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics|http
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: service
+
+      # ---- Istio control plane ----
+      - job_name: istio-mesh
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [istio-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: istio-telemetry;prometheus
+
+      - job_name: envoy-stats
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: .*-envoy-prom
+
+      # ---- Kafka ----
+      - job_name: kafka
+        static_configs:
+          - targets:
+              - kafka-0.kafka.svc.cluster.local:9308
+              - kafka-1.kafka.svc.cluster.local:9308
+              - kafka-2.kafka.svc.cluster.local:9308
+        labels:
+          job: kafka
+
+      # ---- Redis ----
+      - job_name: redis
+        static_configs:
+          - targets:
+              - redis-ha.redis.svc.cluster.local:9121
+        labels:
+          job: redis
+
+      # ---- PostgreSQL ----
+      - job_name: postgres
+        static_configs:
+          - targets:
+              - postgres-ha.postgres.svc.cluster.local:9187
+        labels:
+          job: postgres
+
+      # ---- Vault ----
+      - job_name: vault
+        metrics_path: /v1/sys/metrics
+        params:
+          format: [prometheus]
+        scheme: https
+        tls_config:
+          ca_file: /etc/ssl/certs/vault-ca.crt
+        static_configs:
+          - targets:
+              - vault.vault.svc.cluster.local:8200
+        labels:
+          job: vault
+
+      # ---- Keycloak ----
+      - job_name: keycloak
+        static_configs:
+          - targets:
+              - keycloak.keycloak.svc.cluster.local:8080
+        metrics_path: /metrics
+        labels:
+          job: keycloak
+
+      # ---- Temporal ----
+      - job_name: temporal
+        static_configs:
+          - targets:
+              - temporal-frontend.temporal.svc.cluster.local:9090
+              - temporal-history.temporal.svc.cluster.local:9090
+              - temporal-matching.temporal.svc.cluster.local:9090
+        labels:
+          job: temporal
+
+      # ---- Node exporter ----
+      - job_name: node-exporter
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - source_labels: [__address__]
+            regex: '(.*):10250'
+            replacement: '${1}:9100'
+            target_label: __address__
+
+      # ---- Wazuh ----
+      - job_name: wazuh
+        static_configs:
+          - targets:
+              - wazuh-manager.wazuh.svc.cluster.local:9200
+        labels:
+          job: wazuh
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: observability
+spec:
+  serviceName: prometheus
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: prometheus
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=30d
+            - --storage.tsdb.retention.size=180GB
+            - --web.enable-lifecycle
+            - --web.enable-admin-api
+            - --web.console.libraries=/usr/share/prometheus/console_libraries
+            - --web.console.templates=/usr/share/prometheus/consoles
+            - --log.level=info
+          ports:
+            - containerPort: 9090
+              name: http
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: rules
+              mountPath: /etc/prometheus/rules
+            - name: prometheus-data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: rules
+          configMap:
+            name: prometheus-rules
+  volumeClaimTemplates:
+    - metadata:
+        name: prometheus-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 200Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+---
+# ---- Alertmanager ----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: observability
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      slack_api_url: 'SLACK_WEBHOOK_URL'
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'slack-default'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'pagerduty-critical'
+          continue: true
+        - match:
+            severity: critical
+          receiver: 'slack-critical'
+        - match:
+            severity: warning
+          receiver: 'slack-warning'
+        - match:
+            alertname: SLOBudgetBurn
+          receiver: 'pagerduty-critical'
+
+    receivers:
+      - name: 'slack-default'
+        slack_configs:
+          - channel: '#insurance-alerts'
+            send_resolved: true
+            title: '{{ template "slack.title" . }}'
+            text: '{{ template "slack.text" . }}'
+
+      - name: 'slack-critical'
+        slack_configs:
+          - channel: '#insurance-critical'
+            send_resolved: true
+            title: ':fire: CRITICAL: {{ template "slack.title" . }}'
+            text: '{{ template "slack.text" . }}'
+
+      - name: 'slack-warning'
+        slack_configs:
+          - channel: '#insurance-warnings'
+            send_resolved: true
+
+      - name: 'pagerduty-critical'
+        pagerduty_configs:
+          - routing_key: 'PAGERDUTY_ROUTING_KEY'
+            description: '{{ template "pagerduty.description" . }}'
+            severity: critical
+
+    inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'cluster', 'service']

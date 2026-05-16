@@ -1,0 +1,390 @@
+{
+  "liveness_detection_service": {
+    "passive_liveness_success": {
+      "check_id": "LC-20260129-001",
+      "customer_id": "CUST-001",
+      "liveness_type": "passive",
+      "is_live": true,
+      "confidence_score": 0.95,
+      "anti_spoofing": {
+        "is_photo": false,
+        "is_video": false,
+        "is_mask": false,
+        "is_deepfake": false,
+        "texture_score": 0.92,
+        "color_score": 0.94,
+        "reflection_score": 0.96,
+        "depth_score": 0.93
+      },
+      "face_quality": {
+        "brightness": 0.85,
+        "sharpness": 0.88,
+        "frontal_score": 0.92
+      },
+      "face_matching": null,
+      "status": "approved",
+      "checked_at": "2026-01-29T10:30:00Z",
+      "checked_by": "kyc_analyst_001"
+    },
+    "active_liveness_success": {
+      "check_id": "LC-20260129-002",
+      "customer_id": "CUST-002",
+      "liveness_type": "active",
+      "is_live": true,
+      "confidence_score": 0.93,
+      "anti_spoofing": {
+        "is_photo": false,
+        "is_video": false,
+        "is_mask": false,
+        "is_deepfake": false,
+        "texture_score": 0.90,
+        "color_score": 0.92,
+        "reflection_score": 0.94,
+        "depth_score": 0.91
+      },
+      "face_quality": {
+        "brightness": 0.82,
+        "sharpness": 0.85,
+        "frontal_score": 0.89
+      },
+      "face_matching": null,
+      "status": "approved",
+      "checked_at": "2026-01-29T10:35:00Z",
+      "checked_by": "kyc_analyst_001"
+    },
+    "liveness_with_face_match": {
+      "check_id": "LC-20260129-003",
+      "customer_id": "CUST-003",
+      "liveness_type": "passive",
+      "is_live": true,
+      "confidence_score": 0.96,
+      "anti_spoofing": {
+        "is_photo": false,
+        "is_video": false,
+        "is_mask": false,
+        "is_deepfake": false,
+        "texture_score": 0.93,
+        "color_score": 0.95,
+        "reflection_score": 0.97,
+        "depth_score": 0.94
+      },
+      "face_quality": {
+        "brightness": 0.87,
+        "sharpness": 0.90,
+        "frontal_score": 0.93
+      },
+      "face_matching": {
+        "match_found": true,
+        "similarity_score": 0.91,
+        "match_confidence": "high"
+      },
+      "status": "approved",
+      "checked_at": "2026-01-29T10:40:00Z",
+      "checked_by": "kyc_analyst_001"
+    },
+    "liveness_rejected_spoofing": {
+      "check_id": "LC-20260129-004",
+      "customer_id": "CUST-004",
+      "liveness_type": "passive",
+      "is_live": false,
+      "confidence_score": 0.35,
+      "anti_spoofing": {
+        "is_photo": true,
+        "is_video": false,
+        "is_mask": false,
+        "is_deepfake": false,
+        "texture_score": 0.45,
+        "color_score": 0.40,
+        "reflection_score": 0.30,
+        "depth_score": 0.25
+      },
+      "face_quality": {
+        "brightness": 0.75,
+        "sharpness": 0.80,
+        "frontal_score": 0.85
+      },
+      "face_matching": null,
+      "status": "rejected",
+      "checked_at": "2026-01-29T10:45:00Z",
+      "checked_by": "kyc_analyst_001",
+      "notes": "Photo attack detected - printed photo used instead of live person"
+    }
+  },
+  "aml_screening_service": {
+    "sanctions_no_match": {
+      "screening_id": "SS-20260129-001",
+      "customer_id": "CUST-001",
+      "entity_type": "individual",
+      "screened_name": "John Smith",
+      "matches_found": false,
+      "total_matches": 0,
+      "matches": [],
+      "risk_level": "low",
+      "screened_at": "2026-01-29T11:00:00Z",
+      "screened_by": "compliance_officer_001"
+    },
+    "sanctions_match_found": {
+      "screening_id": "SS-20260129-002",
+      "customer_id": "CUST-002",
+      "entity_type": "individual",
+      "screened_name": "Ahmed Hassan",
+      "matches_found": true,
+      "total_matches": 1,
+      "matches": [
+        {
+          "list_name": "UN Sanctions List",
+          "matched_name": "Ahmed Hassan",
+          "match_score": 0.95,
+          "date_of_birth": "1975-03-20",
+          "nationality": "SY",
+          "reason": "Terrorism financing",
+          "listed_date": "2020-05-10"
+        }
+      ],
+      "risk_level": "critical",
+      "screened_at": "2026-01-29T11:05:00Z",
+      "screened_by": "compliance_officer_001"
+    },
+    "pep_check_is_pep": {
+      "check_id": "PEP-20260129-001",
+      "customer_id": "CUST-003",
+      "checked_name": "Maria Santos",
+      "is_pep": true,
+      "pep_level": "direct",
+      "position": "Minister of Finance",
+      "country": "NG",
+      "start_date": "2020-01-01",
+      "end_date": null,
+      "is_active": true,
+      "risk_level": "high",
+      "checked_at": "2026-01-29T11:10:00Z",
+      "checked_by": "compliance_officer_001"
+    },
+    "pep_check_not_pep": {
+      "check_id": "PEP-20260129-002",
+      "customer_id": "CUST-004",
+      "checked_name": "David Johnson",
+      "is_pep": false,
+      "pep_level": null,
+      "position": null,
+      "country": null,
+      "start_date": null,
+      "end_date": null,
+      "is_active": false,
+      "risk_level": "low",
+      "checked_at": "2026-01-29T11:15:00Z",
+      "checked_by": "compliance_officer_001"
+    },
+    "adverse_media_found": {
+      "check_id": "AM-20260129-001",
+      "customer_id": "CUST-005",
+      "searched_name": "Sarah Williams",
+      "mentions_found": true,
+      "total_mentions": 2,
+      "mentions": [
+        {
+          "source": "Financial Times",
+          "title": "CEO Involved in Fraud Investigation",
+          "url": "https://ft.com/article/123",
+          "published_date": "2025-12-15",
+          "severity": "high",
+          "categories": ["fraud", "financial_crime"]
+        },
+        {
+          "source": "Reuters",
+          "title": "Company Under Regulatory Scrutiny",
+          "url": "https://reuters.com/article/456",
+          "published_date": "2025-11-20",
+          "severity": "medium",
+          "categories": ["regulatory", "compliance"]
+        }
+      ],
+      "risk_level": "high",
+      "checked_at": "2026-01-29T11:20:00Z",
+      "checked_by": "compliance_officer_001"
+    },
+    "comprehensive_screening_low_risk": {
+      "screening_id": "CS-20260129-001",
+      "customer_id": "CUST-006",
+      "screened_name": "Michael Brown",
+      "sanctions": {
+        "matches_found": false,
+        "risk_level": "low"
+      },
+      "pep": {
+        "is_pep": false,
+        "risk_level": "low"
+      },
+      "adverse_media": {
+        "mentions_found": false,
+        "risk_level": "low"
+      },
+      "overall_risk_level": "low",
+      "status": "approved",
+      "screened_at": "2026-01-29T11:25:00Z",
+      "screened_by": "compliance_officer_001"
+    },
+    "comprehensive_screening_high_risk": {
+      "screening_id": "CS-20260129-002",
+      "customer_id": "CUST-007",
+      "screened_name": "Robert Taylor",
+      "sanctions": {
+        "matches_found": false,
+        "risk_level": "low"
+      },
+      "pep": {
+        "is_pep": true,
+        "risk_level": "high"
+      },
+      "adverse_media": {
+        "mentions_found": true,
+        "risk_level": "high"
+      },
+      "overall_risk_level": "high",
+      "status": "review_required",
+      "screened_at": "2026-01-29T11:30:00Z",
+      "screened_by": "compliance_officer_001"
+    }
+  },
+  "risk_scoring_service": {
+    "risk_score_low": {
+      "score_id": "RS-20260129-001",
+      "customer_id": "CUST-001",
+      "overall_score": 25,
+      "risk_level": "low",
+      "dimension_scores": {
+        "identity_risk": 15,
+        "document_risk": 10,
+        "aml_risk": 5,
+        "behavioral_risk": 20,
+        "geographic_risk": 10,
+        "transaction_risk": 15
+      },
+      "risk_factors": [
+        {
+          "factor": "Low AML risk",
+          "impact": "positive",
+          "weight": 0.3
+        },
+        {
+          "factor": "Verified identity",
+          "impact": "positive",
+          "weight": 0.25
+        },
+        {
+          "factor": "Normal transaction patterns",
+          "impact": "positive",
+          "weight": 0.2
+        }
+      ],
+      "recommendations": [
+        {
+          "action": "approve",
+          "confidence": "high",
+          "reason": "All risk dimensions within acceptable thresholds"
+        }
+      ],
+      "status": "approved",
+      "scored_at": "2026-01-29T11:35:00Z",
+      "scored_by": "risk_manager_001"
+    },
+    "risk_score_high": {
+      "score_id": "RS-20260129-002",
+      "customer_id": "CUST-002",
+      "overall_score": 75,
+      "risk_level": "high",
+      "dimension_scores": {
+        "identity_risk": 65,
+        "document_risk": 70,
+        "aml_risk": 85,
+        "behavioral_risk": 60,
+        "geographic_risk": 55,
+        "transaction_risk": 80
+      },
+      "risk_factors": [
+        {
+          "factor": "PEP identified",
+          "impact": "negative",
+          "weight": 0.4
+        },
+        {
+          "factor": "High-risk country",
+          "impact": "negative",
+          "weight": 0.3
+        },
+        {
+          "factor": "Large transaction amount",
+          "impact": "negative",
+          "weight": 0.2
+        },
+        {
+          "factor": "VPN detected",
+          "impact": "negative",
+          "weight": 0.15
+        }
+      ],
+      "recommendations": [
+        {
+          "action": "reject",
+          "confidence": "high",
+          "reason": "Multiple high-risk factors detected"
+        },
+        {
+          "action": "enhanced_due_diligence",
+          "confidence": "medium",
+          "reason": "Consider EDD if business justification exists"
+        }
+      ],
+      "status": "review_required",
+      "scored_at": "2026-01-29T11:40:00Z",
+      "scored_by": "risk_manager_001"
+    },
+    "comprehensive_assessment": {
+      "assessment_id": "RA-20260129-001",
+      "customer_id": "CUST-003",
+      "overall_risk_score": 30,
+      "overall_risk_level": "low",
+      "risk_dimensions": {
+        "identity": {
+          "score": 20,
+          "level": "low",
+          "factors": ["verified_identity", "high_liveness_score", "authentic_documents"]
+        },
+        "document": {
+          "score": 15,
+          "level": "low",
+          "factors": ["authentic_documents", "high_quality", "no_tampering"]
+        },
+        "aml": {
+          "score": 10,
+          "level": "low",
+          "factors": ["no_sanctions", "not_pep", "no_adverse_media"]
+        },
+        "behavioral": {
+          "score": 25,
+          "level": "low",
+          "factors": ["normal_activity", "consistent_patterns", "low_failed_logins"]
+        },
+        "geographic": {
+          "score": 20,
+          "level": "low",
+          "factors": ["low_risk_country", "no_vpn", "consistent_location"]
+        },
+        "transaction": {
+          "score": 25,
+          "level": "low",
+          "factors": ["normal_amount", "legitimate_purpose", "verified_payment_method"]
+        }
+      },
+      "recommendations": {
+        "primary_action": "approve",
+        "alternative_actions": [],
+        "monitoring_required": false,
+        "review_period_days": 90
+      },
+      "status": "approved",
+      "assessed_at": "2026-01-29T11:45:00Z",
+      "assessed_by": "risk_manager_001"
+    }
+  }
+}

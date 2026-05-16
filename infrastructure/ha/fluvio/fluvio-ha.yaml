@@ -1,0 +1,268 @@
+---
+# Fluvio HA — 3 Streaming Controllers (SC) + 3 Streaming Processing Units (SPU)
+# Persistent storage, TLS, Prometheus metrics, PodDisruptionBudgets
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fluvio
+---
+# Fluvio Streaming Controller (SC) — HA with 3 replicas
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluvio-sc
+  namespace: fluvio
+  labels:
+    app: fluvio-sc
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: fluvio-sc
+  template:
+    metadata:
+      labels:
+        app: fluvio-sc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: fluvio-sc
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: fluvio-sc
+      serviceAccountName: fluvio-sc
+      containers:
+        - name: fluvio-sc
+          image: infinyon/fluvio:0.11.0
+          args:
+            - run
+            - sc
+            - --bind-public=0.0.0.0:9003
+            - --bind-private=0.0.0.0:9004
+            - --k8=true
+            - --tls-enabled=true
+            - --ca-cert=/etc/fluvio/tls/ca.crt
+            - --server-cert=/etc/fluvio/tls/tls.crt
+            - --server-key=/etc/fluvio/tls/tls.key
+            - --log-level=info
+          ports:
+            - containerPort: 9003
+              name: public
+            - containerPort: 9004
+              name: private
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: FLV_SC_METADATA_STORE
+              value: "k8"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          livenessProbe:
+            tcpSocket:
+              port: 9003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 9003
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: fluvio-tls
+              mountPath: /etc/fluvio/tls
+              readOnly: true
+      volumes:
+        - name: fluvio-tls
+          secret:
+            secretName: fluvio-tls-secret
+            optional: true
+---
+# Fluvio Streaming Processing Units (SPU) — StatefulSet for persistent storage
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-spg
+  namespace: fluvio
+  labels:
+    app: fluvio-spg
+spec:
+  serviceName: fluvio-spg-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: fluvio-spg
+  template:
+    metadata:
+      labels:
+        app: fluvio-spg
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: fluvio-spg
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: fluvio-spg
+      containers:
+        - name: fluvio-spu
+          image: infinyon/fluvio:0.11.0
+          args:
+            - run
+            - spu
+            - --id=$(SPU_ID)
+            - --sc-addr=fluvio-sc.fluvio.svc.cluster.local:9004
+            - --public-server=0.0.0.0:9005
+            - --private-server=0.0.0.0:9006
+            - --log-base-dir=/var/fluvio/data
+            - --tls-enabled=true
+            - --ca-cert=/etc/fluvio/tls/ca.crt
+            - --server-cert=/etc/fluvio/tls/tls.crt
+            - --server-key=/etc/fluvio/tls/tls.key
+          env:
+            - name: SPU_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RUST_LOG
+              value: "info"
+          ports:
+            - containerPort: 9005
+              name: public
+            - containerPort: 9006
+              name: private
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          livenessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: fluvio-data
+              mountPath: /var/fluvio/data
+            - name: fluvio-tls
+              mountPath: /etc/fluvio/tls
+              readOnly: true
+      volumes:
+        - name: fluvio-tls
+          secret:
+            secretName: fluvio-tls-secret
+            optional: true
+  volumeClaimTemplates:
+    - metadata:
+        name: fluvio-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-sc
+  namespace: fluvio
+  labels:
+    app: fluvio-sc
+spec:
+  selector:
+    app: fluvio-sc
+  ports:
+    - name: public
+      port: 9003
+      targetPort: 9003
+    - name: private
+      port: 9004
+      targetPort: 9004
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-spg-headless
+  namespace: fluvio
+spec:
+  clusterIP: None
+  selector:
+    app: fluvio-spg
+  ports:
+    - name: public
+      port: 9005
+    - name: private
+      port: 9006
+---
+# PodDisruptionBudgets
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-sc-pdb
+  namespace: fluvio
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-sc
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-spg-pdb
+  namespace: fluvio
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-spg

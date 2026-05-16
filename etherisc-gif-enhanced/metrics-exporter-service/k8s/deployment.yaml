@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gif-metrics-exporter
+  labels:
+    app: gif-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gif-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: gif-metrics-exporter
+      annotations:
+        # Prometheus scrape annotation
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: metrics-exporter
+        image: gif-metrics-exporter:latest # Replace with your actual image
+        ports:
+        - containerPort: 9100
+          name: metrics
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        # Environment variables can be used to override config.yaml values
+        env:
+        - name: CONFIG_PATH
+          value: "/root/config/config.yaml"
+        # In a real deployment, integration URLs would be set here or via a ConfigMap
+        # - name: INTEGRATION_GIF_SERVICE_URL
+        #   value: "http://gif-service.gif-namespace.svc.cluster.local:8080"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 5
+          periodSeconds: 5

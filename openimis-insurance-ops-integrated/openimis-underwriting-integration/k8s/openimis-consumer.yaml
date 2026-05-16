@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openimis-consumer
+  labels:
+    app: openimis-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openimis-consumer
+  template:
+    metadata:
+      labels:
+        app: openimis-consumer
+    spec:
+      containers:
+      - name: openimis-consumer
+        image: openimis-consumer:latest # Replace with your registry image
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: OC_KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker-0.kafka-headless.default.svc.cluster.local:9092" # Example for in-cluster Kafka
+        - name: OC_KAFKA_TOPIC
+          value: "underwriting-events"
+        - name: OC_KAFKA_GROUP_ID
+          value: "openimis-risk-model-group"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

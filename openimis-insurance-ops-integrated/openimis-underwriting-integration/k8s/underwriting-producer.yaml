@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: underwriting-producer
+  labels:
+    app: underwriting-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: underwriting-producer
+  template:
+    metadata:
+      labels:
+        app: underwriting-producer
+    spec:
+      containers:
+      - name: underwriting-producer
+        image: underwriting-producer:latest # Replace with your registry image
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: UP_KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker-0.kafka-headless.default.svc.cluster.local:9092" # Example for in-cluster Kafka
+        - name: UP_KAFKA_TOPIC
+          value: "underwriting-events"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080 # If it were a web service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: underwriting-producer
+spec:
+  selector:
+    app: underwriting-producer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

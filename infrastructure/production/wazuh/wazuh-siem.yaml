@@ -1,0 +1,394 @@
+---
+# =============================================================================
+# Wazuh SIEM — Unified Insurance Platform
+# 3-node Wazuh cluster + Elasticsearch + Kibana/Wazuh Dashboard
+# Integrated with OpenCTI for threat intelligence enrichment
+# Custom decoders and rules for insurance-specific events
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wazuh
+  labels:
+    istio-injection: enabled
+---
+# --- Wazuh Manager StatefulSet ---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wazuh-manager
+  namespace: wazuh
+spec:
+  serviceName: wazuh-manager
+  replicas: 3
+  selector:
+    matchLabels:
+      app: wazuh-manager
+  template:
+    metadata:
+      labels:
+        app: wazuh-manager
+    spec:
+      serviceAccountName: wazuh
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: wazuh-manager
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: init-config
+          image: busybox:1.36
+          command: ["sh", "-c", "cp /config-templates/* /var/ossec/etc/ && chmod 640 /var/ossec/etc/*.conf"]
+          volumeMounts:
+            - name: config-templates
+              mountPath: /config-templates
+            - name: wazuh-config
+              mountPath: /var/ossec/etc
+      containers:
+        - name: wazuh-manager
+          image: wazuh/wazuh-manager:4.8.0
+          env:
+            - name: WAZUH_CLUSTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wazuh-secrets
+                  key: cluster-key
+            - name: WAZUH_MANAGER_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: INDEXER_URL
+              value: "https://wazuh-indexer.wazuh.svc.cluster.local:9200"
+            - name: INDEXER_USERNAME
+              value: "admin"
+            - name: INDEXER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wazuh-secrets
+                  key: indexer-password
+          ports:
+            - containerPort: 1514
+              name: agent-udp
+              protocol: UDP
+            - containerPort: 1515
+              name: agent-tcp
+            - containerPort: 1516
+              name: cluster
+            - containerPort: 55000
+              name: api
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          volumeMounts:
+            - name: wazuh-data
+              mountPath: /var/ossec/data
+            - name: wazuh-logs
+              mountPath: /var/ossec/logs
+            - name: wazuh-config
+              mountPath: /var/ossec/etc
+            - name: custom-rules
+              mountPath: /var/ossec/etc/rules
+            - name: custom-decoders
+              mountPath: /var/ossec/etc/decoders
+            - name: wazuh-tls
+              mountPath: /etc/ssl/wazuh
+      volumes:
+        - name: config-templates
+          configMap:
+            name: wazuh-config-templates
+        - name: wazuh-config
+          emptyDir: {}
+        - name: custom-rules
+          configMap:
+            name: wazuh-custom-rules
+        - name: custom-decoders
+          configMap:
+            name: wazuh-custom-decoders
+        - name: wazuh-tls
+          secret:
+            secretName: wazuh-tls
+  volumeClaimTemplates:
+    - metadata:
+        name: wazuh-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+    - metadata:
+        name: wazuh-logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 20Gi
+---
+# --- Custom Decoders for Insurance Platform ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-custom-decoders
+  namespace: wazuh
+data:
+  insurance-decoders.xml: |
+    <!-- Insurance Platform Custom Decoders -->
+    <decoder name="insurance-api">
+      <prematch>{"service":</prematch>
+      <regex>{"service":"(\S+)","level":"(\S+)","message":"(\.+)","request_id":"(\S+)"</regex>
+      <order>service, log_level, message, request_id</order>
+    </decoder>
+
+    <decoder name="insurance-claim-event">
+      <parent>insurance-api</parent>
+      <prematch>claim</prematch>
+      <regex>claim_id":"(\S+)","policy_id":"(\S+)","amount":"(\S+)","status":"(\S+)"</regex>
+      <order>claim_id, policy_id, amount, status</order>
+    </decoder>
+
+    <decoder name="insurance-payment-event">
+      <parent>insurance-api</parent>
+      <prematch>payment</prematch>
+      <regex>payment_id":"(\S+)","amount":"(\S+)","currency":"(\S+)","method":"(\S+)"</regex>
+      <order>payment_id, amount, currency, payment_method</order>
+    </decoder>
+
+    <decoder name="insurance-auth-event">
+      <parent>insurance-api</parent>
+      <prematch>authentication</prematch>
+      <regex>user_id":"(\S+)","action":"(\S+)","ip":"(\S+)","result":"(\S+)"</regex>
+      <order>user_id, auth_action, src_ip, auth_result</order>
+    </decoder>
+
+    <decoder name="insurance-policy-event">
+      <parent>insurance-api</parent>
+      <prematch>policy</prematch>
+      <regex>policy_id":"(\S+)","type":"(\S+)","premium":"(\S+)","action":"(\S+)"</regex>
+      <order>policy_id, policy_type, premium, policy_action</order>
+    </decoder>
+
+    <decoder name="keycloak-auth">
+      <prematch>{"type":"LOGIN</prematch>
+      <regex>type":"(\S+)","realmId":"(\S+)","userId":"(\S+)","ipAddress":"(\S+)","error":"(\S+)"</regex>
+      <order>event_type, realm_id, user_id, src_ip, error</order>
+    </decoder>
+
+    <decoder name="istio-access-log">
+      <prematch>{"authority":</prematch>
+      <regex>authority":"(\S+)","method":"(\S+)","path":"(\S+)","response_code":(\d+),"bytes_sent":(\d+)</regex>
+      <order>authority, http_method, url_path, response_code, bytes_sent</order>
+    </decoder>
+---
+# --- Custom Rules for Insurance Platform ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-custom-rules
+  namespace: wazuh
+data:
+  insurance-rules.xml: |
+    <!-- Insurance Platform Custom Security Rules -->
+    <group name="insurance,">
+
+      <!-- High-value claim fraud detection -->
+      <rule id="100001" level="12">
+        <decoded_as>insurance-claim-event</decoded_as>
+        <field name="amount">^[0-9]{6,}</field>
+        <description>High-value insurance claim submitted (>= 100,000)</description>
+        <group>insurance_fraud,pci_dss_10.2.1,gdpr_IV_35.7.d,</group>
+      </rule>
+
+      <!-- Multiple claims from same IP in short window -->
+      <rule id="100002" level="14" frequency="5" timeframe="60">
+        <if_matched_sid>100001</if_matched_sid>
+        <same_field>src_ip</same_field>
+        <description>Possible insurance fraud: multiple high-value claims from same source</description>
+        <group>insurance_fraud,attack,</group>
+      </rule>
+
+      <!-- Failed authentication brute force -->
+      <rule id="100010" level="10" frequency="10" timeframe="60">
+        <decoded_as>insurance-auth-event</decoded_as>
+        <field name="auth_result">failure</field>
+        <same_field>src_ip</same_field>
+        <description>Brute force authentication attempt on insurance platform</description>
+        <group>authentication_failures,attack,</group>
+      </rule>
+
+      <!-- Privileged user login outside business hours -->
+      <rule id="100011" level="9">
+        <decoded_as>insurance-auth-event</decoded_as>
+        <field name="auth_result">success</field>
+        <field name="user_id">admin|superuser|root</field>
+        <time>19:00 - 07:00</time>
+        <description>Privileged user login outside business hours</description>
+        <group>policy_violation,authentication_success,</group>
+      </rule>
+
+      <!-- Keycloak authentication failure -->
+      <rule id="100020" level="7">
+        <decoded_as>keycloak-auth</decoded_as>
+        <field name="event_type">LOGIN_ERROR</field>
+        <description>Keycloak authentication failure</description>
+        <group>authentication_failures,</group>
+      </rule>
+
+      <!-- Keycloak brute force -->
+      <rule id="100021" level="12" frequency="8" timeframe="120">
+        <if_matched_sid>100020</if_matched_sid>
+        <same_field>src_ip</same_field>
+        <description>Keycloak brute force attack detected</description>
+        <group>authentication_failures,attack,brute_force,</group>
+      </rule>
+
+      <!-- Unauthorized API access (403/401 responses) -->
+      <rule id="100030" level="8" frequency="20" timeframe="60">
+        <decoded_as>istio-access-log</decoded_as>
+        <field name="response_code">^40[13]$</field>
+        <same_field>src_ip</same_field>
+        <description>Repeated unauthorized API access attempts</description>
+        <group>web_attack,access_control,</group>
+      </rule>
+
+      <!-- Large data exfiltration attempt -->
+      <rule id="100031" level="13">
+        <decoded_as>istio-access-log</decoded_as>
+        <field name="bytes_sent">^[0-9]{8,}</field>
+        <field name="http_method">GET</field>
+        <description>Possible data exfiltration: large response body on GET request</description>
+        <group>data_exfiltration,gdpr_IV_33,</group>
+      </rule>
+
+      <!-- Payment anomaly: unusual amount -->
+      <rule id="100040" level="11">
+        <decoded_as>insurance-payment-event</decoded_as>
+        <field name="amount">^[0-9]{7,}</field>
+        <description>Unusual payment amount detected (>= 1,000,000)</description>
+        <group>financial_fraud,pci_dss_10.2.1,</group>
+      </rule>
+
+      <!-- Policy modification by non-underwriter -->
+      <rule id="100050" level="10">
+        <decoded_as>insurance-policy-event</decoded_as>
+        <field name="policy_action">modify|delete|cancel</field>
+        <description>Policy modification event - requires audit review</description>
+        <group>policy_change,audit,</group>
+      </rule>
+
+    </group>
+---
+# --- Wazuh Active Response: auto-block on critical alerts ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-config-templates
+  namespace: wazuh
+data:
+  ossec.conf: |
+    <ossec_config>
+      <global>
+        <jsonout_output>yes</jsonout_output>
+        <alerts_log>yes</alerts_log>
+        <logall>no</logall>
+        <logall_json>no</logall_json>
+        <email_notification>yes</email_notification>
+        <smtp_server>smtp.insurance-platform.com</smtp_server>
+        <email_from>wazuh@insurance-platform.com</email_from>
+        <email_to>security-ops@insurance-platform.com</email_to>
+        <email_maxperhour>12</email_maxperhour>
+        <email_log_source>alerts.log</email_log_source>
+      </global>
+
+      <cluster>
+        <name>insurance-wazuh-cluster</name>
+        <node_name>WAZUH_MANAGER_NODE_NAME</node_name>
+        <node_type>master</node_type>
+        <key>WAZUH_CLUSTER_KEY</key>
+        <port>1516</port>
+        <bind_addr>0.0.0.0</bind_addr>
+        <nodes>
+          <node>wazuh-manager-0.wazuh-manager.wazuh.svc.cluster.local</node>
+          <node>wazuh-manager-1.wazuh-manager.wazuh.svc.cluster.local</node>
+          <node>wazuh-manager-2.wazuh-manager.wazuh.svc.cluster.local</node>
+        </nodes>
+        <hidden>no</hidden>
+        <disabled>no</disabled>
+      </cluster>
+
+      <alerts>
+        <log_alert_level>3</log_alert_level>
+        <email_alert_level>12</email_alert_level>
+      </alerts>
+
+      <active-response>
+        <command>firewall-drop</command>
+        <location>local</location>
+        <rules_id>100002,100010,100021,100030</rules_id>
+        <timeout>3600</timeout>
+      </active-response>
+
+      <active-response>
+        <command>host-deny</command>
+        <location>all</location>
+        <rules_id>100002,100021</rules_id>
+        <timeout>86400</timeout>
+      </active-response>
+
+      <integration>
+        <name>slack</name>
+        <hook_url>SLACK_WEBHOOK_URL</hook_url>
+        <alert_format>json</alert_format>
+        <level>12</level>
+      </integration>
+
+      <integration>
+        <name>pagerduty</name>
+        <api_key>PAGERDUTY_API_KEY</api_key>
+        <level>14</level>
+      </integration>
+
+      <ruleset>
+        <decoder_dir>etc/decoders</decoder_dir>
+        <rule_dir>etc/rules</rule_dir>
+        <rule_exclude>0215-policy_rules.xml</rule_exclude>
+        <list>etc/lists/audit-keys</list>
+        <list>etc/lists/amazon/aws-eventnames</list>
+      </ruleset>
+
+      <syslog_output>
+        <level>9</level>
+        <server>siem-forwarder.wazuh.svc.cluster.local</server>
+        <port>514</port>
+        <format>json</format>
+      </syslog_output>
+
+      <vulnerability-detector>
+        <enabled>yes</enabled>
+        <interval>5m</interval>
+        <min_full_scan_interval>6h</min_full_scan_interval>
+        <run_on_start>yes</run_on_start>
+        <provider name="nvd">
+          <enabled>yes</enabled>
+          <url>https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-</url>
+          <update_interval>1h</update_interval>
+        </provider>
+      </vulnerability-detector>
+
+      <sca>
+        <enabled>yes</enabled>
+        <scan_on_start>yes</scan_on_start>
+        <interval>12h</interval>
+        <skip_nfs>yes</skip_nfs>
+        <policies>
+          <policy>etc/shared/cis_debian_linux_rcl.yml</policy>
+          <policy>etc/shared/cis_rhel8_linux_rcl.yml</policy>
+        </policies>
+      </sca>
+    </ossec_config>

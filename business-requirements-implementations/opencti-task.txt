@@ -1,0 +1,13 @@
+Implement OpenCTI threat intelligence integration in Go:
+- OpenCTI API client with STIX/TAXII protocol support
+- Threat intelligence data ingestion pipeline from OpenCTI
+- Integration with Wazuh for threat indicator correlation
+- Integration with OpenSearch for threat data indexing
+- Automated threat response workflows with Temporal
+- Threat intelligence dashboards in Grafana
+- Kafka event streaming for threat indicators
+- REST API for threat intelligence queries (8+ endpoints)
+- PostgreSQL schema for threat data with migrations
+- Kubernetes manifests
+- Prometheus metrics
+- Complete error handling and tests

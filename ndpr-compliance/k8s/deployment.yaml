@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ndpr-compliance
+  labels:
+    app: ndpr-compliance
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ndpr-compliance
+  template:
+    metadata:
+      labels:
+        app: ndpr-compliance
+    spec:
+      containers:
+      - name: ndpr-compliance
+        image: ndpr-compliance:latest
+        ports:
+        - containerPort: 8107
+        env:
+        - name: PORT
+          value: "8107"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8107
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8107
+          initialDelaySeconds: 5

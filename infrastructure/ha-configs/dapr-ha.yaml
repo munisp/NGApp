@@ -1,0 +1,310 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dapr-system
+---
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: insurance-platform-config
+  namespace: dapr-system
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: http://zipkin.observability.svc.cluster.local:9411/api/v2/spans
+  metrics:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: 24h
+    allowedClockSkew: 15m
+  logging:
+    apiLogging:
+      enabled: true
+      obfuscateURLs: false
+      omitHealthChecks: true
+  accessControl:
+    defaultAction: deny
+    trustDomain: "insurance-platform.ng"
+    policies:
+      - appId: policy-service
+        defaultAction: allow
+        trustDomain: "insurance-platform.ng"
+        namespace: insurance
+        operations:
+          - name: /api/v1/*
+            httpVerb: ["GET", "POST", "PUT", "DELETE"]
+            action: allow
+      - appId: claim-service
+        defaultAction: allow
+        trustDomain: "insurance-platform.ng"
+        namespace: insurance
+        operations:
+          - name: /api/v1/*
+            httpVerb: ["GET", "POST", "PUT", "DELETE"]
+            action: allow
+      - appId: payment-service
+        defaultAction: allow
+        trustDomain: "insurance-platform.ng"
+        namespace: insurance
+        operations:
+          - name: /api/v1/*
+            httpVerb: ["GET", "POST"]
+            action: allow
+      - appId: verification-service
+        defaultAction: allow
+        trustDomain: "insurance-platform.ng"
+        namespace: insurance
+        operations:
+          - name: /api/v1/*
+            httpVerb: ["GET", "POST"]
+            action: allow
+  features:
+    - name: ServiceInvocationStreaming
+      enabled: true
+    - name: AppHealthCheck
+      enabled: true
+    - name: HotReload
+      enabled: true
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: insurance
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: redis-cluster-lb.redis.svc.cluster.local:6379
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-credentials
+        key: password
+    - name: actorStateStore
+      value: "true"
+    - name: enableTLS
+      value: "false"
+    - name: failover
+      value: "true"
+    - name: sentinelMasterName
+      value: ""
+    - name: maxRetries
+      value: "3"
+    - name: maxRetryBackoff
+      value: "2s"
+    - name: ttlInSeconds
+      value: "3600"
+    - name: queryIndexes
+      value: |
+        [
+          {"name": "policyId", "indexes": [{"key": "policyId", "type": "TEXT"}]},
+          {"name": "customerId", "indexes": [{"key": "customerId", "type": "TEXT"}]},
+          {"name": "status", "indexes": [{"key": "status", "type": "TEXT"}]}
+        ]
+  auth:
+    secretStore: kubernetes
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: insurance
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: insurance-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+    - name: consumerGroup
+      value: insurance-platform
+    - name: authType
+      value: none
+    - name: maxMessageBytes
+      value: "10485760"
+    - name: consumeRetryInterval
+      value: "100ms"
+    - name: version
+      value: "3.6.0"
+    - name: initialOffset
+      value: "oldest"
+    - name: disableTls
+      value: "true"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: secretstore
+  namespace: insurance
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: binding-cron
+  namespace: insurance
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@every 1h"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: lockstore
+  namespace: insurance
+spec:
+  type: lock.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: redis-cluster-lb.redis.svc.cluster.local:6379
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-credentials
+        key: password
+---
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: insurance-resiliency
+  namespace: insurance
+spec:
+  policies:
+    timeouts:
+      general: 30s
+      important: 60s
+      critical: 120s
+    retries:
+      retryForever:
+        policy: constant
+        duration: 5s
+        maxRetries: -1
+      important:
+        policy: exponential
+        maxInterval: 15s
+        maxRetries: 10
+      critical:
+        policy: exponential
+        maxInterval: 30s
+        maxRetries: 20
+      quick:
+        policy: constant
+        duration: 1s
+        maxRetries: 3
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+      aggressiveCB:
+        maxRequests: 1
+        interval: 60s
+        timeout: 120s
+        trip: consecutiveFailures >= 3
+  targets:
+    apps:
+      policy-service:
+        timeout: important
+        retry: important
+        circuitBreaker: simpleCB
+      claim-service:
+        timeout: important
+        retry: important
+        circuitBreaker: simpleCB
+      payment-service:
+        timeout: critical
+        retry: critical
+        circuitBreaker: aggressiveCB
+      verification-service:
+        timeout: critical
+        retry: critical
+        circuitBreaker: aggressiveCB
+    components:
+      statestore:
+        outbound:
+          timeout: general
+          retry: quick
+          circuitBreaker: simpleCB
+      pubsub:
+        outbound:
+          timeout: important
+          retry: important
+          circuitBreaker: simpleCB
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: policy-events-subscription
+  namespace: insurance
+spec:
+  pubsubname: pubsub
+  topic: policy-events
+  route: /api/v1/events/policy
+  scopes:
+    - policy-service
+    - claim-service
+    - payment-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: claim-events-subscription
+  namespace: insurance
+spec:
+  pubsubname: pubsub
+  topic: claim-events
+  route: /api/v1/events/claim
+  scopes:
+    - claim-service
+    - payment-service
+    - fraud-detection-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: payment-events-subscription
+  namespace: insurance
+spec:
+  pubsubname: pubsub
+  topic: payment-events
+  route: /api/v1/events/payment
+  scopes:
+    - payment-service
+    - policy-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: verification-events-subscription
+  namespace: insurance
+spec:
+  pubsubname: pubsub
+  topic: verification-events
+  route: /api/v1/events/verification
+  scopes:
+    - verification-service
+    - policy-service
+    - kyc-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: fraud-alerts-subscription
+  namespace: insurance
+spec:
+  pubsubname: pubsub
+  topic: fraud-alerts
+  route: /api/v1/events/fraud
+  scopes:
+    - fraud-detection-service
+    - claim-service
+    - policy-service

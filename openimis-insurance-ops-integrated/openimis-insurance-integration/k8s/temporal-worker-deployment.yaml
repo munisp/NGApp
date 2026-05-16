@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-worker
+  labels:
+    app: temporal-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: temporal-worker
+  template:
+    metadata:
+      labels:
+        app: temporal-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9094"
+    spec:
+      containers:
+      - name: worker
+        image: temporal-worker:latest # Replace with your actual image
+        ports:
+        - containerPort: 9094
+          name: metrics
+        env:
+        - name: TEMPORAL_HOST_PORT
+          value: "temporal-frontend:7233" # Replace with your Temporal service address
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-worker-metrics
+spec:
+  selector:
+    app: temporal-worker
+  ports:
+    - protocol: TCP
+      port: 9094
+      targetPort: metrics
+      name: metrics

@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erpnext-integration-service
+  namespace: insurance-platform
+  labels:
+    app: erpnext-integration-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: erpnext-integration-service
+  template:
+    metadata:
+      labels:
+        app: erpnext-integration-service
+    spec:
+      containers:
+      - name: erpnext-integration-service
+        image: insurance-platform/erpnext-integration-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: ERPNEXT_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: erpnext-config
+              key: base_url
+        - name: ERPNEXT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: erpnext-credentials
+              key: api_key
+        - name: ERPNEXT_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: erpnext-credentials
+              key: api_secret
+        - name: ERPNEXT_COMPANY
+          valueFrom:
+            configMapKeyRef:
+              name: erpnext-config
+              key: company
+        - name: KAFKA_BROKERS
+          value: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092"
+        - name: KAFKA_GROUP_ID
+          value: "erpnext-integration"
+        - name: KAFKA_TOPICS
+          value: "payment-events,customer-events,agent-events,document-events"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep erpnext-integration-service | grep -v grep"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep erpnext-integration-service | grep -v grep"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: erpnext-config
+  namespace: insurance-platform
+data:
+  base_url: "https://erpnext.example.com"
+  company: "Insurance Company"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: erpnext-credentials
+  namespace: insurance-platform
+type: Opaque
+stringData:
+  api_key: "your-api-key-here"
+  api_secret: "your-api-secret-here"

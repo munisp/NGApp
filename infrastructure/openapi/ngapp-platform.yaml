@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: NGApp Insurance Platform API
+  version: 3.0.0
+  description: >
+    Next-generation insurance platform for developing markets.
+    Comprehensive API covering financial services, insurance products,
+    identity verification, and platform operations.
+  contact:
+    name: NGApp Platform Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:9080
+    description: Local (APISix gateway)
+  - url: https://api.ngapp.io
+    description: Production
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+    Payout:
+      type: object
+      properties:
+        payout_id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          default: NGN
+        channel:
+          type: string
+          enum: [bank_transfer, mobile_money, wallet]
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        recipient_name:
+          type: string
+        fee:
+          type: number
+
+    Transaction:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        type:
+          type: string
+          enum: [collection, disbursement, transfer]
+        provider:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+
+    Policy:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        product_id:
+          type: string
+        premium:
+          type: number
+        coverage:
+          type: number
+        status:
+          type: string
+          enum: [active, expired, cancelled, claimed]
+
+    KYCProfile:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        country:
+          type: string
+        level:
+          type: string
+          enum: [basic, standard, enhanced]
+        status:
+          type: string
+          enum: [pending, verified, rejected, expired]
+        score:
+          type: number
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        service:
+          type: string
+        version:
+          type: string
+        db_connected:
+          type: boolean
+        middleware:
+          type: array
+          items:
+            type: string
+
+paths:
+  # ── Financial Services ──
+  /api/v1/payouts/channels:
+    get:
+      tags: [Financial]
+      summary: List payout channels
+      operationId: listPayoutChannels
+      responses:
+        '200':
+          description: Available payout channels
+
+  /api/v1/payouts/initiate:
+    post:
+      tags: [Financial]
+      summary: Initiate a payout
+      operationId: initiatePayout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, channel, recipient_account]
+              properties:
+                amount:
+                  type: number
+                channel:
+                  type: string
+                recipient_account:
+                  type: string
+                recipient_bank:
+                  type: string
+      responses:
+        '201':
+          description: Payout initiated
+        '400':
+          description: Validation error
+
+  /api/v1/mobile-money/collect:
+    post:
+      tags: [Financial]
+      summary: Initiate mobile money collection
+      operationId: initiateCollection
+      responses:
+        '201':
+          description: Collection initiated
+
+  /api/v1/currency/rates:
+    get:
+      tags: [Financial]
+      summary: Get exchange rates
+      operationId: getExchangeRates
+      parameters:
+        - name: base
+          in: query
+          schema:
+            type: string
+            default: NGN
+      responses:
+        '200':
+          description: Current exchange rates
+
+  # ── Insurance Products ──
+  /api/v1/microinsurance/products:
+    get:
+      tags: [Insurance]
+      summary: List microinsurance products
+      operationId: listMicroinsuranceProducts
+      responses:
+        '200':
+          description: Available products
+
+  /api/v1/microinsurance/enroll:
+    post:
+      tags: [Insurance]
+      summary: Enroll in microinsurance
+      operationId: enrollMicroinsurance
+      responses:
+        '201':
+          description: Enrollment created
+
+  /api/v1/ubi/telemetry:
+    post:
+      tags: [Insurance]
+      summary: Ingest telemetry data
+      operationId: ingestTelemetry
+      responses:
+        '201':
+          description: Telemetry recorded
+
+  /api/v1/takaful/pools:
+    get:
+      tags: [Insurance]
+      summary: List Takaful pools
+      operationId: listTakafulPools
+      responses:
+        '200':
+          description: Available pools
+
+  # ── Identity & KYC ──
+  /api/v1/ekyc/verify/nin:
+    post:
+      tags: [Identity]
+      summary: Verify NIN
+      operationId: verifyNIN
+      responses:
+        '200':
+          description: NIN verification result
+
+  /api/v1/ekyc/verify/bvn:
+    post:
+      tags: [Identity]
+      summary: Verify BVN
+      operationId: verifyBVN
+      responses:
+        '200':
+          description: BVN verification result
+
+  /api/v1/ussd/session:
+    post:
+      tags: [Access]
+      summary: Handle USSD session
+      security: []
+      operationId: handleUSSD
+      responses:
+        '200':
+          description: USSD response
+
+  # ── Platform Operations ──
+  /api/v1/tenants:
+    get:
+      tags: [Platform]
+      summary: List tenants
+      operationId: listTenants
+      responses:
+        '200':
+          description: Tenant list
+
+  /api/v1/regulatory/dashboard:
+    get:
+      tags: [Compliance]
+      summary: Compliance dashboard
+      operationId: complianceDashboard
+      responses:
+        '200':
+          description: Compliance overview
+
+  /api/v1/marketplace/products:
+    get:
+      tags: [Developer]
+      summary: List API products
+      security:
+        - ApiKeyAuth: []
+      operationId: listAPIProducts
+      responses:
+        '200':
+          description: Available APIs

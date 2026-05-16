@@ -1,0 +1,1 @@
+Claims Service: Config, Metrics, K8s - Implement configuration management, Prometheus metrics (20+), structured logging, Kubernetes manifests (deployment, service, HPA, configmap, secret).

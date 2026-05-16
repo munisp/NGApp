@@ -1,0 +1,19 @@
+{
+  "description": "Example request for passive liveness detection",
+  "endpoint": "POST /api/v1/liveness/check",
+  "headers": {
+    "Authorization": "Bearer <access_token>",
+    "Content-Type": "multipart/form-data"
+  },
+  "form_data": {
+    "customer_id": "CUST-001",
+    "liveness_type": "passive",
+    "file": "@selfie.jpg"
+  },
+  "notes": [
+    "Replace <access_token> with actual JWT token from Keycloak",
+    "selfie.jpg should be a clear frontal face image (JPEG/PNG)",
+    "Image should be at least 640x480 pixels",
+    "Face should be clearly visible and well-lit"
+  ]
+}

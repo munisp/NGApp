@@ -1,0 +1,86 @@
+// NGApp Permission Schema for Permify
+// Fine-grained RBAC for insurance platform
+
+entity user {}
+
+entity organization {
+    relation owner @user
+    relation admin @user
+    relation member @user
+
+    permission manage = owner or admin
+    permission view = manage or member
+}
+
+entity tenant {
+    relation organization @organization
+    relation admin @user
+    relation agent @user
+    relation underwriter @user
+    relation customer @user
+    relation compliance_officer @user
+    relation finance_officer @user
+
+    permission manage = admin or organization.manage
+    permission view_reports = manage or compliance_officer or finance_officer
+    permission process_claims = manage or underwriter
+    permission sell_policies = manage or agent
+    permission view_own = customer
+}
+
+entity policy {
+    relation tenant @tenant
+    relation owner @user
+    relation agent @user
+    relation underwriter @user
+
+    permission view = owner or agent or underwriter or tenant.manage
+    permission create = agent or tenant.sell_policies
+    permission approve = underwriter or tenant.process_claims
+    permission cancel = owner or tenant.manage
+}
+
+entity claim {
+    relation tenant @tenant
+    relation claimant @user
+    relation assessor @user
+    relation approver @user
+
+    permission view = claimant or assessor or approver or tenant.manage
+    permission submit = claimant
+    permission assess = assessor or tenant.process_claims
+    permission approve = approver or tenant.manage
+    permission pay = tenant.manage
+}
+
+entity payout {
+    relation tenant @tenant
+    relation recipient @user
+    relation approver @user
+
+    permission view = recipient or approver or tenant.manage
+    permission initiate = tenant.manage
+    permission approve = approver
+    permission disburse = tenant.manage
+}
+
+entity kyc_profile {
+    relation tenant @tenant
+    relation subject @user
+    relation reviewer @user
+
+    permission view = subject or reviewer or tenant.manage
+    permission submit = subject
+    permission review = reviewer or tenant.manage
+    permission approve = tenant.manage
+}
+
+entity regulatory_report {
+    relation tenant @tenant
+    relation author @user
+    relation reviewer @user
+
+    permission view = author or reviewer or tenant.view_reports
+    permission create = author or tenant.view_reports
+    permission submit = tenant.manage
+}

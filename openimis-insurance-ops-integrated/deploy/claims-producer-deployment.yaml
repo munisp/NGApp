@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claims-producer-service
+  labels:
+    app: claims-producer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: claims-producer
+  template:
+    metadata:
+      labels:
+        app: claims-producer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: claims-producer
+        image: claims-producer-service:latest # Replace with your image registry path
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8080
+          name: metrics
+        env:
+        - name: PORT
+          value: "8080"
+        - name: KAFKA_BROKER
+          value: "kafka-broker-service:9092" # Replace with your Kafka service address
+        - name: KAFKA_TOPIC
+          value: "claim-lifecycle-events"
+        - name: LOSS_RATIO_API
+          value: "http://loss-ratio-service:8081/api/v1/loss-ratio" # Mock external service
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+          requests:
+            cpu: "250m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claims-producer-service
+spec:
+  selector:
+    app: claims-producer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http
+  type: ClusterIP

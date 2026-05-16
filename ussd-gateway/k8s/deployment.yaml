@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ussd-gateway
+  labels:
+    app: ussd-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ussd-gateway
+  template:
+    metadata:
+      labels:
+        app: ussd-gateway
+    spec:
+      containers:
+      - name: ussd-gateway
+        image: insurance-platform/ussd-gateway:latest
+        ports:
+        - containerPort: 8090
+        env:
+        - name: PORT
+          value: "8090"
+        - name: AFRICASTALKING_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ussd-secrets
+              key: africastalking-api-key
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ussd-gateway
+spec:
+  selector:
+    app: ussd-gateway
+  ports:
+  - port: 8090
+    targetPort: 8090
+  type: ClusterIP

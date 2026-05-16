@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: native-mobile-ios
+  labels:
+    app: native-mobile-ios
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: native-mobile-ios
+  template:
+    metadata:
+      labels:
+        app: native-mobile-ios
+    spec:
+      containers:
+      - name: native-mobile-ios
+        image: native-mobile-ios:latest
+        ports:
+        - containerPort: 8111
+        env:
+        - name: PORT
+          value: "8111"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8111
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8111
+          initialDelaySeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

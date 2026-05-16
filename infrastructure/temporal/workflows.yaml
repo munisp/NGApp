@@ -1,0 +1,52 @@
+namespace: ngapp
+task_queues:
+  - name: payouts
+    description: Payout processing workflows
+    workflows:
+      - ProcessPayout
+      - BatchPayout
+      - RefundPayout
+
+  - name: claims
+    description: Claims processing workflows
+    workflows:
+      - ProcessClaim
+      - AutoApproveClaim
+      - EscalateClaim
+      - PayClaim
+
+  - name: kyc
+    description: KYC verification workflows
+    workflows:
+      - VerifyIdentity
+      - EnhancedDueDiligence
+      - PeriodicRecheck
+      - AMLScreening
+
+  - name: enrollment
+    description: Insurance enrollment workflows
+    workflows:
+      - EnrollMicroinsurance
+      - RenewPolicy
+      - CancelPolicy
+
+  - name: compliance
+    description: Regulatory compliance workflows
+    workflows:
+      - RunComplianceCheck
+      - GenerateRegulatoryReport
+      - SubmitToRegulator
+
+  - name: tenant-provisioning
+    description: Tenant lifecycle workflows
+    workflows:
+      - ProvisionTenant
+      - SuspendTenant
+      - DecommissionTenant
+
+  - name: failover
+    description: DR/HA failover workflows
+    workflows:
+      - InitiateFailover
+      - ValidateFailover
+      - RollbackFailover

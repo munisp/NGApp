@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-renewal-automation
+  namespace: insurance-platform
+  labels:
+    app: policy-renewal-automation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: policy-renewal-automation
+  template:
+    metadata:
+      labels:
+        app: policy-renewal-automation
+    spec:
+      containers:
+        - name: policy-renewal-automation
+          image: policy-renewal-automation:latest
+          ports:
+            - containerPort: 8101
+          env:
+            - name: PORT
+              value: "8101"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8101
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8101
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-renewal-automation
+  namespace: insurance-platform
+spec:
+  selector:
+    app: policy-renewal-automation
+  ports:
+    - port: 8101
+      targetPort: 8101
+  type: ClusterIP

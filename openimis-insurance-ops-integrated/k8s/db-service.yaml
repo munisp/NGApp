@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: claims-reserve-db
+  labels:
+    app: claims-reserve-service
+    component: db
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: claims-reserve-service
+    component: db
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claims-reserve-db
+  labels:
+    app: claims-reserve-service
+    component: db
+spec:
+  selector:
+    matchLabels:
+      app: claims-reserve-service
+      component: db
+  template:
+    metadata:
+      labels:
+        app: claims-reserve-service
+        component: db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:14-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: claims_reserve_db
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: claims-reserve-secrets
+                  key: db-password
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          emptyDir: {} # Use PersistentVolumeClaim in production

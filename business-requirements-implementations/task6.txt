@@ -1,0 +1,1 @@
+Customer Portal: Feature Components - Implement all feature pages and components: Dashboard, Policies, Claims, Payments, Profile, Notifications. 30+ components with full functionality.

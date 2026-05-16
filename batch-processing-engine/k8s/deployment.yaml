@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: batch-processing-engine
+  namespace: insurance-platform
+  labels:
+    app: batch-processing-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: batch-processing-engine
+  template:
+    metadata:
+      labels:
+        app: batch-processing-engine
+    spec:
+      containers:
+        - name: batch-processing-engine
+          image: batch-processing-engine:latest
+          ports:
+            - containerPort: 8099
+          env:
+            - name: PORT
+              value: "8099"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8099
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8099
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: batch-processing-engine
+  namespace: insurance-platform
+spec:
+  selector:
+    app: batch-processing-engine
+  ports:
+    - port: 8099
+      targetPort: 8099
+  type: ClusterIP

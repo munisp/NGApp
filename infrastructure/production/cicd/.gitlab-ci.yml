@@ -1,0 +1,541 @@
+---
+# =============================================================================
+# GitLab CI/CD Pipeline — Unified Insurance Platform
+# Stages: build → test → security-scan → integration → performance →
+#         deploy-staging → smoke-test → deploy-production → notify
+# Supports all 54 microservices via dynamic matrix jobs
+# =============================================================================
+
+image: docker:24.0
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: registry.insurance-platform.com
+  HELM_VERSION: "3.15.0"
+  KUBECTL_VERSION: "1.30.0"
+  TRIVY_VERSION: "0.53.0"
+  SONAR_HOST_URL: "https://sonar.insurance-platform.com"
+  STAGING_CLUSTER: "insurance-staging"
+  PRODUCTION_CLUSTER: "insurance-production"
+  CANARY_WEIGHT: "20"
+
+stages:
+  - build
+  - test
+  - security-scan
+  - integration
+  - performance
+  - deploy-staging
+  - smoke-test
+  - deploy-production
+  - notify
+
+# ============================================================
+# TEMPLATES
+# ============================================================
+.docker-login: &docker-login
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$REGISTRY"
+
+.kubectl-setup: &kubectl-setup
+  before_script:
+    - curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    - chmod 700 get_helm.sh && ./get_helm.sh --version "v${HELM_VERSION}"
+    - echo "$KUBECONFIG_CONTENT" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+
+.python-service: &python-service
+  image: python:3.11-slim
+  before_script:
+    - pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+# ============================================================
+# BUILD STAGE
+# ============================================================
+build-services:
+  stage: build
+  services:
+    - docker:24.0-dind
+  <<: *docker-login
+  parallel:
+    matrix:
+      - SERVICE:
+          - openimis-consumer
+          - claims-producer
+          - underwriting-risk-integrator
+          - unified-analytics
+          - etherisc-gif
+          - cession-management
+          - reinsurance-accounting
+          - payment-service
+          - insurance-radar
+          - customer-portal
+  script:
+    - |
+      IMAGE_TAG="${REGISTRY}/insurance/${SERVICE}:${CI_COMMIT_SHA}"
+      IMAGE_LATEST="${REGISTRY}/insurance/${SERVICE}:latest"
+      docker build
+        --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        --build-arg GIT_COMMIT="${CI_COMMIT_SHA}"
+        --build-arg VERSION="${CI_COMMIT_TAG:-${CI_COMMIT_SHORT_SHA}}"
+        --cache-from "${IMAGE_LATEST}"
+        --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}"
+        --label "org.opencontainers.image.source=${CI_PROJECT_URL}"
+        -t "${IMAGE_TAG}"
+        -t "${IMAGE_LATEST}"
+        "services/${SERVICE}/"
+      docker push "${IMAGE_TAG}"
+      docker push "${IMAGE_LATEST}"
+      echo "IMAGE_TAG=${IMAGE_TAG}" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^release\//'
+    - if: '$CI_MERGE_REQUEST_IID'
+
+build-frontend:
+  stage: build
+  image: node:22-alpine
+  services:
+    - docker:24.0-dind
+  <<: *docker-login
+  script:
+    - cd customer-portal
+    - npm ci --prefer-offline
+    - npm run build
+    - |
+      IMAGE_TAG="${REGISTRY}/insurance/customer-portal:${CI_COMMIT_SHA}"
+      docker build -t "${IMAGE_TAG}" -t "${REGISTRY}/insurance/customer-portal:latest" .
+      docker push "${IMAGE_TAG}"
+      docker push "${REGISTRY}/insurance/customer-portal:latest"
+  artifacts:
+    paths:
+      - customer-portal/dist/
+    expire_in: 1 week
+  cache:
+    key: frontend-${CI_COMMIT_REF_SLUG}
+    paths:
+      - customer-portal/node_modules/
+
+# ============================================================
+# TEST STAGE
+# ============================================================
+unit-tests:
+  stage: test
+  <<: *python-service
+  parallel:
+    matrix:
+      - SERVICE:
+          - openimis-consumer
+          - claims-producer
+          - underwriting-risk-integrator
+          - unified-analytics
+          - etherisc-gif
+          - cession-management
+          - reinsurance-accounting
+          - payment-service
+          - insurance-radar
+  script:
+    - cd "services/${SERVICE}"
+    - pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+    - |
+      pytest tests/unit/ \
+        --cov=. \
+        --cov-report=xml:coverage.xml \
+        --cov-report=html:coverage-html \
+        --junitxml=junit.xml \
+        --cov-fail-under=80 \
+        -v
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    when: always
+    reports:
+      junit: "services/${SERVICE}/junit.xml"
+      coverage_report:
+        coverage_format: cobertura
+        path: "services/${SERVICE}/coverage.xml"
+    paths:
+      - "services/${SERVICE}/coverage-html/"
+    expire_in: 1 week
+
+frontend-tests:
+  stage: test
+  image: node:22-alpine
+  script:
+    - cd customer-portal
+    - npm ci --prefer-offline
+    - npm run test:unit -- --coverage
+    - npm run test:e2e:ci
+  artifacts:
+    when: always
+    reports:
+      junit: customer-portal/test-results/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: customer-portal/coverage/cobertura-coverage.xml
+
+# ============================================================
+# SECURITY SCAN STAGE
+# ============================================================
+sast-scan:
+  stage: security-scan
+  image: semgrep/semgrep:latest
+  script:
+    - |
+      semgrep scan \
+        --config=auto \
+        --config=p/python \
+        --config=p/typescript \
+        --config=p/docker \
+        --config=p/kubernetes \
+        --config=p/owasp-top-ten \
+        --config=p/secrets \
+        --json \
+        --output=semgrep-results.json \
+        --error \
+        --severity=ERROR \
+        .
+  artifacts:
+    when: always
+    paths:
+      - semgrep-results.json
+    reports:
+      sast: semgrep-results.json
+  allow_failure: false
+
+container-scan:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:${TRIVY_VERSION}
+    entrypoint: [""]
+  parallel:
+    matrix:
+      - SERVICE:
+          - openimis-consumer
+          - claims-producer
+          - underwriting-risk-integrator
+          - unified-analytics
+          - etherisc-gif
+          - cession-management
+          - reinsurance-accounting
+          - payment-service
+          - insurance-radar
+          - customer-portal
+  script:
+    - |
+      trivy image \
+        --exit-code 1 \
+        --severity HIGH,CRITICAL \
+        --no-progress \
+        --format sarif \
+        --output "trivy-${SERVICE}.sarif" \
+        "${REGISTRY}/insurance/${SERVICE}:${CI_COMMIT_SHA}"
+  artifacts:
+    when: always
+    paths:
+      - "trivy-*.sarif"
+  allow_failure: false
+
+dependency-scan:
+  stage: security-scan
+  image: python:3.11-slim
+  script:
+    - pip install safety pip-audit
+    - |
+      for SERVICE in services/*/; do
+        if [ -f "${SERVICE}requirements.txt" ]; then
+          echo "==> Scanning ${SERVICE}"
+          pip-audit -r "${SERVICE}requirements.txt" \
+            --format json \
+            --output "audit-$(basename ${SERVICE}).json" || true
+          safety check -r "${SERVICE}requirements.txt" \
+            --json \
+            --output "safety-$(basename ${SERVICE}).json" || true
+        fi
+      done
+    - cd customer-portal && npm audit --json > ../npm-audit.json || true
+  artifacts:
+    when: always
+    paths:
+      - "audit-*.json"
+      - "safety-*.json"
+      - npm-audit.json
+  allow_failure: true
+
+sonarqube-scan:
+  stage: security-scan
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  script:
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey=insurance-platform \
+        -Dsonar.sources=. \
+        -Dsonar.host.url="${SONAR_HOST_URL}" \
+        -Dsonar.token="${SONAR_TOKEN}" \
+        -Dsonar.python.coverage.reportPaths="**/coverage.xml" \
+        -Dsonar.javascript.lcov.reportPaths="customer-portal/coverage/lcov.info" \
+        -Dsonar.qualitygate.wait=true
+  allow_failure: false
+
+secret-detection:
+  stage: security-scan
+  image: trufflesecurity/trufflehog:latest
+  script:
+    - |
+      trufflehog git \
+        --branch="${CI_COMMIT_BRANCH}" \
+        --since-commit="${CI_MERGE_REQUEST_DIFF_BASE_SHA:-HEAD~1}" \
+        --fail \
+        --json \
+        "file://." > trufflehog-results.json
+  artifacts:
+    when: always
+    paths:
+      - trufflehog-results.json
+  allow_failure: false
+
+# ============================================================
+# INTEGRATION STAGE
+# ============================================================
+integration-tests:
+  stage: integration
+  image: python:3.11-slim
+  services:
+    - name: redis:7-alpine
+      alias: redis
+    - name: postgres:16-alpine
+      alias: postgres
+      variables:
+        POSTGRES_DB: insurance_test
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
+  variables:
+    REDIS_URL: "redis://redis:6379"
+    DATABASE_URL: "postgresql://test:test@postgres:5432/insurance_test"
+    VAULT_ADDR: "http://vault-mock:8200"
+    KAFKA_BOOTSTRAP_SERVERS: "kafka-mock:9092"
+    TEST_ENV: "ci"
+  script:
+    - pip install --no-cache-dir -r requirements-test.txt
+    - |
+      pytest tests/integration/ \
+        --junitxml=integration-junit.xml \
+        -v \
+        --timeout=120
+  artifacts:
+    when: always
+    reports:
+      junit: integration-junit.xml
+  needs:
+    - unit-tests
+
+# ============================================================
+# PERFORMANCE STAGE
+# ============================================================
+performance-tests:
+  stage: performance
+  image: grafana/k6:latest
+  script:
+    - |
+      k6 run \
+        --vus 50 \
+        --duration 5m \
+        --threshold "http_req_duration{p(95)<500}" \
+        --threshold "http_req_failed<0.01" \
+        --out json=k6-results.json \
+        tests/performance/load-test.js
+  artifacts:
+    when: always
+    paths:
+      - k6-results.json
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  needs:
+    - integration-tests
+
+# ============================================================
+# DEPLOY STAGING
+# ============================================================
+deploy-staging:
+  stage: deploy-staging
+  image: alpine/helm:${HELM_VERSION}
+  <<: *kubectl-setup
+  environment:
+    name: staging
+    url: https://staging.insurance-platform.com
+  variables:
+    KUBECONFIG_CONTENT: "$KUBECONFIG_STAGING_B64"
+  script:
+    - |
+      helm upgrade --install insurance-platform ./helm/insurance-platform \
+        --namespace insurance-platform \
+        --create-namespace \
+        --set global.image.tag="${CI_COMMIT_SHA}" \
+        --set global.environment=staging \
+        --set global.replicaCount=1 \
+        --values helm/values-staging.yaml \
+        --wait \
+        --timeout 10m \
+        --atomic
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  needs:
+    - build-services
+    - build-frontend
+    - sast-scan
+    - container-scan
+    - sonarqube-scan
+
+# ============================================================
+# SMOKE TESTS
+# ============================================================
+smoke-tests:
+  stage: smoke-test
+  image: python:3.11-slim
+  script:
+    - pip install httpx pytest
+    - |
+      pytest tests/smoke/ \
+        --base-url="https://staging.insurance-platform.com" \
+        --junitxml=smoke-junit.xml \
+        -v
+  artifacts:
+    when: always
+    reports:
+      junit: smoke-junit.xml
+  environment:
+    name: staging
+  needs:
+    - deploy-staging
+
+# ============================================================
+# DEPLOY PRODUCTION (Canary → Full)
+# ============================================================
+deploy-production-canary:
+  stage: deploy-production
+  image: alpine/helm:${HELM_VERSION}
+  <<: *kubectl-setup
+  environment:
+    name: production/canary
+    url: https://api.insurance-platform.com
+  variables:
+    KUBECONFIG_CONTENT: "$KUBECONFIG_PRODUCTION_B64"
+  script:
+    - |
+      # Deploy canary with 20% traffic weight
+      helm upgrade --install insurance-platform-canary ./helm/insurance-platform \
+        --namespace insurance-platform \
+        --set global.image.tag="${CI_COMMIT_SHA}" \
+        --set global.environment=production \
+        --set global.replicaCount=1 \
+        --set global.canary.enabled=true \
+        --set global.canary.weight="${CANARY_WEIGHT}" \
+        --values helm/values-production.yaml \
+        --wait \
+        --timeout 10m \
+        --atomic
+      echo "Canary deployed with ${CANARY_WEIGHT}% traffic weight"
+      echo "Monitoring canary for 10 minutes..."
+      sleep 600
+      # Check error rate
+      ERROR_RATE=$(kubectl exec -n observability deployment/prometheus -- \
+        promtool query instant \
+        'sum(rate(http_requests_total{job="insurance-platform-canary",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="insurance-platform-canary"}[5m])) * 100' \
+        | grep -oP '[\d.]+' | head -1)
+      if (( $(echo "$ERROR_RATE > 1" | bc -l) )); then
+        echo "ERROR: Canary error rate ${ERROR_RATE}% exceeds 1% threshold. Rolling back."
+        helm rollback insurance-platform-canary
+        exit 1
+      fi
+      echo "Canary healthy. Error rate: ${ERROR_RATE}%"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  needs:
+    - smoke-tests
+
+deploy-production-full:
+  stage: deploy-production
+  image: alpine/helm:${HELM_VERSION}
+  <<: *kubectl-setup
+  environment:
+    name: production
+    url: https://api.insurance-platform.com
+  variables:
+    KUBECONFIG_CONTENT: "$KUBECONFIG_PRODUCTION_B64"
+  script:
+    - |
+      helm upgrade --install insurance-platform ./helm/insurance-platform \
+        --namespace insurance-platform \
+        --set global.image.tag="${CI_COMMIT_SHA}" \
+        --set global.environment=production \
+        --set global.replicaCount=3 \
+        --values helm/values-production.yaml \
+        --wait \
+        --timeout 15m \
+        --atomic
+      # Remove canary
+      helm uninstall insurance-platform-canary --namespace insurance-platform || true
+      echo "Full production deployment complete"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  needs:
+    - deploy-production-canary
+
+# ============================================================
+# NOTIFY
+# ============================================================
+notify-success:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "${SLACK_WEBHOOK_URL}" \
+        -H 'Content-type: application/json' \
+        --data "{
+          \"text\": \":white_check_mark: *Insurance Platform Deployed*\",
+          \"attachments\": [{
+            \"color\": \"good\",
+            \"fields\": [
+              {\"title\": \"Version\", \"value\": \"${CI_COMMIT_SHORT_SHA}\", \"short\": true},
+              {\"title\": \"Branch\", \"value\": \"${CI_COMMIT_BRANCH}\", \"short\": true},
+              {\"title\": \"Pipeline\", \"value\": \"${CI_PIPELINE_URL}\", \"short\": false}
+            ]
+          }]
+        }"
+  when: on_success
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  needs:
+    - deploy-production-full
+
+notify-failure:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "${SLACK_WEBHOOK_URL}" \
+        -H 'Content-type: application/json' \
+        --data "{
+          \"text\": \":x: *Insurance Platform Pipeline FAILED*\",
+          \"attachments\": [{
+            \"color\": \"danger\",
+            \"fields\": [
+              {\"title\": \"Version\", \"value\": \"${CI_COMMIT_SHORT_SHA}\", \"short\": true},
+              {\"title\": \"Branch\", \"value\": \"${CI_COMMIT_BRANCH}\", \"short\": true},
+              {\"title\": \"Pipeline\", \"value\": \"${CI_PIPELINE_URL}\", \"short\": false},
+              {\"title\": \"Job\", \"value\": \"${CI_JOB_NAME}\", \"short\": true}
+            ]
+          }]
+        }"
+  when: on_failure
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

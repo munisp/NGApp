@@ -1,0 +1,36 @@
+apiVersion: v2
+name: insurance-platform
+version: 1.0.0
+description: A Helm chart for deploying the Insurance Platform
+
+type: application
+
+dependencies:
+- name: postgresql
+  version: "12.1.6"
+  repository: "https://charts.bitnami.com/bitnami"
+  alias: postgres
+- name: redis
+  version: "16.4.2"
+  repository: "https://charts.bitnami.com/bitnami"
+- name: kafka
+  version: "14.3.3"
+  repository: "https://charts.bitnami.com/bitnami"
+- name: temporal
+  version: "0.1.0"
+  repository: "https://temporalio.github.io/helm-charts"
+- name: tigerbeetle
+  version: "0.1.0"
+  repository: "https://tigerbeetle.github.io/helm-charts"
+- name: apisix
+  version: "1.6.0"
+  repository: "https://charts.apache.org/apisix"
+- name: opensearch
+  version: "2.3.0"
+  repository: "https://opensearch-project.github.io/helm-charts/"
+- name: wazuh
+  version: "4.3.0"
+  repository: "https://wazuh.github.io/wazuh-kubernetes/"
+- name: minio
+  version: "8.0.10"
+  repository: "https://charts.min.io/"

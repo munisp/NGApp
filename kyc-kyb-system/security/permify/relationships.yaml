@@ -1,0 +1,206 @@
+# Permify Relationship Tuples for KYC/KYB System
+# These define the relationships between users, roles, and resources
+
+# ============================================================================
+# EXAMPLE ORGANIZATION SETUP
+# ============================================================================
+
+organizations:
+  - id: "org_insurance_co"
+    name: "Insurance Company Ltd"
+    members:
+      - user_id: "user_john_doe"
+        role: "member"
+      - user_id: "user_jane_smith"
+        role: "admin"
+      - user_id: "user_compliance_officer"
+        role: "member"
+      - user_id: "user_kyc_analyst"
+        role: "member"
+      - user_id: "user_risk_manager"
+        role: "member"
+      - user_id: "user_operator"
+        role: "member"
+
+# ============================================================================
+# ROLE ASSIGNMENTS
+# ============================================================================
+
+role_assignments:
+  # System Administrator
+  - entity: "system_administrator"
+    entity_id: "sysadmin_role"
+    relation: "user"
+    subject: "user"
+    subject_id: "user_admin"
+    
+  # Compliance Officer
+  - entity: "compliance_officer"
+    entity_id: "compliance_role_1"
+    relation: "user"
+    subject: "user"
+    subject_id: "user_compliance_officer"
+    
+  - entity: "compliance_officer"
+    entity_id: "compliance_role_1"
+    relation: "organization"
+    subject: "organization"
+    subject_id: "org_insurance_co"
+    
+  # KYC Analyst
+  - entity: "kyc_analyst"
+    entity_id: "kyc_analyst_role_1"
+    relation: "user"
+    subject: "user"
+    subject_id: "user_kyc_analyst"
+    
+  - entity: "kyc_analyst"
+    entity_id: "kyc_analyst_role_1"
+    relation: "organization"
+    subject: "organization"
+    subject_id: "org_insurance_co"
+    
+  # Risk Manager
+  - entity: "risk_manager"
+    entity_id: "risk_manager_role_1"
+    relation: "user"
+    subject: "user"
+    subject_id: "user_risk_manager"
+    
+  - entity: "risk_manager"
+    entity_id: "risk_manager_role_1"
+    relation: "organization"
+    subject: "organization"
+    subject_id: "org_insurance_co"
+    
+  # KYC Operator
+  - entity: "kyc_operator"
+    entity_id: "kyc_operator_role_1"
+    relation: "user"
+    subject: "user"
+    subject_id: "user_operator"
+    
+  - entity: "kyc_operator"
+    entity_id: "kyc_operator_role_1"
+    relation: "organization"
+    subject: "organization"
+    subject_id: "org_insurance_co"
+
+# ============================================================================
+# CUSTOMER RELATIONSHIPS
+# ============================================================================
+
+customers:
+  - entity: "customer"
+    entity_id: "customer_12345"
+    relationships:
+      - relation: "organization"
+        subject: "organization"
+        subject_id: "org_insurance_co"
+      - relation: "viewer"
+        subject: "user"
+        subject_id: "user_kyc_analyst"
+      - relation: "editor"
+        subject: "user"
+        subject_id: "user_john_doe"
+
+# ============================================================================
+# RESOURCE-LEVEL PERMISSIONS
+# ============================================================================
+
+liveness_checks:
+  - entity: "liveness_check"
+    entity_id: "liveness_check_001"
+    relationships:
+      - relation: "customer"
+        subject: "customer"
+        subject_id: "customer_12345"
+      - relation: "organization"
+        subject: "organization"
+        subject_id: "org_insurance_co"
+      - relation: "creator"
+        subject: "user"
+        subject_id: "user_kyc_analyst"
+      - relation: "viewer"
+        subject: "user"
+        subject_id: "user_compliance_officer"
+
+aml_screenings:
+  - entity: "aml_screening"
+    entity_id: "aml_screening_001"
+    relationships:
+      - relation: "customer"
+        subject: "customer"
+        subject_id: "customer_12345"
+      - relation: "organization"
+        subject: "organization"
+        subject_id: "org_insurance_co"
+      - relation: "screener"
+        subject: "user"
+        subject_id: "user_compliance_officer"
+      - relation: "viewer"
+        subject: "user"
+        subject_id: "user_kyc_analyst"
+      - relation: "summary_viewer"
+        subject: "user"
+        subject_id: "user_operator"
+
+risk_scores:
+  - entity: "risk_score"
+    entity_id: "risk_score_001"
+    relationships:
+      - relation: "customer"
+        subject: "customer"
+        subject_id: "customer_12345"
+      - relation: "organization"
+        subject: "organization"
+        subject_id: "org_insurance_co"
+      - relation: "calculator"
+        subject: "user"
+        subject_id: "user_risk_manager"
+      - relation: "viewer"
+        subject: "user"
+        subject_id: "user_compliance_officer"
+      - relation: "overrider"
+        subject: "user"
+        subject_id: "user_admin"
+
+# ============================================================================
+# PERMISSION CHECK EXAMPLES
+# ============================================================================
+
+# Check if user_kyc_analyst can create liveness check
+# permify.check({
+#   entity: "kyc_analyst",
+#   entity_id: "kyc_analyst_role_1",
+#   permission: "liveness_check_create",
+#   subject: "user",
+#   subject_id: "user_kyc_analyst"
+# })
+
+# Check if user_compliance_officer can create AML screening
+# permify.check({
+#   entity: "compliance_officer",
+#   entity_id: "compliance_role_1",
+#   permission: "aml_screen_create",
+#   subject: "user",
+#   subject_id: "user_compliance_officer"
+# })
+
+# Check if user_risk_manager can create risk score
+# permify.check({
+#   entity: "risk_manager",
+#   entity_id: "risk_manager_role_1",
+#   permission: "risk_score_create",
+#   subject: "user",
+#   subject_id: "user_risk_manager"
+# })
+
+# Check if user_operator can view AML screening (summary only)
+# permify.check({
+#   entity: "kyc_operator",
+#   entity_id: "kyc_operator_role_1",
+#   permission: "aml_screen_read_summary",
+#   subject: "user",
+#   subject_id: "user_operator"
+# })
