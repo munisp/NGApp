@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/gamification-service
+module gamification-service
 
 go 1.22.0

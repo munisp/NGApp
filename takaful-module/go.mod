@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/takaful-module
+module takaful-module
 
 go 1.22.0

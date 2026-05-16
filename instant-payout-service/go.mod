@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/instant-payout-service
+module instant-payout-service
 
 go 1.22.0
