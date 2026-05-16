@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
+import { useLocation } from 'wouter';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -8,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = true;
 
 const TwoFactorAuth: React.FC = () => {
-  const router = useRouter();
+  const [, navigate] = useLocation();
   const { login: authLogin } = useAuth(); // Assuming useAuth has a login function to set auth state
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ const TwoFactorAuth: React.FC = () => {
       if (data.success) { // Assuming the login mutation returns a success flag and token
         toast.success('Two-factor authentication successful!');
         authLogin(data.token); // Assuming data contains a token
-        router.push('/dashboard'); // Redirect to dashboard or appropriate page
+        navigate('/dashboard'); // Redirect to dashboard or appropriate page
       } else {
         setError(data.message || 'Invalid 2FA code.');
         toast.error(data.message || 'Invalid 2FA code. Please try again.');
@@ -41,7 +41,7 @@ const TwoFactorAuth: React.FC = () => {
       if (code === '123456') {
         toast.success('Demo 2FA successful!');
         authLogin('demo-token-2fa');
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
         setError('Invalid demo 2FA code. Try 123456.');
         toast.error('Invalid demo 2FA code. Try 123456.');

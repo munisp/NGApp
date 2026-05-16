@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 const DEMO_MODE = process.env.NODE_ENV === "development"; // Or some other flag
 
-export function ERPNextIntegration() {
+export default function ERPNextIntegration() {
   const { isAuthenticated } = useAuth();
 
   // tRPC query for ERPNext status

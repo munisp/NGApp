@@ -2,6 +2,7 @@
 <html lang="en">
 
   <head>
+    <script>window.process = window.process || { env: { NODE_ENV: 'development', NEXT_PUBLIC_DEMO_MODE: 'true' } };</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
     <title>Unified Insurance Platform</title>
@@ -36,13 +37,11 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Register service worker -->
+    <!-- Service worker disabled during development -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(reg => console.log('[PWA] Service worker registered:', reg.scope))
-            .catch(err => console.warn('[PWA] Service worker registration failed:', err));
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
         });
       }
     </script>

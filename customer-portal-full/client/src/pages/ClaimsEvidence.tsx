@@ -67,7 +67,7 @@ const demoEvidence: Evidence[] = [
   },
 ];
 
-export function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
+export default function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
 
