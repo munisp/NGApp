@@ -59,3 +59,4 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+*/server
