@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/premium-finance-service
+module premium-finance-service
 
 go 1.22.0

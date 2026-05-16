@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/multi-tenant-platform
+module multi-tenant-platform
 
 go 1.22.0

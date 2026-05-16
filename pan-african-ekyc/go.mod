@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/pan-african-ekyc
+module pan-african-ekyc
 
 go 1.22.0

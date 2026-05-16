@@ -1,3 +1,3 @@
-module github.com/munisp/ngapp/blockchain-transparency
+module blockchain-transparency
 
 go 1.22.0
