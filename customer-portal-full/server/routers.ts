@@ -1502,7 +1502,11 @@ export const appRouter = router({
     rates: protectedProcedure.query(async () => {
       const live = await proxyGet("multi-currency", "/rates");
       if (live) return live;
-      return await db.getCurrencyRates();
+      const raw = await db.getCurrencyRates();
+      return Object.entries(raw.rates).map(([currency, rate]) => ({
+        currency,
+        rateToNGN: Math.round((1 / (rate as number)) * 100) / 100,
+      }));
     }),
     convert: protectedProcedure
       .input(z.object({ from: z.string(), to: z.string(), amount: z.number() }))
