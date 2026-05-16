@@ -1,0 +1,28 @@
+# Configuration file for the Treaty Reinsurance Service
+
+# Server settings
+server:
+  port: 8080
+
+# Database settings (PostgreSQL DSN)
+database:
+  dsn: "host=postgres user=postgres password=postgres dbname=treaty_reinsurance sslmode=disable"
+
+# Logging settings
+logging:
+  level: "info" # debug, info, warn, error
+
+# External service integration settings (placeholders for future integration)
+integrations:
+  etherisc_gif:
+    url: "http://gif-service:8080"
+  policy_service:
+    url: "http://policy-service:8080"
+  claims_service:
+    url: "http://claims-service:8080"
+  payment_service:
+    url: "http://payment-service:8080"
+  tiger_beetle:
+    url: "http://tiger-beetle:8080"
+  lakehouse:
+    url: "http://lakehouse-service:8080"

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-trail-system
+  namespace: insurance-platform
+  labels:
+    app: audit-trail-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: audit-trail-system
+  template:
+    metadata:
+      labels:
+        app: audit-trail-system
+    spec:
+      containers:
+        - name: audit-trail-system
+          image: audit-trail-system:latest
+          ports:
+            - containerPort: 8098
+          env:
+            - name: PORT
+              value: "8098"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8098
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8098
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-trail-system
+  namespace: insurance-platform
+spec:
+  selector:
+    app: audit-trail-system
+  ports:
+    - port: 8098
+      targetPort: 8098
+  type: ClusterIP

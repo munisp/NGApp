@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-360-view
+  namespace: insurance-platform
+  labels:
+    app: customer-360-view
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: customer-360-view
+  template:
+    metadata:
+      labels:
+        app: customer-360-view
+    spec:
+      containers:
+        - name: customer-360-view
+          image: customer-360-view:latest
+          ports:
+            - containerPort: 8102
+          env:
+            - name: PORT
+              value: "8102"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8102
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8102
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-360-view
+  namespace: insurance-platform
+spec:
+  selector:
+    app: customer-360-view
+  ports:
+    - port: 8102
+      targetPort: 8102
+  type: ClusterIP

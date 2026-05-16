@@ -1,0 +1,26 @@
+{
+  "name": "etherisc-gif-insurance-contracts",
+  "version": "1.0.0",
+  "description": "Etherisc GIF smart contracts for parametric insurance",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy-testnet.js --network polygon-mumbai",
+    "deploy:mainnet": "hardhat run scripts/deploy-mainnet.js --network polygon",
+    "verify": "hardhat verify --network polygon",
+    "flatten": "hardhat flatten"
+  },
+  "devDependencies": {
+    "@etherisc/gif-contracts": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
+    "hardhat": "^2.17.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.4"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.8.0",
+    "dotenv": "^16.3.1"
+  }
+}

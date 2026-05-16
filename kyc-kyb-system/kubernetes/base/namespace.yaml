@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyc-kyb-system
+  labels:
+    name: kyc-kyb-system
+    environment: production

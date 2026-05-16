@@ -1,0 +1,33 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: openimis-resiliency-policy
+spec:
+  policies:
+    timeouts:
+      general: 5s
+    retries:
+      pubsubRetry:
+        policy: constant
+        duration: 5s
+        maxRetries: 3
+      serviceRetry:
+        policy: constant
+        duration: 2s
+        maxRetries: 5
+    circuitBreakers:
+      serviceCircuitBreaker:
+        maxRequests: 1
+        interval: 30s
+        timeout: 15s
+        trip: consecutiveFailures > 5
+  targets:
+    apps:
+      insurance-ops-service:
+        retry: serviceRetry
+        circuitBreaker: serviceCircuitBreaker
+        timeout: general
+    components:
+      pubsub:
+        retry: pubsubRetry
+        timeout: general

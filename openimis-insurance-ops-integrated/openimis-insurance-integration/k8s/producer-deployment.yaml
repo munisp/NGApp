@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openimis-producer
+  labels:
+    app: openimis-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openimis-producer
+  template:
+    metadata:
+      labels:
+        app: openimis-producer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      containers:
+      - name: producer
+        image: openimis-producer:latest # Replace with your actual image
+        ports:
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker:9092" # Replace with your Kafka service address
+        - name: KAFKA_TOPIC_PREFIX
+          value: "openimis.actuarial."
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openimis-producer-metrics
+spec:
+  selector:
+    app: openimis-producer
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: metrics
+      name: metrics

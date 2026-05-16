@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oracle-config
+  namespace: etherisc
+data:
+  RPC_URL: "https://polygon-rpc.com"
+  USE_MOCK_CLIENTS: "false"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oracle-secrets
+  namespace: etherisc
+type: Opaque
+stringData:
+  PRIVATE_KEY: "your_private_key_here"
+  ORACLE_ADDRESS: "your_oracle_contract_address"
+  PRODUCT_ADDRESS: "your_product_contract_address"
+  FLIGHTAWARE_API_KEY: "your_flightaware_api_key"
+  NIMET_API_KEY: "your_nimet_api_key"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-service
+  namespace: etherisc
+  labels:
+    app: oracle-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oracle-service
+  template:
+    metadata:
+      labels:
+        app: oracle-service
+    spec:
+      containers:
+      - name: oracle-service
+        image: your-registry/oracle-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: RPC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: oracle-config
+              key: RPC_URL
+        - name: USE_MOCK_CLIENTS
+          valueFrom:
+            configMapKeyRef:
+              name: oracle-config
+              key: USE_MOCK_CLIENTS
+        - name: PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secrets
+              key: PRIVATE_KEY
+        - name: ORACLE_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secrets
+              key: ORACLE_ADDRESS
+        - name: PRODUCT_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secrets
+              key: PRODUCT_ADDRESS
+        - name: FLIGHTAWARE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secrets
+              key: FLIGHTAWARE_API_KEY
+        - name: NIMET_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secrets
+              key: NIMET_API_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-service
+  namespace: etherisc
+spec:
+  selector:
+    app: oracle-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP

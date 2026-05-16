@@ -1,0 +1,22 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+
+# Output of 'go build'
+/metrics-exporter-service
+
+# Dependencies
+/vendor
+
+# Logs
+*.log
+
+# IDE files
+.idea/
+.vscode/

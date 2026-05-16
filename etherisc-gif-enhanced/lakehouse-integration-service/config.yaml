@@ -1,0 +1,15 @@
+server:
+  port: "8080"
+
+kafka:
+  bootstrap_servers: "kafka-broker:9092"
+  topic_policies: "blockchain_policies_cdc"
+  topic_claims: "blockchain_claims_cdc"
+
+database:
+  # This DSN is for the source database (e.g., Postgres) that Debezium would monitor.
+  # In this simulation, it's a placeholder.
+  dsn: "host=db user=user password=password dbname=gif sslmode=disable"
+
+observability:
+  metrics_path: "/metrics"

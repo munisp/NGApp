@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: whatsapp-service }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: whatsapp-service } }
+  template:
+    metadata: { labels: { app: whatsapp-service } }
+    spec:
+      containers:
+      - name: whatsapp-service
+        image: whatsapp-service:latest
+        ports: [{ containerPort: 8080 }]
+        env:
+        - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: whatsapp-secret, key: database-url } } }
+        - { name: TWILIO_ACCOUNT_SID, valueFrom: { secretKeyRef: { name: whatsapp-secret, key: twilio-sid } } }
+        - { name: TWILIO_AUTH_TOKEN, valueFrom: { secretKeyRef: { name: whatsapp-secret, key: twilio-token } } }
+        - { name: WHATSAPP_FROM, value: "+1234567890" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: whatsapp-service }
+spec:
+  selector: { app: whatsapp-service }
+  ports: [{ port: 80, targetPort: 8080 }]

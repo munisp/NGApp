@@ -1,0 +1,1 @@
+Claims Service: Repository Layer - Implement complete GORM repository with all CRUD operations for claims, documents, activities, payments, reserves, appeals, subrogation, medical bills. Include complex queries, transactions, pagination.

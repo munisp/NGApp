@@ -1,0 +1,472 @@
+---
+# =============================================================================
+# Istio Service Mesh — Unified Insurance Platform
+# Strict mTLS for all service-to-service communication
+# Zero-trust: deny-all default, explicit allow per service
+# =============================================================================
+
+# --- IstioOperator: Full mesh installation ---
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: insurance-platform-mesh
+  namespace: istio-system
+spec:
+  profile: production
+  meshConfig:
+    accessLogFile: /dev/stdout
+    accessLogEncoding: JSON
+    enableTracing: true
+    defaultConfig:
+      tracing:
+        zipkin:
+          address: jaeger-collector.observability.svc.cluster.local:9411
+        sampling: 100.0
+      holdApplicationUntilProxyStarts: true
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
+    trustDomain: insurance-platform.local
+  components:
+    pilot:
+      k8s:
+        replicaCount: 3
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: istiod
+                topologyKey: kubernetes.io/hostname
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: "2"
+            memory: 4Gi
+        hpaSpec:
+          minReplicas: 3
+          maxReplicas: 10
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: 80
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          replicaCount: 3
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app: istio-ingressgateway
+                  topologyKey: kubernetes.io/hostname
+          service:
+            type: LoadBalancer
+            ports:
+              - port: 80
+                name: http2
+                targetPort: 8080
+              - port: 443
+                name: https
+                targetPort: 8443
+              - port: 15443
+                name: tls
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          hpaSpec:
+            minReplicas: 3
+            maxReplicas: 20
+  values:
+    global:
+      mtls:
+        enabled: true
+      proxy:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      tracer:
+        zipkin:
+          address: jaeger-collector.observability.svc.cluster.local:9411
+    pilot:
+      traceSampling: 100.0
+---
+# --- Strict mTLS: Mesh-wide PeerAuthentication ---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: insurance-platform
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: vault
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: keycloak
+spec:
+  mtls:
+    mode: STRICT
+---
+# --- Default deny-all AuthorizationPolicy ---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: insurance-platform
+spec: {}
+---
+# --- Allow ingress gateway to reach all services ---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ingress
+  namespace: insurance-platform
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+---
+# --- Allow Prometheus scraping ---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-prometheus
+  namespace: insurance-platform
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/observability/sa/prometheus"
+      to:
+        - operation:
+            paths: ["/metrics", "/actuator/prometheus"]
+---
+# --- Service-specific AuthorizationPolicies ---
+# OpenIMIS Consumer
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: openimis-consumer-authz
+  namespace: insurance-platform
+spec:
+  selector:
+    matchLabels:
+      app: openimis-consumer
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/insurance-platform/sa/claims-producer"
+              - "cluster.local/ns/insurance-platform/sa/underwriting-risk-integrator"
+              - "cluster.local/ns/insurance-platform/sa/unified-analytics"
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT"]
+---
+# Claims Producer
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: claims-producer-authz
+  namespace: insurance-platform
+spec:
+  selector:
+    matchLabels:
+      app: claims-producer
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/insurance-platform/sa/openimis-consumer"
+              - "cluster.local/ns/insurance-platform/sa/customer-portal"
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "PATCH"]
+---
+# Payment Service
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: payment-service-authz
+  namespace: insurance-platform
+spec:
+  selector:
+    matchLabels:
+      app: payment-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/insurance-platform/sa/claims-producer"
+              - "cluster.local/ns/insurance-platform/sa/customer-portal"
+              - "cluster.local/ns/insurance-platform/sa/reinsurance-accounting"
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+---
+# --- DestinationRules: enforce mTLS for all services ---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: insurance-platform-mtls
+  namespace: insurance-platform
+spec:
+  host: "*.insurance-platform.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 30ms
+        tcpKeepalive:
+          time: 7200s
+          interval: 75s
+      http:
+        http1MaxPendingRequests: 1024
+        http2MaxRequests: 10000
+        maxRequestsPerConnection: 0
+        maxRetries: 3
+        idleTimeout: 90s
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+---
+# --- Gateway: TLS termination for external traffic ---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: insurance-platform-gateway
+  namespace: insurance-platform
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: insurance-platform-tls
+      hosts:
+        - "api.insurance-platform.com"
+        - "portal.insurance-platform.com"
+        - "admin.insurance-platform.com"
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+      hosts:
+        - "api.insurance-platform.com"
+        - "portal.insurance-platform.com"
+        - "admin.insurance-platform.com"
+---
+# --- VirtualServices: traffic routing ---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-gateway
+  namespace: insurance-platform
+spec:
+  hosts:
+    - "api.insurance-platform.com"
+  gateways:
+    - insurance-platform-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/v1/claims
+      route:
+        - destination:
+            host: claims-producer
+            port:
+              number: 8000
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: "5xx,reset,connect-failure,retriable-4xx"
+    - match:
+        - uri:
+            prefix: /api/v1/policies
+      route:
+        - destination:
+            host: openimis-consumer
+            port:
+              number: 8000
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+    - match:
+        - uri:
+            prefix: /api/v1/payments
+      route:
+        - destination:
+            host: payment-service
+            port:
+              number: 8000
+      timeout: 60s
+      retries:
+        attempts: 2
+        perTryTimeout: 30s
+    - match:
+        - uri:
+            prefix: /api/v1/underwriting
+      route:
+        - destination:
+            host: underwriting-risk-integrator
+            port:
+              number: 8000
+      timeout: 45s
+    - match:
+        - uri:
+            prefix: /api/v1/analytics
+      route:
+        - destination:
+            host: unified-analytics
+            port:
+              number: 8000
+      timeout: 120s
+    - match:
+        - uri:
+            prefix: /api/v1/reinsurance
+      route:
+        - destination:
+            host: cession-management
+            port:
+              number: 8000
+      timeout: 30s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: portal-gateway
+  namespace: insurance-platform
+spec:
+  hosts:
+    - "portal.insurance-platform.com"
+  gateways:
+    - insurance-platform-gateway
+  http:
+    - route:
+        - destination:
+            host: customer-portal
+            port:
+              number: 3000
+      timeout: 30s
+---
+# --- ServiceEntries: allow egress to external services ---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-openimis
+  namespace: insurance-platform
+spec:
+  hosts:
+    - "openimis.example.org"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-ethereum-rpc
+  namespace: insurance-platform
+spec:
+  hosts:
+    - "mainnet.infura.io"
+    - "polygon-rpc.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-stripe
+  namespace: insurance-platform
+spec:
+  hosts:
+    - "api.stripe.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+---
+# --- Telemetry: enable access logging and tracing for all services ---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: insurance-platform-telemetry
+  namespace: insurance-platform
+spec:
+  accessLogging:
+    - providers:
+        - name: envoy
+  tracing:
+    - providers:
+        - name: zipkin
+      randomSamplingPercentage: 100.0
+  metrics:
+    - providers:
+        - name: prometheus
