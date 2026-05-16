@@ -8165,13 +8165,50 @@ async function startServer() {
   app.get("/api/platform/kyb-engine/v1/sanctions/screen", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/sanctions/screen?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
   app.get("/api/platform/kyb-engine/v1/stats", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/v1/stats", req, res); });
 
-  // Liveness Detection Engine — 5-method ensemble, iBeta L2 (Rust :8226)
+  // ─── Liveness Detection System (3-service architecture) ─────────────────────
+
+  // Liveness Inference Engine — ML models: RetinaFace, ArcFace-R100, MiniFASNet, EfficientNet-B4 (Python :8230)
+  const LIVENESS_INFERENCE_URL = process.env.LIVENESS_INFERENCE_URL || "http://localhost:8230";
+  app.get("/api/platform/liveness-inference/health", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/healthz", req, res); });
+  app.post("/api/platform/liveness-inference/v1/liveness/check", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/liveness/check", req, res); });
+  app.post("/api/platform/liveness-inference/v1/liveness/passive", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/liveness/passive", req, res); });
+  app.get("/api/platform/liveness-inference/v1/liveness/methods", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/liveness/methods", req, res); });
+  app.get("/api/platform/liveness-inference/v1/liveness/checks", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/liveness/checks", req, res); });
+  app.get("/api/platform/liveness-inference/v1/liveness/checks/:id", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, `/v1/liveness/checks/${req.params.id}`, req, res); });
+  app.post("/api/platform/liveness-inference/v1/face-detect", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/face-detect", req, res); });
+  app.post("/api/platform/liveness-inference/v1/landmarks", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/landmarks", req, res); });
+  app.post("/api/platform/liveness-inference/v1/features/extract", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/features/extract", req, res); });
+  app.post("/api/platform/liveness-inference/v1/anti-spoof/classify", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/anti-spoof/classify", req, res); });
+  app.post("/api/platform/liveness-inference/v1/deepfake/detect", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/deepfake/detect", req, res); });
+  app.post("/api/platform/liveness-inference/v1/face-match", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/face-match", req, res); });
+  app.post("/api/platform/liveness-inference/v1/face-match/batch", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/face-match/batch", req, res); });
+  app.get("/api/platform/liveness-inference/v1/stats", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/stats", req, res); });
+  app.get("/api/platform/liveness-inference/v1/pipeline-info", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/pipeline-info", req, res); });
+
+  // Liveness Scoring Engine — Multi-method ensemble, iBeta L2 certification (Rust :8226)
   const LIVENESS_URL = process.env.LIVENESS_URL || "http://localhost:8226";
   app.get("/api/platform/liveness-detection/health", (req, res) => { void proxyToService(LIVENESS_URL, "/healthz", req, res); });
+  app.post("/api/platform/liveness-detection/v1/score/liveness", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/score/liveness", req, res); });
+  app.post("/api/platform/liveness-detection/v1/score/face-match", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/score/face-match", req, res); });
   app.get("/api/platform/liveness-detection/v1/checks", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/checks", req, res); });
   app.get("/api/platform/liveness-detection/v1/checks/:id", (req, res) => { void proxyToService(LIVENESS_URL, `/v1/checks/${req.params.id}`, req, res); });
   app.get("/api/platform/liveness-detection/v1/methods", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/methods", req, res); });
+  app.get("/api/platform/liveness-detection/v1/config", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/config", req, res); });
   app.get("/api/platform/liveness-detection/v1/stats", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/stats", req, res); });
+  app.get("/api/platform/liveness-detection/v1/matches", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/matches", req, res); });
+
+  // Liveness Orchestrator — Session management, active challenges, Kafka events (Go :8231)
+  const LIVENESS_ORCH_URL = process.env.LIVENESS_ORCH_URL || "http://localhost:8231";
+  app.get("/api/platform/liveness-orchestrator/health", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/healthz", req, res); });
+  app.post("/api/platform/liveness-orchestrator/v1/sessions", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/sessions", req, res); });
+  app.get("/api/platform/liveness-orchestrator/v1/sessions", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/sessions", req, res); });
+  app.get("/api/platform/liveness-orchestrator/v1/sessions/:id", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, `/v1/sessions/${req.params.id}`, req, res); });
+  app.post("/api/platform/liveness-orchestrator/v1/submit-frame", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/submit-frame", req, res); });
+  app.post("/api/platform/liveness-orchestrator/v1/passive-liveness", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/passive-liveness", req, res); });
+  app.post("/api/platform/liveness-orchestrator/v1/face-match", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/face-match", req, res); });
+  app.get("/api/platform/liveness-orchestrator/v1/face-matches", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/face-matches", req, res); });
+  app.get("/api/platform/liveness-orchestrator/v1/events", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/events", req, res); });
+  app.get("/api/platform/liveness-orchestrator/v1/stats", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/stats", req, res); });
 
   // Face Match Engine — ArcFace R100, 512-dim cosine similarity (Rust :8227)
   const FACE_MATCH_URL = process.env.FACE_MATCH_URL || "http://localhost:8227";

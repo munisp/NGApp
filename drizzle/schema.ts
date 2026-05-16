@@ -5193,4 +5193,144 @@ export const rewardsAccounts = pgTable("rewards_accounts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ─── Liveness Detection Schema ──────────────────────────────────────────────
+
+export const livenessChecks = pgTable("liveness_checks", {
+  id: serial("id").primaryKey(),
+  checkId: text("check_id").notNull().unique(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  customerId: text("customer_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  mode: text("mode").notNull().default("hybrid"), // passive, active, hybrid
+  isLive: boolean("is_live").notNull(),
+  overallScore: real("overall_score").notNull(),
+  confidenceScore: real("confidence_score").notNull(),
+  verdict: text("verdict").notNull(), // LIVE, SPOOF
+  methodScores: jsonb("method_scores").default("{}"),
+  deepfakeProbability: real("deepfake_probability").default(0),
+  faceDetected: boolean("face_detected").default(true),
+  faceQuality: real("face_quality").default(0),
+  headPoseYaw: real("head_pose_yaw").default(0),
+  headPosePitch: real("head_pose_pitch").default(0),
+  headPoseRoll: real("head_pose_roll").default(0),
+  devicePlatform: text("device_platform"),
+  deviceModel: text("device_model"),
+  ipAddress: text("ip_address"),
+  challengeType: text("challenge_type"),
+  challengesPassed: integer("challenges_passed").default(0),
+  challengesTotal: integer("challenges_total").default(0),
+  processingTimeMs: real("processing_time_ms"),
+  kafkaEventId: text("kafka_event_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (t) => [
+  index("liveness_checks_customer_idx").on(t.customerId),
+  index("liveness_checks_tenant_idx").on(t.tenantId),
+  index("liveness_checks_session_idx").on(t.sessionId),
+  index("liveness_checks_verdict_idx").on(t.verdict),
+]);
+
+export const faceMatches = pgTable("face_matches", {
+  id: serial("id").primaryKey(),
+  matchId: text("match_id").notNull().unique(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  customerId: text("customer_id").notNull(),
+  matched: boolean("matched").notNull(),
+  similarityScore: real("similarity_score").notNull(),
+  embeddingDistance: real("embedding_distance"),
+  face1Quality: real("face1_quality"),
+  face2Quality: real("face2_quality"),
+  ageEstimation: integer("age_estimation"),
+  genderEstimation: text("gender_estimation"),
+  headPoseDiff: real("head_pose_diff"),
+  glassesDetected: boolean("glasses_detected").default(false),
+  maskDetected: boolean("mask_detected").default(false),
+  purpose: text("purpose").default("kyc_onboarding"), // kyc_onboarding, transaction_auth, periodic_reverify
+  processingTimeMs: real("processing_time_ms"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("face_matches_customer_idx").on(t.customerId),
+  index("face_matches_tenant_idx").on(t.tenantId),
+  index("face_matches_matched_idx").on(t.matched),
+]);
+
+export const antiSpoofingResults = pgTable("anti_spoofing_results", {
+  id: serial("id").primaryKey(),
+  resultId: text("result_id").notNull().unique(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  customerId: text("customer_id").notNull(),
+  livenessCheckId: text("liveness_check_id").notNull(),
+  isSpoof: boolean("is_spoof").notNull(),
+  spoofType: text("spoof_type").notNull().default("none"), // printed_photo, screen_replay, paper_mask, 3d_mask, deepfake, high_quality_photo, none
+  overallConfidence: real("overall_confidence").notNull(),
+  textureLbpScore: real("texture_lbp_score"),
+  monocularDepthScore: real("monocular_depth_score"),
+  frequencyFftScore: real("frequency_fft_score"),
+  edgeBoundaryScore: real("edge_boundary_score"),
+  moireDetected: boolean("moire_detected").default(false),
+  reflectionAnomaly: boolean("reflection_anomaly").default(false),
+  deepfakeProbability: real("deepfake_probability").default(0),
+  modelVersion: text("model_version").default("v1.0"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("anti_spoofing_customer_idx").on(t.customerId),
+  index("anti_spoofing_tenant_idx").on(t.tenantId),
+  index("anti_spoofing_check_idx").on(t.livenessCheckId),
+  index("anti_spoofing_spoof_type_idx").on(t.spoofType),
+]);
+
+export const livenessEvents = pgTable("liveness_events", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id").notNull().unique(),
+  eventType: text("event_type").notNull(), // session_created, frame_submitted, challenge_passed, session_completed, face_match_completed
+  sessionId: text("session_id"),
+  customerId: text("customer_id").notNull(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  payload: jsonb("payload").default("{}"),
+  kafkaTopic: text("kafka_topic"),
+  kafkaPartition: integer("kafka_partition").default(0),
+  kafkaOffset: bigint("kafka_offset", { mode: "number" }),
+  publishedAt: timestamp("published_at").defaultNow(),
+}, (t) => [
+  index("liveness_events_session_idx").on(t.sessionId),
+  index("liveness_events_customer_idx").on(t.customerId),
+  index("liveness_events_type_idx").on(t.eventType),
+]);
+
+export const facialLandmarks = pgTable("facial_landmarks", {
+  id: serial("id").primaryKey(),
+  landmarkId: text("landmark_id").notNull().unique(),
+  customerId: text("customer_id").notNull(),
+  livenessCheckId: text("liveness_check_id"),
+  landmarkCount: integer("landmark_count").default(68),
+  landmarks: jsonb("landmarks").default("[]"), // Array of {index, x, y, confidence, region}
+  faceQuality: real("face_quality"),
+  interEyeDistance: real("inter_eye_distance"),
+  faceAreaRatio: real("face_area_ratio"),
+  headPose: jsonb("head_pose").default("{}"), // {yaw, pitch, roll}
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("facial_landmarks_customer_idx").on(t.customerId),
+  index("facial_landmarks_check_idx").on(t.livenessCheckId),
+]);
+
+export const faceEmbeddings = pgTable("face_embeddings", {
+  id: serial("id").primaryKey(),
+  embeddingId: text("embedding_id").notNull().unique(),
+  customerId: text("customer_id").notNull(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  embedding: jsonb("embedding").notNull(), // 512-dim float vector
+  embeddingNorm: real("embedding_norm").default(1.0),
+  model: text("model").default("arcface_r100"),
+  faceQuality: real("face_quality"),
+  isEnrolled: boolean("is_enrolled").default(false), // true = reference face for matching
+  purpose: text("purpose").default("enrollment"), // enrollment, verification, update
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("face_embeddings_customer_idx").on(t.customerId),
+  index("face_embeddings_tenant_idx").on(t.tenantId),
+  index("face_embeddings_enrolled_idx").on(t.isEnrolled),
+]);
+
 
