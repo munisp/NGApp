@@ -178,6 +178,7 @@ const CDPProfiles = lazy(() => import('./components/CDPProfiles'))
 // Operations & Security
 const AuditLog = lazy(() => import('./components/AuditLog'))
 const SecurityDashboard = lazy(() => import('./components/SecurityDashboard'))
+const LivenessVerification = lazy(() => import('./components/LivenessVerification'))
 const ComplianceDashboard = lazy(() => import('./components/ComplianceDashboard'))
 const DocumentManager = lazy(() => import('./components/DocumentManager'))
 const TaskManager = lazy(() => import('./components/TaskManager'))
@@ -391,6 +392,7 @@ function App() {
                         {/* Operations & Security */}
                         <Route path="/audit-log" element={<P permission="audit:read"><AuditLog /></P>} />
                         <Route path="/security-dashboard" element={<P permission="security:read"><SecurityDashboard /></P>} />
+                        <Route path="/liveness-verification" element={<P permission="security:read"><LivenessVerification /></P>} />
                         <Route path="/compliance-dashboard" element={<P permission="compliance:read"><ComplianceDashboard /></P>} />
                         <Route path="/documents" element={<P permission="customers:read"><DocumentManager /></P>} />
                         <Route path="/tasks" element={<P permission="customers:read"><TaskManager /></P>} />

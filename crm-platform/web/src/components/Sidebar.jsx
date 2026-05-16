@@ -58,6 +58,7 @@ import {
   Cpu,
   Clock,
   Signal,
+  Scan,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -346,6 +347,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
       items: [
         { i18nKey: 'nav.audit', href: '/audit-log', icon: ClipboardList, description: 'Tamper-evident audit trail' },
         { i18nKey: 'nav.securityDashboard', href: '/security-dashboard', icon: ShieldCheck, description: 'Threats, DDoS, WAF status' },
+        { i18nKey: 'nav.livenessVerification', href: '/liveness-verification', icon: Scan, description: 'Facial liveness & anti-spoofing' },
         { i18nKey: 'nav.complianceDashboard', href: '/compliance-dashboard', icon: Shield, description: 'NDPR, CBN, PCI-DSS, AML/CFT' },
         { i18nKey: 'nav.documents', href: '/documents', icon: FolderOpen, description: 'KYC docs, policies, contracts' },
         { i18nKey: 'nav.tasks', href: '/tasks', icon: ClipboardList, description: 'Task management with SLA' },
