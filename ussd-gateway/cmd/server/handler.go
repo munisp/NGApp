@@ -39,6 +39,13 @@ type USSDHandler struct {
 	sessions *SessionStore
 }
 
+func safeIDPrefix(id string, n int) string {
+	if len(id) < n {
+		return id
+	}
+	return id[:n]
+}
+
 // NewUSSDHandler creates a new USSD handler
 func NewUSSDHandler(sessions *SessionStore) *USSDHandler {
 	return &USSDHandler{sessions: sessions}
@@ -148,7 +155,7 @@ func (h *USSDHandler) motorInsuranceFlow(session *Session, inputs []string) (str
 		}
 		if len(inputs) == 4 && inputs[3] == "1" {
 			return "Policy purchased! Certificate sent via SMS to " + session.PhoneNumber +
-				"\nPolicy No: NGA-MTR-" + session.ID[:8] +
+				"\nPolicy No: NGA-MTR-" + safeIDPrefix(session.ID, 8) +
 				"\nThank you for choosing NGApp Insurance.", "END"
 		}
 		return "Purchase cancelled. Thank you.", "END"
@@ -174,7 +181,7 @@ func (h *USSDHandler) motorInsuranceFlow(session *Session, inputs []string) (str
 		}
 		if len(inputs) == 4 && inputs[3] == "1" {
 			return "Policy purchased! Certificate sent via SMS.\n" +
-				"Policy No: NGA-CMP-" + session.ID[:8], "END"
+				"Policy No: NGA-CMP-" + safeIDPrefix(session.ID, 8), "END"
 		}
 		return "Purchase cancelled.", "END"
 	case "3":
@@ -204,7 +211,7 @@ func (h *USSDHandler) lifeCoverFlow(session *Session, inputs []string) (string, 
 		if inputs[1] == "1" {
 			return "Funeral Cover activated!\n" +
 				"N500 will be deducted monthly.\n" +
-				"Policy: NGA-FNR-" + session.ID[:8], "END"
+				"Policy: NGA-FNR-" + safeIDPrefix(session.ID, 8), "END"
 		}
 		return "Cancelled.", "END"
 	case "2":
@@ -215,7 +222,7 @@ func (h *USSDHandler) lifeCoverFlow(session *Session, inputs []string) (string, 
 				"3. N10M (N15,000/mo)", "CON"
 		}
 		return "Term Life activated! Details sent via SMS.\n" +
-			"Policy: NGA-TRM-" + session.ID[:8], "END"
+			"Policy: NGA-TRM-" + safeIDPrefix(session.ID, 8), "END"
 	case "3":
 		if len(inputs) == 1 {
 			return "Hospital Cash: N5,000/day\n" +
@@ -225,7 +232,7 @@ func (h *USSDHandler) lifeCoverFlow(session *Session, inputs []string) (string, 
 		}
 		if inputs[1] == "1" {
 			return "Hospital Cash activated!\n" +
-				"Policy: NGA-HSP-" + session.ID[:8], "END"
+				"Policy: NGA-HSP-" + safeIDPrefix(session.ID, 8), "END"
 		}
 		return "Cancelled.", "END"
 	case "0":
@@ -273,7 +280,7 @@ func (h *USSDHandler) fileClaimFlow(session *Session, inputs []string) (string, 
 				"Policy: %s\n"+
 				"An adjuster will contact you within 24 hours at %s.\n"+
 				"For faster processing, send photos via WhatsApp to +234-800-NGAPP",
-			session.ID[:8], session.Data["policy_number"], session.PhoneNumber), "END"
+			safeIDPrefix(session.ID, 8), session.Data["policy_number"], session.PhoneNumber), "END"
 	}
 	return h.mainMenu(), "CON"
 }
@@ -299,7 +306,7 @@ func (h *USSDHandler) payPremiumFlow(session *Session, inputs []string) (string,
 	if len(inputs) == 3 {
 		return "Payment of N5,000 initiated!\n" +
 			"You will receive a confirmation SMS shortly.\n" +
-			"Ref: PAY-" + session.ID[:8], "END"
+			"Ref: PAY-" + safeIDPrefix(session.ID, 8), "END"
 	}
 	return h.mainMenu(), "CON"
 }
