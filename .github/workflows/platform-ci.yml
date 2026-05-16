@@ -10,7 +10,7 @@ env:
   GO_VERSION: '1.22'
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
-  RUST_VERSION: '1.85'
+  RUST_VERSION: 'stable'
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
