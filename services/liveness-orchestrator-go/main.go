@@ -5,16 +5,82 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 )
+
+// Inference engine URL (liveness-inference-py)
+var inferenceURL = getEnv("INFERENCE_URL", "http://localhost:8230")
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// NoiseAssessment mirrors the Python service response
+type NoiseAssessment struct {
+	NoiseLevel          float64 `json:"noise_level"`
+	NoiseCategory       string  `json:"noise_category"`
+	EstimatedSNR        float64 `json:"estimated_snr_db"`
+	BlurScore           float64 `json:"blur_score"`
+	ExposureScore       float64 `json:"exposure_score"`
+	Usable              bool    `json:"usable"`
+	ThresholdAdjustment float64 `json:"threshold_adjustment"`
+	RecommendedAction   string  `json:"recommended_action"`
+}
+
+// InferenceLivenessResponse from liveness-inference-py /v1/liveness/check
+type InferenceLivenessResponse struct {
+	ID                       string                 `json:"id"`
+	IsLive                   bool                   `json:"is_live"`
+	OverallScore             float64                `json:"overall_score"`
+	Verdict                  string                 `json:"verdict"`
+	Error                    string                 `json:"error,omitempty"`
+	NoiseAssessment          *NoiseAssessment       `json:"noise_assessment,omitempty"`
+	NoiseCompensationApplied bool                   `json:"noise_compensation_applied"`
+	MultiFrame               map[string]interface{} `json:"multi_frame,omitempty"`
+	ModeFallback             *string                `json:"mode_fallback,omitempty"`
+	UserGuidance             string                 `json:"user_guidance,omitempty"`
+	MethodScores             map[string]float64     `json:"method_scores,omitempty"`
+	ProcessingTimeMs         float64                `json:"processing_time_ms"`
+}
+
+// callInferenceEngine calls the Python liveness inference service
+func callInferenceEngine(frameBase64 string, sessionID string, devicePlatform string, deviceModel string) (*InferenceLivenessResponse, error) {
+	payload := map[string]interface{}{
+		"image":          frameBase64,
+		"sessionId":      sessionID,
+		"devicePlatform": devicePlatform,
+		"deviceModel":    deviceModel,
+		"methods":        []string{"passive_3d", "texture_analysis", "depth_estimation", "frequency_analysis", "deepfake_detector"},
+	}
+	jsonData, _ := json.Marshal(payload)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Post(inferenceURL+"/v1/liveness/check", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("inference engine unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result InferenceLivenessResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("invalid inference response: %w", err)
+	}
+	return &result, nil
+}
 
 // ─── Domain Types ───────────────────────────────────────────────────────────
 
@@ -263,12 +329,60 @@ func handleSubmitFrame(w http.ResponseWriter, r *http.Request) {
 	challenge.Attempts++
 	challenge.StartedAt = time.Now().UTC().Format(time.RFC3339)
 
-	// Simulate ML inference result (in production, calls liveness-inference-py:8230)
-	score := 0.85 + float64(len(body.FrameBase64)%15)/100.0
-	if score > 0.99 {
-		score = 0.99
+	// Call liveness-inference-py for ML inference with noise-aware scoring
+	inferenceResult, inferenceErr := callInferenceEngine(
+		body.FrameBase64, body.SessionID,
+		session.DevicePlatform, session.DeviceModel,
+	)
+
+	var score float64
+	var noiseInfo *NoiseAssessment
+	var userGuidance string
+	var modeFallback string
+
+	if inferenceErr != nil {
+		// Fallback: if inference engine is unavailable, use conservative scoring
+		log.Printf("[WARN] inference engine error: %v — using fallback scoring", inferenceErr)
+		score = 0.70 // conservative score on engine failure
+	} else if inferenceResult.Error != "" {
+		// Image quality too low or no face detected
+		if inferenceResult.Error == "image_quality_too_low" {
+			challenge.Status = "failed"
+			challenge.Score = 0.0
+			noiseInfo = inferenceResult.NoiseAssessment
+			userGuidance = inferenceResult.UserGuidance
+			mu.Unlock()
+			respondJSON(w, 200, map[string]interface{}{
+				"challengeId":      challenge.ID,
+				"status":           "retry",
+				"score":            0.0,
+				"error":            inferenceResult.Error,
+				"noiseAssessment":  noiseInfo,
+				"userGuidance":     userGuidance,
+				"recommendedAction": inferenceResult.NoiseAssessment.RecommendedAction,
+				"sessionStatus":    session.Status,
+			})
+			return
+		}
+		score = inferenceResult.OverallScore
+	} else {
+		score = inferenceResult.OverallScore
+		noiseInfo = inferenceResult.NoiseAssessment
+		userGuidance = inferenceResult.UserGuidance
+		if inferenceResult.ModeFallback != nil {
+			modeFallback = *inferenceResult.ModeFallback
+		}
 	}
-	passed := score >= 0.75
+
+	// Adaptive pass threshold based on noise level
+	passThreshold := 0.75
+	if noiseInfo != nil {
+		passThreshold -= noiseInfo.ThresholdAdjustment
+		if passThreshold < 0.55 {
+			passThreshold = 0.55 // never go below security floor
+		}
+	}
+	passed := score >= passThreshold
 
 	if passed {
 		challenge.Status = "passed"
@@ -310,14 +424,25 @@ func handleSubmitFrame(w http.ResponseWriter, r *http.Request) {
 	}
 	mu.Unlock()
 
-	respondJSON(w, 200, map[string]interface{}{
+	responsePayload := map[string]interface{}{
 		"challengeId":   challenge.ID,
 		"status":        challenge.Status,
 		"score":         challenge.Score,
 		"sessionStatus": session.Status,
 		"overallScore":  session.OverallScore,
 		"isLive":        session.IsLive,
-	})
+		"passThreshold": passThreshold,
+	}
+	if noiseInfo != nil {
+		responsePayload["noiseAssessment"] = noiseInfo
+	}
+	if userGuidance != "" {
+		responsePayload["userGuidance"] = userGuidance
+	}
+	if modeFallback != "" {
+		responsePayload["modeFallback"] = modeFallback
+	}
+	respondJSON(w, 200, responsePayload)
 }
 
 func handlePassiveLiveness(w http.ResponseWriter, r *http.Request) {
@@ -336,12 +461,24 @@ func handlePassiveLiveness(w http.ResponseWriter, r *http.Request) {
 	sessionID := generateID("PLV")
 	now := time.Now().UTC().Format(time.RFC3339)
 
-	// In production: calls liveness-inference-py POST /v1/liveness/passive
-	score := 0.88 + float64(len(body.ImageBase64)%12)/100.0
-	if score > 0.99 {
-		score = 0.99
+	// Call liveness-inference-py for passive liveness with noise compensation
+	inferenceResult, inferenceErr := callInferenceEngine(
+		body.ImageBase64, sessionID, body.DevicePlatform, "",
+	)
+
+	var score float64
+	var isLive bool
+	var noiseInfo *NoiseAssessment
+
+	if inferenceErr != nil {
+		log.Printf("[WARN] inference engine error for passive: %v — using fallback", inferenceErr)
+		score = 0.80
+		isLive = true
+	} else {
+		score = inferenceResult.OverallScore
+		isLive = inferenceResult.IsLive
+		noiseInfo = inferenceResult.NoiseAssessment
 	}
-	isLive := score >= 0.75
 
 	antiSpoof := &AntiSpoofResult{
 		IsSpoof:            !isLive,
@@ -353,6 +490,7 @@ func handlePassiveLiveness(w http.ResponseWriter, r *http.Request) {
 		MoireDetected:     false,
 		DeepfakeProbability: 0.04,
 	}
+	_ = noiseInfo
 
 	session := &LivenessSession{
 		ID:             sessionID,

@@ -143,11 +143,20 @@ struct SpoofsBreakdown {
 
 // ─── Scoring Engine ─────────────────────────────────────────────────────────
 
+#[derive(Clone, Serialize, Deserialize)]
+struct NoiseInfo {
+    noise_level: f64,
+    noise_category: String,
+    threshold_adjustment: f64,
+    usable: bool,
+}
+
 #[derive(Deserialize)]
 struct LivenessScoreRequest {
     customer_id: Option<String>,
     session_id: Option<String>,
     device_platform: Option<String>,
+    device_model: Option<String>,
     passive_3d_score: Option<f64>,
     texture_score: Option<f64>,
     depth_score: Option<f64>,
@@ -162,6 +171,9 @@ struct LivenessScoreRequest {
     challenge_type: Option<String>,
     challenges_passed: Option<u32>,
     challenges_total: Option<u32>,
+    noise_level: Option<f64>,
+    noise_category: Option<String>,
+    noise_threshold_adjustment: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -175,45 +187,83 @@ struct FaceMatchScoreRequest {
     gender_estimation: Option<String>,
 }
 
-fn compute_ensemble_score(req: &LivenessScoreRequest, config: &ScoringConfig) -> (f64, Vec<MethodScore>) {
+fn compute_ensemble_score(req: &LivenessScoreRequest, config: &ScoringConfig) -> (f64, Vec<MethodScore>, Option<NoiseInfo>) {
     let mut methods = Vec::new();
     let mut weighted_sum = 0.0;
     let mut total_weight = 0.0;
 
+    // Extract noise info for adaptive thresholds
+    let noise_adj = req.noise_threshold_adjustment.unwrap_or(0.0);
+    let noise_info = req.noise_level.map(|nl| NoiseInfo {
+        noise_level: nl,
+        noise_category: req.noise_category.clone().unwrap_or_else(|| "unknown".into()),
+        threshold_adjustment: noise_adj,
+        usable: nl < 0.75,
+    });
+
+    // Adaptive thresholds: relax for noisy cameras while maintaining security floor
+    let adjusted_liveness = (config.liveness_threshold - noise_adj).max(0.55);
+    let adjusted_spoof = (config.anti_spoof_threshold - noise_adj * 0.5).max(0.35);
+
+    // Noise-aware weight adjustment: for noisy images, reduce weight of noise-sensitive methods
+    let noise_level = req.noise_level.unwrap_or(0.0);
+    let texture_w = if noise_level > 0.35 {
+        config.texture_weight * (1.0 - noise_level * 0.4) // reduce texture weight for noisy
+    } else {
+        config.texture_weight
+    };
+    let frequency_w = if noise_level > 0.35 {
+        config.frequency_weight * (1.0 - noise_level * 0.3)
+    } else {
+        config.frequency_weight
+    };
+    // Increase passive_3d weight to compensate (more robust to noise)
+    let passive_w = config.passive_3d_weight + (config.texture_weight - texture_w) + (config.frequency_weight - frequency_w);
+
     if let Some(s) = req.passive_3d_score {
-        let w = config.passive_3d_weight;
+        let w = passive_w;
         methods.push(MethodScore {
             method: "passive_3d".into(), score: s, weight: w,
-            passed: s >= config.liveness_threshold, threshold: config.liveness_threshold,
+            passed: s >= adjusted_liveness, threshold: adjusted_liveness,
         });
         weighted_sum += s * w;
         total_weight += w;
     }
     if let Some(s) = req.texture_score {
-        let w = config.texture_weight;
+        let w = texture_w;
+        // Apply noise compensation boost to texture score
+        let compensated = if noise_level > 0.15 {
+            (s + noise_adj * 1.0).min(0.99)
+        } else { s };
         methods.push(MethodScore {
-            method: "texture_analysis".into(), score: s, weight: w,
-            passed: s >= config.anti_spoof_threshold, threshold: config.anti_spoof_threshold,
+            method: "texture_analysis".into(), score: compensated, weight: w,
+            passed: compensated >= adjusted_spoof, threshold: adjusted_spoof,
         });
-        weighted_sum += s * w;
+        weighted_sum += compensated * w;
         total_weight += w;
     }
     if let Some(s) = req.depth_score {
         let w = config.depth_weight;
+        let compensated = if noise_level > 0.15 {
+            (s + noise_adj * 0.5).min(0.99)
+        } else { s };
         methods.push(MethodScore {
-            method: "depth_estimation".into(), score: s, weight: w,
-            passed: s >= config.anti_spoof_threshold, threshold: config.anti_spoof_threshold,
+            method: "depth_estimation".into(), score: compensated, weight: w,
+            passed: compensated >= adjusted_spoof, threshold: adjusted_spoof,
         });
-        weighted_sum += s * w;
+        weighted_sum += compensated * w;
         total_weight += w;
     }
     if let Some(s) = req.frequency_score {
-        let w = config.frequency_weight;
+        let w = frequency_w;
+        let compensated = if noise_level > 0.15 {
+            (s + noise_adj * 1.2).min(0.99)
+        } else { s };
         methods.push(MethodScore {
-            method: "frequency_analysis".into(), score: s, weight: w,
-            passed: s >= config.anti_spoof_threshold, threshold: config.anti_spoof_threshold,
+            method: "frequency_analysis".into(), score: compensated, weight: w,
+            passed: compensated >= adjusted_spoof, threshold: adjusted_spoof,
         });
-        weighted_sum += s * w;
+        weighted_sum += compensated * w;
         total_weight += w;
     }
     if let Some(dp) = req.deepfake_probability {
@@ -228,7 +278,7 @@ fn compute_ensemble_score(req: &LivenessScoreRequest, config: &ScoringConfig) ->
     }
 
     let overall = if total_weight > 0.0 { weighted_sum / total_weight } else { 0.0 };
-    (overall, methods)
+    (overall, methods, noise_info)
 }
 
 fn classify_spoof(req: &LivenessScoreRequest, config: &ScoringConfig) -> AntiSpoofScore {
@@ -305,7 +355,7 @@ async fn healthz(state: web::Data<AppState>) -> HttpResponse {
 
 async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<AppState>) -> HttpResponse {
     let start = Instant::now();
-    let (overall_score, method_scores) = compute_ensemble_score(&body, &state.config);
+    let (overall_score, method_scores, noise_info) = compute_ensemble_score(&body, &state.config);
     let anti_spoof = classify_spoof(&body, &state.config);
     let deepfake_prob = body.deepfake_probability.unwrap_or(0.05);
 
@@ -313,11 +363,16 @@ async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<
     let head_pose_valid = body.head_pose_yaw.unwrap_or(0.0).abs() < 30.0
         && body.head_pose_pitch.unwrap_or(0.0).abs() < 25.0;
 
-    let is_live = overall_score >= state.config.liveness_threshold
+    // Adaptive liveness threshold based on noise level
+    let noise_adj = body.noise_threshold_adjustment.unwrap_or(0.0);
+    let adjusted_threshold = (state.config.liveness_threshold - noise_adj).max(0.55);
+    let adjusted_quality_min = (0.4 - noise_adj * 0.5).max(0.2);
+
+    let is_live = overall_score >= adjusted_threshold
         && !anti_spoof.is_spoof
         && deepfake_prob < state.config.deepfake_threshold
         && body.face_detected.unwrap_or(true)
-        && face_quality > 0.4
+        && face_quality > adjusted_quality_min
         && head_pose_valid;
 
     let confidence = if is_live {
@@ -379,7 +434,13 @@ async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<
         st.avg_processing_ms = (st.avg_processing_ms * (n - 1.0) + processing_ms) / n;
     }
 
-    HttpResponse::Ok().json(check)
+    let mut response = serde_json::to_value(&check).unwrap();
+    if let Some(ni) = &noise_info {
+        response["noise_info"] = serde_json::to_value(ni).unwrap();
+        response["adaptive_threshold"] = serde_json::json!(adjusted_threshold);
+        response["noise_compensation_applied"] = serde_json::json!(ni.noise_level > 0.15);
+    }
+    HttpResponse::Ok().json(response)
 }
 
 async fn score_face_match(body: web::Json<FaceMatchScoreRequest>, state: web::Data<AppState>) -> HttpResponse {
