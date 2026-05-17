@@ -456,6 +456,7 @@ import { alertNotificationsRouter } from "./routers/alertNotifications";
 import { networkQualityHeatmapRouter } from "./routers/networkQualityHeatmap";
 import { bulkRoleImportRouter } from "./routers/bulkRoleImport";
 import { networkTrendsRouter } from "./routers/networkTrends";
+import { kybRouter } from "./routers/kyb";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -519,6 +520,7 @@ export const appRouter = router({
   disputes: disputesRouter,
   geofencing: geofencingRouter,
   kyc: kycRouter,
+  kyb: kybRouter,
   // Back-office and multi-app routers
   management: managementRouter,
   agentBanking: agentBankingRouter,
