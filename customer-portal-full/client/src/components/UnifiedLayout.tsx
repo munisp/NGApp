@@ -235,7 +235,7 @@ const menuGroups: MenuGroup[] = [
       { icon: TrendingUp, label: "Dynamic Pricing", path: "/dynamic-pricing", permission: "canViewAnalytics" },
       { icon: Sparkles, label: "AI Knowledge Assistant", path: "/ai-assistant", permission: "canViewDashboard" },
       { icon: Activity, label: "Smart Risk Intelligence", path: "/mcmc-risk", permission: "canViewAnalytics" },
-      { icon: Route, label: "Smart Claim Routing", path: "/smart-claim-routing", permission: "canViewClaims" },
+      { icon: Route, label: "Smart Claim Routing", path: "/smart-claim-routing", permission: "canViewPolicyApproval" },
       { icon: UserMinus, label: "Churn Prediction", path: "/churn-prediction", permission: "canViewAnalytics" },
       { icon: Shield, label: "AI Model Security", path: "/model-security", permission: "canViewAnalytics" },
     ],
@@ -256,14 +256,14 @@ const menuGroups: MenuGroup[] = [
     items: [
       { icon: Users, label: "Agent Portal", path: "/agent-portal", permission: "canViewCommission" },
       { icon: Building2, label: "Bancassurance Portal", path: "/bancassurance-portal", permission: "canViewAnalytics" },
-      { icon: Zap, label: "Embedded Distribution", path: "/embedded-distribution", permission: "canViewPolicies" },
+      { icon: Zap, label: "Embedded Distribution", path: "/embedded-distribution", permission: "canViewCommission" },
       { icon: Zap, label: "Embedded Insurance", path: "/embedded-insurance", permission: "canViewUserManagement" },
     ],
   },
   {
     label: "Regulatory Compliance",
     items: [
-      { icon: Scale, label: "NIIRA 2025 Compulsory Insurance", path: "/niira-compulsory-insurance", permission: "canViewPolicies" },
+      { icon: Scale, label: "NIIRA 2025 Compulsory Insurance", path: "/niira-compulsory-insurance", permission: "canViewAuditLogs" },
       { icon: Shield, label: "NAICOM Compliance", path: "/naicom-compliance", permission: "canViewAuditLogs" },
       { icon: Gavel, label: "Compliance Monitor", path: "/compliance", permission: "canViewAuditLogs" },
       { icon: ScrollTextIcon, label: "Audit Trail", path: "/audit-trail", permission: "canViewAuditLogs" },
@@ -272,8 +272,8 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Nigerian Market",
     items: [
-      { icon: Phone, label: "USSD Gateway", path: "/ussd-gateway", permission: "canViewDashboard" },
-      { icon: Car, label: "NMID Integration", path: "/nmid-integration", permission: "canViewPolicies" },
+      { icon: Phone, label: "USSD Gateway", path: "/ussd-gateway", permission: "canViewUserManagement" },
+      { icon: Car, label: "NMID Integration", path: "/nmid-integration", permission: "canViewUserManagement" },
     ],
   },
   {
@@ -293,7 +293,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Technology & Innovation",
     items: [
-      { icon: Bot, label: "Insurance Technology", path: "/insurance-tech-innovations", permission: "canViewPolicies" },
+      { icon: Bot, label: "Insurance Technology", path: "/insurance-tech-innovations", permission: "canViewAnalytics" },
       { icon: Car, label: "Telematics", path: "/telematics", permission: "canViewPolicies" },
       { icon: MapPin, label: "Geospatial Map", path: "/geospatial", permission: "canViewAnalytics" },
       { icon: Key, label: "Broker API", path: "/broker-api", permission: "canViewUserManagement" },
@@ -320,15 +320,15 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Operations",
     items: [
-      { icon: GavelIcon, label: "Claims Adjudication", path: "/claims-adjudication", permission: "canViewClaims" },
-      { icon: RefreshCw, label: "Renewal Automation", path: "/policy-renewal-automation", permission: "canViewPolicies" },
+      { icon: GavelIcon, label: "Claims Adjudication", path: "/claims-adjudication", permission: "canViewPolicyApproval" },
+      { icon: RefreshCw, label: "Renewal Automation", path: "/policy-renewal-automation", permission: "canViewUserManagement" },
       { icon: DollarSign, label: "Agent Commissions", path: "/agent-commission", permission: "canViewCommission" },
       { icon: Layers, label: "Batch Processing", path: "/batch-processing", permission: "canViewUserManagement" },
       { icon: Eye, label: "Customer 360", path: "/customer-360", permission: "canViewCustomers" },
       { icon: FolderOpen, label: "Document Management", path: "/document-management", permission: "canViewUserManagement" },
       { icon: MessageSquareText, label: "Customer Feedback", path: "/customer-feedback", permission: "canViewAnalytics" },
-      { icon: CoinsIcon, label: "Multi-Currency", path: "/multi-currency", permission: "canViewPayments" },
-      { icon: Building2Icon, label: "Bank Integrations", path: "/bank-integrations", permission: "canViewPayments" },
+      { icon: CoinsIcon, label: "Multi-Currency", path: "/multi-currency", permission: "canViewUserManagement" },
+      { icon: Building2Icon, label: "Bank Integrations", path: "/bank-integrations", permission: "canViewUserManagement" },
       { icon: BarChart2, label: "Reconciliation", path: "/reconciliation", permission: "canViewAnalytics" },
       { icon: Server, label: "Disaster Recovery", path: "/disaster-recovery", permission: "canViewSystemSettings" },
       { icon: FlaskConical, label: "A/B Testing", path: "/ab-testing", permission: "canViewAnalytics" },
