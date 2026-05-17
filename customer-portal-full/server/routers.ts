@@ -578,7 +578,7 @@ export const appRouter = router({
         if (!input.consentGiven) throw new Error("User consent required for credit scoring");
         return await db.computeTelcoCreditScore(ctx.user.id, input.phoneNumber, input.provider);
       }),
-    apply: protectedProcedure
+    submitApplication: protectedProcedure
       .input(z.object({ scoreId: z.string(), productType: z.string() }))
       .mutation(async ({ ctx, input }) => {
         return await db.applyTelcoCreditProduct(ctx.user.id, input.scoreId, input.productType);
@@ -628,7 +628,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.createBancassuranceOffer(ctx.user.id, input);
       }),
-    apply: protectedProcedure
+    submitApplication: protectedProcedure
       .input(z.object({ productId: z.string(), loanReference: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         return await db.applyBancassurance(ctx.user.id, input.productId, input.loanReference);
@@ -1141,7 +1141,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.getSMEQuote(ctx.user.id, input);
       }),
-    apply: protectedProcedure
+    submitApplication: protectedProcedure
       .input(z.object({ productId: z.string(), businessDetails: z.record(z.unknown()).optional() }))
       .mutation(async ({ ctx, input }) => {
         return await db.applySMEInsurance(ctx.user.id, input.productId, input.businessDetails ?? {});
@@ -1298,7 +1298,7 @@ export const appRouter = router({
     policies: protectedProcedure.query(async ({ ctx }) => {
       return await db.getAgriculturalPolicies(ctx.user.id);
     }),
-    apply: protectedProcedure
+    submitApplication: protectedProcedure
       .input(z.object({ productId: z.string(), farmDetails: z.record(z.unknown()).optional() }))
       .mutation(async ({ ctx, input }) => {
         return await db.applyAgriculturalInsurance(ctx.user.id, input.productId, input.farmDetails ?? {});

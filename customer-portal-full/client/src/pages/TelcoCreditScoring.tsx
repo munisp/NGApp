@@ -41,7 +41,7 @@ const TelcoCreditScoring: React.FC = () => {
     enabled: isAuthenticated && !process.env.DEMO_MODE,
   });
 
-  const { mutate: applyForScore, isLoading: isApplyLoading } = trpc.telcoCredit.apply.useMutation({
+  const { mutate: applyForScore, isLoading: isApplyLoading } = trpc.telcoCredit.submitApplication.useMutation({
     onSuccess: () => {
       toast.success('Telco credit score application submitted successfully!');
       utils.telcoCredit.score.invalidate();

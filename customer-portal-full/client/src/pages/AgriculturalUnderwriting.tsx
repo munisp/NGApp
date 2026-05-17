@@ -92,7 +92,7 @@ const AgriculturalUnderwriting: React.FC = () => {
     enabled: !DEMO_MODE && isAuthenticated,
   });
 
-  const applyMutation = trpc.agricultural.apply.useMutation({
+  const applyMutation = trpc.agricultural.submitApplication.useMutation({
     onSuccess: () => {
       toast.success('Application submitted successfully!');
       setIsApplyDialogOpen(false);

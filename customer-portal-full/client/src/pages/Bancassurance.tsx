@@ -73,7 +73,7 @@ const Bancassurance: React.FC = () => {
   });
 
   const { data: products, isLoading, isError, error } = trpc.bancassurance.products.useQuery();
-  const applyMutation = trpc.bancassurance.apply.useMutation({
+  const applyMutation = trpc.bancassurance.submitApplication.useMutation({
     onSuccess: () => {
       toast.success('Application submitted successfully!');
       setIsApplyDialogOpen(false);

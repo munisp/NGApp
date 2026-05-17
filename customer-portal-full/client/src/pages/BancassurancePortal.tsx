@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export default function BancassurancePortal() {
   const [search, setSearch] = useState("");
   const { data: products, isLoading, refetch } = trpc.bancassurance.products.useQuery();
-  const applyMutation = trpc.bancassurance.apply.useMutation({
+  const applyMutation = trpc.bancassurance.submitApplication.useMutation({
     onSuccess: () => { toast.success("Application submitted successfully"); refetch(); },
     onError: (e: any) => toast.error("Application failed", { description: e.message }),
   });

@@ -120,7 +120,7 @@ const SMEBusiness: React.FC = () => {
     enabled: !DEMO_MODE, // Only fetch if not in demo mode
   });
 
-  const applyMutation = trpc.sme.apply.useMutation({
+  const applyMutation = trpc.sme.submitApplication.useMutation({
     onSuccess: () => {
       toast.success('Application submitted successfully!');
       utils.sme.products.invalidate(); // Invalidate products query to refetch data
