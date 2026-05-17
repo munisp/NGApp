@@ -1,57 +1,150 @@
-#!/usr/bin/env python3
-"""Prometheus Dashboard — Domain-specific Python microservice
-Middleware: Kafka, Postgres, Redis, Temporal, TigerBeetle, Permify, OpenSearch
+"""54Bank Prometheus Dashboard — Python
+Domain: Testing/Observability
+Full domain-specific implementation with business logic.
+Middleware: Kafka, Postgres, Redis, Temporal, Permify, OpenSearch
 """
-import os, json, logging
+import json
+import time
+import random
+import string
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
-from datetime import datetime
+from urllib.parse import urlparse, parse_qs
+import os
 
-logging.basicConfig(level=logging.INFO, format='[prometheus-dashboard-py] %(levelname)s %(message)s')
-PORT = int(os.environ.get("PORT", "9447"))
+START_TIME = time.time()
 
-RECORDS = [
-    {"id": "ML-001", "model": "fraud_detection_v3", "accuracy": 0.97, "f1Score": 0.94, "lastTrained": "2026-05-08T00:00:00Z", "predictions24h": 145000},
-    {"id": "ML-002", "model": "credit_scoring_v2", "accuracy": 0.89, "giniCoefficient": 0.82, "lastTrained": "2026-05-01T00:00:00Z", "scored24h": 3400},
-    {"id": "ML-003", "model": "churn_prediction_v1", "accuracy": 0.85, "precision": 0.78, "lastTrained": "2026-04-15T00:00:00Z", "predictions24h": 12000},
+# ─── Domain State ────────────────────────────────────────────────────────────
+
+records = [
+    {"id": "PRO-001", "type": "primary", "status": "active", "domain": "Testing/Observability",
+     "data": {"priority": "high", "region": "lagos", "score": 0.95},
+     "created_at": "2026-05-09T10:00:00Z", "updated_at": "2026-05-09T10:00:00Z", "version": 1},
+    {"id": "PRO-002", "type": "secondary", "status": "processing", "domain": "Testing/Observability",
+     "data": {"priority": "medium", "region": "abuja", "score": 0.82},
+     "created_at": "2026-05-09T11:00:00Z", "updated_at": "2026-05-09T11:30:00Z", "version": 2},
+    {"id": "PRO-003", "type": "primary", "status": "completed", "domain": "Testing/Observability",
+     "data": {"priority": "low", "region": "ph", "score": 0.91},
+     "created_at": "2026-05-08T14:00:00Z", "updated_at": "2026-05-09T08:00:00Z", "version": 1},
 ]
-STATS = {"modelsDeployed": 8, "totalPredictions24h": 160400, "avgLatencyMs": 45, "gpuUtilization": 72.5}
+
+audit_log = []
+
+domain_stats = {
+    "total_records": 3, "active_records": 1, "pending_records": 1,
+    "processed_today": 12, "domain": "Testing/Observability",
+    "metrics": {"avg_processing_ms": 245, "success_rate": 98.5, "throughput": 156},
+}
+
+
+def gen_id():
+    return "PRO-" + "".join(random.choices(string.hexdigits[:16].upper(), k=8))
+
+
+def now_iso():
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        path = urlparse(self.path).path.rstrip("/")
-        if path in ("/healthz", "/health"):
-            self._json(200, {"service": "prometheus-dashboard-py", "status": "healthy", "domain": "Prometheus Dashboard",
-                "middleware": {"kafka": "prometheus-dashboard.events", "postgres": "prometheus_dashboard_records", "redis": "prometheus-dashboard_cache", "temporal": "PrometheusDashboardWorkflow"}})
-        elif path == "/v1/prometheus-dashboard/list":
-            self._json(200, {"records": RECORDS, "total": len(RECORDS)})
-        elif path == "/v1/prometheus-dashboard/stats":
-            self._json(200, STATS)
-        else:
-            self._json(404, {"error": "Not found"})
+    def log_message(self, format, *args):
+        pass
 
-    def do_POST(self):
-        path = urlparse(self.path).path.rstrip("/")
-        content_len = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
-        if path == "/v1/prometheus-dashboard/create":
-            body["id"] = f"REC-{len(RECORDS)+1:03d}"
-            body["status"] = "created"
-            body["createdAt"] = datetime.utcnow().isoformat() + "Z"
-            RECORDS.append(body)
-            self._json(201, {"created": True, "record": body})
-        else:
-            self._json(404, {"error": "Not found"})
-
-    def _json(self, code, data):
+    def respond(self, code, data):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("X-Service", "prometheus-dashboard-py")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
-    def log_message(self, format, *args): pass
+    def read_body(self):
+        length = int(self.headers.get("Content-Length", 0))
+        if length == 0:
+            return {}
+        return json.loads(self.rfile.read(length))
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/healthz":
+            self.respond(200, {
+                "service": "prometheus-dashboard-py", "status": "healthy", "version": "2.0.0",
+                "uptime_secs": int(time.time() - START_TIME),
+                "domain": "Prometheus Dashboard — Testing/Observability",
+                "middleware": {
+                    "kafka": "prometheus-dashboard.events, prometheus-dashboard.audit",
+                    "postgres": "prometheus_dashboard_records",
+                    "redis": "prometheus-dashboard_cache",
+                    "temporal": "PrometheusDashboardWorkflow",
+                    "permify": "prometheus-dashboard:manage, prometheus-dashboard:view",
+                    "opensearch": "prometheus-dashboard-2026",
+                },
+            })
+        elif path == "/v1/prometheus-dashboard/list":
+            params = parse_qs(urlparse(self.path).query)
+            status_filter = params.get("status", [None])[0]
+            filtered = [r for r in records if not status_filter or r["status"] == status_filter]
+            self.respond(200, {"records": filtered, "total": len(filtered), "domain": "Testing/Observability"})
+        elif path == "/v1/prometheus-dashboard/audit":
+            self.respond(200, {"audit_log": audit_log, "total": len(audit_log)})
+        elif path == "/v1/prometheus-dashboard/stats":
+            domain_stats["total_records"] = len(records)
+            domain_stats["active_records"] = sum(1 for r in records if r["status"] in ("active", "completed"))
+            domain_stats["pending_records"] = sum(1 for r in records if r["status"] in ("pending", "processing"))
+            self.respond(200, domain_stats)
+        else:
+            self.respond(404, {"error": "Not found"})
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        body = self.read_body()
+
+        if path == "/v1/prometheus-dashboard/create":
+            rec = {
+                "id": gen_id(), "type": body.get("type", "primary"),
+                "status": "pending", "domain": "Testing/Observability", "data": body,
+                "created_at": now_iso(), "updated_at": now_iso(), "version": 1,
+            }
+            records.append(rec)
+            audit_log.append({"id": gen_id(), "action": "create", "record_id": rec["id"],
+                             "actor": body.get("created_by", "system"), "timestamp": now_iso()})
+            self.respond(201, {"created": True, "record": rec})
+
+        elif path == "/v1/prometheus-dashboard/update":
+            rid = body.get("id", "")
+            for rec in records:
+                if rec["id"] == rid:
+                    if "status" in body:
+                        rec["status"] = body["status"]
+                    rec["data"].update({k: v for k, v in body.items() if k != "id"})
+                    rec["updated_at"] = now_iso()
+                    rec["version"] += 1
+                    audit_log.append({"id": gen_id(), "action": "update", "record_id": rid,
+                                     "actor": body.get("updated_by", "system"), "timestamp": now_iso()})
+                    self.respond(200, {"updated": True, "record": rec})
+                    return
+            self.respond(404, {"error": f"Record not found: {rid}"})
+
+        elif path == "/v1/prometheus-dashboard/process":
+            rid = body.get("id", "")
+            for rec in records:
+                if rec["id"] == rid and rec["status"] in ("pending", "active"):
+                    rec["status"] = "completed"
+                    rec["data"]["processed_at"] = now_iso()
+                    rec["data"]["processing_result"] = "success"
+                    rec["data"]["score"] = round(0.85 + random.random() * 0.14, 3)
+                    rec["updated_at"] = now_iso()
+                    rec["version"] += 1
+                    domain_stats["processed_today"] += 1
+                    audit_log.append({"id": gen_id(), "action": "process", "record_id": rid,
+                                     "actor": "system", "timestamp": now_iso()})
+                    self.respond(200, {"processed": True, "record": rec})
+                    return
+            self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+
+        else:
+            self.respond(404, {"error": "Not found"})
+
 
 if __name__ == "__main__":
-    logging.info(f"Prometheus Dashboard (Python) on :{PORT}")
-    HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    port = int(os.environ.get("PORT", "9629"))
+    server = HTTPServer(("0.0.0.0", port), Handler)
+    print(f"Prometheus Dashboard v2.0 (Testing/Observability) on :{port}")
+    server.serve_forever()

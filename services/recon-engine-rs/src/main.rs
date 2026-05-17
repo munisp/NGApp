@@ -1,58 +1,147 @@
-// 54Bank Reconciliation Engine — Rust
-// 3-way matching (core banking GL, NIBSS switch, TigerBeetle ledger),
-// Nostro reconciliation, fuzzy amount tolerance, reference correlation.
-// Middleware: All 14
 use actix_web::{web, App, HttpServer, HttpResponse};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::sync::Mutex;
 use std::time::Instant;
 
-#[derive(Clone)]
-struct AppState { start_time: Instant }
+// ─── Recon Engine — Banking Ops ────────────────────────────────────────────────
+
+#[derive(Clone, Serialize, Deserialize)]
+struct Record {
+    id: String,
+    record_type: String,
+    status: String,
+    data: serde_json::Value,
+    score: f64,
+    version: u32,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct AuditEntry {
+    id: String,
+    action: String,
+    record_id: String,
+    actor: String,
+    timestamp: String,
+}
+
+struct AppState {
+    start_time: Instant,
+    records: Mutex<Vec<Record>>,
+    audit_log: Mutex<Vec<AuditEntry>>,
+}
+
+fn seed_records() -> Vec<Record> {
+    vec![
+        Record { id: "REC-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Banking Ops", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
+        Record { id: "REC-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Banking Ops", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
+        Record { id: "REC-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Banking Ops", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
+    ]
+}
+
+fn rand_id() -> String {
+    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
+    format!("REC-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+}
+
+fn now_str() -> String {
+    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
+    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
+}
 
 async fn healthz(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "service": "recon-engine-rs", "status": "healthy",
+        "service": "recon-engine-rs",
+        "status": "healthy",
+        "version": "2.0.0",
         "uptime_secs": state.start_time.elapsed().as_secs(),
-        "algorithms": ["exact_match", "fuzzy_amount_tolerance", "reference_correlation", "timestamp_window", "hash_based"],
-        "matchingTypes": ["three_way", "two_way", "nostro", "gl_vs_switch", "gl_vs_tigerbeetle"],
-        "middleware": {"kafka": "recon.results, recon.exceptions", "postgres": "recon_results, recon_exceptions", "redis": "match_cache", "temporal": "DailyReconWorkflow, ExceptionResolutionSaga", "opensearch": "recon-audit-2026", "tigerbeetle": "source of truth for balances"}
+        "domain": "Recon Engine — Banking Ops",
+        "middleware": {
+            "kafka": "recon-engine.events, recon-engine.audit",
+            "postgres": "recon_engine_records",
+            "redis": "recon-engine_cache",
+            "temporal": "ReconEngineWorkflow",
+            "opensearch": "recon-engine-2026",
+        }
     }))
 }
 
-async fn list_results() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"results": [
-        {"id": "REC-001", "date": "2026-05-09", "type": "three_way", "source1": "Core Banking GL", "source2": "NIBSS Switch", "source3": "TigerBeetle Ledger", "totalRecords": 12847, "matched": 12830, "unmatched": 0, "exceptions": 17, "netDifference": 0, "status": "exceptions_pending", "matchRate": "99.87%"},
-        {"id": "REC-002", "date": "2026-05-09", "type": "nostro", "source1": "Nostro GL (1101-1108)", "source2": "Correspondent Bank Statements", "totalRecords": 342, "matched": 340, "exceptions": 2, "netDifference": 15000000, "status": "exceptions_pending", "matchRate": "99.42%"},
-        {"id": "REC-003", "date": "2026-05-08", "type": "three_way", "source1": "Core Banking GL", "source2": "NIBSS Switch", "source3": "TigerBeetle Ledger", "totalRecords": 14523, "matched": 14523, "exceptions": 0, "netDifference": 0, "status": "completed", "matchRate": "100.00%"}
-    ], "total": 3}))
+async fn list_records(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Banking Ops"}))
 }
 
-async fn list_exceptions() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"exceptions": [
-        {"id": "EXC-001", "reconId": "REC-001", "type": "amount_mismatch", "source1Amount": 500000, "source2Amount": 500500, "difference": 500, "reference": "NIP-SESSION-001", "status": "under_review", "assignedTo": "recon-team-1"},
-        {"id": "EXC-002", "reconId": "REC-001", "type": "missing_in_source2", "source1Amount": 1200000, "reference": "NIP-SESSION-002", "status": "escalated", "notes": "Transaction in GL but not in NIBSS switch — possible late settlement"},
-        {"id": "EXC-003", "reconId": "REC-002", "type": "fx_rate_difference", "source1Amount": 750000000, "source2Amount": 751200000, "difference": 1200000, "reference": "NOSTRO-USD-001", "status": "pending_cb_confirmation"},
-    ], "total": 3}))
+async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let rec = Record {
+        id: rand_id(),
+        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
+        status: "pending".into(),
+        data: body.into_inner(),
+        score: 0.0,
+        version: 1,
+        created_at: now_str(),
+        updated_at: now_str(),
+    };
+    let mut records = state.records.lock().unwrap();
+    records.push(rec.clone());
+    let mut audit = state.audit_log.lock().unwrap();
+    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
+    HttpResponse::Created().json(json!({"created": true, "record": rec}))
 }
 
-async fn run_recon(body: web::Json<serde_json::Value>) -> HttpResponse {
-    HttpResponse::Accepted().json(json!({
-        "accepted": true, "reconType": body.get("type"), "date": body.get("date"),
-        "estimatedDuration": "2-5 minutes", "workflowId": "WF-RECON-TRIGGERED"
+async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
+    let mut records = state.records.lock().unwrap();
+    for rec in records.iter_mut() {
+        if rec.id == id {
+            rec.status = "completed".into();
+            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
+            rec.version += 1;
+            rec.updated_at = now_str();
+            let mut audit = state.audit_log.lock().unwrap();
+            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
+            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
+        }
+    }
+    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
+}
+
+async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
+    let audit = state.audit_log.lock().unwrap();
+    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
+}
+
+async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
+    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
+    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
+    HttpResponse::Ok().json(json!({
+        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
+        "avgScore": avg_score, "domain": "Banking Ops",
+        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
     }))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "8119".to_string());
-    let state = AppState { start_time: Instant::now() };
-    println!("Reconciliation Engine (Rust) on :{} — 3-way matching", port);
+    let port = std::env::var("PORT").unwrap_or_else(|_| "9543".to_string());
+    let state = web::Data::new(AppState {
+        start_time: Instant::now(),
+        records: Mutex::new(seed_records()),
+        audit_log: Mutex::new(vec![]),
+    });
+    println!("Recon Engine v2.0 (Banking Ops) on :{}", port);
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(state.clone()))
+            .app_data(state.clone())
             .route("/healthz", web::get().to(healthz))
-            .route("/v1/recon/results", web::get().to(list_results))
-            .route("/v1/recon/exceptions", web::get().to(list_exceptions))
-            .route("/v1/recon/run", web::post().to(run_recon))
+            .route("/v1/recon-engine/list", web::get().to(list_records))
+            .route("/v1/recon-engine/create", web::post().to(create_record))
+            .route("/v1/recon-engine/process", web::post().to(process_record))
+            .route("/v1/recon-engine/audit", web::get().to(get_audit))
+            .route("/v1/recon-engine/stats", web::get().to(get_stats))
     }).bind(format!("0.0.0.0:{}", port))?.run().await
 }
