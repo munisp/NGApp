@@ -123,6 +123,21 @@ export const appRouter = router({
           source: "fallback"
         };
       }),
+    advisor: protectedProcedure
+      .input(z.object({ question: z.string(), context: z.string().default('general') }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.getAIAdvisorResponse(ctx.user.id, input.question, input.context);
+      }),
+    chat: protectedProcedure
+      .input(z.object({ message: z.string(), sessionId: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.getAIChatResponse(ctx.user.id, input.message, input.sessionId);
+      }),
+    getHistory: protectedProcedure
+      .input(z.object({ sessionId: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getAIChatHistory(ctx.user.id, input.sessionId);
+      }),
   }),
 
   auth: router({
@@ -134,6 +149,11 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    login: publicProcedure
+      .input(z.object({ email: z.string(), password: z.string(), twoFactorCode: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        return await db.loginUser(input.email, input.password, input.twoFactorCode);
+      }),
   }),
 
   policies: router({
@@ -160,6 +180,11 @@ export const appRouter = router({
           expiryDate: newExpiryDate,
           status: "Active"
         });
+      }),
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number(), reason: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.cancelPolicy(ctx.user.id, input.id, input.reason);
       }),
   }),
 
@@ -193,6 +218,11 @@ export const appRouter = router({
           description: input.description,
           status: "Submitted",
         });
+      }),
+    getById: protectedProcedure
+      .input(z.object({ claimId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getClaimByIdString(ctx.user.id, input.claimId);
       }),
   }),
 
@@ -347,6 +377,12 @@ export const appRouter = router({
         return await db.getRecentFraudScores(ctx.user.id, input.limit);
       }),
 
+    scan: protectedProcedure
+      .input(z.object({ scanType: z.string(), target: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.scanInsuranceRadar(ctx.user.id, input.scanType, input.target);
+      }),
+
     scoreRequest: protectedProcedure
       .input(z.object({
         entityType: z.string(),
@@ -393,6 +429,11 @@ export const appRouter = router({
       .input(z.object({ entityType: z.string(), entityId: z.string() }))
       .mutation(async ({ ctx, input }) => {
         return await db.triggerERPNextSync(ctx.user.id, input.entityType, input.entityId);
+      }),
+    sync: protectedProcedure
+      .input(z.object({ module: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.syncERPNext(ctx.user.id, input.module);
       }),
   }),
 
@@ -465,6 +506,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.revokeBrokerAPIKey(ctx.user.id, input.keyId);
       }),
+    revoke: protectedProcedure
+      .input(z.object({ keyId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.revokeBrokerKey(ctx.user.id, input.keyId);
+      }),
   }),
 
   // Fraud Network Visualization
@@ -486,6 +532,16 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return await db.getFraudNetworkGraph(ctx.user.id, input.entityId, input.depth);
       }),
+    analyze: protectedProcedure
+      .input(z.object({ entityId: z.string(), entityType: z.string().default('policy') }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.analyzeFraudNetwork(ctx.user.id, input.entityId, input.entityType);
+      }),
+    graph: protectedProcedure
+      .input(z.object({ entityId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getFraudNetworkGraphData(ctx.user.id, input.entityId);
+      }),
   }),
 
   // Knowledge Graph Explorer
@@ -495,7 +551,14 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return await db.getKnowledgeGraphNodes(ctx.user.id, input.entityType, input.search);
       }),
-
+    entities: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getKnowledgeGraphEntities(ctx.user.id);
+    }),
+    query: protectedProcedure
+      .input(z.object({ question: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.queryKnowledgeGraph(ctx.user.id, input.question);
+      }),
     edges: protectedProcedure
       .input(z.object({ nodeId: z.string(), depth: z.number().default(1) }))
       .query(async ({ ctx, input }) => {
@@ -515,7 +578,11 @@ export const appRouter = router({
         if (!input.consentGiven) throw new Error("User consent required for credit scoring");
         return await db.computeTelcoCreditScore(ctx.user.id, input.phoneNumber, input.provider);
       }),
-
+    apply: protectedProcedure
+      .input(z.object({ scoreId: z.string(), productType: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.applyTelcoCreditProduct(ctx.user.id, input.scoreId, input.productType);
+      }),
     history: protectedProcedure.query(async ({ ctx }) => {
       return await db.getTelcoCreditHistory(ctx.user.id);
     }),
@@ -538,6 +605,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.createActuarialCalculation(ctx.user.id, 'reserves', input);
       }),
+    calculate: protectedProcedure
+      .input(z.object({ calculationType: z.string(), params: z.record(z.unknown()) }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.genericActuarialCalculation(ctx.user.id, input.calculationType, input.params);
+      }),
     history: protectedProcedure.query(async ({ ctx }) => {
       return await db.getActuarialHistory(ctx.user.id);
     }),
@@ -548,10 +620,18 @@ export const appRouter = router({
     partners: protectedProcedure.query(async () => {
       return await db.getBancassurancePartners();
     }),
+    products: protectedProcedure.query(async () => {
+      return await db.getBancassurancePartners();
+    }),
     generateOffer: protectedProcedure
       .input(z.object({ partnerId: z.number(), offerType: z.string(), loanAmount: z.number().optional(), tenure: z.number().optional() }))
       .mutation(async ({ ctx, input }) => {
         return await db.createBancassuranceOffer(ctx.user.id, input);
+      }),
+    apply: protectedProcedure
+      .input(z.object({ productId: z.string(), loanReference: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.applyBancassurance(ctx.user.id, input.productId, input.loanReference);
       }),
     myOffers: protectedProcedure.query(async ({ ctx }) => {
       return await db.getUserBancassuranceOffers(ctx.user.id);
@@ -567,6 +647,11 @@ export const appRouter = router({
       .input(z.object({ schemeName: z.string(), employerName: z.string(), schemeType: z.string(), totalMembers: z.number() }))
       .mutation(async ({ ctx, input }) => {
         return await db.createGroupLifeScheme(ctx.user.id, input);
+      }),
+    enroll: protectedProcedure
+      .input(z.object({ schemeId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return { schemeId: input.schemeId, userId: ctx.user.id, status: 'enrolled', enrolledAt: new Date() };
       }),
     calculatePremium: protectedProcedure
       .input(z.object({ totalMembers: z.number(), averageSalary: z.number(), coverMultiple: z.number() }))
@@ -598,6 +683,14 @@ export const appRouter = router({
     partners: protectedProcedure.query(async () => {
       return await db.getPFAPartners();
     }),
+    annuities: protectedProcedure.query(async () => {
+      return await db.getPFAAnnuities();
+    }),
+    quote: protectedProcedure
+      .input(z.object({ amount: z.number(), years: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.getPFAQuote(ctx.user.id, input.amount, input.years);
+      }),
     annuityQuote: protectedProcedure
       .input(z.object({ pfaId: z.number(), rsaPin: z.string(), retirementAge: z.number(), accumulatedFund: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -707,6 +800,11 @@ export const appRouter = router({
       .input(z.object({ entityType: z.string().optional(), limit: z.number().default(50), offset: z.number().default(0) }))
       .query(async ({ ctx, input }) => {
         return await db.getAuditTrail(ctx.user.id, input.entityType, input.limit, input.offset);
+      }),
+    export: protectedProcedure
+      .input(z.object({ format: z.string().default('csv'), dateRange: z.object({ from: z.string(), to: z.string() }).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.exportAuditTrail(ctx.user.id, input.format, input.dateRange);
       }),
   }),
 
@@ -941,6 +1039,16 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.walletTopUp(ctx.user.id, input.amount, input.paymentMethod);
       }),
+    topup: protectedProcedure
+      .input(z.object({ amount: z.number(), source: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.walletTopUpAlt(ctx.user.id, input.amount, input.source);
+      }),
+    withdraw: protectedProcedure
+      .input(z.object({ amount: z.number(), bankAccount: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.walletWithdraw(ctx.user.id, input.amount, input.bankAccount);
+      }),
   }),
 
   // ── Health & Wellness ─────────────────────────────────────────────────────────
@@ -963,6 +1071,14 @@ export const appRouter = router({
     products: protectedProcedure.query(async () => {
       return await db.getParametricProducts();
     }),
+    triggers: protectedProcedure.query(async () => {
+      return await db.getParametricTriggers();
+    }),
+    claim: protectedProcedure
+      .input(z.object({ policyId: z.string(), triggerId: z.string(), evidence: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.fileParametricClaim(ctx.user.id, input.policyId, input.triggerId, input.evidence);
+      }),
     purchase: protectedProcedure
       .input(z.object({ productId: z.string(), coverAmount: z.number(), location: z.string() }))
       .mutation(async ({ ctx, input }) => {
@@ -1025,6 +1141,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.getSMEQuote(ctx.user.id, input);
       }),
+    apply: protectedProcedure
+      .input(z.object({ productId: z.string(), businessDetails: z.record(z.unknown()).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.applySMEInsurance(ctx.user.id, input.productId, input.businessDetails ?? {});
+      }),
     policies: protectedProcedure.query(async ({ ctx }) => {
       return await db.getSMEPolicies(ctx.user.id);
     }),
@@ -1062,6 +1183,9 @@ export const appRouter = router({
     }),
     factors: protectedProcedure.query(async ({ ctx }) => {
       return await db.getInsuranceScoreFactors(ctx.user.id);
+    }),
+    improve: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getInsuranceScoreImprovements(ctx.user.id);
     }),
   }),
 
@@ -1125,6 +1249,11 @@ export const appRouter = router({
     auditLog: protectedProcedure.query(async () => {
       return await db.getModelAuditLog();
     }),
+    scan: protectedProcedure
+      .input(z.object({ modelId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.scanModelSecurity(ctx.user.id, input.modelId);
+      }),
   }),
 
   // ── MCMC Risk Modeling ────────────────────────────────────────────────────────
@@ -1169,6 +1298,11 @@ export const appRouter = router({
     policies: protectedProcedure.query(async ({ ctx }) => {
       return await db.getAgriculturalPolicies(ctx.user.id);
     }),
+    apply: protectedProcedure
+      .input(z.object({ productId: z.string(), farmDetails: z.record(z.unknown()).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.applyAgriculturalInsurance(ctx.user.id, input.productId, input.farmDetails ?? {});
+      }),
   }),
 
   // ── Performance Monitoring ────────────────────────────────────────────────────
@@ -1190,6 +1324,11 @@ export const appRouter = router({
       .input(z.object({ testType: z.string() }))
       .mutation(async ({ ctx, input }) => {
         return await db.runDRTest(input.testType);
+      }),
+    test: protectedProcedure
+      .input(z.object({ testType: z.string(), targetSystem: z.string().default('all') }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.runDRTestExecution(input.testType, input.targetSystem);
       }),
   }),
 
@@ -1219,6 +1358,16 @@ export const appRouter = router({
       .input(z.object({ name: z.string(), relationship: z.string(), dateOfBirth: z.string() }))
       .mutation(async ({ ctx, input }) => {
         return await db.addFamilyMember(ctx.user.id, input);
+      }),
+    add: protectedProcedure
+      .input(z.object({ name: z.string(), relationship: z.string(), dateOfBirth: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.addFamilyCoverageMember(ctx.user.id, input.name, input.relationship, input.dateOfBirth);
+      }),
+    remove: protectedProcedure
+      .input(z.object({ memberId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.removeFamilyCoverageMember(ctx.user.id, input.memberId);
       }),
     plans: protectedProcedure.query(async () => {
       return await db.getFamilyCoveragePlans();
@@ -1265,6 +1414,11 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return await db.getGeospatialClaims(input.bounds);
       }),
+    analyze: protectedProcedure
+      .input(z.object({ latitude: z.number(), longitude: z.number(), analysisType: z.string().default('comprehensive') }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.analyzeGeospatialRisk(input.latitude, input.longitude, input.analysisType);
+      }),
   }),
 
   // ── WhatsApp Integration ──────────────────────────────────────────────────────
@@ -1282,6 +1436,14 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return await db.getWhatsAppMessages(ctx.user.id, input.limit);
       }),
+    send: protectedProcedure
+      .input(z.object({ phone: z.string(), message: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.sendWhatsAppMessage(ctx.user.id, input.phone, input.message);
+      }),
+    history: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getWhatsAppHistory(ctx.user.id);
+    }),
   }),
 
   // ── Voice Assistant ───────────────────────────────────────────────────────────
