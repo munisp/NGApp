@@ -587,8 +587,8 @@ export async function getUserPFAQuotes(userId: number) { return []; }
 
 // ─── Reinsurance ──────────────────────────────────────────────────────────────
 export async function getReinsuranceTreaties(userId: number) { return []; }
-export async function createReinsuranceTreaty(userId: number, input: any) {
-  return { id: Date.now(), userId, ...input, treatyNumber: `TRT-${Date.now()}`, status: 'Active', createdAt: new Date() };
+export async function createReinsuranceTreaty(userId: number, data: { name: string; type: string; cessionRate: number; limit: number }) {
+  return { id: `RE-${Date.now().toString(36)}`, userId, ...data, treatyNumber: `TRT-${Date.now()}`, status: 'pending_approval', counterparty: 'African Re', effectiveDate: new Date(Date.now() + 2592000000), createdAt: new Date() };
 }
 export async function createReinsuranceCession(input: any) {
   return { id: Date.now(), ...input, cessionAmount: Math.round(input.sumAssured * 0.4), retentionAmount: Math.round(input.sumAssured * 0.6), createdAt: new Date() };
@@ -1892,11 +1892,6 @@ export async function deletePremiumRate(id: string) {
 // ── Referrals Delete ────────────────────────────────────────────────────────
 export async function deleteReferral(userId: number, referralId: string) {
   return { id: referralId, deleted: true, deletedAt: new Date() };
-}
-
-// ── Reinsurance Create ──────────────────────────────────────────────────────
-export async function createReinsuranceTreaty(userId: number, data: { name: string; type: string; cessionRate: number; limit: number }) {
-  return { id: `RE-${Date.now().toString(36)}`, userId, ...data, status: 'pending_approval', counterparty: 'African Re', effectiveDate: new Date(Date.now() + 2592000000), createdAt: new Date() };
 }
 
 // ── Reviews Delete ──────────────────────────────────────────────────────────
