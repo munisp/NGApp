@@ -1377,6 +1377,48 @@ export async function getTechGamificationLevels() {
     { level: 'Gold', pointsRange: '501+', discount: '20%', membersCount: 3200 },
   ];
 }
+// ── Embedded Insurance Partner CRUD ──────────────────────────────────────────
+export async function activateEmbeddedPartner(userId: number, partnerId: string) {
+  return { id: partnerId, userId, status: 'active', activatedAt: new Date() };
+}
+export async function createEmbeddedInsurancePartner(userId: number, input: { name: string; industry: string; contactEmail: string; productsOffered: string }) {
+  return {
+    id: `ep-${Date.now().toString(36)}`,
+    name: input.name,
+    industry: input.industry,
+    status: 'pending' as const,
+    integrationDate: new Date().toISOString().split('T')[0],
+    contactEmail: input.contactEmail,
+    productsOffered: input.productsOffered.split(',').map(p => p.trim()),
+    createdBy: userId,
+    createdAt: new Date(),
+  };
+}
+
+// ── Voice Assistant — synthesize endpoint ────────────────────────────────────
+export async function synthesizeVoice(userId: number, text: string, language: string) {
+  return {
+    audioUrl: `/api/voice/synthesized/${Date.now()}.mp3`,
+    text,
+    language,
+    duration: Math.ceil(text.length / 15),
+    userId,
+    createdAt: new Date(),
+  };
+}
+
+// ── Telematics — submit data endpoint ────────────────────────────────────────
+export async function submitTelematicsData(userId: number, input: { vehicleId: string; driverId: string; speed: number; fuelLevel: number; engineStatus: string; latitude: number; longitude: number }) {
+  return {
+    id: `tel-${Date.now().toString(36)}`,
+    ...input,
+    location: { lat: input.latitude, lng: input.longitude },
+    timestamp: new Date().toISOString(),
+    userId,
+    createdAt: new Date(),
+  };
+}
+
 export async function calculateDynamicPrice(userId: number, input: { basePremium: number; drivingScore: number; claimsHistory: number; mileage: number }) {
   const drivingFactor = input.drivingScore > 80 ? -0.2 : input.drivingScore < 40 ? 0.4 : 0;
   const claimsFactor = input.claimsHistory === 0 ? -0.15 : input.claimsHistory > 2 ? 0.3 : 0;

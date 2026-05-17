@@ -45,26 +45,19 @@ const VoiceAssistant: React.FC = () => {
   };
 
   const handleTranscribe = async () => {
-    if (DEMO_MODE) {
-      setTranscribedText('This is a demo transcription of your audio. "The quick brown fox jumps over the lazy dog."');
-      toast.success('Demo transcription successful!');
-      return;
-    }
     if (!audioFile) {
       toast.error('Please select an audio file to transcribe.');
       return;
     }
-    // In a real scenario, you'd convert File to a format suitable for the API, e.g., base64 or FormData
-    // For this example, we'll simulate sending the file.
-    transcribeMutation.mutate({ audio: 'base64encodedAudioString' }); // Placeholder
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1] || '';
+      transcribeMutation.mutate({ audio: base64 });
+    };
+    reader.readAsDataURL(audioFile);
   };
 
   const handleSynthesize = async () => {
-    if (DEMO_MODE) {
-      setSynthesizedAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); // Demo audio
-      toast.success('Demo synthesis successful!');
-      return;
-    }
     if (!textToSynthesize.trim()) {
       toast.error('Please enter text to synthesize.');
       return;
@@ -112,7 +105,7 @@ const VoiceAssistant: React.FC = () => {
             </div>
             <Button
               onClick={handleTranscribe}
-              disabled={transcribeMutation.isLoading || (!audioFile && !DEMO_MODE)}
+              disabled={transcribeMutation.isLoading || !audioFile}
             >
               {transcribeMutation.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Transcribe Audio
@@ -146,7 +139,7 @@ const VoiceAssistant: React.FC = () => {
             </div>
             <Button
               onClick={handleSynthesize}
-              disabled={synthesizeMutation.isLoading || (!textToSynthesize.trim() && !DEMO_MODE)}
+              disabled={synthesizeMutation.isLoading || !textToSynthesize.trim()}
             >
               {synthesizeMutation.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Synthesize Speech

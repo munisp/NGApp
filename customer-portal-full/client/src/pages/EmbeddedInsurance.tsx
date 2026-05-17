@@ -85,13 +85,27 @@ const EmbeddedInsurance: React.FC = () => {
   const activateMutation = trpc.embedded.activate.useMutation({
     onSuccess: () => {
       toast.success('Partner activated successfully!');
-      trpc.useUtils().embedded.partners.invalidate();
       refetch();
     },
     onError: (err) => {
       toast.error(`Failed to activate partner: ${err.message}`);
     },
   });
+
+  const createMutation = trpc.embedded.create.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Partner "${data.name}" created successfully!`);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(`Failed to create partner: ${err.message}`);
+    },
+  });
+
+  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newPartnerIndustry, setNewPartnerIndustry] = useState('');
+  const [newPartnerEmail, setNewPartnerEmail] = useState('');
+  const [newPartnerProducts, setNewPartnerProducts] = useState('');
 
   useEffect(() => {
     if (isError && !DEMO_MODE) {
@@ -183,23 +197,26 @@ const EmbeddedInsurance: React.FC = () => {
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <label htmlFor="name" className="text-right">Name</label>
-                    <Input id="name" defaultValue="New Partner Co." className="col-span-3" />
+                    <Input id="name" value={newPartnerName} onChange={(e) => setNewPartnerName(e.target.value)} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <label htmlFor="industry" className="text-right">Industry</label>
-                    <Input id="industry" defaultValue="Fintech" className="col-span-3" />
+                    <Input id="industry" value={newPartnerIndustry} onChange={(e) => setNewPartnerIndustry(e.target.value)} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <label htmlFor="email" className="text-right">Contact Email</label>
-                    <Input id="email" defaultValue="contact@newpartner.com" className="col-span-3" />
+                    <Input id="email" value={newPartnerEmail} onChange={(e) => setNewPartnerEmail(e.target.value)} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <label htmlFor="products" className="text-right">Products</label>
-                    <Input id="products" defaultValue="Health, Life" className="col-span-3" />
+                    <Input id="products" value={newPartnerProducts} onChange={(e) => setNewPartnerProducts(e.target.value)} className="col-span-3" />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" onClick={() => toast.info('Add Partner functionality not yet implemented.')}>Save Partner</Button>
+                  <Button type="submit" disabled={createMutation.isLoading || !newPartnerName || !newPartnerIndustry || !newPartnerEmail} onClick={() => {
+                    createMutation.mutate({ name: newPartnerName, industry: newPartnerIndustry, contactEmail: newPartnerEmail, productsOffered: newPartnerProducts });
+                    setNewPartnerName(''); setNewPartnerIndustry(''); setNewPartnerEmail(''); setNewPartnerProducts('');
+                  }}>{createMutation.isLoading ? 'Saving...' : 'Save Partner'}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

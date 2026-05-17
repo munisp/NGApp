@@ -74,12 +74,14 @@ const Telematics: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [newTelematicsData, setNewTelematicsData] = useState<Partial<TelematicsData>>({
+  const [newTelematicsData, setNewTelematicsData] = useState<Partial<TelematicsData> & { latitude?: number; longitude?: number }>({
     vehicleId: '',
     driverId: '',
     speed: 0,
     fuelLevel: 0,
     engineStatus: 'Running',
+    latitude: 6.5244,
+    longitude: 3.3792,
   });
 
   const utils = trpc.useUtils();
@@ -132,11 +134,14 @@ const Telematics: React.FC = () => {
   const handleSubmitNewData = () => {
     if (newTelematicsData.vehicleId && newTelematicsData.driverId && newTelematicsData.speed !== undefined && newTelematicsData.fuelLevel !== undefined && newTelematicsData.engineStatus) {
       submitMutation.mutate({
-        id: `temp-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        location: { lat: 0, lng: 0 }, // Placeholder, ideally from a map input
-        ...newTelematicsData
-      } as TelematicsData);
+        vehicleId: newTelematicsData.vehicleId,
+        driverId: newTelematicsData.driverId,
+        speed: newTelematicsData.speed,
+        fuelLevel: newTelematicsData.fuelLevel,
+        engineStatus: newTelematicsData.engineStatus,
+        latitude: newTelematicsData.latitude ?? 6.5244,
+        longitude: newTelematicsData.longitude ?? 3.3792,
+      });
     } else {
       toast.error("Please fill all required fields.");
     }
@@ -253,6 +258,30 @@ const Telematics: React.FC = () => {
                       <SelectItem value="Off">Off</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="latitude" className="text-right">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    name="latitude"
+                    type="number"
+                    step="0.0001"
+                    value={newTelematicsData.latitude}
+                    onChange={(e) => setNewTelematicsData(prev => ({ ...prev, latitude: parseFloat(e.target.value) }))}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="longitude" className="text-right">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    name="longitude"
+                    type="number"
+                    step="0.0001"
+                    value={newTelematicsData.longitude}
+                    onChange={(e) => setNewTelematicsData(prev => ({ ...prev, longitude: parseFloat(e.target.value) }))}
+                    className="col-span-3"
+                  />
                 </div>
               </div>
               <Button onClick={handleSubmitNewData} disabled={submitMutation.isLoading}>

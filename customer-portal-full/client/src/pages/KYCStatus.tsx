@@ -100,21 +100,7 @@ const KYCStatus: React.FC = () => {
       return;
     }
 
-    // In a real application, you would convert the File to a format suitable for your API,
-    // e.g., FormData or base64 string. For this example, we'll simulate the submission.
-    console.log('Submitting KYC:', { documentType, fileName: documentFile.name });
-
-    if (DEMO_MODE) {
-      toast.success('KYC document submitted successfully in DEMO MODE!');
-      // Simulate invalidation
-      // For demo, we might update the local demoKycStatus or just show a success message
-      setDocumentType('');
-      setDocumentFile(null);
-    } else {
-      // Assuming submitKyc expects an object with documentType and file content
-      // This part needs to be adapted based on the actual trpc.kyc.submit input type
-      submitKyc({ documentType, file: documentFile.name }); // Placeholder for actual file upload logic
-    }
+    submitKyc({ verificationType: 'document', documentType, documentNumber: documentFile.name });
   };
 
   if (isLoading && !DEMO_MODE) {

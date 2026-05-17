@@ -907,6 +907,11 @@ export const appRouter = router({
     score: protectedProcedure.query(async ({ ctx }) => {
       return await db.getTelematicsScore(ctx.user.id);
     }),
+    submit: protectedProcedure
+      .input(z.object({ vehicleId: z.string(), driverId: z.string(), speed: z.number(), fuelLevel: z.number(), engineStatus: z.string(), latitude: z.number(), longitude: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.submitTelematicsData(ctx.user.id, input);
+      }),
   }),
 
   // ── Emergency SOS ─────────────────────────────────────────────────────────────
@@ -1037,6 +1042,16 @@ export const appRouter = router({
       .input(z.object({ offerId: z.string() }))
       .mutation(async ({ ctx, input }) => {
         return await db.acceptEmbeddedOffer(ctx.user.id, input.offerId);
+      }),
+    activate: protectedProcedure
+      .input(z.object({ partnerId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.activateEmbeddedPartner(ctx.user.id, input.partnerId);
+      }),
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), industry: z.string(), contactEmail: z.string(), productsOffered: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createEmbeddedInsurancePartner(ctx.user.id, input);
       }),
   }),
 
@@ -1272,9 +1287,14 @@ export const appRouter = router({
   // ── Voice Assistant ───────────────────────────────────────────────────────────
   voice: router({
     transcribe: protectedProcedure
-      .input(z.object({ audioUrl: z.string(), language: z.string().default('en') }))
+      .input(z.object({ audio: z.string(), language: z.string().default('en') }))
       .mutation(async ({ ctx, input }) => {
-        return await db.transcribeVoice(ctx.user.id, input.audioUrl, input.language);
+        return await db.transcribeVoice(ctx.user.id, input.audio, input.language);
+      }),
+    synthesize: protectedProcedure
+      .input(z.object({ text: z.string(), language: z.string().default('en') }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.synthesizeVoice(ctx.user.id, input.text, input.language);
       }),
     sessions: protectedProcedure.query(async ({ ctx }) => {
       return await db.getVoiceSessions(ctx.user.id);
