@@ -7689,11 +7689,39 @@ async function startServer() {
     res.json({ items: calendar, total: calendar.length });
   });
 
-  // E5: Customer onboarding endpoints
+  // E5: Customer onboarding endpoints (KYC-gated workflow)
   app.get("/api/platform/onboarding/applications", (_req, res) => {
     const { getOnboardingApplications } = require("./lib/customerOnboarding");
     const apps = getOnboardingApplications();
     res.json({ items: apps, total: apps.length });
+  });
+  app.get("/api/platform/onboarding/applications/:id", (req, res) => {
+    const { getOnboardingById } = require("./lib/customerOnboarding");
+    const app = getOnboardingById(req.params.id);
+    if (!app) { res.status(404).json({ error: "Application not found" }); return; }
+    res.json(app);
+  });
+  app.post("/api/platform/onboarding/applications", (req, res) => {
+    const { createOnboardingApplication } = require("./lib/customerOnboarding");
+    const result = createOnboardingApplication(req.body);
+    res.status(201).json(result);
+  });
+  app.post("/api/platform/onboarding/applications/:id/advance", (req, res) => {
+    const { advanceOnboarding } = require("./lib/customerOnboarding");
+    const { step, passed, details } = req.body;
+    if (!step) { res.status(400).json({ error: "step is required (bvn_verification, nin_verification, liveness_check, document_verification, sanctions_screening, pep_check, risk_scoring)" }); return; }
+    const result = advanceOnboarding(req.params.id, step, { passed: passed !== false, details });
+    if (result.error) { res.status(404).json(result); return; }
+    if (result.kycBlocked) { res.status(403).json(result); return; }
+    res.json(result);
+  });
+  app.get("/api/platform/onboarding/kyc-requirements/:tier", (req, res) => {
+    const { getKYCRequirements } = require("./lib/customerOnboarding");
+    res.json(getKYCRequirements(req.params.tier));
+  });
+  app.get("/api/platform/onboarding/stats", (_req, res) => {
+    const { getOnboardingStats } = require("./lib/customerOnboarding");
+    res.json(getOnboardingStats());
   });
   app.post("/api/platform/onboarding/validate-bvn", (req, res) => {
     const { validateBVN } = require("./lib/customerOnboarding");

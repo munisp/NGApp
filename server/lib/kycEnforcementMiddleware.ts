@@ -179,6 +179,39 @@ const GATE_RULES: GateRule[] = [
     bypassConditions: ["sum_assured_below_1m"],
     extractCustomerId: fromBody,
   },
+  // Customer Onboarding — BVN validation requires basic, full onboarding requires standard
+  {
+    pathPattern: /^\/api\/platform\/onboarding\/(validate-bvn|validate-nin)/,
+    serviceId: "customer-onboarding", kycRequired: false, kybRequired: false,
+    minimumLevel: "basic", enforcedMethods: ["POST"],
+    bypassConditions: ["onboarding_bvn_nin_self_service"],
+    extractCustomerId: fromBody,
+  },
+  // Customer Creation — Tier 2+ require standard KYC before platform record creation
+  {
+    pathPattern: /^\/api\/platform\/customers$/,
+    serviceId: "customer-creation", kycRequired: true, kybRequired: false,
+    minimumLevel: "basic", enforcedMethods: ["POST"],
+    bypassConditions: ["tier1_basic_only"],
+    extractCustomerId: fromBody,
+  },
+  // Custody Service — full EDD + KYB
+  {
+    pathPattern: /^\/api\/platform\/custody\/(accounts|assets\/transfer)/,
+    serviceId: "custody-service-go", kycRequired: true, kybRequired: true,
+    minimumLevel: "full_edd", enforcedMethods: ["POST"],
+    bypassConditions: [],
+    extractCustomerId: fromBody,
+    extractCompanyId: fromBodyCompany,
+  },
+  // Virtual Accounts — standard
+  {
+    pathPattern: /^\/api\/platform\/virtual-accounts\/(create|topup)/,
+    serviceId: "virtual-accounts-go", kycRequired: true, kybRequired: false,
+    minimumLevel: "standard", enforcedMethods: ["POST"],
+    bypassConditions: [],
+    extractCustomerId: fromBody,
+  },
 ];
 
 // ── KYC/KYB Verification Store ──────────────────────────────────────────────
