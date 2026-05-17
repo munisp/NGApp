@@ -2,16 +2,20 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"native-mobile-ios/internal/models"
 	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var errNoDB = fmt.Errorf("database not available")
+
 type MobileRepository struct{ db *gorm.DB }
 func NewMobileRepository(db *gorm.DB) *MobileRepository { return &MobileRepository{db: db} }
 
 func (r *MobileRepository) AutoMigrate() error {
+	if r.db == nil { return nil }
 	return r.db.AutoMigrate(&models.MobileUser{}, &models.MobilePolicy{}, &models.MobileClaim{}, &models.MobilePayment{}, &models.PushNotification{})
 }
 

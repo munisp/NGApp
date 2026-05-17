@@ -2,16 +2,20 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"enhanced-kyc-kyb/internal/models"
 	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var errNoDB = fmt.Errorf("database not available")
+
 type KYCRepository struct{ db *gorm.DB }
 func NewKYCRepository(db *gorm.DB) *KYCRepository { return &KYCRepository{db: db} }
 
 func (r *KYCRepository) AutoMigrate() error {
+	if r.db == nil { return nil }
 	return r.db.AutoMigrate(&models.KYCApplication{}, &models.KYBApplication{}, &models.VerificationCheck{}, &models.WatchlistEntry{}, &models.DocumentVerification{})
 }
 

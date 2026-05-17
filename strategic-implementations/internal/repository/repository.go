@@ -2,16 +2,20 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"strategic-implementations/internal/models"
 	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var errNoDB = fmt.Errorf("database not available")
+
 type StrategyRepository struct{ db *gorm.DB }
 func NewStrategyRepository(db *gorm.DB) *StrategyRepository { return &StrategyRepository{db: db} }
 
 func (r *StrategyRepository) AutoMigrate() error {
+	if r.db == nil { return nil }
 	return r.db.AutoMigrate(&models.StrategicInitiative{}, &models.Milestone{}, &models.KPI{}, &models.RiskRegister{}, &models.StrategicReport{})
 }
 

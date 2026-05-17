@@ -2,16 +2,20 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"ndpr-compliance/internal/models"
 	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var errNoDB = fmt.Errorf("database not available")
+
 type NDPRRepository struct{ db *gorm.DB }
 func NewNDPRRepository(db *gorm.DB) *NDPRRepository { return &NDPRRepository{db: db} }
 
 func (r *NDPRRepository) AutoMigrate() error {
+	if r.db == nil { return nil }
 	return r.db.AutoMigrate(&models.NDPRDataController{}, &models.NDPRConsentRecord{}, &models.NDPRDataRequest{}, &models.NDPRAuditLog{}, &models.NDPRBreachNotification{}, &models.NDPRComplianceAssessment{})
 }
 

@@ -2,16 +2,20 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"agent-mobile-app/internal/models"
 	"time"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var errNoDB = fmt.Errorf("database not available")
+
 type AgentMobileRepository struct{ db *gorm.DB }
 func NewAgentMobileRepository(db *gorm.DB) *AgentMobileRepository { return &AgentMobileRepository{db: db} }
 
 func (r *AgentMobileRepository) AutoMigrate() error {
+	if r.db == nil { return nil }
 	return r.db.AutoMigrate(&models.AgentProfile{}, &models.AgentLead{}, &models.AgentQuote{}, &models.AgentActivity{})
 }
 
