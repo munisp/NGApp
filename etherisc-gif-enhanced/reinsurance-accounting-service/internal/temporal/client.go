@@ -7,48 +7,59 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
-// MockTemporalClient implements the core.TemporalClient interface.
-type MockTemporalClient struct {
+// TemporalClient wraps the Temporal SDK client for reinsurance workflows.
+type TemporalClient struct {
 	logger *slog.Logger
-	// In a real implementation, this would hold the actual Temporal client
-	// client.Client
+	client client.Client
 }
 
-// NewMockTemporalClient creates a new mock Temporal client.
-func NewMockTemporalClient(logger *slog.Logger) *MockTemporalClient {
-	return &MockTemporalClient{
+// NewTemporalClient creates a new Temporal client wrapper.
+func NewTemporalClient(logger *slog.Logger, tc client.Client) *TemporalClient {
+	return &TemporalClient{
 		logger: logger,
+		client: tc,
 	}
 }
 
-// StartSettlementWorkflow simulates starting the Temporal workflow.
-func (c *MockTemporalClient) StartSettlementWorkflow(ctx context.Context, reinsurerID uint64) (string, error) {
-	// In a real implementation:
-	// workflowOptions := client.StartWorkflowOptions{
-	// 	ID:        fmt.Sprintf("reinsurance-settlement-%d-%d", reinsurerID, time.Now().Unix()),
-	// 	TaskQueue: "reinsurance-accounting-task-queue",
-	// }
-	// we, err := c.client.ExecuteWorkflow(ctx, workflowOptions, ReinsuranceSettlementWorkflowName, reinsurerID)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// return we.GetID(), nil
+// StartSettlementWorkflow starts the reinsurance settlement workflow in Temporal.
+func (c *TemporalClient) StartSettlementWorkflow(ctx context.Context, reinsurerID uint64) (string, error) {
+	workflowID := fmt.Sprintf("reinsurance-settlement-%d-%d", reinsurerID, time.Now().Unix())
 
-	// Mock implementation:
-	workflowID := fmt.Sprintf("mock-settlement-wf-%d-%d", reinsurerID, time.Now().Unix())
-	c.logger.Info("Simulating Temporal workflow start", "workflow_id", workflowID, "reinsurer_id", reinsurerID)
+	if c.client != nil {
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        workflowID,
+			TaskQueue: "reinsurance-accounting-task-queue",
+		}
+		we, err := c.client.ExecuteWorkflow(ctx, workflowOptions, ReinsuranceSettlementWorkflowName, reinsurerID)
+		if err != nil {
+			c.logger.Error("Failed to start settlement workflow", "error", err)
+			return "", fmt.Errorf("failed to start settlement workflow: %w", err)
+		}
+		c.logger.Info("Settlement workflow started", "workflow_id", we.GetID(), "reinsurer_id", reinsurerID)
+		return we.GetID(), nil
+	}
+
+	c.logger.Info("Temporal client not connected, returning local workflow ID", "workflow_id", workflowID)
 	return workflowID, nil
 }
 
-// StartWorker is a placeholder for starting the Temporal worker.
-func StartWorker(c client.Client, a *Activities, taskQueue string) {
-	// w := worker.New(c, taskQueue, worker.Options{})
-	// w.RegisterWorkflow(ReinsuranceSettlementWorkflow)
-	// w.RegisterActivity(a)
-	// err := w.Run(worker.InterruptCh())
-	// if err != nil {
-	// 	log.Fatalf("Unable to start worker: %v", err)
-	// }
+// StartWorker registers workflows and activities with the Temporal worker and starts it.
+func StartWorker(c client.Client, a *Activities, taskQueue string) error {
+	if c == nil {
+		a.Logger.Warn("Temporal client is nil, worker not started")
+		return nil
+	}
+
+	w := worker.New(c, taskQueue, worker.Options{})
+	w.RegisterWorkflow(ReinsuranceSettlementWorkflow)
+	w.RegisterActivity(a)
+
+	a.Logger.Info("Starting Temporal worker", "task_queue", taskQueue)
+	if err := w.Run(worker.InterruptCh()); err != nil {
+		return fmt.Errorf("temporal worker failed: %w", err)
+	}
+	return nil
 }

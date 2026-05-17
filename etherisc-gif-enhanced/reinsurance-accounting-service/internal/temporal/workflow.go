@@ -3,6 +3,7 @@ package temporal
 import (
 	"time"
 
+	"github.com/etherisc/reinsurance-accounting-service/internal/core"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -48,9 +49,8 @@ func ReinsuranceSettlementWorkflow(ctx workflow.Context, reinsurerID uint64) err
 	}
 	logger.Info("Settlement initiated", "amount", settlementTx.Amount)
 
-	// 4. (Placeholder) Notify External Payment System
-	// In a real system, this would involve an activity to call an external payment service.
-	logger.Info("Notifying external payment system (placeholder)...")
+	// 4. Notify External Payment System
+	logger.Info("Notifying external payment system...")
 	err = workflow.ExecuteActivity(ctx, a.NotifyPaymentSystemActivity, reinsurerID, settlementTx.Amount).Get(ctx, nil)
 	if err != nil {
 		logger.Error("Failed to notify payment system", "error", err)

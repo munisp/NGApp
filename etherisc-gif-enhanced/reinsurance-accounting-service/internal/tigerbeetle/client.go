@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"time"
 
 	tb "github.com/tigerbeetle/tigerbeetle-go"
 	"github.com/tigerbeetle/tigerbeetle-go/pkg/types"
@@ -13,13 +12,14 @@ import (
 
 // Client wraps the TigerBeetle client and provides accounting operations.
 type Client struct {
-	tbClient types.Client
+	tbClient tb.Client
 	logger   *slog.Logger
 }
 
 // NewClient creates a new TigerBeetle client.
 func NewClient(addresses []string, logger *slog.Logger) (*Client, error) {
-	tbClient, err := tb.NewClient(types.Addresses(addresses))
+	clusterID := types.ToUint128(0)
+	tbClient, err := tb.NewClient(clusterID, addresses)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create TigerBeetle client: %w", err)
 	}
@@ -35,13 +35,17 @@ func (c *Client) Close() {
 }
 
 // CreateAccount creates a new account in TigerBeetle.
-func (c *Client) CreateAccount(ctx context.Context, id uint64, ledger uint32, code uint16, flags types.AccountFlags) error {
+func (c *Client) CreateAccount(ctx context.Context, id uint64, ledger uint32, code uint16, flagLinked bool) error {
+	var flags uint16
+	if flagLinked {
+		flags = types.AccountFlags{Linked: true}.ToUint16()
+	}
+
 	account := types.Account{
-		ID:     types.Uint128(id),
+		ID:     types.ToUint128(id),
 		Ledger: ledger,
 		Code:   code,
 		Flags:  flags,
-		Timestamp: types.ToUint128(uint64(time.Now().UnixNano())),
 	}
 
 	results, err := c.tbClient.CreateAccounts([]types.Account{account})
@@ -100,23 +104,21 @@ func (c *Client) CreateReinsurerAccounts(ctx context.Context, reinsurerID uint64
 	)
 
 	accounts := []struct {
-		id    uint64
-		code  uint16
-		flags types.AccountFlags
+		id   uint64
+		code uint16
 	}{
-		{cededID, ReinsurerCededPremiumCode, types.AccountFlags{DebitsMustNotExceedCredits: false}},
-		{recoveryID, ReinsurerClaimRecoveryCode, types.AccountFlags{DebitsMustNotExceedCredits: false}},
-		{settlementID, ReinsurerSettlementCode, types.AccountFlags{DebitsMustNotExceedCredits: false}},
+		{cededID, ReinsurerCededPremiumCode},
+		{recoveryID, ReinsurerClaimRecoveryCode},
+		{settlementID, ReinsurerSettlementCode},
 	}
 
 	tbAccounts := make([]types.Account, len(accounts))
 	for i, acc := range accounts {
 		tbAccounts[i] = types.Account{
-			ID:     types.Uint128(acc.id),
+			ID:     types.ToUint128(acc.id),
 			Ledger: reinsuranceLedger,
 			Code:   acc.code,
-			Flags:  acc.flags,
-			Timestamp: types.ToUint128(uint64(time.Now().UnixNano())),
+			Flags:  0,
 		}
 	}
 
@@ -136,14 +138,12 @@ func (c *Client) CreateReinsurerAccounts(ctx context.Context, reinsurerID uint64
 // PostTransfer posts a single transfer to TigerBeetle.
 func (c *Client) PostTransfer(ctx context.Context, id uint64, debitAccountID, creditAccountID uint64, amount uint64, currency uint16, ledger uint32, code uint16) (uint64, error) {
 	transfer := types.Transfer{
-		ID:              types.Uint128(id),
-		DebitAccountID:  types.Uint128(debitAccountID),
-		CreditAccountID: types.Uint128(creditAccountID),
+		ID:              types.ToUint128(id),
+		DebitAccountID:  types.ToUint128(debitAccountID),
+		CreditAccountID: types.ToUint128(creditAccountID),
 		Amount:          types.ToUint128(amount),
-		Currency:        currency,
 		Ledger:          ledger,
 		Code:            code,
-		Timestamp: types.ToUint128(uint64(time.Now().UnixNano())),
 	}
 
 	results, err := c.tbClient.CreateTransfers([]types.Transfer{transfer})
@@ -161,7 +161,7 @@ func (c *Client) PostTransfer(ctx context.Context, id uint64, debitAccountID, cr
 
 // GetAccountBalance retrieves the current balance of an account.
 func (c *Client) GetAccountBalance(ctx context.Context, accountID uint64) (uint64, error) {
-	accounts, err := c.tbClient.LookupAccounts([]types.Uint128{types.Uint128(accountID)})
+	accounts, err := c.tbClient.LookupAccounts([]types.Uint128{types.ToUint128(accountID)})
 	if err != nil {
 		return 0, fmt.Errorf("failed to lookup account %d: %w", accountID, err)
 	}
@@ -172,8 +172,8 @@ func (c *Client) GetAccountBalance(ctx context.Context, accountID uint64) (uint6
 
 	// The balance is the difference between credits and debits.
 	// TigerBeetle stores `credits_posted` and `debits_posted` as 128-bit integers.
-	credits := types.ToBigInt(accounts[0].CreditsPosted)
-	debits := types.ToBigInt(accounts[0].DebitsPosted)
+	credits := uint128ToBigInt(accounts[0].CreditsPosted)
+	debits := uint128ToBigInt(accounts[0].DebitsPosted)
 
 	balance := new(big.Int).Sub(credits, debits)
 	
@@ -187,4 +187,14 @@ func (c *Client) GetAccountBalance(ctx context.Context, accountID uint64) (uint6
 	}
 
 	return balance.Uint64(), nil
+}
+
+// uint128ToBigInt converts a TigerBeetle Uint128 ([16]byte little-endian) to a *big.Int.
+func uint128ToBigInt(v types.Uint128) *big.Int {
+	// v is [16]byte in little-endian order; reverse to big-endian for big.Int
+	var be [16]byte
+	for i := 0; i < 16; i++ {
+		be[15-i] = v[i]
+	}
+	return new(big.Int).SetBytes(be[:])
 }

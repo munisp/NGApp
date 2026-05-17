@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -43,7 +44,7 @@ func EnhancedUnderwritingSaga(ctx workflow.Context, input EnhancedUnderwritingIn
 	// Configure activity options
 	activityOptions := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Minute,
-		RetryPolicy: &workflow.RetryPolicy{
+		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
 			MaximumInterval:    time.Minute,

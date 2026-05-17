@@ -3,7 +3,6 @@ package frauddetection
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 
 	"go.temporal.io/sdk/activity"

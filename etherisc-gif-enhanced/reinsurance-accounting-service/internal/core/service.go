@@ -1,18 +1,16 @@
 package core
 
-// CurrencyNGN is the ISO 4217 numeric code for Nigerian Naira (NGN = 566).
-// TigerBeetle uses uint16 currency codes aligned with ISO 4217.
-const CurrencyNGN uint16 = 566
-
 import (
 	"context"
 	"fmt"
 	"log/slog"
 	"math"
 	"time"
-
-	"github.com/etherisc/reinsurance-accounting-service/internal/tigerbeetle"
 )
+
+// CurrencyNGN is the ISO 4217 numeric code for Nigerian Naira (NGN = 566).
+// TigerBeetle uses uint16 currency codes aligned with ISO 4217.
+const CurrencyNGN uint16 = 566
 
 // Repository defines the interface for data persistence (non-TigerBeetle data).
 type Repository interface {

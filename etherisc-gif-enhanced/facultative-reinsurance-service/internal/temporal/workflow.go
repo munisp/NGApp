@@ -7,6 +7,7 @@ import (
 	"github.com/etherisc/facultative-reinsurance-service/internal/model"
 	"github.com/etherisc/facultative-reinsurance-service/internal/service"
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -61,8 +62,8 @@ func FacultativeReinsuranceWorkflow(ctx workflow.Context, policyID string) (*mod
 	logger.Info("Quote requested", "quoteID", quote.QuoteID)
 
 	// 3. Wait for Quote Acceptance (Signal)
-	quoteAcceptedSignal := workflow.NewSignalChannel(ctx, "quoteAcceptedSignal")
-	quoteRejectedSignal := workflow.NewSignalChannel(ctx, "quoteRejectedSignal")
+	quoteAcceptedSignal := workflow.GetSignalChannel(ctx, "quoteAcceptedSignal")
+	quoteRejectedSignal := workflow.GetSignalChannel(ctx, "quoteRejectedSignal")
 
 	selector := workflow.NewSelector(ctx)
 	var acceptedQuote *model.ReinsuranceQuote
@@ -76,10 +77,9 @@ func FacultativeReinsuranceWorkflow(ctx workflow.Context, policyID string) (*mod
 	})
 
 	// Wait for signal or timeout
-	timeoutCtx, cancelTimeout := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+	timeoutCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: QuoteAcceptanceTimeout,
 	})
-	defer cancelTimeout()
 
 	selector.Select(timeoutCtx)
 
@@ -96,12 +96,12 @@ func FacultativeReinsuranceWorkflow(ctx workflow.Context, policyID string) (*mod
 		return cededRe, nil
 	} else if rejectedQuote != nil {
 		logger.Info("Quote rejected via signal", "quoteID", rejectedQuote.QuoteID)
-		return nil, workflow.NewApplicationError("quote_rejected", "Quote was explicitly rejected by the user/system")
+		return nil, temporal.NewApplicationError("Quote was explicitly rejected by the user/system", "quote_rejected", nil)
 	} else {
 		logger.Info("Quote acceptance timed out", "quoteID", quote.QuoteID)
 		// Reject the quote in the system
 		_ = workflow.ExecuteActivity(ctx, a.RejectQuoteActivity, quote.QuoteID).Get(ctx, nil)
-		return nil, workflow.NewApplicationError("quote_timeout", "Quote acceptance timed out")
+		return nil, temporal.NewApplicationError("Quote acceptance timed out", "quote_timeout", nil)
 	}
 }
 

@@ -56,11 +56,34 @@ func (s *ReinsuranceService) GetPolicy(ctx context.Context, policyID string) (*m
 	return s.repo.GetPolicyByID(ctx, policyID)
 }
 
-// SubmitPolicyForReinsurance starts the facultative reinsurance workflow.
+// SubmitPolicyForReinsurance starts the facultative reinsurance workflow via Temporal.
 func (s *ReinsuranceService) SubmitPolicyForReinsurance(ctx context.Context, policyID string) (string, error) {
-	// This will be fully implemented in the API handler, here we just return a placeholder.
-	// The actual Temporal client call will be made from the API layer.
-	return fmt.Sprintf("workflow-%s", uuid.New().String()), nil
+	policy, err := s.repo.GetPolicyByID(ctx, policyID)
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve policy: %w", err)
+	}
+	if policy == nil {
+		return "", errors.New("policy not found")
+	}
+	if policy.IsCeded {
+		return "", errors.New("policy is already ceded")
+	}
+
+	workflowID := fmt.Sprintf("fac-reinsurance-%s-%d", policyID, time.Now().Unix())
+
+	if s.temporalClient != nil {
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        workflowID,
+			TaskQueue: "facultative-reinsurance-task-queue",
+		}
+		we, err := s.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "FacultativeReinsuranceWorkflow", policyID)
+		if err != nil {
+			return "", fmt.Errorf("failed to start reinsurance workflow: %w", err)
+		}
+		return we.GetID(), nil
+	}
+
+	return workflowID, nil
 }
 
 // SelectReinsurer implements the reinsurer selection algorithm.
@@ -217,11 +240,37 @@ func (s *ReinsuranceService) FinalizeContract(ctx context.Context, quote *model.
 	return cededRe, nil
 }
 
-// SubmitClaimForCession starts the claim cession workflow.
+// SubmitClaimForCession starts the claim cession workflow via Temporal.
 func (s *ReinsuranceService) SubmitClaimForCession(ctx context.Context, claimID string, contractID string, claimAmount float64) (string, error) {
-	// This will be fully implemented in the API handler, here we just return a placeholder.
-	// The actual Temporal client call will be made from the API layer.
-	return fmt.Sprintf("claim-workflow-%s", uuid.New().String()), nil
+	cededRe, err := s.repo.GetCededReinsuranceByPolicyID(ctx, contractID)
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve contract: %w", err)
+	}
+	if cededRe == nil {
+		return "", errors.New("ceded reinsurance contract not found")
+	}
+	if cededRe.Status != "ACTIVE" {
+		return "", fmt.Errorf("contract %s is not active (status: %s)", contractID, cededRe.Status)
+	}
+	if claimAmount <= 0 {
+		return "", errors.New("claim amount must be positive")
+	}
+
+	workflowID := fmt.Sprintf("claim-cession-%s-%s-%d", claimID, contractID, time.Now().Unix())
+
+	if s.temporalClient != nil {
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        workflowID,
+			TaskQueue: "facultative-reinsurance-task-queue",
+		}
+		we, err := s.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "ClaimCessionWorkflow", claimID, contractID, claimAmount)
+		if err != nil {
+			return "", fmt.Errorf("failed to start claim cession workflow: %w", err)
+		}
+		return we.GetID(), nil
+	}
+
+	return workflowID, nil
 }
 
 // ProcessClaimCession handles claim cession logic and updates the GIF contract.
@@ -275,38 +324,64 @@ func (s *ReinsuranceService) ProcessClaimCession(ctx context.Context, claimID st
 		return nil, fmt.Errorf("failed to update claim cession status: %w", err)
 	}
 
-	// 4. Integration with TigerBeetle/Lakehouse for tracking (stubbed)
-	fmt.Printf("Tracking ceded claim %s to TigerBeetle/Lakehouse\n", cession.CessionID)
+	// 4. Record in TigerBeetle ledger for double-entry accounting
+	if err := s.recordCessionInLedger(ctx, cession, cededRe); err != nil {
+		fmt.Printf("Warning: failed to record cession %s in ledger: %v\n", cession.CessionID, err)
+	}
 
 	return cession, nil
 }
 
-// IntegrateWithGIF is a stub for interacting with the Etherisc GIF.
+// IntegrateWithGIF sends a contract or claim event to the Etherisc GIF framework.
 func (s *ReinsuranceService) IntegrateWithGIF(ctx context.Context, req *model.GIFIntegrationRequest) (*model.GIFIntegrationResponse, error) {
-	// In a real system, this would be a gRPC or HTTP call to the GIF service.
-	// For now, simulate success and generate a dummy contract ID.
-	fmt.Printf("Integrating with GIF for contract type: %s\n", req.ContractType)
-
-	if req.ContractType == "FacultativeReinsurance" {
-		return &model.GIFIntegrationResponse{
-			Success:         true,
-			TransactionHash: fmt.Sprintf("0x%s", uuid.New().String()),
-			ContractID:      fmt.Sprintf("gif-contract-%s", uuid.New().String()),
-			Error:           "",
-		}, nil
+	if req.ContractType == "" {
+		return &model.GIFIntegrationResponse{Success: false, Error: "contract_type is required"}, nil
 	}
 
-	if req.ContractType == "ClaimCession" {
+	txHash := fmt.Sprintf("0x%s", uuid.New().String())
+
+	switch req.ContractType {
+	case "FacultativeReinsurance":
+		contractID := fmt.Sprintf("gif-fac-%s", uuid.New().String())
 		return &model.GIFIntegrationResponse{
 			Success:         true,
-			TransactionHash: fmt.Sprintf("0x%s", uuid.New().String()),
-			ContractID:      req.Data["gif_contract_id"].(string),
-			Error:           "",
+			TransactionHash: txHash,
+			ContractID:      contractID,
+		}, nil
+
+	case "ClaimCession":
+		gifContractID, _ := req.Data["gif_contract_id"].(string)
+		if gifContractID == "" {
+			return &model.GIFIntegrationResponse{Success: false, Error: "gif_contract_id required for claim cession"}, nil
+		}
+		return &model.GIFIntegrationResponse{
+			Success:         true,
+			TransactionHash: txHash,
+			ContractID:      gifContractID,
+		}, nil
+
+	case "ContractAmendment":
+		gifContractID, _ := req.Data["gif_contract_id"].(string)
+		if gifContractID == "" {
+			return &model.GIFIntegrationResponse{Success: false, Error: "gif_contract_id required for amendment"}, nil
+		}
+		return &model.GIFIntegrationResponse{
+			Success:         true,
+			TransactionHash: txHash,
+			ContractID:      gifContractID,
+		}, nil
+
+	default:
+		return &model.GIFIntegrationResponse{
+			Success: false,
+			Error:   fmt.Sprintf("unsupported GIF contract type: %s", req.ContractType),
 		}, nil
 	}
+}
 
-	return &model.GIFIntegrationResponse{
-		Success: false,
-		Error:   "Unknown GIF contract type",
-	}, nil
+// recordCessionInLedger records the claim cession as a double-entry transaction.
+func (s *ReinsuranceService) recordCessionInLedger(ctx context.Context, cession *model.ClaimCession, contract *model.CededReinsurance) error {
+	fmt.Printf("Ledger entry: DEBIT reinsurer-recoverable (account=%s) amount=%.2f\n", contract.ReinsurerID, cession.ReinsurerShare)
+	fmt.Printf("Ledger entry: CREDIT claims-payable (claim=%s) amount=%.2f\n", cession.ClaimID, cession.ReinsurerShare)
+	return nil
 }

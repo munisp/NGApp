@@ -19,7 +19,6 @@ import (
 	"github.com/etherisc/reinsurance-accounting-service/internal/tigerbeetle"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"go.temporal.io/sdk/client"
 )
 
 func main() {
@@ -35,7 +34,7 @@ func main() {
 	}
 
 	// 3. Initialize Metrics
-	m := metrics.NewMetrics()
+	_ = metrics.NewMetrics()
 
 	// 4. Initialize TigerBeetle Client
 	tbClient, err := tigerbeetle.NewClient(cfg.TigerBeetleAddresses, logger)
@@ -46,7 +45,7 @@ func main() {
 	defer tbClient.Close()
 
 	// 5. Initialize Temporal Client (Mock for now)
-	var temporalClient core.TemporalClient = temporal.NewMockTemporalClient(logger)
+	var temporalClient core.TemporalClient = temporal.NewTemporalClient(logger, nil)
 	// In a real system, we would initialize the real client:
 	// temporalClient, err := client.Dial(client.Options{HostPort: cfg.TemporalHostPort})
 	// if err != nil {

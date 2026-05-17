@@ -1,3 +1,8 @@
-module github.com/etherisc/gif-distributed-tracing
+module gif-distributed-tracing
 
-go 1.18
+go 1.22.0
+
+require (
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
+)

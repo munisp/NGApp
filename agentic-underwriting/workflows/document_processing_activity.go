@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"time"
 
 	"go.temporal.io/sdk/activity"
 )
