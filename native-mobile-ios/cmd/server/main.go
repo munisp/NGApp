@@ -72,11 +72,12 @@ func main() {
 		return
 	}
 
+	repo := repository.NewMobileRepository(nil)
+	svc := service.NewMobileService(repo)
+	handler := handlers.NewMobileHandler(svc)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"healthy","service":"native-mobile-ios","db":"disconnected"}`))
-	})
+	handler.RegisterRoutes(mux)
 	log.Printf("Native Mobile iOS API starting on port %s (no database)", port)
 	http.ListenAndServe(":"+port, mux)
 }

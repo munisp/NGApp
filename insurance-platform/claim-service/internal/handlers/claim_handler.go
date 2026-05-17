@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"net/http"
 	"claim-service/internal/models"
 	"claim-service/internal/service"
 	"github.com/gin-gonic/gin"
