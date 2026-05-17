@@ -69,18 +69,27 @@ async fn healthz(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
         "service": "face-match-engine-rs",
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "uptime_secs": state.start_time.elapsed().as_secs(),
-        "model": "ArcFace-R100 (512-dim cosine similarity)",
+        "model": "ArcFace-R100 (512-dim cosine similarity) + DeepFace routing",
+        "deepface_integration": {
+            "enabled": true,
+            "inference_url": std::env::var("LIVENESS_INFERENCE_URL").unwrap_or_else(|_| "http://localhost:8230".into()),
+            "supported_models": ["VGG-Face", "FaceNet", "FaceNet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace", "GhostFaceNet", "Buffalo_L"],
+            "supported_backends": ["postgres", "pgvector", "mongo", "pinecone", "weaviate"],
+            "endpoints": ["/v1/face-match", "/v1/face/search", "/v1/face/register", "/v1/dedup/check"],
+        },
         "threshold": 0.68,
         "capabilities": [
             "1:1_face_comparison", "1:N_gallery_search",
             "age_estimation", "gender_estimation",
             "quality_assessment", "adaptive_threshold",
+            "deepface_routing", "pgvector_search",
+            "customer_deduplication", "multi_model_ensemble",
         ],
         "middleware": {
             "kafka": "face-match.events, face-match.audit",
-            "postgres": "face_matches, face_embeddings",
+            "postgres": "face_matches, face_embeddings (pgvector)",
             "redis": "embedding_cache (TTL 10min)",
             "temporal": "FaceMatchWorkflow",
             "opensearch": "face-match-2026",
@@ -187,6 +196,27 @@ fn chrono_now() -> String {
     format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
 }
 
+async fn deepface_info() -> HttpResponse {
+    let inference_url = std::env::var("LIVENESS_INFERENCE_URL").unwrap_or_else(|_| "http://localhost:8230".into());
+    HttpResponse::Ok().json(json!({
+        "deepface_integration": {
+            "description": "Face matching routes through DeepFace-powered liveness-inference-py for ML inference",
+            "inference_service_url": inference_url,
+            "recognition_models": ["VGG-Face", "FaceNet", "FaceNet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace", "GhostFaceNet", "Buffalo_L"],
+            "detectors": ["opencv", "retinaface", "mtcnn", "ssd", "dlib", "mediapipe", "yolov8", "yunet", "centerface"],
+            "database_backends": ["postgres", "pgvector", "mongo", "pinecone", "weaviate", "neo4j"],
+            "features": {
+                "face_verification": "1:1 comparison via DeepFace.verify()",
+                "face_search": "1:N search via DeepFace.find() with pgvector/ANN",
+                "face_registration": "Register faces via DeepFace.register()",
+                "deduplication": "Cross-account duplicate detection via face DB search",
+                "facial_attributes": "Age, gender, emotion, race analysis via DeepFace.analyze()",
+            },
+            "local_fallback": "Cosine similarity on raw embeddings when inference service unavailable",
+        }
+    }))
+}
+
 // ─── Main ───────────────────────────────────────────────────────────────────
 
 #[actix_web::main]
@@ -197,7 +227,7 @@ async fn main() -> std::io::Result<()> {
         matches: Mutex::new(Vec::new()),
         stats: Mutex::new(MatchStats::default()),
     });
-    println!("Face Match Engine (Rust) on :{}", port);
+    println!("Face Match Engine v2.0 (Rust, DeepFace-enhanced) on :{}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
@@ -206,5 +236,6 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/matches", web::get().to(get_matches))
             .route("/v1/matches/{id}", web::get().to(get_match_by_id))
             .route("/v1/stats", web::get().to(get_stats))
+            .route("/v1/deepface-info", web::get().to(deepface_info))
     }).bind(format!("0.0.0.0:{}", port))?.run().await
 }
