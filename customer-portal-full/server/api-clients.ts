@@ -44,6 +44,10 @@ const SERVICE_URLS = {
   documentOcr: process.env.DOCUMENT_OCR_URL || 'http://localhost:8111',
   kycOrchestrator: process.env.KYC_ORCHESTRATOR_URL || 'http://localhost:8085',
   identityMatcher: process.env.IDENTITY_MATCHER_URL || 'http://localhost:8112',
+  // Middleware services
+  kycLedger: process.env.KYC_LEDGER_URL || 'http://localhost:8113',
+  kycAnalytics: process.env.KYC_ANALYTICS_URL || 'http://localhost:8114',
+  kycStream: process.env.KYC_STREAM_URL || 'http://localhost:8115',
 };
 
 const TIMEOUT_MS = 10000; // 10 seconds
@@ -692,6 +696,132 @@ export const identityMatcherService = {
     });
   },
 };
+
+// ============================================================================
+// KYC Ledger Service Client (Rust — TigerBeetle + Dapr)
+// ============================================================================
+
+export const kycLedgerService = {
+  async createEntry(entry: {
+    debit_account: string; credit_account: string; amount: number; currency: string;
+    ledger_type: string; user_id: string; description: string;
+    kyc_session_id?: string; kyc_level?: number; metadata?: Record<string, unknown>;
+  }) {
+    return apiCall<any>('kycLedger', '/api/v1/ledger/entry', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+  },
+
+  async getEntry(id: string) {
+    return apiCall<any>('kycLedger', `/api/v1/ledger/entry/${id}`);
+  },
+
+  async getUserEntries(userId: string) {
+    return apiCall<any>('kycLedger', `/api/v1/ledger/user/${userId}`);
+  },
+
+  async getAccountBalance(accountId: string) {
+    return apiCall<any>('kycLedger', `/api/v1/ledger/balance/${accountId}`);
+  },
+
+  async validateTransfer(userId: string, amount: number, kycLevel: number) {
+    return apiCall<any>('kycLedger', '/api/v1/ledger/validate-transfer', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, amount, kyc_level: kycLevel }),
+    });
+  },
+
+  async getStats() {
+    return apiCall<any>('kycLedger', '/api/v1/ledger/stats');
+  },
+};
+
+// ============================================================================
+// KYC Analytics Service Client (Python — Lakehouse)
+// ============================================================================
+
+export const kycAnalyticsService = {
+  async generateComplianceReport(period: string, country: string = 'NG') {
+    return apiCall<any>('kycAnalytics', '/api/v1/analytics/compliance-report', {
+      method: 'POST',
+      body: JSON.stringify({ period, country }),
+    });
+  },
+
+  async getMetrics(period: string = 'monthly') {
+    return apiCall<any>('kycAnalytics', `/api/v1/analytics/metrics?period=${period}`);
+  },
+
+  async getRiskAnalysis() {
+    return apiCall<any>('kycAnalytics', '/api/v1/analytics/risk-analysis');
+  },
+
+  async ingestData(table: string, data: Record<string, unknown>) {
+    return apiCall<any>('kycAnalytics', '/api/v1/analytics/ingest', {
+      method: 'POST',
+      body: JSON.stringify({ table, data }),
+    });
+  },
+
+  async getNDPRReport() {
+    return apiCall<any>('kycAnalytics', '/api/v1/analytics/ndpr-report');
+  },
+
+  async getTableStats() {
+    return apiCall<any>('kycAnalytics', '/api/v1/analytics/tables');
+  },
+};
+
+// ============================================================================
+// KYC Stream Processor Client (Python — Fluvio)
+// ============================================================================
+
+export const kycStreamService = {
+  async publishEvent(event: {
+    id: string; event_type: string; session_id: string;
+    user_id: string; timestamp: string; data: Record<string, unknown>;
+  }) {
+    return apiCall<any>('kycStream', '/api/v1/stream/publish', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  },
+
+  async consumeEvents(topic: string, offset: number = 0, limit: number = 100) {
+    return apiCall<any>('kycStream', `/api/v1/stream/consume/${topic}?offset=${offset}&limit=${limit}`);
+  },
+
+  async listTopics() {
+    return apiCall<any>('kycStream', '/api/v1/stream/topics');
+  },
+
+  async getStats() {
+    return apiCall<any>('kycStream', '/api/v1/stream/stats');
+  },
+};
+
+// ============================================================================
+// KYC Gate Helper — Platform-wide enforcement
+// ============================================================================
+
+export async function checkKYCGate(userId: string, requiredLevel: number = 1): Promise<{
+  allowed: boolean; level: number; reason: string;
+}> {
+  try {
+    const result = await apiCall<any>('kycOrchestrator', `/api/v1/kyc/gate/${userId}`);
+    const allowed = result.allowed && result.level >= requiredLevel;
+    return {
+      allowed,
+      level: result.level || 0,
+      reason: allowed
+        ? `KYC Level ${result.level} meets minimum ${requiredLevel}`
+        : `KYC Level ${result.level || 0} below required ${requiredLevel}`,
+    };
+  } catch {
+    return { allowed: false, level: 0, reason: 'KYC gate check unavailable' };
+  }
+}
 
 export async function checkAllServicesHealth(): Promise<Record<string, boolean>> {
   const services = Object.keys(SERVICE_URLS) as Array<keyof typeof SERVICE_URLS>;

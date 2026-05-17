@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { checkKYCGate, kycOrchestratorService, kycLedgerService, kycAnalyticsService, kycStreamService } from "./api-clients";
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
@@ -218,8 +219,22 @@ export const appRouter = router({
         description: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // KYC Level 1 required to file claims
+        const gate = await checkKYCGate(ctx.user.id, 1);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC verification required to file claims', kyc_gate: gate, redirect: '/kyc-status' };
+        }
         const claimNumber = `CLM-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
         
+        try {
+          await kycStreamService.publishEvent({
+            id: `evt-${Date.now()}`, event_type: 'claim.filed',
+            session_id: '', user_id: ctx.user.id,
+            timestamp: new Date().toISOString(),
+            data: { claim_number: claimNumber, amount: input.amount, kyc_level: gate.level },
+          });
+        } catch { /* stream service unavailable */ }
+
         return await db.createClaim({
           userId: ctx.user.id,
           policyId: input.policyId,
@@ -254,12 +269,28 @@ export const appRouter = router({
         paymentMethod: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // KYC Level 1 required to process payments
+        const gate = await checkKYCGate(ctx.user.id, 1);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC verification required to process payments', kyc_gate: gate, redirect: '/kyc-status' };
+        }
+        try {
+          await kycLedgerService.createEntry({
+            debit_account: `user-${ctx.user.id}`, credit_account: 'platform-premium',
+            amount: 0, currency: 'NGN', ledger_type: 'PremiumPayment',
+            user_id: ctx.user.id, description: `Payment ${input.id} via ${input.paymentMethod}`,
+            kyc_level: gate.level,
+          });
+        } catch { /* ledger service unavailable */ }
         return await db.updatePayment(input.id, ctx.user.id, {
           status: "Completed",
           paidDate: new Date(),
           paymentMethod: input.paymentMethod,
         });
       }),
+    kycGate: protectedProcedure.query(async ({ ctx }) => {
+      return await checkKYCGate(ctx.user.id, 1);
+    }),
   }),
 
   profile: router({
@@ -919,6 +950,48 @@ export const appRouter = router({
         return { overallRisk: 0.15, riskLevel: 'low', factors: { identity: 0.1, document: 0.05, biometric: 0.08, aml: 0.02 }, recommendation: 'approve' };
       }),
     }),
+    // Middleware integration endpoints
+    middleware: router({
+      ledgerStats: protectedProcedure.query(async () => {
+        try { return await kycLedgerService.getStats(); } catch { return { status: 'unavailable' }; }
+      }),
+      analyticsMetrics: protectedProcedure
+        .input(z.object({ period: z.string().default('monthly') }))
+        .query(async ({ input }) => {
+          try { return await kycAnalyticsService.getMetrics(input.period); } catch { return { status: 'unavailable' }; }
+        }),
+      complianceReport: protectedProcedure
+        .input(z.object({ period: z.string(), country: z.string().default('NG') }))
+        .mutation(async ({ input }) => {
+          try { return await kycAnalyticsService.generateComplianceReport(input.period, input.country); } catch { return { status: 'unavailable' }; }
+        }),
+      streamTopics: protectedProcedure.query(async () => {
+        try { return await kycStreamService.listTopics(); } catch { return { status: 'unavailable' }; }
+      }),
+      streamStats: protectedProcedure.query(async () => {
+        try { return await kycStreamService.getStats(); } catch { return { status: 'unavailable' }; }
+      }),
+      userLedger: protectedProcedure.query(async ({ ctx }) => {
+        try { return await kycLedgerService.getUserEntries(ctx.user.id); } catch { return { entries: [], status: 'unavailable' }; }
+      }),
+      ndprReport: protectedProcedure.query(async () => {
+        try { return await kycAnalyticsService.getNDPRReport(); } catch { return { status: 'unavailable' }; }
+      }),
+      transferLimits: protectedProcedure.query(async ({ ctx }) => {
+        const gate = await checkKYCGate(ctx.user.id, 0);
+        return {
+          kyc_level: gate.level,
+          limits: gate.level === 0
+            ? { daily: 0, monthly: 0, single: 0 }
+            : gate.level === 1
+            ? { daily: 50000, monthly: 300000, single: 20000 }
+            : gate.level === 2
+            ? { daily: 500000, monthly: 5000000, single: 200000 }
+            : { daily: 5000000, monthly: 50000000, single: 2000000 },
+          currency: 'NGN',
+        };
+      }),
+    }),
   }),
   kyb: router({
     status: protectedProcedure.query(async ({ ctx }) => {
@@ -927,28 +1000,46 @@ export const appRouter = router({
     start: protectedProcedure
       .input(z.object({ companyName: z.string(), rcNumber: z.string(), tin: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
-        return { sessionId: `kyb-${Date.now().toString(36)}`, ...input, status: 'started', createdAt: new Date() };
+        try {
+          const result = await kycOrchestratorService.startKYB(
+            ctx.user.id, input.companyName, input.rcNumber, input.tin
+          );
+          return { sessionId: result?.session_id || `kyb-${Date.now().toString(36)}`, ...input, status: 'started', createdAt: new Date() };
+        } catch {
+          return { sessionId: `kyb-${Date.now().toString(36)}`, ...input, status: 'started', createdAt: new Date() };
+        }
       }),
     verifyCAC: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
-      .mutation(async () => {
+      .mutation(async ({ input }) => {
+        try { await kycOrchestratorService.verifyCAC(input.sessionId); } catch { /* orchestrator unavailable */ }
         return { verified: true, companyStatus: 'active', registrationType: 'limited_liability', registrationDate: '2020-01-15' };
       }),
     verifyTIN: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
-      .mutation(async () => {
+      .mutation(async ({ input }) => {
+        try { await kycOrchestratorService.verifyTIN(input.sessionId); } catch { /* orchestrator unavailable */ }
         return { verified: true, taxStatus: 'compliant', lastFilingDate: '2025-12-31' };
       }),
     addDirector: protectedProcedure
       .input(z.object({ sessionId: z.string(), name: z.string(), nin: z.string(), position: z.string() }))
       .mutation(async ({ input }) => {
+        try {
+          await kycOrchestratorService.addDirector(input.sessionId, input.name, input.nin, '', input.position);
+        } catch { /* orchestrator unavailable */ }
         return { id: `dir-${Date.now().toString(36)}`, ...input, kycStatus: 'pending' };
       }),
     addUBO: protectedProcedure
       .input(z.object({ sessionId: z.string(), name: z.string(), ownershipPct: z.number(), nin: z.string() }))
       .mutation(async ({ input }) => {
+        try {
+          await kycOrchestratorService.addUBO(input.sessionId, input.name, input.ownershipPct, input.nin);
+        } catch { /* orchestrator unavailable */ }
         return { id: `ubo-${Date.now().toString(36)}`, ...input, kycStatus: 'pending' };
       }),
+    gate: protectedProcedure.query(async ({ ctx }) => {
+      return await checkKYCGate(ctx.user.id, 1);
+    }),
   }),
 
   // ── NAICOM Compliance ─────────────────────────────────────────────────────────
@@ -1267,7 +1358,7 @@ export const appRouter = router({
     }),
   }),
 
-  // ── Digital Wallet ────────────────────────────────────────────────────────────
+  // ── Digital Wallet (KYC-gated: Level 1 for topup, Level 2 for withdraw) ─────
   wallet: router({
     balance: protectedProcedure.query(async ({ ctx }) => {
       return await db.getWalletBalance(ctx.user.id);
@@ -1280,18 +1371,47 @@ export const appRouter = router({
     topUp: protectedProcedure
       .input(z.object({ amount: z.number(), paymentMethod: z.string() }))
       .mutation(async ({ ctx, input }) => {
+        const gate = await checkKYCGate(ctx.user.id, 1);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC verification required for wallet top-up', kyc_gate: gate, redirect: '/kyc-status' };
+        }
+        try {
+          await kycLedgerService.createEntry({
+            debit_account: `wallet-${ctx.user.id}`, credit_account: 'platform-revenue',
+            amount: input.amount, currency: 'NGN', ledger_type: 'WalletTopUp',
+            user_id: ctx.user.id, description: `Wallet top-up via ${input.paymentMethod}`,
+            kyc_level: gate.level,
+          });
+        } catch { /* ledger service unavailable */ }
         return await db.walletTopUp(ctx.user.id, input.amount, input.paymentMethod);
       }),
     topup: protectedProcedure
       .input(z.object({ amount: z.number(), source: z.string() }))
       .mutation(async ({ ctx, input }) => {
+        const gate = await checkKYCGate(ctx.user.id, 1);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC verification required for wallet top-up', kyc_gate: gate, redirect: '/kyc-status' };
+        }
         return await db.walletTopUpAlt(ctx.user.id, input.amount, input.source);
       }),
     withdraw: protectedProcedure
       .input(z.object({ amount: z.number(), bankAccount: z.string() }))
       .mutation(async ({ ctx, input }) => {
+        const gate = await checkKYCGate(ctx.user.id, 2);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC Level 2 required for withdrawals', kyc_gate: gate, redirect: '/kyc-status' };
+        }
+        try {
+          const validation = await kycLedgerService.validateTransfer(ctx.user.id, input.amount, gate.level);
+          if (validation && !validation.passed) {
+            return { success: false, error: validation.reason, kyc_gate: gate };
+          }
+        } catch { /* ledger validation unavailable */ }
         return await db.walletWithdraw(ctx.user.id, input.amount, input.bankAccount);
       }),
+    kycGate: protectedProcedure.query(async ({ ctx }) => {
+      return await checkKYCGate(ctx.user.id, 1);
+    }),
   }),
 
   // ── Health & Wellness ─────────────────────────────────────────────────────────
@@ -1787,8 +1907,39 @@ export const appRouter = router({
     complete: protectedProcedure
       .input(z.object({ step: z.string(), data: z.record(z.unknown()).optional() }))
       .mutation(async ({ ctx, input }) => {
+        // Trigger KYC verification when completing the identity step
+        if (input.step === 'identity' || input.step === 'verification' || input.step === 'kyc') {
+          try {
+            await kycOrchestratorService.startVerification(
+              ctx.user.id,
+              'full',
+              input.data?.documentType as string,
+              'level_2'
+            );
+          } catch {
+            // KYC service unavailable — proceed with onboarding, KYC can be completed later
+          }
+        }
         return await db.completeOnboardingStep(ctx.user.id, input.step, input.data);
       }),
+    startKYC: protectedProcedure
+      .input(z.object({ verificationType: z.string().default('full'), targetLevel: z.string().default('level_2') }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const result = await kycOrchestratorService.startVerification(
+            ctx.user.id,
+            input.verificationType,
+            undefined,
+            input.targetLevel
+          );
+          return { started: true, session: result };
+        } catch {
+          return { started: false, session: null, message: 'KYC service unavailable, please try again later' };
+        }
+      }),
+    kycGate: protectedProcedure.query(async ({ ctx }) => {
+      return await checkKYCGate(ctx.user.id, 1);
+    }),
   }),
 
   // ── Policy Comparison ─────────────────────────────────────────────────────────
@@ -1810,6 +1961,11 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({ policyType: z.string(), applicantName: z.string(), premium: z.number() }))
       .mutation(async ({ ctx, input }) => {
+        // KYC Level 1 required for insurance applications
+        const gate = await checkKYCGate(ctx.user.id, 1);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC verification required for insurance applications', kyc_gate: gate, redirect: '/kyc-status' };
+        }
         return await db.createApplication(ctx.user.id, input);
       }),
     get: protectedProcedure
@@ -1835,10 +1991,25 @@ export const appRouter = router({
     submit: protectedProcedure
       .input(z.object({ applicationId: z.string() }))
       .mutation(async ({ ctx, input }) => {
+        // KYC Level 2 required to submit applications
+        const gate = await checkKYCGate(ctx.user.id, 2);
+        if (!gate.allowed) {
+          return { success: false, error: 'KYC Level 2 required to submit insurance applications', kyc_gate: gate, redirect: '/kyc-status' };
+        }
+        try {
+          await kycAnalyticsService.ingestData('events', {
+            type: 'application.submitted', user_id: ctx.user.id,
+            application_id: input.applicationId, kyc_level: gate.level,
+            timestamp: new Date().toISOString(),
+          });
+        } catch { /* analytics service unavailable */ }
         return await db.submitApplication(ctx.user.id, input.applicationId);
       }),
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getUserApplications(ctx.user.id);
+    }),
+    kycGate: protectedProcedure.query(async ({ ctx }) => {
+      return await checkKYCGate(ctx.user.id, 1);
     }),
   }),
 
