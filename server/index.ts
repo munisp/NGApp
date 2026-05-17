@@ -49,6 +49,7 @@ import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerKYCKYBEnhancedSuite } from "./lib/kycKybEnhancedSuite";
+import { kycEnforcementMiddleware, registerKYCEnforcementRoutes } from "./lib/kycEnforcementMiddleware";
 import { registerAiMlGnnSuite } from "./lib/aiMlGnnIntegration";
 import { registerProductionHardening } from "./lib/productionHardening";
 import { registerSecurityEnhancementRoutes } from "./lib/securityEnhancement";
@@ -5447,6 +5448,10 @@ async function startServer() {
   registerProxySeedFallback(fallbackRegistry);
   registerPlatformSeedRoutes(app);
 
+  // KYC/KYB Enforcement Middleware — intercepts POST/PUT to gated services, verifies KYC/KYB status
+  app.use(kycEnforcementMiddleware);
+  registerKYCEnforcementRoutes(app);
+
   // Multi-Tenant Platform (feature flags, isolation, white label, provisioning, etc.)
   registerMultiTenantPlatformRoutes(app);
 
@@ -8164,6 +8169,16 @@ async function startServer() {
   app.get("/api/platform/kyb-engine/v1/ubo/identify", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/ubo/identify?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
   app.get("/api/platform/kyb-engine/v1/sanctions/screen", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/sanctions/screen?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
   app.get("/api/platform/kyb-engine/v1/stats", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/v1/stats", req, res); });
+
+  // KYC Event Consumer — Kafka-driven KYC/KYB trigger automation (Python :9460)
+  const KYC_EVENT_CONSUMER_URL = process.env.KYC_EVENT_CONSUMER_URL || "http://localhost:9460";
+  app.get("/api/platform/kyc-events/health", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/healthz", req, res); });
+  app.get("/api/platform/kyc-events/rules", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/rules", req, res); });
+  app.get("/api/platform/kyc-events/processed", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/processed", req, res); });
+  app.get("/api/platform/kyc-events/stats", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/stats", req, res); });
+  app.get("/api/platform/kyc-events/cooldowns", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/cooldowns", req, res); });
+  app.post("/api/platform/kyc-events/simulate", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/simulate", req, res); });
+  app.post("/api/platform/kyc-events/batch-simulate", (req, res) => { void proxyToService(KYC_EVENT_CONSUMER_URL, "/v1/kyc-events/batch-simulate", req, res); });
 
   // ─── Liveness Detection System (3-service architecture) ─────────────────────
 

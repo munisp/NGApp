@@ -5333,4 +5333,98 @@ export const faceEmbeddings = pgTable("face_embeddings", {
   index("face_embeddings_enrolled_idx").on(t.isEnrolled),
 ]);
 
+// ─── KYC/KYB Enforcement Schema ─────────────────────────────────────────────
+
+export const kycEnforcementVerifications = pgTable("kyc_enforcement_verifications", {
+  id: serial("id").primaryKey(),
+  verificationId: text("verification_id").notNull().unique(),
+  customerId: text("customer_id").notNull(),
+  tenantId: text("tenant_id").notNull().default("default"),
+  level: text("level").notNull(), // basic, standard, enhanced, full_edd
+  status: text("status").notNull().default("pending"), // pending, verified, expired, rejected
+  bvnVerified: boolean("bvn_verified").default(false),
+  ninVerified: boolean("nin_verified").default(false),
+  livenessVerified: boolean("liveness_verified").default(false),
+  documentsVerified: boolean("documents_verified").default(false),
+  sanctionsCleared: boolean("sanctions_cleared").default(false),
+  riskScore: integer("risk_score"),
+  assignedTier: text("assigned_tier"), // tier1, tier2, tier3
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("kyc_verifications_customer_idx").on(t.customerId),
+  index("kyc_verifications_status_idx").on(t.status),
+  index("kyc_verifications_level_idx").on(t.level),
+  index("kyc_verifications_tenant_idx").on(t.tenantId),
+]);
+
+export const kybEnforcementVerifications = pgTable("kyb_enforcement_verifications", {
+  id: serial("id").primaryKey(),
+  verificationId: text("verification_id").notNull().unique(),
+  companyId: text("company_id").notNull(),
+  rcNumber: text("rc_number"),
+  tenantId: text("tenant_id").notNull().default("default"),
+  level: text("level").notNull(), // basic, standard, enhanced, full_edd
+  status: text("status").notNull().default("pending"),
+  cacVerified: boolean("cac_verified").default(false),
+  tinVerified: boolean("tin_verified").default(false),
+  uboVerified: boolean("ubo_verified").default(false),
+  directorScreened: boolean("director_screened").default(false),
+  sanctionsCleared: boolean("sanctions_cleared").default(false),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("kyb_verifications_company_idx").on(t.companyId),
+  index("kyb_verifications_status_idx").on(t.status),
+  index("kyb_verifications_tenant_idx").on(t.tenantId),
+]);
+
+export const kycEnforcementLog = pgTable("kyc_enforcement_log", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id").notNull().unique(),
+  serviceId: text("service_id").notNull(),
+  path: text("path").notNull(),
+  method: text("method").notNull(),
+  customerId: text("customer_id"),
+  companyId: text("company_id"),
+  decision: text("decision").notNull(), // allowed, blocked, monitored
+  reason: text("reason"),
+  kycLevel: text("kyc_level"),
+  requiredLevel: text("required_level"),
+  tenantId: text("tenant_id").notNull().default("default"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("kyc_enforcement_log_service_idx").on(t.serviceId),
+  index("kyc_enforcement_log_decision_idx").on(t.decision),
+  index("kyc_enforcement_log_customer_idx").on(t.customerId),
+]);
+
+export const kycEventTriggers = pgTable("kyc_event_triggers", {
+  id: serial("id").primaryKey(),
+  triggerId: text("trigger_id").notNull().unique(),
+  eventTopic: text("event_topic").notNull(),
+  eventName: text("event_name").notNull(),
+  customerId: text("customer_id"),
+  companyId: text("company_id"),
+  kycLevel: text("kyc_level").notNull(),
+  kybRequired: boolean("kyb_required").default(false),
+  status: text("status").notNull().default("triggered"), // triggered, processing, completed, failed
+  triggerSource: text("trigger_source"),
+  integratedServices: jsonb("integrated_services"),
+  eventData: jsonb("event_data"),
+  tenantId: text("tenant_id").notNull().default("default"),
+  triggeredAt: timestamp("triggered_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (t) => [
+  index("kyc_event_triggers_topic_idx").on(t.eventTopic),
+  index("kyc_event_triggers_customer_idx").on(t.customerId),
+  index("kyc_event_triggers_status_idx").on(t.status),
+]);
+
 
