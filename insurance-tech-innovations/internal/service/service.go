@@ -94,6 +94,9 @@ func (s *Service) ProcessInstantClaim(req models.InstantClaimRequest) *models.In
 	if req.Amount < 100000 {
 		confidence += 10
 	}
+	if confidence > 100 {
+		confidence = 100
+	}
 	if confidence >= 85 {
 		decision = "auto_approved"
 	} else if confidence >= 70 {
