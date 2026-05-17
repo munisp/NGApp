@@ -1072,7 +1072,7 @@ export const appRouter = router({
       return await db.getParametricProducts();
     }),
     triggers: protectedProcedure.query(async () => {
-      return await db.getParametricTriggers();
+      return await db.getParametricTriggersList();
     }),
     claim: protectedProcedure
       .input(z.object({ policyId: z.string(), triggerId: z.string(), evidence: z.string() }))

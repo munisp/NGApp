@@ -1574,7 +1574,7 @@ export async function scanModelSecurity(userId: number, modelId: string) {
 }
 
 // ── Parametric — triggers + claim ─────────────────────────────────────────────
-export async function getParametricTriggers() {
+export async function getParametricTriggersList() {
   return [
     { id: 'pt1', type: 'rainfall', condition: '< 50mm in 30 days', region: 'North Central', status: 'monitoring', lastChecked: new Date() },
     { id: 'pt2', type: 'temperature', condition: '> 42°C for 5 consecutive days', region: 'North East', status: 'alert', lastChecked: new Date() },
