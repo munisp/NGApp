@@ -1,25 +1,30 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const binDatabase = [
-  { bin: "411111", brand: "Visa", type: "Credit", level: "Classic", bank: "First Bank", country: "NG", currency: "NGN" },
-  { bin: "522222", brand: "Mastercard", type: "Credit", level: "Standard", bank: "GTBank", country: "NG", currency: "NGN" },
-  { bin: "506099", brand: "Verve", type: "Debit", level: "Standard", bank: "Access Bank", country: "NG", currency: "NGN" },
-  { bin: "650002", brand: "Verve", type: "Prepaid", level: "Classic", bank: "UBA", country: "NG", currency: "NGN" },
-  { bin: "539941", brand: "Mastercard", type: "Debit", level: "World", bank: "Zenith Bank", country: "NG", currency: "NGN" },
-  { bin: "428600", brand: "Visa", type: "Debit", level: "Gold", bank: "Stanbic IBTC", country: "NG", currency: "NGN" },
-  { bin: "536000", brand: "Mastercard", type: "Credit", level: "Platinum", bank: "Sterling Bank", country: "NG", currency: "NGN" },
-  { bin: "455600", brand: "Visa", type: "Credit", level: "Infinite", bank: "Fidelity Bank", country: "NG", currency: "NGN" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const cardBinLookupRouter = router({
-  getStats: protectedProcedure.query(async () => ({
-    totalBins: 45000, brands: 4, issuingBanks: 24, countries: 12, lastUpdated: Date.now() - 172800000,
-    lookups24h: 12500, cacheHitRate: 94.3, avgLookupMs: 12,
-  })),
-  lookup: protectedProcedure.input(z.object({ bin: z.string().min(6).max(8) }))
-    .query(async ({ input }) => binDatabase.find(b => input.bin.startsWith(b.bin)) || { bin: input.bin, brand: "Unknown", type: "Unknown", level: "Unknown", bank: "Unknown", country: "Unknown", currency: "Unknown" }),
-  validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() }))
-    .query(async ({ input }) => {
-      const bin = binDatabase.find(b => input.cardNumber.startsWith(b.bin));
-      return { valid: !!bin, bin: bin || null, luhnValid: true, cardLength: input.cardNumber.length };
-    }),
+  lookup: protectedProcedure.input(z.object({ bin: z.string().min(6).max(8) })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { found: false };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "card_bin_" + input.bin)).limit(1);
+    if (rows.length > 0 && rows[0].value) return { found: true, ...JSON.parse(String(rows[0].value)) };
+    await db.insert(auditLog).values({ action: "bin_lookup", resource: "card_bins", resourceId: input.bin, status: "success", metadata: {} });
+    return { found: false, bin: input.bin };
+  }),
+  addBin: protectedProcedure.input(z.object({ bin: z.string().min(6).max(8), bank: z.string(), scheme: z.enum(["visa", "mastercard", "verve", "amex"]), type: z.enum(["debit", "credit", "prepaid"]), country: z.string().default("NG") })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "card_bin_" + input.bin, value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    return { success: true };
+  }),
+  listBins: protectedProcedure.input(z.object({ scheme: z.string().optional(), limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { bins: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'card_bin_%'`).limit(input?.limit ?? 50);
+    let bins = rows.map(r => ({ bin: r.key.replace("card_bin_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
+    if (input?.scheme) bins = bins.filter((b: any) => b.scheme === input.scheme);
+    return { bins, total: bins.length };
+  }),
 });

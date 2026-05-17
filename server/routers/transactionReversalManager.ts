@@ -1,37 +1,38 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-// ── Middleware Integration (Sprint 44) ──────────────────────────────
-import { publishEvent, type KafkaTopic } from "../kafkaClient";
-import { cacheSet, cacheGet } from "../redisClient";
-import { tbCreateTransfer } from "../tbClient";
-import { fluvioProduce } from "../fluvio";
-import { permifyCheck } from "../_core/permify";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { transactions, auditLog } from "../../drizzle/schema";
 
-const reversals = [
-  { id: "REV-001", originalTxId: "TXN-45678", amount: 150000, type: "full_reversal", reason: "duplicate_transaction", status: "completed", initiatedBy: "System", initiatedAt: "2026-04-21T08:30:00Z", completedAt: "2026-04-21T08:31:00Z", approvedBy: "Auto" },
-  { id: "REV-002", originalTxId: "TXN-45890", amount: 25000, type: "partial_reversal", reason: "wrong_amount", status: "pending_approval", initiatedBy: "Agent AGT-002", initiatedAt: "2026-04-21T10:00:00Z", completedAt: null, approvedBy: null },
-  { id: "REV-003", originalTxId: "TXN-46012", amount: 500000, type: "full_reversal", reason: "fraud_detected", status: "completed", initiatedBy: "Fraud Team", initiatedAt: "2026-04-20T15:00:00Z", completedAt: "2026-04-20T15:02:00Z", approvedBy: "Senior Manager" },
-  { id: "REV-004", originalTxId: "TXN-46234", amount: 75000, type: "full_reversal", reason: "customer_request", status: "rejected", initiatedBy: "Agent AGT-003", initiatedAt: "2026-04-19T12:00:00Z", completedAt: null, approvedBy: null },
-];
 export const transactionReversalManagerRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalReversals: reversals.length, completedReversals: reversals.filter(r => r.status === "completed").length, pendingReversals: reversals.filter(r => r.status === "pending_approval").length, totalReversedAmount: reversals.filter(r => r.status === "completed").reduce((s: any, r: any) => s + r.amount, 0), autoReversals: 1, manualReversals: 3, avgProcessingTime: "1.5 minutes", rejectionRate: 25 })),
-  listReversals: protectedProcedure.input(z.object({ status: z.string().optional() })).query(({ input }) => ({ reversals: input.status ? reversals.filter(r => r.status === input.status) : reversals, total: reversals.length })),
-  getReversal: protectedProcedure.input(z.object({ reversalId: z.string() })).query(({ input }) => reversals.find(r => r.id === input.reversalId) || null),
-  initiateReversal: protectedProcedure.input(z.object({ transactionId: z.string(), type: z.string(), reason: z.string(), amount: z.number() })).mutation(async ({ input }) => {
-      // ── Middleware Integration (Sprint 44) ──────────────────────────
-      // [Kafka] Publish event
-      try { await publishEvent("pos.transactionreversalmanager" as KafkaTopic, "system", { event: "transactionReversalManager.processed", timestamp: Date.now() }); } catch {}
-      // [Redis] Cache result for 5 min
-      try { await cacheSet("transactionReversalManager:last", JSON.stringify({ ts: Date.now() }), 300); } catch {}
-      // [TigerBeetle] Record ledger entry (if sidecar available)
-      try { await tbCreateTransfer({ debitAccountId: "1", creditAccountId: "2", amount: 0 }); } catch {}
-      // [Fluvio] Stream event for real-time analytics
-      try { await fluvioProduce("pos.transactionreversalmanager", { value: JSON.stringify({ event: "transactionReversalManager.processed", ts: Date.now() }) }); } catch {}
-      // [Permify] Authorization check (fail-open)
-      try { await permifyCheck({ subjectType: "user", subjectId: "system", entityType: "transactionReversalManager", entityId: "system", permission: "execute" }); } catch {}
-      // ── End Middleware ──────────────────────────────────────────────
-      return { reversalId: "REV-" + Date.now(), status: input.amount > 100000 ? "pending_approval" : "processing", ...input };
-    }),
-
-  approveReversal: protectedProcedure.input(z.object({ reversalId: z.string(), decision: z.enum(["approve", "reject"]) })).mutation(({ input }) => ({ reversalId: input.reversalId, status: input.decision === "approve" ? "completed" : "rejected", processedAt: new Date().toISOString() })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalReversals: 0, pending: 0, completed: 0, rejected: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "reversal_requested")).orderBy(desc(auditLog.createdAt)).limit(500);
+    const completed = rows.filter(r => (r.metadata as any)?.status === "completed").length;
+    return { totalReversals: rows.length, pending: rows.length - completed, completed, rejected: 0 };
+  }),
+  listReversals: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { reversals: [], total: 0 };
+    const conditions: any[] = [eq(auditLog.action, "reversal_requested")];
+    if (input?.status) conditions.push(sql`${auditLog.status} = ${input.status}`);
+    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { reversals: rows.map(r => ({ id: r.id, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
+  }),
+  requestReversal: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string(), requestedBy: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const txRows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
+    if (txRows.length === 0) return { success: false, error: "Transaction not found" };
+    const reversalId = "REV-" + Date.now().toString(36).toUpperCase();
+    await db.insert(auditLog).values({ action: "reversal_requested", resource: "transactions", resourceId: reversalId, status: "success", metadata: { transactionId: input.transactionId, reason: input.reason, amount: txRows[0].amount, status: "pending" } });
+    return { success: true, reversalId };
+  }),
+  approveReversal: protectedProcedure.input(z.object({ reversalId: z.string(), approved: z.boolean(), notes: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: input.approved ? "reversal_approved" : "reversal_rejected", resource: "transactions", resourceId: input.reversalId, status: "success", metadata: { approved: input.approved, notes: input.notes, status: input.approved ? "completed" : "rejected" } });
+    return { success: true };
+  }),
 });

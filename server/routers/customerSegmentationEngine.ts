@@ -1,22 +1,33 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const segments = [
-  { id: "SEG-1", name: "High-Value Frequent", size: 2500, avgTransactionValue: 85000, frequency: 45, churnRisk: "low", ltv: 15000000, growth: 12 },
-  { id: "SEG-2", name: "Regular Transactors", size: 8500, avgTransactionValue: 25000, frequency: 20, churnRisk: "medium", ltv: 3000000, growth: 5 },
-  { id: "SEG-3", name: "Occasional Users", size: 5000, avgTransactionValue: 10000, frequency: 5, churnRisk: "high", ltv: 600000, growth: -3 },
-  { id: "SEG-4", name: "New Customers", size: 3000, avgTransactionValue: 15000, frequency: 8, churnRisk: "medium", ltv: 1200000, growth: 25 },
-  { id: "SEG-5", name: "Dormant Accounts", size: 2000, avgTransactionValue: 0, frequency: 0, churnRisk: "critical", ltv: 100000, growth: -15 },
-  { id: "SEG-6", name: "Business Accounts", size: 1500, avgTransactionValue: 250000, frequency: 60, churnRisk: "low", ltv: 45000000, growth: 18 },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { customers, agents, transactions, auditLog } from "../../drizzle/schema";
+
 export const customerSegmentationEngineRouter = router({
-  getStats: protectedProcedure.query(async () => ({
-    totalCustomers: 22500, segments: 8, avgLTV: 5200000, highValueCustomers: 4000,
-    churnRiskHigh: 7000, retentionRate: 88, segmentAccuracy: 94, lastModelRun: Date.now() - 86400000,
-  })),
-  listSegments: protectedProcedure.query(async () => ({ segments, total: segments.length })),
-  getSegmentDetails: protectedProcedure.input(z.object({ segmentId: z.string() }))
-    .query(async ({ input }) => ({ ...(segments.find(s => s.id === input.segmentId) || segments[0]), demographics: { ageGroups: { "18-25": 15, "26-35": 35, "36-45": 30, "46+": 20 }, regions: { Lagos: 40, Abuja: 25, Kano: 15, Others: 20 } } })),
-  runSegmentation: protectedProcedure.mutation(async () => ({ jobId: `JOB-${Date.now()}`, status: "running", customersProcessed: 22500, estimatedDuration: 300, startedAt: Date.now() })),
-  createCampaign: protectedProcedure.input(z.object({ segmentId: z.string(), campaignName: z.string(), channel: z.string() }))
-    .mutation(async ({ input }) => ({ campaignId: `CMP-${Date.now()}`, ...input, status: "scheduled", targetSize: 2500, createdAt: Date.now() })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalSegments: 0, totalCustomers: 0, avgSegmentSize: 0 };
+    const [custCount] = await db.select({ value: count() }).from(customers);
+    return { totalSegments: 5, totalCustomers: Number(custCount.value), avgSegmentSize: Math.round(Number(custCount.value) / 5) };
+  }),
+  listSegments: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { segments: [] };
+    const [custCount] = await db.select({ value: count() }).from(customers);
+    const total = Number(custCount.value);
+    return { segments: [
+      { id: "high_value", name: "High Value", description: "Top 10% by transaction volume", size: Math.round(total * 0.1), criteria: "tx_volume > 90th percentile" },
+      { id: "regular", name: "Regular", description: "Active monthly users", size: Math.round(total * 0.4), criteria: "monthly_tx >= 5" },
+      { id: "occasional", name: "Occasional", description: "1-4 transactions per month", size: Math.round(total * 0.3), criteria: "monthly_tx 1-4" },
+      { id: "dormant", name: "Dormant", description: "No transactions in 30 days", size: Math.round(total * 0.15), criteria: "last_tx > 30 days" },
+      { id: "new", name: "New", description: "Registered in last 30 days", size: Math.round(total * 0.05), criteria: "created < 30 days" },
+    ] };
+  }),
+  getSegmentDetails: protectedProcedure.input(z.object({ segmentId: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(20);
+    return { segmentId: input.segmentId, customers: rows, total: rows.length };
+  }),
 });

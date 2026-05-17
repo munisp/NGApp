@@ -1,33 +1,31 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { tenants, auditLog } from "../../drizzle/schema";
 
 export const multiTenancyRouter = router({
-  dashboard: protectedProcedure.query(async () => ({
-    totalTenants: 12, activeTenants: 10, totalAgents: 2150, totalTransactions: 12_500_000,
-    tenants: [
-      { id: "T001", name: "FirstBank Agency", agents: 450, status: "active", plan: "enterprise", monthlyVolume: 3_200_000 },
-      { id: "T002", name: "GTBank Mobile", agents: 380, status: "active", plan: "enterprise", monthlyVolume: 2_800_000 },
-      { id: "T003", name: "Access POS Network", agents: 320, status: "active", plan: "premium", monthlyVolume: 2_100_000 },
-      { id: "T004", name: "Zenith Agency", agents: 280, status: "active", plan: "premium", monthlyVolume: 1_500_000 },
-      { id: "T005", name: "UBA Express", agents: 200, status: "active", plan: "standard", monthlyVolume: 900_000 },
-    ],
-    resourceAllocation: { totalCpu: 64, usedCpu: 42, totalMemoryGb: 128, usedMemoryGb: 78, totalStorageGb: 2000, usedStorageGb: 1200 },
-  })),
-
-  getTenant: protectedProcedure.input(z.object({ tenantId: z.string() })).query(async ({ input }) => ({
-    id: input.tenantId, name: "FirstBank Agency", status: "active", plan: "enterprise",
-    config: { maxAgents: 500, maxTxPerDay: 100000, features: ["fraud_detection", "settlement", "reporting", "api_access"], whiteLabel: { logo: "/logos/firstbank.png", primaryColor: "#003366", domain: "pos.firstbank.ng" } },
-    usage: { agents: 450, txToday: 45000, storageGb: 120, apiCalls: 890000 },
-    billing: { plan: "enterprise", monthlyFee: 2500000, overage: 0, nextBillingDate: "2026-05-01" },
-  })),
-
-  createTenant: protectedProcedure
-    .input(z.object({ name: z.string(), plan: z.string(), maxAgents: z.number().default(100) }))
-    .mutation(async ({ input }) => ({
-      tenantId: `T${Date.now()}`, name: input.name, plan: input.plan, status: "provisioning", createdAt: Date.now(),
-    })),
-
-  updateTenantConfig: protectedProcedure
-    .input(z.object({ tenantId: z.string(), config: z.record(z.string(), z.unknown()) }))
-    .mutation(async ({ input }) => ({ success: true, tenantId: input.tenantId, updatedAt: Date.now() })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalTenants: 0, activeTenants: 0, isolationMode: "schema", dataResidency: "NG" };
+    const [total] = await db.select({ value: count() }).from(tenants);
+    const [active] = await db.select({ value: count() }).from(tenants).where(eq(tenants.status, "active"));
+    return { totalTenants: Number(total.value), activeTenants: Number(active.value), isolationMode: "schema", dataResidency: "NG" };
+  }),
+  listTenants: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { tenants: [], total: 0 };
+    const conditions: any[] = [];
+    if (input?.status) conditions.push(eq(tenants.status, input.status as any));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const rows = await db.select().from(tenants).where(where).orderBy(desc(tenants.createdAt)).limit(input?.limit ?? 20);
+    return { tenants: rows, total: rows.length };
+  }),
+  getTenantConfig: protectedProcedure.input(z.object({ tenantId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(tenants).where(eq(tenants.id, input.tenantId)).limit(1);
+    if (rows.length === 0) return null;
+    return { tenant: rows[0], isolation: "schema", features: { offlineMode: true, customBranding: true, apiAccess: true } };
+  }),
 });

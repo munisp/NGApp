@@ -36,7 +36,7 @@ const dashboard = protectedProcedure
     return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
   });
 const createSchedule = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -48,7 +48,7 @@ const createSchedule = protectedProcedure
     return { success: true, ...row, message: "createSchedule completed" };
   });
 const updateSchedule = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id));
@@ -69,7 +69,7 @@ const deleteSchedule = protectedProcedure
     return { success: true, deleted: input.id, message: "Record deleted" };
   });
 const runNow = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -81,7 +81,7 @@ const runNow = protectedProcedure
     return { success: true, ...row, message: "runNow completed" };
   });
 const toggleSchedule = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id));
@@ -93,7 +93,7 @@ const toggleSchedule = protectedProcedure
     return { success: true, ...existing, message: "No changes applied" };
   });
 const triggerNow = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

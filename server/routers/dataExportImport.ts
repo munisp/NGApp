@@ -16,7 +16,7 @@ const dashboard = protectedProcedure
     return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
   });
 const createExport = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -27,7 +27,7 @@ const createExport = protectedProcedure
     return { success: true, message: "createExport completed", timestamp: new Date().toISOString() };
   });
 const createImport = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -38,7 +38,7 @@ const createImport = protectedProcedure
     return { success: true, message: "createImport completed", timestamp: new Date().toISOString() };
   });
 const getExportStatus = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

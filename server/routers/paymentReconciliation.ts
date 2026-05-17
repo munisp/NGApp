@@ -46,7 +46,7 @@ const getMatchRules = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const runReconciliation = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -58,7 +58,7 @@ const runReconciliation = protectedProcedure
     return { success: true, ...row, message: "runReconciliation completed" };
   });
 const resolveDiscrepancy = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -70,7 +70,7 @@ const resolveDiscrepancy = protectedProcedure
     return { success: true, ...row, message: "resolveDiscrepancy completed" };
   });
 const updateMatchRules = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(floatReconciliations).where(eq(floatReconciliations.id, input.id));

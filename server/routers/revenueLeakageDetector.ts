@@ -44,7 +44,7 @@ const getStats = protectedProcedure
     return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
   });
 const runScan = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -56,7 +56,7 @@ const runScan = protectedProcedure
     return { success: true, ...row, message: "runScan completed" };
   });
 const resolveDiscrepancy = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

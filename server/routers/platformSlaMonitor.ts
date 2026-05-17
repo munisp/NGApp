@@ -1,16 +1,34 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const slas = [
-  { id: "SLA-001", service: "Payment Processing", target: 99.95, actual: 99.97, unit: "% uptime", status: "met", breaches: 0, period: "2026-04", penalty: 0, lastChecked: "2026-04-21T11:00:00Z" },
-  { id: "SLA-002", service: "Agent Portal", target: 99.9, actual: 99.85, unit: "% uptime", status: "breached", breaches: 2, period: "2026-04", penalty: 500000, lastChecked: "2026-04-21T11:00:00Z" },
-  { id: "SLA-003", service: "Settlement Engine", target: 99.99, actual: 99.99, unit: "% uptime", status: "met", breaches: 0, period: "2026-04", penalty: 0, lastChecked: "2026-04-21T11:00:00Z" },
-  { id: "SLA-004", service: "API Response Time", target: 200, actual: 185, unit: "ms p99", status: "met", breaches: 0, period: "2026-04", penalty: 0, lastChecked: "2026-04-21T11:00:00Z" },
-  { id: "SLA-005", service: "Transaction Success Rate", target: 99.5, actual: 99.2, unit: "%", status: "at_risk", breaches: 0, period: "2026-04", penalty: 0, lastChecked: "2026-04-21T11:00:00Z" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const platformSlaMonitorRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalSLAs: slas.length, metSLAs: slas.filter(s => s.status === "met").length, breachedSLAs: slas.filter(s => s.status === "breached").length, atRiskSLAs: slas.filter(s => s.status === "at_risk").length, totalPenalties: slas.reduce((s: any, sl: any) => s + sl.penalty, 0), overallCompliance: 80, avgPerformance: "99.57%", monitoringFrequency: "1 minute" })),
-  listSLAs: protectedProcedure.query(() => ({ slas, total: slas.length })),
-  getSLA: protectedProcedure.input(z.object({ slaId: z.string() })).query(({ input }) => slas.find(s => s.id === input.slaId) || null),
-  createSLA: protectedProcedure.input(z.object({ service: z.string(), target: z.number(), unit: z.string() })).mutation(({ input }) => ({ slaId: "SLA-" + Date.now(), status: "active", ...input })),
-  acknowledgeBreach: protectedProcedure.input(z.object({ slaId: z.string(), rootCause: z.string(), remediation: z.string() })).mutation(({ input }) => ({ slaId: input.slaId, acknowledged: true, acknowledgedAt: new Date().toISOString() })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalItems: 0, active: 0, lastUpdated: null };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'sla_%'`).limit(100);
+    return { totalItems: rows.length, active: rows.length, lastUpdated: new Date().toISOString() };
+  }),
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'sla_%'`).limit(input?.limit ?? 20);
+    return { items: rows.map(r => ({ id: r.key.replace("sla_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const itemId = "SLA-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "sla_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "sla_created", resource: "sla", resourceId: itemId, status: "success", metadata: { name: input.name } });
+    return { success: true, itemId };
+  }),
+  delete: protectedProcedure.input(z.object({ itemId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, "sla_" + input.itemId));
+    return { success: true };
+  }),
 });

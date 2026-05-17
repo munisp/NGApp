@@ -1,16 +1,36 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const workflows = [
-  { id: "WF-001", name: "KYC Tier 1 Verification", regulation: "CBN KYC Guidelines 2025", status: "active", completionRate: 98.5, avgProcessingTime: "4.2 hours", automationLevel: 92, lastRun: "2026-04-21T08:00:00Z", nextRun: "2026-04-22T08:00:00Z" },
-  { id: "WF-002", name: "AML Transaction Screening", regulation: "NFIU AML/CFT Regulations", status: "active", completionRate: 99.8, avgProcessingTime: "0.3 seconds", automationLevel: 99, lastRun: "2026-04-21T11:30:00Z", nextRun: "continuous" },
-  { id: "WF-003", name: "PEP/Sanctions Check", regulation: "UN/OFAC Sanctions Lists", status: "active", completionRate: 100, avgProcessingTime: "1.5 seconds", automationLevel: 100, lastRun: "2026-04-21T11:45:00Z", nextRun: "continuous" },
-  { id: "WF-004", name: "Agent License Renewal", regulation: "CBN Agent Banking Guidelines", status: "active", completionRate: 95.2, avgProcessingTime: "2.1 days", automationLevel: 78, lastRun: "2026-04-20T09:00:00Z", nextRun: "2026-04-27T09:00:00Z" },
-  { id: "WF-005", name: "Quarterly Regulatory Filing", regulation: "CBN Quarterly Returns", status: "pending", completionRate: 88.0, avgProcessingTime: "3.5 days", automationLevel: 65, lastRun: "2026-03-31T23:59:00Z", nextRun: "2026-06-30T23:59:00Z" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const autoComplianceWorkflowRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalWorkflows: workflows.length, activeWorkflows: workflows.filter(w => w.status === "active").length, avgAutomation: workflows.reduce((s: any, w: any) => s + w.automationLevel, 0) / workflows.length, complianceScore: 97.2, pendingActions: 3, regulationsTracked: 15, lastAuditDate: "2026-04-15", nextAuditDate: "2026-07-15" })),
-  listWorkflows: protectedProcedure.query(() => ({ workflows, total: workflows.length })),
-  getWorkflow: protectedProcedure.input(z.object({ workflowId: z.string() })).query(({ input }) => workflows.find(w => w.id === input.workflowId) || null),
-  triggerWorkflow: protectedProcedure.input(z.object({ workflowId: z.string(), priority: z.string().default("normal") })).mutation(({ input }) => ({ executionId: `EX-${Date.now()}`, workflowId: input.workflowId, status: "running", startedAt: new Date().toISOString() })),
-  updateRegulation: protectedProcedure.input(z.object({ workflowId: z.string(), regulation: z.string(), effectiveDate: z.string() })).mutation(({ input }) => ({ updated: true, ...input })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalWorkflows: 0, activeWorkflows: 0, completedToday: 0, failedToday: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'compliance_wf_%'`).limit(100);
+    return { totalWorkflows: rows.length, activeWorkflows: rows.filter(r => JSON.parse(String(r.value ?? "{}")).status === "active").length, completedToday: 0, failedToday: 0 };
+  }),
+  listWorkflows: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { workflows: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'compliance_wf_%'`).limit(input?.limit ?? 20);
+    let workflows = rows.map(r => ({ id: r.key.replace("compliance_wf_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
+    if (input?.status) workflows = workflows.filter((w: any) => w.status === input.status);
+    return { workflows, total: workflows.length };
+  }),
+  createWorkflow: protectedProcedure.input(z.object({ name: z.string(), type: z.string(), steps: z.array(z.string()), schedule: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const wfId = "CWF-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "compliance_wf_" + wfId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "compliance_workflow_created", resource: "compliance_workflows", resourceId: wfId, status: "success", metadata: { name: input.name } });
+    return { success: true, workflowId: wfId };
+  }),
+  triggerWorkflow: protectedProcedure.input(z.object({ workflowId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "compliance_workflow_triggered", resource: "compliance_workflows", resourceId: input.workflowId, status: "success", metadata: {} });
+    return { success: true, runId: "RUN-" + Date.now().toString(36).toUpperCase() };
+  }),
 });

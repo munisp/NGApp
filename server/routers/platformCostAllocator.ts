@@ -1,16 +1,34 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const costCenters = [
-  { id: "CC-001", name: "POS Operations", budget: 50000000, spent: 42000000, allocated: 48000000, utilization: 87.5, category: "operations", owner: "Operations Team" },
-  { id: "CC-002", name: "Agent Support", budget: 25000000, spent: 21000000, allocated: 23000000, utilization: 91.3, category: "support", owner: "Support Team" },
-  { id: "CC-003", name: "Infrastructure", budget: 80000000, spent: 65000000, allocated: 75000000, utilization: 86.7, category: "technology", owner: "Engineering Team" },
-  { id: "CC-004", name: "Compliance & Legal", budget: 15000000, spent: 12500000, allocated: 14000000, utilization: 89.3, category: "compliance", owner: "Legal Team" },
-  { id: "CC-005", name: "Marketing & Growth", budget: 35000000, spent: 28000000, allocated: 32000000, utilization: 87.5, category: "marketing", owner: "Growth Team" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const platformCostAllocatorRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalBudget: costCenters.reduce((s: any, c: any) => s + c.budget, 0), totalSpent: costCenters.reduce((s: any, c: any) => s + c.spent, 0), totalAllocated: costCenters.reduce((s: any, c: any) => s + c.allocated, 0), avgUtilization: costCenters.reduce((s: any, c: any) => s + c.utilization, 0) / costCenters.length, costCenterCount: costCenters.length, overBudgetAlerts: 0, forecastVariance: "3.2%" })),
-  listCostCenters: protectedProcedure.query(() => ({ costCenters, total: costCenters.length })),
-  getCostCenter: protectedProcedure.input(z.object({ centerId: z.string() })).query(({ input }) => costCenters.find(c => c.id === input.centerId) || null),
-  allocateBudget: protectedProcedure.input(z.object({ centerId: z.string(), amount: z.number(), reason: z.string() })).mutation(({ input }) => ({ allocationId: `ALLOC-${Date.now()}`, ...input, status: "approved", approvedAt: new Date().toISOString() })),
-  generateReport: protectedProcedure.input(z.object({ period: z.string().default("2026-04") })).mutation(({ input }) => ({ reportId: `COST-RPT-${Date.now()}`, period: input.period, totalCost: 168500000, breakdown: costCenters.map(c => ({ name: c.name, amount: c.spent })) })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalItems: 0, active: 0, lastUpdated: null };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'cost_allocation_%'`).limit(100);
+    return { totalItems: rows.length, active: rows.length, lastUpdated: new Date().toISOString() };
+  }),
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'cost_allocation_%'`).limit(input?.limit ?? 20);
+    return { items: rows.map(r => ({ id: r.key.replace("cost_allocation_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const itemId = "COSTALLOCATION-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "cost_allocation_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "cost_allocation_created", resource: "cost_allocation", resourceId: itemId, status: "success", metadata: { name: input.name } });
+    return { success: true, itemId };
+  }),
+  delete: protectedProcedure.input(z.object({ itemId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, "cost_allocation_" + input.itemId));
+    return { success: true };
+  }),
 });

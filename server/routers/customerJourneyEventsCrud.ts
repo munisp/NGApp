@@ -25,7 +25,7 @@ export const customer_journey_eventsRouter = router({
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Journey event not found" });
     return row;
   }),
-  trackEvent: protectedProcedure.input(z.object({ customerId: z.number(), stage: z.enum(["awareness", "consideration", "onboarding", "first_transaction", "active", "loyal", "churned"]), eventType: z.string(), metadata: z.record(z.any()).optional() })).mutation(async ({ input }) => {
+  trackEvent: protectedProcedure.input(z.object({ customerId: z.number(), stage: z.enum(["awareness", "consideration", "onboarding", "first_transaction", "active", "loyal", "churned"]), eventType: z.string(), metadata: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [row] = await db.insert(customerJourneySteps).values({ ...input, createdAt: new Date() } as any).returning();
     return row;

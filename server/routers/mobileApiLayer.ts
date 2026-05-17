@@ -1,23 +1,27 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const mobileApiLayerRouter = router({
-  dashboard: protectedProcedure.query(() => ({
-    registeredDevices: 4500, activeDevices: 3200, offlineCapable: 2800,
-    pushNotificationsSent24h: 12500, syncOperations24h: 45000,
-    platforms: [{ name: "Android", devices: 3800, percentage: 84.4 }, { name: "iOS", devices: 700, percentage: 15.6 }],
-    appVersions: [{ version: "3.2.1", devices: 2500, percentage: 55.6 }, { version: "3.1.0", devices: 1200, percentage: 26.7 }, { version: "3.0.0", devices: 500, percentage: 11.1 }, { version: "2.x", devices: 300, percentage: 6.7 }],
-    offlineQueue: { pendingSync: 234, avgSyncTime: 2.3, conflictsResolved: 12 },
-    deviceHealth: { healthy: 3000, degraded: 150, offline: 50, batteryLow: 200 },
-  })),
-  registerDevice: protectedProcedure.input(z.object({ deviceId: z.string(), platform: z.enum(["android", "ios"]), appVersion: z.string(), pushToken: z.string().optional() })).mutation(({ input }) => ({
-    deviceId: input.deviceId, registered: true, capabilities: ["offline_sync", "push_notifications", "biometric_auth"],
-  })),
-  syncData: protectedProcedure.input(z.object({ deviceId: z.string(), lastSyncTimestamp: z.number(), pendingOperations: z.array(z.object({ type: z.string(), data: z.record(z.string(), z.any()) })).default([]) })).mutation(({ input }) => ({
-    syncedAt: Date.now(), newRecords: 15, updatedRecords: 8, conflicts: 0,
-    pendingProcessed: input.pendingOperations.length,
-  })),
-  sendPush: protectedProcedure.input(z.object({ deviceIds: z.array(z.string()), title: z.string(), body: z.string(), data: z.record(z.string(), z.string()).optional() })).mutation(({ input }) => ({
-    sent: input.deviceIds.length, delivered: input.deviceIds.length - 1, failed: 1,
-  })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalRequests: 0, activeDevices: 0, apiVersion: "v3", sdkVersion: "2.1.0" };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "mobile_api")).orderBy(desc(auditLog.createdAt)).limit(100);
+    return { totalRequests: rows.length, activeDevices: 0, apiVersion: "v3", sdkVersion: "2.1.0" };
+  }),
+  getConfig: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { config: null };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "mobile_api_config")).limit(1);
+    if (rows.length > 0 && rows[0].value) return { config: JSON.parse(String(rows[0].value)) };
+    return { config: { apiUrl: "/api/trpc", wsUrl: "/ws", offlineEnabled: true, syncInterval: 30000, maxOfflineQueue: 500 } };
+  }),
+  updateConfig: protectedProcedure.input(z.object({ offlineEnabled: z.boolean().optional(), syncInterval: z.number().optional(), maxOfflineQueue: z.number().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "mobile_api_config", value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    return { success: true };
+  }),
 });

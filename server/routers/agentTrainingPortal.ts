@@ -56,7 +56,7 @@ const getProgress = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const submitQuiz = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -68,7 +68,7 @@ const submitQuiz = protectedProcedure
     return { success: true, ...row, message: "submitQuiz completed" };
   });
 const createCourse = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

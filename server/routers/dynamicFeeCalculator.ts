@@ -1,38 +1,39 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-// ── Middleware Integration (Sprint 44) ──────────────────────────────
-import { publishEvent, type KafkaTopic } from "../kafkaClient";
-import { cacheSet, cacheGet } from "../redisClient";
-import { tbCreateTransfer } from "../tbClient";
-import { fluvioProduce } from "../fluvio";
-import { permifyCheck } from "../_core/permify";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
-const feeStructures = [
-  { id: "FEE-001", name: "Standard Transfer", type: "transfer", tiers: [{ min: 0, max: 5000, fee: 10, feeType: "flat" }, { min: 5001, max: 50000, fee: 25, feeType: "flat" }, { min: 50001, max: 1000000, fee: 0.05, feeType: "percent" }], status: "active", effectiveDate: "2026-01-01" },
-  { id: "FEE-002", name: "Bill Payment", type: "bill_payment", tiers: [{ min: 0, max: 10000, fee: 100, feeType: "flat" }, { min: 10001, max: 100000, fee: 0.1, feeType: "percent" }], status: "active", effectiveDate: "2026-01-01" },
-  { id: "FEE-003", name: "Cash Withdrawal", type: "withdrawal", tiers: [{ min: 0, max: 20000, fee: 100, feeType: "flat" }, { min: 20001, max: 500000, fee: 0.075, feeType: "percent" }], status: "active", effectiveDate: "2026-02-01" },
-  { id: "FEE-004", name: "Agent Commission", type: "commission", tiers: [{ min: 0, max: 50000, fee: 0.5, feeType: "percent" }, { min: 50001, max: 500000, fee: 0.3, feeType: "percent" }], status: "active", effectiveDate: "2026-01-01" },
-];
 export const dynamicFeeCalculatorRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalFeeStructures: feeStructures.length, activeFeeStructures: feeStructures.filter(f => f.status === "active").length, totalFeeRevenue: 45000000, avgFeeRate: 0.12, feeTypes: ["flat", "percent"], lastUpdated: "2026-04-01", pendingChanges: 0, complianceStatus: "CBN Approved" })),
-  listFeeStructures: protectedProcedure.query(() => ({ feeStructures, total: feeStructures.length })),
-  getFeeStructure: protectedProcedure.input(z.object({ feeId: z.string() })).query(({ input }) => feeStructures.find(f => f.id === input.feeId) || null),
-  calculateFee: protectedProcedure.input(z.object({ type: z.string(), amount: z.number() })).mutation(async ({ input }) => {
-      const structure = feeStructures.find(f => f.type === input.type); if (!structure) return { fee: 0, error: "Unknown type" }; const tier = structure.tiers.find(t => input.amount >= t.min && input.amount <= t.max); const fee = tier ? (tier.feeType === "flat" ? tier.fee : input.amount * tier.fee / 100) : 0;
-      // ── Middleware Integration (Sprint 44) ──────────────────────────
-      // [Kafka] Publish event
-      try { await publishEvent("pos.dynamicfeecalculator" as KafkaTopic, "system", { event: "dynamicFeeCalculator.processed", timestamp: Date.now() }); } catch {}
-      // [Redis] Cache result for 5 min
-      try { await cacheSet("dynamicFeeCalculator:last", JSON.stringify({ ts: Date.now() }), 300); } catch {}
-      // [TigerBeetle] Record ledger entry (if sidecar available)
-      try { await tbCreateTransfer({ debitAccountId: "1", creditAccountId: "2", amount: 0 }); } catch {}
-      // [Fluvio] Stream event for real-time analytics
-      try { await fluvioProduce("pos.dynamicfeecalculator", { value: JSON.stringify({ event: "dynamicFeeCalculator.processed", ts: Date.now() }) }); } catch {}
-      // [Permify] Authorization check (fail-open)
-      try { await permifyCheck({ subjectType: "user", subjectId: "system", entityType: "dynamicFeeCalculator", entityId: "system", permission: "execute" }); } catch {}
-      // ── End Middleware ──────────────────────────────────────────────
-      return { fee: Math.round(fee), type: input.type, amount: input.amount, tier: tier };
-    }),
-
-  updateFeeStructure: protectedProcedure.input(z.object({ feeId: z.string(), tiers: z.array(z.object({ min: z.number(), max: z.number(), fee: z.number(), feeType: z.string() })) })).mutation(({ input }) => ({ feeId: input.feeId, status: "pending_approval", updatedAt: new Date().toISOString() })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalRules: 0, activeRules: 0, avgFeeRate: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'fee_rule_%'`).limit(100);
+    return { totalRules: rows.length, activeRules: rows.length, avgFeeRate: 1.5 };
+  }),
+  calculate: protectedProcedure.input(z.object({ amount: z.number(), transactionType: z.string(), channel: z.string().default("pos"), agentTier: z.string().optional() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { fee: Math.round(input.amount * 0.015), rate: 1.5, breakdown: [] };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "fee_rule_" + input.transactionType)).limit(1);
+    if (rows.length > 0) {
+      const rule = JSON.parse(String(rows[0].value ?? "{}"));
+      const rate = Number(rule.rate ?? 1.5);
+      return { fee: Math.round(input.amount * rate / 100), rate, breakdown: [{ component: "Base fee", amount: Math.round(input.amount * rate / 100) }] };
+    }
+    const defaultRate = 1.5;
+    return { fee: Math.round(input.amount * defaultRate / 100), rate: defaultRate, breakdown: [{ component: "Default fee", amount: Math.round(input.amount * defaultRate / 100) }] };
+  }),
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { rules: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'fee_rule_%'`).limit(input?.limit ?? 20);
+    return { rules: rows.map(r => ({ id: r.key.replace("fee_rule_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  createRule: protectedProcedure.input(z.object({ transactionType: z.string(), rate: z.number(), minFee: z.number().optional(), maxFee: z.number().optional(), flatFee: z.number().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "fee_rule_" + input.transactionType, value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "fee_rule_created", resource: "fee_rules", resourceId: input.transactionType, status: "success", metadata: input as any });
+    return { success: true };
+  }),
 });

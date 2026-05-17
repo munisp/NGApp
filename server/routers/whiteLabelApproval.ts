@@ -1,19 +1,37 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-
-const approvalQueue = [
-  { id: "APR-001", applicationId: "WL-002", type: "document_review", priority: "high", assignedTo: "reviewer@54link.com", status: "pending", createdAt: "2026-04-10T08:00:00Z", slaDeadline: "2026-04-15T23:59:59Z", escalationLevel: 0, notes: [], checklist: [{ item: "Verify CAC registration", done: false }, { item: "Validate tax clearance", done: false }, { item: "Check director credentials", done: true }] },
-  { id: "APR-002", applicationId: "WL-001", type: "branding_review", priority: "medium", assignedTo: "design@54link.com", status: "in_review", createdAt: "2026-04-01T09:00:00Z", slaDeadline: "2026-04-20T23:59:59Z", escalationLevel: 0, notes: [{ by: "design@54link.com", text: "Logo needs higher resolution", at: "2026-04-05T10:00:00Z" }], checklist: [{ item: "Logo quality check", done: false }, { item: "Color accessibility", done: true }, { item: "Brand guidelines compliance", done: true }] },
-];
-
-const slaConfig = { document_review: { hours: 120, escalateAfter: 96 }, compliance_check: { hours: 168, escalateAfter: 120 }, branding_review: { hours: 120, escalateAfter: 96 }, technical_review: { hours: 240, escalateAfter: 168 } };
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { tenants, auditLog } from "../../drizzle/schema";
 
 export const whiteLabelApprovalRouter = router({
-  getStats: protectedProcedure.query(() => ({ pendingApprovals: approvalQueue.filter(a => a.status === "pending").length, inReview: approvalQueue.filter(a => a.status === "in_review").length, avgApprovalTime: "3.2 days", slaBreaches: 0, escalations: 0 })),
-  listQueue: protectedProcedure.input(z.object({ status: z.string().optional(), priority: z.string().optional(), assignedTo: z.string().optional() }).optional()).query(({ input }) => { let q = [...approvalQueue]; if (input?.status) q = q.filter(a => a.status === input.status); if (input?.priority) q = q.filter(a => a.priority === input.priority); return { queue: q, total: q.length }; }),
-  getApproval: protectedProcedure.input(z.object({ id: z.string() })).query(({ input }) => approvalQueue.find(a => a.id === input.id) || null),
-  approveItem: protectedProcedure.input(z.object({ approvalId: z.string(), notes: z.string().optional() })).mutation(({ input }) => ({ success: true, approvalId: input.approvalId, action: "approved", at: new Date().toISOString() })),
-  rejectItem: protectedProcedure.input(z.object({ approvalId: z.string(), reason: z.string() })).mutation(({ input }) => ({ success: true, approvalId: input.approvalId, action: "rejected", reason: input.reason, at: new Date().toISOString() })),
-  escalate: protectedProcedure.input(z.object({ approvalId: z.string(), escalateTo: z.string() })).mutation(({ input }) => ({ success: true, approvalId: input.approvalId, escalatedTo: input.escalateTo, at: new Date().toISOString() })),
-  getSlaConfig: protectedProcedure.query(() => slaConfig),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalApplications: 0, pendingApproval: 0, approved: 0, rejected: 0 };
+    const [total] = await db.select({ value: count() }).from(tenants);
+    const statusCounts = await db.select({ status: tenants.status, cnt: count() }).from(tenants).groupBy(tenants.status);
+    const byStatus: Record<string, number> = {};
+    statusCounts.forEach(r => { byStatus[r.status ?? "unknown"] = Number(r.cnt); });
+    return { totalApplications: Number(total.value), pendingApproval: byStatus["pending"] ?? 0, approved: byStatus["active"] ?? 0, rejected: byStatus["suspended"] ?? 0 };
+  }),
+  listPending: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { applications: [], total: 0 };
+    const rows = await db.select().from(tenants).where(eq(tenants.status, "trial")).orderBy(desc(tenants.createdAt)).limit(input?.limit ?? 20);
+    return { applications: rows, total: rows.length };
+  }),
+  approve: protectedProcedure.input(z.object({ tenantId: z.number(), notes: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [updated] = await db.update(tenants).set({ status: "active", updatedAt: new Date() }).where(eq(tenants.id, input.tenantId)).returning();
+    await db.insert(auditLog).values({ action: "whitelabel_approved", resource: "tenants", resourceId: String(input.tenantId), status: "success", metadata: { notes: input.notes } });
+    return { success: true, tenant: updated };
+  }),
+  reject: protectedProcedure.input(z.object({ tenantId: z.number(), reason: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [updated] = await db.update(tenants).set({ status: "suspended", updatedAt: new Date() }).where(eq(tenants.id, input.tenantId)).returning();
+    await db.insert(auditLog).values({ action: "whitelabel_rejected", resource: "tenants", resourceId: String(input.tenantId), status: "success", metadata: { reason: input.reason } });
+    return { success: true, tenant: updated };
+  }),
 });

@@ -1,23 +1,36 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const LIMITS: Record<string, { perTx: number; daily: number; monthly: number }> = {
-  "tier1": { perTx: 50000, daily: 300000, monthly: 3000000 },
-  "tier2": { perTx: 200000, daily: 1000000, monthly: 10000000 },
-  "tier3": { perTx: 5000000, daily: 10000000, monthly: 50000000 },
-};
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
+
 export const transactionLimitsEngineRouter = router({
-  getLimits: protectedProcedure.input(z.object({ tier: z.string() })).query(async ({ input }) => LIMITS[input.tier] ?? LIMITS["tier1"]),
-  checkLimit: protectedProcedure.input(z.object({ tier: z.string(), amount: z.number(), dailyTotal: z.number().optional(), monthlyTotal: z.number().optional() })).query(async ({ input }) => {
-    const limits = LIMITS[input.tier] ?? LIMITS["tier1"];
-    if (input.amount > limits.perTx) return { allowed: false, reason: `Exceeds per-transaction limit of N${limits.perTx.toLocaleString()}` };
-    if ((input.dailyTotal??0) + input.amount > limits.daily) return { allowed: false, reason: `Exceeds daily limit` };
-    if ((input.monthlyTotal??0) + input.amount > limits.monthly) return { allowed: false, reason: `Exceeds monthly limit` };
-    return { allowed: true, remaining: { perTx: limits.perTx - input.amount, daily: limits.daily - (input.dailyTotal??0) - input.amount } };
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalLimits: 0, activeLimits: 0, breachesToday: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'tx_limit_%'`).limit(100);
+    return { totalLimits: rows.length, activeLimits: rows.length, breachesToday: 0 };
   }),
-  updateLimits: protectedProcedure.input(z.object({ tier: z.string(), perTx: z.number().optional(), daily: z.number().optional(), monthly: z.number().optional() })).mutation(async ({ input }) => {
-    if (LIMITS[input.tier]) { Object.assign(LIMITS[input.tier], { ...(input.perTx && { perTx: input.perTx }), ...(input.daily && { daily: input.daily }), ...(input.monthly && { monthly: input.monthly }) }); }
-    return { success: true, limits: LIMITS[input.tier] };
+  listLimits: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { limits: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'tx_limit_%'`).limit(input?.limit ?? 20);
+    return { limits: rows.map(r => ({ id: r.key.replace("tx_limit_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
   }),
-  getAllTiers: protectedProcedure.query(async () => Object.entries(LIMITS).map(([tier, limits]) => ({ tier, ...limits }))),
-  getStats: protectedProcedure.query(async () => ({ tiers: 3, breachesToday: 12, breachesThisMonth: 145, avgUtilization: "67%" })),
+  checkLimit: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.number(), transactionType: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { allowed: true, limit: 0, remaining: 0 };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "tx_limit_" + input.transactionType)).limit(1);
+    if (rows.length === 0) return { allowed: true, limit: 10000000, remaining: 10000000 };
+    const limit = JSON.parse(String(rows[0].value ?? "{}"));
+    const maxAmount = Number(limit.maxAmount ?? 10000000);
+    return { allowed: input.amount <= maxAmount, limit: maxAmount, remaining: Math.max(0, maxAmount - input.amount) };
+  }),
+  setLimit: protectedProcedure.input(z.object({ transactionType: z.string(), maxAmount: z.number(), dailyLimit: z.number().optional(), monthlyLimit: z.number().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "tx_limit_" + input.transactionType, value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "tx_limit_set", resource: "tx_limits", resourceId: input.transactionType, status: "success", metadata: input as any });
+    return { success: true };
+  }),
 });

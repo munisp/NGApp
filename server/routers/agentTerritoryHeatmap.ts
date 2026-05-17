@@ -46,7 +46,7 @@ const getOptimalCoverage = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const assignTerritory = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(agents).where(eq(agents.id, input.id));

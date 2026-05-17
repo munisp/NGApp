@@ -1,14 +1,33 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const exportJobs = [
-  { id: "JOB-001", name: "Daily Settlement Report", format: "excel", status: "completed", rows: 3450, fileSize: "4.2MB", createdAt: "2026-04-20T06:00:00Z", completedAt: "2026-04-20T06:02:30Z", downloadUrl: "/exports/JOB-001.xlsx", filters: { dateRange: "last_24h", status: "completed" }, schedule: { frequency: "daily", time: "06:00", timezone: "Africa/Lagos" } },
-  { id: "JOB-002", name: "Weekly Agent Performance", format: "csv", status: "processing", rows: 0, fileSize: "", createdAt: "2026-04-21T08:00:00Z", completedAt: "", downloadUrl: "", filters: { dateRange: "last_7d" }, schedule: { frequency: "weekly", time: "08:00", timezone: "Africa/Lagos" } },
-  { id: "JOB-003", name: "Monthly Compliance Report", format: "pdf", status: "scheduled", rows: 0, fileSize: "", createdAt: "2026-04-01T00:00:00Z", completedAt: "", downloadUrl: "", filters: { dateRange: "last_30d", includeCharts: true }, schedule: { frequency: "monthly", time: "00:00", timezone: "Africa/Lagos" } },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { transactions, auditLog } from "../../drizzle/schema";
+
 export const transactionExportEngineRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalExports: 1892, scheduledJobs: 12, avgProcessingTime: "45s", storageUsed: "2.3GB" })),
-  listJobs: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(({ input }) => { let jobs = [...exportJobs]; if (input?.status) jobs = jobs.filter(j => j.status === input.status); return { jobs, total: jobs.length }; }),
-  createExport: protectedProcedure.input(z.object({ name: z.string(), format: z.enum(["csv", "excel", "pdf"]), filters: z.object({ dateRange: z.string().optional(), status: z.string().optional(), agentId: z.string().optional(), region: z.string().optional() }).optional(), schedule: z.object({ frequency: z.string(), time: z.string() }).optional() })).mutation(({ input }) => ({ jobId: `JOB-${Date.now()}`, name: input.name, status: "queued", estimatedTime: "30s" })),
-  cancelJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(({ input }) => ({ success: true, jobId: input.jobId })),
-  getFormats: protectedProcedure.query(() => [{ id: "csv", label: "CSV", description: "Comma-separated values", maxRows: 1000000 }, { id: "excel", label: "Excel (XLSX)", description: "Microsoft Excel format", maxRows: 500000 }, { id: "pdf", label: "PDF Report", description: "Formatted PDF with charts", maxRows: 10000 }]),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalExports: 0, pendingExports: 0, exportFormats: 3 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "transaction_export")).orderBy(desc(auditLog.createdAt)).limit(100);
+    return { totalExports: rows.length, pendingExports: rows.filter(r => r.status === "warning").length, exportFormats: 3 };
+  }),
+  export: protectedProcedure.input(z.object({ format: z.enum(["csv", "xlsx", "pdf"]).default("csv"), dateFrom: z.string().optional(), dateTo: z.string().optional(), agentId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const exportId = "EXP-" + Date.now().toString(36).toUpperCase();
+    const conditions: any[] = [];
+    if (input.dateFrom) conditions.push(gte(transactions.createdAt, new Date(input.dateFrom)));
+    if (input.dateTo) conditions.push(lte(transactions.createdAt, new Date(input.dateTo)));
+    if (input.agentId) conditions.push(eq(transactions.agentId, input.agentId));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const [{ value: txCount }] = await db.select({ value: count() }).from(transactions).where(where);
+    await db.insert(auditLog).values({ action: "transaction_export", resource: "exports", resourceId: exportId, status: "success", metadata: { format: input.format, transactionCount: Number(txCount), dateFrom: input.dateFrom, dateTo: input.dateTo } });
+    return { success: true, exportId, transactionCount: Number(txCount), format: input.format };
+  }),
+  listExports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { exports: [], total: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "transaction_export")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { exports: rows.map(r => ({ id: r.id, exportId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
+  }),
 });

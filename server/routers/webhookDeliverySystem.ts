@@ -46,7 +46,7 @@ const getStats = protectedProcedure
     return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
   });
 const createEndpoint = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -58,7 +58,7 @@ const createEndpoint = protectedProcedure
     return { success: true, ...row, message: "createEndpoint completed" };
   });
 const updateEndpoint = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));

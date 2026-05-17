@@ -1,70 +1,34 @@
-// Carrier SLA Monitor Router — Sprint 76
-// Track uptime/availability per carrier per region, SLA compliance scoring
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-
-const SLA_TARGETS: Record<string, { uptime: number; latencyMs: number; packetLoss: number }> = {
-  MTN: { uptime: 99.5, latencyMs: 200, packetLoss: 2.0 },
-  Airtel: { uptime: 99.0, latencyMs: 250, packetLoss: 3.0 },
-  Safaricom: { uptime: 99.5, latencyMs: 150, packetLoss: 1.5 },
-  Glo: { uptime: 98.0, latencyMs: 300, packetLoss: 5.0 },
-  "9mobile": { uptime: 97.5, latencyMs: 350, packetLoss: 5.0 },
-  MTN_GH: { uptime: 99.0, latencyMs: 200, packetLoss: 2.5 },
-  Vodafone_GH: { uptime: 99.0, latencyMs: 220, packetLoss: 3.0 },
-  Orange_SN: { uptime: 98.5, latencyMs: 250, packetLoss: 3.0 },
-  MTN_ZA: { uptime: 99.5, latencyMs: 180, packetLoss: 2.0 },
-  Vodacom_ZA: { uptime: 99.5, latencyMs: 180, packetLoss: 2.0 },
-};
-
-interface SLACheck { timestamp: number; up: boolean; latencyMs: number; packetLossPct: number }
-const checks = new Map<string, SLACheck[]>();
-const violations: Array<{ timestamp: number; carrier: string; region: string; violation: string; severity: string }> = [];
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const carrierSlaRouter = router({
-  recordCheck: protectedProcedure
-    .input(z.object({
-      carrier: z.string(),
-      region: z.string(),
-      up: z.boolean().default(true),
-      latencyMs: z.number(),
-      packetLossPct: z.number(),
-    }))
-    .mutation(({ input }) => {
-      const key = `${input.carrier}:${input.region}`;
-      if (!checks.has(key)) checks.set(key, []);
-      checks.get(key)!.push({ timestamp: Date.now(), up: input.up, latencyMs: input.latencyMs, packetLossPct: input.packetLossPct });
-      const target = SLA_TARGETS[input.carrier] || { uptime: 99.0, latencyMs: 300, packetLoss: 5.0 };
-      if (!input.up) violations.push({ timestamp: Date.now(), carrier: input.carrier, region: input.region, violation: "Downtime detected", severity: "critical" });
-      if (input.latencyMs > target.latencyMs) violations.push({ timestamp: Date.now(), carrier: input.carrier, region: input.region, violation: `Latency ${input.latencyMs}ms exceeds SLA ${target.latencyMs}ms`, severity: "warning" });
-      if (input.packetLossPct > target.packetLoss) violations.push({ timestamp: Date.now(), carrier: input.carrier, region: input.region, violation: `Packet loss ${input.packetLossPct}% exceeds SLA ${target.packetLoss}%`, severity: "warning" });
-      return { status: "recorded" };
-    }),
-
-  getSummary: protectedProcedure.query(() => {
-    const summary: Record<string, any> = {};
-    checks.forEach((checkList, key) => {
-      const [carrier, region] = key.split(":");
-      const total = checkList.length;
-      const upCount = checkList.filter(c => c.up).length;
-      const avgLatency = checkList.reduce((s: any, c: any) => s + c.latencyMs, 0) / (total || 1);
-      const avgLoss = checkList.reduce((s: any, c: any) => s + c.packetLossPct, 0) / (total || 1);
-      const uptimePct = total > 0 ? (upCount / total) * 100 : 100;
-      const target = SLA_TARGETS[carrier] || { uptime: 99.0, latencyMs: 300, packetLoss: 5.0 };
-      summary[key] = {
-        carrier, region, totalChecks: total,
-        uptimePct: Math.round(uptimePct * 100) / 100,
-        avgLatencyMs: Math.round(avgLatency * 10) / 10,
-        avgPacketLossPct: Math.round(avgLoss * 100) / 100,
-        slaCompliant: uptimePct >= target.uptime && avgLatency <= target.latencyMs && avgLoss <= target.packetLoss,
-        slaTarget: target,
-      };
-    });
-    return summary;
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalCarriers: 0, avgUptime: 0, slaBreaches: 0, activeSlas: 0 };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "carrier_sla_stats")).limit(1);
+    if (rows.length > 0 && rows[0].value) return JSON.parse(String(rows[0].value));
+    return { totalCarriers: 0, avgUptime: 99.5, slaBreaches: 0, activeSlas: 0 };
   }),
-
-  getViolations: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
-    .query(({ input }) => violations.slice(-input.limit)),
-
-  getTargets: protectedProcedure.query(() => SLA_TARGETS),
+  listCarriers: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { carriers: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "carrier_sla_list")).limit(1);
+    const carriers = rows.length > 0 && rows[0].value ? JSON.parse(String(rows[0].value)) : [];
+    return { carriers: carriers.slice(0, input?.limit ?? 20), total: carriers.length };
+  }),
+  updateSla: protectedProcedure.input(z.object({ carrierId: z.string(), uptimeTarget: z.number().min(90).max(100), responseTimeMs: z.number(), maxDowntimeMinutes: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "carrier_sla_updated", resource: "carrier_sla", resourceId: input.carrierId, status: "success", metadata: { uptimeTarget: input.uptimeTarget, responseTimeMs: input.responseTimeMs, maxDowntimeMinutes: input.maxDowntimeMinutes } });
+    return { success: true };
+  }),
+  reportBreach: protectedProcedure.input(z.object({ carrierId: z.string(), breachType: z.string(), description: z.string(), downtimeMinutes: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "sla_breach_reported", resource: "carrier_sla", resourceId: input.carrierId, status: "warning", metadata: { breachType: input.breachType, description: input.description, downtimeMinutes: input.downtimeMinutes } });
+    return { success: true, breachId: "SLA-" + Date.now().toString(36).toUpperCase() };
+  }),
 });

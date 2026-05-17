@@ -1,19 +1,29 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const apiVersioningRouter = router({
-  dashboard: protectedProcedure.query(() => ({
-    currentVersion: "v2.1.0", supportedVersions: ["v1.0", "v1.5", "v2.0", "v2.1"],
-    deprecatedVersions: [{ version: "v1.0", deprecatedAt: Date.now() - 90 * 86400000, sunsetDate: Date.now() + 90 * 86400000, activeClients: 12 }],
-    versionUsage: [{ version: "v2.1", percentage: 68, clients: 340 }, { version: "v2.0", percentage: 25, clients: 125 }, { version: "v1.5", percentage: 5, clients: 25 }, { version: "v1.0", percentage: 2, clients: 12 }],
-    migrationGuides: [{ from: "v1.0", to: "v1.5", breakingChanges: 3, guide: "/docs/migration/v1-to-v1.5" }, { from: "v1.5", to: "v2.0", breakingChanges: 7, guide: "/docs/migration/v1.5-to-v2" }, { from: "v2.0", to: "v2.1", breakingChanges: 1, guide: "/docs/migration/v2-to-v2.1" }],
-    changelog: [{ version: "v2.1.0", date: Date.now() - 7 * 86400000, changes: ["Added GraphQL federation", "Enhanced fraud detection", "New agent hierarchy endpoints"] }, { version: "v2.0.0", date: Date.now() - 60 * 86400000, changes: ["Breaking: New auth flow", "Added real-time WebSocket", "Multi-tenancy support"] }],
-  })),
-  getVersion: protectedProcedure.input(z.object({ version: z.string() })).query(({ input }) => ({
-    version: input.version, status: input.version === "v1.0" ? "deprecated" : "active",
-    endpoints: 133, docsUrl: `/api/docs/${input.version}`,
-  })),
-  setDeprecation: protectedProcedure.input(z.object({ version: z.string(), sunsetDate: z.number() })).mutation(({ input }) => ({
-    version: input.version, deprecated: true, sunsetDate: input.sunsetDate,
-  })),
+  getCurrentVersion: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { version: "3.6.0", apiVersion: "v3", deprecated: false };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "api_version")).limit(1);
+    if (rows.length > 0 && rows[0].value) return JSON.parse(String(rows[0].value));
+    return { version: "3.6.0", apiVersion: "v3", deprecated: false, supportedVersions: ["v3", "v2"], sunsetVersions: ["v1"] };
+  }),
+  listVersions: protectedProcedure.query(async () => {
+    return { versions: [
+      { version: "v3", status: "current", releaseDate: "2026-04-01", endpoints: 424 },
+      { version: "v2", status: "supported", releaseDate: "2025-10-01", endpoints: 280, sunsetDate: "2027-04-01" },
+      { version: "v1", status: "deprecated", releaseDate: "2025-01-01", endpoints: 120, sunsetDate: "2026-07-01" },
+    ] };
+  }),
+  setVersion: protectedProcedure.input(z.object({ version: z.string(), apiVersion: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "api_version", value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "api_version_updated", resource: "api_versioning", resourceId: input.apiVersion, status: "success", metadata: input as any });
+    return { success: true };
+  }),
 });

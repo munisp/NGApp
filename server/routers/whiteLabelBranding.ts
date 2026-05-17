@@ -1,16 +1,35 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-
-const brandingProfiles = [
-  { id: "BR-001", partnerId: "WL-001", appName: "PayFast POS", primaryColor: "#1E40AF", secondaryColor: "#3B82F6", accentColor: "#DBEAFE", fontFamily: "Inter", logoUrl: "", faviconUrl: "", domain: "payfast.54link.com", customCss: "", loginBg: "gradient-blue", dashboardLayout: "standard", emailTemplate: "branded", smsSignature: "PayFast", receiptHeader: "PayFast POS - Powered by 54Link", receiptFooter: "Thank you for using PayFast", status: "draft" },
-  { id: "BR-002", partnerId: "WL-003", appName: "MobileMoney POS", primaryColor: "#7C3AED", secondaryColor: "#8B5CF6", accentColor: "#EDE9FE", fontFamily: "Poppins", logoUrl: "mobilemoney-logo.png", faviconUrl: "mobilemoney-favicon.ico", domain: "mobilemoney.54link.com", customCss: "", loginBg: "gradient-purple", dashboardLayout: "compact", emailTemplate: "branded", smsSignature: "MobileMoney", receiptHeader: "MobileMoney Express - Powered by 54Link", receiptFooter: "Thank you for choosing MobileMoney", status: "active" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { tenants, auditLog, systemConfig } from "../../drizzle/schema";
 
 export const whiteLabelBrandingRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalProfiles: brandingProfiles.length, activeProfiles: brandingProfiles.filter(b => b.status === "active").length, draftProfiles: brandingProfiles.filter(b => b.status === "draft").length, customDomains: 2 })),
-  listProfiles: protectedProcedure.query(() => brandingProfiles),
-  getProfile: protectedProcedure.input(z.object({ id: z.string() })).query(({ input }) => brandingProfiles.find(b => b.id === input.id) || null),
-  updateBranding: protectedProcedure.input(z.object({ profileId: z.string(), appName: z.string().optional(), primaryColor: z.string().optional(), secondaryColor: z.string().optional(), fontFamily: z.string().optional(), domain: z.string().optional() })).mutation(({ input }) => ({ success: true, profileId: input.profileId, updatedAt: new Date().toISOString() })),
-  previewBranding: protectedProcedure.input(z.object({ profileId: z.string() })).query(({ input }) => ({ previewUrl: `https://preview.54link.com/${input.profileId}`, expiresAt: new Date(Date.now() + 3600000).toISOString() })),
-  getThemeOptions: protectedProcedure.query(() => ({ fonts: ["Inter", "Poppins", "Roboto", "Open Sans", "Montserrat", "Lato"], layouts: ["standard", "compact", "wide", "minimal"], loginBackgrounds: ["gradient-blue", "gradient-purple", "gradient-green", "solid-dark", "solid-light", "custom-image"] })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalBrands: 0, activeBrands: 0, customDomains: 0 };
+    const [total] = await db.select({ value: count() }).from(tenants);
+    return { totalBrands: Number(total.value), activeBrands: Number(total.value), customDomains: 0 };
+  }),
+  getBranding: protectedProcedure.input(z.object({ tenantId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "branding_" + input.tenantId)).limit(1);
+    if (rows.length > 0 && rows[0].value) return JSON.parse(String(rows[0].value));
+    return { primaryColor: "#1a56db", secondaryColor: "#6b7280", logo: null, appName: "54Link", domain: null };
+  }),
+  updateBranding: protectedProcedure.input(z.object({ tenantId: z.number(), primaryColor: z.string().optional(), secondaryColor: z.string().optional(), logo: z.string().optional(), appName: z.string().optional(), domain: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const { tenantId, ...branding } = input;
+    await db.insert(systemConfig).values({ key: "branding_" + tenantId, value: JSON.stringify({ ...branding, updatedAt: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ ...branding, updatedAt: new Date().toISOString() }), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "branding_updated", resource: "tenants", resourceId: String(tenantId), status: "success", metadata: branding as any });
+    return { success: true };
+  }),
+  listBrands: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { brands: [], total: 0 };
+    const rows = await db.select().from(tenants).orderBy(desc(tenants.createdAt)).limit(input?.limit ?? 20);
+    return { brands: rows.map(t => ({ tenantId: t.id, name: t.name, status: t.status })), total: rows.length };
+  }),
 });

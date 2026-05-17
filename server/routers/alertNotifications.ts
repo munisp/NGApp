@@ -1,213 +1,33 @@
-// @ts-nocheck
-/**
- * Sprint 93 — Alert Notification tRPC Router
- *
- * Exposes endpoints for managing admin notification preferences,
- * viewing delivery history, sending test alerts, and managing
- * escalation rules.
- */
-
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import {
-  getAdminPreferences,
-  getAdminPreference,
-  updateAdminPreference,
-  addAdminPreference,
-  getDeliveryHistory,
-  getDeliveryStats,
-  getEscalationRules,
-  updateEscalationRule,
-  sendTestAlert,
-  dispatchSecurityAlert,
-  cancelEscalation,
-  type AlertSeverity,
-  type AlertCategory,
-  type DeliveryChannel,
-  type DeliveryStatus,
-} from "../services/securityAlertNotifier";
-
-const severityEnum = z.enum(["critical", "high", "medium", "low", "info"]);
-const categoryEnum = z.enum([
-  "ransomware", "bulk_operation", "file_integrity", "exfiltration",
-  "brute_force", "canary_trigger", "ddos", "deepfake", "unauthorized_access",
-]);
-const channelEnum = z.enum(["push", "email", "sms", "webhook", "slack"]);
-const deliveryStatusEnum = z.enum(["pending", "sent", "delivered", "failed", "bounced"]);
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { notification_logs, auditLog } from "../../drizzle/schema";
 
 export const alertNotificationsRouter = router({
-  // ── Preferences ──────────────────────────────────────────────────────────
-
-  /** List all admin notification preferences */
-  listPreferences: protectedProcedure.query(() => {
-    return getAdminPreferences();
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalAlerts: 0, unacknowledged: 0, critical: 0, warning: 0 };
+    const [total] = await db.select({ value: count() }).from(notification_logs);
+    const [unread] = await db.select({ value: count() }).from(notification_logs).where(eq(notification_logs.status, "pending"));
+    return { totalAlerts: Number(total.value), unacknowledged: Number(unread.value), critical: 0, warning: 0 };
   }),
-
-  /** Get a single admin's notification preferences */
-  getPreference: protectedProcedure
-    .input(z.object({ adminId: z.string() }))
-    .query(({ input }) => {
-      const pref = getAdminPreference(input.adminId);
-      if (!pref) return null;
-      return pref;
-    }),
-
-  /** Update an admin's notification preferences */
-  updatePreference: protectedProcedure
-    .input(
-      z.object({
-        adminId: z.string(),
-        channels: z
-          .object({
-            push: z.boolean().optional(),
-            email: z.boolean().optional(),
-            sms: z.boolean().optional(),
-            webhook: z.boolean().optional(),
-            slack: z.boolean().optional(),
-          })
-          .optional(),
-        severityThreshold: severityEnum.optional(),
-        quietHours: z
-          .object({
-            enabled: z.boolean(),
-            startHour: z.number().min(0).max(23),
-            endHour: z.number().min(0).max(23),
-            overrideForCritical: z.boolean(),
-          })
-          .optional(),
-        categories: z.array(categoryEnum).optional(),
-        webhookUrl: z.string().url().optional(),
-        slackWebhookUrl: z.string().url().optional(),
-        adminEmail: z.string().email().optional(),
-        adminPhone: z.string().optional(),
-      })
-    )
-    .mutation(({ input }) => {
-      const { adminId, ...updates } = input;
-      const result = updateAdminPreference(adminId, updates);
-      if (!result) {
-        return { success: false, message: "Admin preference not found" };
-      }
-      return { success: true, preference: result };
-    }),
-
-  /** Add a new admin notification preference */
-  addPreference: protectedProcedure
-    .input(
-      z.object({
-        adminId: z.string(),
-        adminName: z.string(),
-        adminEmail: z.string().email(),
-        adminPhone: z.string().optional(),
-        channels: z.object({
-          push: z.boolean(),
-          email: z.boolean(),
-          sms: z.boolean(),
-          webhook: z.boolean(),
-          slack: z.boolean(),
-        }),
-        severityThreshold: severityEnum,
-        categories: z.array(categoryEnum),
-        webhookUrl: z.string().url().optional(),
-        slackWebhookUrl: z.string().url().optional(),
-      })
-    )
-    .mutation(({ input }) => {
-      addAdminPreference(input);
-      return { success: true } as any;
-    }),
-
-  // ── Delivery History ─────────────────────────────────────────────────────
-
-  /** Get delivery history with filters */
-  getDeliveryHistory: protectedProcedure
-    .input(
-      z
-        .object({
-          alertId: z.string().optional(),
-          adminId: z.string().optional(),
-          channel: channelEnum.optional(),
-          status: deliveryStatusEnum.optional(),
-          limit: z.number().min(1).max(200).optional(),
-          offset: z.number().min(0).optional(),
-        })
-        .optional()
-    )
-    .query(({ input }) => {
-      return getDeliveryHistory(input ?? undefined);
-    }),
-
-  /** Get delivery statistics */
-  getDeliveryStats: protectedProcedure.query(() => {
-    return getDeliveryStats();
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { alerts: [], total: 0 };
+    const rows = await db.select().from(notification_logs).orderBy(desc(notification_logs.createdAt)).limit(input?.limit ?? 20);
+    return { alerts: rows, total: rows.length };
   }),
-
-  // ── Escalation Rules ─────────────────────────────────────────────────────
-
-  /** List all escalation rules */
-  listEscalationRules: protectedProcedure.query(() => {
-    return getEscalationRules();
+  acknowledge: protectedProcedure.input(z.object({ alertId: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [updated] = await db.update(notification_logs).set({ status: "read" }).where(eq(notification_logs.id, input.alertId)).returning();
+    return { success: true, alert: updated };
   }),
-
-  /** Update an escalation rule */
-  updateEscalationRule: protectedProcedure
-    .input(
-      z.object({
-        ruleId: z.string(),
-        name: z.string().optional(),
-        triggerAfterMinutes: z.number().min(1).optional(),
-        enabled: z.boolean().optional(),
-      })
-    )
-    .mutation(({ input }) => {
-      const { ruleId, ...updates } = input;
-      const result = updateEscalationRule(ruleId, updates);
-      if (!result) {
-        return { success: false, message: "Escalation rule not found" };
-      }
-      return { success: true, rule: result };
-    }),
-
-  // ── Test & Manual Dispatch ───────────────────────────────────────────────
-
-  /** Send a test alert to verify notification configuration */
-  sendTestAlert: protectedProcedure
-    .input(
-      z.object({
-        adminId: z.string(),
-        severity: severityEnum.optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      return sendTestAlert(input.adminId, input.severity ?? "info");
-    }),
-
-  /** Manually dispatch a security alert (for testing or manual trigger) */
-  manualDispatch: protectedProcedure
-    .input(
-      z.object({
-        severity: severityEnum,
-        category: categoryEnum,
-        title: z.string().min(1).max(200),
-        description: z.string().min(1).max(2000),
-        sourceIp: z.string().optional(),
-        affectedResource: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const result = await dispatchSecurityAlert({
-        alertId: `manual-${Date.now()}`,
-        ...input,
-        timestamp: Date.now(),
-      });
-      return result;
-    }),
-
-  /** Cancel escalation for an acknowledged alert */
-  cancelEscalation: protectedProcedure
-    .input(z.object({ alertId: z.string() }))
-    .mutation(({ input }) => {
-      const cancelled = cancelEscalation(input.alertId);
-      return { success: cancelled };
-    }),
+  create: protectedProcedure.input(z.object({ recipientId: z.string(), subject: z.string(), body: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [alert] = await db.insert(notification_logs).values({ recipientId: input.recipientId, recipientType: "user", subject: input.subject, body: input.body, status: "pending" }).returning();
+    return { success: true, alert };
+  }),
 });

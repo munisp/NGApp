@@ -1,15 +1,36 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const policies = [
-  { id: "INS-001", agentId: "AGT-001", type: "Float Protection", premium: 15000, coverage: 5000000, status: "active", startDate: "2026-01-01", endDate: "2026-12-31", claims: 0, provider: "Leadway Assurance" },
-  { id: "INS-002", agentId: "AGT-002", type: "Device Insurance", premium: 8000, coverage: 500000, status: "active", startDate: "2026-02-01", endDate: "2027-01-31", claims: 1, provider: "AXA Mansard" },
-  { id: "INS-003", agentId: "AGT-003", type: "Transaction Fraud Cover", premium: 25000, coverage: 10000000, status: "active", startDate: "2026-01-15", endDate: "2027-01-14", claims: 0, provider: "Custodian Insurance" },
-  { id: "INS-004", agentId: "AGT-005", type: "Float Protection", premium: 12000, coverage: 3000000, status: "lapsed", startDate: "2025-06-01", endDate: "2026-05-31", claims: 2, provider: "Leadway Assurance" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const agentMicroInsuranceRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalPolicies: policies.length, activePolicies: policies.filter(p => p.status === "active").length, totalPremiums: policies.reduce((s: any, p: any) => s + p.premium, 0), totalCoverage: policies.reduce((s: any, p: any) => s + p.coverage, 0), totalClaims: policies.reduce((s: any, p: any) => s + p.claims, 0), claimRatio: 0.08, providers: 3, penetrationRate: 32 })),
-  listPolicies: protectedProcedure.query(() => ({ policies, total: policies.length })),
-  getPolicy: protectedProcedure.input(z.object({ policyId: z.string() })).query(({ input }) => policies.find(p => p.id === input.policyId) || null),
-  createPolicy: protectedProcedure.input(z.object({ agentId: z.string(), type: z.string(), coverageAmount: z.number() })).mutation(({ input }) => ({ policyId: `INS-${Date.now()}`, status: "pending_underwriting", premium: Math.floor(input.coverageAmount * 0.003), ...input })),
-  fileClaim: protectedProcedure.input(z.object({ policyId: z.string(), amount: z.number(), description: z.string() })).mutation(({ input }) => ({ claimId: `CLM-${Date.now()}`, status: "under_review", ...input, estimatedProcessing: "5-7 business days" })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalPolicies: 0, activePolicies: 0, totalPremiums: 0, totalCoverage: 0, totalClaims: 0 };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "insurance_stats")).limit(1);
+    if (rows.length > 0 && rows[0].value) return JSON.parse(String(rows[0].value));
+    return { totalPolicies: 0, activePolicies: 0, totalPremiums: 0, totalCoverage: 0, totalClaims: 0 };
+  }),
+  listPolicies: protectedProcedure.input(z.object({ agentId: z.number().optional(), status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { policies: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "insurance_policies")).limit(1);
+    let policies: any[] = rows.length > 0 && rows[0].value ? JSON.parse(String(rows[0].value)) : [];
+    if (input?.status) policies = policies.filter((p: any) => p.status === input.status);
+    return { policies: policies.slice(0, input?.limit ?? 20), total: policies.length };
+  }),
+  createPolicy: protectedProcedure.input(z.object({ agentId: z.number(), type: z.string(), coverageAmount: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const premium = Math.floor(input.coverageAmount * 0.003);
+    await db.insert(auditLog).values({ action: "insurance_policy_created", resource: "insurance", resourceId: String(input.agentId), status: "success", metadata: { type: input.type, coverageAmount: input.coverageAmount, premium } });
+    return { success: true, policy: { agentId: input.agentId, type: input.type, coverageAmount: input.coverageAmount, premium, status: "pending_underwriting", createdAt: new Date().toISOString() } };
+  }),
+  fileClaim: protectedProcedure.input(z.object({ policyId: z.string(), amount: z.number(), description: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "insurance_claim_filed", resource: "insurance", resourceId: input.policyId, status: "success", metadata: { amount: input.amount, description: input.description } });
+    return { success: true, claimId: "CLM-" + Date.now().toString(36).toUpperCase(), status: "under_review" };
+  }),
 });

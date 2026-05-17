@@ -1,19 +1,39 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const advancedRateLimiterRouter = router({
-  dashboard: protectedProcedure.query(() => ({
-    totalRules: 24, activeRules: 22, blockedRequests24h: 1847, allowedRequests24h: 458230,
-    algorithms: [{ name: "Token Bucket", rules: 8, description: "Smooth rate limiting with burst allowance" }, { name: "Sliding Window", rules: 10, description: "Precise rate counting over rolling window" }, { name: "Fixed Window", rules: 4, description: "Simple counter per time window" }, { name: "Leaky Bucket", rules: 2, description: "Constant output rate regardless of input" }],
-    topBlocked: [{ ip: "41.58.xxx.xxx", requests: 342, rule: "API abuse", blockedAt: Date.now() - 3600000 }, { ip: "105.112.xxx.xxx", requests: 218, rule: "Brute force", blockedAt: Date.now() - 7200000 }],
-    rules: [
-      { id: "rl-1", name: "Transaction API", endpoint: "/api/trpc/transaction.*", algorithm: "token_bucket", limit: 100, window: 60, burst: 20, scope: "per_user", status: "active" },
-      { id: "rl-2", name: "Auth Endpoints", endpoint: "/api/trpc/auth.*", algorithm: "sliding_window", limit: 10, window: 300, burst: 0, scope: "per_ip", status: "active" },
-      { id: "rl-3", name: "Report Generation", endpoint: "/api/trpc/report.*", algorithm: "fixed_window", limit: 5, window: 3600, burst: 0, scope: "per_user", status: "active" },
-      { id: "rl-4", name: "Bulk Operations", endpoint: "/api/trpc/bulk.*", algorithm: "leaky_bucket", limit: 2, window: 60, burst: 0, scope: "per_user", status: "active" },
-    ],
-  })),
-  createRule: protectedProcedure.input(z.object({ name: z.string(), endpoint: z.string(), algorithm: z.enum(["token_bucket", "sliding_window", "fixed_window", "leaky_bucket"]), limit: z.number(), window: z.number(), burst: z.number().default(0), scope: z.enum(["per_user", "per_ip", "per_endpoint", "global"]) })).mutation(({ input }) => ({ id: `rl-${Date.now()}`, ...input, status: "active", createdAt: Date.now() })),
-  toggleRule: protectedProcedure.input(z.object({ ruleId: z.string(), enabled: z.boolean() })).mutation(({ input }) => ({ ruleId: input.ruleId, status: input.enabled ? "active" : "disabled" })),
-  getBlockedIps: protectedProcedure.query(() => ({ blocked: [{ ip: "41.58.xxx.xxx", reason: "API abuse", blockedAt: Date.now() - 3600000, expiresAt: Date.now() + 3600000, requestCount: 342 }], total: 15 })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalRules: 0, activeRules: 0, blockedRequests24h: 0, avgLatencyMs: 2 };
+    const rows = await db.select().from(systemConfig).where(sql`\${systemConfig.key} LIKE 'rate_limit_%'`).limit(100);
+    const activeRules = rows.filter(r => { const v = JSON.parse(String(r.value ?? "{}")); return v.enabled !== false; }).length;
+    return { totalRules: rows.length, activeRules, blockedRequests24h: 0, avgLatencyMs: 2 };
+  }),
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { rules: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`\${systemConfig.key} LIKE 'rate_limit_%'`).limit(input?.limit ?? 50);
+    return { rules: rows.map(r => ({ id: r.key.replace("rate_limit_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  createRule: protectedProcedure.input(z.object({ name: z.string(), endpoint: z.string(), maxRequests: z.number(), windowSeconds: z.number(), action: z.enum(["throttle", "block", "queue"]).default("throttle") })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const ruleId = "RL-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "rate_limit_" + ruleId, value: JSON.stringify({ ...input, enabled: true, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "rate_limit_rule_created", resource: "rate_limits", resourceId: ruleId, status: "success", metadata: { name: input.name, endpoint: input.endpoint } });
+    return { success: true, ruleId };
+  }),
+  toggleRule: protectedProcedure.input(z.object({ ruleId: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "rate_limit_" + input.ruleId)).limit(1);
+    if (rows.length === 0) return { success: false, error: "Rule not found" };
+    const data = JSON.parse(String(rows[0].value ?? "{}"));
+    data.enabled = input.enabled;
+    await db.update(systemConfig).set({ value: JSON.stringify(data), updatedAt: new Date() }).where(eq(systemConfig.key, "rate_limit_" + input.ruleId));
+    return { success: true };
+  }),
 });

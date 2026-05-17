@@ -1,15 +1,34 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const migrations = [
-  { id: "MIG-001", name: "Legacy POS Data Import", source: "Old POS System", target: "54Link Platform", status: "completed", totalRecords: 2500000, migratedRecords: 2500000, failedRecords: 0, startedAt: "2026-01-10", completedAt: "2026-01-12", duration: "48 hours" },
-  { id: "MIG-002", name: "Agent Profile Migration", source: "Excel Spreadsheets", target: "Agent Database", status: "completed", totalRecords: 1250, migratedRecords: 1248, failedRecords: 2, startedAt: "2026-01-15", completedAt: "2026-01-15", duration: "2 hours" },
-  { id: "MIG-003", name: "Transaction History Import", source: "Bank Statements", target: "Transaction Ledger", status: "in_progress", totalRecords: 5000000, migratedRecords: 3200000, failedRecords: 150, startedAt: "2026-04-20", completedAt: null, duration: null },
-  { id: "MIG-004", name: "Customer KYC Data", source: "Third-Party KYC Provider", target: "KYC Vault", status: "scheduled", totalRecords: 800000, migratedRecords: 0, failedRecords: 0, startedAt: null, completedAt: null, duration: null },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const platformMigrationToolkitRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalMigrations: migrations.length, completedMigrations: migrations.filter(m => m.status === "completed").length, inProgressMigrations: migrations.filter(m => m.status === "in_progress").length, totalRecordsMigrated: migrations.reduce((s: any, m: any) => s + m.migratedRecords, 0), totalFailedRecords: migrations.reduce((s: any, m: any) => s + m.failedRecords, 0), overallSuccessRate: 99.998, scheduledMigrations: 1, dataIntegrityScore: 99.99 })),
-  listMigrations: protectedProcedure.query(() => ({ migrations, total: migrations.length })),
-  getMigration: protectedProcedure.input(z.object({ migrationId: z.string() })).query(({ input }) => migrations.find(m => m.id === input.migrationId) || null),
-  createMigration: protectedProcedure.input(z.object({ name: z.string(), source: z.string(), target: z.string(), scheduledAt: z.string().optional() })).mutation(({ input }) => ({ migrationId: "MIG-" + Date.now(), status: "scheduled", ...input })),
-  rollbackMigration: protectedProcedure.input(z.object({ migrationId: z.string(), reason: z.string() })).mutation(({ input }) => ({ migrationId: input.migrationId, status: "rolling_back", estimatedTime: "30 minutes" })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalItems: 0, active: 0, lastUpdated: null };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'migrations_%'`).limit(100);
+    return { totalItems: rows.length, active: rows.length, lastUpdated: new Date().toISOString() };
+  }),
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'migrations_%'`).limit(input?.limit ?? 20);
+    return { items: rows.map(r => ({ id: r.key.replace("migrations_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const itemId = "MIGRATIONS-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "migrations_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "migrations_created", resource: "migrations", resourceId: itemId, status: "success", metadata: { name: input.name } });
+    return { success: true, itemId };
+  }),
+  delete: protectedProcedure.input(z.object({ itemId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, "migrations_" + input.itemId));
+    return { success: true };
+  }),
 });

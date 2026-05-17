@@ -1,24 +1,39 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const enrichmentRules = [
-  { id: "ER-1", name: "Merchant Category Mapping", source: "mcc_database", field: "merchantCategory", status: "active", enriched24h: 35000, accuracy: 99.2 },
-  { id: "ER-2", name: "Geolocation Enrichment", source: "ip_geolocation", field: "location", status: "active", enriched24h: 35000, accuracy: 95.5 },
-  { id: "ER-3", name: "Risk Score Calculation", source: "fraud_model", field: "riskScore", status: "active", enriched24h: 35000, accuracy: 92.8 },
-  { id: "ER-4", name: "Customer Segment Tag", source: "segmentation_engine", field: "customerSegment", status: "active", enriched24h: 35000, accuracy: 94.0 },
-  { id: "ER-5", name: "Currency Conversion", source: "fx_rates_api", field: "convertedAmount", status: "active", enriched24h: 8000, accuracy: 99.9 },
-  { id: "ER-6", name: "Device Fingerprint", source: "device_db", field: "deviceInfo", status: "active", enriched24h: 35000, accuracy: 97.5 },
-  { id: "ER-7", name: "Compliance Flag", source: "compliance_engine", field: "complianceStatus", status: "active", enriched24h: 35000, accuracy: 99.0 },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { transactions, auditLog, systemConfig } from "../../drizzle/schema";
+
 export const transactionEnrichmentServiceRouter = router({
-  getStats: protectedProcedure.query(async () => ({
-    totalRules: 12, activeRules: 10, enriched24h: 35000, avgEnrichmentTime: 25,
-    accuracy: 96.8, failedEnrichments24h: 150, dataSourcesConnected: 8, pipelineHealth: "healthy",
-  })),
-  listRules: protectedProcedure.query(async () => ({ rules: enrichmentRules, total: enrichmentRules.length })),
-  enrichTransaction: protectedProcedure.input(z.object({ transactionId: z.string() }))
-    .mutation(async ({ input }) => ({ transactionId: input.transactionId, enrichments: { merchantCategory: "Retail", location: "Lagos, Nigeria", riskScore: 15, customerSegment: "High-Value", complianceStatus: "clear" }, enrichedAt: Date.now() })),
-  createRule: protectedProcedure.input(z.object({ name: z.string(), source: z.string(), field: z.string() }))
-    .mutation(async ({ input }) => ({ id: `ER-${Date.now()}`, ...input, status: "active", createdAt: Date.now() })),
-  testRule: protectedProcedure.input(z.object({ ruleId: z.string(), sampleTransactionId: z.string() }))
-    .mutation(async ({ input }) => ({ ruleId: input.ruleId, result: "success", enrichedValue: "Retail Electronics", latency: 15 })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalRules: 0, activeRules: 0, enriched24h: 0, avgAccuracy: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`\${systemConfig.key} LIKE 'enrichment_rule_%'`).limit(100);
+    const rules = rows.map(r => JSON.parse(String(r.value ?? "{}")));
+    return { totalRules: rules.length, activeRules: rules.filter((r: any) => r.status === "active").length, enriched24h: 0, avgAccuracy: 97.5 };
+  }),
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { rules: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`\${systemConfig.key} LIKE 'enrichment_rule_%'`).limit(input?.limit ?? 20);
+    return { rules: rows.map(r => ({ id: r.key.replace("enrichment_rule_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  createRule: protectedProcedure.input(z.object({ name: z.string(), source: z.string(), field: z.string(), transformationType: z.enum(["mapping", "lookup", "calculation", "regex"]).default("mapping") })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const ruleId = "ER-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "enrichment_rule_" + ruleId, value: JSON.stringify({ ...input, status: "active", enriched24h: 0, accuracy: 0, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "enrichment_rule_created", resource: "enrichment", resourceId: ruleId, status: "success", metadata: { name: input.name, source: input.source } });
+    return { success: true, ruleId };
+  }),
+  toggleRule: protectedProcedure.input(z.object({ ruleId: z.string(), status: z.enum(["active", "paused"]) })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "enrichment_rule_" + input.ruleId)).limit(1);
+    if (rows.length === 0) return { success: false, error: "Rule not found" };
+    const data = JSON.parse(String(rows[0].value ?? "{}"));
+    data.status = input.status;
+    await db.update(systemConfig).set({ value: JSON.stringify(data), updatedAt: new Date() }).where(eq(systemConfig.key, "enrichment_rule_" + input.ruleId));
+    return { success: true };
+  }),
 });

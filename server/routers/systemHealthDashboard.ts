@@ -1,27 +1,31 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const SERVICES = [
-  { name: "API Gateway", status: "healthy", uptime: "99.97%", latencyMs: 12, port: 3000 },
-  { name: "PostgreSQL", status: "healthy", uptime: "99.99%", latencyMs: 3, port: 5432 },
-  { name: "Redis Cache", status: "degraded", uptime: "99.5%", latencyMs: 45, port: 6379 },
-  { name: "Kafka Broker", status: "healthy", uptime: "99.95%", latencyMs: 8, port: 9092 },
-  { name: "Rust Sidecar", status: "healthy", uptime: "99.9%", latencyMs: 2, port: 9100 },
-  { name: "Go Sidecar", status: "healthy", uptime: "99.9%", latencyMs: 3, port: 9200 },
-  { name: "Python ML Engine", status: "healthy", uptime: "99.8%", latencyMs: 15, port: 9300 },
-  { name: "TigerBeetle", status: "healthy", uptime: "99.99%", latencyMs: 1, port: 3001 },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const systemHealthDashboardRouter = router({
-  getServices: protectedProcedure.query(async () => {
-    const checks = await Promise.all(SERVICES.map(async (svc) => {
-      try { const res = await fetch(`http://localhost:${svc.port}/health`, { signal: AbortSignal.timeout(2000) }); return { ...svc, status: res.ok ? "healthy" : "degraded" }; }
-      catch { return { ...svc, status: "unreachable" }; }
-    }));
-    return checks;
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { overallHealth: "unknown", services: 0, healthyServices: 0, degradedServices: 0, downServices: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'service_health_%'`).limit(100);
+    const services = rows.map(r => JSON.parse(String(r.value ?? "{}")));
+    const healthy = services.filter((s: any) => s.status === "healthy").length;
+    const degraded = services.filter((s: any) => s.status === "degraded").length;
+    return { overallHealth: degraded === 0 ? "healthy" : "degraded", services: services.length, healthyServices: healthy, degradedServices: degraded, downServices: services.length - healthy - degraded };
   }),
-  getOverview: protectedProcedure.query(async () => ({
-    totalServices: SERVICES.length, healthy: SERVICES.filter(s=>s.status==="healthy").length,
-    degraded: SERVICES.filter(s=>s.status==="degraded").length, avgLatency: "12ms",
-    overallUptime: "99.87%", lastChecked: new Date().toISOString(),
-  })),
-  getStats: protectedProcedure.query(async () => ({ services: 8, healthy: 7, degraded: 1, unreachable: 0 })),
+  listServices: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { services: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'service_health_%'`).limit(input?.limit ?? 50);
+    let services = rows.map(r => ({ id: r.key.replace("service_health_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
+    if (input?.status) services = services.filter((s: any) => s.status === input.status);
+    return { services, total: services.length };
+  }),
+  updateServiceHealth: protectedProcedure.input(z.object({ serviceId: z.string(), status: z.enum(["healthy", "degraded", "down"]), latencyMs: z.number().optional(), errorRate: z.number().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: "service_health_" + input.serviceId, value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }), updatedAt: new Date() } });
+    return { success: true };
+  }),
 });

@@ -1,100 +1,43 @@
-// @ts-nocheck
-/**
- * Runtime Configuration Admin Router
- * P1-3: Admin tRPC procedures for reading/updating runtime parameters
- *
- * Allows admins to tune batch sizes, concurrency, circuit breaker thresholds,
- * and other performance parameters at runtime without server restart.
- */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-import {
-  getConfig, getConfigNumber, setConfig, getAllConfig,
-  resetConfig, seedDefaults, invalidateCache,
-} from "../lib/runtimeConfig";
-import logger from "../_core/logger";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const runtimeConfigAdminRouter = router({
-  /** Get all configuration parameters with defaults and current values */
-  getAll: protectedProcedure.query(async () => {
-    return getAllConfig();
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalConfigs: 0, modifiedToday: 0, environments: 0 };
+    const [total] = await db.select({ value: count() }).from(systemConfig);
+    return { totalConfigs: Number(total.value), modifiedToday: 0, environments: 3 };
   }),
-
-  /** Get a single configuration value */
-  get: protectedProcedure
-    .input(z.object({ key: z.string() }))
-    .query(async ({ input }) => {
-      const value = await getConfig(input.key);
-      return { key: input.key, value };
-    }),
-
-  /** Get a numeric configuration value */
-  getNumber: protectedProcedure
-    .input(z.object({ key: z.string() }))
-    .query(async ({ input }) => {
-      const value = await getConfigNumber(input.key);
-      return { key: input.key, value };
-    }),
-
-  /** Update a configuration parameter */
-  update: protectedProcedure
-    .input(z.object({
-      key: z.string().min(1).max(128),
-      value: z.string().min(1).max(4096),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id ? String(ctx.user.id) : "admin";
-      await setConfig(input.key, input.value, userId);
-      logger.info(`[RuntimeConfig] Admin ${userId} updated ${input.key} = ${input.value}`);
-      return { key: input.key, value: input.value, updatedBy: userId };
-    }),
-
-  /** Batch update multiple configuration parameters */
-  batchUpdate: protectedProcedure
-    .input(z.object({
-      updates: z.array(z.object({
-        key: z.string().min(1).max(128),
-        value: z.string().min(1).max(4096),
-      })),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id ? String(ctx.user.id) : "admin";
-      const results: Array<{ key: string; value: string; success: boolean }> = [];
-
-      for (const { key, value } of input.updates) {
-        try {
-          await setConfig(key, value, userId);
-          results.push({ key, value, success: true });
-        } catch (error) {
-          logger.error(`[RuntimeConfig] Failed to update ${key}:`, error);
-          results.push({ key, value, success: false });
-        }
-      }
-
-      logger.info(`[RuntimeConfig] Admin ${userId} batch updated ${results.filter(r => r.success).length}/${results.length} params`);
-      return { results, updatedBy: userId };
-    }),
-
-  /** Reset a configuration parameter to its default value */
-  reset: protectedProcedure
-    .input(z.object({ key: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id ? String(ctx.user.id) : "admin";
-      await resetConfig(input.key, userId);
-      return { key: input.key, reset: true };
-    }),
-
-  /** Seed all default configuration values (idempotent) */
-  seedDefaults: protectedProcedure.mutation(async () => {
-    const seeded = await seedDefaults();
-    return { seeded };
+  listConfigs: protectedProcedure.input(z.object({ prefix: z.string().optional(), limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { configs: [], total: 0 };
+    const conditions: any[] = [];
+    if (input?.prefix) conditions.push(sql`${systemConfig.key} LIKE ${input.prefix + "%"}`);
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const rows = await db.select().from(systemConfig).where(where).orderBy(asc(systemConfig.key)).limit(input?.limit ?? 50);
+    return { configs: rows.map(r => ({ key: r.key, value: r.value, updatedAt: r.updatedAt })), total: rows.length };
   }),
-
-  /** Invalidate the in-memory configuration cache */
-  invalidateCache: protectedProcedure
-    .input(z.object({ key: z.string().optional() }).optional())
-    .mutation(async ({ input }) => {
-      invalidateCache(input?.key);
-      return { invalidated: input?.key ?? "all" };
-    }),
+  getConfig: protectedProcedure.input(z.object({ key: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, input.key)).limit(1);
+    return rows.length > 0 ? { key: rows[0].key, value: rows[0].value, updatedAt: rows[0].updatedAt } : null;
+  }),
+  setConfig: protectedProcedure.input(z.object({ key: z.string(), value: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(systemConfig).values({ key: input.key, value: input.value }).onConflictDoUpdate({ target: systemConfig.key, set: { value: input.value, updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "config_updated", resource: "system_config", resourceId: input.key, status: "success", metadata: { key: input.key } });
+    return { success: true };
+  }),
+  deleteConfig: protectedProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, input.key));
+    await db.insert(auditLog).values({ action: "config_deleted", resource: "system_config", resourceId: input.key, status: "success", metadata: {} });
+    return { success: true };
+  }),
 });

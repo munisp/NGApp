@@ -1,167 +1,31 @@
-/**
- * guideFeedback — tRPC router for user feedback & ratings on User Guide sections
- * 
- * Features:
- * - Submit thumbs up/down rating + optional text feedback per section
- * - List all feedback (admin view)
- * - Get aggregate stats per section (avg rating, count)
- * - Delete feedback (admin)
- */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog } from "../../drizzle/schema";
 
-// ─── In-Memory Store ────────────────────────────────────────────────────────
-interface GuideFeedback {
-  id: string;
-  sectionId: string;
-  subsectionId: string;
-  rating: "up" | "down";
-  comment: string;
-  userId?: string;
-  userName?: string;
-  createdAt: string;
-}
-
-const feedbackStore: GuideFeedback[] = [];
-let nextId = 1;
-
-// Seed some demo feedback
-const seedFeedback: Omit<GuideFeedback, "id">[] = [
-  { sectionId: "getting-started", subsectionId: "overview", rating: "up", comment: "Very clear introduction!", createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { sectionId: "getting-started", subsectionId: "first-login", rating: "up", comment: "Step-by-step was helpful", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { sectionId: "getting-started", subsectionId: "first-login", rating: "up", comment: "", createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { sectionId: "pos-terminal", subsectionId: "cash-in", rating: "up", comment: "Great walkthrough", createdAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { sectionId: "pos-terminal", subsectionId: "cash-out", rating: "down", comment: "Needs more detail on error handling", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { sectionId: "fraud-detection", subsectionId: "ai-scoring", rating: "up", comment: "AI explanation was very helpful", createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { sectionId: "fraud-detection", subsectionId: "alert-management", rating: "up", comment: "", createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { sectionId: "fraud-detection", subsectionId: "alert-management", rating: "down", comment: "Could use screenshots", createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { sectionId: "kyc-verification", subsectionId: "document-upload", rating: "up", comment: "Clear instructions", createdAt: new Date(Date.now() - 86400000 * 6).toISOString() },
-  { sectionId: "kyc-verification", subsectionId: "review-process", rating: "up", comment: "", createdAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { sectionId: "reports", subsectionId: "weekly-reports", rating: "up", comment: "Very useful", createdAt: new Date(Date.now() - 86400000 * 7).toISOString() },
-  { sectionId: "reports", subsectionId: "weekly-reports", rating: "down", comment: "How do I customize report templates?", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { sectionId: "settings", subsectionId: "notifications", rating: "up", comment: "", createdAt: new Date(Date.now() - 86400000 * 8).toISOString() },
-  { sectionId: "troubleshooting", subsectionId: "error-codes", rating: "up", comment: "Saved me a lot of time", createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { sectionId: "troubleshooting", subsectionId: "error-codes", rating: "up", comment: "Comprehensive list", createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { sectionId: "faq", subsectionId: "general", rating: "up", comment: "", createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-];
-
-// Initialize seed data
-seedFeedback.forEach(f => {
-  feedbackStore.push({ ...f, id: `gf-${nextId++}` });
-});
-
-// ─── Router ─────────────────────────────────────────────────────────────────
 export const guideFeedbackRouter = router({
-  /** Submit feedback for a guide section */
-  submit: protectedProcedure
-    .input(z.object({
-      sectionId: z.string(),
-      subsectionId: z.string(),
-      rating: z.enum(["up", "down"]),
-      comment: z.string().max(500).default(""),
-      userName: z.string().optional(),
-    }))
-    .mutation(({ input }) => {
-      const feedback: GuideFeedback = {
-        id: `gf-${nextId++}`,
-        sectionId: input.sectionId,
-        subsectionId: input.subsectionId,
-        rating: input.rating,
-        comment: input.comment,
-        userName: input.userName,
-        createdAt: new Date().toISOString(),
-      };
-      feedbackStore.push(feedback);
-      return { success: true, id: feedback.id };
-    }),
-
-  /** Get aggregate stats per section */
-  stats: protectedProcedure.query(() => {
-    const sectionStats: Record<string, { up: number; down: number; total: number; comments: number }> = {};
-
-    feedbackStore.forEach(f => {
-      if (!sectionStats[f.sectionId]) {
-        sectionStats[f.sectionId] = { up: 0, down: 0, total: 0, comments: 0 };
-      }
-      sectionStats[f.sectionId].total++;
-      if (f.rating === "up") sectionStats[f.sectionId].up++;
-      else sectionStats[f.sectionId].down++;
-      if (f.comment) sectionStats[f.sectionId].comments++;
-    });
-
-    return sectionStats;
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalFeedback: 0, avgRating: 0, helpfulCount: 0, notHelpfulCount: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "guide_feedback")).orderBy(desc(auditLog.createdAt)).limit(500);
+    const helpful = rows.filter(r => (r.metadata as any)?.helpful === true).length;
+    const ratings = rows.map(r => (r.metadata as any)?.rating).filter((r: any) => typeof r === "number");
+    const avgRating = ratings.length > 0 ? Math.round(ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length * 10) / 10 : 0;
+    return { totalFeedback: rows.length, avgRating, helpfulCount: helpful, notHelpfulCount: rows.length - helpful };
   }),
-
-  /** Get detailed stats per subsection */
-  subsectionStats: protectedProcedure
-    .input(z.object({ sectionId: z.string() }))
-    .query(({ input }) => {
-      const filtered = feedbackStore.filter(f => f.sectionId === input.sectionId);
-      const subStats: Record<string, { up: number; down: number; total: number }> = {};
-
-      filtered.forEach(f => {
-        if (!subStats[f.subsectionId]) {
-          subStats[f.subsectionId] = { up: 0, down: 0, total: 0 };
-        }
-        subStats[f.subsectionId].total++;
-        if (f.rating === "up") subStats[f.subsectionId].up++;
-        else subStats[f.subsectionId].down++;
-      });
-
-      return subStats;
-    }),
-
-  /** List all feedback (admin view) */
-  list: protectedProcedure
-    .input(z.object({
-      sectionId: z.string().optional(),
-      rating: z.enum(["up", "down"]).optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
-    .query(({ input }) => {
-      let filtered = [...feedbackStore];
-      if (input.sectionId) filtered = filtered.filter(f => f.sectionId === input.sectionId);
-      if (input.rating) filtered = filtered.filter(f => f.rating === input.rating);
-
-      // Sort by newest first
-      filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      return {
-        items: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
-    }),
-
-  /** Delete feedback (admin) */
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(({ input }) => {
-      const idx = feedbackStore.findIndex(f => f.id === input.id);
-      if (idx === -1) return { success: false, error: "Not found" };
-      feedbackStore.splice(idx, 1);
-      return { success: true } as any;
-    }),
-
-  /** Get overall summary */
-  summary: protectedProcedure.query(() => {
-    const total = feedbackStore.length;
-    const upCount = feedbackStore.filter(f => f.rating === "up").length;
-    const downCount = feedbackStore.filter(f => f.rating === "down").length;
-    const withComments = feedbackStore.filter(f => f.comment).length;
-    const satisfactionRate = total > 0 ? Math.round((upCount / total) * 100) : 0;
-
-    // Recent feedback (last 7 days)
-    const weekAgo = Date.now() - 7 * 86400000;
-    const recentCount = feedbackStore.filter(f => new Date(f.createdAt).getTime() > weekAgo).length;
-
-    return {
-      total,
-      upCount,
-      downCount,
-      withComments,
-      satisfactionRate,
-      recentCount,
-    };
+  listFeedback: protectedProcedure.input(z.object({ guideId: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { feedback: [], total: 0 };
+    const conditions: any[] = [eq(auditLog.action, "guide_feedback")];
+    if (input?.guideId) conditions.push(eq(auditLog.resourceId, input.guideId));
+    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { feedback: rows.map(r => ({ id: r.id, guideId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
+  }),
+  submitFeedback: protectedProcedure.input(z.object({ guideId: z.string(), rating: z.number().min(1).max(5), helpful: z.boolean(), comment: z.string().optional(), userId: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "guide_feedback", resource: "guides", resourceId: input.guideId, status: "success", metadata: { rating: input.rating, helpful: input.helpful, comment: input.comment, userId: input.userId } });
+    return { success: true };
   }),
 });

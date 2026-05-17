@@ -1,15 +1,34 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const pnlData = [
-  { id: "PNL-001", entity: "Lagos Region", type: "region", revenue: 125000000, costs: 42000000, profit: 83000000, margin: 66.4, transactions: 45000, period: "2026-04", trend: "up" },
-  { id: "PNL-002", entity: "Abuja Region", type: "region", revenue: 89000000, costs: 31000000, profit: 58000000, margin: 65.2, transactions: 32000, period: "2026-04", trend: "up" },
-  { id: "PNL-003", entity: "Kano Region", type: "region", revenue: 52000000, costs: 18000000, profit: 34000000, margin: 65.4, transactions: 18000, period: "2026-04", trend: "stable" },
-  { id: "PNL-004", entity: "AGT-001 (Adebayo)", type: "agent", revenue: 8500000, costs: 2100000, profit: 6400000, margin: 75.3, transactions: 3200, period: "2026-04", trend: "up" },
-  { id: "PNL-005", entity: "AGT-002 (Chioma)", type: "agent", revenue: 6200000, costs: 1800000, profit: 4400000, margin: 71.0, transactions: 2800, period: "2026-04", trend: "down" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const realtimePnlDashboardRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalRevenue: pnlData.reduce((s: any, p: any) => s + p.revenue, 0), totalCosts: pnlData.reduce((s: any, p: any) => s + p.costs, 0), totalProfit: pnlData.reduce((s: any, p: any) => s + p.profit, 0), avgMargin: pnlData.reduce((s: any, p: any) => s + p.margin, 0) / pnlData.length, totalTransactions: pnlData.reduce((s: any, p: any) => s + p.transactions, 0), regions: 3, topPerformer: "Lagos Region", profitGrowth: 12.5 })),
-  listPnl: protectedProcedure.input(z.object({ type: z.string().optional() })).query(({ input }) => ({ data: input.type ? pnlData.filter(p => p.type === input.type) : pnlData, total: pnlData.length })),
-  getPnlDetail: protectedProcedure.input(z.object({ entityId: z.string() })).query(({ input }) => pnlData.find(p => p.id === input.entityId) || null),
-  generateReport: protectedProcedure.input(z.object({ period: z.string(), groupBy: z.string().default("region") })).mutation(({ input }) => ({ reportId: "RPT-" + Date.now(), ...input, generatedAt: new Date().toISOString(), downloadUrl: "/api/reports/pnl-" + input.period + ".pdf" })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalItems: 0, active: 0, lastUpdated: null };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'pnl_%'`).limit(100);
+    return { totalItems: rows.length, active: rows.length, lastUpdated: new Date().toISOString() };
+  }),
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'pnl_%'`).limit(input?.limit ?? 20);
+    return { items: rows.map(r => ({ id: r.key.replace("pnl_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const itemId = "PNL-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "pnl_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "pnl_created", resource: "pnl", resourceId: itemId, status: "success", metadata: { name: input.name } });
+    return { success: true, itemId };
+  }),
+  delete: protectedProcedure.input(z.object({ itemId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, "pnl_" + input.itemId));
+    return { success: true };
+  }),
 });

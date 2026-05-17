@@ -38,7 +38,7 @@ const getActiveIncidents = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const createPlaybook = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -50,7 +50,7 @@ const createPlaybook = protectedProcedure
     return { success: true, ...row, message: "createPlaybook completed" };
   });
 const triggerPlaybook = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -62,7 +62,7 @@ const triggerPlaybook = protectedProcedure
     return { success: true, ...row, message: "triggerPlaybook completed" };
   });
 const resolveIncident = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

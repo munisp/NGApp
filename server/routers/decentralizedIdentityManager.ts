@@ -1,21 +1,35 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const identities = [
-  { id: "DID-001", did: "did:54link:agent:adebayo123", holder: "Agent Adebayo", status: "verified", credentials: 5, issuedAt: "2026-03-01T10:00:00Z", lastVerified: "2026-04-21T08:00:00Z", trustScore: 98 },
-  { id: "DID-002", did: "did:54link:agent:chukwu456", holder: "Agent Chukwu", status: "verified", credentials: 4, issuedAt: "2026-03-05T14:00:00Z", lastVerified: "2026-04-21T07:30:00Z", trustScore: 95 },
-  { id: "DID-003", did: "did:54link:merchant:shoprite", holder: "ShopRite Nigeria", status: "verified", credentials: 8, issuedAt: "2026-02-15T09:00:00Z", lastVerified: "2026-04-21T06:00:00Z", trustScore: 99 },
-  { id: "DID-004", did: "did:54link:customer:john789", holder: "John Obi", status: "pending", credentials: 2, issuedAt: "2026-04-20T15:00:00Z", lastVerified: null, trustScore: 0 },
-];
-const credentials = [
-  { id: "CRED-001", type: "KYC_Level3", issuer: "54Link Platform", holder: "did:54link:agent:adebayo123", status: "active", issuedAt: "2026-03-01T10:00:00Z", expiresAt: "2027-03-01T10:00:00Z" },
-  { id: "CRED-002", type: "AgentLicense", issuer: "CBN", holder: "did:54link:agent:adebayo123", status: "active", issuedAt: "2026-01-15T10:00:00Z", expiresAt: "2027-01-15T10:00:00Z" },
-  { id: "CRED-003", type: "AML_Certification", issuer: "NFIU", holder: "did:54link:agent:adebayo123", status: "active", issuedAt: "2026-02-01T10:00:00Z", expiresAt: "2027-02-01T10:00:00Z" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { agents, auditLog, systemConfig } from "../../drizzle/schema";
+
 export const decentralizedIdentityManagerRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalIdentities: identities.length, verified: identities.filter(i => i.status === "verified").length, totalCredentials: credentials.length, avgTrustScore: 73, supportedMethods: ["did:54link", "did:web", "did:key"] })),
-  listIdentities: protectedProcedure.query(() => ({ identities, total: identities.length })),
-  getIdentity: protectedProcedure.input(z.object({ did: z.string() })).query(({ input }) => ({ identity: identities.find(i => i.did === input.did), credentials: credentials.filter(c => c.holder === input.did) })),
-  issueCredential: protectedProcedure.input(z.object({ holderDid: z.string(), type: z.string() })).mutation(({ input }) => ({ id: `CRED-${Date.now()}`, ...input, issuer: "54Link Platform", status: "active", issuedAt: new Date().toISOString() })),
-  verifyCredential: protectedProcedure.input(z.object({ credentialId: z.string() })).mutation(({ input }) => ({ credentialId: input.credentialId, verified: true, verifiedAt: new Date().toISOString(), trustScore: 98 })),
-  revokeCredential: protectedProcedure.input(z.object({ credentialId: z.string(), reason: z.string() })).mutation(({ input }) => ({ credentialId: input.credentialId, status: "revoked", reason: input.reason, revokedAt: new Date().toISOString() })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalIdentities: 0, verified: 0, pending: 0, revoked: 0 };
+    const [total] = await db.select({ value: count() }).from(agents);
+    const [verified] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, true));
+    return { totalIdentities: Number(total.value), verified: Number(verified.value), pending: 0, revoked: Number(total.value) - Number(verified.value) };
+  }),
+  listIdentities: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { identities: [], total: 0 };
+    const rows = await db.select().from(agents).orderBy(desc(agents.createdAt)).limit(input?.limit ?? 20);
+    return { identities: rows.map(a => ({ id: a.id, agentCode: a.agentCode, name: a.name, verified: a.isActive, tier: a.tier })), total: rows.length };
+  }),
+  verifyIdentity: protectedProcedure.input(z.object({ agentId: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [updated] = await db.update(agents).set({ isActive: true, updatedAt: new Date() }).where(eq(agents.id, input.agentId)).returning();
+    await db.insert(auditLog).values({ action: "identity_verified", resource: "agents", resourceId: String(input.agentId), status: "success" });
+    return { success: true, agent: updated };
+  }),
+  revokeIdentity: protectedProcedure.input(z.object({ agentId: z.number(), reason: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const [updated] = await db.update(agents).set({ isActive: false, updatedAt: new Date() }).where(eq(agents.id, input.agentId)).returning();
+    await db.insert(auditLog).values({ action: "identity_revoked", resource: "agents", resourceId: String(input.agentId), status: "success", metadata: { reason: input.reason } });
+    return { success: true, agent: updated };
+  }),
 });

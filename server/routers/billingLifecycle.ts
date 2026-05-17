@@ -18,7 +18,7 @@ const renewContract = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const suspendBilling = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -39,7 +39,7 @@ const terminateContract = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const reactivateBilling = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -63,7 +63,7 @@ const getAlerts = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: input.limit ?? 10 };
   });
 const configureAlertThresholds = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -102,7 +102,7 @@ const registerWebhook = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const deleteWebhook = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -113,7 +113,7 @@ const deleteWebhook = protectedProcedure
     return { success: true, message: "deleteWebhook completed", timestamp: new Date().toISOString() };
   });
 const archiveOldRecords = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -124,7 +124,7 @@ const archiveOldRecords = protectedProcedure
     return { success: true, message: "archiveOldRecords completed", timestamp: new Date().toISOString() };
   });
 const generateComplianceReport = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -148,7 +148,7 @@ const getNotificationPreferences = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: input.limit ?? 10 };
   });
 const updateNotificationPreferences = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -192,7 +192,7 @@ const listDisputes = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const resolveDispute = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

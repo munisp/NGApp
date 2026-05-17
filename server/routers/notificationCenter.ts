@@ -29,7 +29,7 @@ const getNotifications = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: input.limit ?? 10 };
   });
 const sendNotification = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -40,7 +40,7 @@ const sendNotification = protectedProcedure
     return { success: true, message: "sendNotification completed", timestamp: new Date().toISOString() };
   });
 const updatePreferences = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

@@ -23,7 +23,7 @@ export const notification_channelsRouter = router({
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Channel not found" });
     return row;
   }),
-  create: protectedProcedure.input(z.object({ name: z.string().min(3), channelType: z.enum(["sms", "email", "push", "whatsapp", "in_app", "webhook"]), config: z.record(z.any()).optional(), isActive: z.boolean().default(true), priority: z.number().default(0) })).mutation(async ({ input }) => {
+  create: protectedProcedure.input(z.object({ name: z.string().min(3), channelType: z.enum(["sms", "email", "push", "whatsapp", "in_app", "webhook"]), config: z.record(z.string(), z.any()).optional(), isActive: z.boolean().default(true), priority: z.number().default(0) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [row] = await db.insert(notification_channels).values(input as any).returning();
     return { ...row, rateLimit: RATE_LIMITS[input.channelType], message: `Channel created with rate limit ${RATE_LIMITS[input.channelType]}/hour` };

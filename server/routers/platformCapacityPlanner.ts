@@ -1,16 +1,34 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const resources = [
-  { id: "RES-001", name: "API Gateway", currentUsage: 72, maxCapacity: 100, unit: "k req/s", growthRate: 8.5, exhaustionDate: "2026-09-15", status: "healthy", recommendation: "Scale at 85% threshold" },
-  { id: "RES-002", name: "Database Cluster", currentUsage: 65, maxCapacity: 100, unit: "% CPU", growthRate: 5.2, exhaustionDate: "2027-01-20", status: "healthy", recommendation: "Add read replica at 80%" },
-  { id: "RES-003", name: "Message Queue", currentUsage: 45, maxCapacity: 100, unit: "k msg/s", growthRate: 12.1, exhaustionDate: "2026-08-01", status: "warning", recommendation: "Upgrade to dedicated cluster" },
-  { id: "RES-004", name: "Storage (S3)", currentUsage: 58, maxCapacity: 100, unit: "TB", growthRate: 3.8, exhaustionDate: "2027-06-15", status: "healthy", recommendation: "Implement lifecycle policies" },
-  { id: "RES-005", name: "Redis Cache", currentUsage: 82, maxCapacity: 100, unit: "% memory", growthRate: 6.5, exhaustionDate: "2026-07-10", status: "critical", recommendation: "Immediate scale-up needed" },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const platformCapacityPlannerRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalResources: resources.length, healthyResources: resources.filter(r => r.status === "healthy").length, criticalResources: resources.filter(r => r.status === "critical").length, avgUtilization: resources.reduce((s: any, r: any) => s + r.currentUsage, 0) / resources.length, nearestExhaustion: "Redis Cache — Jul 2026", projectedGrowth: "15% QoQ" })),
-  listResources: protectedProcedure.query(() => ({ resources, total: resources.length })),
-  getResource: protectedProcedure.input(z.object({ resourceId: z.string() })).query(({ input }) => resources.find(r => r.id === input.resourceId) || null),
-  runProjection: protectedProcedure.input(z.object({ months: z.number().default(6), growthScenario: z.string().default("moderate") })).mutation(({ input }) => ({ projectionId: `PROJ-${Date.now()}`, months: input.months, scenario: input.growthScenario, results: resources.map(r => ({ name: r.name, projectedUsage: Math.min(100, r.currentUsage + r.growthRate * input.months), needsScaling: r.currentUsage + r.growthRate * input.months > 85 })) })),
-  createScalingPlan: protectedProcedure.input(z.object({ resourceId: z.string(), targetCapacity: z.number() })).mutation(({ input }) => ({ planId: `SCALE-${Date.now()}`, ...input, estimatedCost: 2500000, timeline: "2 weeks", approvalRequired: true })),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalItems: 0, active: 0, lastUpdated: null };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'capacity_%'`).limit(100);
+    return { totalItems: rows.length, active: rows.length, lastUpdated: new Date().toISOString() };
+  }),
+  list: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'capacity_%'`).limit(input?.limit ?? 20);
+    return { items: rows.map(r => ({ id: r.key.replace("capacity_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const itemId = "CAPACITY-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "capacity_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
+    await db.insert(auditLog).values({ action: "capacity_created", resource: "capacity", resourceId: itemId, status: "success", metadata: { name: input.name } });
+    return { success: true, itemId };
+  }),
+  delete: protectedProcedure.input(z.object({ itemId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.delete(systemConfig).where(eq(systemConfig.key, "capacity_" + input.itemId));
+    return { success: true };
+  }),
 });

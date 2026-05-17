@@ -38,7 +38,7 @@ const getCircuitBreakerStatus = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const setThreshold = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(velocityLimits).where(eq(velocityLimits.id, input.id));
@@ -50,7 +50,7 @@ const setThreshold = protectedProcedure
     return { success: true, ...existing, message: "No changes applied" };
   });
 const resetCircuitBreaker = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(velocityLimits).where(eq(velocityLimits.id, input.id));

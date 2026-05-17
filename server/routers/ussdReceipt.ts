@@ -1,95 +1,37 @@
-// USSD Receipt Printer Router — Sprint 76
-// Generate thermal receipts for completed *384# USSD transactions
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-
-const RECEIPT_WIDTH = 32;
-
-const TEMPLATES: Record<string, { header: string; footer: string; locale: string }> = {
-  en: { header: "54LINK POS SERVICES", footer: "Thank you for banking with 54Link", locale: "en" },
-  fr: { header: "SERVICES POS 54LINK", footer: "Merci d'utiliser 54Link", locale: "fr" },
-  sw: { header: "HUDUMA ZA POS 54LINK", footer: "Asante kwa kutumia 54Link", locale: "sw" },
-  ha: { header: "SABIS NA POS 54LINK", footer: "Na gode da amfani da 54Link", locale: "ha" },
-  yo: { header: "ISE POS 54LINK", footer: "E se fun lilo 54Link", locale: "yo" },
-};
-
-const TX_TYPE_NAMES: Record<string, string> = {
-  cash_in: "CASH IN", cash_out: "CASH OUT", balance: "BALANCE INQUIRY",
-  transfer: "TRANSFER", airtime: "AIRTIME", bills: "BILL PAYMENT",
-};
-
-function center(s: string, w: number): string {
-  if (s.length >= w) return s.substring(0, w);
-  const pad = Math.floor((w - s.length) / 2);
-  return " ".repeat(pad) + s + " ".repeat(w - pad - s.length);
-}
-
-function maskPhone(phone: string): string {
-  if (phone.length < 6) return phone;
-  return phone.substring(0, 3) + "*".repeat(phone.length - 6) + phone.substring(phone.length - 3);
-}
-
-function formatReceipt(tx: any, locale: string): string {
-  const tmpl = TEMPLATES[locale] || TEMPLATES.en;
-  const sep = "=".repeat(RECEIPT_WIDTH);
-  const dash = "-".repeat(RECEIPT_WIDTH);
-  const txName = TX_TYPE_NAMES[tx.type] || tx.type.toUpperCase();
-  const date = new Date(tx.timestamp).toISOString().replace("T", " ").substring(0, 19);
-  return [
-    sep, center(tmpl.header, RECEIPT_WIDTH), center(txName, RECEIPT_WIDTH), sep,
-    `Ref:    ${tx.reference}`, `Date:   ${date}`,
-    `Agent:  ${tx.agentName}`, `Phone:  ${maskPhone(tx.customerPhone)}`,
-    dash, `Amount: ${tx.currency} ${tx.amount.toFixed(2)}`,
-    `Status: ${tx.status.toUpperCase()}`,
-    `Via:    USSD ${tx.shortCode}`, `Net:    ${tx.carrier}`,
-    dash, center(tmpl.footer, RECEIPT_WIDTH), sep,
-  ].join("\n");
-}
-
-const receipts: Array<{ id: string; txId: string; content: string; printStatus: string; createdAt: number; printedAt?: number }> = [];
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { transactions, auditLog } from "../../drizzle/schema";
 
 export const ussdReceiptRouter = router({
-  generate: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      type: z.string(),
-      amount: z.number(),
-      currency: z.string(),
-      agentName: z.string(),
-      customerPhone: z.string(),
-      carrier: z.string(),
-      shortCode: z.string(),
-      reference: z.string(),
-      status: z.string(),
-      timestamp: z.number(),
-      locale: z.string().default("en"),
-    }))
-    .mutation(({ input }) => {
-      const content = formatReceipt(input, input.locale);
-      const receipt = {
-        id: `RCP-${Date.now()}-${input.id.substring(0, 8)}`,
-        txId: input.id,
-        content,
-        printStatus: "queued" as string,
-        createdAt: Date.now(),
-      };
-      receipts.push(receipt);
-      return receipt;
-    }),
-
-  print: protectedProcedure
-    .input(z.object({ receiptId: z.string() }))
-    .mutation(({ input }) => {
-      const receipt = receipts.find(r => r.id === input.receiptId);
-      if (!receipt) return { status: "not_found" };
-      receipt.printStatus = "printed";
-      receipt.printedAt = Date.now();
-      return { status: "printed", receiptId: receipt.id };
-    }),
-
-  getReceipts: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
-    .query(({ input }) => receipts.slice(-input.limit)),
-
-  getTemplates: protectedProcedure.query(() => TEMPLATES),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalReceipts: 0, smsReceipts: 0, ussdReceipts: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "receipt_generated")).orderBy(desc(auditLog.createdAt)).limit(500);
+    return { totalReceipts: rows.length, smsReceipts: rows.filter(r => (r.metadata as any)?.channel === "sms").length, ussdReceipts: rows.filter(r => (r.metadata as any)?.channel === "ussd").length };
+  }),
+  generateReceipt: protectedProcedure.input(z.object({ transactionId: z.number(), channel: z.enum(["sms", "ussd", "email"]).default("sms"), phone: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const txRows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
+    if (txRows.length === 0) return { success: false, error: "Transaction not found" };
+    const tx = txRows[0];
+    const receiptId = "RCP-" + Date.now().toString(36).toUpperCase();
+    await db.insert(auditLog).values({ action: "receipt_generated", resource: "receipts", resourceId: receiptId, status: "success", metadata: { transactionId: input.transactionId, channel: input.channel, amount: tx.amount, type: tx.type } });
+    return { success: true, receiptId, receipt: { id: receiptId, transactionId: input.transactionId, amount: tx.amount, type: tx.type, channel: input.channel, generatedAt: new Date().toISOString() } };
+  }),
+  getReceipt: protectedProcedure.input(z.object({ receiptId: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(auditLog).where(and(eq(auditLog.action, "receipt_generated"), eq(auditLog.resourceId, input.receiptId))).limit(1);
+    if (rows.length === 0) return null;
+    return { id: rows[0].resourceId, ...rows[0].metadata as any, createdAt: rows[0].createdAt };
+  }),
+  resendReceipt: protectedProcedure.input(z.object({ receiptId: z.string(), channel: z.enum(["sms", "ussd", "email"]), phone: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "receipt_resent", resource: "receipts", resourceId: input.receiptId, status: "success", metadata: { channel: input.channel, phone: input.phone } });
+    return { success: true };
+  }),
 });

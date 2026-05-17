@@ -46,7 +46,7 @@ const getStats = protectedProcedure
     return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
   });
 const assignTerritory = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(agents).where(eq(agents.id, input.id));
@@ -58,7 +58,7 @@ const assignTerritory = protectedProcedure
     return { success: true, ...existing, message: "No changes applied" };
   });
 const setCommissionCascade = protectedProcedure
-  .input(z.object({ id: z.number(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [existing] = await db.select().from(agents).where(eq(agents.id, input.id));
@@ -70,7 +70,7 @@ const setCommissionCascade = protectedProcedure
     return { success: true, ...existing, message: "No changes applied" };
   });
 const createTerritory = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

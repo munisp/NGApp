@@ -1,14 +1,29 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const releases = [
-  { id: "REL-036", version: "3.6.0", title: "Sprint 36 - White-Label Partner Platform", date: "2026-04-21", status: "current", features: ["White-Label Partner Onboarding", "Partner Self-Service Portal", "Transaction CSV Export", "NL Financial Query", "Agent Gamification", "Bulk Transaction Processing", "Customer 360 View", "Webhook Management", "Feature Flags", "SLA Monitoring", "Data Retention Policies", "Advanced Search", "Revenue Sharing", "Branding Engine", "Approval Workflow", "Loading States", "Financial NL Engine", "Export Engine", "Changelog", "Platform Search"], breakingChanges: [], migrationGuide: "", knownIssues: [] },
-  { id: "REL-035", version: "3.5.0", title: "Sprint 35 - Advanced Operations", date: "2026-04-20", status: "stable", features: ["Transaction Map Viz", "Report Builder Templates", "NL Analytics Query", "Banking Workflows", "Agent Onboarding Wizard", "Transaction Reconciliation", "Chargeback Management", "Regulatory Reporting", "Territory Management", "Dynamic Pricing", "Loyalty Program", "Fraud Case Management", "Terminal Fleet", "Financial Reconciliation", "API Analytics", "Agent Communication", "Dispute Arbitration", "Compliance Training", "Migration Tools", "Audit Log Viewer"], breakingChanges: [], migrationGuide: "", knownIssues: [] },
-  { id: "REL-034", version: "3.4.0", title: "Sprint 34 - Enterprise Features", date: "2026-04-19", status: "stable", features: ["Real-time Notifications", "Drag-drop Report Builder", "GraphQL Federation", "API Versioning", "Rate Limiting", "Dashboard Widgets", "Agent Scorecard", "Dispute Resolution", "Regulatory Sandbox", "Multi-Currency", "Document Management", "Agent Training", "Revenue Analytics", "Platform Health", "Batch Processing", "Integration Marketplace", "Mobile API", "Automated Testing"], breakingChanges: [], migrationGuide: "", knownIssues: [] },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
+
 export const platformChangelogRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalReleases: releases.length, currentVersion: releases[0].version, totalFeatures: releases.reduce((s: any, r: any) => s + r.features.length, 0), lastRelease: releases[0].date })),
-  listReleases: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(10) }).optional()).query(({ input }) => { let r = [...releases]; if (input?.status) r = r.filter(x => x.status === input.status); return { releases: r.slice(0, input?.limit || 10), total: r.length }; }),
-  getRelease: protectedProcedure.input(z.object({ id: z.string() })).query(({ input }) => releases.find(r => r.id === input.id) || null),
-  createRelease: protectedProcedure.input(z.object({ version: z.string(), title: z.string(), features: z.array(z.string()), breakingChanges: z.array(z.string()).optional() })).mutation(({ input }) => ({ id: `REL-${Date.now()}`, ...input, date: new Date().toISOString().split("T")[0], status: "draft" })),
-  getRoadmap: protectedProcedure.query(() => [{ quarter: "Q2 2026", items: ["Advanced AI Analytics", "Multi-tenant Architecture", "Real-time Collaboration"] }, { quarter: "Q3 2026", items: ["Mobile App v2", "Blockchain Settlement", "Open Banking API"] }]),
+  listReleases: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { releases: [], total: 0 };
+    const rows = await db.select().from(systemConfig).where(sql`\${systemConfig.key} LIKE 'release_%'`).orderBy(desc(systemConfig.updatedAt)).limit(input?.limit ?? 20);
+    return { releases: rows.map(r => ({ id: r.key.replace("release_", ""), ...JSON.parse(String(r.value ?? "{}")) })), total: rows.length };
+  }),
+  getRelease: protectedProcedure.input(z.object({ releaseId: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "release_" + input.releaseId)).limit(1);
+    if (rows.length === 0) return null;
+    return { id: input.releaseId, ...JSON.parse(String(rows[0].value ?? "{}")) };
+  }),
+  createRelease: protectedProcedure.input(z.object({ version: z.string(), title: z.string(), features: z.array(z.string()), breakingChanges: z.array(z.string()).optional(), migrationGuide: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const releaseId = "REL-" + Date.now().toString(36).toUpperCase();
+    await db.insert(systemConfig).values({ key: "release_" + releaseId, value: JSON.stringify({ ...input, status: "current", date: new Date().toISOString().split("T")[0], knownIssues: [] }) });
+    await db.insert(auditLog).values({ action: "release_published", resource: "changelog", resourceId: releaseId, status: "success", metadata: { version: input.version, title: input.title } });
+    return { success: true, releaseId };
+  }),
 });

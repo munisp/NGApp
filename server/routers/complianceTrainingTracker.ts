@@ -1,16 +1,30 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const trainings = [
-  { id: "TRN-001", agentId: "AGT-001", agentName: "Adebayo Ogundimu", course: "AML/CFT Annual Refresher", status: "completed", completedAt: "2026-03-15", score: 92, certificate: "CERT-AML-001", expiresAt: "2027-03-15", mandatory: true },
-  { id: "TRN-002", agentId: "AGT-002", agentName: "Chioma Eze", course: "AML/CFT Annual Refresher", status: "in_progress", completedAt: null, score: 0, certificate: null, expiresAt: null, mandatory: true },
-  { id: "TRN-003", agentId: "AGT-003", agentName: "Ibrahim Musa", course: "Data Protection (NDPR)", status: "completed", completedAt: "2026-02-20", score: 88, certificate: "CERT-NDPR-001", expiresAt: "2027-02-20", mandatory: true },
-  { id: "TRN-004", agentId: "AGT-005", agentName: "Ngozi Obi", course: "AML/CFT Annual Refresher", status: "overdue", completedAt: null, score: 0, certificate: null, expiresAt: null, mandatory: true },
-  { id: "TRN-005", agentId: "AGT-001", agentName: "Adebayo Ogundimu", course: "Fraud Prevention Workshop", status: "completed", completedAt: "2026-04-01", score: 95, certificate: "CERT-FP-001", expiresAt: "2027-04-01", mandatory: false },
-];
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { trainingCourses, trainingEnrollments, auditLog } from "../../drizzle/schema";
+
 export const complianceTrainingTrackerRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalTrainings: trainings.length, completed: trainings.filter(t => t.status === "completed").length, inProgress: trainings.filter(t => t.status === "in_progress").length, overdue: trainings.filter(t => t.status === "overdue").length, avgScore: trainings.filter(t => t.score > 0).reduce((s: any, t: any) => s + t.score, 0) / trainings.filter(t => t.score > 0).length, complianceRate: 60, certificatesActive: 3, expiringIn30Days: 0 })),
-  listTrainings: protectedProcedure.input(z.object({ status: z.string().optional(), agentId: z.string().optional() })).query(({ input }) => ({ trainings: trainings.filter(t => (!input.status || t.status === input.status) && (!input.agentId || t.agentId === input.agentId)), total: trainings.length })),
-  getTraining: protectedProcedure.input(z.object({ trainingId: z.string() })).query(({ input }) => trainings.find(t => t.id === input.trainingId) || null),
-  assignTraining: protectedProcedure.input(z.object({ agentId: z.string(), courseId: z.string(), dueDate: z.string() })).mutation(({ input }) => ({ trainingId: "TRN-" + Date.now(), status: "assigned", ...input })),
-  recordCompletion: protectedProcedure.input(z.object({ trainingId: z.string(), score: z.number() })).mutation(({ input }) => ({ trainingId: input.trainingId, status: input.score >= 70 ? "completed" : "failed", score: input.score, certificate: input.score >= 70 ? "CERT-" + Date.now() : null })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalModules: 0, completedModules: 0, overdueModules: 0, complianceRate: 0 };
+    const [courseCount] = await db.select({ value: count() }).from(trainingCourses);
+    const [enrollCount] = await db.select({ value: count() }).from(trainingEnrollments);
+    const [completedCount] = await db.select({ value: count() }).from(trainingEnrollments).where(eq(trainingEnrollments.status, "completed"));
+    const total = Number(enrollCount.value);
+    const completed = Number(completedCount.value);
+    return { totalModules: Number(courseCount.value), completedModules: completed, overdueModules: 0, complianceRate: total > 0 ? Math.round(completed / total * 100) : 100 };
+  }),
+  listModules: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { modules: [], total: 0 };
+    const rows = await db.select().from(trainingCourses).orderBy(desc(trainingCourses.createdAt)).limit(input?.limit ?? 20);
+    return { modules: rows, total: rows.length };
+  }),
+  trackCompletion: protectedProcedure.input(z.object({ agentId: z.number(), courseId: z.number(), score: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "compliance_training_completed", resource: "training", resourceId: String(input.courseId), status: "success", metadata: { agentId: input.agentId, score: input.score } });
+    return { success: true, passed: input.score >= 70 };
+  }),
 });

@@ -38,7 +38,7 @@ const getLoanPortfolio = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const submitApplication = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -50,7 +50,7 @@ const submitApplication = protectedProcedure
     return { success: true, ...row, message: "submitApplication completed" };
   });
 const approveApplication = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {
@@ -62,7 +62,7 @@ const approveApplication = protectedProcedure
     return { success: true, ...row, message: "approveApplication completed" };
   });
 const rejectApplication = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

@@ -1,16 +1,28 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-const incidents = [
-  { id: "INC-001", title: "NIBSS Gateway Latency Spike", severity: "P2", status: "investigating", startedAt: "2026-04-21T10:30:00Z", affectedServices: ["Payment Processing", "Settlement"], assignee: "Platform Engineering", impactedAgents: 120, estimatedResolution: "1 hour" },
-  { id: "INC-002", title: "Agent Portal Login Failures", severity: "P3", status: "resolved", startedAt: "2026-04-21T08:00:00Z", resolvedAt: "2026-04-21T08:45:00Z", affectedServices: ["Agent Portal"], assignee: "Auth Team", impactedAgents: 45, rootCause: "Expired OAuth certificate" },
-  { id: "INC-003", title: "Settlement Batch Delay", severity: "P1", status: "monitoring", startedAt: "2026-04-20T23:00:00Z", affectedServices: ["Settlement Engine", "Agent Float"], assignee: "Settlement Team", impactedAgents: 850, estimatedResolution: "30 minutes" },
-];
-const metrics = { tps: 2450, errorRate: 0.12, p99Latency: 245, activeAgents: 1180, activeTerminals: 1050, uptimePercent: 99.97, openIncidents: 2, mttr: "32 minutes" };
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { auditLog, systemConfig, agents, transactions } from "../../drizzle/schema";
+
 export const operationalCommandBridgeRouter = router({
-  getStats: protectedProcedure.query(() => ({ ...metrics, totalIncidentsToday: incidents.length, resolvedToday: incidents.filter(i => i.status === "resolved").length, criticalIncidents: incidents.filter(i => i.severity === "P1").length })),
-  listIncidents: protectedProcedure.query(() => ({ incidents, total: incidents.length })),
-  getIncident: protectedProcedure.input(z.object({ incidentId: z.string() })).query(({ input }) => incidents.find(i => i.id === input.incidentId) || null),
-  createIncident: protectedProcedure.input(z.object({ title: z.string(), severity: z.string(), affectedServices: z.array(z.string()) })).mutation(({ input }) => ({ incidentId: `INC-${Date.now()}`, status: "open", ...input, createdAt: new Date().toISOString() })),
-  updateStatus: protectedProcedure.input(z.object({ incidentId: z.string(), status: z.string(), notes: z.string().optional() })).mutation(({ input }) => ({ ...input, updatedAt: new Date().toISOString() })),
-  getLiveMetrics: protectedProcedure.query(() => metrics),
+  dashboard: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { activeCommands: 0, totalExecuted: 0, systemStatus: "unknown", alerts: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "command_executed")).orderBy(desc(auditLog.createdAt)).limit(500);
+    const secEvents = await db.select().from(auditLog).where(eq(auditLog.action, "security_event")).orderBy(desc(auditLog.createdAt)).limit(100);
+    return { activeCommands: 0, totalExecuted: rows.length, systemStatus: "operational", alerts: secEvents.length };
+  }),
+  executeCommand: protectedProcedure.input(z.object({ command: z.string(), target: z.string(), parameters: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const cmdId = "CMD-" + Date.now().toString(36).toUpperCase();
+    await db.insert(auditLog).values({ action: "command_executed", resource: "command_bridge", resourceId: cmdId, status: "success", metadata: { command: input.command, target: input.target, parameters: input.parameters } });
+    return { success: true, commandId: cmdId };
+  }),
+  listCommands: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { commands: [], total: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "command_executed")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { commands: rows.map(r => ({ id: r.id, commandId: r.resourceId, status: r.status, executedAt: r.createdAt })), total: rows.length };
+  }),
 });

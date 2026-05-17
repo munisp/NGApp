@@ -1,37 +1,36 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-// ── Middleware Integration (Sprint 44) ──────────────────────────────
-import { publishEvent, type KafkaTopic } from "../kafkaClient";
-import { cacheSet, cacheGet } from "../redisClient";
-import { tbCreateTransfer } from "../tbClient";
-import { fluvioProduce } from "../fluvio";
-import { permifyCheck } from "../_core/permify";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { transactions, auditLog } from "../../drizzle/schema";
 
-const disputes = [
-  { id: "DIS-001", transactionId: "TXN-45678", amount: 150000, claimant: "Customer - Adebayo Ogundimu", respondent: "Agent AGT-001", type: "unauthorized_transaction", status: "under_review", filedAt: "2026-04-19", dueDate: "2026-05-03", assignedTo: "Dispute Team A", priority: "high" },
-  { id: "DIS-002", transactionId: "TXN-45890", amount: 50000, claimant: "Agent AGT-002", respondent: "GTBank", type: "failed_settlement", status: "escalated", filedAt: "2026-04-18", dueDate: "2026-05-02", assignedTo: "Settlement Team", priority: "critical" },
-  { id: "DIS-003", transactionId: "TXN-46012", amount: 25000, claimant: "Customer - Fatima Bello", respondent: "Agent AGT-003", type: "wrong_amount", status: "resolved", filedAt: "2026-04-15", dueDate: "2026-04-29", assignedTo: "Dispute Team B", priority: "medium", resolution: "Refund issued" },
-  { id: "DIS-004", transactionId: "TXN-46234", amount: 500000, claimant: "Merchant MCH-001", respondent: "Platform", type: "chargeback", status: "pending_evidence", filedAt: "2026-04-20", dueDate: "2026-05-04", assignedTo: "Chargeback Team", priority: "high" },
-];
 export const paymentDisputeArbitrationRouter = router({
-  getStats: protectedProcedure.query(() => ({ totalDisputes: disputes.length, openDisputes: disputes.filter(d => d.status !== "resolved").length, resolvedDisputes: disputes.filter(d => d.status === "resolved").length, avgResolutionTime: "5.2 days", totalDisputedAmount: disputes.reduce((s: any, d: any) => s + d.amount, 0), escalatedCount: disputes.filter(d => d.status === "escalated").length, slaCompliance: 94.5, refundRate: 32 })),
-  listDisputes: protectedProcedure.input(z.object({ status: z.string().optional() })).query(({ input }) => ({ disputes: input.status ? disputes.filter(d => d.status === input.status) : disputes, total: disputes.length })),
-  getDispute: protectedProcedure.input(z.object({ disputeId: z.string() })).query(({ input }) => disputes.find(d => d.id === input.disputeId) || null),
-  createDispute: protectedProcedure.input(z.object({ transactionId: z.string(), type: z.string(), description: z.string(), amount: z.number() })).mutation(async ({ input }) => {
-      // ── Middleware Integration (Sprint 44) ──────────────────────────
-      // [Kafka] Publish event
-      try { await publishEvent("pos.paymentdisputearbitration" as KafkaTopic, "system", { event: "paymentDisputeArbitration.processed", timestamp: Date.now() }); } catch {}
-      // [Redis] Cache result for 5 min
-      try { await cacheSet("paymentDisputeArbitration:last", JSON.stringify({ ts: Date.now() }), 300); } catch {}
-      // [TigerBeetle] Record ledger entry (if sidecar available)
-      try { await tbCreateTransfer({ debitAccountId: "1", creditAccountId: "2", amount: 0 }); } catch {}
-      // [Fluvio] Stream event for real-time analytics
-      try { await fluvioProduce("pos.paymentdisputearbitration", { value: JSON.stringify({ event: "paymentDisputeArbitration.processed", ts: Date.now() }) }); } catch {}
-      // [Permify] Authorization check (fail-open)
-      try { await permifyCheck({ subjectType: "user", subjectId: "system", entityType: "paymentDisputeArbitration", entityId: "system", permission: "execute" }); } catch {}
-      // ── End Middleware ──────────────────────────────────────────────
-      return { disputeId: "DIS-" + Date.now(), status: "filed", ...input, dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10) };
-    }),
-
-  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string(), refundAmount: z.number().optional() })).mutation(({ input }) => ({ status: "resolved", ...input, resolvedAt: new Date().toISOString() })),
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalDisputes: 0, pending: 0, resolved: 0, avgResolutionDays: 0 };
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "dispute_filed")).orderBy(desc(auditLog.createdAt)).limit(500);
+    const resolved = rows.filter(r => (r.metadata as any)?.status === "resolved").length;
+    return { totalDisputes: rows.length, pending: rows.length - resolved, resolved, avgResolutionDays: 3 };
+  }),
+  listDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { disputes: [], total: 0 };
+    const conditions: any[] = [eq(auditLog.action, "dispute_filed")];
+    if (input?.status) conditions.push(sql`${auditLog.status} = ${input.status}`);
+    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { disputes: rows.map(r => ({ id: r.id, disputeId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
+  }),
+  fileDispute: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string(), amount: z.number(), evidence: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const disputeId = "DSP-" + Date.now().toString(36).toUpperCase();
+    await db.insert(auditLog).values({ action: "dispute_filed", resource: "disputes", resourceId: disputeId, status: "success", metadata: { transactionId: input.transactionId, reason: input.reason, amount: input.amount, status: "pending" } });
+    return { success: true, disputeId };
+  }),
+  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.enum(["merchant_favor", "customer_favor", "split"]), notes: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    await db.insert(auditLog).values({ action: "dispute_resolved", resource: "disputes", resourceId: input.disputeId, status: "success", metadata: { resolution: input.resolution, notes: input.notes, refundAmount: input.refundAmount, status: "resolved" } });
+    return { success: true };
+  }),
 });

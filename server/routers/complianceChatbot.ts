@@ -18,7 +18,7 @@ const startSession = protectedProcedure
     return { items: rows, total, page: input.page ?? 1, limit: lim };
   });
 const sendMessage = protectedProcedure
-  .input(z.object({ id: z.number().optional(), data: z.record(z.any()).optional() }))
+  .input(z.object({ id: z.number().optional(), data: z.record(z.string(), z.any()).optional() }))
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     if (input.id) {

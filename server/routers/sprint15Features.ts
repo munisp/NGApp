@@ -131,7 +131,7 @@ export const eventBusRouter = router({
     return { topics: ["transactions", "agents", "settlements", "disputes", "compliance"], activeSubscribers: 0 };
   }),
   publish: protectedProcedure
-    .input(z.object({ topic: z.string(), payload: z.record(z.any()) }))
+    .input(z.object({ topic: z.string(), payload: z.record(z.string(), z.any()) }))
     .mutation(async ({ input }) => {
       return { success: true, topic: input.topic, publishedAt: new Date().toISOString() };
     }),
