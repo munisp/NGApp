@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "tx-validator",
+    "ledger-bridge",
+    "fraud-engine",
+    "pos-printer", "i18n-currency",
+    "fluvio-smartmodule",
+]
+resolver = "2"
+
+# offline-queue has a separate workspace (uses rusqlite which conflicts with sqlx-sqlite)
+# Build it independently: cd services/rust/offline-queue && cargo build
