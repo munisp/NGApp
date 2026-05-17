@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claims-reserve-worker
+  labels:
+    app: claims-reserve-service
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: claims-reserve-service
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: claims-reserve-service
+        component: worker
+    spec:
+      containers:
+      - name: worker
+        image: claims-reserve-service:latest # Replace with your image registry path
+        command: ["/usr/local/bin/worker"]
+        ports:
+        - containerPort: 9090 # Metrics port
+        env:
+        - name: TEMPORAL_HOSTPORT
+          value: "temporal-frontend:7233"
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: DATABASE_HOST
+          value: "claims-reserve-db"
+        - name: DATABASE_NAME
+          value: "claims_reserve_db"
+        - name: DATABASE_USER
+          value: "postgres"
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: claims-reserve-secrets
+              key: db-password
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claims-reserve-api
+  labels:
+    app: claims-reserve-service
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: claims-reserve-service
+      component: api
+  template:
+    metadata:
+      labels:
+        app: claims-reserve-service
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: claims-reserve-service:latest # Replace with your image registry path
+        command: ["/usr/local/bin/api"]
+        ports:
+        - containerPort: 8080 # API port
+        - containerPort: 9090 # Metrics port
+        env:
+        - name: TEMPORAL_HOSTPORT
+          value: "temporal-frontend:7233"
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SERVER_PORT
+          value: "8080"
+        - name: METRICS_PORT
+          value: "9090"
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claims-reserve-api
+  labels:
+    app: claims-reserve-service
+    component: api
+spec:
+  selector:
+    app: claims-reserve-service
+    component: api
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: LoadBalancer

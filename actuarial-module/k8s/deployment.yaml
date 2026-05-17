@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actuarial-module
+  namespace: insurance-platform
+  labels:
+    app: actuarial-module
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: actuarial-module
+  template:
+    metadata:
+      labels:
+        app: actuarial-module
+    spec:
+      containers:
+        - name: actuarial-module
+          image: actuarial-module:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: PORT
+              value: "8090"
+            - name: DB_PATH
+              value: "/data/actuarial.db"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actuarial-module
+  namespace: insurance-platform
+spec:
+  selector:
+    app: actuarial-module
+  ports:
+    - port: 8090
+      targetPort: 8090
+  type: ClusterIP

@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: redis
+data:
+  redis.conf: |
+    bind 0.0.0.0
+    port 6379
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 5000
+    appendonly yes
+    appendfsync everysec
+    maxmemory 4gb
+    maxmemory-policy allkeys-lru
+    tcp-keepalive 300
+    timeout 0
+    tcp-backlog 511
+    databases 16
+    save 900 1
+    save 300 10
+    save 60 10000
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dir /data
+    replica-serve-stale-data yes
+    replica-read-only yes
+    repl-diskless-sync no
+    repl-diskless-sync-delay 5
+    repl-ping-replica-period 10
+    repl-timeout 60
+    repl-disable-tcp-nodelay no
+    replica-priority 100
+    lazyfree-lazy-eviction no
+    lazyfree-lazy-expire no
+    lazyfree-lazy-server-del no
+    replica-lazy-flush no
+    activerehashing yes
+    client-output-buffer-limit normal 0 0 0
+    client-output-buffer-limit replica 256mb 64mb 60
+    client-output-buffer-limit pubsub 32mb 8mb 60
+    hz 10
+    dynamic-hz yes
+    aof-rewrite-incremental-fsync yes
+    rdb-save-incremental-fsync yes
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: redis
+spec:
+  serviceName: redis-cluster
+  replicas: 6
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - redis-cluster
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - redis-cluster
+                topologyKey: topology.kubernetes.io/zone
+      containers:
+        - name: redis
+          image: redis:7.2-alpine
+          ports:
+            - containerPort: 6379
+              name: client
+            - containerPort: 16379
+              name: gossip
+          command:
+            - redis-server
+            - /conf/redis.conf
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: conf
+              mountPath: /conf
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: conf
+          configMap:
+            name: redis-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: redis
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: client
+    - port: 16379
+      targetPort: 16379
+      name: gossip
+  selector:
+    app: redis-cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-lb
+  namespace: redis
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: client
+  selector:
+    app: redis-cluster
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-init
+  namespace: redis
+spec:
+  template:
+    spec:
+      containers:
+        - name: redis-cluster-init
+          image: redis:7.2-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sleep 30
+              echo "Creating Redis cluster..."
+              redis-cli --cluster create \
+                redis-cluster-0.redis-cluster.redis.svc.cluster.local:6379 \
+                redis-cluster-1.redis-cluster.redis.svc.cluster.local:6379 \
+                redis-cluster-2.redis-cluster.redis.svc.cluster.local:6379 \
+                redis-cluster-3.redis-cluster.redis.svc.cluster.local:6379 \
+                redis-cluster-4.redis-cluster.redis.svc.cluster.local:6379 \
+                redis-cluster-5.redis-cluster.redis.svc.cluster.local:6379 \
+                --cluster-replicas 1 --cluster-yes
+              echo "Redis cluster created successfully"
+      restartPolicy: OnFailure
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-cluster
+  namespace: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis-cluster
+  endpoints:
+    - port: client
+      interval: 30s
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-cluster-pdb
+  namespace: redis
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: redis-cluster

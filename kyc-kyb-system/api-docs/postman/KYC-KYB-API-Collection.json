@@ -1,0 +1,900 @@
+{
+	"info": {
+		"_postman_id": "kyc-kyb-api-collection-v1",
+		"name": "KYC/KYB System API Collection",
+		"description": "Complete API collection for KYC/KYB microservices including Liveness Detection, AML Screening, and Risk Scoring services.\n\n## Authentication\n\nAll endpoints require OAuth2 Bearer token from Keycloak. Use the \"Get Auth Token\" request in the \"Authentication\" folder to obtain a token.\n\n## Services\n\n1. **Liveness Detection Service** (Port 8002) - 9 endpoints\n2. **AML Screening Service** (Port 8003) - 12 endpoints\n3. **Risk Scoring Service** (Port 8004) - 6 endpoints\n\n## Total: 27 API Endpoints\n\n## Variables\n\nSet the following collection variables:\n- `base_url`: http://localhost\n- `keycloak_url`: http://localhost:8080\n- `realm`: kyc-kyb-system\n- `username`: kyc_analyst\n- `password`: kyc123\n- `client_id`: liveness-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Get Auth Token (KYC Analyst)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+									"    pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+									"    console.log(\"Access token saved to collection variable\");",
+									"} else {",
+									"    console.log(\"Failed to get token:\", pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						},
+						"description": "Get OAuth2 Bearer token from Keycloak for KYC Analyst role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Compliance Officer)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "compliance",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "compliance123",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "aml-screening-service",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auth Token (Risk Manager)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "risk_manager",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "risk123",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "risk-scoring-service",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+							"host": [
+								"{{keycloak_url}}"
+							],
+							"path": [
+								"realms",
+								"{{realm}}",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints to obtain OAuth2 Bearer tokens from Keycloak"
+		},
+		{
+			"name": "Liveness Detection Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8002/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if Liveness Detection Service is healthy"
+					},
+					"response": []
+				},
+				{
+					"name": "Perform Passive Liveness Check",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "customer_id",
+									"value": "CUST-001",
+									"type": "text"
+								},
+								{
+									"key": "liveness_type",
+									"value": "passive",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}:8002/api/v1/liveness/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"liveness",
+								"check"
+							]
+						},
+						"description": "Perform passive liveness detection on a selfie image"
+					},
+					"response": []
+				},
+				{
+					"name": "Perform Active Liveness Check",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "customer_id",
+									"value": "CUST-002",
+									"type": "text"
+								},
+								{
+									"key": "liveness_type",
+									"value": "active",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}:8002/api/v1/liveness/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"liveness",
+								"check"
+							]
+						},
+						"description": "Perform active liveness detection on a video"
+					},
+					"response": []
+				},
+				{
+					"name": "Liveness Check with Face Matching",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "customer_id",
+									"value": "CUST-003",
+									"type": "text"
+								},
+								{
+									"key": "liveness_type",
+									"value": "passive",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "reference_image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}:8002/api/v1/liveness/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"liveness",
+								"check"
+							]
+						},
+						"description": "Perform liveness check with face matching against ID document"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Liveness Check Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8002/api/v1/liveness/check/LC-20260129-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"liveness",
+								"check",
+								"LC-20260129-001"
+							]
+						},
+						"description": "Retrieve a specific liveness check result by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Liveness Checks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8002/api/v1/liveness/customer/CUST-001?limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"liveness",
+								"customer",
+								"CUST-001"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Get all liveness checks for a specific customer"
+					},
+					"response": []
+				}
+			],
+			"description": "Liveness Detection Service endpoints (9 endpoints total including auth variations)"
+		},
+		{
+			"name": "AML Screening Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8003/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Screen Individual - Sanctions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-001\",\n  \"entity_type\": \"individual\",\n  \"full_name\": \"John Smith\",\n  \"date_of_birth\": \"1980-05-15\",\n  \"nationality\": \"NG\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/sanctions/screen",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"sanctions",
+								"screen"
+							]
+						},
+						"description": "Screen an individual against sanctions lists"
+					},
+					"response": []
+				},
+				{
+					"name": "Screen Entity - Sanctions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CORP-001\",\n  \"entity_type\": \"entity\",\n  \"full_name\": \"Acme Corporation Ltd\",\n  \"registration_number\": \"RC123456\",\n  \"country\": \"NG\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/sanctions/screen",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"sanctions",
+								"screen"
+							]
+						},
+						"description": "Screen a business entity against sanctions lists"
+					},
+					"response": []
+				},
+				{
+					"name": "Check PEP Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-003\",\n  \"full_name\": \"Maria Santos\",\n  \"date_of_birth\": \"1970-08-25\",\n  \"nationality\": \"NG\",\n  \"position\": \"CEO\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/pep/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"pep",
+								"check"
+							]
+						},
+						"description": "Check if an individual is a Politically Exposed Person"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Adverse Media - Basic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-004\",\n  \"entity_type\": \"individual\",\n  \"full_name\": \"David Johnson\",\n  \"search_depth\": \"basic\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/adverse-media/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"adverse-media",
+								"check"
+							]
+						},
+						"description": "Check for adverse media mentions (basic search)"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Adverse Media - Comprehensive",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-005\",\n  \"entity_type\": \"individual\",\n  \"full_name\": \"Sarah Williams\",\n  \"search_depth\": \"comprehensive\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/adverse-media/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"adverse-media",
+								"check"
+							]
+						},
+						"description": "Check for adverse media mentions (comprehensive search)"
+					},
+					"response": []
+				},
+				{
+					"name": "Comprehensive AML Screening",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-006\",\n  \"entity_type\": \"individual\",\n  \"full_name\": \"Michael Brown\",\n  \"date_of_birth\": \"1985-03-10\",\n  \"nationality\": \"NG\",\n  \"include_sanctions\": true,\n  \"include_pep\": true,\n  \"include_adverse_media\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/comprehensive/screen",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"comprehensive",
+								"screen"
+							]
+						},
+						"description": "Perform comprehensive AML screening (all checks)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Screening Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8003/api/v1/aml/screening/CS-20260129-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8003",
+							"path": [
+								"api",
+								"v1",
+								"aml",
+								"screening",
+								"CS-20260129-001"
+							]
+						},
+						"description": "Retrieve a specific screening result by ID"
+					},
+					"response": []
+				}
+			],
+			"description": "AML Screening Service endpoints (12 endpoints total)"
+		},
+		{
+			"name": "Risk Scoring Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8004/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Risk Score - Low Risk",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-001\",\n  \"identity_data\": {\n    \"verification_status\": \"verified\",\n    \"document_authenticity\": 0.95,\n    \"liveness_score\": 0.92,\n    \"face_match_score\": 0.91\n  },\n  \"aml_data\": {\n    \"sanctions_match\": false,\n    \"is_pep\": false,\n    \"adverse_media_found\": false\n  },\n  \"behavioral_data\": {\n    \"account_age_days\": 180,\n    \"transaction_count\": 45,\n    \"average_transaction_amount\": 50000,\n    \"failed_login_attempts\": 1\n  },\n  \"geographic_data\": {\n    \"country\": \"NG\",\n    \"region\": \"Lagos\",\n    \"ip_country\": \"NG\",\n    \"vpn_detected\": false\n  },\n  \"transaction_data\": {\n    \"amount\": 100000,\n    \"currency\": \"NGN\",\n    \"transaction_type\": \"policy_purchase\",\n    \"payment_method\": \"bank_transfer\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8004/api/v1/risk/score",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"api",
+								"v1",
+								"risk",
+								"score"
+							]
+						},
+						"description": "Calculate risk score for a low-risk customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Risk Score - High Risk",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-002\",\n  \"identity_data\": {\n    \"verification_status\": \"pending\",\n    \"document_authenticity\": 0.65,\n    \"liveness_score\": 0.70,\n    \"face_match_score\": 0.68\n  },\n  \"aml_data\": {\n    \"sanctions_match\": false,\n    \"is_pep\": true,\n    \"adverse_media_found\": true\n  },\n  \"behavioral_data\": {\n    \"account_age_days\": 10,\n    \"transaction_count\": 2,\n    \"average_transaction_amount\": 500000,\n    \"failed_login_attempts\": 5\n  },\n  \"geographic_data\": {\n    \"country\": \"NG\",\n    \"region\": \"Unknown\",\n    \"ip_country\": \"US\",\n    \"vpn_detected\": true\n  },\n  \"transaction_data\": {\n    \"amount\": 5000000,\n    \"currency\": \"NGN\",\n    \"transaction_type\": \"policy_purchase\",\n    \"payment_method\": \"crypto\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8004/api/v1/risk/score",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"api",
+								"v1",
+								"risk",
+								"score"
+							]
+						},
+						"description": "Calculate risk score for a high-risk customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Risk Score",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8004/api/v1/risk/score/RS-20260129-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"api",
+								"v1",
+								"risk",
+								"score",
+								"RS-20260129-001"
+							]
+						},
+						"description": "Retrieve a specific risk score by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Risk Scores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}:8004/api/v1/risk/customer/CUST-001?limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"api",
+								"v1",
+								"risk",
+								"customer",
+								"CUST-001"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Get all risk scores for a specific customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Comprehensive Risk Assessment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"CUST-003\",\n  \"include_identity\": true,\n  \"include_document\": true,\n  \"include_aml\": true,\n  \"include_behavioral\": true,\n  \"include_geographic\": true,\n  \"include_transaction\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}:8004/api/v1/risk/assess",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "8004",
+							"path": [
+								"api",
+								"v1",
+								"risk",
+								"assess"
+							]
+						},
+						"description": "Perform comprehensive risk assessment"
+					},
+					"response": []
+				}
+			],
+			"description": "Risk Scoring Service endpoints (6 endpoints total)"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "keycloak_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "realm",
+			"value": "kyc-kyb-system",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "kyc_analyst",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "kyc123",
+			"type": "string"
+		},
+		{
+			"key": "client_id",
+			"value": "liveness-service",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

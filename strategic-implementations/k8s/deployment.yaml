@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strategic-implementations
+  labels:
+    app: strategic-implementations
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: strategic-implementations
+  template:
+    metadata:
+      labels:
+        app: strategic-implementations
+    spec:
+      containers:
+      - name: strategic-implementations
+        image: strategic-implementations:latest
+        ports:
+        - containerPort: 8109
+        env:
+        - name: PORT
+          value: "8109"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8109
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8109
+          initialDelaySeconds: 5

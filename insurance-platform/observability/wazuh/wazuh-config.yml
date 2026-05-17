@@ -1,0 +1,192 @@
+# Wazuh Manager Configuration for Insurance Platform
+
+# Global settings
+global:
+  jsonout_output: yes
+  alerts_log: yes
+  logall: yes
+  logall_json: yes
+
+# Remote syslog
+remote:
+  - connection: secure
+    port: 1514
+    protocol: tcp
+    allowed-ips:
+      - 10.0.0.0/8
+
+# Alerts configuration
+alerts:
+  log_alert_level: 3
+  email_alert_level: 12
+
+# Ruleset
+ruleset:
+  # Default ruleset
+  decoder_dir: ruleset/decoders
+  rule_dir: ruleset/rules
+  rule_exclude:
+    - 0215-policy_rules.xml
+  list:
+    - etc/lists/audit-keys
+    - etc/lists/amazon/aws-eventnames
+    - etc/lists/security-eventchannel
+
+  # Custom rules for insurance platform
+  rule_dir: etc/rules/insurance-platform
+
+# Syscheck (File Integrity Monitoring)
+syscheck:
+  disabled: no
+  frequency: 43200  # 12 hours
+  scan_on_start: yes
+  
+  # Directories to monitor
+  directories:
+    - /etc
+    - /usr/bin
+    - /usr/sbin
+    - /app/config
+  
+  # Files to ignore
+  ignore:
+    - /etc/mtab
+    - /etc/hosts.deny
+    - /etc/mail/statistics
+    - /etc/random-seed
+    - /etc/adjtime
+
+# Rootcheck
+rootcheck:
+  disabled: no
+  frequency: 43200
+
+# OpenSCAP
+wodle:
+  - name: open-scap
+    disabled: yes
+    timeout: 1800
+    interval: 1d
+    scan-on-start: yes
+
+# Vulnerability Detector
+  - name: vulnerability-detector
+    disabled: no
+    interval: 5m
+    min_full_scan_interval: 6h
+    run_on_start: yes
+    
+    # Providers
+    provider:
+      - name: canonical
+        enabled: yes
+        os:
+          - ubuntu
+        update_interval: 1h
+      
+      - name: redhat
+        enabled: yes
+        os:
+          - rhel
+        update_interval: 1h
+
+# Osquery integration
+  - name: osquery
+    disabled: no
+    run_daemon: yes
+    log_path: /var/log/osquery/osqueryd.results.log
+    config_path: /etc/osquery/osquery.conf
+    add_labels: yes
+
+# Active Response
+active-response:
+  disabled: no
+  ca_store: /var/ossec/etc/wpk_root.pem
+  ca_verification: yes
+
+# Command definitions
+command:
+  - name: disable-account
+    executable: disable-account
+    timeout_allowed: yes
+  
+  - name: restart-wazuh
+    executable: restart-wazuh
+  
+  - name: firewall-drop
+    executable: firewall-drop
+    timeout_allowed: yes
+
+# Active response rules
+active-response:
+  # Block repeated login failures
+  - command: firewall-drop
+    location: local
+    rules_id: 5710,5720
+    timeout: 600
+
+  # Disable account after multiple failed logins
+  - command: disable-account
+    location: local
+    rules_id: 5710
+    timeout: 1800
+
+# Log analysis
+localfile:
+  # System logs
+  - log_format: syslog
+    location: /var/log/syslog
+  
+  - log_format: syslog
+    location: /var/log/auth.log
+  
+  - log_format: syslog
+    location: /var/log/kern.log
+  
+  # Application logs
+  - log_format: json
+    location: /var/log/insurance-platform/*.log
+  
+  # Kubernetes logs
+  - log_format: json
+    location: /var/log/containers/*.log
+  
+  # PostgreSQL logs
+  - log_format: postgresql_log
+    location: /var/log/postgresql/*.log
+  
+  # Nginx/API Gateway logs
+  - log_format: json
+    location: /var/log/nginx/access.log
+  
+  - log_format: json
+    location: /var/log/nginx/error.log
+
+# Integration with external tools
+integration:
+  # Slack integration
+  - name: slack
+    hook_url: ${SLACK_WEBHOOK_URL}
+    level: 10
+    alert_format: json
+  
+  # OpenSearch integration
+  - name: opensearch
+    api_url: https://opensearch:9200
+    api_key: ${OPENSEARCH_API_KEY}
+    level: 3
+    alert_format: json
+
+# Cluster configuration
+cluster:
+  disabled: no
+  name: insurance-wazuh-cluster
+  node_name: ${HOSTNAME}
+  node_type: master
+  key: ${CLUSTER_KEY}
+  port: 1516
+  bind_addr: 0.0.0.0
+  nodes:
+    - wazuh-master-0
+    - wazuh-master-1
+  hidden: no

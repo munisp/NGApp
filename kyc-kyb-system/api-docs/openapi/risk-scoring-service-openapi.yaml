@@ -1,0 +1,600 @@
+openapi: 3.0.3
+info:
+  title: Risk Scoring Service API
+  description: |
+    ML-based risk scoring service for comprehensive customer risk assessment.
+    
+    This service provides:
+    - Identity risk scoring
+    - Document risk scoring
+    - AML risk scoring
+    - Behavioral risk scoring
+    - Geographic risk scoring
+    - Transaction risk scoring
+    - Overall risk assessment
+    
+    **Authentication**: OAuth2 Bearer token from Keycloak
+    **Authorization**: Role-based access control via Permify
+  version: 1.0.0
+  contact:
+    name: KYC/KYB System Support
+    email: support@insurance.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: http://localhost:8004
+    description: Local development
+  - url: http://risk-scoring-service:8004
+    description: Docker Compose
+  - url: https://kyc.insurance.com/api/v1/risk
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Risk Scoring
+    description: Risk scoring operations
+  - name: Risk Assessment
+    description: Comprehensive risk assessment
+  - name: Health
+    description: Service health and status
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the service is healthy and ready to accept requests
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /api/v1/risk/score:
+    post:
+      tags:
+        - Risk Scoring
+      summary: Calculate risk score
+      description: |
+        Calculate comprehensive risk score for a customer based on multiple dimensions.
+        
+        **Required Permissions**: `risk_score:create`
+        **Roles**: risk_manager, compliance_officer, system_administrator
+      operationId: calculateRiskScore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskScoringRequest'
+            example:
+              customer_id: CUST-001
+              identity_data:
+                verification_status: verified
+                document_authenticity: 0.95
+                liveness_score: 0.92
+                face_match_score: 0.91
+              aml_data:
+                sanctions_match: false
+                is_pep: false
+                adverse_media_found: false
+              behavioral_data:
+                account_age_days: 180
+                transaction_count: 45
+                average_transaction_amount: 50000
+                failed_login_attempts: 1
+              geographic_data:
+                country: NG
+                region: Lagos
+                ip_country: NG
+                vpn_detected: false
+              transaction_data:
+                amount: 100000
+                currency: NGN
+                transaction_type: policy_purchase
+                payment_method: bank_transfer
+      responses:
+        '200':
+          description: Risk score calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoringResponse'
+              examples:
+                lowRisk:
+                  summary: Low risk customer
+                  value:
+                    score_id: RS-20260129-001
+                    customer_id: CUST-001
+                    overall_score: 25
+                    risk_level: low
+                    dimension_scores:
+                      identity_risk: 15
+                      document_risk: 10
+                      aml_risk: 5
+                      behavioral_risk: 20
+                      geographic_risk: 10
+                      transaction_risk: 15
+                    risk_factors:
+                      - factor: Low AML risk
+                        impact: positive
+                        weight: 0.3
+                      - factor: Verified identity
+                        impact: positive
+                        weight: 0.25
+                    recommendations:
+                      - action: approve
+                        confidence: high
+                        reason: All risk dimensions within acceptable thresholds
+                    status: approved
+                    scored_at: "2026-01-29T11:00:00Z"
+                    scored_by: risk_manager_001
+                highRisk:
+                  summary: High risk customer
+                  value:
+                    score_id: RS-20260129-002
+                    customer_id: CUST-002
+                    overall_score: 75
+                    risk_level: high
+                    dimension_scores:
+                      identity_risk: 65
+                      document_risk: 70
+                      aml_risk: 85
+                      behavioral_risk: 60
+                      geographic_risk: 55
+                      transaction_risk: 80
+                    risk_factors:
+                      - factor: PEP identified
+                        impact: negative
+                        weight: 0.4
+                      - factor: High-risk country
+                        impact: negative
+                        weight: 0.3
+                      - factor: Large transaction amount
+                        impact: negative
+                        weight: 0.2
+                    recommendations:
+                      - action: reject
+                        confidence: high
+                        reason: Multiple high-risk factors detected
+                      - action: enhanced_due_diligence
+                        confidence: medium
+                        reason: Consider EDD if business justification exists
+                    status: review_required
+                    scored_at: "2026-01-29T11:05:00Z"
+                    scored_by: risk_manager_001
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/risk/score/{score_id}:
+    get:
+      tags:
+        - Risk Scoring
+      summary: Get risk score
+      description: |
+        Retrieve a previously calculated risk score.
+        
+        **Required Permissions**: `risk_score:read`
+        **Roles**: risk_manager, compliance_officer, system_administrator
+      operationId: getRiskScore
+      parameters:
+        - name: score_id
+          in: path
+          required: true
+          description: Unique risk score identifier
+          schema:
+            type: string
+          example: RS-20260129-001
+      responses:
+        '200':
+          description: Risk score retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoringResponse'
+        '404':
+          description: Risk score not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/risk/customer/{customer_id}:
+    get:
+      tags:
+        - Risk Scoring
+      summary: Get customer's risk scores
+      description: |
+        Retrieve all risk scores for a specific customer.
+        
+        **Required Permissions**: `risk_score:read`
+        **Roles**: risk_manager, compliance_officer, system_administrator
+      operationId: getCustomerRiskScores
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          description: Unique customer identifier
+          schema:
+            type: string
+          example: CUST-001
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Customer risk scores retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer_id:
+                    type: string
+                  total:
+                    type: integer
+                  current_risk_level:
+                    type: string
+                    enum: [low, medium, high, critical]
+                  scores:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RiskScoringResponse'
+
+  /api/v1/risk/assess:
+    post:
+      tags:
+        - Risk Assessment
+      summary: Comprehensive risk assessment
+      description: |
+        Perform comprehensive risk assessment including all available data sources.
+        
+        **Required Permissions**: `risk_score:create`
+        **Roles**: risk_manager, system_administrator
+      operationId: comprehensiveAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskAssessmentRequest'
+            example:
+              customer_id: CUST-001
+              include_identity: true
+              include_document: true
+              include_aml: true
+              include_behavioral: true
+              include_geographic: true
+              include_transaction: true
+      responses:
+        '200':
+          description: Risk assessment completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentResponse'
+              example:
+                assessment_id: RA-20260129-001
+                customer_id: CUST-001
+                overall_risk_score: 30
+                overall_risk_level: low
+                risk_dimensions:
+                  identity:
+                    score: 20
+                    level: low
+                    factors: [verified_identity, high_liveness_score]
+                  document:
+                    score: 15
+                    level: low
+                    factors: [authentic_documents, high_quality]
+                  aml:
+                    score: 10
+                    level: low
+                    factors: [no_sanctions, not_pep, no_adverse_media]
+                  behavioral:
+                    score: 25
+                    level: low
+                    factors: [normal_activity, consistent_patterns]
+                  geographic:
+                    score: 20
+                    level: low
+                    factors: [low_risk_country, no_vpn]
+                  transaction:
+                    score: 25
+                    level: low
+                    factors: [normal_amount, legitimate_purpose]
+                recommendations:
+                  primary_action: approve
+                  alternative_actions: []
+                  monitoring_required: false
+                  review_period_days: 90
+                status: approved
+                assessed_at: "2026-01-29T11:10:00Z"
+                assessed_by: risk_manager_001
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RiskScoringRequest:
+      type: object
+      required:
+        - customer_id
+      properties:
+        customer_id:
+          type: string
+        identity_data:
+          type: object
+          nullable: true
+          properties:
+            verification_status:
+              type: string
+            document_authenticity:
+              type: number
+              format: float
+            liveness_score:
+              type: number
+              format: float
+            face_match_score:
+              type: number
+              format: float
+        aml_data:
+          type: object
+          nullable: true
+          properties:
+            sanctions_match:
+              type: boolean
+            is_pep:
+              type: boolean
+            adverse_media_found:
+              type: boolean
+        behavioral_data:
+          type: object
+          nullable: true
+          properties:
+            account_age_days:
+              type: integer
+            transaction_count:
+              type: integer
+            average_transaction_amount:
+              type: number
+            failed_login_attempts:
+              type: integer
+        geographic_data:
+          type: object
+          nullable: true
+          properties:
+            country:
+              type: string
+            region:
+              type: string
+            ip_country:
+              type: string
+            vpn_detected:
+              type: boolean
+        transaction_data:
+          type: object
+          nullable: true
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+            transaction_type:
+              type: string
+            payment_method:
+              type: string
+
+    RiskScoringResponse:
+      type: object
+      properties:
+        score_id:
+          type: string
+        customer_id:
+          type: string
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall risk score (0-100, higher is riskier)
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        dimension_scores:
+          type: object
+          properties:
+            identity_risk:
+              type: integer
+            document_risk:
+              type: integer
+            aml_risk:
+              type: integer
+            behavioral_risk:
+              type: integer
+            geographic_risk:
+              type: integer
+            transaction_risk:
+              type: integer
+        risk_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              impact:
+                type: string
+                enum: [positive, negative]
+              weight:
+                type: number
+                format: float
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                enum: [approve, reject, review, enhanced_due_diligence]
+              confidence:
+                type: string
+                enum: [low, medium, high]
+              reason:
+                type: string
+        status:
+          type: string
+          enum: [approved, rejected, review_required]
+        scored_at:
+          type: string
+          format: date-time
+        scored_by:
+          type: string
+        notes:
+          type: string
+          nullable: true
+
+    RiskAssessmentRequest:
+      type: object
+      required:
+        - customer_id
+      properties:
+        customer_id:
+          type: string
+        include_identity:
+          type: boolean
+          default: true
+        include_document:
+          type: boolean
+          default: true
+        include_aml:
+          type: boolean
+          default: true
+        include_behavioral:
+          type: boolean
+          default: true
+        include_geographic:
+          type: boolean
+          default: true
+        include_transaction:
+          type: boolean
+          default: true
+
+    RiskAssessmentResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        customer_id:
+          type: string
+        overall_risk_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        overall_risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        risk_dimensions:
+          type: object
+          properties:
+            identity:
+              $ref: '#/components/schemas/RiskDimension'
+            document:
+              $ref: '#/components/schemas/RiskDimension'
+            aml:
+              $ref: '#/components/schemas/RiskDimension'
+            behavioral:
+              $ref: '#/components/schemas/RiskDimension'
+            geographic:
+              $ref: '#/components/schemas/RiskDimension'
+            transaction:
+              $ref: '#/components/schemas/RiskDimension'
+        recommendations:
+          type: object
+          properties:
+            primary_action:
+              type: string
+            alternative_actions:
+              type: array
+              items:
+                type: string
+            monitoring_required:
+              type: boolean
+            review_period_days:
+              type: integer
+        status:
+          type: string
+          enum: [approved, rejected, review_required]
+        assessed_at:
+          type: string
+          format: date-time
+        assessed_by:
+          type: string
+
+    RiskDimension:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        level:
+          type: string
+          enum: [low, medium, high, critical]
+        factors:
+          type: array
+          items:
+            type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true

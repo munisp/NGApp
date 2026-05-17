@@ -1,0 +1,515 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lakehouse
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: lakehouse
+data:
+  spark-defaults.conf: |
+    spark.master=k8s://https://kubernetes.default.svc:443
+    spark.kubernetes.container.image=apache/spark:3.5.0
+    spark.kubernetes.namespace=lakehouse
+    spark.kubernetes.authenticate.driver.serviceAccountName=spark
+    spark.kubernetes.executor.podNamePrefix=spark-executor
+    spark.executor.instances=3
+    spark.executor.cores=2
+    spark.executor.memory=4g
+    spark.driver.cores=2
+    spark.driver.memory=2g
+    spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+    spark.sql.warehouse.dir=s3a://insurance-lakehouse/warehouse
+    spark.eventLog.enabled=true
+    spark.eventLog.dir=s3a://insurance-lakehouse/spark-events
+    spark.history.fs.logDirectory=s3a://insurance-lakehouse/spark-events
+    spark.kubernetes.driver.podTemplateFile=/opt/spark/conf/driver-pod-template.yaml
+    spark.kubernetes.executor.podTemplateFile=/opt/spark/conf/executor-pod-template.yaml
+  driver-pod-template.yaml: |
+    apiVersion: v1
+    kind: Pod
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: spark-role
+                      operator: In
+                      values:
+                        - driver
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: spark-kubernetes-driver
+          resources:
+            requests:
+              cpu: "2"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+  executor-pod-template.yaml: |
+    apiVersion: v1
+    kind: Pod
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: spark-role
+                      operator: In
+                      values:
+                        - executor
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: spark-kubernetes-executor
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-history-server
+  namespace: lakehouse
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spark-history-server
+  template:
+    metadata:
+      labels:
+        app: spark-history-server
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - spark-history-server
+              topologyKey: kubernetes.io/hostname
+      serviceAccountName: spark
+      containers:
+        - name: spark-history-server
+          image: apache/spark:3.5.0
+          command:
+            - /opt/spark/sbin/start-history-server.sh
+          ports:
+            - containerPort: 18080
+              name: http
+          env:
+            - name: SPARK_HISTORY_OPTS
+              value: "-Dspark.history.fs.logDirectory=s3a://insurance-lakehouse/spark-events -Dspark.history.ui.port=18080"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: secret-key
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /opt/spark/conf/spark-defaults.conf
+              subPath: spark-defaults.conf
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 18080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 18080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: spark-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-config
+  namespace: lakehouse
+data:
+  flink-conf.yaml: |
+    jobmanager.rpc.address: flink-jobmanager
+    jobmanager.rpc.port: 6123
+    jobmanager.memory.process.size: 2048m
+    taskmanager.memory.process.size: 4096m
+    taskmanager.numberOfTaskSlots: 4
+    parallelism.default: 4
+    high-availability: kubernetes
+    high-availability.storageDir: s3://insurance-lakehouse/flink-ha
+    state.backend: rocksdb
+    state.checkpoints.dir: s3://insurance-lakehouse/flink-checkpoints
+    state.savepoints.dir: s3://insurance-lakehouse/flink-savepoints
+    execution.checkpointing.interval: 60000
+    execution.checkpointing.min-pause: 30000
+    execution.checkpointing.timeout: 600000
+    execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+    restart-strategy: exponential-delay
+    restart-strategy.exponential-delay.initial-backoff: 1s
+    restart-strategy.exponential-delay.max-backoff: 60s
+    restart-strategy.exponential-delay.backoff-multiplier: 2.0
+    restart-strategy.exponential-delay.reset-backoff-threshold: 1h
+    kubernetes.cluster-id: insurance-flink-cluster
+    kubernetes.namespace: lakehouse
+    kubernetes.jobmanager.replicas: 2
+    kubernetes.taskmanager.cpu: 2.0
+    metrics.reporters: prometheus
+    metrics.reporter.prometheus.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    metrics.reporter.prometheus.port: 9249
+  log4j-console.properties: |
+    rootLogger.level = INFO
+    rootLogger.appenderRef.console.ref = ConsoleAppender
+    appender.console.name = ConsoleAppender
+    appender.console.type = CONSOLE
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+    logger.flink.name = org.apache.flink
+    logger.flink.level = INFO
+    logger.kafka.name = org.apache.kafka
+    logger.kafka.level = WARN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-jobmanager
+  namespace: lakehouse
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flink
+      component: jobmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: jobmanager
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: component
+                    operator: In
+                    values:
+                      - jobmanager
+              topologyKey: kubernetes.io/hostname
+      serviceAccountName: flink
+      containers:
+        - name: jobmanager
+          image: flink:1.18-scala_2.12-java11
+          args: ["jobmanager"]
+          ports:
+            - containerPort: 6123
+              name: rpc
+            - containerPort: 6124
+              name: blob-server
+            - containerPort: 8081
+              name: webui
+            - containerPort: 9249
+              name: metrics
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: secret-key
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: flink-config
+              mountPath: /opt/flink/conf/flink-conf.yaml
+              subPath: flink-conf.yaml
+            - name: flink-config
+              mountPath: /opt/flink/conf/log4j-console.properties
+              subPath: log4j-console.properties
+          readinessProbe:
+            httpGet:
+              path: /overview
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /overview
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: flink-config
+          configMap:
+            name: flink-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-taskmanager
+  namespace: lakehouse
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: flink
+      component: taskmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: taskmanager
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - taskmanager
+                topologyKey: kubernetes.io/hostname
+      serviceAccountName: flink
+      containers:
+        - name: taskmanager
+          image: flink:1.18-scala_2.12-java11
+          args: ["taskmanager"]
+          ports:
+            - containerPort: 6122
+              name: rpc
+            - containerPort: 9249
+              name: metrics
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lakehouse-s3-credentials
+                  key: secret-key
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: flink-config
+              mountPath: /opt/flink/conf/flink-conf.yaml
+              subPath: flink-conf.yaml
+            - name: flink-config
+              mountPath: /opt/flink/conf/log4j-console.properties
+              subPath: log4j-console.properties
+      volumes:
+        - name: flink-config
+          configMap:
+            name: flink-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-history-server
+  namespace: lakehouse
+spec:
+  type: ClusterIP
+  ports:
+    - port: 18080
+      targetPort: 18080
+      name: http
+  selector:
+    app: spark-history-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager
+  namespace: lakehouse
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6123
+      targetPort: 6123
+      name: rpc
+    - port: 6124
+      targetPort: 6124
+      name: blob-server
+    - port: 8081
+      targetPort: 8081
+      name: webui
+  selector:
+    app: flink
+    component: jobmanager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager-rest
+  namespace: lakehouse
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: rest
+  selector:
+    app: flink
+    component: jobmanager
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark
+  namespace: lakehouse
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink
+  namespace: lakehouse
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-role
+  namespace: lakehouse
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-role-binding
+  namespace: lakehouse
+subjects:
+  - kind: ServiceAccount
+    name: spark
+    namespace: lakehouse
+roleRef:
+  kind: Role
+  name: spark-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: flink-role
+  namespace: lakehouse
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flink-role-binding
+  namespace: lakehouse
+subjects:
+  - kind: ServiceAccount
+    name: flink
+    namespace: lakehouse
+roleRef:
+  kind: Role
+  name: flink-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: flink-jobmanager-pdb
+  namespace: lakehouse
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: flink
+      component: jobmanager
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: flink-taskmanager-pdb
+  namespace: lakehouse
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: flink
+      component: taskmanager
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: flink-taskmanager-hpa
+  namespace: lakehouse
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flink-taskmanager
+  minReplicas: 4
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

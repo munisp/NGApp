@@ -1,0 +1,5 @@
+kafka:
+  bootstrap_servers: "kafka:9092" # Assumes Kafka is running in a service named 'kafka'
+  topic: "underwriting-events"
+service:
+  port: "8080"

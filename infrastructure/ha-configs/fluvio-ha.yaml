@@ -1,0 +1,270 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fluvio
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluvio-sc-config
+  namespace: fluvio
+data:
+  sc-config.yaml: |
+    replication:
+      min_in_sync_replicas: 2
+      default_replication_factor: 3
+    retention:
+      segment_size: 1073741824
+      max_partition_size: 10737418240
+      time_based_retention: 604800000
+    batching:
+      max_batch_size: 16384
+      linger_ms: 5
+    compression:
+      type: lz4
+    smartmodule:
+      max_memory: 1073741824
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-sc
+  namespace: fluvio
+spec:
+  serviceName: fluvio-sc
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fluvio-sc
+  template:
+    metadata:
+      labels:
+        app: fluvio-sc
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - fluvio-sc
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: fluvio-sc
+          image: infinyon/fluvio:0.11.5
+          command: ["fluvio-sc"]
+          args:
+            - "--bind-public"
+            - "0.0.0.0:9003"
+            - "--bind-private"
+            - "0.0.0.0:9004"
+          ports:
+            - containerPort: 9003
+              name: public
+            - containerPort: 9004
+              name: private
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: FLV_SC_PRIVATE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/fluvio/sc-config.yaml
+              subPath: sc-config.yaml
+            - name: data
+              mountPath: /var/lib/fluvio
+          readinessProbe:
+            tcpSocket:
+              port: 9003
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: fluvio-sc-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-spu
+  namespace: fluvio
+spec:
+  serviceName: fluvio-spu
+  replicas: 5
+  selector:
+    matchLabels:
+      app: fluvio-spu
+  template:
+    metadata:
+      labels:
+        app: fluvio-spu
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - fluvio-spu
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - fluvio-spu
+                topologyKey: topology.kubernetes.io/zone
+      containers:
+        - name: fluvio-spu
+          image: infinyon/fluvio:0.11.5
+          command: ["fluvio-spu"]
+          args:
+            - "--sc-addr"
+            - "fluvio-sc:9004"
+            - "--bind-public"
+            - "0.0.0.0:9005"
+            - "--bind-private"
+            - "0.0.0.0:9006"
+          ports:
+            - containerPort: 9005
+              name: public
+            - containerPort: 9006
+              name: private
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: FLV_SPU_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/fluvio
+          readinessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-sc
+  namespace: fluvio
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9003
+      targetPort: 9003
+      name: public
+    - port: 9004
+      targetPort: 9004
+      name: private
+  selector:
+    app: fluvio-sc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-sc-lb
+  namespace: fluvio
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 9003
+      targetPort: 9003
+      name: public
+  selector:
+    app: fluvio-sc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-spu
+  namespace: fluvio
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 9005
+      targetPort: 9005
+      name: public
+    - port: 9006
+      targetPort: 9006
+      name: private
+  selector:
+    app: fluvio-spu
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-sc-pdb
+  namespace: fluvio
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-sc
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-spu-pdb
+  namespace: fluvio
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      app: fluvio-spu

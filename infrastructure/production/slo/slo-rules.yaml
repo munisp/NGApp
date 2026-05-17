@@ -1,0 +1,412 @@
+---
+# =============================================================================
+# SLO/SLA Definitions — Unified Insurance Platform
+# Based on Google SRE error budget model
+# SLOs: Availability 99.9%, Latency p95 < 500ms, Error Rate < 0.1%
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: observability
+data:
+  slo-recording-rules.yaml: |
+    groups:
+      # ============================================================
+      # SLO Recording Rules — 5-minute windows
+      # ============================================================
+      - name: slo.recording.5m
+        interval: 30s
+        rules:
+          # Availability SLI: successful requests / total requests
+          - record: slo:http_availability:ratio_rate5m
+            expr: |
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform", status!~"5.."}[5m])
+              ) /
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform"}[5m])
+              )
+
+          # Latency SLI: fraction of requests < 500ms
+          - record: slo:http_latency_p95:ratio_rate5m
+            expr: |
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="0.5"}[5m])
+              ) /
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="+Inf"}[5m])
+              )
+
+          # Throughput: requests per second
+          - record: slo:http_throughput:rate5m
+            expr: |
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform"}[5m])
+              )
+
+      # ============================================================
+      # SLO Recording Rules — 30-minute windows (for burn rate)
+      # ============================================================
+      - name: slo.recording.30m
+        interval: 60s
+        rules:
+          - record: slo:http_availability:ratio_rate30m
+            expr: |
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform", status!~"5.."}[30m])
+              ) /
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform"}[30m])
+              )
+
+          - record: slo:http_latency_p95:ratio_rate30m
+            expr: |
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="0.5"}[30m])
+              ) /
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="+Inf"}[30m])
+              )
+
+      # ============================================================
+      # SLO Recording Rules — 1-hour windows
+      # ============================================================
+      - name: slo.recording.1h
+        interval: 120s
+        rules:
+          - record: slo:http_availability:ratio_rate1h
+            expr: |
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform", status!~"5.."}[1h])
+              ) /
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform"}[1h])
+              )
+
+          - record: slo:http_latency_p95:ratio_rate1h
+            expr: |
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="0.5"}[1h])
+              ) /
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="+Inf"}[1h])
+              )
+
+      # ============================================================
+      # SLO Recording Rules — 6-hour windows
+      # ============================================================
+      - name: slo.recording.6h
+        interval: 300s
+        rules:
+          - record: slo:http_availability:ratio_rate6h
+            expr: |
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform", status!~"5.."}[6h])
+              ) /
+              sum by (service, namespace) (
+                rate(http_requests_total{namespace="insurance-platform"}[6h])
+              )
+
+          - record: slo:http_latency_p95:ratio_rate6h
+            expr: |
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="0.5"}[6h])
+              ) /
+              sum by (service, namespace) (
+                rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="+Inf"}[6h])
+              )
+
+      # ============================================================
+      # Error Budget Remaining (30-day rolling window)
+      # ============================================================
+      - name: slo.error_budget
+        interval: 300s
+        rules:
+          # Availability error budget: target 99.9% = 0.1% error budget
+          - record: slo:error_budget_availability:remaining
+            expr: |
+              (
+                sum by (service) (
+                  rate(http_requests_total{namespace="insurance-platform", status!~"5.."}[30d])
+                ) /
+                sum by (service) (
+                  rate(http_requests_total{namespace="insurance-platform"}[30d])
+                )
+                - 0.999
+              ) / (1 - 0.999)
+
+          # Latency error budget: target 99% of requests < 500ms
+          - record: slo:error_budget_latency:remaining
+            expr: |
+              (
+                sum by (service) (
+                  rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="0.5"}[30d])
+                ) /
+                sum by (service) (
+                  rate(http_request_duration_seconds_bucket{namespace="insurance-platform", le="+Inf"}[30d])
+                )
+                - 0.99
+              ) / (1 - 0.99)
+
+  slo-alerting-rules.yaml: |
+    groups:
+      # ============================================================
+      # Multi-window, multi-burn-rate SLO alerts
+      # Based on Google SRE Workbook Chapter 5
+      # ============================================================
+      - name: slo.availability.alerts
+        rules:
+          # Fast burn: 14.4x burn rate over 1h (consumes 2% budget in 1h)
+          - alert: SLOAvailabilityFastBurn
+            expr: |
+              (
+                1 - slo:http_availability:ratio_rate1h{namespace="insurance-platform"}
+              ) / (1 - 0.999) > 14.4
+              and
+              (
+                1 - slo:http_availability:ratio_rate5m{namespace="insurance-platform"}
+              ) / (1 - 0.999) > 14.4
+            for: 2m
+            labels:
+              severity: critical
+              slo: availability
+            annotations:
+              summary: "Fast SLO burn rate for {{ $labels.service }}"
+              description: "Service {{ $labels.service }} is burning availability error budget at {{ $value | humanizePercentage }} of the allowed rate. Current availability: {{ printf \"%.4f\" (1 - $value * 0.001) | humanizePercentage }}"
+              runbook: "https://wiki.insurance-platform.com/runbooks/slo-availability-fast-burn"
+
+          # Slow burn: 6x burn rate over 6h (consumes 5% budget in 6h)
+          - alert: SLOAvailabilitySlowBurn
+            expr: |
+              (
+                1 - slo:http_availability:ratio_rate6h{namespace="insurance-platform"}
+              ) / (1 - 0.999) > 6
+              and
+              (
+                1 - slo:http_availability:ratio_rate30m{namespace="insurance-platform"}
+              ) / (1 - 0.999) > 6
+            for: 15m
+            labels:
+              severity: warning
+              slo: availability
+            annotations:
+              summary: "Slow SLO burn rate for {{ $labels.service }}"
+              description: "Service {{ $labels.service }} is slowly burning availability error budget at {{ $value | humanizePercentage }} of allowed rate."
+              runbook: "https://wiki.insurance-platform.com/runbooks/slo-availability-slow-burn"
+
+          # Error budget exhausted
+          - alert: SLOErrorBudgetExhausted
+            expr: slo:error_budget_availability:remaining < 0
+            for: 5m
+            labels:
+              severity: critical
+              slo: availability
+            annotations:
+              summary: "SLO error budget exhausted for {{ $labels.service }}"
+              description: "Service {{ $labels.service }} has exhausted its 30-day availability error budget. All deployments should be halted."
+              runbook: "https://wiki.insurance-platform.com/runbooks/slo-error-budget-exhausted"
+
+      # ============================================================
+      # Latency SLO alerts
+      # ============================================================
+      - name: slo.latency.alerts
+        rules:
+          - alert: SLOLatencyFastBurn
+            expr: |
+              (
+                1 - slo:http_latency_p95:ratio_rate1h{namespace="insurance-platform"}
+              ) / (1 - 0.99) > 14.4
+              and
+              (
+                1 - slo:http_latency_p95:ratio_rate5m{namespace="insurance-platform"}
+              ) / (1 - 0.99) > 14.4
+            for: 2m
+            labels:
+              severity: critical
+              slo: latency
+            annotations:
+              summary: "Latency SLO fast burn for {{ $labels.service }}"
+              description: "Service {{ $labels.service }} p95 latency is exceeding 500ms target at high burn rate."
+
+          - alert: SLOLatencySlowBurn
+            expr: |
+              (
+                1 - slo:http_latency_p95:ratio_rate6h{namespace="insurance-platform"}
+              ) / (1 - 0.99) > 6
+              and
+              (
+                1 - slo:http_latency_p95:ratio_rate30m{namespace="insurance-platform"}
+              ) / (1 - 0.99) > 6
+            for: 15m
+            labels:
+              severity: warning
+              slo: latency
+            annotations:
+              summary: "Latency SLO slow burn for {{ $labels.service }}"
+              description: "Service {{ $labels.service }} p95 latency is trending above 500ms target."
+
+      # ============================================================
+      # Infrastructure alerts
+      # ============================================================
+      - name: infrastructure.alerts
+        rules:
+          - alert: KafkaConsumerLag
+            expr: kafka_consumer_group_lag > 10000
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Kafka consumer lag high: {{ $labels.group }}"
+              description: "Consumer group {{ $labels.group }} on topic {{ $labels.topic }} has lag of {{ $value }} messages."
+
+          - alert: KafkaConsumerLagCritical
+            expr: kafka_consumer_group_lag > 100000
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Critical Kafka consumer lag: {{ $labels.group }}"
+              description: "Consumer group {{ $labels.group }} on topic {{ $labels.topic }} has critical lag of {{ $value }} messages. Data loss risk."
+
+          - alert: RedisMemoryHigh
+            expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Redis memory usage high"
+              description: "Redis is using {{ $value | humanizePercentage }} of max memory."
+
+          - alert: PostgresConnectionsHigh
+            expr: pg_stat_activity_count > 400
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "PostgreSQL connections high"
+              description: "PostgreSQL has {{ $value }} active connections."
+
+          - alert: VaultSealed
+            expr: vault_core_unsealed == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Vault is sealed"
+              description: "Vault instance {{ $labels.instance }} is sealed. All secret operations will fail."
+
+          - alert: CertificateExpiringSoon
+            expr: |
+              certmanager_certificate_expiration_timestamp_seconds - time() < 86400 * 14
+            for: 1h
+            labels:
+              severity: warning
+            annotations:
+              summary: "Certificate expiring soon: {{ $labels.name }}"
+              description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires in {{ $value | humanizeDuration }}."
+
+          - alert: CertificateExpired
+            expr: |
+              certmanager_certificate_expiration_timestamp_seconds - time() < 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Certificate EXPIRED: {{ $labels.name }}"
+              description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} has expired!"
+
+          - alert: PodCrashLooping
+            expr: |
+              rate(kube_pod_container_status_restarts_total{namespace="insurance-platform"}[15m]) * 60 * 15 > 5
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod crash looping: {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping."
+
+          - alert: PodNotReady
+            expr: |
+              kube_pod_status_ready{namespace="insurance-platform", condition="true"} == 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod not ready: {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for 5 minutes."
+
+          - alert: DeploymentReplicasMismatch
+            expr: |
+              kube_deployment_spec_replicas{namespace="insurance-platform"} !=
+              kube_deployment_status_available_replicas{namespace="insurance-platform"}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Deployment replicas mismatch: {{ $labels.deployment }}"
+              description: "Deployment {{ $labels.deployment }} has {{ $value }} available replicas, expected {{ $labels.spec_replicas }}."
+
+          - alert: TemporalWorkflowFailed
+            expr: |
+              sum(rate(temporal_workflow_failed_total[5m])) by (namespace, task_queue) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Temporal workflow failures: {{ $labels.task_queue }}"
+              description: "Temporal task queue {{ $labels.task_queue }} has {{ $value }} workflow failures per second."
+
+          - alert: TigerBeetleReplicationLag
+            expr: tigerbeetle_replication_lag_ms > 1000
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "TigerBeetle replication lag critical"
+              description: "TigerBeetle replication lag is {{ $value }}ms. Financial data consistency at risk."
+
+      # ============================================================
+      # Business metrics alerts
+      # ============================================================
+      - name: business.alerts
+        rules:
+          - alert: ClaimProcessingBacklog
+            expr: insurance_claims_pending_total > 1000
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High claim processing backlog"
+              description: "{{ $value }} claims are pending processing."
+
+          - alert: PaymentFailureRateHigh
+            expr: |
+              rate(insurance_payment_failed_total[5m]) /
+              rate(insurance_payment_total[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High payment failure rate"
+              description: "Payment failure rate is {{ $value | humanizePercentage }}."
+
+          - alert: UnderwritingDecisionLatency
+            expr: |
+              histogram_quantile(0.95, rate(insurance_underwriting_duration_seconds_bucket[5m])) > 30
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Underwriting decision latency high"
+              description: "P95 underwriting decision time is {{ $value }}s, exceeding 30s SLA."
+
+          - alert: PolicyIssuanceFailure
+            expr: |
+              rate(insurance_policy_issuance_failed_total[5m]) > 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Policy issuance failures detected"
+              description: "{{ $value }} policy issuance failures per second."

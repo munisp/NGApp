@@ -1,0 +1,90 @@
+{
+  "type": "record",
+  "name": "UnderwritingEvent",
+  "namespace": "com.openimis.insurance.underwriting",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string",
+      "doc": "Unique identifier for the event (UUID)."
+    },
+    {
+      "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "UnderwritingEventType",
+        "symbols": ["CASE_CREATED", "DECISION_MADE", "MANUAL_REVIEW"]
+      },
+      "doc": "Type of the underwriting event."
+    },
+    {
+      "name": "case_id",
+      "type": "string",
+      "doc": "Identifier for the underwriting case."
+    },
+    {
+      "name": "policy_id",
+      "type": "string",
+      "doc": "Identifier for the related insurance policy."
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Event creation timestamp (Unix epoch in milliseconds)."
+    },
+    {
+      "name": "payload",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "CaseCreatedPayload",
+          "fields": [
+            {
+              "name": "applicant_data_json",
+              "type": "string",
+              "doc": "JSON string of the applicant's data."
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "DecisionMadePayload",
+          "fields": [
+            {
+              "name": "decision",
+              "type": {
+                "type": "enum",
+                "name": "Decision",
+                "symbols": ["APPROVED", "REJECTED"]
+              },
+              "doc": "The final underwriting decision."
+            },
+            {
+              "name": "risk_score",
+              "type": "double",
+              "doc": "The calculated risk score."
+            },
+            {
+              "name": "risk_model_version",
+              "type": "string",
+              "doc": "Version of the risk model used."
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "ManualReviewPayload",
+          "fields": [
+            {
+              "name": "reason",
+              "type": "string",
+              "doc": "Reason for manual review."
+            }
+          ]
+        }
+      ],
+      "doc": "Specific data payload based on the event type."
+    }
+  ]
+}

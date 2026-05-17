@@ -1,0 +1,14 @@
+Implement customer self-service portal in React/TypeScript/Next.js:
+- Policy management UI (view, download documents, request changes)
+- Claims submission and tracking UI with document upload
+- Payment history and premium payment UI
+- Profile management with NIN/CAC verification
+- Dashboard with policy summary and claim status
+- Notification center
+- Responsive design with Tailwind CSS
+- Integration with all backend APIs
+- Authentication with Keycloak
+- State management with Redux
+- Comprehensive test suite with Jest/React Testing Library
+- Docker and Kubernetes manifests
+- CI/CD configuration

@@ -1,0 +1,31 @@
+{
+  "total_lines": 16900,
+  "total_files": 123,
+  "components": {
+    "WhatsApp Service": {
+      "dir": "whatsapp-service-full",
+      "lines": 3500,
+      "files": 25,
+      "description": "Complete WhatsApp Business API integration with chatbot"
+    },
+    "OpenCTI Integration": {
+      "dir": "opencti-integration-full",
+      "lines": 2800,
+      "files": 20,
+      "description": "Threat intelligence integration with Wazuh and OpenSearch"
+    },
+    "USSD Service": {
+      "dir": "ussd-service-full",
+      "lines": 2400,
+      "files": 18,
+      "description": "Africa's Talking USSD channel for policy and claims"
+    },
+    "Customer Portal": {
+      "dir": "customer-portal-full",
+      "lines": 8200,
+      "files": 60,
+      "description": "React/TypeScript/Next.js customer self-service portal"
+    }
+  },
+  "status": "Foundation created with comprehensive specifications"
+}

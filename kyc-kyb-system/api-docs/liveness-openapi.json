@@ -1,0 +1,158 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Liveness Detection Service",
+    "description": "KYC/KYB Liveness Detection with TinyLiveness ML model, Anti-Spoofing, and Face Matching",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {"url": "http://localhost:8002", "description": "Local development"},
+    {"url": "http://liveness-service:8002", "description": "Kubernetes internal"}
+  ],
+  "paths": {
+    "/api/v1/liveness/check": {
+      "post": {
+        "summary": "Perform liveness check",
+        "operationId": "checkLiveness",
+        "tags": ["liveness"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["customer_id", "file"],
+                "properties": {
+                  "customer_id": {"type": "string", "format": "uuid"},
+                  "document_id": {"type": "string", "format": "uuid"},
+                  "liveness_type": {"type": "string", "enum": ["passive", "active"], "default": "passive"},
+                  "file": {"type": "string", "format": "binary"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Liveness check result",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/LivenessResponse"}
+              }
+            }
+          },
+          "400": {"description": "Invalid request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "401": {"description": "Unauthorized"},
+          "500": {"description": "Internal error"}
+        }
+      }
+    },
+    "/api/v1/liveness/{check_id}": {
+      "get": {
+        "summary": "Get liveness check result",
+        "operationId": "getLivenessCheck",
+        "tags": ["liveness"],
+        "parameters": [
+          {"name": "check_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "Liveness check details", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LivenessResponse"}}}},
+          "404": {"description": "Check not found"}
+        }
+      }
+    },
+    "/api/v1/liveness/customer/{customer_id}": {
+      "get": {
+        "summary": "Get all liveness checks for a customer",
+        "operationId": "getCustomerChecks",
+        "tags": ["liveness"],
+        "parameters": [
+          {"name": "customer_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "List of liveness checks", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/LivenessResponse"}}}}}
+        }
+      }
+    },
+    "/api/v1/liveness/match-faces": {
+      "post": {
+        "summary": "Match two face images",
+        "operationId": "matchFaces",
+        "tags": ["face-matching"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image1", "image2"],
+                "properties": {
+                  "image1": {"type": "string", "format": "binary"},
+                  "image2": {"type": "string", "format": "binary"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Face match result", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FaceMatchResponse"}}}}
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "tags": ["health"],
+        "responses": {
+          "200": {"description": "Service is healthy"}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LivenessResponse": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "customer_id": {"type": "string", "format": "uuid"},
+          "document_id": {"type": "string", "format": "uuid", "nullable": true},
+          "liveness_type": {"type": "string", "enum": ["passive", "active"]},
+          "liveness_score": {"type": "number", "minimum": 0, "maximum": 1},
+          "face_match_score": {"type": "number", "minimum": 0, "maximum": 1, "nullable": true},
+          "is_live": {"type": "boolean"},
+          "spoofing_detected": {"type": "boolean"},
+          "spoofing_type": {"type": "string", "enum": ["photo", "video", "mask", "deepfake", "none"], "nullable": true},
+          "status": {"type": "string", "enum": ["pending", "processing", "passed", "failed", "error"]},
+          "metadata": {"type": "object", "additionalProperties": true},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "FaceMatchResponse": {
+        "type": "object",
+        "properties": {
+          "match": {"type": "boolean"},
+          "confidence": {"type": "number"},
+          "distance": {"type": "number"}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {"type": "string"},
+              "message": {"type": "string"},
+              "details": {"type": "array", "items": {"type": "object"}}
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+    }
+  }
+}

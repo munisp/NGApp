@@ -1,0 +1,376 @@
+openapi: 3.0.3
+info:
+  title: Liveness Detection Service API
+  description: |
+    Biometric liveness detection and face matching service for KYC/KYB verification.
+    
+    This service provides:
+    - Passive liveness detection (image-based anti-spoofing)
+    - Active liveness detection (video-based motion verification)
+    - Face matching against ID documents
+    - Anti-spoofing detection (photo, video, mask, deepfake)
+    
+    **Authentication**: OAuth2 Bearer token from Keycloak
+    **Authorization**: Role-based access control via Permify
+  version: 1.0.0
+  contact:
+    name: KYC/KYB System Support
+    email: support@insurance.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: http://localhost:8002
+    description: Local development
+  - url: http://liveness-service:8002
+    description: Docker Compose
+  - url: https://kyc.insurance.com/api/v1/liveness
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Liveness Checks
+    description: Liveness detection operations
+  - name: Health
+    description: Service health and status
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the service is healthy and ready to accept requests
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /api/v1/liveness/check:
+    post:
+      tags:
+        - Liveness Checks
+      summary: Perform liveness check
+      description: |
+        Perform a liveness detection check on a customer's selfie or video.
+        
+        **Required Permissions**: `liveness_check:create`
+        **Roles**: kyc_analyst, kyc_operator, system_administrator
+      operationId: performLivenessCheck
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - liveness_type
+                - file
+              properties:
+                customer_id:
+                  type: string
+                  description: Unique customer identifier
+                  example: CUST-001
+                liveness_type:
+                  type: string
+                  enum: [passive, active]
+                  description: Type of liveness check (passive=image, active=video)
+                  example: passive
+                file:
+                  type: string
+                  format: binary
+                  description: Image (JPEG/PNG) or video (MP4/WEBM) file
+                reference_image:
+                  type: string
+                  format: binary
+                  description: Optional reference image from ID document for face matching
+      responses:
+        '200':
+          description: Liveness check completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessCheckResponse'
+              examples:
+                passiveSuccess:
+                  summary: Successful passive liveness check
+                  value:
+                    check_id: LC-20260129-001
+                    customer_id: CUST-001
+                    liveness_type: passive
+                    is_live: true
+                    confidence_score: 0.95
+                    anti_spoofing:
+                      is_photo: false
+                      is_video: false
+                      is_mask: false
+                      is_deepfake: false
+                      texture_score: 0.92
+                      color_score: 0.94
+                      reflection_score: 0.96
+                      depth_score: 0.93
+                    face_quality:
+                      brightness: 0.85
+                      sharpness: 0.88
+                      frontal_score: 0.92
+                    face_matching:
+                      match_found: true
+                      similarity_score: 0.91
+                      match_confidence: high
+                    status: approved
+                    checked_at: "2026-01-29T10:30:00Z"
+                    checked_by: kyc_analyst_001
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_request
+                message: Invalid liveness_type. Must be 'passive' or 'active'
+                details:
+                  field: liveness_type
+                  provided: invalid_type
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/liveness/check/{check_id}:
+    get:
+      tags:
+        - Liveness Checks
+      summary: Get liveness check result
+      description: |
+        Retrieve the result of a previously performed liveness check.
+        
+        **Required Permissions**: `liveness_check:read`
+        **Roles**: kyc_analyst, compliance_officer, risk_manager, system_administrator
+      operationId: getLivenessCheck
+      parameters:
+        - name: check_id
+          in: path
+          required: true
+          description: Unique liveness check identifier
+          schema:
+            type: string
+          example: LC-20260129-001
+      responses:
+        '200':
+          description: Liveness check result retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessCheckResponse'
+        '404':
+          description: Liveness check not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/liveness/customer/{customer_id}:
+    get:
+      tags:
+        - Liveness Checks
+      summary: Get customer's liveness checks
+      description: |
+        Retrieve all liveness checks for a specific customer.
+        
+        **Required Permissions**: `liveness_check:read`
+        **Roles**: kyc_analyst, compliance_officer, risk_manager, system_administrator
+      operationId: getCustomerLivenessChecks
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          description: Unique customer identifier
+          schema:
+            type: string
+          example: CUST-001
+        - name: limit
+          in: query
+          description: Maximum number of results to return
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Customer liveness checks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer_id:
+                    type: string
+                  total:
+                    type: integer
+                  checks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LivenessCheckResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from Keycloak.
+        
+        To get a token:
+        ```
+        POST http://localhost:8080/realms/kyc-kyb-system/protocol/openid-connect/token
+        Content-Type: application/x-www-form-urlencoded
+        
+        username=kyc_analyst&password=kyc123&grant_type=password&client_id=liveness-service
+        ```
+
+  schemas:
+    LivenessCheckResponse:
+      type: object
+      properties:
+        check_id:
+          type: string
+          description: Unique liveness check identifier
+          example: LC-20260129-001
+        customer_id:
+          type: string
+          description: Customer identifier
+          example: CUST-001
+        liveness_type:
+          type: string
+          enum: [passive, active]
+          description: Type of liveness check performed
+        is_live:
+          type: boolean
+          description: Whether the subject is determined to be live
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Overall confidence score (0-1)
+        anti_spoofing:
+          type: object
+          properties:
+            is_photo:
+              type: boolean
+              description: Whether a photo attack was detected
+            is_video:
+              type: boolean
+              description: Whether a video replay attack was detected
+            is_mask:
+              type: boolean
+              description: Whether a mask was detected
+            is_deepfake:
+              type: boolean
+              description: Whether a deepfake was detected
+            texture_score:
+              type: number
+              format: float
+            color_score:
+              type: number
+              format: float
+            reflection_score:
+              type: number
+              format: float
+            depth_score:
+              type: number
+              format: float
+        face_quality:
+          type: object
+          properties:
+            brightness:
+              type: number
+              format: float
+            sharpness:
+              type: number
+              format: float
+            frontal_score:
+              type: number
+              format: float
+        face_matching:
+          type: object
+          nullable: true
+          properties:
+            match_found:
+              type: boolean
+            similarity_score:
+              type: number
+              format: float
+            match_confidence:
+              type: string
+              enum: [low, medium, high]
+        status:
+          type: string
+          enum: [approved, rejected, review_required]
+          description: Overall status of the liveness check
+        checked_at:
+          type: string
+          format: date-time
+          description: Timestamp when check was performed
+        checked_by:
+          type: string
+          description: User who performed the check
+        notes:
+          type: string
+          nullable: true
+          description: Additional notes or comments
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error details

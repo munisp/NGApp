@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-workflow-worker
+  labels:
+    app: policy-workflow-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: policy-workflow-worker
+  template:
+    metadata:
+      labels:
+        app: policy-workflow-worker
+    spec:
+      containers:
+      - name: worker
+        image: insurance-platform/policy-workflow-worker:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TIGERBEETLE_ADDRESSES
+          value: "tigerbeetle-0:3000,tigerbeetle-1:3000,tigerbeetle-2:3000"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: connection-string
+        - name: TEMPORAL_SERVICE_URL
+          value: "temporal:7233"
+        - name: TEMPORAL_TASK_QUEUE
+          value: "policy-task-queue"
+        - name: KAFKA_BROKERS
+          value: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f worker"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f worker"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-workflow-config
+data:
+  worker.yaml: |
+    temporal:
+      service_url: temporal:7233
+      namespace: insurance-platform
+      task_queue: policy-task-queue
+    tigerbeetle:
+      addresses:
+        - tigerbeetle-0:3000
+        - tigerbeetle-1:3000
+        - tigerbeetle-2:3000
+    database:
+      max_connections: 50
+      idle_connections: 10
+    kafka:
+      brokers:
+        - kafka-0:9092
+        - kafka-1:9092
+        - kafka-2:9092
+      topics:
+        policy_events: policy-events
+        payment_events: payment-events

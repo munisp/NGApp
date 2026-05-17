@@ -1,0 +1,328 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: broker-api-gateway
+  namespace: insurance-platform
+spec:
+  http:
+  - name: broker-api-v1
+    match:
+      hosts:
+      - api.insurance.ng
+      - broker-api.insurance.ng
+      paths:
+      - /broker/v1/*
+    backends:
+    - serviceName: broker-api-service
+      servicePort: 8080
+    plugins:
+    - name: key-auth
+      enable: true
+      config:
+        header: X-API-Key
+        hide_credentials: false
+    - name: limit-count
+      enable: true
+      config:
+        count: 10000
+        time_window: 86400
+        key_type: var
+        key: consumer_name
+        rejected_code: 429
+        rejected_msg: "Daily quota exceeded"
+        policy: redis
+        redis_host: redis-master.redis.svc.cluster.local
+        redis_port: 6379
+        redis_password: "${REDIS_PASSWORD}"
+        redis_database: 1
+        redis_timeout: 1000
+    - name: limit-req
+      enable: true
+      config:
+        rate: 100
+        burst: 200
+        key_type: var
+        key: consumer_name
+        rejected_code: 429
+        rejected_msg: "Rate limit exceeded"
+    - name: prometheus
+      enable: true
+      config:
+        prefer_name: true
+    - name: request-id
+      enable: true
+      config:
+        header_name: X-Request-ID
+        include_in_response: true
+    - name: openappsec-waf
+      enable: true
+      config:
+        policy: api-protection
+        mode: prevent
+    - name: response-rewrite
+      enable: true
+      config:
+        headers:
+          set:
+            X-Powered-By: "InsurePortal Broker API"
+            X-API-Version: "1.0.0"
+  - name: broker-admin-api
+    match:
+      hosts:
+      - admin-api.insurance.ng
+      paths:
+      - /admin/*
+    backends:
+    - serviceName: broker-api-service
+      servicePort: 8080
+    plugins:
+    - name: ip-restriction
+      enable: true
+      config:
+        whitelist:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        message: "Admin API access restricted"
+    - name: basic-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 50
+        burst: 100
+        key: remote_addr
+    - name: prometheus
+      enable: true
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixConsumer
+metadata:
+  name: broker-starter-tier
+  namespace: insurance-platform
+spec:
+  authParameter:
+    keyAuth:
+      value:
+        key: "${BROKER_STARTER_KEY}"
+  plugins:
+    limit-count:
+      count: 1000
+      time_window: 86400
+      key: consumer_name
+      policy: redis
+      redis_host: redis-master.redis.svc.cluster.local
+      redis_port: 6379
+    limit-req:
+      rate: 100
+      burst: 200
+      key: consumer_name
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixConsumer
+metadata:
+  name: broker-growth-tier
+  namespace: insurance-platform
+spec:
+  authParameter:
+    keyAuth:
+      value:
+        key: "${BROKER_GROWTH_KEY}"
+  plugins:
+    limit-count:
+      count: 10000
+      time_window: 86400
+      key: consumer_name
+      policy: redis
+      redis_host: redis-master.redis.svc.cluster.local
+      redis_port: 6379
+    limit-req:
+      rate: 500
+      burst: 1000
+      key: consumer_name
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixConsumer
+metadata:
+  name: broker-enterprise-tier
+  namespace: insurance-platform
+spec:
+  authParameter:
+    keyAuth:
+      value:
+        key: "${BROKER_ENTERPRISE_KEY}"
+  plugins:
+    limit-count:
+      count: 100000
+      time_window: 86400
+      key: consumer_name
+      policy: redis
+      redis_host: redis-master.redis.svc.cluster.local
+      redis_port: 6379
+    limit-req:
+      rate: 2000
+      burst: 5000
+      key: consumer_name
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixPluginConfig
+metadata:
+  name: broker-api-metering
+  namespace: insurance-platform
+spec:
+  plugins:
+  - name: http-logger
+    enable: true
+    config:
+      uri: http://metering-service.insurance-platform.svc.cluster.local:8080/api/v1/usage
+      batch_max_size: 100
+      max_retry_count: 3
+      retry_delay: 1
+      buffer_duration: 10
+      inactive_timeout: 5
+      concat_method: json
+      include_req_body: false
+      include_resp_body: false
+  - name: kafka-logger
+    enable: true
+    config:
+      broker_list:
+        "kafka-0.kafka-headless.kafka.svc.cluster.local:9092": 1
+        "kafka-1.kafka-headless.kafka.svc.cluster.local:9092": 1
+        "kafka-2.kafka-headless.kafka.svc.cluster.local:9092": 1
+      kafka_topic: broker-api-usage
+      key: broker_id
+      batch_max_size: 100
+      max_retry_count: 3
+      retry_delay: 1
+      buffer_duration: 10
+      include_req_body: false
+      include_resp_body: false
+  - name: prometheus
+    enable: true
+    config:
+      prefer_name: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: broker-api-metering-plugin
+  namespace: insurance-platform
+data:
+  broker-metering.lua: |
+    local core = require("apisix.core")
+    local http = require("resty.http")
+    local json = require("cjson")
+    local redis = require("resty.redis")
+    
+    local plugin_name = "broker-metering"
+    
+    local schema = {
+        type = "object",
+        properties = {
+            redis_host = {
+                type = "string",
+                default = "redis-master.redis.svc.cluster.local"
+            },
+            redis_port = {
+                type = "integer",
+                default = 6379
+            },
+            redis_password = {
+                type = "string"
+            },
+            metering_endpoint = {
+                type = "string",
+                default = "http://metering-service:8080/api/v1/record"
+            }
+        }
+    }
+    
+    local _M = {
+        version = 1.0,
+        priority = 900,
+        name = plugin_name,
+        schema = schema
+    }
+    
+    function _M.check_schema(conf)
+        return core.schema.check(schema, conf)
+    end
+    
+    function _M.access(conf, ctx)
+        ctx.broker_request_start = ngx.now()
+        ctx.broker_request_size = ngx.var.request_length or 0
+    end
+    
+    function _M.log(conf, ctx)
+        local request_time = ngx.now() - (ctx.broker_request_start or ngx.now())
+        local response_size = ngx.var.bytes_sent or 0
+        
+        local consumer_name = ctx.var.consumer_name or "unknown"
+        local api_key = ngx.req.get_headers()["X-API-Key"] or "unknown"
+        
+        local usage_record = {
+            timestamp = ngx.time(),
+            broker_id = consumer_name,
+            api_key_prefix = string.sub(api_key, 1, 8),
+            endpoint = ngx.var.uri,
+            method = ngx.var.request_method,
+            status_code = ngx.status,
+            request_size = ctx.broker_request_size,
+            response_size = response_size,
+            latency_ms = math.floor(request_time * 1000),
+            ip_address = ngx.var.remote_addr,
+            user_agent = ngx.var.http_user_agent or ""
+        }
+        
+        local red = redis:new()
+        red:set_timeout(1000)
+        
+        local ok, err = red:connect(conf.redis_host, conf.redis_port)
+        if ok then
+            if conf.redis_password and conf.redis_password ~= "" then
+                red:auth(conf.redis_password)
+            end
+            
+            local daily_key = "broker:usage:daily:" .. consumer_name .. ":" .. os.date("%Y-%m-%d")
+            local monthly_key = "broker:usage:monthly:" .. consumer_name .. ":" .. os.date("%Y-%m")
+            
+            red:incr(daily_key)
+            red:expire(daily_key, 172800)
+            
+            red:incr(monthly_key)
+            red:expire(monthly_key, 2678400)
+            
+            red:hincrby("broker:stats:" .. consumer_name, "total_requests", 1)
+            red:hincrby("broker:stats:" .. consumer_name, "total_latency_ms", usage_record.latency_ms)
+            red:hincrby("broker:stats:" .. consumer_name, "total_data_bytes", usage_record.request_size + usage_record.response_size)
+            
+            if ngx.status >= 400 then
+                red:hincrby("broker:stats:" .. consumer_name, "error_count", 1)
+            else
+                red:hincrby("broker:stats:" .. consumer_name, "success_count", 1)
+            end
+            
+            red:lpush("broker:usage:log:" .. consumer_name, json.encode(usage_record))
+            red:ltrim("broker:usage:log:" .. consumer_name, 0, 9999)
+            
+            red:set_keepalive(10000, 100)
+        end
+        
+        local httpc = http.new()
+        httpc:set_timeout(1000)
+        
+        local res, err = httpc:request_uri(conf.metering_endpoint, {
+            method = "POST",
+            body = json.encode(usage_record),
+            headers = {
+                ["Content-Type"] = "application/json"
+            }
+        })
+        
+        if not res then
+            core.log.warn("Failed to send metering data: ", err)
+        end
+    end
+    
+    return _M

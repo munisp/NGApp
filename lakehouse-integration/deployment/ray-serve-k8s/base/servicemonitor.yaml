@@ -1,0 +1,128 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ray-serve-api-monitor
+  namespace: ray-serve
+  labels:
+    app: ray-serve-api
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ray-serve-api
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http
+    scrapeTimeout: 10s
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: node
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ray-serve-api-alerts
+  namespace: ray-serve
+  labels:
+    app: ray-serve-api
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: ray-serve-api
+    interval: 30s
+    rules:
+    # High Error Rate
+    - alert: RayServeHighErrorRate
+      expr: |
+        (sum(rate(ray_serve_num_http_error_requests_total[5m])) by (deployment) / 
+         sum(rate(ray_serve_num_http_requests_total[5m])) by (deployment)) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+        component: ray-serve-api
+      annotations:
+        summary: "High error rate in Ray Serve API"
+        description: "Ray Serve deployment {{ $labels.deployment }} has error rate of {{ $value | humanizePercentage }}"
+    
+    # High Latency
+    - alert: RayServeHighLatency
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(ray_serve_deployment_processing_latency_ms_bucket[5m])) by (le, deployment)
+        ) > 1000
+      for: 10m
+      labels:
+        severity: warning
+        component: ray-serve-api
+      annotations:
+        summary: "High latency in Ray Serve API"
+        description: "Ray Serve deployment {{ $labels.deployment }} has p95 latency of {{ $value }}ms"
+    
+    # Queue Buildup
+    - alert: RayServeQueueBuildup
+      expr: |
+        sum(ray_serve_deployment_queued_queries) by (deployment) > 50
+      for: 5m
+      labels:
+        severity: warning
+        component: ray-serve-api
+      annotations:
+        summary: "Queue buildup in Ray Serve API"
+        description: "Ray Serve deployment {{ $labels.deployment }} has {{ $value }} queued queries"
+    
+    # Pod Down
+    - alert: RayServePodDown
+      expr: |
+        up{job="ray-serve-api"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        component: ray-serve-api
+      annotations:
+        summary: "Ray Serve API pod is down"
+        description: "Ray Serve API pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is down"
+    
+    # High Memory Usage
+    - alert: RayServeHighMemoryUsage
+      expr: |
+        (container_memory_working_set_bytes{pod=~"ray-serve-api-.*"} / 
+         container_spec_memory_limit_bytes{pod=~"ray-serve-api-.*"}) > 0.9
+      for: 10m
+      labels:
+        severity: warning
+        component: ray-serve-api
+      annotations:
+        summary: "High memory usage in Ray Serve API"
+        description: "Ray Serve API pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of memory"
+    
+    # High CPU Usage
+    - alert: RayServeHighCPUUsage
+      expr: |
+        (rate(container_cpu_usage_seconds_total{pod=~"ray-serve-api-.*"}[5m]) / 
+         container_spec_cpu_quota{pod=~"ray-serve-api-.*"} * 100000) > 90
+      for: 10m
+      labels:
+        severity: warning
+        component: ray-serve-api
+      annotations:
+        summary: "High CPU usage in Ray Serve API"
+        description: "Ray Serve API pod {{ $labels.pod }} is using {{ $value }}% of CPU"
+    
+    # Model Load Failure
+    - alert: RayServeModelLoadFailure
+      expr: |
+        increase(ray_serve_deployment_error_counter[10m]) > 5
+      for: 5m
+      labels:
+        severity: critical
+        component: ray-serve-api
+      annotations:
+        summary: "Model load failures in Ray Serve API"
+        description: "Ray Serve deployment {{ $labels.deployment }} has {{ $value }} model load failures"

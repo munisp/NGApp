@@ -1,0 +1,201 @@
+// Permify Authorization Schema for KYC/KYB System
+// Version: 1.0.0
+
+// ============================================================================
+// ENTITIES
+// ============================================================================
+
+entity user {}
+
+entity organization {
+    // Organization can have members
+    relation member @user
+    relation admin @user
+    
+    // Permissions
+    permission view_members = member or admin
+    permission manage_members = admin
+}
+
+entity customer {
+    // Customer belongs to an organization
+    relation organization @organization
+    
+    // Customer can be accessed by users
+    relation viewer @user
+    relation editor @user
+    
+    // Permissions
+    permission view = viewer or editor or organization.member
+    permission edit = editor or organization.admin
+}
+
+// ============================================================================
+// LIVENESS SERVICE ENTITIES
+// ============================================================================
+
+entity liveness_check {
+    // Belongs to a customer
+    relation customer @customer
+    relation organization @organization
+    
+    // Who can perform actions
+    relation creator @user
+    relation viewer @user
+    
+    // Permissions
+    permission create = creator or organization.admin
+    permission view = viewer or creator or customer.viewer or organization.member
+    permission match_faces = creator or organization.admin
+    permission extract_features = creator or organization.admin
+}
+
+// ============================================================================
+// AML SERVICE ENTITIES
+// ============================================================================
+
+entity aml_screening {
+    // Belongs to a customer
+    relation customer @customer
+    relation organization @organization
+    
+    // Who can perform actions
+    relation screener @user
+    relation viewer @user
+    relation summary_viewer @user
+    
+    // Permissions
+    permission create = screener or organization.admin
+    permission view = viewer or screener or customer.viewer or organization.admin
+    permission view_summary = summary_viewer or viewer or screener or organization.member
+}
+
+// ============================================================================
+// RISK SERVICE ENTITIES
+// ============================================================================
+
+entity risk_score {
+    // Belongs to a customer
+    relation customer @customer
+    relation organization @organization
+    
+    // Who can perform actions
+    relation calculator @user
+    relation viewer @user
+    relation overrider @user
+    
+    // Permissions
+    permission create = calculator or organization.admin
+    permission view = viewer or calculator or customer.viewer or organization.member
+    permission override = overrider or organization.admin
+}
+
+// ============================================================================
+// ROLE-BASED PERMISSIONS
+// ============================================================================
+
+entity role {
+    relation assignee @user
+    
+    // Liveness permissions
+    permission liveness_check_create = assignee
+    permission liveness_check_read = assignee
+    permission liveness_face_match = assignee
+    permission liveness_features_extract = assignee
+    
+    // AML permissions
+    permission aml_screen_create = assignee
+    permission aml_screen_read = assignee
+    permission aml_screen_read_summary = assignee
+    
+    // Risk permissions
+    permission risk_score_create = assignee
+    permission risk_score_read = assignee
+    permission risk_score_override = assignee
+}
+
+// ============================================================================
+// SYSTEM ROLES
+// ============================================================================
+
+entity system_administrator {
+    relation user @user
+    
+    // Full access to everything
+    permission liveness_check_create = user
+    permission liveness_check_read = user
+    permission liveness_face_match = user
+    permission liveness_features_extract = user
+    
+    permission aml_screen_create = user
+    permission aml_screen_read = user
+    
+    permission risk_score_create = user
+    permission risk_score_read = user
+    permission risk_score_override = user
+    
+    permission manage_system = user
+}
+
+entity compliance_officer {
+    relation user @user
+    relation organization @organization
+    
+    // AML focused permissions
+    permission aml_screen_create = user
+    permission aml_screen_read = user
+    
+    // Read-only for others
+    permission liveness_check_read = user
+    permission risk_score_read = user
+}
+
+entity kyc_analyst {
+    relation user @user
+    relation organization @organization
+    
+    // Document and liveness focused
+    permission liveness_check_create = user
+    permission liveness_check_read = user
+    permission liveness_face_match = user
+    permission liveness_features_extract = user
+    
+    // Read access to AML and risk
+    permission aml_screen_read = user
+    permission risk_score_read = user
+}
+
+entity risk_manager {
+    relation user @user
+    relation organization @organization
+    
+    // Risk focused permissions
+    permission risk_score_create = user
+    permission risk_score_read = user
+    permission risk_score_override = user
+    
+    // Read access to others
+    permission liveness_check_read = user
+    permission aml_screen_read = user
+}
+
+entity kyc_operator {
+    relation user @user
+    relation organization @organization
+    
+    // Read-only access
+    permission liveness_check_read = user
+    permission aml_screen_read_summary = user
+    permission risk_score_read = user
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+entity audit_log {
+    relation organization @organization
+    relation viewer @user
+    
+    permission view = viewer or organization.admin
+}

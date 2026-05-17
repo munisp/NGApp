@@ -1,0 +1,406 @@
+---
+# =============================================================================
+# OpenCTI — Threat Intelligence Platform
+# Integrated with Wazuh for real-time IOC enrichment
+# Feeds: MISP, AlienVault OTX, Abuse.ch, VirusTotal
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opencti
+  labels:
+    istio-injection: enabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti
+  namespace: opencti
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opencti
+  template:
+    metadata:
+      labels:
+        app: opencti
+    spec:
+      containers:
+        - name: opencti
+          image: opencti/platform:6.2.0
+          env:
+            - name: APP__PORT
+              value: "8080"
+            - name: APP__BASE_URL
+              value: "https://threat-intel.insurance-platform.com"
+            - name: APP__ADMIN__EMAIL
+              value: "admin@insurance-platform.com"
+            - name: APP__ADMIN__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: admin-password
+            - name: APP__ADMIN__TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: admin-token
+            - name: REDIS__HOSTNAME
+              value: "redis-ha.redis.svc.cluster.local"
+            - name: REDIS__PORT
+              value: "6379"
+            - name: REDIS__USE_SSL
+              value: "true"
+            - name: ELASTICSEARCH__URL
+              value: "https://wazuh-indexer.wazuh.svc.cluster.local:9200"
+            - name: MINIO__ENDPOINT
+              value: "minio.minio.svc.cluster.local"
+            - name: MINIO__PORT
+              value: "9000"
+            - name: MINIO__USE_SSL
+              value: "true"
+            - name: MINIO__ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: minio-access-key
+            - name: MINIO__SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: minio-secret-key
+            - name: RABBITMQ__HOSTNAME
+              value: "rabbitmq.opencti.svc.cluster.local"
+            - name: RABBITMQ__PORT
+              value: "5672"
+            - name: RABBITMQ__USERNAME
+              value: "opencti"
+            - name: RABBITMQ__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: rabbitmq-password
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+---
+# --- OpenCTI Connectors ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-connector-misp
+  namespace: opencti
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-connector-misp
+  template:
+    metadata:
+      labels:
+        app: opencti-connector-misp
+    spec:
+      containers:
+        - name: connector
+          image: opencti/connector-misp:6.2.0
+          env:
+            - name: OPENCTI_URL
+              value: "http://opencti.opencti.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: admin-token
+            - name: CONNECTOR_ID
+              value: "misp-connector"
+            - name: CONNECTOR_TYPE
+              value: "EXTERNAL_IMPORT"
+            - name: CONNECTOR_NAME
+              value: "MISP"
+            - name: CONNECTOR_SCOPE
+              value: "misp"
+            - name: CONNECTOR_CONFIDENCE_LEVEL
+              value: "75"
+            - name: CONNECTOR_LOG_LEVEL
+              value: "info"
+            - name: MISP_URL
+              value: "https://misp.insurance-platform.com"
+            - name: MISP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: misp-api-key
+            - name: MISP_SSL_VERIFY
+              value: "true"
+            - name: MISP_CREATE_REPORTS
+              value: "true"
+            - name: MISP_INTERVAL
+              value: "5"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-connector-alienvault
+  namespace: opencti
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-connector-alienvault
+  template:
+    metadata:
+      labels:
+        app: opencti-connector-alienvault
+    spec:
+      containers:
+        - name: connector
+          image: opencti/connector-alienvault:6.2.0
+          env:
+            - name: OPENCTI_URL
+              value: "http://opencti.opencti.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: admin-token
+            - name: CONNECTOR_ID
+              value: "alienvault-connector"
+            - name: CONNECTOR_TYPE
+              value: "EXTERNAL_IMPORT"
+            - name: CONNECTOR_NAME
+              value: "AlienVault OTX"
+            - name: CONNECTOR_SCOPE
+              value: "alienvault"
+            - name: CONNECTOR_CONFIDENCE_LEVEL
+              value: "80"
+            - name: ALIENVAULT_BASE_URL
+              value: "https://otx.alienvault.com"
+            - name: ALIENVAULT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: alienvault-api-key
+            - name: ALIENVAULT_PULSE_START_TIMESTAMP
+              value: "2024-01-01T00:00:00"
+            - name: ALIENVAULT_INTERVAL
+              value: "30"
+---
+# --- Wazuh-OpenCTI Integration Sidecar ---
+# Enriches Wazuh alerts with OpenCTI IOC data
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-opencti-enricher
+  namespace: wazuh
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wazuh-opencti-enricher
+  template:
+    metadata:
+      labels:
+        app: wazuh-opencti-enricher
+    spec:
+      containers:
+        - name: enricher
+          image: python:3.11-slim
+          command: ["python3", "/app/enricher.py"]
+          env:
+            - name: WAZUH_API_URL
+              value: "https://wazuh-manager.wazuh.svc.cluster.local:55000"
+            - name: WAZUH_API_USER
+              value: "wazuh-wui"
+            - name: WAZUH_API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wazuh-secrets
+                  key: api-password
+            - name: OPENCTI_URL
+              value: "http://opencti.opencti.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-secrets
+                  key: admin-token
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-0.kafka.svc.cluster.local:9092,kafka-1.kafka.svc.cluster.local:9092"
+            - name: KAFKA_TOPIC_ALERTS
+              value: "siem.alerts.enriched"
+          volumeMounts:
+            - name: enricher-code
+              mountPath: /app
+      volumes:
+        - name: enricher-code
+          configMap:
+            name: wazuh-opencti-enricher-code
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-opencti-enricher-code
+  namespace: wazuh
+data:
+  enricher.py: |
+    """
+    Wazuh-OpenCTI Enrichment Service
+    Polls Wazuh API for new alerts, enriches with OpenCTI IOC data,
+    and publishes enriched alerts to Kafka for downstream SIEM processing.
+    """
+    import asyncio
+    import json
+    import logging
+    import os
+    import time
+    from datetime import datetime, timedelta
+
+    import httpx
+    from kafka import KafkaProducer
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logger = logging.getLogger(__name__)
+
+    WAZUH_API_URL = os.environ["WAZUH_API_URL"]
+    WAZUH_USER = os.environ["WAZUH_API_USER"]
+    WAZUH_PASSWORD = os.environ["WAZUH_API_PASSWORD"]
+    OPENCTI_URL = os.environ["OPENCTI_URL"]
+    OPENCTI_TOKEN = os.environ["OPENCTI_TOKEN"]
+    KAFKA_SERVERS = os.environ["KAFKA_BOOTSTRAP_SERVERS"].split(",")
+    KAFKA_TOPIC = os.environ["KAFKA_TOPIC_ALERTS"]
+
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_SERVERS,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        acks="all",
+        retries=5,
+    )
+
+    async def get_wazuh_token(client: httpx.AsyncClient) -> str:
+        resp = await client.post(
+            f"{WAZUH_API_URL}/security/user/authenticate",
+            auth=(WAZUH_USER, WAZUH_PASSWORD),
+            verify=False,
+        )
+        resp.raise_for_status()
+        return resp.json()["data"]["token"]
+
+    async def get_recent_alerts(client: httpx.AsyncClient, token: str, since: str) -> list:
+        resp = await client.get(
+            f"{WAZUH_API_URL}/alerts",
+            headers={"Authorization": f"Bearer {token}"},
+            params={"limit": 500, "sort": "+timestamp", "q": f"timestamp>{since}"},
+            verify=False,
+        )
+        resp.raise_for_status()
+        return resp.json().get("data", {}).get("affected_items", [])
+
+    async def enrich_with_opencti(client: httpx.AsyncClient, ioc: str, ioc_type: str) -> dict:
+        """Query OpenCTI for IOC enrichment data."""
+        query = """
+        query SearchIOC($value: String!) {
+          stixCyberObservables(filters: {key: value, values: [$value]}) {
+            edges {
+              node {
+                id
+                entity_type
+                observable_value
+                x_opencti_score
+                indicators {
+                  edges {
+                    node {
+                      name
+                      confidence
+                      valid_until
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """
+        try:
+            resp = await client.post(
+                f"{OPENCTI_URL}/graphql",
+                headers={"Authorization": f"Bearer {OPENCTI_TOKEN}"},
+                json={"query": query, "variables": {"value": ioc}},
+                timeout=5.0,
+            )
+            data = resp.json()
+            edges = data.get("data", {}).get("stixCyberObservables", {}).get("edges", [])
+            if edges:
+                node = edges[0]["node"]
+                return {
+                    "opencti_id": node["id"],
+                    "opencti_score": node.get("x_opencti_score", 0),
+                    "indicators": [
+                        {
+                            "name": e["node"]["name"],
+                            "confidence": e["node"]["confidence"],
+                            "valid_until": e["node"]["valid_until"],
+                        }
+                        for e in node.get("indicators", {}).get("edges", [])
+                    ],
+                }
+        except Exception as e:
+            logger.warning(f"OpenCTI enrichment failed for {ioc}: {e}")
+        return {}
+
+    async def process_alert(client: httpx.AsyncClient, alert: dict) -> dict:
+        """Enrich a Wazuh alert with OpenCTI threat intelligence."""
+        enriched = dict(alert)
+        enriched["opencti_enrichment"] = {}
+
+        # Extract IOCs from alert
+        src_ip = alert.get("data", {}).get("srcip") or alert.get("agent", {}).get("ip")
+        if src_ip and not src_ip.startswith(("10.", "172.", "192.168.")):
+            enriched["opencti_enrichment"]["src_ip"] = await enrich_with_opencti(
+                client, src_ip, "IPv4-Addr"
+            )
+
+        # Extract domain/URL if present
+        url = alert.get("data", {}).get("url")
+        if url:
+            enriched["opencti_enrichment"]["url"] = await enrich_with_opencti(
+                client, url, "Url"
+            )
+
+        # Calculate combined risk score
+        base_level = alert.get("rule", {}).get("level", 0)
+        opencti_score = enriched["opencti_enrichment"].get("src_ip", {}).get("opencti_score", 0)
+        enriched["combined_risk_score"] = min(100, base_level * 5 + opencti_score)
+        enriched["enrichment_timestamp"] = datetime.utcnow().isoformat()
+
+        return enriched
+
+    async def main():
+        last_check = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+        async with httpx.AsyncClient() as client:
+            while True:
+                try:
+                    token = await get_wazuh_token(client)
+                    alerts = await get_recent_alerts(client, token, last_check)
+                    logger.info(f"Processing {len(alerts)} alerts since {last_check}")
+
+                    for alert in alerts:
+                        enriched = await process_alert(client, alert)
+                        producer.send(KAFKA_TOPIC, value=enriched)
+
+                    if alerts:
+                        last_check = alerts[-1]["timestamp"]
+
+                    producer.flush()
+                    await asyncio.sleep(30)
+                except Exception as e:
+                    logger.error(f"Enrichment cycle failed: {e}")
+                    await asyncio.sleep(60)
+
+    if __name__ == "__main__":
+        asyncio.run(main())

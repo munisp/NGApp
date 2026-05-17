@@ -1,0 +1,41 @@
+{
+  "type": "record",
+  "name": "ClaimEvent",
+  "namespace": "com.openimis.insurance",
+  "fields": [
+    {
+      "name": "claim_id",
+      "type": "string",
+      "doc": "Unique identifier for the claim."
+    },
+    {
+      "name": "policy_id",
+      "type": "string",
+      "doc": "Identifier for the policy associated with the claim."
+    },
+    {
+      "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "ClaimEventType",
+        "symbols": ["REPORTED", "APPROVED", "PAID", "DENIED"]
+      },
+      "doc": "The lifecycle stage of the claim."
+    },
+    {
+      "name": "event_timestamp",
+      "type": "long",
+      "doc": "Unix epoch timestamp (milliseconds) of the event."
+    },
+    {
+      "name": "claim_amount",
+      "type": "double",
+      "doc": "The monetary amount of the claim."
+    },
+    {
+      "name": "loss_ratio",
+      "type": "double",
+      "doc": "Enriched data: The current loss ratio for the policy/portfolio."
+    }
+  ]
+}

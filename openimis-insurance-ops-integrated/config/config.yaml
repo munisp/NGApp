@@ -1,0 +1,25 @@
+temporal:
+  hostPort: "temporal-frontend:7233"
+  namespace: "default"
+  taskQueue: "CLAIMS_RESERVE_TASK_QUEUE"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "password"
+  name: "claims_reserve_db"
+  sslMode: "disable"
+
+server:
+  port: 8080
+
+log:
+  level: "info"
+
+metrics:
+  port: 9090
+
+openimis:
+  claimsServiceUrl: "http://openimis-claims-service:8080"
+  actuarialServiceUrl: "http://openimis-actuarial-service:8080"

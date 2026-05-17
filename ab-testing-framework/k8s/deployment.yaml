@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ab-testing-framework
+  namespace: insurance-platform
+  labels:
+    app: ab-testing-framework
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ab-testing-framework
+  template:
+    metadata:
+      labels:
+        app: ab-testing-framework
+    spec:
+      containers:
+        - name: ab-testing-framework
+          image: ab-testing-framework:latest
+          ports:
+            - containerPort: 8096
+          env:
+            - name: PORT
+              value: "8096"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8096
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8096
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ab-testing-framework
+  namespace: insurance-platform
+spec:
+  selector:
+    app: ab-testing-framework
+  ports:
+    - port: 8096
+      targetPort: 8096
+  type: ClusterIP

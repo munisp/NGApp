@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="25" skipped="10" tests="168" time="31.412" timestamp="2026-03-03T02:21:59.762711-05:00" hostname="bb0c857bb459"><testcase classname="regression.test_regression.TestPolicyService" name="test_list_policies" time="0.007" /><testcase classname="regression.test_regression.TestPolicyService" name="test_get_policy_by_id" time="0.005" /><testcase classname="regression.test_regression.TestPolicyService" name="test_update_policy_status" time="0.003" /><testcase classname="regression.test_regression.TestPolicyService" name="test_policy_not_found" time="0.002" /><testcase classname="regression.test_regression.TestPolicyService" name="test_create_policy_validation" time="0.002" /><testcase classname="regression.test_regression.TestPolicyService" name="test_policy_premium_is_positive" time="0.002" /><testcase classname="regression.test_regression.TestClaimsService" name="test_list_claims" time="0.002" /><testcase classname="regression.test_regression.TestClaimsService" name="test_get_claim_by_id" time="0.004" /><testcase classname="regression.test_regression.TestClaimsService" name="test_update_claim_status" time="0.002" /><testcase classname="regression.test_regression.TestClaimsService" name="test_claim_adjudication_workflow" time="0.005" /><testcase classname="regression.test_regression.TestClaimsService" name="test_claim_amount_validation" time="0.002" /><testcase classname="regression.test_regression.TestPaymentService" name="test_list_payments" time="0.002" /><testcase classname="regression.test_regression.TestPaymentService" name="test_process_payment" time="0.002" /><testcase classname="regression.test_regression.TestPaymentService" name="test_payment_idempotency" time="0.003" /><testcase classname="regression.test_regression.TestInsuranceRadar" name="test_fraud_score_endpoint" time="0.002"><failure message="AssertionError: assert 'decision' in {'assessedAt': '2026-03-03T07:21:59.974856', 'entityId': 'CLM-785E2533', 'entityType': 'Claim', 'flags': [], ...}">regression/test_regression.py:235: in test_fraud_score_endpoint
+    assert "decision" in data
+E   AssertionError: assert 'decision' in {'assessedAt': '2026-03-03T07:21:59.974856', 'entityId': 'CLM-785E2533', 'entityType': 'Claim', 'flags': [], ...}</failure></testcase><testcase classname="regression.test_regression.TestInsuranceRadar" name="test_fraud_analytics" time="0.002"><failure message="AssertionError: assert 'falsePositiveRate' in {'blockRate': 0.0028, 'blocked': 127, 'generatedAt': '2026-03-03T07:21:59.997073', 'suspicious': 89, ...}">regression/test_regression.py:246: in test_fraud_analytics
+    assert "falsePositiveRate" in data
+E   AssertionError: assert 'falsePositiveRate' in {'blockRate': 0.0028, 'blocked': 127, 'generatedAt': '2026-03-03T07:21:59.997073', 'suspicious': 89, ...}</failure></testcase><testcase classname="regression.test_regression.TestInsuranceRadar" name="test_fraud_ring_detection" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:250: in test_fraud_ring_detection
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestInsuranceRadar" name="test_fraud_score_high_risk_claim" time="0.002" /><testcase classname="regression.test_regression.TestUnderwriting" name="test_risk_assessment" time="0.002" /><testcase classname="regression.test_regression.TestUnderwriting" name="test_risk_score_range" time="0.002" /><testcase classname="regression.test_regression.TestUnderwriting" name="test_high_risk_applicant_premium_loading" time="0.003"><failure message="AssertionError: High-risk applicant should have higher premium&#10;assert 13800.0 &gt; 34500.0">regression/test_regression.py:335: in test_high_risk_applicant_premium_loading
+    assert premium_high &gt; premium_low, "High-risk applicant should have higher premium"
+E   AssertionError: High-risk applicant should have higher premium
+E   assert 13800.0 &gt; 34500.0</failure></testcase><testcase classname="regression.test_regression.TestReinsurance" name="test_cession_creation" time="0.002"><failure message="assert 404 in (200, 201)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:350: in test_cession_creation
+    assert resp.status_code in (200, 201)
+E   assert 404 in (200, 201)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestReinsurance" name="test_bordereau_generation" time="0.002"><failure message="assert 404 in (200, 201, 202)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:362: in test_bordereau_generation
+    assert resp.status_code in (200, 201, 202)
+E   assert 404 in (200, 201, 202)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestReinsurance" name="test_reinsurance_accounting" time="0.002" /><testcase classname="regression.test_regression.TestOpenIMIS" name="test_sync_policies" time="0.002" /><testcase classname="regression.test_regression.TestOpenIMIS" name="test_sync_claims" time="0.002"><failure message="assert 404 in (200, 201, 202)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:390: in test_sync_claims
+    assert resp.status_code in (200, 201, 202)
+E   assert 404 in (200, 201, 202)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestOpenIMIS" name="test_actuarial_model_update" time="0.002"><failure message="assert 404 in (200, 201, 202)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:399: in test_actuarial_model_update
+    assert resp.status_code in (200, 201, 202)
+E   assert 404 in (200, 201, 202)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestERPNext" name="test_sync_status" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:406: in test_sync_status
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestERPNext" name="test_trigger_sync" time="0.002" /><testcase classname="regression.test_regression.TestERPNext" name="test_reconciliation" time="0.002" /><testcase classname="regression.test_regression.TestPremiumRates" name="test_list_rate_tables" time="0.002" /><testcase classname="regression.test_regression.TestPremiumRates" name="test_list_risk_factors" time="0.002" /><testcase classname="regression.test_regression.TestPremiumRates" name="test_rate_change_audit_trail" time="0.002" /><testcase classname="regression.test_regression.TestBrokerAPI" name="test_list_api_keys" time="0.002" /><testcase classname="regression.test_regression.TestBrokerAPI" name="test_create_api_key" time="0.002" /><testcase classname="regression.test_regression.TestBrokerAPI" name="test_api_usage_metrics" time="0.002" /><testcase classname="regression.test_regression.TestTelcoCreditScoring" name="test_compute_credit_score" time="0.002" /><testcase classname="regression.test_regression.TestTelcoCreditScoring" name="test_credit_score_history" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:483: in test_credit_score_history
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestKnowledgeGraph" name="test_get_nodes" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:491: in test_get_nodes
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestKnowledgeGraph" name="test_get_edges" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:496: in test_get_edges
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestKnowledgeGraph" name="test_fraud_network_graph" time="0.002"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">regression/test_regression.py:504: in test_fraud_network_graph
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestAuthAndAuthorization" name="test_unauthenticated_request_rejected" time="0.002" /><testcase classname="regression.test_regression.TestAuthAndAuthorization" name="test_invalid_token_rejected" time="0.002" /><testcase classname="regression.test_regression.TestAuthAndAuthorization" name="test_expired_token_rejected" time="0.002" /><testcase classname="regression.test_regression.TestAuthAndAuthorization" name="test_cross_tenant_isolation" time="0.002" /><testcase classname="regression.test_regression.TestHealthChecks" name="test_platform_health" time="0.002" /><testcase classname="regression.test_regression.TestHealthChecks" name="test_platform_readiness" time="0.002"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">regression/test_regression.py:546: in test_platform_readiness
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestHealthChecks" name="test_metrics_endpoint" time="0.002" /><testcase classname="regression.test_regression.TestHealthChecks" name="test_api_version" time="0.002"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">regression/test_regression.py:554: in test_api_version
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="regression.test_regression.TestDataIntegrity" name="test_policy_claim_relationship" time="0.002" /><testcase classname="regression.test_regression.TestDataIntegrity" name="test_payment_policy_relationship" time="0.002" /><testcase classname="regression.test_regression.TestDataIntegrity" name="test_referral_uniqueness" time="0.002"><failure message="TypeError: string indices must be integers, not 'str'">regression/test_regression.py:581: in test_referral_uniqueness
+    codes = [r["referralCode"] for r in referrals]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+regression/test_regression.py:581: in &lt;listcomp&gt;
+    codes = [r["referralCode"] for r in referrals]
+             ^^^^^^^^^^^^^^^^^
+E   TypeError: string indices must be integers, not 'str'</failure></testcase><testcase classname="integration.test_integration.TestKafkaIntegration" name="test_kafka_broker_connectivity" time="0.000"><skipped type="pytest.skip" message="kafka-python not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:57: kafka-python not installed</skipped></testcase><testcase classname="integration.test_integration.TestKafkaIntegration" name="test_claim_event_published_to_kafka" time="0.000"><skipped type="pytest.skip" message="kafka-python not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:97: kafka-python not installed</skipped></testcase><testcase classname="integration.test_integration.TestKafkaIntegration" name="test_kafka_topic_replication" time="0.000"><skipped type="pytest.skip" message="kafka-python not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:116: kafka-python not installed</skipped></testcase><testcase classname="integration.test_integration.TestTemporalIntegration" name="test_temporal_frontend_reachable" time="0.000"><skipped type="pytest.skip" message="temporalio not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:136: temporalio not installed</skipped></testcase><testcase classname="integration.test_integration.TestTemporalIntegration" name="test_cession_workflow_execution" time="0.000"><skipped type="pytest.skip" message="temporalio not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:164: temporalio not installed</skipped></testcase><testcase classname="integration.test_integration.TestTemporalIntegration" name="test_payment_workflow_execution" time="0.002"><failure message="assert 404 in (200, 201, 202)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">integration/test_integration.py:181: in test_payment_workflow_execution
+    assert resp.status_code in (200, 201, 202)
+E   assert 404 in (200, 201, 202)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="integration.test_integration.TestDaprIntegration" name="test_dapr_sidecar_health" time="0.001"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/healthz (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0ce5890&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))">/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:198: in _new_conn
+    sock = connection.create_connection(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:73: in create_connection
+    sock.connect(sa)
+E   ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:787: in urlopen
+    response = self._make_request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:493: in _make_request
+    conn.request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:494: in request
+    self.endheaders()
+/usr/lib/python3.11/http/client.py:1277: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+/usr/lib/python3.11/http/client.py:1037: in _send_output
+    self.send(msg)
+/usr/lib/python3.11/http/client.py:975: in send
+    self.connect()
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:325: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:213: in _new_conn
+    raise NewConnectionError(
+E   urllib3.exceptions.NewConnectionError: &lt;urllib3.connection.HTTPConnection object at 0x7f5ba0ce5890&gt;: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:644: in send
+    resp = conn.urlopen(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:841: in urlopen
+    retries = retries.increment(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/retry.py:519: in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/healthz (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0ce5890&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+integration/test_integration.py:192: in test_dapr_sidecar_health
+    resp = requests.get(f"http://localhost:{DAPR_HTTP_PORT}/v1.0/healthz", timeout=5)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:677: in send
+    raise ConnectionError(e, request=request)
+E   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/healthz (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0ce5890&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))</failure></testcase><testcase classname="integration.test_integration.TestDaprIntegration" name="test_dapr_pubsub_publish" time="0.002"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/publish/insurance-pubsub/claims (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0843cd0&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))">/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:198: in _new_conn
+    sock = connection.create_connection(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:73: in create_connection
+    sock.connect(sa)
+E   ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:787: in urlopen
+    response = self._make_request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:493: in _make_request
+    conn.request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:494: in request
+    self.endheaders()
+/usr/lib/python3.11/http/client.py:1277: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+/usr/lib/python3.11/http/client.py:1037: in _send_output
+    self.send(msg)
+/usr/lib/python3.11/http/client.py:975: in send
+    self.connect()
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:325: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:213: in _new_conn
+    raise NewConnectionError(
+E   urllib3.exceptions.NewConnectionError: &lt;urllib3.connection.HTTPConnection object at 0x7f5ba0843cd0&gt;: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:644: in send
+    resp = conn.urlopen(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:841: in urlopen
+    retries = retries.increment(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/retry.py:519: in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/publish/insurance-pubsub/claims (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0843cd0&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+integration/test_integration.py:197: in test_dapr_pubsub_publish
+    resp = requests.post(
+/usr/local/lib/python3.11/dist-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:677: in send
+    raise ConnectionError(e, request=request)
+E   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/publish/insurance-pubsub/claims (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba0843cd0&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))</failure></testcase><testcase classname="integration.test_integration.TestDaprIntegration" name="test_dapr_service_invocation" time="0.002"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/invoke/openimis-service/method/health (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba09b2710&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))">/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:198: in _new_conn
+    sock = connection.create_connection(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:73: in create_connection
+    sock.connect(sa)
+E   ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:787: in urlopen
+    response = self._make_request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:493: in _make_request
+    conn.request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:494: in request
+    self.endheaders()
+/usr/lib/python3.11/http/client.py:1277: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+/usr/lib/python3.11/http/client.py:1037: in _send_output
+    self.send(msg)
+/usr/lib/python3.11/http/client.py:975: in send
+    self.connect()
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:325: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:213: in _new_conn
+    raise NewConnectionError(
+E   urllib3.exceptions.NewConnectionError: &lt;urllib3.connection.HTTPConnection object at 0x7f5ba09b2710&gt;: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:644: in send
+    resp = conn.urlopen(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:841: in urlopen
+    retries = retries.increment(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/retry.py:519: in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/invoke/openimis-service/method/health (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba09b2710&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+integration/test_integration.py:210: in test_dapr_service_invocation
+    resp = requests.post(
+/usr/local/lib/python3.11/dist-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:677: in send
+    raise ConnectionError(e, request=request)
+E   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/invoke/openimis-service/method/health (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba09b2710&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))</failure></testcase><testcase classname="integration.test_integration.TestDaprIntegration" name="test_dapr_state_store" time="0.002"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/state/insurance-statestore (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba08f0290&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))">/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:198: in _new_conn
+    sock = connection.create_connection(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+/usr/local/lib/python3.11/dist-packages/urllib3/util/connection.py:73: in create_connection
+    sock.connect(sa)
+E   ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:787: in urlopen
+    response = self._make_request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:493: in _make_request
+    conn.request(
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:494: in request
+    self.endheaders()
+/usr/lib/python3.11/http/client.py:1277: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+/usr/lib/python3.11/http/client.py:1037: in _send_output
+    self.send(msg)
+/usr/lib/python3.11/http/client.py:975: in send
+    self.connect()
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:325: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/urllib3/connection.py:213: in _new_conn
+    raise NewConnectionError(
+E   urllib3.exceptions.NewConnectionError: &lt;urllib3.connection.HTTPConnection object at 0x7f5ba08f0290&gt;: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:644: in send
+    resp = conn.urlopen(
+/usr/local/lib/python3.11/dist-packages/urllib3/connectionpool.py:841: in urlopen
+    retries = retries.increment(
+/usr/local/lib/python3.11/dist-packages/urllib3/util/retry.py:519: in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/state/insurance-statestore (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba08f0290&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+integration/test_integration.py:221: in test_dapr_state_store
+    save_resp = requests.post(
+/usr/local/lib/python3.11/dist-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/dist-packages/requests/adapters.py:677: in send
+    raise ConnectionError(e, request=request)
+E   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=3500): Max retries exceeded with url: /v1.0/state/insurance-statestore (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x7f5ba08f0290&gt;: Failed to establish a new connection: [Errno 111] Connection refused'))</failure></testcase><testcase classname="integration.test_integration.TestTigerBeetleIntegration" name="test_account_creation" time="0.003"><failure message="assert 404 in (200, 201, 409)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">integration/test_integration.py:253: in test_account_creation
+    assert resp.status_code in (200, 201, 409)  # 409 if account already exists
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 404 in (200, 201, 409)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="integration.test_integration.TestTigerBeetleIntegration" name="test_transfer_creation" time="0.003"><failure message="assert 404 in (200, 201, 400)&#10; +  where 404 = &lt;Response [404]&gt;.status_code">integration/test_integration.py:270: in test_transfer_creation
+    assert resp.status_code in (200, 201, 400)
+E   assert 404 in (200, 201, 400)
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="integration.test_integration.TestTigerBeetleIntegration" name="test_account_balance_query" time="0.002" /><testcase classname="integration.test_integration.TestAuthorizationChain" name="test_keycloak_token_introspection" time="0.002"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">integration/test_integration.py:295: in test_keycloak_token_introspection
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="integration.test_integration.TestAuthorizationChain" name="test_permify_health" time="0.002" /><testcase classname="integration.test_integration.TestAuthorizationChain" name="test_permify_permission_check" time="0.002" /><testcase classname="integration.test_integration.TestAPISIXIntegration" name="test_apisix_status" time="0.002"><failure message="assert 401 in (200, 404)&#10; +  where 401 = &lt;Response [401]&gt;.status_code">integration/test_integration.py:331: in test_apisix_status
+    assert resp.status_code in (200, 404)
+E   assert 401 in (200, 404)
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="integration.test_integration.TestAPISIXIntegration" name="test_rate_limiting_headers" time="0.002"><skipped type="pytest.skip" message="Rate limit headers not exposed by gateway">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:348: Rate limit headers not exposed by gateway</skipped></testcase><testcase classname="integration.test_integration.TestAPISIXIntegration" name="test_jwt_validation_via_apisix" time="0.002" /><testcase classname="integration.test_integration.TestAPISIXIntegration" name="test_cors_headers" time="0.002" /><testcase classname="integration.test_integration.TestLakehouseIntegration" name="test_trino_connectivity" time="0.000"><skipped type="pytest.skip" message="trino not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:390: trino not installed</skipped></testcase><testcase classname="integration.test_integration.TestLakehouseIntegration" name="test_iceberg_table_exists" time="0.000"><skipped type="pytest.skip" message="trino not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:413: trino not installed</skipped></testcase><testcase classname="integration.test_integration.TestLakehouseIntegration" name="test_data_ingestion_pipeline" time="30.003"><skipped type="pytest.skip" message="trino not installed">/home/ubuntu/platform_complete/unified-insurance-platform/tests/integration/test_integration.py:452: trino not installed</skipped></testcase><testcase classname="integration.test_integration.TestOpenIMISIntegration" name="test_openimis_health" time="0.002" /><testcase classname="integration.test_integration.TestOpenIMISIntegration" name="test_policy_sync_bidirectional" time="0.004" /><testcase classname="integration.test_integration.TestOpenIMISIntegration" name="test_claims_loss_ratio_calculation" time="0.002" /><testcase classname="integration.test_integration.TestEndToEndWorkflows" name="test_full_policy_lifecycle" time="0.009" /><testcase classname="integration.test_integration.TestEndToEndWorkflows" name="test_fraud_detection_blocks_suspicious_claim" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[' OR '1'='1]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id['; DROP TABLE policies; --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[1 UNION SELECT * FROM users --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[' OR 1=1 --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[admin'--]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[1; SELECT * FROM information_schema.tables]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[' UNION SELECT NULL, NULL, NULL --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[1 OR 1=1]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[' OR 'x'='x]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_policy_id[1'; EXEC xp_cmdshell('whoami'); --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_search_params[' OR '1'='1]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_search_params['; DROP TABLE policies; --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_search_params[1 UNION SELECT * FROM users --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_search_params[' OR 1=1 --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_search_params[admin'--]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_request_body[' OR '1'='1]" time="0.003" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_request_body['; DROP TABLE policies; --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_request_body[1 UNION SELECT * FROM users --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_request_body[' OR 1=1 --]" time="0.002" /><testcase classname="security.test_security.TestSQLInjection" name="test_sql_injection_in_request_body[admin'--]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_policy_name[&lt;script&gt;alert('xss')&lt;/script&gt;]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_policy_name[&lt;img src=x onerror=alert(1)&gt;]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_policy_name[javascript:alert(1)]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_policy_name[&lt;svg onload=alert(1)&gt;]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_policy_name[';alert('xss')//]" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_in_response_content_type" time="0.002" /><testcase classname="security.test_security.TestXSS" name="test_xss_security_headers" time="0.002" /><testcase classname="security.test_security.TestAuthentication" name="test_no_auth_returns_401" time="0.007" /><testcase classname="security.test_security.TestAuthentication" name="test_invalid_jwt_returns_401" time="0.006" /><testcase classname="security.test_security.TestAuthentication" name="test_jwt_algorithm_none_attack" time="0.002" /><testcase classname="security.test_security.TestAuthentication" name="test_privilege_escalation_user_to_admin" time="0.005" /><testcase classname="security.test_security.TestAuthentication" name="test_idor_prevention" time="0.002" /><testcase classname="security.test_security.TestRateLimiting" name="test_rate_limit_enforced" time="0.194" /><testcase classname="security.test_security.TestRateLimiting" name="test_brute_force_protection_on_auth" time="0.010" /><testcase classname="security.test_security.TestSensitiveDataExposure" name="test_no_sensitive_data_in_error_responses" time="0.002" /><testcase classname="security.test_security.TestSensitiveDataExposure" name="test_passwords_not_in_api_responses" time="0.002" /><testcase classname="security.test_security.TestSensitiveDataExposure" name="test_api_keys_masked_in_responses" time="0.002" /><testcase classname="security.test_security.TestSensitiveDataExposure" name="test_security_headers_present" time="0.002" /><testcase classname="security.test_security.TestSensitiveDataExposure" name="test_no_server_version_disclosure" time="0.002" /><testcase classname="security.test_security.TestInputValidation" name="test_oversized_payload_rejected" time="0.002" /><testcase classname="security.test_security.TestInputValidation" name="test_negative_amounts_rejected" time="0.002" /><testcase classname="security.test_security.TestInputValidation" name="test_future_incident_date_rejected" time="0.002" /><testcase classname="security.test_security.TestInputValidation" name="test_invalid_email_format_rejected" time="0.008" /><testcase classname="security.test_security.TestInputValidation" name="test_path_traversal_rejected" time="0.006" /><testcase classname="security.test_security.TestTLSSecurity" name="test_tls_minimum_version" time="0.002" /><testcase classname="security.test_security.TestTLSSecurity" name="test_http_redirects_to_https" time="0.002" /><testcase classname="security.test_security.TestTLSSecurity" name="test_hsts_header" time="0.001"><skipped type="pytest.skip" message="HTTPS not available in test environment">/home/ubuntu/platform_complete/unified-insurance-platform/tests/security/test_security.py:530: HTTPS not available in test environment</skipped></testcase><testcase classname="security.test_security.TestOpenAppSecWAF" name="test_waf_blocks_sql_injection" time="0.002" /><testcase classname="security.test_security.TestOpenAppSecWAF" name="test_waf_blocks_xss" time="0.002" /><testcase classname="security.test_security.TestOpenAppSecWAF" name="test_waf_allows_legitimate_requests" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_01_view_available_products" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_02_get_premium_quote" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_03_enroll_in_policy" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_04_pay_premium" time="0.003" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_05_submit_claim" time="0.003" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_06_track_claim_status" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_07_view_policy_documents" time="0.004" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_08_view_payment_history" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_09_referral_program" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestPolicyholderJourney" name="test_ph_10_notification_preferences" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestClaimsAdjudicatorJourney" name="test_ca_01_view_pending_claims_queue" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestClaimsAdjudicatorJourney" name="test_ca_02_review_claim_details" time="0.003" /><testcase classname="ux.test_stakeholder_ux.TestClaimsAdjudicatorJourney" name="test_ca_03_approve_claim" time="0.005" /><testcase classname="ux.test_stakeholder_ux.TestClaimsAdjudicatorJourney" name="test_ca_04_reject_claim_with_reason" time="0.005" /><testcase classname="ux.test_stakeholder_ux.TestClaimsAdjudicatorJourney" name="test_ca_05_view_fraud_score_during_adjudication" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestUnderwriterJourney" name="test_uw_01_assess_new_application" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestUnderwriterJourney" name="test_uw_02_view_premium_rate_tables" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestUnderwriterJourney" name="test_uw_03_update_risk_factor" time="0.003" /><testcase classname="ux.test_stakeholder_ux.TestUnderwriterJourney" name="test_uw_04_view_loss_ratio_analytics" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestBrokerJourney" name="test_br_01_create_api_key" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestBrokerJourney" name="test_br_02_view_api_usage_metrics" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestBrokerJourney" name="test_br_03_submit_policy_via_api" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestBrokerJourney" name="test_br_04_get_telco_credit_score" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestFinanceAdminJourney" name="test_fa_01_view_payment_reconciliation" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestFinanceAdminJourney" name="test_fa_02_view_reinsurance_accounting" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestFinanceAdminJourney" name="test_fa_03_trigger_erpnext_sync" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestFinanceAdminJourney" name="test_fa_04_view_ledger_balances" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestComplianceOfficerJourney" name="test_co_01_view_audit_logs" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestComplianceOfficerJourney" name="test_co_02_view_premium_rate_audit_trail" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestComplianceOfficerJourney" name="test_co_03_view_fraud_analytics" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestReinsurerJourney" name="test_ri_01_view_cession_portfolio" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestReinsurerJourney" name="test_ri_02_view_bordereau" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestReinsurerJourney" name="test_ri_03_view_settlement_status" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestAccessibility" name="test_api_supports_json_content_type" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestAccessibility" name="test_api_pagination_works" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestAccessibility" name="test_api_sorting_works" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestAccessibility" name="test_api_filtering_works" time="0.002" /><testcase classname="ux.test_stakeholder_ux.TestAccessibility" name="test_error_messages_are_user_friendly" time="0.002" /></testsuite></testsuites>

@@ -1,0 +1,387 @@
+---
+# =============================================================================
+# cert-manager — Unified Insurance Platform
+# Automated TLS certificate lifecycle management
+# Issuers: Let's Encrypt (production + staging) + Vault PKI (internal)
+# =============================================================================
+
+# --- ClusterIssuer: Let's Encrypt Production ---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: platform-ops@insurance-platform.com
+    privateKeySecretRef:
+      name: letsencrypt-production-key
+    solvers:
+      - http01:
+          ingress:
+            class: istio
+      - dns01:
+          route53:
+            region: eu-west-1
+            hostedZoneID: HOSTED_ZONE_ID
+            accessKeyIDSecretRef:
+              name: route53-credentials
+              key: access-key-id
+            secretAccessKeySecretRef:
+              name: route53-credentials
+              key: secret-access-key
+---
+# --- ClusterIssuer: Let's Encrypt Staging (for testing) ---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: platform-ops@insurance-platform.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-key
+    solvers:
+      - http01:
+          ingress:
+            class: istio
+---
+# --- ClusterIssuer: Vault PKI (internal services) ---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vault-internal-ca
+spec:
+  vault:
+    path: insurance/pki/sign/internal-services
+    server: https://vault.vault.svc.cluster.local:8200
+    caBundle: |-
+      # Base64-encoded Vault CA certificate — populated during bootstrap
+      VAULT_CA_BUNDLE_PLACEHOLDER
+    auth:
+      kubernetes:
+        role: cert-manager
+        mountPath: /v1/auth/kubernetes
+        secretRef:
+          name: cert-manager-vault-token
+          key: token
+---
+# --- Certificate: External API gateway (Let's Encrypt) ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: insurance-platform-tls
+  namespace: istio-system
+spec:
+  secretName: insurance-platform-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  dnsNames:
+    - api.insurance-platform.com
+    - portal.insurance-platform.com
+    - admin.insurance-platform.com
+    - "*.insurance-platform.com"
+  duration: 2160h   # 90 days
+  renewBefore: 360h # Renew 15 days before expiry
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Vault TLS (internal CA) ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vault-tls
+  namespace: vault
+spec:
+  secretName: vault-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: vault.vault.svc.cluster.local
+  dnsNames:
+    - vault
+    - vault.vault
+    - vault.vault.svc
+    - vault.vault.svc.cluster.local
+    - vault-0.vault-internal
+    - vault-1.vault-internal
+    - vault-2.vault-internal
+  duration: 8760h   # 1 year
+  renewBefore: 720h # Renew 30 days before expiry
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Keycloak TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+  namespace: keycloak
+spec:
+  secretName: keycloak-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: keycloak.keycloak.svc.cluster.local
+  dnsNames:
+    - keycloak
+    - keycloak.keycloak
+    - keycloak.keycloak.svc.cluster.local
+    - auth.insurance-platform.com
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Kafka TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kafka-tls
+  namespace: kafka
+spec:
+  secretName: kafka-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: kafka.kafka.svc.cluster.local
+  dnsNames:
+    - kafka-0.kafka-headless.kafka.svc.cluster.local
+    - kafka-1.kafka-headless.kafka.svc.cluster.local
+    - kafka-2.kafka-headless.kafka.svc.cluster.local
+    - kafka.kafka.svc.cluster.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: PostgreSQL TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: postgres-tls
+  namespace: postgres
+spec:
+  secretName: postgres-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: postgres-ha.postgres.svc.cluster.local
+  dnsNames:
+    - postgres-ha.postgres.svc.cluster.local
+    - postgres-primary.postgres.svc.cluster.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Redis TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: redis-tls
+  namespace: redis
+spec:
+  secretName: redis-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: redis-ha.redis.svc.cluster.local
+  dnsNames:
+    - redis-ha.redis.svc.cluster.local
+    - redis-ha-headless.redis.svc.cluster.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Temporal TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: temporal-tls
+  namespace: temporal
+spec:
+  secretName: temporal-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: temporal-frontend.temporal.svc.cluster.local
+  dnsNames:
+    - temporal-frontend.temporal.svc.cluster.local
+    - temporal-history.temporal.svc.cluster.local
+    - temporal-matching.temporal.svc.cluster.local
+    - temporal-worker.temporal.svc.cluster.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: TigerBeetle TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tigerbeetle-tls
+  namespace: tigerbeetle
+spec:
+  secretName: tigerbeetle-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: tigerbeetle.tigerbeetle.svc.cluster.local
+  dnsNames:
+    - tigerbeetle-0.tigerbeetle.tigerbeetle.svc.cluster.local
+    - tigerbeetle-1.tigerbeetle.tigerbeetle.svc.cluster.local
+    - tigerbeetle-2.tigerbeetle.tigerbeetle.svc.cluster.local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Wazuh SIEM TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wazuh-tls
+  namespace: wazuh
+spec:
+  secretName: wazuh-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: wazuh.wazuh.svc.cluster.local
+  dnsNames:
+    - wazuh.wazuh.svc.cluster.local
+    - wazuh-manager.wazuh.svc.cluster.local
+    - wazuh-dashboard.wazuh.svc.cluster.local
+    - siem.insurance-platform.com
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- Certificate: Observability stack TLS ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: observability-tls
+  namespace: observability
+spec:
+  secretName: observability-tls
+  issuerRef:
+    name: vault-internal-ca
+    kind: ClusterIssuer
+  commonName: grafana.observability.svc.cluster.local
+  dnsNames:
+    - grafana.observability.svc.cluster.local
+    - prometheus.observability.svc.cluster.local
+    - jaeger.observability.svc.cluster.local
+    - loki.observability.svc.cluster.local
+    - monitoring.insurance-platform.com
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+---
+# --- CertificateRequest approver RBAC ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-approver
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificaterequests"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificaterequests/status"]
+    verbs: ["update"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["signers"]
+    resourceNames:
+      - "issuers.cert-manager.io/*"
+      - "clusterissuers.cert-manager.io/*"
+    verbs: ["approve"]
+---
+# --- External Secrets Operator: sync Vault secrets to K8s Secrets ---
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vault-backend
+  namespace: insurance-platform
+spec:
+  provider:
+    vault:
+      server: "https://vault.vault.svc.cluster.local:8200"
+      path: "insurance"
+      version: "v2"
+      caBundle: ""  # Populated from vault-tls secret
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "external-secrets"
+          serviceAccountRef:
+            name: external-secrets
+---
+# --- ExternalSecret: sync all platform secrets ---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: platform-secrets
+  namespace: insurance-platform
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: platform-secrets
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+  data:
+    - secretKey: kafka-sasl-password
+      remoteRef:
+        key: infra/kafka
+        property: sasl_password
+    - secretKey: redis-password
+      remoteRef:
+        key: infra/redis
+        property: password
+    - secretKey: keycloak-client-secret
+      remoteRef:
+        key: infra/keycloak
+        property: client_secret
+    - secretKey: openimis-api-key
+      remoteRef:
+        key: platform/openimis
+        property: api_key
+    - secretKey: stripe-api-key
+      remoteRef:
+        key: platform/payment
+        property: stripe_api_key
+    - secretKey: unleash-api-token
+      remoteRef:
+        key: infra/unleash
+        property: api_token

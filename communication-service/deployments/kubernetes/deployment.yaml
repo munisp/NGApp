@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: communication
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: communication-service-config
+  namespace: communication
+data:
+  PORT: "8080"
+  KAFKA_BROKERS: "kafka-service.kafka:9092"
+  KAFKA_TOPIC: "notification-events"
+  KAFKA_GROUP_ID: "communication-service"
+  REDIS_ADDR: "redis-service.redis:6379"
+  WHATSAPP_API_URL: "https://graph.facebook.com/v18.0"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: communication-service-secrets
+  namespace: communication
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://postgres:postgres@postgres-service.database:5432/communication?sslmode=disable"
+  REDIS_PASSWORD: ""
+  WHATSAPP_ACCESS_TOKEN: "your-whatsapp-access-token"
+  WHATSAPP_PHONE_ID: "your-phone-id"
+  WHATSAPP_VERIFY_TOKEN: "your-verify-token"
+  TWILIO_ACCOUNT_SID: "your-twilio-account-sid"
+  TWILIO_AUTH_TOKEN: "your-twilio-auth-token"
+  TWILIO_FROM_NUMBER: "+1234567890"
+  TELEGRAM_BOT_TOKEN: "your-telegram-bot-token"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communication-service
+  namespace: communication
+  labels:
+    app: communication-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: communication-service
+  template:
+    metadata:
+      labels:
+        app: communication-service
+    spec:
+      containers:
+      - name: communication-service
+        image: insurance-platform/communication-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: PORT
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: DATABASE_URL
+        - name: REDIS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: REDIS_ADDR
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: REDIS_PASSWORD
+        - name: WHATSAPP_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: WHATSAPP_API_URL
+        - name: WHATSAPP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: WHATSAPP_ACCESS_TOKEN
+        - name: WHATSAPP_PHONE_ID
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: WHATSAPP_PHONE_ID
+        - name: WHATSAPP_VERIFY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: WHATSAPP_VERIFY_TOKEN
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: TWILIO_AUTH_TOKEN
+        - name: TWILIO_FROM_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: TWILIO_FROM_NUMBER
+        - name: TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: communication-service-secrets
+              key: TELEGRAM_BOT_TOKEN
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: KAFKA_BROKERS
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: KAFKA_TOPIC
+        - name: KAFKA_GROUP_ID
+          valueFrom:
+            configMapKeyRef:
+              name: communication-service-config
+              key: KAFKA_GROUP_ID
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: communication-service
+  namespace: communication
+  labels:
+    app: communication-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: communication-service
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: communication-service-ingress
+  namespace: communication
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - communication.insurance-platform.ng
+    secretName: communication-tls
+  rules:
+  - host: communication.insurance-platform.ng
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: communication-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: communication-service-hpa
+  namespace: communication
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: communication-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

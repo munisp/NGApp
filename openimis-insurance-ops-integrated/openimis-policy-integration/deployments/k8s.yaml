@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-producer-metrics
+  labels:
+    app: policy-producer
+spec:
+  selector:
+    app: policy-producer
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-producer
+  labels:
+    app: policy-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-producer
+  template:
+    metadata:
+      labels:
+        app: policy-producer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+      - name: policy-producer
+        image: openimis/policy-producer:latest # Replace with actual image
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BROKER
+          value: "kafka-broker:9092" # Replace with actual Kafka service name
+        - name: KAFKA_TOPIC
+          value: "policy-events"
+        - name: METRICS_PORT
+          value: "8080"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openimis-consumer-metrics
+  labels:
+    app: openimis-consumer
+spec:
+  selector:
+    app: openimis-consumer
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openimis-consumer
+  labels:
+    app: openimis-consumer
+spec:
+  replicas: 2 # Run multiple replicas for consumer group
+  selector:
+    matchLabels:
+      app: openimis-consumer
+  template:
+    metadata:
+      labels:
+        app: openimis-consumer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+    spec:
+      containers:
+      - name: openimis-consumer
+        image: openimis/openimis-consumer:latest # Replace with actual image
+        ports:
+        - containerPort: 8081
+        env:
+        - name: KAFKA_BROKER
+          value: "kafka-broker:9092" # Replace with actual Kafka service name
+        - name: KAFKA_TOPIC
+          value: "policy-events"
+        - name: KAFKA_GROUP
+          value: "openimis-actuarial-group"
+        - name: METRICS_PORT
+          value: "8081"
+        - name: DB_CONN_STR
+          valueFrom:
+            secretKeyRef:
+              name: openimis-db-secret
+              key: db_connection_string
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"

@@ -1,0 +1,14 @@
+server:
+  port: "9100"
+
+metrics:
+  # Update metrics every 60 seconds
+  update_interval_seconds: 60
+
+integration:
+  # Mock URLs for demonstration. In a real deployment, these would be service names.
+  gif_service_url: "http://gif-service:8080"
+  policy_service_url: "http://policy-service:8081"
+  claims_service_url: "http://claims-service:8082"
+  tiger_beetle_api_url: "http://tigerbeetle-api:8083"
+  lakehouse_db_conn_str: "postgres://user:password@lakehouse-db:5432/lakehouse"

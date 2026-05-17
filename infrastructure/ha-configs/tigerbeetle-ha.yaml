@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tigerbeetle
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-config
+  namespace: tigerbeetle
+data:
+  cluster-id: "0"
+  replica-count: "6"
+  addresses: |
+    tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+    tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+    tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+    tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+    tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+    tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  serviceName: tigerbeetle-headless
+  replicas: 6
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - tigerbeetle
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - tigerbeetle
+                topologyKey: topology.kubernetes.io/zone
+      initContainers:
+        - name: format
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /data/0_0.tigerbeetle ]; then
+                REPLICA_INDEX=${HOSTNAME##*-}
+                ./tigerbeetle format --cluster=0 --replica=$REPLICA_INDEX --replica-count=6 /data/0_0.tigerbeetle
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+      containers:
+        - name: tigerbeetle
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              REPLICA_INDEX=${HOSTNAME##*-}
+              ADDRESSES="tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001"
+              ./tigerbeetle start --addresses=$ADDRESSES /data/0_0.tigerbeetle
+          ports:
+            - containerPort: 3001
+              name: tigerbeetle
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          readinessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-headless
+  namespace: tigerbeetle
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 3001
+      targetPort: 3001
+      name: tigerbeetle
+  selector:
+    app: tigerbeetle
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      targetPort: 3001
+      name: tigerbeetle
+  selector:
+    app: tigerbeetle
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: tigerbeetle
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: tigerbeetle

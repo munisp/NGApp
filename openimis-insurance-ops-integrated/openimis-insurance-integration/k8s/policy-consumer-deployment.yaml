@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-consumer
+  labels:
+    app: policy-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-consumer
+  template:
+    metadata:
+      labels:
+        app: policy-consumer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      containers:
+      - name: consumer
+        image: policy-consumer:latest # Replace with your actual image
+        ports:
+        - containerPort: 9091
+          name: metrics
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker:9092" # Replace with your Kafka service address
+        - name: TEMPORAL_HOST_PORT
+          value: "temporal-frontend:7233" # Replace with your Temporal service address
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-consumer-metrics
+spec:
+  selector:
+    app: policy-consumer
+  ports:
+    - protocol: TCP
+      port: 9091
+      targetPort: metrics
+      name: metrics
