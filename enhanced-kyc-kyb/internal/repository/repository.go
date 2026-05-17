@@ -20,52 +20,65 @@ func (r *KYCRepository) AutoMigrate() error {
 }
 
 func (r *KYCRepository) CreateKYC(ctx context.Context, a *models.KYCApplication) error {
+	if r.db == nil { return errNoDB }
 	a.ID = uuid.New(); a.CreatedAt = time.Now(); a.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Create(a).Error
 }
 func (r *KYCRepository) GetKYC(ctx context.Context, ref string) (*models.KYCApplication, error) {
+	if r.db == nil { return nil, errNoDB }
 	var a models.KYCApplication; return &a, r.db.WithContext(ctx).First(&a, "application_ref = ?", ref).Error
 }
 func (r *KYCRepository) UpdateKYC(ctx context.Context, a *models.KYCApplication) error {
+	if r.db == nil { return errNoDB }
 	a.UpdatedAt = time.Now(); return r.db.WithContext(ctx).Save(a).Error
 }
 func (r *KYCRepository) ListKYC(ctx context.Context, status string) ([]models.KYCApplication, error) {
+	if r.db == nil { return nil, errNoDB }
 	var apps []models.KYCApplication; q := r.db.WithContext(ctx)
 	if status != "" { q = q.Where("status = ?", status) }
 	return apps, q.Order("created_at DESC").Limit(50).Find(&apps).Error
 }
 func (r *KYCRepository) CreateKYB(ctx context.Context, a *models.KYBApplication) error {
+	if r.db == nil { return errNoDB }
 	a.ID = uuid.New(); a.CreatedAt = time.Now(); a.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Create(a).Error
 }
 func (r *KYCRepository) GetKYB(ctx context.Context, ref string) (*models.KYBApplication, error) {
+	if r.db == nil { return nil, errNoDB }
 	var a models.KYBApplication; return &a, r.db.WithContext(ctx).First(&a, "application_ref = ?", ref).Error
 }
 func (r *KYCRepository) UpdateKYB(ctx context.Context, a *models.KYBApplication) error {
+	if r.db == nil { return errNoDB }
 	a.UpdatedAt = time.Now(); return r.db.WithContext(ctx).Save(a).Error
 }
 func (r *KYCRepository) ListKYB(ctx context.Context, status string) ([]models.KYBApplication, error) {
+	if r.db == nil { return nil, errNoDB }
 	var apps []models.KYBApplication; q := r.db.WithContext(ctx)
 	if status != "" { q = q.Where("status = ?", status) }
 	return apps, q.Order("created_at DESC").Limit(50).Find(&apps).Error
 }
 func (r *KYCRepository) CreateVerification(ctx context.Context, v *models.VerificationCheck) error {
+	if r.db == nil { return errNoDB }
 	v.ID = uuid.New(); v.CreatedAt = time.Now()
 	return r.db.WithContext(ctx).Create(v).Error
 }
 func (r *KYCRepository) GetVerifications(ctx context.Context, ref string) ([]models.VerificationCheck, error) {
+	if r.db == nil { return nil, errNoDB }
 	var checks []models.VerificationCheck
 	return checks, r.db.WithContext(ctx).Where("application_ref = ?", ref).Find(&checks).Error
 }
 func (r *KYCRepository) SearchWatchlist(ctx context.Context, name string) ([]models.WatchlistEntry, error) {
+	if r.db == nil { return nil, errNoDB }
 	var entries []models.WatchlistEntry
 	return entries, r.db.WithContext(ctx).Where("entity_name LIKE ? AND is_active = ?", "%"+name+"%", true).Find(&entries).Error
 }
 func (r *KYCRepository) CreateDocument(ctx context.Context, d *models.DocumentVerification) error {
+	if r.db == nil { return errNoDB }
 	d.ID = uuid.New(); d.CreatedAt = time.Now()
 	return r.db.WithContext(ctx).Create(d).Error
 }
 func (r *KYCRepository) GetDocuments(ctx context.Context, ref string) ([]models.DocumentVerification, error) {
+	if r.db == nil { return nil, errNoDB }
 	var docs []models.DocumentVerification
 	return docs, r.db.WithContext(ctx).Where("application_ref = ?", ref).Find(&docs).Error
 }
