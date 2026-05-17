@@ -1,5 +1,5 @@
 package service
-import ("context"; "fmt"; "strings"; "ussd-service/internal/models"; "gorm.io/gorm"; "github.com/dapr/go-sdk/client")
+import ("context"; "fmt"; "strings"; "time"; "ussd-service/internal/models"; "gorm.io/gorm"; "github.com/dapr/go-sdk/client")
 type Service struct {
 db *gorm.DB
 dapr client.Client

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cession-management-service/internal/model"
+	"github.com/google/uuid"
 )
 
 type CessionService struct {
@@ -44,9 +45,9 @@ func (s *CessionService) CalculateCession(ctx context.Context, policyID string, 
 	commission := cededPremium * 0.25
 
 	cession := model.Cession{
-		ID:              fmt.Sprintf("CES-%d", time.Now().UnixNano()%1000000),
+		ID:              uuid.New(),
 		TreatyID:        treaty.ID,
-		PolicyID:        policyID,
+		PolicyID:        uuid.New(),
 		CededPremium:    math.Round(cededPremium*100) / 100,
 		RetainedPremium: math.Round(retainedPremium*100) / 100,
 		CededRisk:       math.Round(cededRisk*100) / 100,

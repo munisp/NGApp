@@ -4,8 +4,6 @@ import (
 	"cession-management-service/internal/model"
 	"cession-management-service/internal/service"
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"

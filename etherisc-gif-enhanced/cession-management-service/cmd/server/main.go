@@ -1,59 +1,88 @@
 package main
 
 import (
-	"cession-management-service/api"
-	"cession-management-service/config"
-	"cession-management-service/internal/repository"
+	"cession-management-service/internal/model"
 	"cession-management-service/internal/service"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"os"
 )
 
 func main() {
-	cfg := config.LoadConfig()
-
-	// 1. Initialize Repository (Database)
-	// NOTE: In a real system, this would connect to a real database.
-	// For this implementation, we use the GormRepository which is structured for Postgres
-	// but will not actually connect in the sandbox.
-	repo, err := repository.NewGormRepository(cfg.DatabaseDSN)
-	if err != nil {
-		log.Fatalf("failed to initialize repository: %v", err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8120"
 	}
 
-	// 2. Initialize Service Layer
-	svc := service.NewCessionService(repo)
+	svc := service.NewCessionService()
 
-	// 3. Initialize Temporal Client (configured via environment)
-	// Temporal client initialization is handled by the workflow worker service
-	// which connects to Temporal server at cfg.TemporalHostPort
+	mux := http.NewServeMux()
 
-	// 4. Initialize API Handler
-	handler := api.NewHandler(svc)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "healthy", "service": "cession-management-service"})
+	})
 
-	// 5. Setup Router
-	r := mux.NewRouter()
+	mux.HandleFunc("/api/v1/cession/treaties", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			var treaty model.Treaty
+			if err := json.NewDecoder(r.Body).Decode(&treaty); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			result, err := svc.CreateTreaty(r.Context(), treaty)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(result)
+			return
+		}
+		treaties, _ := svc.GetTreaties(r.Context())
+		json.NewEncoder(w).Encode(treaties)
+	})
 
-	// API routes
-	r.PathPrefix("/v1").Handler(handler.Router)
+	mux.HandleFunc("/api/v1/cession/calculate", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var req struct {
+			PolicyID   string  `json:"policy_id"`
+			Premium    float64 `json:"premium"`
+			SumAssured float64 `json:"sum_assured"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		result, err := svc.CalculateCession(r.Context(), req.PolicyID, req.Premium, req.SumAssured)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(result)
+	})
 
-	// Prometheus metrics endpoint
-	r.Handle("/metrics", promhttp.Handler()).Methods("GET")
+	mux.HandleFunc("/api/v1/cession/cessions", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		treatyID := r.URL.Query().Get("treaty_id")
+		cessions, _ := svc.GetCessions(r.Context(), treatyID)
+		json.NewEncoder(w).Encode(cessions)
+	})
 
-	// Health check
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	}).Methods("GET")
-
-	// 6. Start Server
-	addr := fmt.Sprintf(":%d", cfg.Port)
-	log.Printf("Starting Cession Management Service on %s", addr)
-	if err := http.ListenAndServe(addr, r); err != nil {
+	log.Printf("Cession Management Service starting on port %s", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), mux); err != nil {
 		log.Fatalf("could not start server: %v", err)
 	}
 }

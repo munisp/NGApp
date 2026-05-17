@@ -2,7 +2,6 @@ package temporal
 
 import (
 	"cession-management-service/internal/model"
-	"context"
 	"time"
 
 	"github.com/google/uuid"

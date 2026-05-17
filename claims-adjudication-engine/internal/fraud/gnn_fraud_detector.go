@@ -2,7 +2,6 @@ package fraud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -185,7 +184,6 @@ func (g *GNNFraudDetector) calculateIndicators(input FraudDetectionInput) []Frau
 	indicators := []FraudIndicator{}
 
 	// 1. Timing Analysis
-	daysSinceIncident := time.Since(input.IncidentDate).Hours() / 24
 	reportingDelay := input.ReportedDate.Sub(input.IncidentDate).Hours() / 24
 
 	if reportingDelay > 30 {

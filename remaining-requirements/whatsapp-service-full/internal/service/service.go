@@ -19,7 +19,8 @@ s.db.Create(&session)
 }
 response := s.processMessage(body, &session)
 s.db.Save(&session)
-return s.wa.SendMessage(ctx, from, response)
+_, err2 := s.wa.SendMessage(ctx, from, response)
+return err2
 }
 func (s *Service) processMessage(body string, session *models.Session) string {
 body = strings.ToLower(strings.TrimSpace(body))
@@ -44,5 +45,6 @@ session.State = "idle"; return "Session expired. Reply HELP to start."
 }
 }
 func (s *Service) SendNotification(ctx context.Context, to, message string) error {
-return s.wa.SendMessage(ctx, to, message)
+_, err := s.wa.SendMessage(ctx, to, message)
+return err
 }
