@@ -1345,6 +1345,121 @@ export const appRouter = router({
       return await db.getDBScalingRecommendations();
     }),
   }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // AGRICULTURAL INSURANCE SUITE — 13 parametric products
+  // ══════════════════════════════════════════════════════════════════════════════
+  agriculturalInsurance: router({
+    products: protectedProcedure.query(async () => {
+      return await db.getAgriculturalInsuranceProducts();
+    }),
+    triggerEvents: protectedProcedure.query(async () => {
+      return await db.getAgriculturalTriggerEvents();
+    }),
+    ndviReadings: protectedProcedure.query(async () => {
+      return await db.getAgriculturalNDVIReadings();
+    }),
+    purchase: protectedProcedure
+      .input(z.object({ productId: z.string(), farmSize: z.number(), location: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.purchaseAgriculturalPolicy(ctx.user.id, input);
+      }),
+  }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // EMBEDDED DISTRIBUTION PLATFORM — 6 distribution channels
+  // ══════════════════════════════════════════════════════════════════════════════
+  embeddedDistribution: router({
+    partners: protectedProcedure.query(async () => {
+      return await db.getEmbeddedDistributionPartners();
+    }),
+    revenue: protectedProcedure.query(async () => {
+      return await db.getEmbeddedDistributionRevenue();
+    }),
+    createPartner: protectedProcedure
+      .input(z.object({ name: z.string(), channel: z.string(), industry: z.string(), commission: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createEmbeddedPartner(ctx.user.id, input);
+      }),
+  }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // DIGITAL CONSUMER PRODUCTS — 8 on-demand flexible products
+  // ══════════════════════════════════════════════════════════════════════════════
+  digitalConsumer: router({
+    products: protectedProcedure.query(async () => {
+      return await db.getDigitalConsumerProducts();
+    }),
+    cyberAssessment: protectedProcedure
+      .input(z.object({ businessName: z.string(), industry: z.string(), employees: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.getDigitalCyberAssessment(ctx.user.id, input);
+      }),
+    activate: protectedProcedure
+      .input(z.object({ productId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.activateDigitalProduct(ctx.user.id, input.productId);
+      }),
+  }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // TAKAFUL ISLAMIC INSURANCE — 6 Sharia-compliant mutual pools
+  // ══════════════════════════════════════════════════════════════════════════════
+  takaful: router({
+    pools: protectedProcedure.query(async () => {
+      return await db.getTakafulPools();
+    }),
+    shariaPrinciples: protectedProcedure.query(async () => {
+      return await db.getTakafulShariaPrinciples();
+    }),
+    join: protectedProcedure
+      .input(z.object({ poolId: z.string(), contribution: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.joinTakafulPool(ctx.user.id, input.poolId, input.contribution);
+      }),
+  }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // NIIRA 2025 COMPULSORY INSURANCE — 11 compulsory classes
+  // ══════════════════════════════════════════════════════════════════════════════
+  niiraInsurance: router({
+    classes: protectedProcedure.query(async () => {
+      return await db.getNIIRAClasses();
+    }),
+    complianceCheck: protectedProcedure
+      .input(z.object({ businessType: z.string(), employees: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.getNIIRAComplianceCheck(ctx.user.id, input);
+      }),
+    purchase: protectedProcedure
+      .input(z.object({ classId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.purchaseNIIRAPolicy(ctx.user.id, input.classId);
+      }),
+  }),
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // INSURANCE TECH INNOVATIONS — AI pricing, P2P, gamification, product builder
+  // ══════════════════════════════════════════════════════════════════════════════
+  techInnovations: router({
+    features: protectedProcedure.query(async () => {
+      return await db.getTechInnovationFeatures();
+    }),
+    pricingComparison: protectedProcedure.query(async () => {
+      return await db.getTechPricingComparison();
+    }),
+    p2pPools: protectedProcedure.query(async () => {
+      return await db.getTechP2PPools();
+    }),
+    gamificationLevels: protectedProcedure.query(async () => {
+      return await db.getTechGamificationLevels();
+    }),
+    calculatePrice: protectedProcedure
+      .input(z.object({ basePremium: z.number(), drivingScore: z.number(), claimsHistory: z.number(), mileage: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.calculateDynamicPrice(ctx.user.id, input);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

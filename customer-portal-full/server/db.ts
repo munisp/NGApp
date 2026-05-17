@@ -1193,3 +1193,195 @@ export async function getDBScalingRecommendations() {
     { id: 2, recommendation: 'Enable connection pooling (PgBouncer)', priority: 'High', estimatedImpact: '50% connection overhead reduction' },
   ];
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AGRICULTURAL INSURANCE SUITE — 13 parametric products with trigger-based payouts
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getAgriculturalInsuranceProducts() {
+  return [
+    { id: 'PROD-RAIN-001', name: 'ClimaCash RainCash', type: 'climacash_rain', trigger: 'Rainfall > 255mm/week', payout: 50000, premium: 2500, icon: 'rain', regions: ['North-Central', 'South-West', 'South-South'], season: 'rainy', status: 'Active', policiesIssued: 1245, totalPayouts: 15600000, createdAt: new Date('2025-01-15') },
+    { id: 'PROD-DROUGHT-001', name: 'ClimaCash DroughtCash', type: 'climacash_drought', trigger: 'Rainfall < 20mm/month', payout: 75000, premium: 3500, icon: 'sun', regions: ['North-West', 'North-East'], season: 'dry', status: 'Active', policiesIssued: 890, totalPayouts: 22500000, createdAt: new Date('2025-01-15') },
+    { id: 'PROD-FLOOD-001', name: 'ClimaCash FloodCash', type: 'climacash_flood', trigger: 'Rainfall > 380mm/week', payout: 100000, premium: 5000, icon: 'flood', regions: ['South-South', 'South-East'], season: 'rainy', status: 'Active', policiesIssued: 567, totalPayouts: 18900000, createdAt: new Date('2025-02-01') },
+    { id: 'PROD-HEAT-001', name: 'ClimaCash HeatCash', type: 'climacash_heat', trigger: 'Temp > 42C', payout: 40000, premium: 2000, icon: 'heat', regions: ['North-East', 'North-West'], season: 'dry', status: 'Active', policiesIssued: 432, totalPayouts: 8640000, createdAt: new Date('2025-02-01') },
+    { id: 'PROD-WICI-001', name: 'Weather Index Crop Insurance', type: 'weather_index_crop', trigger: 'Multi-index', payout: 85000, premium: 4200, icon: 'crop', regions: ['All zones'], season: 'all', status: 'Active', policiesIssued: 2100, totalPayouts: 42000000, createdAt: new Date('2025-03-01') },
+    { id: 'PROD-IBLI-001', name: 'Index-Based Livestock (IBLI)', type: 'livestock_index', trigger: 'NDVI Satellite', payout: 120000, premium: 6000, icon: 'livestock', regions: ['North-Central', 'North-West'], season: 'all', status: 'Active', policiesIssued: 1560, totalPayouts: 37440000, createdAt: new Date('2025-03-15') },
+    { id: 'PROD-IBLT-001', name: 'Takaful IBLT (Livestock)', type: 'livestock_takaful', trigger: 'NDVI Satellite', payout: 120000, premium: 5500, icon: 'takaful', regions: ['North-West', 'North-East'], season: 'all', status: 'Active', policiesIssued: 780, totalPayouts: 18720000, createdAt: new Date('2025-04-01') },
+    { id: 'PROD-FERT-001', name: 'Fertiliser-Bundled Insurance', type: 'fertiliser_bundled', trigger: 'Bundled', payout: 7000, premium: 500, icon: 'fertiliser', regions: ['All zones'], season: 'planting', status: 'Active', policiesIssued: 5400, totalPayouts: 10800000, createdAt: new Date('2025-04-15') },
+    { id: 'PROD-AYI-001', name: 'Area Yield Index', type: 'area_yield_index', trigger: 'Area Yield', payout: 95000, premium: 4800, icon: 'yield', regions: ['North-Central'], season: 'harvest', status: 'Active', policiesIssued: 650, totalPayouts: 15600000, createdAt: new Date('2025-05-01') },
+    { id: 'PROD-AQUA-001', name: 'Aquaculture & Fisheries', type: 'aquaculture', trigger: 'Marine Data', payout: 80000, premium: 4000, icon: 'fish', regions: ['South-South', 'South-West'], season: 'all', status: 'Active', policiesIssued: 340, totalPayouts: 6800000, createdAt: new Date('2025-05-15') },
+    { id: 'PROD-MPCI-001', name: 'Multi-Peril Crop Insurance', type: 'multi_peril_crop', trigger: 'Hybrid', payout: 150000, premium: 7500, icon: 'shield', regions: ['All zones'], season: 'all', status: 'Active', policiesIssued: 1800, totalPayouts: 54000000, createdAt: new Date('2025-06-01') },
+    { id: 'PROD-PAST-001', name: 'Pastoral Migration Route', type: 'pastoral_route', trigger: 'GPS + NDVI', payout: 60000, premium: 3000, icon: 'pastoral', regions: ['North-East', 'North-Central'], season: 'migration', status: 'Active', policiesIssued: 290, totalPayouts: 4350000, createdAt: new Date('2025-06-15') },
+    { id: 'PROD-CARB-001', name: 'Carbon Credit Insurance', type: 'carbon_credit', trigger: 'Carbon Flux', payout: 200000, premium: 10000, icon: 'carbon', regions: ['All zones'], season: 'all', status: 'Active', policiesIssued: 120, totalPayouts: 4800000, createdAt: new Date('2025-07-01') },
+  ];
+}
+export async function getAgriculturalTriggerEvents() {
+  return [
+    { id: 'TRG-001', type: 'Flood', region: 'South-South', measured: '400mm', threshold: '380mm', result: 'TRIGGERED', productId: 'PROD-FLOOD-001', affectedPolicies: 45, payoutAmount: 4500000, detectedAt: new Date(Date.now() - 3600000) },
+    { id: 'TRG-002', type: 'Drought', region: 'North-East', measured: '10mm', threshold: '20mm', result: 'TRIGGERED', productId: 'PROD-DROUGHT-001', affectedPolicies: 120, payoutAmount: 9000000, detectedAt: new Date(Date.now() - 7200000) },
+    { id: 'TRG-003', type: 'Heat', region: 'North-West', measured: '38C', threshold: '42C', result: 'NORMAL', productId: 'PROD-HEAT-001', affectedPolicies: 0, payoutAmount: 0, detectedAt: new Date(Date.now() - 1800000) },
+    { id: 'TRG-004', type: 'NDVI Drop', region: 'North-Central', measured: '0.15', threshold: '0.25', result: 'TRIGGERED', productId: 'PROD-IBLI-001', affectedPolicies: 89, payoutAmount: 10680000, detectedAt: new Date(Date.now() - 14400000) },
+  ];
+}
+export async function getAgriculturalNDVIReadings() {
+  return [
+    { id: 'NDVI-001', region: 'North-Central', value: 0.15, condition: 'Severe Drought', percentile: 15, satellite: 'Sentinel-2', capturedAt: new Date(Date.now() - 86400000) },
+    { id: 'NDVI-002', region: 'South-West', value: 0.45, condition: 'Below Normal', percentile: 45, satellite: 'Sentinel-2', capturedAt: new Date(Date.now() - 86400000) },
+    { id: 'NDVI-003', region: 'South-South', value: 0.72, condition: 'Above Normal', percentile: 72, satellite: 'Sentinel-2', capturedAt: new Date(Date.now() - 86400000) },
+    { id: 'NDVI-004', region: 'North-East', value: 0.22, condition: 'Drought Warning', percentile: 22, satellite: 'MODIS', capturedAt: new Date(Date.now() - 172800000) },
+    { id: 'NDVI-005', region: 'North-West', value: 0.38, condition: 'Below Normal', percentile: 38, satellite: 'MODIS', capturedAt: new Date(Date.now() - 172800000) },
+  ];
+}
+export async function purchaseAgriculturalPolicy(userId: number, input: { productId: string; farmSize: number; location: string }) {
+  return { id: `AGRI-POL-${Date.now()}`, userId, ...input, status: 'Active', policyNumber: `AGR-${Date.now().toString(36).toUpperCase()}`, issuedAt: new Date(), expiresAt: new Date(Date.now() + 365 * 86400000) };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EMBEDDED DISTRIBUTION PLATFORM — 6 distribution channels
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getEmbeddedDistributionPartners() {
+  return [
+    { id: 'PTR-001', name: 'PayStack Financial', channel: 'Loan Embedded', industry: 'Fintech', commission: 15, product: 'Credit Life Plus', premium: 500, coverage: 100000, status: 'Active', policiesIssued: 5000, totalPremiums: 2500000, apiCalls: 125000, createdAt: new Date('2025-01-20') },
+    { id: 'PTR-002', name: 'MTN MoMo', channel: 'Airtime Bundled', industry: 'Telecom', commission: 20, product: 'Airtime Accident Cover', premium: 50, coverage: 25000, status: 'Active', policiesIssued: 17000, totalPremiums: 850000, apiCalls: 340000, createdAt: new Date('2025-02-10') },
+    { id: 'PTR-003', name: 'Jumia', channel: 'E-commerce', industry: 'Retail', commission: 12, product: 'Device Protection', premium: 1500, coverage: 150000, status: 'Active', policiesIssued: 800, totalPremiums: 1200000, apiCalls: 45000, createdAt: new Date('2025-03-05') },
+    { id: 'PTR-004', name: 'Bolt', channel: 'Ride-hailing', industry: 'Transport', commission: 18, product: 'Ride-Hailing Driver Cover', premium: 200, coverage: 500000, status: 'Active', policiesIssued: 18000, totalPremiums: 3600000, apiCalls: 890000, createdAt: new Date('2025-03-20') },
+    { id: 'PTR-005', name: 'PiggyVest', channel: 'Savings-linked', industry: 'Fintech', commission: 10, product: 'Savings Guard', premium: 300, coverage: 200000, status: 'Active', policiesIssued: 3000, totalPremiums: 900000, apiCalls: 67000, createdAt: new Date('2025-04-10') },
+    { id: 'PTR-006', name: 'Kuda Bank', channel: 'Marketplace SDK', industry: 'Banking', commission: 14, product: 'Marketplace Exchange', premium: 0, coverage: 0, status: 'Integration', policiesIssued: 0, totalPremiums: 0, apiCalls: 12000, createdAt: new Date('2025-05-01') },
+  ];
+}
+export async function getEmbeddedDistributionRevenue() {
+  return [
+    { partnerId: 'PTR-001', partner: 'PayStack', premiums: 2500000, commission: 375000, policies: 5000, period: '2025-Q2' },
+    { partnerId: 'PTR-002', partner: 'MTN MoMo', premiums: 850000, commission: 170000, policies: 17000, period: '2025-Q2' },
+    { partnerId: 'PTR-003', partner: 'Jumia', premiums: 1200000, commission: 144000, policies: 800, period: '2025-Q2' },
+    { partnerId: 'PTR-004', partner: 'Bolt', premiums: 3600000, commission: 648000, policies: 18000, period: '2025-Q2' },
+    { partnerId: 'PTR-005', partner: 'PiggyVest', premiums: 900000, commission: 90000, policies: 3000, period: '2025-Q2' },
+  ];
+}
+export async function createEmbeddedPartner(userId: number, input: { name: string; channel: string; industry: string; commission: number }) {
+  return { id: `PTR-${Date.now().toString(36).toUpperCase()}`, ...input, status: 'Pending', createdBy: userId, createdAt: new Date() };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DIGITAL CONSUMER PRODUCTS — 8 on-demand flexible products
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getDigitalConsumerProducts() {
+  return [
+    { id: 'PPD-001', name: 'Pay-Per-Day Motor', type: 'on-demand', coverage: 2000000, premium: 350, unit: '/day', description: 'Activate/deactivate daily motor insurance via app. Only pay for days you drive.', activePolicies: 1250, totalRevenue: 4375000, status: 'Active', createdAt: new Date('2025-02-01') },
+    { id: 'GIG-001', name: 'Gig Worker On-Demand', type: 'on-demand', coverage: 500000, premium: 150, unit: '/trip', description: 'Per-trip accident cover for delivery riders — auto-activates when online.', activePolicies: 8900, totalRevenue: 13350000, status: 'Active', createdAt: new Date('2025-02-15') },
+    { id: 'CYB-001', name: 'SME Cyber Shield', type: 'cyber', coverage: 0, premium: 25000, unit: '/year', description: 'AI-powered cyber risk assessment for SMEs — scores vulnerability, recommends protection.', activePolicies: 340, totalRevenue: 8500000, status: 'Active', createdAt: new Date('2025-03-01') },
+    { id: 'PET-001', name: 'Pet Insurance', type: 'pet', coverage: 500000, premium: 2000, unit: '/month', description: 'Comprehensive veterinary coverage for dogs and cats — accidents, illness, surgery.', activePolicies: 2100, totalRevenue: 4200000, status: 'Active', createdAt: new Date('2025-03-15') },
+    { id: 'NOM-001', name: 'Digital Nomad Travel', type: 'travel', coverage: 5000000, premium: 8500, unit: '/month', description: 'Multi-country travel insurance for remote workers — medical, equipment, liability.', activePolicies: 450, totalRevenue: 3825000, status: 'Active', createdAt: new Date('2025-04-01') },
+    { id: 'SUB-001', name: 'Subscription Motor', type: 'subscription', coverage: 3000000, premium: 4500, unit: '/month', description: 'Monthly subscription motor insurance — cancel anytime, usage-based pricing.', activePolicies: 3200, totalRevenue: 14400000, status: 'Active', createdAt: new Date('2025-04-15') },
+    { id: 'HOS-001', name: 'Hospi-Cash', type: 'health', coverage: 5000, premium: 1500, unit: '/month', description: 'Daily cash benefit during hospitalization — N5,000/day paid directly. No receipts needed.', activePolicies: 6700, totalRevenue: 10050000, status: 'Active', createdAt: new Date('2025-05-01') },
+    { id: 'FUN-001', name: 'Funeral Insurance', type: 'life', coverage: 500000, premium: 1000, unit: '/month', description: 'Dignified funeral coverage with immediate payout on death notification.', activePolicies: 4500, totalRevenue: 4500000, status: 'Active', createdAt: new Date('2025-05-15') },
+  ];
+}
+export async function getDigitalCyberAssessment(userId: number, input: { businessName: string; industry: string; employees: number }) {
+  const riskScore = Math.min(100, Math.max(20, input.employees < 10 ? 85 : input.employees < 50 ? 65 : 45));
+  const vulnerabilities = ['No dedicated IT staff', 'High-value financial data', 'Phishing risk', 'Ransomware exposure'].slice(0, riskScore > 70 ? 4 : riskScore > 50 ? 3 : 2);
+  const premium = riskScore > 70 ? 75000 : riskScore > 50 ? 50000 : 35000;
+  return { userId, business: input.businessName, industry: input.industry, employees: input.employees, riskScore, vulnerabilities, recommendation: riskScore > 70 ? 'Comprehensive Plan' : 'Standard Plan', premium, assessedAt: new Date() };
+}
+export async function activateDigitalProduct(userId: number, productId: string) {
+  return { id: `DIG-POL-${Date.now()}`, userId, productId, status: 'Active', activatedAt: new Date(), policyNumber: `DIG-${Date.now().toString(36).toUpperCase()}` };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAKAFUL ISLAMIC INSURANCE — 6 Sharia-compliant mutual pools
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getTakafulPools() {
+  return [
+    { id: 'POOL-CROP', name: 'Crop Takaful', members: 12857, contributions: 45000000, surplus: 33002625, premium: 3500, unit: '/season', shariaScore: 6, boardApproved: true, wakalaFee: 15, surplusDistributed: 22000000, claimsPaid: 12000000, status: 'Active', createdAt: new Date('2025-01-01') },
+    { id: 'POOL-LIVESTOCK', name: 'Livestock IBLT', members: 5600, contributions: 28000000, surplus: 19500000, premium: 5000, unit: '/season', shariaScore: 6, boardApproved: true, wakalaFee: 12, surplusDistributed: 13000000, claimsPaid: 8500000, status: 'Active', createdAt: new Date('2025-01-15') },
+    { id: 'POOL-MOTOR', name: 'Motor TP Takaful', members: 8125, contributions: 65000000, surplus: 30000000, premium: 8000, unit: '/year', shariaScore: 6, boardApproved: true, wakalaFee: 18, surplusDistributed: 20000000, claimsPaid: 35000000, status: 'Active', createdAt: new Date('2025-02-01') },
+    { id: 'POOL-HEALTH', name: 'Hospi-Cash Takaful', members: 12000, contributions: 18000000, surplus: 12800000, premium: 1500, unit: '/month', shariaScore: 6, boardApproved: true, wakalaFee: 10, surplusDistributed: 8500000, claimsPaid: 5200000, status: 'Active', createdAt: new Date('2025-02-15') },
+    { id: 'POOL-EDUCATION', name: 'Education Savings', members: 7000, contributions: 35000000, surplus: 33000000, premium: 5000, unit: '/month', shariaScore: 6, boardApproved: true, wakalaFee: 8, surplusDistributed: 28000000, claimsPaid: 2000000, status: 'Active', createdAt: new Date('2025-03-01') },
+    { id: 'POOL-HAJJ', name: 'Hajj/Umrah Travel', members: 1467, contributions: 22000000, surplus: 15200000, premium: 15000, unit: '/trip', shariaScore: 6, boardApproved: true, wakalaFee: 14, surplusDistributed: 10000000, claimsPaid: 6800000, status: 'Active', createdAt: new Date('2025-03-15') },
+  ];
+}
+export async function getTakafulShariaPrinciples() {
+  return [
+    { id: 1, principle: 'Tabarru (Donation)', description: 'Voluntary contribution to mutual pool', compliant: true, lastAuditDate: new Date('2025-04-01') },
+    { id: 2, principle: 'Wakala (Agency)', description: 'Transparent management fee structure', compliant: true, lastAuditDate: new Date('2025-04-01') },
+    { id: 3, principle: 'No Gharar', description: 'Clear terms, no excessive uncertainty', compliant: true, lastAuditDate: new Date('2025-04-01') },
+    { id: 4, principle: 'No Maysir', description: 'No gambling or speculative elements', compliant: true, lastAuditDate: new Date('2025-04-01') },
+    { id: 5, principle: 'No Riba', description: 'Interest-free investment of pool funds', compliant: true, lastAuditDate: new Date('2025-04-01') },
+    { id: 6, principle: 'Surplus Distribution', description: 'Equitable return to participants', compliant: true, lastAuditDate: new Date('2025-04-01') },
+  ];
+}
+export async function joinTakafulPool(userId: number, poolId: string, contribution: number) {
+  return { id: `TAK-MEM-${Date.now()}`, userId, poolId, contribution, status: 'Active', memberNumber: `TAK-${Date.now().toString(36).toUpperCase()}`, joinedAt: new Date() };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NIIRA 2025 COMPULSORY INSURANCE — 11 compulsory insurance classes
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getNIIRAClasses() {
+  return [
+    { id: 'NIIRA-MTP', name: 'Motor Third-Party', section: 'Section 68', scope: 'All vehicles', premium: 15000, unit: '/year', isNew: false, complianceRate: 72, policiesIssued: 45000, penaltyForNonCompliance: 250000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-EL', name: "Employer's Liability", section: 'Section 65', scope: '5+ employees', premium: 25000, unit: '/year', isNew: false, complianceRate: 58, policiesIssued: 12000, penaltyForNonCompliance: 500000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-BI', name: 'Building Insurance', section: 'Section 64', scope: 'All buildings', premium: 50000, unit: '/year', isNew: false, complianceRate: 45, policiesIssued: 8500, penaltyForNonCompliance: 1000000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-PI', name: 'Professional Indemnity', section: 'Section 66', scope: 'Professionals', premium: 35000, unit: '/year', isNew: false, complianceRate: 62, policiesIssued: 6700, penaltyForNonCompliance: 500000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-PL', name: 'Product Liability', section: 'Section 67', scope: 'Manufacturers', premium: 40000, unit: '/year', isNew: true, complianceRate: 15, policiesIssued: 1200, penaltyForNonCompliance: 750000, createdAt: new Date('2025-07-01') },
+    { id: 'NIIRA-HPI', name: 'Healthcare Professional Indemnity', section: 'Section 69', scope: 'Healthcare', premium: 45000, unit: '/year', isNew: true, complianceRate: 22, policiesIssued: 3400, penaltyForNonCompliance: 1000000, createdAt: new Date('2025-07-01') },
+    { id: 'NIIRA-MC', name: 'Marine Cargo', section: 'Section 70', scope: 'Importers', premium: 30000, unit: '/shipment', isNew: false, complianceRate: 55, policiesIssued: 4500, penaltyForNonCompliance: 500000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-PUB', name: 'Public Liability', section: 'Section 71', scope: 'Public venues', premium: 20000, unit: '/year', isNew: false, complianceRate: 48, policiesIssued: 7800, penaltyForNonCompliance: 350000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-GL', name: 'Group Life', section: 'Section 72', scope: '3+ staff', premium: 10000, unit: '/employee/year', isNew: false, complianceRate: 67, policiesIssued: 15000, penaltyForNonCompliance: 250000, createdAt: new Date('2025-01-01') },
+    { id: 'NIIRA-OL', name: "Occupier's Liability", section: 'Section 73', scope: 'Occupiers', premium: 15000, unit: '/year', isNew: true, complianceRate: 10, policiesIssued: 890, penaltyForNonCompliance: 500000, createdAt: new Date('2025-07-01') },
+    { id: 'NIIRA-CAR', name: 'Contractors All Risk', section: 'Section 74', scope: 'Contractors', premium: 60000, unit: '/project', isNew: true, complianceRate: 18, policiesIssued: 560, penaltyForNonCompliance: 1000000, createdAt: new Date('2025-07-01') },
+  ];
+}
+export async function getNIIRAComplianceCheck(userId: number, input: { businessType: string; employees: number }) {
+  const checks = [
+    { type: 'Hospital', employees: 20, required: ['Motor TP', 'Employer Liability', 'Building', 'Healthcare PI', 'Public Liability', "Occupier's Liability", 'Group Life'], compliant: 1, total: 7, estimatedPremium: 155000 },
+    { type: 'Law Firm', employees: 8, required: ['Motor TP', 'Employer Liability', 'Professional PI', 'Group Life'], compliant: 2, total: 4, estimatedPremium: 85000 },
+    { type: 'Manufacturer', employees: 50, required: ['Motor TP', 'Employer Liability', 'Building', 'Product Liability', 'Public Liability', 'Group Life'], compliant: 3, total: 6, estimatedPremium: 160000 },
+  ];
+  const match = checks.find(c => c.type.toLowerCase() === input.businessType.toLowerCase()) || checks[0];
+  return { userId, ...match, deadline: '2026-07-30', regulator: 'NAICOM', assessedAt: new Date() };
+}
+export async function purchaseNIIRAPolicy(userId: number, classId: string) {
+  return { id: `NIIRA-POL-${Date.now()}`, userId, classId, status: 'Active', policyNumber: `NII-${Date.now().toString(36).toUpperCase()}`, issuedAt: new Date(), deadline: '2026-07-30' };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INSURANCE TECH INNOVATIONS — AI pricing, satellite claims, gamification, P2P, product builder
+// ══════════════════════════════════════════════════════════════════════════════
+export async function getTechInnovationFeatures() {
+  return [
+    { id: 'AI-PRICE', name: 'AI Dynamic Pricing Engine', description: 'Multi-factor premium adjustment: driving score, claims history, mileage, vehicle age, region. Real-time pricing updates.', tags: ['AI/ML', '5 Factors', 'Real-time'], status: 'Active', usageCount: 45000, createdAt: new Date('2025-01-15') },
+    { id: 'SAT-CLAIM', name: 'Instant Satellite Claims', description: 'Satellite-verified damage assessment with AI confidence scoring — auto-approve claims above 85% confidence in 250ms.', tags: ['Satellite', 'Auto-approve', '250ms'], status: 'Active', usageCount: 1200, createdAt: new Date('2025-02-01') },
+    { id: 'GAME', name: 'Gamification Engine', description: 'Points-based rewards for safe behavior — bronze/silver/gold levels with premium discounts up to 20%.', tags: ['Points', '3 Levels', 'Up to 20% off'], status: 'Active', usageCount: 28000, createdAt: new Date('2025-02-15') },
+    { id: 'P2P', name: 'P2P Insurance Pools', description: 'Peer-to-peer mutual groups — Lagos Drivers (150 members), Ikoyi Neighbours (45), Tech Workers (200). Up to 42% giveback.', tags: ['P2P', '3 Pools', 'Up to 42% giveback'], status: 'Active', usageCount: 395, createdAt: new Date('2025-03-01') },
+    { id: 'BUILDER', name: 'Multi-Peril Product Builder', description: 'No-code platform to create custom insurance products — select perils, triggers, payout rules, distribution. Launch in 3 days.', tags: ['No-code', 'Custom Perils', '3-day launch'], status: 'Active', usageCount: 67, createdAt: new Date('2025-03-15') },
+  ];
+}
+export async function getTechPricingComparison() {
+  return [
+    { profile: 'Safe Driver', basePremium: 50000, adjustedPremium: 25000, factors: ['Safe driving score', 'No Claims Discount', 'Low mileage'], discountPercent: -50 },
+    { profile: 'Risky Driver', basePremium: 50000, adjustedPremium: 87500, factors: ['Poor driving score', 'Multiple claims', 'High mileage', 'Old vehicle'], discountPercent: 75 },
+    { profile: 'New Driver', basePremium: 50000, adjustedPremium: 60000, factors: ['No history', 'Average mileage'], discountPercent: 20 },
+  ];
+}
+export async function getTechP2PPools() {
+  return [
+    { name: 'Lagos Drivers', members: 150, premium: 5000, poolBalance: 750000, claimsPaid: 200000, giveback: 42, status: 'Active' },
+    { name: 'Ikoyi Neighbours', members: 45, premium: 8000, poolBalance: 360000, claimsPaid: 50000, giveback: 38, status: 'Active' },
+    { name: 'Tech Workers', members: 200, premium: 3000, poolBalance: 600000, claimsPaid: 120000, giveback: 35, status: 'Active' },
+  ];
+}
+export async function getTechGamificationLevels() {
+  return [
+    { level: 'Bronze', pointsRange: '0-200', discount: '5%', membersCount: 12000 },
+    { level: 'Silver', pointsRange: '201-500', discount: '10%', membersCount: 8500 },
+    { level: 'Gold', pointsRange: '501+', discount: '20%', membersCount: 3200 },
+  ];
+}
+export async function calculateDynamicPrice(userId: number, input: { basePremium: number; drivingScore: number; claimsHistory: number; mileage: number }) {
+  const drivingFactor = input.drivingScore > 80 ? -0.2 : input.drivingScore < 40 ? 0.4 : 0;
+  const claimsFactor = input.claimsHistory === 0 ? -0.15 : input.claimsHistory > 2 ? 0.3 : 0;
+  const mileageFactor = input.mileage < 10000 ? -0.1 : input.mileage > 30000 ? 0.15 : 0;
+  const totalAdjustment = drivingFactor + claimsFactor + mileageFactor;
+  const adjustedPremium = Math.round(input.basePremium * (1 + totalAdjustment));
+  return { userId, basePremium: input.basePremium, adjustedPremium, totalAdjustment: Math.round(totalAdjustment * 100), factors: { driving: Math.round(drivingFactor * 100), claims: Math.round(claimsFactor * 100), mileage: Math.round(mileageFactor * 100) }, calculatedAt: new Date() };
+}
