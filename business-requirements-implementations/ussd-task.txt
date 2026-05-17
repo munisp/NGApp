@@ -1,0 +1,14 @@
+Implement USSD service using Africa's Talking API in Go:
+- Africa's Talking USSD API client
+- USSD menu system for policy purchase, premium payment, claims submission, policy inquiry, balance check
+- Session management with Redis
+- Temporal workflows for USSD transactions
+- Dapr integration with policy, payment, claims services
+- USSD to SMS fallback
+- Transaction confirmation via SMS
+- REST API for USSD gateway (6+ endpoints)
+- PostgreSQL schema for USSD sessions with migrations
+- Kafka event producers
+- Prometheus metrics
+- Kubernetes manifests
+- Complete error handling and tests

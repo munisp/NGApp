@@ -1,0 +1,79 @@
+{
+  "type": "record",
+  "name": "PolicyEvent",
+  "namespace": "com.openimis.events",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string",
+      "doc": "Unique identifier for the event"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp of the event creation (milliseconds since epoch)"
+    },
+    {
+      "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "PolicyEventType",
+        "symbols": ["CREATED", "RENEWED", "CANCELLED", "LAPSED"]
+      },
+      "doc": "Type of policy lifecycle event"
+    },
+    {
+      "name": "policy_id",
+      "type": "string",
+      "doc": "Identifier of the policy"
+    },
+    {
+      "name": "policy_data",
+      "type": {
+        "type": "record",
+        "name": "PolicyData",
+        "fields": [
+          {
+            "name": "holder_id",
+            "type": "string"
+          },
+          {
+            "name": "start_date",
+            "type": "string",
+            "doc": "Policy start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "end_date",
+            "type": "string",
+            "doc": "Policy end date (YYYY-MM-DD)"
+          },
+          {
+            "name": "premium_amount",
+            "type": "double"
+          },
+          {
+            "name": "actuarial_metadata",
+            "type": {
+              "type": "record",
+              "name": "ActuarialMetadata",
+              "fields": [
+                {
+                  "name": "risk_score",
+                  "type": "double"
+                },
+                {
+                  "name": "expected_claims_ratio",
+                  "type": "double"
+                },
+                {
+                  "name": "reserve_required",
+                  "type": "double"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

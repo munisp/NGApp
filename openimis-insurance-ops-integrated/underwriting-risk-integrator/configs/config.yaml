@@ -1,0 +1,14 @@
+app:
+  name: underwriting-risk-integrator
+  port: 8080
+  metrics_port: 9090
+  log_level: info
+
+temporal:
+  host_port: "localhost:7233"
+  namespace: default
+  task_queue: UNDERWRITING_RISK_TASK_QUEUE
+
+openimis:
+  base_url: "http://openimis-risk-assessor:8080"
+  timeout_seconds: 5

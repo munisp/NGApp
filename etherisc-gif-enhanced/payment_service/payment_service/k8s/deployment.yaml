@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-service
+        image: payment-service:latest # Replace with your image repository
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: TEMPORAL_HOST_PORT
+          value: "temporal-frontend.temporal.svc.cluster.local:7233"
+        - name: FIAT_GATEWAY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: payment-secrets
+              key: fiat_gateway_api_key
+        - name: CRYPTO_EXCHANGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: payment-secrets
+              key: crypto_exchange_key
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/payments/health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/v1/payments/health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: metrics
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-secrets
+type: Opaque
+data:
+  fiat_gateway_api_key: <base64_encoded_key>
+  crypto_exchange_key: <base64_encoded_key>

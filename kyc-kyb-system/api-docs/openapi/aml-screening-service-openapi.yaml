@@ -1,0 +1,638 @@
+openapi: 3.0.3
+info:
+  title: AML Screening Service API
+  description: |
+    Anti-Money Laundering (AML) screening service for sanctions, PEP checks, and adverse media monitoring.
+    
+    This service provides:
+    - Sanctions screening (UN, OFAC, EU, UK lists)
+    - Politically Exposed Persons (PEP) checks
+    - Adverse media monitoring
+    - Comprehensive screening (all checks combined)
+    
+    **Authentication**: OAuth2 Bearer token from Keycloak
+    **Authorization**: Role-based access control via Permify
+  version: 1.0.0
+  contact:
+    name: KYC/KYB System Support
+    email: support@insurance.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: http://localhost:8003
+    description: Local development
+  - url: http://aml-screening-service:8003
+    description: Docker Compose
+  - url: https://kyc.insurance.com/api/v1/aml
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Sanctions Screening
+    description: Sanctions list screening operations
+  - name: PEP Checks
+    description: Politically Exposed Persons checks
+  - name: Adverse Media
+    description: Adverse media monitoring
+  - name: Comprehensive Screening
+    description: Combined AML screening
+  - name: Health
+    description: Service health and status
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the service is healthy and ready to accept requests
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /api/v1/aml/sanctions/screen:
+    post:
+      tags:
+        - Sanctions Screening
+      summary: Screen against sanctions lists
+      description: |
+        Screen an individual or entity against global sanctions lists (UN, OFAC, EU, UK).
+        
+        **Required Permissions**: `aml_screening:create`
+        **Roles**: compliance_officer, kyc_analyst, system_administrator
+      operationId: screenSanctions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SanctionsScreeningRequest'
+            examples:
+              individual:
+                summary: Screen individual
+                value:
+                  customer_id: CUST-001
+                  entity_type: individual
+                  full_name: John Smith
+                  date_of_birth: "1980-05-15"
+                  nationality: NG
+              entity:
+                summary: Screen business entity
+                value:
+                  customer_id: CORP-001
+                  entity_type: entity
+                  full_name: Acme Corporation Ltd
+                  registration_number: RC123456
+                  country: NG
+      responses:
+        '200':
+          description: Sanctions screening completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SanctionsScreeningResponse'
+              examples:
+                noMatch:
+                  summary: No sanctions match found
+                  value:
+                    screening_id: SS-20260129-001
+                    customer_id: CUST-001
+                    entity_type: individual
+                    screened_name: John Smith
+                    matches_found: false
+                    total_matches: 0
+                    matches: []
+                    risk_level: low
+                    screened_at: "2026-01-29T10:30:00Z"
+                    screened_by: compliance_officer_001
+                matchFound:
+                  summary: Sanctions match found
+                  value:
+                    screening_id: SS-20260129-002
+                    customer_id: CUST-002
+                    entity_type: individual
+                    screened_name: Ahmed Hassan
+                    matches_found: true
+                    total_matches: 1
+                    matches:
+                      - list_name: UN Sanctions List
+                        matched_name: Ahmed Hassan
+                        match_score: 0.95
+                        date_of_birth: "1975-03-20"
+                        nationality: SY
+                        reason: Terrorism financing
+                        listed_date: "2020-05-10"
+                    risk_level: critical
+                    screened_at: "2026-01-29T10:35:00Z"
+                    screened_by: compliance_officer_001
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/aml/pep/check:
+    post:
+      tags:
+        - PEP Checks
+      summary: Check for Politically Exposed Persons
+      description: |
+        Check if an individual is a Politically Exposed Person (PEP) or has close associations with PEPs.
+        
+        **Required Permissions**: `aml_screening:create`
+        **Roles**: compliance_officer, kyc_analyst, system_administrator
+      operationId: checkPEP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PEPCheckRequest'
+            example:
+              customer_id: CUST-003
+              full_name: Maria Santos
+              date_of_birth: "1970-08-25"
+              nationality: NG
+              position: CEO
+      responses:
+        '200':
+          description: PEP check completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PEPCheckResponse'
+              examples:
+                isPEP:
+                  summary: Individual is a PEP
+                  value:
+                    check_id: PEP-20260129-001
+                    customer_id: CUST-003
+                    checked_name: Maria Santos
+                    is_pep: true
+                    pep_level: direct
+                    position: Minister of Finance
+                    country: NG
+                    start_date: "2020-01-01"
+                    end_date: null
+                    is_active: true
+                    risk_level: high
+                    checked_at: "2026-01-29T10:40:00Z"
+                    checked_by: compliance_officer_001
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/aml/adverse-media/check:
+    post:
+      tags:
+        - Adverse Media
+      summary: Check for adverse media
+      description: |
+        Search for adverse media mentions related to an individual or entity.
+        
+        **Required Permissions**: `aml_screening:create`
+        **Roles**: compliance_officer, kyc_analyst, system_administrator
+      operationId: checkAdverseMedia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdverseMediaRequest'
+            example:
+              customer_id: CUST-004
+              entity_type: individual
+              full_name: David Johnson
+              search_depth: comprehensive
+      responses:
+        '200':
+          description: Adverse media check completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdverseMediaResponse'
+              example:
+                check_id: AM-20260129-001
+                customer_id: CUST-004
+                searched_name: David Johnson
+                mentions_found: true
+                total_mentions: 2
+                mentions:
+                  - source: Financial Times
+                    title: "CEO Involved in Fraud Investigation"
+                    url: "https://ft.com/article/123"
+                    published_date: "2025-12-15"
+                    severity: high
+                    categories: [fraud, financial_crime]
+                  - source: Reuters
+                    title: "Company Under Regulatory Scrutiny"
+                    url: "https://reuters.com/article/456"
+                    published_date: "2025-11-20"
+                    severity: medium
+                    categories: [regulatory, compliance]
+                risk_level: high
+                checked_at: "2026-01-29T10:45:00Z"
+                checked_by: compliance_officer_001
+
+  /api/v1/aml/comprehensive/screen:
+    post:
+      tags:
+        - Comprehensive Screening
+      summary: Comprehensive AML screening
+      description: |
+        Perform comprehensive AML screening including sanctions, PEP checks, and adverse media monitoring.
+        
+        **Required Permissions**: `aml_screening:create`
+        **Roles**: compliance_officer, system_administrator
+      operationId: comprehensiveScreen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComprehensiveScreeningRequest'
+            example:
+              customer_id: CUST-005
+              entity_type: individual
+              full_name: Sarah Williams
+              date_of_birth: "1985-03-10"
+              nationality: NG
+              include_sanctions: true
+              include_pep: true
+              include_adverse_media: true
+      responses:
+        '200':
+          description: Comprehensive screening completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComprehensiveScreeningResponse'
+              example:
+                screening_id: CS-20260129-001
+                customer_id: CUST-005
+                screened_name: Sarah Williams
+                sanctions:
+                  matches_found: false
+                  risk_level: low
+                pep:
+                  is_pep: false
+                  risk_level: low
+                adverse_media:
+                  mentions_found: false
+                  risk_level: low
+                overall_risk_level: low
+                status: approved
+                screened_at: "2026-01-29T10:50:00Z"
+                screened_by: compliance_officer_001
+
+  /api/v1/aml/screening/{screening_id}:
+    get:
+      tags:
+        - Comprehensive Screening
+      summary: Get screening result
+      description: |
+        Retrieve the result of a previously performed AML screening.
+        
+        **Required Permissions**: `aml_screening:read`
+        **Roles**: compliance_officer, risk_manager, system_administrator
+      operationId: getScreening
+      parameters:
+        - name: screening_id
+          in: path
+          required: true
+          description: Unique screening identifier
+          schema:
+            type: string
+          example: CS-20260129-001
+      responses:
+        '200':
+          description: Screening result retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComprehensiveScreeningResponse'
+        '404':
+          description: Screening not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SanctionsScreeningRequest:
+      type: object
+      required:
+        - customer_id
+        - entity_type
+        - full_name
+      properties:
+        customer_id:
+          type: string
+        entity_type:
+          type: string
+          enum: [individual, entity]
+        full_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+          nullable: true
+        registration_number:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+
+    SanctionsScreeningResponse:
+      type: object
+      properties:
+        screening_id:
+          type: string
+        customer_id:
+          type: string
+        entity_type:
+          type: string
+        screened_name:
+          type: string
+        matches_found:
+          type: boolean
+        total_matches:
+          type: integer
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              list_name:
+                type: string
+              matched_name:
+                type: string
+              match_score:
+                type: number
+                format: float
+              date_of_birth:
+                type: string
+                format: date
+                nullable: true
+              nationality:
+                type: string
+                nullable: true
+              reason:
+                type: string
+              listed_date:
+                type: string
+                format: date
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        screened_at:
+          type: string
+          format: date-time
+        screened_by:
+          type: string
+
+    PEPCheckRequest:
+      type: object
+      required:
+        - customer_id
+        - full_name
+      properties:
+        customer_id:
+          type: string
+        full_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+
+    PEPCheckResponse:
+      type: object
+      properties:
+        check_id:
+          type: string
+        customer_id:
+          type: string
+        checked_name:
+          type: string
+        is_pep:
+          type: boolean
+        pep_level:
+          type: string
+          enum: [direct, close_associate, family_member]
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        checked_at:
+          type: string
+          format: date-time
+        checked_by:
+          type: string
+
+    AdverseMediaRequest:
+      type: object
+      required:
+        - customer_id
+        - entity_type
+        - full_name
+      properties:
+        customer_id:
+          type: string
+        entity_type:
+          type: string
+          enum: [individual, entity]
+        full_name:
+          type: string
+        search_depth:
+          type: string
+          enum: [basic, standard, comprehensive]
+          default: standard
+
+    AdverseMediaResponse:
+      type: object
+      properties:
+        check_id:
+          type: string
+        customer_id:
+          type: string
+        searched_name:
+          type: string
+        mentions_found:
+          type: boolean
+        total_mentions:
+          type: integer
+        mentions:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              title:
+                type: string
+              url:
+                type: string
+              published_date:
+                type: string
+                format: date
+              severity:
+                type: string
+                enum: [low, medium, high]
+              categories:
+                type: array
+                items:
+                  type: string
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        checked_at:
+          type: string
+          format: date-time
+        checked_by:
+          type: string
+
+    ComprehensiveScreeningRequest:
+      type: object
+      required:
+        - customer_id
+        - entity_type
+        - full_name
+      properties:
+        customer_id:
+          type: string
+        entity_type:
+          type: string
+          enum: [individual, entity]
+        full_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+          nullable: true
+        include_sanctions:
+          type: boolean
+          default: true
+        include_pep:
+          type: boolean
+          default: true
+        include_adverse_media:
+          type: boolean
+          default: true
+
+    ComprehensiveScreeningResponse:
+      type: object
+      properties:
+        screening_id:
+          type: string
+        customer_id:
+          type: string
+        screened_name:
+          type: string
+        sanctions:
+          type: object
+          properties:
+            matches_found:
+              type: boolean
+            risk_level:
+              type: string
+        pep:
+          type: object
+          properties:
+            is_pep:
+              type: boolean
+            risk_level:
+              type: string
+        adverse_media:
+          type: object
+          properties:
+            mentions_found:
+              type: boolean
+            risk_level:
+              type: string
+        overall_risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        status:
+          type: string
+          enum: [approved, rejected, review_required]
+        screened_at:
+          type: string
+          format: date-time
+        screened_by:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true

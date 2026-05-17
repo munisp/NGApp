@@ -1,0 +1,107 @@
+topics:
+  # Financial events
+  - name: ngapp.payouts.events
+    partitions: 6
+    replication: 3
+    config:
+      retention.ms: 604800000  # 7 days
+      cleanup.policy: delete
+
+  - name: ngapp.mobilemoney.events
+    partitions: 6
+    replication: 3
+    config:
+      retention.ms: 604800000
+
+  - name: ngapp.currency.events
+    partitions: 3
+    replication: 3
+
+  # Insurance events
+  - name: ngapp.microinsurance.events
+    partitions: 6
+    replication: 3
+    config:
+      retention.ms: 2592000000  # 30 days
+
+  - name: ngapp.ubi.events
+    partitions: 12
+    replication: 3
+    config:
+      retention.ms: 604800000
+
+  - name: ngapp.takaful.events
+    partitions: 3
+    replication: 3
+
+  # Identity events
+  - name: ngapp.ekyc.events
+    partitions: 6
+    replication: 3
+    config:
+      retention.ms: 7776000000  # 90 days
+
+  - name: ngapp.ussd.events
+    partitions: 12
+    replication: 3
+    config:
+      retention.ms: 259200000  # 3 days
+
+  # Platform events
+  - name: ngapp.agents.events
+    partitions: 3
+    replication: 3
+
+  - name: ngapp.notifications.events
+    partitions: 12
+    replication: 3
+    config:
+      retention.ms: 172800000  # 2 days
+
+  - name: ngapp.tenants.events
+    partitions: 3
+    replication: 3
+    config:
+      retention.ms: 2592000000  # 30 days
+
+  - name: ngapp.regulatory.events
+    partitions: 3
+    replication: 3
+    config:
+      retention.ms: 31536000000  # 365 days
+
+  - name: ngapp.gamification.events
+    partitions: 6
+    replication: 3
+
+  - name: ngapp.blockchain.events
+    partitions: 3
+    replication: 3
+    config:
+      retention.ms: -1  # infinite retention
+      cleanup.policy: compact
+
+  # AI/ML events
+  - name: ngapp.claims-ai.events
+    partitions: 6
+    replication: 3
+
+  - name: ngapp.fraud.events
+    partitions: 6
+    replication: 3
+    config:
+      retention.ms: 7776000000  # 90 days
+
+  # Analytics
+  - name: ngapp.analytics.events
+    partitions: 12
+    replication: 3
+    config:
+      retention.ms: 2592000000  # 30 days
+
+  # Dead letter queues
+  - name: ngapp.dlq
+    partitions: 3
+    replication: 3
+    config:
+      retention.ms: 2592000000

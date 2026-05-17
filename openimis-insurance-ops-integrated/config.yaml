@@ -1,0 +1,19 @@
+dapr:
+  listen_address: ":8080"
+
+iceberg:
+  catalog_uri: "http://iceberg-rest-catalog:8080"
+  warehouse_path: "s3://actuarial-lake/warehouse"
+  namespace: "actuarial"
+
+temporal:
+  host_port: "temporal-frontend:7233"
+  namespace: "default"
+  task_queue: "actuarial-queue"
+
+kafka:
+  pubsub_name: "kafka-pubsub"
+  premium_topic: "premium.calculated"
+
+metrics:
+  listen_address: ":9090"

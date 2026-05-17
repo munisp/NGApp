@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: opencti-integration }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: opencti-integration } }
+  template:
+    metadata: { labels: { app: opencti-integration } }
+    spec:
+      containers:
+      - name: opencti-integration
+        image: opencti-integration:latest
+        ports: [{ containerPort: 8080 }]
+        env:
+        - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: opencti-secret, key: database-url } } }
+        - { name: OPENCTI_URL, value: "http://opencti:8080" }
+        - { name: OPENCTI_API_KEY, valueFrom: { secretKeyRef: { name: opencti-secret, key: api-key } } }
+        - { name: WAZUH_URL, value: "https://wazuh:55000" }
+        - { name: WAZUH_USER, valueFrom: { secretKeyRef: { name: wazuh-secret, key: username } } }
+        - { name: WAZUH_PASS, valueFrom: { secretKeyRef: { name: wazuh-secret, key: password } } }

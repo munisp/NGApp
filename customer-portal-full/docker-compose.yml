@@ -1,0 +1,301 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NGApp Insurance Platform - Docker Compose
+# Orchestrates the customer portal + 33 microservices + PostgreSQL
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Usage:
+#   docker compose up -d                  # Start all services
+#   docker compose up -d portal postgres  # Start portal + DB only
+#   docker compose up -d --profile go     # Start all Go services
+#   docker compose logs -f portal         # Follow portal logs
+#   docker compose down                   # Stop all services
+
+x-go-service: &go-service
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.go
+  restart: unless-stopped
+  networks: [ngapp]
+
+x-python-service: &python-service
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.python
+  restart: unless-stopped
+  networks: [ngapp]
+
+x-rust-service: &rust-service
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.rust
+  restart: unless-stopped
+  networks: [ngapp]
+
+services:
+  # ── Database ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ngapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ngapp}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [ngapp]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngapp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Customer Portal (Express + tRPC + Vite) ──────────────────────────────
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: ["5000:5000"]
+    environment:
+      NODE_ENV: development
+      PORT: "5000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ngapp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ngapp}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ngapp]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 1 - Accessibility & Distribution (Go)
+  # ═══════════════════════════════════════════════════════════════════════════
+  ussd-gateway:
+    <<: *go-service
+    build:
+      context: ../ussd-gateway
+    ports: ["8090:8090"]
+    profiles: [go, pillar1, all]
+
+  whatsapp-bot:
+    <<: *go-service
+    build:
+      context: ../whatsapp-bot
+    ports: ["8091:8091"]
+    profiles: [go, pillar1, all]
+
+  mobile-money:
+    <<: *go-service
+    build:
+      context: ../mobile-money-service
+    ports: ["8092:8092"]
+    profiles: [go, pillar1, all]
+
+  agent-network:
+    <<: *go-service
+    build:
+      context: ../agent-network-platform
+    ports: ["8093:8093"]
+    profiles: [go, pillar1, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 2 - Product Innovation (Go, Rust)
+  # ═══════════════════════════════════════════════════════════════════════════
+  microinsurance:
+    <<: *go-service
+    build:
+      context: ../microinsurance-engine
+    ports: ["8095:8094"]
+    profiles: [go, pillar2, all]
+
+  parametric:
+    <<: *rust-service
+    build:
+      context: ../parametric-insurance-engine
+    ports: ["8096:8095"]
+    profiles: [rust, pillar2, all]
+
+  product-builder:
+    <<: *go-service
+    build:
+      context: ../product-builder
+    ports: ["8097:8096"]
+    profiles: [go, pillar2, all]
+
+  usage-based:
+    <<: *go-service
+    build:
+      context: ../usage-based-insurance
+    ports: ["8098:8097"]
+    profiles: [go, pillar2, all]
+
+  takaful:
+    <<: *go-service
+    build:
+      context: ../takaful-module
+    ports: ["8099:8098"]
+    profiles: [go, pillar2, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 3 - AI & Intelligence (Python, Rust, TypeScript)
+  # ═══════════════════════════════════════════════════════════════════════════
+  ai-claims:
+    <<: *python-service
+    build:
+      context: ../ai-claims-engine
+    ports: ["8200:8200"]
+    profiles: [python, pillar3, all]
+
+  ai-underwriting:
+    <<: *python-service
+    build:
+      context: ../ai-underwriting-engine
+    ports: ["8201:8201"]
+    profiles: [python, pillar3, all]
+
+  fraud-detection:
+    <<: *rust-service
+    build:
+      context: ../fraud-detection-neural
+    ports: ["8202:8202"]
+    profiles: [rust, pillar3, all]
+
+  ai-chatbot:
+    <<: *go-service
+    build:
+      context: ../ai-chatbot
+    ports: ["8100:8100"]
+    profiles: [go, pillar3, all]
+
+  predictive-analytics:
+    <<: *python-service
+    build:
+      context: ../predictive-analytics
+    ports: ["8203:8203"]
+    profiles: [python, pillar3, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 4 - Financial Infrastructure (Go)
+  # ═══════════════════════════════════════════════════════════════════════════
+  instant-payout:
+    <<: *go-service
+    build:
+      context: ../instant-payout-service
+    ports: ["8101:8101"]
+    profiles: [go, pillar4, all]
+
+  multi-currency:
+    <<: *go-service
+    build:
+      context: ../multi-currency-service
+    ports: ["8102:8102"]
+    profiles: [go, pillar4, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 5 - Regulatory & Compliance (Go, Python)
+  # ═══════════════════════════════════════════════════════════════════════════
+  multi-country:
+    <<: *go-service
+    build:
+      context: ../multi-country-regulatory
+    ports: ["8105:8105"]
+    profiles: [go, pillar5, all]
+
+  ifrs17:
+    <<: *python-service
+    build:
+      context: ../ifrs17-engine
+    ports: ["8210:8210"]
+    profiles: [python, pillar5, all]
+
+  pan-african-ekyc:
+    <<: *go-service
+    build:
+      context: ../pan-african-ekyc
+    ports: ["8106:8106"]
+    profiles: [go, pillar5, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 6 - Customer Experience (Go)
+  # ═══════════════════════════════════════════════════════════════════════════
+  multi-language:
+    <<: *go-service
+    build:
+      context: ../multi-language-service
+    ports: ["8108:8108"]
+    profiles: [go, pillar6, all]
+
+  notification:
+    <<: *go-service
+    build:
+      context: ../notification-service
+    ports: ["8109:8109"]
+    profiles: [go, pillar6, all]
+
+  gamification:
+    <<: *go-service
+    build:
+      context: ../gamification-service
+    ports: ["8110:8110"]
+    profiles: [go, pillar6, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 7 - Data & Analytics (Python, Go)
+  # ═══════════════════════════════════════════════════════════════════════════
+  lakehouse:
+    <<: *python-service
+    build:
+      context: ../lakehouse-analytics
+    ports: ["8211:8211"]
+    profiles: [python, pillar7, all]
+
+  actuarial:
+    <<: *python-service
+    build:
+      context: ../actuarial-platform
+    ports: ["8212:8212"]
+    profiles: [python, pillar7, all]
+
+  api-marketplace:
+    <<: *go-service
+    build:
+      context: ../api-marketplace
+    ports: ["8111:8111"]
+    profiles: [go, pillar7, all]
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Pillar 8 - Operational Excellence (Go, Rust)
+  # ═══════════════════════════════════════════════════════════════════════════
+  multi-tenant:
+    <<: *go-service
+    build:
+      context: ../multi-tenant-platform
+    ports: ["8112:8112"]
+    profiles: [go, pillar8, all]
+
+  dr-ha:
+    <<: *go-service
+    build:
+      context: ../dr-ha-service
+    ports: ["8113:8113"]
+    profiles: [go, pillar8, all]
+
+  performance-gateway:
+    <<: *rust-service
+    build:
+      context: ../performance-gateway
+    ports: ["8114:8114"]
+    profiles: [rust, pillar8, all]
+
+  devops:
+    <<: *go-service
+    build:
+      context: ../devops-platform
+    ports: ["8115:8115"]
+    profiles: [go, pillar8, all]
+
+volumes:
+  pgdata:
+
+networks:
+  ngapp:
+    driver: bridge

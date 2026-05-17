@@ -1,0 +1,284 @@
+---
+# OpenStack HA Configuration — Kolla-Ansible based deployment
+# 3 control nodes, N compute nodes, Ceph storage backend, Neutron ML2/OVN
+# This file documents the Kolla-Ansible globals.yml and inventory for HA deployment
+
+# ── Kolla-Ansible globals.yml ─────────────────────────────────────────────────
+# Save as: /etc/kolla/globals.yml
+
+kolla_base_distro: "ubuntu"
+kolla_install_type: "source"
+openstack_release: "2024.1"
+
+# ── Network Configuration ─────────────────────────────────────────────────────
+kolla_internal_vip_address: "10.0.0.250"
+kolla_external_vip_address: "192.168.1.250"
+network_interface: "eth0"
+neutron_external_interface: "eth1"
+kolla_internal_fqdn: "openstack-internal.insurance-platform.com"
+kolla_external_fqdn: "openstack.insurance-platform.com"
+
+# ── HA Settings ───────────────────────────────────────────────────────────────
+enable_haproxy: "yes"
+enable_keepalived: "yes"
+keepalived_virtual_router_id: "51"
+
+# ── Core Services ─────────────────────────────────────────────────────────────
+enable_keystone: "yes"
+enable_nova: "yes"
+enable_neutron: "yes"
+enable_glance: "yes"
+enable_cinder: "yes"
+enable_heat: "yes"
+enable_horizon: "yes"
+enable_barbican: "yes"
+enable_octavia: "yes"
+enable_designate: "yes"
+enable_manila: "yes"
+
+# ── Database & Message Queue ──────────────────────────────────────────────────
+enable_mariadb: "yes"
+enable_rabbitmq: "yes"
+mariadb_wsrep_cluster_name: "insurance_openstack_cluster"
+rabbitmq_cluster_name: "insurance_openstack_rabbitmq"
+
+# ── Storage Backend — Ceph ────────────────────────────────────────────────────
+enable_ceph: "yes"
+ceph_pool_pg_num: 128
+ceph_pool_pgp_num: 128
+glance_backend_ceph: "yes"
+cinder_backend_ceph: "yes"
+nova_backend_ceph: "yes"
+gnocchi_backend_storage: "ceph"
+
+# ── Neutron — ML2/OVN ────────────────────────────────────────────────────────
+neutron_plugin_agent: "ovn"
+enable_neutron_provider_networks: "yes"
+enable_neutron_dvr: "no"
+enable_neutron_qos: "yes"
+enable_neutron_vpnaas: "yes"
+enable_neutron_fwaas: "yes"
+
+# ── TLS ───────────────────────────────────────────────────────────────────────
+kolla_enable_tls_internal: "yes"
+kolla_enable_tls_external: "yes"
+kolla_copy_ca_into_containers: "yes"
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+enable_prometheus: "yes"
+enable_grafana: "yes"
+enable_alertmanager: "yes"
+enable_opensearch: "yes"
+enable_opensearch_dashboards: "yes"
+
+# ── Octavia (Load Balancer) ───────────────────────────────────────────────────
+octavia_network_type: "tenant"
+enable_octavia_driver_agent: "yes"
+octavia_provider_drivers: "amphora:The Octavia Amphora driver.,ovn:Octavia OVN driver."
+octavia_provider_default_driver: "amphora"
+
+# ── Barbican (Key Manager) ────────────────────────────────────────────────────
+barbican_crypto_plugin: "simple_crypto"
+barbican_library_path: "usrlocal/lib/libCryptoki2_64.so"
+
+---
+# ── Kolla-Ansible Inventory ───────────────────────────────────────────────────
+# Save as: /etc/kolla/multinode
+
+# Control nodes (3 for HA)
+# [control]
+# control01 ansible_host=10.0.0.11 ansible_user=ubuntu
+# control02 ansible_host=10.0.0.12 ansible_user=ubuntu
+# control03 ansible_host=10.0.0.13 ansible_user=ubuntu
+
+# Compute nodes
+# [compute]
+# compute01 ansible_host=10.0.0.21 ansible_user=ubuntu
+# compute02 ansible_host=10.0.0.22 ansible_user=ubuntu
+# compute03 ansible_host=10.0.0.23 ansible_user=ubuntu
+
+# Storage nodes (Ceph OSD)
+# [storage]
+# storage01 ansible_host=10.0.0.31 ansible_user=ubuntu
+# storage02 ansible_host=10.0.0.32 ansible_user=ubuntu
+# storage03 ansible_host=10.0.0.33 ansible_user=ubuntu
+
+# Network nodes
+# [network]
+# control01
+# control02
+# control03
+
+# Monitoring
+# [monitoring]
+# control01
+
+# Deployment node
+# [deployment]
+# localhost ansible_connection=local
+
+---
+# ── Terraform Infrastructure as Code ─────────────────────────────────────────
+# File: main.tf — OpenStack resources for insurance platform
+
+terraform_config: |
+  terraform {
+    required_providers {
+      openstack = {
+        source  = "terraform-provider-openstack/openstack"
+        version = "~> 1.54"
+      }
+    }
+    backend "s3" {
+      bucket   = "terraform-state"
+      key      = "insurance-platform/openstack/terraform.tfstate"
+      region   = "RegionOne"
+      endpoint = "https://openstack.insurance-platform.com:8080"
+    }
+  }
+
+  provider "openstack" {
+    auth_url    = "https://openstack.insurance-platform.com:5000/v3"
+    region      = "RegionOne"
+    tenant_name = "insurance-platform"
+    user_name   = var.os_username
+    password    = var.os_password
+    domain_name = "Default"
+  }
+
+  # Network
+  resource "openstack_networking_network_v2" "insurance_net" {
+    name           = "insurance-platform-net"
+    admin_state_up = true
+  }
+
+  resource "openstack_networking_subnet_v2" "insurance_subnet" {
+    name            = "insurance-platform-subnet"
+    network_id      = openstack_networking_network_v2.insurance_net.id
+    cidr            = "10.100.0.0/24"
+    ip_version      = 4
+    dns_nameservers = ["8.8.8.8", "8.8.4.4"]
+  }
+
+  resource "openstack_networking_router_v2" "insurance_router" {
+    name                = "insurance-platform-router"
+    admin_state_up      = true
+    external_network_id = data.openstack_networking_network_v2.external.id
+  }
+
+  resource "openstack_networking_router_interface_v2" "insurance_router_iface" {
+    router_id = openstack_networking_router_v2.insurance_router.id
+    subnet_id = openstack_networking_subnet_v2.insurance_subnet.id
+  }
+
+  # Security Groups
+  resource "openstack_networking_secgroup_v2" "k8s_master" {
+    name        = "k8s-master-sg"
+    description = "Security group for Kubernetes master nodes"
+  }
+
+  resource "openstack_networking_secgroup_rule_v2" "k8s_api" {
+    direction         = "ingress"
+    ethertype         = "IPv4"
+    protocol          = "tcp"
+    port_range_min    = 6443
+    port_range_max    = 6443
+    remote_ip_prefix  = "10.0.0.0/8"
+    security_group_id = openstack_networking_secgroup_v2.k8s_master.id
+  }
+
+  # Kubernetes Master Instances
+  resource "openstack_compute_instance_v2" "k8s_master" {
+    count           = 3
+    name            = "k8s-master-${count.index + 1}"
+    image_name      = "Ubuntu-22.04-LTS"
+    flavor_name     = "m1.xlarge"
+    key_pair        = openstack_compute_keypair_v2.insurance_keypair.name
+    security_groups = [openstack_networking_secgroup_v2.k8s_master.name]
+
+    network {
+      uuid = openstack_networking_network_v2.insurance_net.id
+    }
+
+    metadata = {
+      role        = "k8s-master"
+      environment = "production"
+    }
+  }
+
+  # Kubernetes Worker Instances
+  resource "openstack_compute_instance_v2" "k8s_worker" {
+    count           = 6
+    name            = "k8s-worker-${count.index + 1}"
+    image_name      = "Ubuntu-22.04-LTS"
+    flavor_name     = "m1.2xlarge"
+    key_pair        = openstack_compute_keypair_v2.insurance_keypair.name
+    security_groups = [openstack_networking_secgroup_v2.k8s_worker.name]
+
+    network {
+      uuid = openstack_networking_network_v2.insurance_net.id
+    }
+
+    metadata = {
+      role        = "k8s-worker"
+      environment = "production"
+    }
+  }
+
+  # Ceph Storage Instances
+  resource "openstack_compute_instance_v2" "ceph_osd" {
+    count           = 3
+    name            = "ceph-osd-${count.index + 1}"
+    image_name      = "Ubuntu-22.04-LTS"
+    flavor_name     = "m1.large"
+    key_pair        = openstack_compute_keypair_v2.insurance_keypair.name
+    security_groups = [openstack_networking_secgroup_v2.storage.name]
+
+    network {
+      uuid = openstack_networking_network_v2.insurance_net.id
+    }
+  }
+
+  # Ceph OSD Volumes (NVMe)
+  resource "openstack_blockstorage_volume_v3" "ceph_osd_volume" {
+    count       = 9  # 3 OSD nodes × 3 drives each
+    name        = "ceph-osd-vol-${count.index + 1}"
+    size        = 1000  # 1TB per OSD
+    volume_type = "nvme"
+  }
+
+  # Octavia Load Balancer for Kubernetes API
+  resource "openstack_lb_loadbalancer_v2" "k8s_api_lb" {
+    name          = "k8s-api-loadbalancer"
+    vip_subnet_id = openstack_networking_subnet_v2.insurance_subnet.id
+  }
+
+  resource "openstack_lb_listener_v2" "k8s_api_listener" {
+    name            = "k8s-api-listener"
+    protocol        = "TCP"
+    protocol_port   = 6443
+    loadbalancer_id = openstack_lb_loadbalancer_v2.k8s_api_lb.id
+  }
+
+  resource "openstack_lb_pool_v2" "k8s_api_pool" {
+    name        = "k8s-api-pool"
+    protocol    = "TCP"
+    lb_method   = "ROUND_ROBIN"
+    listener_id = openstack_lb_listener_v2.k8s_api_listener.id
+  }
+
+  resource "openstack_lb_member_v2" "k8s_master_member" {
+    count         = 3
+    pool_id       = openstack_lb_pool_v2.k8s_api_pool.id
+    address       = openstack_compute_instance_v2.k8s_master[count.index].access_ip_v4
+    protocol_port = 6443
+    subnet_id     = openstack_networking_subnet_v2.insurance_subnet.id
+  }
+
+  resource "openstack_lb_monitor_v2" "k8s_api_monitor" {
+    pool_id        = openstack_lb_pool_v2.k8s_api_pool.id
+    type           = "TCP"
+    delay          = 5
+    timeout        = 3
+    max_retries    = 3
+  }

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-commission-management
+  namespace: insurance-platform
+  labels:
+    app: agent-commission-management
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agent-commission-management
+  template:
+    metadata:
+      labels:
+        app: agent-commission-management
+    spec:
+      containers:
+        - name: agent-commission-management
+          image: agent-commission-management:latest
+          ports:
+            - containerPort: 8097
+          env:
+            - name: PORT
+              value: "8097"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8097
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8097
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-commission-management
+  namespace: insurance-platform
+spec:
+  selector:
+    app: agent-commission-management
+  ports:
+    - port: 8097
+      targetPort: 8097
+  type: ClusterIP

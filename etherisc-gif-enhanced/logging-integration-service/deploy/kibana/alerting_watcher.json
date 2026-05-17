@@ -1,0 +1,78 @@
+{
+  "trigger": {
+    "schedule": {
+      "interval": "5m"
+    }
+  },
+  "input": {
+    "search": {
+      "request": {
+        "indices": [
+          "gif-logs-*"
+        ],
+        "body": {
+          "size": 0,
+          "query": {
+            "bool": {
+              "filter": [
+                {
+                  "range": {
+                    "@timestamp": {
+                      "gte": "now-5m"
+                    }
+                  }
+                },
+                {
+                  "term": {
+                    "level": "error"
+                  }
+                },
+                {
+                  "term": {
+                    "error_code": "E_GIF_1001"
+                  }
+                }
+              ]
+            }
+          },
+          "aggs": {
+            "error_count": {
+              "value_count": {
+                "field": "level"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "condition": {
+    "script": {
+      "source": "ctx.payload.aggregations.error_count.value > 5",
+      "lang": "painless"
+    }
+  },
+  "actions": {
+    "log_error": {
+      "logging": {
+        "text": "CRITICAL ALERT: {{ctx.payload.aggregations.error_count.value}} E_GIF_1001 errors detected in the last 5 minutes. Check the GIF Logging Service logs immediately."
+      }
+    },
+    "send_slack": {
+      "slack": {
+        "message": {
+          "to": [
+            "#critical-alerts"
+          ],
+          "text": "CRITICAL ALERT: {{ctx.payload.aggregations.error_count.value}} E_GIF_1001 errors detected in the last 5 minutes. Service: gif-logging-service. Trace: {{ctx.payload.hits.hits.0._source.trace_id}}",
+          "attachments": [
+            {
+              "title": "Error Details",
+              "text": "Error Code: E_GIF_1001 (Failed to connect to GIF service)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

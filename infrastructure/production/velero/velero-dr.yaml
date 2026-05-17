@@ -1,0 +1,336 @@
+---
+# =============================================================================
+# Velero — Backup and Disaster Recovery
+# Unified Insurance Platform
+# RPO: 1 hour | RTO: 4 hours
+# Backup storage: S3-compatible (OpenStack Swift or AWS S3)
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+---
+# --- Velero Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: velero
+  namespace: velero
+  labels:
+    app: velero
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: velero
+  template:
+    metadata:
+      labels:
+        app: velero
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: velero
+      containers:
+        - name: velero
+          image: velero/velero:v1.14.0
+          command:
+            - /velero
+          args:
+            - server
+            - --features=EnableCSI
+            - --uploader-type=kopia
+            - --default-backup-storage-location=default
+            - --default-volume-snapshot-locations=csi-snapshotter
+            - --backup-sync-period=1m
+            - --pod-volume-operation-timeout=240m
+            - --log-level=info
+            - --log-format=json
+            - --metrics-address=:8085
+          env:
+            - name: VELERO_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LD_LIBRARY_PATH
+              value: /plugins
+            - name: AWS_SHARED_CREDENTIALS_FILE
+              value: /credentials/cloud
+          ports:
+            - containerPort: 8085
+              name: metrics
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+          volumeMounts:
+            - name: plugins
+              mountPath: /plugins
+            - name: cloud-credentials
+              mountPath: /credentials
+            - name: scratch
+              mountPath: /scratch
+      initContainers:
+        - name: velero-plugin-for-aws
+          image: velero/velero-plugin-for-aws:v1.10.0
+          volumeMounts:
+            - mountPath: /target
+              name: plugins
+        - name: velero-plugin-for-csi
+          image: velero/velero-plugin-for-csi:v0.7.0
+          volumeMounts:
+            - mountPath: /target
+              name: plugins
+      volumes:
+        - name: plugins
+          emptyDir: {}
+        - name: cloud-credentials
+          secret:
+            secretName: velero-cloud-credentials
+        - name: scratch
+          emptyDir: {}
+---
+# --- BackupStorageLocation: Primary (S3/Swift) ---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: insurance-platform-velero-backups
+    prefix: production
+  config:
+    region: eu-west-1
+    s3ForcePathStyle: "true"
+    s3Url: "https://s3.insurance-platform.com"
+    publicUrl: "https://s3.insurance-platform.com"
+    checksumAlgorithm: ""
+  credential:
+    name: velero-cloud-credentials
+    key: cloud
+  default: true
+  accessMode: ReadWrite
+---
+# --- BackupStorageLocation: Secondary (DR region) ---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: dr-secondary
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: insurance-platform-velero-backups-dr
+    prefix: production
+  config:
+    region: eu-central-1
+    s3ForcePathStyle: "true"
+    s3Url: "https://s3-dr.insurance-platform.com"
+    checksumAlgorithm: ""
+  credential:
+    name: velero-cloud-credentials-dr
+    key: cloud
+  accessMode: ReadWrite
+---
+# --- VolumeSnapshotLocation ---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: csi-snapshotter
+  namespace: velero
+spec:
+  provider: csi
+---
+# --- Schedule: Full backup every 6 hours ---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: insurance-platform-full-6h
+  namespace: velero
+spec:
+  schedule: "0 */6 * * *"
+  useOwnerReferencesInBackup: false
+  template:
+    includedNamespaces:
+      - insurance-platform
+      - vault
+      - keycloak
+      - kafka
+      - redis
+      - postgres
+      - temporal
+      - tigerbeetle
+      - wazuh
+      - unleash
+      - observability
+    excludedResources:
+      - events
+      - events.events.k8s.io
+    storageLocation: default
+    volumeSnapshotLocations:
+      - csi-snapshotter
+    ttl: 720h  # 30 days retention
+    snapshotVolumes: true
+    includeClusterResources: true
+    labelSelector:
+      matchExpressions:
+        - key: velero.io/exclude-from-backup
+          operator: DoesNotExist
+    hooks:
+      resources:
+        - name: postgres-backup-hook
+          includedNamespaces: [postgres]
+          labelSelector:
+            matchLabels:
+              app: postgres
+          pre:
+            - exec:
+                container: postgres
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    pg_dump -U postgres insurance > /tmp/insurance_backup_$(date +%Y%m%d_%H%M%S).sql
+                    echo "PostgreSQL backup complete"
+                timeout: 600s
+                onError: Fail
+---
+# --- Schedule: Database-only backup every 1 hour ---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: insurance-databases-1h
+  namespace: velero
+spec:
+  schedule: "0 * * * *"
+  template:
+    includedNamespaces:
+      - postgres
+      - tigerbeetle
+    storageLocation: default
+    volumeSnapshotLocations:
+      - csi-snapshotter
+    ttl: 168h  # 7 days retention
+    snapshotVolumes: true
+    includeClusterResources: false
+---
+# --- Schedule: Vault backup every 15 minutes ---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: vault-15m
+  namespace: velero
+spec:
+  schedule: "*/15 * * * *"
+  template:
+    includedNamespaces:
+      - vault
+    storageLocation: default
+    volumeSnapshotLocations:
+      - csi-snapshotter
+    ttl: 48h  # 2 days retention
+    snapshotVolumes: true
+    includeClusterResources: false
+---
+# --- Schedule: DR cross-region sync every 24 hours ---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: insurance-dr-sync-24h
+  namespace: velero
+spec:
+  schedule: "0 2 * * *"
+  template:
+    includedNamespaces:
+      - insurance-platform
+      - vault
+      - keycloak
+      - postgres
+      - tigerbeetle
+    storageLocation: dr-secondary
+    volumeSnapshotLocations:
+      - csi-snapshotter
+    ttl: 2160h  # 90 days retention for DR
+    snapshotVolumes: true
+    includeClusterResources: true
+---
+# --- DR Runbook as ConfigMap ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-runbook
+  namespace: velero
+data:
+  runbook.md: |
+    # Disaster Recovery Runbook — Unified Insurance Platform
+    ## RPO: 1 hour | RTO: 4 hours
+
+    ## Scenario 1: Single Service Failure
+    ```bash
+    # List available backups
+    velero backup get
+
+    # Restore specific namespace
+    velero restore create --from-backup <backup-name> \
+      --include-namespaces insurance-platform \
+      --wait
+    ```
+
+    ## Scenario 2: Full Cluster Failure
+    ```bash
+    # 1. Provision new cluster via Terraform
+    cd infrastructure/production/terraform
+    terraform apply -var="environment=production" -target=module.kubernetes
+
+    # 2. Install Velero on new cluster
+    velero install \
+      --provider aws \
+      --plugins velero/velero-plugin-for-aws:v1.10.0 \
+      --bucket insurance-platform-velero-backups \
+      --backup-location-config region=eu-west-1,s3ForcePathStyle=true,s3Url=https://s3.insurance-platform.com \
+      --secret-file ./velero-credentials \
+      --use-volume-snapshots=true \
+      --wait
+
+    # 3. Restore from latest backup
+    LATEST_BACKUP=$(velero backup get --output json | jq -r '.items | sort_by(.metadata.creationTimestamp) | last | .metadata.name')
+    velero restore create dr-restore-$(date +%Y%m%d) \
+      --from-backup $LATEST_BACKUP \
+      --wait
+
+    # 4. Verify restoration
+    kubectl get pods -n insurance-platform
+    kubectl get pods -n vault
+    kubectl get pods -n postgres
+
+    # 5. Run smoke tests
+    pytest tests/smoke/ --base-url=https://api.insurance-platform.com
+    ```
+
+    ## Scenario 3: Data Corruption
+    ```bash
+    # Restore specific PVC from snapshot
+    velero restore create data-restore \
+      --from-backup <backup-name> \
+      --include-namespaces postgres \
+      --restore-volumes=true \
+      --wait
+    ```
+
+    ## Verification Checklist
+    - [ ] All pods running in insurance-platform namespace
+    - [ ] Vault unsealed and accessible
+    - [ ] Keycloak authentication working
+    - [ ] PostgreSQL accepting connections
+    - [ ] Kafka brokers online
+    - [ ] API gateway responding
+    - [ ] Smoke tests passing
+    - [ ] Monitoring dashboards showing data
+    - [ ] SLO metrics recovering

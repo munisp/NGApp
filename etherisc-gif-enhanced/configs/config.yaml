@@ -1,0 +1,29 @@
+server:
+  port: 8080
+  readTimeout: 5s
+  writeTimeout: 10s
+
+auth:
+  apiKeyHeader: "X-Reinsurer-API-Key"
+  # Mock API keys for demonstration
+  validApiKeys:
+    - "reinsurer-a-secret-key"
+    - "reinsurer-b-secret-key"
+
+services:
+  policyServiceUrl: "http://policy-service:8081"
+  claimsServiceUrl: "http://claims-service:8082"
+
+temporal:
+  hostPort: "temporal:7233"
+  namespace: "default"
+  taskQueue: "reinsurer-api-task-queue"
+
+database:
+  driver: "postgres"
+  host: "db-host"
+  port: 5432
+  user: "reinsurer_user"
+  password: "reinsurer_password"
+  name: "reinsurer_db"
+  sslmode: "disable"

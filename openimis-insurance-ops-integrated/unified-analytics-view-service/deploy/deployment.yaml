@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unified-analytics-view-service
+  labels:
+    app: unified-analytics-view-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: unified-analytics-view-service
+  template:
+    metadata:
+      labels:
+        app: unified-analytics-view-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+      - name: unified-analytics-view-service
+        image: unified-analytics-view-service:latest # Replace with your image
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 7233 # Temporal worker port
+          name: temporal
+        env:
+        - name: SERVER_PORT
+          value: "8080"
+        - name: TEMPORAL_HOST_PORT
+          value: "temporal-frontend.temporal.svc.cluster.local:7233"
+        - name: KAFKA_BROKERS
+          value: "kafka-broker-1.kafka.svc.cluster.local:9092,kafka-broker-2.kafka.svc.cluster.local:9092"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-analytics-view-service
+  labels:
+    app: unified-analytics-view-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  - port: 7233
+    targetPort: temporal
+    protocol: TCP
+    name: temporal
+  selector:
+    app: unified-analytics-view-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-analytics-view-service-metrics
+  labels:
+    app: unified-analytics-view-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: metrics
+  selector:
+    app: unified-analytics-view-service

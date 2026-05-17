@@ -1,0 +1,287 @@
+{
+  "dashboard": {
+    "title": "Insurance Platform - Overview",
+    "tags": ["insurance", "overview", "platform"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Policies",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT COUNT(*) as value FROM policies WHERE status = 'ACTIVE'",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Premium Collected (Today)",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT COALESCE(SUM(amount), 0) as value FROM payments WHERE status = 'COMPLETED' AND DATE(created_at) = CURRENT_DATE",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "blue", "value": null}
+              ]
+            },
+            "unit": "currencyNGN"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Claims Pending",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT COUNT(*) as value FROM claims WHERE status = 'PENDING'",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "yellow", "value": null},
+                {"color": "red", "value": 100}
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "NIN Verification Success Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT (COUNT(*) FILTER (WHERE status = 'VERIFIED')::float / NULLIF(COUNT(*), 0) * 100) as value FROM verification_records WHERE verification_type = 'NIN' AND created_at > NOW() - INTERVAL '24 hours'",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Policy Issuance Trend (Last 7 Days)",
+        "type": "timeseries",
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT DATE(created_at) as time, COUNT(*) as value FROM policies WHERE created_at > NOW() - INTERVAL '7 days' GROUP BY DATE(created_at) ORDER BY time",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "Policies",
+              "axisPlacement": "auto",
+              "fillOpacity": 20,
+              "lineWidth": 2,
+              "showPoints": "auto"
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Payment Success Rate (Last 24 Hours)",
+        "type": "timeseries",
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT DATE_TRUNC('hour', created_at) as time, (COUNT(*) FILTER (WHERE status = 'COMPLETED')::float / NULLIF(COUNT(*), 0) * 100) as value FROM payments WHERE created_at > NOW() - INTERVAL '24 hours' GROUP BY DATE_TRUNC('hour', created_at) ORDER BY time",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "Success Rate (%)",
+              "axisPlacement": "auto",
+              "fillOpacity": 20,
+              "lineWidth": 2,
+              "showPoints": "auto"
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "TigerBeetle Transaction Latency",
+        "type": "timeseries",
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": "histogram_quantile(0.99, rate(tigerbeetle_transfer_duration_seconds_bucket[5m]))",
+            "refId": "A",
+            "legendFormat": "p99"
+          },
+          {
+            "datasource": "Prometheus",
+            "expr": "histogram_quantile(0.95, rate(tigerbeetle_transfer_duration_seconds_bucket[5m]))",
+            "refId": "B",
+            "legendFormat": "p95"
+          },
+          {
+            "datasource": "Prometheus",
+            "expr": "histogram_quantile(0.50, rate(tigerbeetle_transfer_duration_seconds_bucket[5m]))",
+            "refId": "C",
+            "legendFormat": "p50"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "Latency (seconds)",
+              "axisPlacement": "auto",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            },
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Kafka Consumer Lag",
+        "type": "timeseries",
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": "sum by (topic) (kafka_consumer_lag)",
+            "refId": "A",
+            "legendFormat": "{{topic}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "Messages",
+              "axisPlacement": "auto",
+              "fillOpacity": 10,
+              "lineWidth": 2,
+              "showPoints": "never"
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Service Health Status",
+        "type": "table",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 28},
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": "up{job=~\".*-service\"}",
+            "refId": "A",
+            "instant": true,
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true, "__name__": true},
+              "indexByName": {},
+              "renameByName": {
+                "job": "Service",
+                "instance": "Instance",
+                "Value": "Status"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {"text": "Down", "color": "red"},
+                  "1": {"text": "Up", "color": "green"}
+                },
+                "type": "value"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

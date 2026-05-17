@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openimis-service
+  labels:
+    app: openimis-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openimis-service
+  template:
+    metadata:
+      labels:
+        app: openimis-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "openimis-service"
+        dapr.io/app-port: "8080"
+        dapr.io/config: "openimis-resiliency-policy" # Apply resiliency policy
+    spec:
+      containers:
+      - name: openimis-service
+        image: openimis-service:latest # Placeholder for actual image
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openimis-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: openimis-service

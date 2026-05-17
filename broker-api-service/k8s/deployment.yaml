@@ -1,0 +1,211 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: broker-api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: broker-api-config
+  namespace: broker-api
+data:
+  REDIS_ADDR: "redis-master.redis.svc.cluster.local:6379"
+  PRODUCT_SERVICE_URL: "http://product-service.insurance-platform.svc.cluster.local:8080"
+  QUOTE_SERVICE_URL: "http://quote-service.insurance-platform.svc.cluster.local:8080"
+  POLICY_SERVICE_URL: "http://policy-service.insurance-platform.svc.cluster.local:8080"
+  CLAIMS_SERVICE_URL: "http://claims-service.insurance-platform.svc.cluster.local:8080"
+  PAYMENT_SERVICE_URL: "http://payment-service.insurance-platform.svc.cluster.local:8080"
+  KYC_SERVICE_URL: "http://kyc-service.insurance-platform.svc.cluster.local:8080"
+  CUSTOMER_SERVICE_URL: "http://customer-service.insurance-platform.svc.cluster.local:8080"
+  UNDERWRITING_SERVICE_URL: "http://underwriting-service.insurance-platform.svc.cluster.local:8080"
+  DOCUMENT_SERVICE_URL: "http://document-service.insurance-platform.svc.cluster.local:8080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: broker-api-secrets
+  namespace: broker-api
+type: Opaque
+stringData:
+  ADMIN_API_KEY: "admin-secret-key-2026-production"
+  REDIS_PASSWORD: "${REDIS_PASSWORD}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broker-api-service
+  namespace: broker-api
+  labels:
+    app: broker-api-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: broker-api-service
+  template:
+    metadata:
+      labels:
+        app: broker-api-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - broker-api-service
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: broker-api-service
+        image: insurance-platform/broker-api-service:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        envFrom:
+        - configMapRef:
+            name: broker-api-config
+        - secretRef:
+            name: broker-api-secrets
+        resources:
+          requests:
+            cpu: "250m"
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broker-api-service
+  namespace: broker-api
+  labels:
+    app: broker-api-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: broker-api-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broker-api-service-external
+  namespace: broker-api
+  labels:
+    app: broker-api-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 443
+    targetPort: 8080
+    name: https
+  selector:
+    app: broker-api-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: broker-api-hpa
+  namespace: broker-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: broker-api-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: broker-api-pdb
+  namespace: broker-api
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: broker-api-service
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: broker-api-network-policy
+  namespace: broker-api
+spec:
+  podSelector:
+    matchLabels:
+      app: broker-api-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: apisix
+    - namespaceSelector:
+        matchLabels:
+          name: insurance-platform
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: insurance-platform
+    - namespaceSelector:
+        matchLabels:
+          name: redis
+    - namespaceSelector:
+        matchLabels:
+          name: kafka
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 9092

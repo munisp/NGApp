@@ -1,0 +1,209 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ray-serve-api-scaler
+  namespace: ray-serve
+spec:
+  scaleTargetRef:
+    name: ray-serve-api
+  pollingInterval: 15
+  cooldownPeriod: 300
+  minReplicaCount: 3
+  maxReplicaCount: 20
+  advanced:
+    restoreToOriginalReplicaCount: false
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 60
+          - type: Pods
+            value: 2
+            periodSeconds: 60
+          selectPolicy: Min
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+          - type: Pods
+            value: 4
+            periodSeconds: 30
+          selectPolicy: Max
+  
+  triggers:
+  # HTTP Request Rate Trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+      metricName: ray_serve_http_requests_per_second
+      query: |
+        sum(rate(ray_serve_num_http_requests_total{deployment="ray-serve-api"}[1m]))
+      threshold: "100"
+    authenticationRef:
+      name: keda-trigger-auth-prometheus
+  
+  # CPU Utilization Trigger
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"
+  
+  # Memory Utilization Trigger
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "80"
+  
+  # Kafka Consumer Lag Trigger (for ML predictions queue)
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka.lakehouse.svc.cluster.local:9092
+      consumerGroup: ray-serve-predictions
+      topic: ml.predictions.requests
+      lagThreshold: "50"
+      offsetResetPolicy: latest
+    authenticationRef:
+      name: keda-trigger-auth-kafka
+  
+  # Custom Metric: Model Inference Queue Length
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+      metricName: ray_serve_deployment_queued_queries
+      query: |
+        sum(ray_serve_deployment_queued_queries{deployment=~"fraud-detection.*|risk-scoring.*|claims-prediction.*"})
+      threshold: "20"
+    authenticationRef:
+      name: keda-trigger-auth-prometheus
+  
+  # Custom Metric: Model Inference Latency (p95)
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+      metricName: ray_serve_deployment_processing_latency_p95
+      query: |
+        histogram_quantile(0.95, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{deployment=~"fraud-detection.*"}[5m])) by (le))
+      threshold: "500"
+      activationThreshold: "300"
+    authenticationRef:
+      name: keda-trigger-auth-prometheus
+  
+  # Redis Queue Length Trigger (for async predictions)
+  - type: redis
+    metadata:
+      address: redis.lakehouse.svc.cluster.local:6379
+      listName: ml:prediction:queue
+      listLength: "30"
+      databaseIndex: "0"
+    authenticationRef:
+      name: keda-trigger-auth-redis
+  
+  # PostgreSQL Active Connections Trigger
+  - type: postgresql
+    metadata:
+      host: postgresql.lakehouse.svc.cluster.local
+      port: "5432"
+      userName: ray_serve
+      dbName: lakehouse
+      query: "SELECT COUNT(*) FROM pg_stat_activity WHERE application_name = 'ray-serve-api' AND state = 'active'"
+      targetQueryValue: "50"
+    authenticationRef:
+      name: keda-trigger-auth-postgresql
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-trigger-auth-prometheus
+  namespace: ray-serve
+type: Opaque
+stringData:
+  # No auth required for internal Prometheus
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-trigger-auth-kafka
+  namespace: ray-serve
+type: Opaque
+stringData:
+  sasl: plaintext
+  username: ray_serve
+  password: changeme_in_production
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-trigger-auth-redis
+  namespace: ray-serve
+type: Opaque
+stringData:
+  password: changeme_in_production
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-trigger-auth-postgresql
+  namespace: ray-serve
+type: Opaque
+stringData:
+  password: changeme_in_production
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-prometheus
+  namespace: ray-serve
+spec:
+  secretTargetRef: []
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-kafka
+  namespace: ray-serve
+spec:
+  secretTargetRef:
+  - parameter: sasl
+    name: keda-trigger-auth-kafka
+    key: sasl
+  - parameter: username
+    name: keda-trigger-auth-kafka
+    key: username
+  - parameter: password
+    name: keda-trigger-auth-kafka
+    key: password
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-redis
+  namespace: ray-serve
+spec:
+  secretTargetRef:
+  - parameter: password
+    name: keda-trigger-auth-redis
+    key: password
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-postgresql
+  namespace: ray-serve
+spec:
+  secretTargetRef:
+  - parameter: password
+    name: keda-trigger-auth-postgresql
+    key: password

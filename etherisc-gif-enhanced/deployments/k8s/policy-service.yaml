@@ -1,0 +1,106 @@
+# Kubernetes Manifests for Policy Service Integration
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-service-config
+  labels:
+    app: policy-service
+data:
+  # Configuration for the API and Worker
+  HTTP_PORT: "8080"
+  TEMPORAL_HOST_PORT: "temporal-frontend.temporal.svc.cluster.local:7233"
+  TEMPORAL_NAMESPACE: "default"
+  GIF_API_KEY: "secure-gif-api-key"
+  # DB_CONNECTION_STRING: "postgres://user:password@db-host:5432/policy_db?sslmode=disable" # Placeholder
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-api
+  labels:
+    app: policy-service
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: policy-service
+      component: api
+  template:
+    metadata:
+      labels:
+        app: policy-service
+        component: api
+    spec:
+      containers:
+      - name: policy-api
+        image: policy-service-integration:latest # Replace with your actual image
+        command: ["/app/policy-api"]
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: policy-service-config
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-api
+  labels:
+    app: policy-service
+    component: api
+spec:
+  selector:
+    app: policy-service
+    component: api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-temporal-worker
+  labels:
+    app: policy-service
+    component: worker
+spec:
+  replicas: 1 # Typically 1 or a small number for Temporal workers
+  selector:
+    matchLabels:
+      app: policy-service
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: policy-service
+        component: worker
+    spec:
+      containers:
+      - name: policy-temporal-worker
+        image: policy-service-integration:latest # Replace with your actual image
+        command: ["/app/policy-temporal-worker"]
+        envFrom:
+        - configMapRef:
+            name: policy-service-config
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"

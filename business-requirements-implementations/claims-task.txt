@@ -1,0 +1,14 @@
+Implement complete claims service workflow in Go:
+- FNOL (First Notice of Loss) Temporal workflow
+- Claims adjudication workflow with fraud detection integration
+- Claims settlement workflow with TigerBeetle payment integration
+- Claims appeal workflow
+- Subrogation workflow
+- Medical bill review workflow with AI
+- REST API endpoints (15+) for all claim operations
+- PostgreSQL schema with migrations for claims, documents, payments
+- Kafka event producers for claim lifecycle events
+- Dapr integration with policy, payment, fraud services
+- Prometheus metrics and Grafana dashboard
+- Kubernetes manifests
+- Complete error handling, circuit breakers, tests

@@ -1,0 +1,1 @@
+Customer Portal: Core Setup and Auth - Implement Next.js 14 project setup, Keycloak authentication, Redux store, API clients, routing, layouts, TypeScript types.
