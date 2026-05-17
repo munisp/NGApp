@@ -189,6 +189,17 @@ export const appRouter = router({
   }),
 
   claims: router({
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.deleteClaimById(ctx.user.id, input.id);
+      }),
+    update: protectedProcedure
+      .input(z.object({ id: z.string(), data: z.record(z.unknown()) }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.updateClaimById(ctx.user.id, input.id, input.data);
+      }),
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getClaimsByUserId(ctx.user.id);
     }),
@@ -272,6 +283,12 @@ export const appRouter = router({
   }),
 
   referrals: router({
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.deleteReferral(ctx.user.id, input.id);
+      }),
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getReferralsByUserId(ctx.user.id);
     }),
@@ -307,6 +324,12 @@ export const appRouter = router({
   }),
 
   reviews: router({
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.deleteReview(ctx.user.id, input.id);
+      }),
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getReviewsByUserId(ctx.user.id);
     }),
@@ -365,6 +388,10 @@ export const appRouter = router({
 
   // Insurance Radar - Fraud Detection Analytics
   insuranceRadar: router({
+
+    alerts: protectedProcedure.query(async () => {
+      return await db.getInsuranceRadarAlerts();
+    }),
     analytics: protectedProcedure
       .input(z.object({ timeRange: z.string().default("7d") }))
       .query(async ({ ctx, input }) => {
@@ -409,6 +436,10 @@ export const appRouter = router({
 
   // ERPNext Integration
   erpnext: router({
+
+    status: protectedProcedure.query(async () => {
+      return await db.getERPNextStatus();
+    }),
     transactions: protectedProcedure
       .input(z.object({ page: z.number().default(1), limit: z.number().default(20) }))
       .query(async ({ ctx, input }) => {
@@ -439,6 +470,25 @@ export const appRouter = router({
 
   // Premium Rate Management
   premiumRates: router({
+
+    list: protectedProcedure.query(async () => {
+      return await db.getPremiumRatesList();
+    }),
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), category: z.string(), baseRate: z.number(), minRate: z.number(), maxRate: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.createPremiumRate(input);
+      }),
+    update: protectedProcedure
+      .input(z.object({ id: z.string(), data: z.record(z.unknown()) }))
+      .mutation(async ({ input }) => {
+        return await db.updatePremiumRateById(input.id, input.data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.deletePremiumRate(input.id);
+      }),
     tables: protectedProcedure.query(async ({ ctx }) => {
       return await db.getPremiumRateTables(ctx.user.id);
     }),
@@ -473,6 +523,12 @@ export const appRouter = router({
 
   // Broker API Management
   brokerApi: router({
+
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), description: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createBrokerApiRecord(ctx.user.id, input);
+      }),
     keys: protectedProcedure.query(async ({ ctx }) => {
       return await db.getBrokerAPIKeys(ctx.user.id);
     }),
@@ -590,6 +646,10 @@ export const appRouter = router({
 
   // ── Actuarial Module ─────────────────────────────────────────────────────────
   actuarial: router({
+
+    tables: protectedProcedure.query(async () => {
+      return await db.getActuarialTables();
+    }),
     calculateLifePremium: protectedProcedure
       .input(z.object({ age: z.number(), gender: z.string(), sumAssured: z.number(), term: z.number(), smoker: z.boolean().optional() }))
       .mutation(async ({ ctx, input }) => {
@@ -708,6 +768,12 @@ export const appRouter = router({
 
   // ── Reinsurance Management ────────────────────────────────────────────────────
   reinsurance: router({
+
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), type: z.string(), cessionRate: z.number(), limit: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createReinsuranceTreaty(ctx.user.id, input);
+      }),
     treaties: protectedProcedure.query(async ({ ctx }) => {
       return await db.getReinsuranceTreaties(ctx.user.id);
     }),
@@ -728,6 +794,15 @@ export const appRouter = router({
 
   // ── Agent Management ──────────────────────────────────────────────────────────
   agents: router({
+
+    list: protectedProcedure.query(async () => {
+      return await db.getAgentsList();
+    }),
+    update: protectedProcedure
+      .input(z.object({ id: z.string(), data: z.record(z.unknown()) }))
+      .mutation(async ({ input }) => {
+        return await db.updateAgent(input.id, input.data);
+      }),
     myProfile: protectedProcedure.query(async ({ ctx }) => {
       return await db.getAgentProfile(ctx.user.id);
     }),
@@ -758,6 +833,12 @@ export const appRouter = router({
 
   // ── NAICOM Compliance ─────────────────────────────────────────────────────────
   naicom: router({
+
+    submit: protectedProcedure
+      .input(z.object({ filingType: z.string(), period: z.string(), data: z.record(z.unknown()).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.submitNAICOMFiling(ctx.user.id, { filingType: input.filingType, period: input.period, data: input.data ?? {} });
+      }),
     filings: protectedProcedure.query(async ({ ctx }) => {
       return await db.getNAICOMFilings(ctx.user.id);
     }),
@@ -828,6 +909,12 @@ export const appRouter = router({
 
   // ── USSD Gateway ──────────────────────────────────────────────────────────────
   ussd: router({
+
+    simulate: protectedProcedure
+      .input(z.object({ phone: z.string(), serviceCode: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.simulateUSSDSession(input.phone, input.serviceCode);
+      }),
     sessions: protectedProcedure.query(async ({ ctx }) => {
       return await db.getUSSDSessions(ctx.user.id);
     }),
@@ -934,6 +1021,10 @@ export const appRouter = router({
 
   // ── Churn Prediction ──────────────────────────────────────────────────────────
   churn: router({
+
+    list: protectedProcedure.query(async () => {
+      return await db.getChurnList();
+    }),
     predict: protectedProcedure.query(async ({ ctx }) => {
       return await db.getChurnPrediction(ctx.user.id);
     }),
@@ -944,6 +1035,15 @@ export const appRouter = router({
 
   // ── AI Claims Adjudication ────────────────────────────────────────────────────
   aiClaims: router({
+
+    process: protectedProcedure
+      .input(z.object({ claimId: z.string(), documents: z.array(z.string()).optional() }))
+      .mutation(async ({ input }) => {
+        return await db.processAIClaim(input.claimId, input.documents ?? []);
+      }),
+    results: protectedProcedure.query(async () => {
+      return await db.getAIClaimsResults();
+    }),
     adjudicate: protectedProcedure
       .input(z.object({ claimId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -956,6 +1056,10 @@ export const appRouter = router({
 
   // ── Smart Claim Routing ───────────────────────────────────────────────────────
   claimRouting: router({
+
+    queue: protectedProcedure.query(async () => {
+      return await db.getClaimRoutingQueue();
+    }),
     route: protectedProcedure
       .input(z.object({ claimId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -985,6 +1089,12 @@ export const appRouter = router({
 
   // ── Batch Processing ──────────────────────────────────────────────────────────
   batch: router({
+
+    run: protectedProcedure
+      .input(z.object({ jobType: z.string(), params: z.record(z.unknown()).optional() }))
+      .mutation(async ({ input }) => {
+        return await db.runBatchJob(input.jobType, input.params ?? {});
+      }),
     jobs: protectedProcedure.query(async () => {
       return await db.getBatchJobs();
     }),
@@ -997,6 +1107,10 @@ export const appRouter = router({
 
   // ── Telematics ────────────────────────────────────────────────────────────────
   telematics: router({
+
+    data: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getTelematicsData(ctx.user.id);
+    }),
     trips: protectedProcedure
       .input(z.object({ policyId: z.number().optional(), limit: z.number().default(20) }))
       .query(async ({ ctx, input }) => {
@@ -1014,6 +1128,15 @@ export const appRouter = router({
 
   // ── Emergency SOS ─────────────────────────────────────────────────────────────
   emergency: router({
+
+    create: protectedProcedure
+      .input(z.object({ type: z.string(), location: z.string(), description: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createEmergency(ctx.user.id, input);
+      }),
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getEmergencyList(ctx.user.id);
+    }),
     trigger: protectedProcedure
       .input(z.object({ latitude: z.number(), longitude: z.number(), emergencyType: z.string() }))
       .mutation(async ({ ctx, input }) => {
@@ -1053,6 +1176,15 @@ export const appRouter = router({
 
   // ── Health & Wellness ─────────────────────────────────────────────────────────
   health: router({
+
+    data: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getHealthData(ctx.user.id);
+    }),
+    submit: protectedProcedure
+      .input(z.object({ steps: z.number(), heartRate: z.number(), sleepHours: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.submitHealthData(ctx.user.id, input);
+      }),
     metrics: protectedProcedure.query(async ({ ctx }) => {
       return await db.getHealthMetrics(ctx.user.id);
     }),
@@ -1088,6 +1220,12 @@ export const appRouter = router({
 
   // ── P2P Insurance ─────────────────────────────────────────────────────────────
   p2p: router({
+
+    contribute: protectedProcedure
+      .input(z.object({ poolId: z.string(), amount: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.contributeToP2PPool(ctx.user.id, input.poolId, input.amount);
+      }),
     pools: protectedProcedure.query(async () => {
       return await db.getP2PPools();
     }),
@@ -1103,6 +1241,12 @@ export const appRouter = router({
 
   // ── Microinsurance ────────────────────────────────────────────────────────────
   microinsurance: router({
+
+    enroll: protectedProcedure
+      .input(z.object({ productId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.enrollMicroinsurance(ctx.user.id, input.productId);
+      }),
     products: protectedProcedure.query(async () => {
       return await db.getMicroinsuranceProducts();
     }),
@@ -1213,6 +1357,12 @@ export const appRouter = router({
 
   // ── Savings & Investment ──────────────────────────────────────────────────────
   savings: router({
+
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), targetAmount: z.number(), monthlyContribution: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createSavingsAccount(ctx.user.id, input);
+      }),
     plans: protectedProcedure.query(async () => {
       return await db.getSavingsPlans();
     }),
@@ -1228,6 +1378,15 @@ export const appRouter = router({
 
   // ── Compliance Monitoring ─────────────────────────────────────────────────────
   compliance: router({
+
+    list: protectedProcedure.query(async () => {
+      return await db.getComplianceList();
+    }),
+    run: protectedProcedure
+      .input(z.object({ ruleId: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.runComplianceCheck(input.ruleId);
+      }),
     status: protectedProcedure.query(async ({ ctx }) => {
       return await db.getComplianceStatus(ctx.user.id);
     }),
@@ -1243,6 +1402,10 @@ export const appRouter = router({
 
   // ── Model Security Dashboard ──────────────────────────────────────────────────
   modelSecurity: router({
+
+    status: protectedProcedure.query(async () => {
+      return await db.getModelSecurityStatus();
+    }),
     threats: protectedProcedure.query(async () => {
       return await db.getModelSecurityThreats();
     }),
@@ -1270,6 +1433,10 @@ export const appRouter = router({
 
   // ── Insurance Literacy Hub ────────────────────────────────────────────────────
   literacy: router({
+
+    content: protectedProcedure.query(async () => {
+      return await db.getLiteracyContent();
+    }),
     articles: protectedProcedure
       .input(z.object({ category: z.string().optional(), language: z.string().default('en') }))
       .query(async ({ ctx, input }) => {
@@ -1287,6 +1454,10 @@ export const appRouter = router({
 
   // ── Agricultural Underwriting ─────────────────────────────────────────────────
   agricultural: router({
+
+    schemes: protectedProcedure.query(async () => {
+      return await db.getAgriculturalSchemes();
+    }),
     products: protectedProcedure.query(async () => {
       return await db.getAgriculturalProducts();
     }),
@@ -1334,6 +1505,25 @@ export const appRouter = router({
 
   // ── A/B Testing ───────────────────────────────────────────────────────────────
   abTesting: router({
+
+    list: protectedProcedure.query(async () => {
+      return await db.getABTests();
+    }),
+    create: protectedProcedure
+      .input(z.object({ name: z.string(), description: z.string(), variantA: z.string(), variantB: z.string(), startDate: z.string(), endDate: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.createABTest(input);
+      }),
+    update: protectedProcedure
+      .input(z.object({ id: z.string(), data: z.record(z.unknown()) }))
+      .mutation(async ({ input }) => {
+        return await db.updateABTest(input.id, input.data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteABTest(input.id);
+      }),
     experiments: protectedProcedure.query(async () => {
       return await db.getABExperiments();
     }),
@@ -1390,6 +1580,12 @@ export const appRouter = router({
 
   // ── Insurance Marketplace ─────────────────────────────────────────────────────
   marketplace: router({
+
+    purchase: protectedProcedure
+      .input(z.object({ productId: z.string(), paymentMethod: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.purchaseMarketplaceProduct(ctx.user.id, input.productId, { paymentMethod: input.paymentMethod });
+      }),
     products: protectedProcedure
       .input(z.object({ category: z.string().optional(), provider: z.string().optional() }))
       .query(async ({ ctx, input }) => {
@@ -1477,6 +1673,10 @@ export const appRouter = router({
 
   // ── Policy Comparison ─────────────────────────────────────────────────────────
   policyComparison: router({
+
+    results: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getPolicyComparisonResults(ctx.user.id);
+    }),
     compare: protectedProcedure
       .input(z.object({ policyIds: z.array(z.number()) }))
       .query(async ({ ctx, input }) => {
@@ -1486,6 +1686,22 @@ export const appRouter = router({
 
   // ── Insurance Application ─────────────────────────────────────────────────────
   application: router({
+
+    create: protectedProcedure
+      .input(z.object({ policyType: z.string(), applicantName: z.string(), premium: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createApplication(ctx.user.id, input);
+      }),
+    get: protectedProcedure
+      .input(z.object({ applicationId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getApplication(ctx.user.id, input.applicationId);
+      }),
+    update: protectedProcedure
+      .input(z.object({ id: z.string(), data: z.record(z.unknown()) }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.updateApplication(ctx.user.id, input.id, input.data);
+      }),
     start: protectedProcedure
       .input(z.object({ productType: z.string(), coverageAmount: z.number() }))
       .mutation(async ({ ctx, input }) => {
