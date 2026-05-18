@@ -155,10 +155,8 @@ export const commissionClawbackRouter = router({
           referenceId: `CLB-${clawback.id}`,
         } as any);
       } catch (e) {
-        // @ts-expect-error middleware type mismatch
         logger.warn(
-          "[CommissionClawback] Middleware event failed:",
-          e instanceof Error ? e.message : String(e)
+          `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
       return { success: true, id: clawback.id, message: "Clawback initiated" };
@@ -193,10 +191,8 @@ export const commissionClawbackRouter = router({
             eventType: "commission.clawback.applied" as any,
           } as any);
         } catch (e) {
-          // @ts-expect-error auto-fix
           logger.warn(
-            "[CommissionClawback] Middleware event failed:",
-            e instanceof Error ? e.message : String(e)
+            `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
           );
         }
         return { success: true, message: "Clawback approved and applied" };

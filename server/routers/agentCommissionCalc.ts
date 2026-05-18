@@ -129,10 +129,8 @@ export const agentCommissionCalcRouter = router({
           referenceId: `CALC-${Date.now()}`,
         } as any);
       } catch (e) {
-        // @ts-expect-error middleware type mismatch
         logger.warn(
-          "[AgentCommCalc] Middleware event failed:",
-          e instanceof Error ? e.message : String(e)
+          `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
       return {
@@ -241,10 +239,8 @@ export const agentCommissionCalcRouter = router({
             eventType: "commission.payout.approved" as any,
           } as any);
         } catch (e) {
-          // @ts-expect-error auto-fix
           logger.warn(
-            "[AgentCommCalc] Middleware event failed:",
-            e instanceof Error ? e.message : String(e)
+            `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
           );
         }
         return {
