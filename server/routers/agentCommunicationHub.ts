@@ -1,49 +1,27 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents, notification_logs, auditLog } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { chatSessions, chatMessages, auditLog } from "../../drizzle/schema";
 
 export const agentCommunicationHubRouter = router({
-  getChannels: protectedProcedure.query(async () => {
-    return { channels: [
-      { id: "sms", name: "SMS", enabled: true, cost: 0.02 },
-      { id: "ussd", name: "USSD Push", enabled: true, cost: 0.01 },
-      { id: "whatsapp", name: "WhatsApp", enabled: true, cost: 0.005 },
-      { id: "push", name: "Push Notification", enabled: true, cost: 0 },
-      { id: "email", name: "Email", enabled: true, cost: 0.001 }
-    ]};
+  listSessions: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.status) conditions.push(eq(chatSessions.status, input.status as any));
+    const rows = await db.select().from(chatSessions).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50);
+    return { sessions: rows, total: rows.length };
   }),
-  sendMessage: protectedProcedure
-    .input(z.object({ agentId: z.number(), channel: z.string(), message: z.string(), priority: z.enum(["low", "normal", "high", "critical"]).default("normal") }))
-    .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      const messageId = crypto.randomUUID();
-      const [notif] = await db.insert(notification_logs).values({ recipientId: String(input.agentId), recipientType: "agent", subject: `[${input.channel.toUpperCase()}] Agent Message`, body: input.message, status: "sent" }).returning();
-      await db.insert(auditLog).values({ action: "agent_message_sent", resource: "notifications", resourceId: String(notif.id), status: "success", metadata: { agentId: input.agentId, channel: input.channel, priority: input.priority } });
-      return { sent: true, messageId, notificationId: notif.id, channel: input.channel, timestamp: new Date().toISOString() };
-    }),
-  getMessageHistory: protectedProcedure
-    .input(z.object({ agentId: z.number(), limit: z.number().default(50) }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const rows = await db.select().from(auditLog).where(sql`${auditLog.action} = 'agent_message_sent' AND (${auditLog.metadata}->>'agentId')::int = ${input.agentId}`).orderBy(desc(auditLog.createdAt)).limit(input.limit);
-      return { messages: rows.map(r => ({ id: r.resourceId, channel: (r.metadata as Record<string, unknown>)?.channel, timestamp: r.createdAt, status: r.status })), total: rows.length, agentId: input.agentId };
-    }),
-  broadcastAlert: protectedProcedure
-    .input(z.object({ message: z.string(), channels: z.array(z.string()), targetGroup: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      const broadcastId = crypto.randomUUID();
-      const [agentCount] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, true));
-      await db.insert(notification_logs).values({ recipientId: "broadcast", recipientType: "all", subject: "Broadcast Alert", body: input.message, status: "sent" });
-      await db.insert(auditLog).values({ action: "broadcast_alert_sent", resource: "notifications", resourceId: broadcastId, status: "success", metadata: { channels: input.channels, targetGroup: input.targetGroup, recipientCount: Number(agentCount.value) } });
-      return { broadcastId, recipientCount: Number(agentCount.value), channels: input.channels, status: "sent" };
-    }),
+  sendMessage: protectedProcedure.input(z.object({ sessionId: z.number(), content: z.string().min(1).max(2000), senderType: z.enum(["agent", "support", "system"]).default("agent") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [msg] = await db.insert(chatMessages).values({ sessionId: input.sessionId, content: input.content, senderType: input.senderType as any }).returning();
+    await db.insert(auditLog).values({ action: "message_sent", resource: "chat_messages", resourceId: String(msg.id), status: "success", metadata: { sessionId: input.sessionId } });
+    return { id: msg.id, sessionId: input.sessionId, status: "sent" };
+  }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [totalMessages] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "agent_message_sent"));
-    const [totalBroadcasts] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "broadcast_alert_sent"));
-    return { totalMessages: Number(totalMessages.value), totalBroadcasts: Number(totalBroadcasts.value), lastUpdated: new Date().toISOString() };
+    const [totalSessions] = await db.select({ value: count() }).from(chatSessions);
+    const [totalMessages] = await db.select({ value: count() }).from(chatMessages);
+    return { totalSessions: Number(totalSessions.value), totalMessages: Number(totalMessages.value) };
   }),
 });

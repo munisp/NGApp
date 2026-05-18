@@ -1,46 +1,20 @@
-// Sprint 95: Production implementation — advancedBiReporting
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { biReportDefinitions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum, and } from "drizzle-orm";
+import { biReportDefinitions, transactions, agents } from "../../drizzle/schema";
 
 export const advancedBiReportingRouter = router({
-  listReports: protectedProcedure
-    .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const rows = await db.select().from(biReportDefinitions).limit(input.limit).offset(input.offset);
-      const [{ total }] = await db.select({ total: count() }).from(biReportDefinitions);
-      return { rows, total };
-    }),
-  getReport: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const [row] = await db.select().from(biReportDefinitions).where(eq(biReportDefinitions.id, input.id));
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Report not found" });
-      return row;
-    }),
-  getReportMetrics: protectedProcedure.query(async () => {
+  listReports: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [{ total }] = await db.select({ total: count() }).from(biReportDefinitions);
-    return { totalReports: total, generatedAt: new Date().toISOString() };
+    const rows = await db.select().from(biReportDefinitions).orderBy(desc(biReportDefinitions.createdAt)).limit(input?.limit ?? 50);
+    return { reports: rows, total: rows.length };
   }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  executiveKpis: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  reportBuilder: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getKpis: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [txCount] = await db.select({ value: count() }).from(transactions);
+    const [txVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    const [agentCount] = await db.select({ value: count() }).from(agents);
+    return { totalTransactions: Number(txCount.value), totalVolume: Number(txVolume.value ?? 0), totalAgents: Number(agentCount.value) };
+  }),
 });

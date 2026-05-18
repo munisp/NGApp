@@ -1,35 +1,28 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, sum, and, gte } from "drizzle-orm";
+import { notification_logs as notificationLogs, auditLog } from "../../drizzle/schema";
 
 export const smsNotificationsRouter = router({
   getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalSent: 0, delivered: 0, failed: 0, deliveryRate: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "sms_sent")).orderBy(desc(auditLog.createdAt)).limit(500);
-    const delivered = rows.filter(r => r.status === "success").length;
-    return { totalSent: rows.length, delivered, failed: rows.filter(r => r.status === "failure").length, deliveryRate: rows.length > 0 ? Math.round(delivered / rows.length * 100) : 0 };
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(notificationLogs);
+    const [sent] = await db.select({ value: count() }).from(notificationLogs).where(eq(notificationLogs.status, "sent"));
+    const [failed] = await db.select({ value: count() }).from(notificationLogs).where(eq(notificationLogs.status, "failed"));
+    return { totalNotifications: Number(total.value), sentCount: Number(sent.value), failedCount: Number(failed.value) };
   }),
-  send: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), template: z.string().optional(), priority: z.enum(["low", "normal", "high"]).default("normal") })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const msgId = "SMS-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "sms_sent", resource: "sms", resourceId: msgId, status: "success", metadata: { to: input.to, template: input.template, priority: input.priority } });
-    return { success: true, messageId: msgId };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.status) conditions.push(eq(notificationLogs.status, input.status));
+    const rows = await db.select().from(notificationLogs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(notificationLogs.createdAt)).limit(input?.limit ?? 50);
+    return { notifications: rows, total: rows.length };
   }),
-  sendBulk: protectedProcedure.input(z.object({ recipients: z.array(z.string()), message: z.string(), template: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const batchId = "SMSBATCH-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "sms_bulk_sent", resource: "sms", resourceId: batchId, status: "success", metadata: { recipientCount: input.recipients.length, template: input.template } });
-    return { success: true, batchId, recipientCount: input.recipients.length };
-  }),
-  listHistory: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { messages: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "sms_sent")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { messages: rows.map(r => ({ id: r.id, messageId: r.resourceId, ...r.metadata as any, status: r.status, sentAt: r.createdAt })), total: rows.length };
+  send: protectedProcedure.input(z.object({ recipientId: z.string(), body: z.string().min(1).max(1000), subject: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [notif] = await db.insert(notificationLogs).values({ recipientId: input.recipientId, recipientType: "agent", body: input.body, subject: input.subject ?? "SMS Notification", status: "pending" }).returning();
+    await db.insert(auditLog).values({ action: "sms_sent", resource: "notification_logs", resourceId: String(notif.id), status: "success", metadata: { recipientId: input.recipientId } });
+    return { id: notif.id, status: "pending" };
   }),
 });

@@ -1,28 +1,23 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { notification_logs as notificationLogs, auditLog } from "../../drizzle/schema";
 
 export const announcementReactionsRouter = router({
-  getReactions: protectedProcedure.input(z.object({ announcementId: z.string() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { reactions: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(and(eq(auditLog.resource, "announcements"), eq(auditLog.resourceId, input.announcementId), eq(auditLog.action, "reaction_added"))).orderBy(desc(auditLog.createdAt)).limit(100);
-    const reactionMap: Record<string, number> = {};
-    rows.forEach(r => { const emoji = (r.metadata as any)?.emoji ?? "thumbsup"; reactionMap[emoji] = (reactionMap[emoji] || 0) + 1; });
-    return { reactions: Object.entries(reactionMap).map(([emoji, cnt]) => ({ emoji, count: cnt })), total: rows.length };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(notificationLogs).orderBy(desc(notificationLogs.createdAt)).limit(input?.limit ?? 50);
+    return { announcements: rows, total: rows.length };
   }),
-  addReaction: protectedProcedure.input(z.object({ announcementId: z.string(), emoji: z.string(), userId: z.string() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "reaction_added", resource: "announcements", resourceId: input.announcementId, status: "success", metadata: { emoji: input.emoji, userId: input.userId } });
-    return { success: true };
+  react: protectedProcedure.input(z.object({ announcementId: z.number(), reaction: z.string().min(1) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "announcement_reaction", resource: "notification_logs", resourceId: String(input.announcementId), status: "success", metadata: { reaction: input.reaction } });
+    return { announcementId: input.announcementId, reaction: input.reaction, status: "recorded" };
   }),
-  removeReaction: protectedProcedure.input(z.object({ announcementId: z.string(), emoji: z.string(), userId: z.string() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "reaction_removed", resource: "announcements", resourceId: input.announcementId, status: "success", metadata: { emoji: input.emoji, userId: input.userId } });
-    return { success: true };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(notificationLogs);
+    return { totalAnnouncements: Number(total.value) };
   }),
 });

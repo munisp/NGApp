@@ -1,82 +1,28 @@
-
-// @ts-ignore
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { transactions, agents } from "../../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
-import * as crypto from "crypto";
-
-function generateQrPayload(merchantId: string, amount: number, currency: string, reference: string): string {
-  const payload = {
-    version: "01",
-    type: "dynamic",
-    merchantId,
-    amount: amount.toFixed(2),
-    currency,
-    reference,
-    timestamp: Date.now(),
-    checksum: crypto.createHash("sha256").update(`${merchantId}:${amount}:${reference}`).digest("hex").slice(0, 8),
-  };
-  return Buffer.from(JSON.stringify(payload)).toString("base64");
-}
-
-function validateQrExpiry(createdAt: number, expiryMinutes: number = 15): boolean {
-  return Date.now() - createdAt < expiryMinutes * 60 * 1000;
-}
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { qrCodes, auditLog } from "../../drizzle/schema";
 
 export const dynamicQrPaymentRouter = router({
-  generate: protectedProcedure
-    .input(z.object({
-      merchantId: z.string().min(1),
-      amount: z.number().positive(),
-      currency: z.string().length(3).default("KES"),
-      description: z.string().optional(),
-      expiryMinutes: z.number().min(1).max(60).default(15),
-    }))
-    .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      const reference = `QR-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
-      const qrPayload = generateQrPayload(input.merchantId, input.amount, input.currency, reference);
-      const expiresAt = new Date(Date.now() + input.expiryMinutes * 60 * 1000);
-      return { qrPayload, reference, expiresAt, amount: input.amount, currency: input.currency };
-    }),
-
-  verify: protectedProcedure
-    .input(z.object({ qrPayload: z.string(), payerPhone: z.string() }))
-    .mutation(async ({ input }) => {
-      const decoded = JSON.parse(Buffer.from(input.qrPayload, "base64").toString());
-      const isValid = validateQrExpiry(decoded.timestamp);
-      if (!isValid) return { success: false, error: "QR code expired" };
-      return { success: true, merchantId: decoded.merchantId, amount: parseFloat(decoded.amount), reference: decoded.reference };
-    }),
-
-  listByMerchant: protectedProcedure
-    .input(z.object({ merchantId: z.string(), limit: z.number().default(20) }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const rows = await db.select().from(transactions).where(eq(transactions.status, "completed")).limit(input.limit).orderBy(desc(transactions.createdAt));
-      return { items: rows, total: rows.length };
-    }),
-
-  stats: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const result = await db.select({ count: sql<number>`count(*)`, total: sql<number>`COALESCE(sum(amount), 0)` }).from(transactions);
-    return { totalPayments: result[0]?.count || 0, totalVolume: result[0]?.total || 0 };
+    const conditions = [];
+    if (input?.status) conditions.push(eq(qrCodes.status, input.status as any));
+    const rows = await db.select().from(qrCodes).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(qrCodes.createdAt)).limit(input?.limit ?? 50);
+    return { qrCodes: rows, total: rows.length };
   }),
-  generateQr: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  getStats: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  listPayments: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  generate: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.number().positive(), description: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const code = `QR-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const [qr] = await db.insert(qrCodes).values({ code, agentId: input.agentId, type: "payment", status: "active", amount: String(input.amount), description: input.description ?? "Dynamic QR Payment" } as any).returning();
+    await db.insert(auditLog).values({ action: "qr_code_generated", resource: "qr_codes", resourceId: String(qr.id), status: "success", metadata: { agentId: input.agentId, amount: input.amount } });
+    return { id: qr.id, agentId: input.agentId, amount: input.amount, status: "active" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(qrCodes);
+    const [active] = await db.select({ value: count() }).from(qrCodes).where(eq(qrCodes.status, "active" as any));
+    return { totalCodes: Number(total.value), activeCodes: Number(active.value) };
+  }),
 });

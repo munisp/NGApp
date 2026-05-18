@@ -1,37 +1,27 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { platform_incidents, auditLog } from "../../drizzle/schema";
 
 export const incidentManagementRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalIncidents: 0, open: 0, resolved: 0, critical: 0, mttrMinutes: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "incident_created")).orderBy(desc(auditLog.createdAt)).limit(500);
-    const open = rows.filter(r => (r.metadata as any)?.resolved !== true).length;
-    const critical = rows.filter(r => (r.metadata as any)?.severity === "critical").length;
-    return { totalIncidents: rows.length, open, resolved: rows.length - open, critical, mttrMinutes: 45 };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), severity: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.severity) conditions.push(eq(platform_incidents.severity, input.severity));
+    const rows = await db.select().from(platform_incidents).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(platform_incidents.startedAt)).limit(input?.limit ?? 50);
+    return { incidents: rows, total: rows.length };
   }),
-  listIncidents: protectedProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { incidents: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "incident_created")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    let incidents = rows.map(r => ({ id: r.id, incidentId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt }));
-    if (input?.severity) incidents = incidents.filter((i: any) => i.severity === input.severity);
-    return { incidents, total: incidents.length };
+  create: protectedProcedure.input(z.object({ title: z.string().min(3).max(256), severity: z.enum(["critical", "high", "medium", "low"]).default("medium"), description: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [inc] = await db.insert(platform_incidents).values({ title: input.title, severity: input.severity, status: "open", description: input.description ?? "" }).returning();
+    await db.insert(auditLog).values({ action: "incident_created", resource: "platform_incidents", resourceId: String(inc.id), status: "success", metadata: { title: input.title, severity: input.severity } });
+    return { id: inc.id, title: input.title, status: "open" };
   }),
-  createIncident: protectedProcedure.input(z.object({ title: z.string(), description: z.string(), severity: z.enum(["low", "medium", "high", "critical"]), assignee: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const incidentId = "INC-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "incident_created", resource: "incidents", resourceId: incidentId, status: "warning", metadata: { title: input.title, description: input.description, severity: input.severity, assignee: input.assignee, resolved: false } });
-    return { success: true, incidentId };
-  }),
-  resolveIncident: protectedProcedure.input(z.object({ incidentId: z.string(), resolution: z.string() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "incident_resolved", resource: "incidents", resourceId: input.incidentId, status: "success", metadata: { resolution: input.resolution, resolved: true } });
-    return { success: true };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(platform_incidents);
+    const [open] = await db.select({ value: count() }).from(platform_incidents).where(eq(platform_incidents.status, "open"));
+    return { totalIncidents: Number(total.value), openIncidents: Number(open.value) };
   }),
 });

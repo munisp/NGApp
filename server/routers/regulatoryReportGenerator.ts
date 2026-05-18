@@ -1,27 +1,26 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { complianceReports, auditLog } from "../../drizzle/schema";
 
 export const regulatoryReportGeneratorRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalReports: 0, pendingSubmissions: 0, completedSubmissions: 0, nextDeadline: null };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "regulatory_report_generated")).orderBy(desc(auditLog.createdAt)).limit(100);
-    return { totalReports: rows.length, pendingSubmissions: 0, completedSubmissions: rows.length, nextDeadline: null };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.status) conditions.push(eq(complianceReports.status, input.status));
+    const rows = await db.select().from(complianceReports).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(complianceReports.periodEnd)).limit(input?.limit ?? 50);
+    return { reports: rows, total: rows.length };
   }),
-  listReports: protectedProcedure.input(z.object({ regulatoryBody: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { reports: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "regulatory_report_generated")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { reports: rows.map(r => ({ id: r.id, ...r.metadata as any, generatedAt: r.createdAt })), total: rows.length };
+  generate: protectedProcedure.input(z.object({ reportType: z.string().min(1), period: z.string().min(1) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [report] = await db.insert(complianceReports).values({ reportType: input.reportType, period: input.period, status: "draft", totalAlerts: 0, highAlerts: 0, mediumAlerts: 0, lowAlerts: 0, escalatedAlerts: 0, resolvedAlerts: 0 }).returning();
+    await db.insert(auditLog).values({ action: "regulatory_report_generated", resource: "compliance_reports", resourceId: String(report.id), status: "success", metadata: { reportType: input.reportType, period: input.period } });
+    return { id: report.id, reportType: input.reportType, status: "draft" };
   }),
-  generateReport: protectedProcedure.input(z.object({ reportType: z.string(), regulatoryBody: z.enum(["CBN", "NDIC", "SEC", "NFIU", "FIRS"]), dateFrom: z.string(), dateTo: z.string(), format: z.enum(["pdf", "csv", "xml"]).default("pdf") })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const reportId = "REG-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "regulatory_report_generated", resource: "regulatory_reports", resourceId: reportId, status: "success", metadata: { ...input } as any });
-    return { success: true, reportId, status: "generating" };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(complianceReports);
+    return { totalReports: Number(total.value) };
   }),
 });

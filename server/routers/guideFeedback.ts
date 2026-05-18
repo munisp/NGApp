@@ -1,31 +1,23 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { notification_logs as notificationLogs, auditLog } from "../../drizzle/schema";
 
 export const guideFeedbackRouter = router({
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(notificationLogs).orderBy(desc(notificationLogs.createdAt)).limit(input?.limit ?? 50);
+    return { feedback: rows, total: rows.length };
+  }),
+  submit: protectedProcedure.input(z.object({ guideId: z.string().min(1), rating: z.number().int().min(1).max(5), comment: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "guide_feedback_submitted", resource: "guide_feedback", resourceId: input.guideId, status: "success", metadata: { rating: input.rating, comment: input.comment } });
+    return { guideId: input.guideId, rating: input.rating, status: "submitted" };
+  }),
   getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalFeedback: 0, avgRating: 0, helpfulCount: 0, notHelpfulCount: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "guide_feedback")).orderBy(desc(auditLog.createdAt)).limit(500);
-    const helpful = rows.filter(r => (r.metadata as any)?.helpful === true).length;
-    const ratings = rows.map(r => (r.metadata as any)?.rating).filter((r: any) => typeof r === "number");
-    const avgRating = ratings.length > 0 ? Math.round(ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length * 10) / 10 : 0;
-    return { totalFeedback: rows.length, avgRating, helpfulCount: helpful, notHelpfulCount: rows.length - helpful };
-  }),
-  listFeedback: protectedProcedure.input(z.object({ guideId: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { feedback: [], total: 0 };
-    const conditions: any[] = [eq(auditLog.action, "guide_feedback")];
-    if (input?.guideId) conditions.push(eq(auditLog.resourceId, input.guideId));
-    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { feedback: rows.map(r => ({ id: r.id, guideId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
-  }),
-  submitFeedback: protectedProcedure.input(z.object({ guideId: z.string(), rating: z.number().min(1).max(5), helpful: z.boolean(), comment: z.string().optional(), userId: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "guide_feedback", resource: "guides", resourceId: input.guideId, status: "success", metadata: { rating: input.rating, helpful: input.helpful, comment: input.comment, userId: input.userId } });
-    return { success: true };
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(notificationLogs);
+    return { totalFeedback: Number(total.value) };
   }),
 });

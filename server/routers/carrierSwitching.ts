@@ -1,28 +1,20 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { simFailoverLog, auditLog } from "../../drizzle/schema";
 
 export const carrierSwitchingRouter = router({
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), terminalId: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.terminalId) conditions.push(eq(simFailoverLog.terminalId, input.terminalId));
+    const rows = await db.select().from(simFailoverLog).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(simFailoverLog.switchedAt)).limit(input?.limit ?? 50);
+    return { switches: rows, total: rows.length };
+  }),
   getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalSwitches: 0, successRate: 0, avgSwitchTimeMs: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "carrier_switch")).orderBy(desc(auditLog.createdAt)).limit(500);
-    const success = rows.filter(r => r.status === "success").length;
-    return { totalSwitches: rows.length, successRate: rows.length > 0 ? Math.round(success / rows.length * 100) : 100, avgSwitchTimeMs: 250 };
-  }),
-  listSwitches: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { switches: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "carrier_switch")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { switches: rows.map(r => ({ id: r.id, ...r.metadata as any, status: r.status, switchedAt: r.createdAt })), total: rows.length };
-  }),
-  requestSwitch: protectedProcedure.input(z.object({ fromCarrier: z.string(), toCarrier: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const switchId = "SW-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "carrier_switch", resource: "carriers", resourceId: switchId, status: "success", metadata: { fromCarrier: input.fromCarrier, toCarrier: input.toCarrier, reason: input.reason } });
-    return { success: true, switchId };
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(simFailoverLog);
+    return { totalSwitches: Number(total.value) };
   }),
 });

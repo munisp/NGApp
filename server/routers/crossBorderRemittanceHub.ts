@@ -1,27 +1,21 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
+import { eq, desc, sql, count, sum, and } from "drizzle-orm";
 import { transactions, auditLog } from "../../drizzle/schema";
 
 export const crossBorderRemittanceHubRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalRemittances: 0, totalVolume: "0", corridors: 0, avgProcessingTime: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "remittance_sent")).orderBy(desc(auditLog.createdAt)).limit(500);
-    return { totalRemittances: rows.length, totalVolume: "0", corridors: 5, avgProcessingTime: 120 };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [eq(transactions.type, "Transfer")];
+    if (input?.status) conditions.push(eq(transactions.status, input.status as any));
+    const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
+    return { remittances: rows, total: rows.length };
   }),
-  listRemittances: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { remittances: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "remittance_sent")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { remittances: rows.map(r => ({ id: r.id, ...r.metadata as any, status: r.status, sentAt: r.createdAt })), total: rows.length };
-  }),
-  sendRemittance: protectedProcedure.input(z.object({ senderAgentId: z.number(), recipientPhone: z.string(), amount: z.number(), currency: z.string().default("NGN"), destinationCountry: z.string(), corridor: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const remittanceId = "REM-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "remittance_sent", resource: "remittances", resourceId: remittanceId, status: "success", metadata: { ...input } as any });
-    return { success: true, remittanceId };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(transactions).where(eq(transactions.type, "Transfer"));
+    const [volume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(eq(transactions.type, "Transfer"));
+    return { totalRemittances: Number(total.value), totalVolume: Number(volume.value ?? 0) };
   }),
 });

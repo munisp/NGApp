@@ -1,27 +1,24 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { complianceChecks, auditLog } from "../../drizzle/schema";
 
 export const regulatorySandboxTesterRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalTests: 0, passing: 0, failing: 0, sandboxEnvironments: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "sandbox_test_run")).orderBy(desc(auditLog.createdAt)).limit(100);
-    return { totalTests: rows.length, passing: rows.filter(r => r.status === "success").length, failing: rows.filter(r => r.status === "failure").length, sandboxEnvironments: 2 };
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(complianceChecks).where(eq(complianceChecks.checkType, "sandbox_test")).orderBy(desc(complianceChecks.createdAt)).limit(input?.limit ?? 50);
+    return { tests: rows, total: rows.length };
   }),
-  runTest: protectedProcedure.input(z.object({ testSuite: z.string(), environment: z.enum(["sandbox", "staging"]).default("sandbox"), parameters: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const testId = "SBX-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "sandbox_test_run", resource: "sandbox", resourceId: testId, status: "success", metadata: { testSuite: input.testSuite, environment: input.environment } });
-    return { success: true, testId, status: "completed" };
+  runTest: protectedProcedure.input(z.object({ ruleCode: z.string().min(1), testType: z.string().default("compliance") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [check] = await db.insert(complianceChecks).values({ checkType: "sandbox_test", ruleCode: input.ruleCode, result: "pass" }).returning();
+    await db.insert(auditLog).values({ action: "sandbox_test_run", resource: "compliance_checks", resourceId: String(check.id), status: "success", metadata: { ruleCode: input.ruleCode, testType: input.testType } });
+    return { id: check.id, ruleCode: input.ruleCode, result: "pass" };
   }),
-  listTests: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { tests: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "sandbox_test_run")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { tests: rows.map(r => ({ id: r.id, testId: r.resourceId, ...r.metadata as any, status: r.status, runAt: r.createdAt })), total: rows.length };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(complianceChecks).where(eq(complianceChecks.checkType, "sandbox_test"));
+    return { totalTests: Number(total.value) };
   }),
 });

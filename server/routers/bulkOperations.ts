@@ -1,32 +1,26 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { agents, transactions, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { data_export_jobs, auditLog } from "../../drizzle/schema";
 
 export const bulkOperationsRouter = router({
-  listOperations: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "bulk_operation")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { operations: rows.map(r => ({ id: r.resourceId, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const conditions = [eq(data_export_jobs.exportType, "bulk_operation")];
+    if (input?.status) conditions.push(eq(data_export_jobs.status, input.status));
+    const rows = await db.select().from(data_export_jobs).where(and(...conditions)).orderBy(desc(data_export_jobs.createdAt)).limit(input?.limit ?? 50);
+    return { operations: rows, total: rows.length };
   }),
-  bulkUpdateAgents: protectedProcedure.input(z.object({ agentIds: z.array(z.number()), updates: z.object({ isActive: z.boolean().optional(), tier: z.string().optional(), location: z.string().optional() }) })).mutation(async ({ input }) => {
+  create: protectedProcedure.input(z.object({ name: z.string().min(1), operationType: z.string().min(1) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    let updated = 0;
-    for (const agentId of input.agentIds) {
-      const updateData: Record<string, unknown> = {};
-      if (input.updates.isActive !== undefined) updateData.isActive = input.updates.isActive;
-      if (input.updates.tier) updateData.tier = input.updates.tier;
-      if (input.updates.location) updateData.location = input.updates.location;
-      await db.update(agents).set(updateData).where(eq(agents.id, agentId));
-      updated++;
-    }
-    await db.insert(auditLog).values({ action: "bulk_operation", resource: "agents", resourceId: "bulk-" + crypto.randomUUID(), status: "success", metadata: { type: "bulk_update_agents", count: updated, updates: input.updates } });
-    return { success: true, updated, total: input.agentIds.length };
+    const [job] = await db.insert(data_export_jobs).values({ name: input.name, exportType: "bulk_operation", format: "json", status: "pending", requestedBy: "system" }).returning();
+    await db.insert(auditLog).values({ action: "bulk_operation_created", resource: "data_export_jobs", resourceId: String(job.id), status: "success", metadata: { name: input.name, type: input.operationType } });
+    return { id: job.id, name: input.name, status: "pending" };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "bulk_operation"));
-    return { totalOperations: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(data_export_jobs).where(eq(data_export_jobs.exportType, "bulk_operation"));
+    return { totalOperations: Number(total.value) };
   }),
 });

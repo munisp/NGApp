@@ -1,33 +1,26 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { transactions, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { data_export_jobs, auditLog } from "../../drizzle/schema";
 
 export const transactionExportEngineRouter = router({
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [eq(data_export_jobs.exportType, "transactions")];
+    if (input?.status) conditions.push(eq(data_export_jobs.status, input.status));
+    const rows = await db.select().from(data_export_jobs).where(and(...conditions)).orderBy(desc(data_export_jobs.createdAt)).limit(input?.limit ?? 50);
+    return { exports: rows, total: rows.length };
+  }),
+  create: protectedProcedure.input(z.object({ name: z.string().min(1), format: z.string().default("csv"), filters: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [job] = await db.insert(data_export_jobs).values({ name: input.name, exportType: "transactions", format: input.format, filters: input.filters, status: "pending", requestedBy: "system" }).returning();
+    await db.insert(auditLog).values({ action: "tx_export_created", resource: "data_export_jobs", resourceId: String(job.id), status: "success", metadata: { name: input.name } });
+    return { id: job.id, name: input.name, status: "pending" };
+  }),
   getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalExports: 0, pendingExports: 0, exportFormats: 3 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "transaction_export")).orderBy(desc(auditLog.createdAt)).limit(100);
-    return { totalExports: rows.length, pendingExports: rows.filter(r => r.status === "warning").length, exportFormats: 3 };
-  }),
-  export: protectedProcedure.input(z.object({ format: z.enum(["csv", "xlsx", "pdf"]).default("csv"), dateFrom: z.string().optional(), dateTo: z.string().optional(), agentId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const exportId = "EXP-" + crypto.randomUUID().toUpperCase();
-    const conditions: any[] = [];
-    if (input.dateFrom) conditions.push(gte(transactions.createdAt, new Date(input.dateFrom)));
-    if (input.dateTo) conditions.push(lte(transactions.createdAt, new Date(input.dateTo)));
-    if (input.agentId) conditions.push(eq(transactions.agentId, input.agentId));
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
-    const [{ value: txCount }] = await db.select({ value: count() }).from(transactions).where(where);
-    await db.insert(auditLog).values({ action: "transaction_export", resource: "exports", resourceId: exportId, status: "success", metadata: { format: input.format, transactionCount: Number(txCount), dateFrom: input.dateFrom, dateTo: input.dateTo } });
-    return { success: true, exportId, transactionCount: Number(txCount), format: input.format };
-  }),
-  listExports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { exports: [], total: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "transaction_export")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { exports: rows.map(r => ({ id: r.id, exportId: r.resourceId, ...r.metadata as any, createdAt: r.createdAt })), total: rows.length };
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(data_export_jobs).where(eq(data_export_jobs.exportType, "transactions"));
+    return { totalExports: Number(total.value) };
   }),
 });
