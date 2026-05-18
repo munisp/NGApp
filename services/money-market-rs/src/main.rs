@@ -32,13 +32,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn price_tbill(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn price_tbill(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let face = input.get("face").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let discount_rate = input.get("discount_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let days = input.get("days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let result = tbill_price(face, discount_rate, days);
+    let _result_data = json!({"endpoint": "price_tbill"});
+    db_persist(&state, "price_tbill", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "price_tbill",
@@ -46,13 +52,19 @@ async fn price_tbill(req: actix_web::HttpRequest, body: web::Json<serde_json::Va
     }))
 }
 
-async fn repo_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn repo_rate(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let price = input.get("price").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let face = input.get("face").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let days = input.get("days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let result = tbill_yield(price, face, days);
+    let _result_data = json!({"endpoint": "repo_rate"});
+    db_persist(&state, "repo_rate", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "repo_rate",
@@ -60,12 +72,18 @@ async fn repo_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Valu
     }))
 }
 
-async fn cp_yield(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn cp_yield(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let collateral_type_s = input.get("collateral_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let collateral_type = collateral_type_s.as_str();
     let result = repo_haircut(collateral_type);
+    let _result_data = json!({"endpoint": "cp_yield"});
+    db_persist(&state, "cp_yield", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "cp_yield",
@@ -208,6 +226,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "money_market_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"money-market-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

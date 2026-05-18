@@ -35,13 +35,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn create_product(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn create_product(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let min_balance = input.get("min_balance").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let max_balance = input.get("max_balance").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let interest_rate = input.get("interest_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = validate_product_config(min_balance, max_balance, interest_rate);
+    let _result_data = json!({"endpoint": "create_product"});
+    db_persist(&state, "create_product", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "create_product",
@@ -49,7 +55,10 @@ async fn create_product(req: actix_web::HttpRequest, body: web::Json<serde_json:
     }))
 }
 
-async fn configure_features(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn configure_features(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let category_s = input.get("category").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -57,6 +66,9 @@ async fn configure_features(req: actix_web::HttpRequest, body: web::Json<serde_j
     let sub_s = input.get("sub").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let sub = sub_s.as_str();
     let result = product_code(category, sub);
+    let _result_data = json!({"endpoint": "configure_features"});
+    db_persist(&state, "configure_features", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "configure_features",
@@ -64,7 +76,10 @@ async fn configure_features(req: actix_web::HttpRequest, body: web::Json<serde_j
     }))
 }
 
-async fn product_eligibility(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn product_eligibility(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let age = input.get("age").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
@@ -72,6 +87,9 @@ async fn product_eligibility(req: actix_web::HttpRequest, body: web::Json<serde_
     let min_age = input.get("min_age").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let min_income = input.get("min_income").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = eligible(age, income, min_age, min_income);
+    let _result_data = json!({"endpoint": "product_eligibility"});
+    db_persist(&state, "product_eligibility", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "product_eligibility",
@@ -214,6 +232,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "product_factory_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"product-factory-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

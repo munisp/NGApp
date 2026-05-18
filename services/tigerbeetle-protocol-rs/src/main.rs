@@ -11,7 +11,8 @@ use std::time::Instant;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 #[derive(Clone)]
-struct AppState { start_time: Instant }
+struct AppState { start_time: Instant     db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct TBAccount {
@@ -77,7 +78,10 @@ async fn list_transfers() -> HttpResponse {
     HttpResponse::Ok().json(json!({"transfers": transfers, "total": 3}))
 }
 
-async fn create_transfer(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn create_transfer(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Created().json(json!({
         "success": true,
@@ -89,8 +93,17 @@ async fn create_transfer(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn commit_pending(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn commit_pending(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
+    let _result_data = json!({"endpoint": "create_transfer"});
+    db_persist(&state, "create_transfer", &_result_data).await;
+    let _result_data = json!({"endpoint": "commit_pending"});
+    db_persist(&state, "commit_pending", &_result_data).await;
+
+
     HttpResponse::Ok().json(json!({
         "success": true,
         "action": "commit",
@@ -100,8 +113,14 @@ async fn commit_pending(req: actix_web::HttpRequest, body: web::Json<serde_json:
     }))
 }
 
-async fn void_pending(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn void_pending(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
+    let _result_data = json!({"endpoint": "void_pending"});
+    db_persist(&state, "void_pending", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "success": true,
         "action": "void",
@@ -205,6 +224,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "tigerbeetle_protocol_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"tigerbeetle-protocol-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

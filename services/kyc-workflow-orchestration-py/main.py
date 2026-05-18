@@ -226,6 +226,25 @@ def compute_risk_assessment(workflow):
 import urllib.request
 import urllib.error
 
+# Rate limiting
+import threading as _rl_threading
+_rl_tokens = 100
+_rl_lock = _rl_threading.Lock()
+_rl_last_refill = [0.0]
+
+def _rl_allow():
+    global _rl_tokens
+    import time as _t
+    now = _t.time()
+    with _rl_lock:
+        if now - _rl_last_refill[0] >= 1.0:
+            _rl_tokens = 100
+            _rl_last_refill[0] = now
+        if _rl_tokens <= 0:
+            return False
+        _rl_tokens -= 1
+        return True
+
 class CircuitBreaker:
     def __init__(self, threshold=5, reset_after=30):
         self._failures = 0

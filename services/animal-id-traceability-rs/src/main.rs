@@ -24,7 +24,10 @@ async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "healthy", "service": "animal-id-traceability-rs"}))
 }
 
-async fn trace_animal(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn trace_animal(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let state_s = input.get("state").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -33,6 +36,16 @@ async fn trace_animal(req: actix_web::HttpRequest, body: web::Json<serde_json::V
     let species = species_s.as_str();
     let seq = input.get("seq").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let result = generate_nlis_tag(state, species, seq);
+    // Inter-service call: register_animal
+    let _upstream_url = std::env::var("AGRI_BANKING_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    match call_service_sync(&format!("{}/v1/register", _upstream_url), "{}") {
+        Ok(_resp) => eprintln!("animal-id-traceability-rs: register_animal ok"),
+        Err(e) => eprintln!("animal-id-traceability-rs: register_animal failed: {}", e),
+    }
+
+    let _result_data = json!({"endpoint": "trace_animal"});
+    db_persist(&state, "trace_animal", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "animal-id-traceability-rs",
         "endpoint": "trace_animal",
@@ -147,6 +160,54 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "animal_id_traceability_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"animal-id-traceability-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+fn call_service_sync(url: &str, body: &str) -> Result<String, String> {
+    use std::io::{Read, Write};
+    let url_parsed = url.strip_prefix("http://").unwrap_or(url);
+    let (host_port, path) = url_parsed.split_once('/').unwrap_or((url_parsed, "/"));
+    let host_port = if !host_port.contains(':') { format!("{}:8080", host_port) } else { host_port.to_string() };
+    match std::net::TcpStream::connect_timeout(&host_port.parse().map_err(|e| format!("{}", e))?, std::time::Duration::from_secs(5)) {
+        Ok(mut stream) => {
+            let host = host_port.split(':').next().unwrap_or("localhost");
+            let req = format!("POST /{} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", path, host, body.len(), body);
+            stream.write_all(req.as_bytes()).map_err(|e| format!("{}", e))?;
+            let mut resp = String::new();
+            stream.read_to_string(&mut resp).map_err(|e| format!("{}", e))?;
+            Ok(resp)
+        }
+        Err(e) => Err(format!("connection failed: {}", e))
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

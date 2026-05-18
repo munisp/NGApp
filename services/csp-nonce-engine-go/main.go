@@ -163,6 +163,13 @@ func handleCreate(w http.ResponseWriter, r *http.Request) {
 	records = append(records, rec)
 	domainStats.TotalRecords = len(records)
 
+	// Persist to database
+	if dataBytes, err := json.Marshal(rec.Data); err == nil {
+		if dbErr := dbInsert(rec.ID, serviceName, rec.Type, rec.Status, dataBytes); dbErr != nil {
+			log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+		}
+	}
+
 	auditLog = append(auditLog, AuditEntry{
 		ID: fmt.Sprintf("AUD-%08X", rand.Uint32()), Action: "create",
 		RecordID: rec.ID, Actor: rec.CreatedBy,
@@ -555,6 +562,34 @@ func sanitizeInput(s string) string {
 		s = s[:10000]
 	}
 	return s
+}
+
+
+var _rlTokens int64 = 100
+var _rlLastRefill int64 = 0
+
+func rlAllow() bool {
+	nowr := time.Now().UnixMilli()
+	if nowr - atomic.LoadInt64(&_rlLastRefill) >= 1000 {
+		atomic.StoreInt64(&_rlTokens, 100)
+		atomic.StoreInt64(&_rlLastRefill, nowr)
+	}
+	if atomic.AddInt64(&_rlTokens, -1) < 0 {
+		atomic.AddInt64(&_rlTokens, 1)
+		return false
+	}
+	return true
+}
+
+func rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rlAllow() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, `{"error":"rate_limit_exceeded"}`, 429)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {

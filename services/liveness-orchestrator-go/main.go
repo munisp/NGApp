@@ -1042,6 +1042,57 @@ func sanitizeInput(s string) string {
 	return s
 }
 
+
+func dbInsert(id, service, typ, status string, data []byte) error {
+	if db == nil { return fmt.Errorf("no db") }
+	_, err := db.Exec("INSERT INTO service_records (id, service, type, status, data) VALUES ($1,$2,$3,$4,$5)", id, service, typ, status, string(data))
+	return err
+}
+
+func dbList(service string, limit int) ([]map[string]interface{}, error) {
+	if db == nil { return nil, fmt.Errorf("no db") }
+	rows, err := db.Query("SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT $2", service, limit)
+	if err != nil { return nil, err }
+	defer rows.Close()
+	var items []map[string]interface{}
+	for rows.Next() {
+		var id, svc, typ, status, data string
+		var createdAt time.Time
+		if rows.Scan(&id, &svc, &typ, &status, &data, &createdAt) == nil {
+			items = append(items, map[string]interface{}{"id": id, "type": typ, "status": status, "data": data, "created_at": createdAt})
+		}
+	}
+	return items, nil
+}
+
+
+var _rlTokens int64 = 100
+var _rlLastRefill int64 = 0
+
+func rlAllow() bool {
+	nowr := time.Now().UnixMilli()
+	if nowr - atomic.LoadInt64(&_rlLastRefill) >= 1000 {
+		atomic.StoreInt64(&_rlTokens, 100)
+		atomic.StoreInt64(&_rlLastRefill, nowr)
+	}
+	if atomic.AddInt64(&_rlTokens, -1) < 0 {
+		atomic.AddInt64(&_rlTokens, 1)
+		return false
+	}
+	return true
+}
+
+func rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rlAllow() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, `{"error":"rate_limit_exceeded"}`, 429)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {

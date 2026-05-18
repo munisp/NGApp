@@ -1586,6 +1586,25 @@ class Handler(BaseHTTPRequestHandler):
 import signal
 import threading
 
+# Rate limiting
+import threading as _rl_threading
+_rl_tokens = 100
+_rl_lock = _rl_threading.Lock()
+_rl_last_refill = [0.0]
+
+def _rl_allow():
+    global _rl_tokens
+    import time as _t
+    now = _t.time()
+    with _rl_lock:
+        if now - _rl_last_refill[0] >= 1.0:
+            _rl_tokens = 100
+            _rl_last_refill[0] = now
+        if _rl_tokens <= 0:
+            return False
+        _rl_tokens -= 1
+        return True
+
 _server = None
 _shutdown_event = threading.Event()
 

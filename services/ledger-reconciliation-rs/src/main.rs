@@ -36,13 +36,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn reconcile_accounts(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn reconcile_accounts(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let entry1_amount = input.get("entry1_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let entry2_amount = input.get("entry2_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let tolerance = input.get("tolerance").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = match_entries(entry1_amount, entry2_amount, tolerance);
+    let _result_data = json!({"endpoint": "reconcile_accounts"});
+    db_persist(&state, "reconcile_accounts", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "reconcile_accounts",
@@ -50,7 +56,10 @@ async fn reconcile_accounts(req: actix_web::HttpRequest, body: web::Json<serde_j
     }))
 }
 
-async fn find_exceptions(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn find_exceptions(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let ref_val_s = input.get("ref_val").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -58,6 +67,9 @@ async fn find_exceptions(req: actix_web::HttpRequest, body: web::Json<serde_json
     let cmp_val_s = input.get("cmp_val").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let cmp_val = cmp_val_s.as_str();
     let result = match_score(ref_val, cmp_val);
+    let _result_data = json!({"endpoint": "find_exceptions"});
+    db_persist(&state, "find_exceptions", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "find_exceptions",
@@ -65,11 +77,17 @@ async fn find_exceptions(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn auto_match(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn auto_match(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let age_days = input.get("age_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let result = classify_exception(age_days);
+    let _result_data = json!({"endpoint": "auto_match"});
+    db_persist(&state, "auto_match", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "auto_match",
@@ -212,6 +230,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "ledger_reconciliation_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"ledger-reconciliation-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

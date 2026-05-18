@@ -34,7 +34,10 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn price_swap(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn price_swap(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let notional = input.get("notional").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -42,6 +45,9 @@ async fn price_swap(req: actix_web::HttpRequest, body: web::Json<serde_json::Val
     let floating_rate = input.get("floating_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let tenor_years = input.get("tenor_years").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = price_irs(notional, fixed_rate, floating_rate, tenor_years);
+    let _result_data = json!({"endpoint": "price_swap"});
+    db_persist(&state, "price_swap", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
         "endpoint": "price_swap",
@@ -49,13 +55,19 @@ async fn price_swap(req: actix_web::HttpRequest, body: web::Json<serde_json::Val
     }))
 }
 
-async fn compute_cva_handler(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn compute_cva_handler(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let expected_exposure = input.get("expected_exposure").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let pd = input.get("pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let lgd = input.get("lgd").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = compute_cva(expected_exposure, pd, lgd);
+    let _result_data = json!({"endpoint": "compute_cva_handler"});
+    db_persist(&state, "compute_cva_handler", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
         "endpoint": "compute_cva_handler",
@@ -63,13 +75,19 @@ async fn compute_cva_handler(req: actix_web::HttpRequest, body: web::Json<serde_
     }))
 }
 
-async fn margin_call(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn margin_call(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let notional = input.get("notional").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let asset_class_s = input.get("asset_class").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let asset_class = asset_class_s.as_str();
     let result = initial_margin(notional, asset_class);
+    let _result_data = json!({"endpoint": "margin_call"});
+    db_persist(&state, "margin_call", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
         "endpoint": "margin_call",
@@ -212,6 +230,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "otc_derivatives_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"otc-derivatives-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

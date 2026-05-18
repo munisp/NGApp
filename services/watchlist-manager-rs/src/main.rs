@@ -38,7 +38,10 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn search_watchlist(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn search_watchlist(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let query_s = input.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -46,6 +49,9 @@ async fn search_watchlist(req: actix_web::HttpRequest, body: web::Json<serde_jso
     let entry_name_s = input.get("entry_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let entry_name = entry_name_s.as_str();
     let result = search_score(query, entry_name);
+    let _result_data = json!({"endpoint": "search_watchlist"});
+    db_persist(&state, "search_watchlist", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "search_watchlist",
@@ -53,12 +59,18 @@ async fn search_watchlist(req: actix_web::HttpRequest, body: web::Json<serde_jso
     }))
 }
 
-async fn add_entry(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn add_entry(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let list_type_s = input.get("list_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let list_type = list_type_s.as_str();
     let result = list_type_priority(list_type);
+    let _result_data = json!({"endpoint": "add_entry"});
+    db_persist(&state, "add_entry", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "add_entry",
@@ -66,7 +78,10 @@ async fn add_entry(req: actix_web::HttpRequest, body: web::Json<serde_json::Valu
     }))
 }
 
-async fn merge_lists(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn merge_lists(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let mut entries: Vec<String> = input.get("entries").and_then(|v| v.as_array()).map(|a| {
@@ -74,6 +89,9 @@ async fn merge_lists(req: actix_web::HttpRequest, body: web::Json<serde_json::Va
     }).unwrap_or_default();
     let before_count = entries.len();
     dedup_entries(&mut entries);
+    let _result_data = json!({"endpoint": "merge_lists"});
+    db_persist(&state, "merge_lists", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "merge_lists",
@@ -216,6 +234,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "watchlist_manager_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"watchlist-manager-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

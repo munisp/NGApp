@@ -118,6 +118,7 @@ struct AppState {
     matches: Mutex<Vec<FaceMatch>>,
     config: ScoringConfig,
     stats: Mutex<EngineStats>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -743,6 +744,54 @@ fn sanitize_input(s: &str) -> String {
     if s.len() > 10000 { s[..10000].to_string() } else { s }
 }
 
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "liveness_detection_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"liveness-detection-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+fn call_service_sync(url: &str, body: &str) -> Result<String, String> {
+    use std::io::{Read, Write};
+    let url_parsed = url.strip_prefix("http://").unwrap_or(url);
+    let (host_port, path) = url_parsed.split_once('/').unwrap_or((url_parsed, "/"));
+    let host_port = if !host_port.contains(':') { format!("{}:8080", host_port) } else { host_port.to_string() };
+    match std::net::TcpStream::connect_timeout(&host_port.parse().map_err(|e| format!("{}", e))?, std::time::Duration::from_secs(5)) {
+        Ok(mut stream) => {
+            let host = host_port.split(':').next().unwrap_or("localhost");
+            let req = format!("POST /{} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", path, host, body.len(), body);
+            stream.write_all(req.as_bytes()).map_err(|e| format!("{}", e))?;
+            let mut resp = String::new();
+            stream.read_to_string(&mut resp).map_err(|e| format!("{}", e))?;
+            Ok(resp)
+        }
+        Err(e) => Err(format!("connection failed: {}", e))
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8226".to_string());
@@ -752,6 +801,12 @@ async fn main() -> std::io::Result<()> {
         matches: Mutex::new(Vec::new()),
         config: ScoringConfig::default(),
         stats: Mutex::new(EngineStats::default()),
+            db_client: {
+            let db_url = std::env::var("DATABASE_URL").ok();
+            if let Some(url) = db_url {
+                init_db(&url).await.map(|c| std::sync::Arc::new(c))
+            } else { None }
+        },
     });
     println!("Liveness Scoring Engine (Rust) on :{}", port);
     HttpServer::new(move || {

@@ -36,12 +36,18 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn parse_message(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn parse_message(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let msg_id_s = input.get("msg_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let msg_id = msg_id_s.as_str();
     let result = message_type(msg_id);
+    let _result_data = json!({"endpoint": "parse_message"});
+    db_persist(&state, "parse_message", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "parse_message",
@@ -49,12 +55,18 @@ async fn parse_message(req: actix_web::HttpRequest, body: web::Json<serde_json::
     }))
 }
 
-async fn generate_message(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn generate_message(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let bic_s = input.get("bic").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let bic = bic_s.as_str();
     let result = validate_bic(bic);
+    let _result_data = json!({"endpoint": "generate_message"});
+    db_persist(&state, "generate_message", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "generate_message",
@@ -62,12 +74,18 @@ async fn generate_message(req: actix_web::HttpRequest, body: web::Json<serde_jso
     }))
 }
 
-async fn validate_message(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn validate_message(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let iban_s = input.get("iban").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let iban = iban_s.as_str();
     let result = validate_iban(iban);
+    let _result_data = json!({"endpoint": "validate_message"});
+    db_persist(&state, "validate_message", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "validate_message",
@@ -210,6 +228,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "iso20022_hub_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"iso20022-hub-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

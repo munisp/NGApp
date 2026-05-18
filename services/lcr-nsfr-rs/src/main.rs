@@ -33,12 +33,18 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn compute_lcr_handler(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn compute_lcr_handler(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let hqla = input.get("hqla").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let net_outflows_30d = input.get("net_outflows_30d").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = compute_lcr(hqla, net_outflows_30d);
+    let _result_data = json!({"endpoint": "compute_lcr_handler"});
+    db_persist(&state, "compute_lcr_handler", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
         "endpoint": "compute_lcr_handler",
@@ -46,12 +52,18 @@ async fn compute_lcr_handler(req: actix_web::HttpRequest, body: web::Json<serde_
     }))
 }
 
-async fn compute_nsfr_handler(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn compute_nsfr_handler(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let asf = input.get("asf").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let rsf = input.get("rsf").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = compute_nsfr(asf, rsf);
+    let _result_data = json!({"endpoint": "compute_nsfr_handler"});
+    db_persist(&state, "compute_nsfr_handler", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
         "endpoint": "compute_nsfr_handler",
@@ -59,12 +71,18 @@ async fn compute_nsfr_handler(req: actix_web::HttpRequest, body: web::Json<serde
     }))
 }
 
-async fn liquidity_stress(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn liquidity_stress(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let asset_type_s = input.get("asset_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let asset_type = asset_type_s.as_str();
     let result = hqla_haircut(asset_type);
+    let _result_data = json!({"endpoint": "liquidity_stress"});
+    db_persist(&state, "liquidity_stress", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
         "endpoint": "liquidity_stress",
@@ -207,6 +225,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "lcr_nsfr_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"lcr-nsfr-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

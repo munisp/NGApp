@@ -20,6 +20,7 @@ struct AppState {
     service_name: String,
     alerts: Arc<RwLock<Vec<KpiAlert>>>,
     thresholds: Arc<RwLock<Vec<ThresholdRule>>>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -144,6 +145,9 @@ async fn list_alerts(state: web::Data<AppState>, query: web::Query<ListParams>) 
 }
 
 async fn evaluate_thresholds(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     // Evaluate all enabled thresholds against current DB values
     let thresholds = state.thresholds.read().unwrap().clone();
@@ -351,7 +355,6 @@ async fn prom_metrics() -> HttpResponse {
 
 
 // --- Database Connection ---
-use tokio_postgres::NoTls;
 
 async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
     match tokio_postgres::connect(db_url, NoTls).await {
@@ -418,6 +421,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "kpi_threshold_monitor_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"kpi-threshold-monitor-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

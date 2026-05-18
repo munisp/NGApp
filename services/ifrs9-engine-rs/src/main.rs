@@ -33,13 +33,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn compute_ecl(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn compute_ecl(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let pd_lifetime = input.get("pd_lifetime").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let lgd = input.get("lgd").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let ead = input.get("ead").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = compute_ecl_lifetime(pd_lifetime, lgd, ead);
+    let _result_data = json!({"endpoint": "compute_ecl"});
+    db_persist(&state, "compute_ecl", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "compute_ecl",
@@ -47,12 +53,18 @@ async fn compute_ecl(req: actix_web::HttpRequest, body: web::Json<serde_json::Va
     }))
 }
 
-async fn stage_classification(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn stage_classification(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let dpd = input.get("dpd").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let pd_increase = input.get("pd_increase").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = classify_stage(dpd, pd_increase);
+    let _result_data = json!({"endpoint": "stage_classification"});
+    db_persist(&state, "stage_classification", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "stage_classification",
@@ -60,12 +72,18 @@ async fn stage_classification(req: actix_web::HttpRequest, body: web::Json<serde
     }))
 }
 
-async fn provision_waterfall(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn provision_waterfall(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let origination_pd = input.get("origination_pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let current_pd = input.get("current_pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = sicr_threshold(origination_pd, current_pd);
+    let _result_data = json!({"endpoint": "provision_waterfall"});
+    db_persist(&state, "provision_waterfall", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "provision_waterfall",
@@ -208,6 +226,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "ifrs9_engine_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"ifrs9-engine-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

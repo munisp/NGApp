@@ -36,7 +36,10 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn check_permission(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn check_permission(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let role_s = input.get("role").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -44,6 +47,9 @@ async fn check_permission(req: actix_web::HttpRequest, body: web::Json<serde_jso
     let action_s = input.get("action").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let action = action_s.as_str();
     let result = has_permission(role, action);
+    let _result_data = json!({"endpoint": "check_permission"});
+    db_persist(&state, "check_permission", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "billing-rbac-rs",
         "endpoint": "check_permission",
@@ -51,12 +57,18 @@ async fn check_permission(req: actix_web::HttpRequest, body: web::Json<serde_jso
     }))
 }
 
-async fn assign_role(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn assign_role(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let role_s = input.get("role").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let role = role_s.as_str();
     let result = role_hierarchy(role);
+    let _result_data = json!({"endpoint": "assign_role"});
+    db_persist(&state, "assign_role", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "billing-rbac-rs",
         "endpoint": "assign_role",
@@ -64,7 +76,10 @@ async fn assign_role(req: actix_web::HttpRequest, body: web::Json<serde_json::Va
     }))
 }
 
-async fn audit_access(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn audit_access(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let role_s = input.get("role").and_then(|v| v.as_str()).unwrap_or("viewer").to_string();
@@ -76,6 +91,9 @@ async fn audit_access(req: actix_web::HttpRequest, body: web::Json<serde_json::V
         let level = role_hierarchy(&role_s);
         json!({"action": action, "allowed": allowed, "role_level": level})
     }).collect();
+    let _result_data = json!({"endpoint": "audit_access"});
+    db_persist(&state, "audit_access", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "billing-rbac-rs",
         "endpoint": "audit_access",
@@ -218,6 +236,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "billing_rbac_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"billing-rbac-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

@@ -31,12 +31,18 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn initiate_kyc(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn initiate_kyc(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let bvn_s = input.get("bvn").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let bvn = bvn_s.as_str();
     let result = validate_bvn(bvn);
+    let _result_data = json!({"endpoint": "initiate_kyc"});
+    db_persist(&state, "initiate_kyc", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "initiate_kyc",
@@ -44,12 +50,18 @@ async fn initiate_kyc(req: actix_web::HttpRequest, body: web::Json<serde_json::V
     }))
 }
 
-async fn verify_document(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn verify_document(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let nin_s = input.get("nin").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let nin = nin_s.as_str();
     let result = validate_nin(nin);
+    let _result_data = json!({"endpoint": "verify_document"});
+    db_persist(&state, "verify_document", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "verify_document",
@@ -57,12 +69,18 @@ async fn verify_document(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn kyc_status(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn kyc_status(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     // TODO: extract step: u8
     let step = Default::default();
     let result = kyc_step_name(step);
+    let _result_data = json!({"endpoint": "kyc_status"});
+    db_persist(&state, "kyc_status", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "kyc_status",
@@ -205,6 +223,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "telegram_kyc_bot_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"telegram-kyc-bot-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

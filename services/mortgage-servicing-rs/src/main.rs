@@ -38,13 +38,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn compute_amortization(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn compute_amortization(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let principal = input.get("principal").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let annual_rate = input.get("annual_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let months = input.get("months").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let result = monthly_payment(principal, annual_rate, months);
+    let _result_data = json!({"endpoint": "compute_amortization"});
+    db_persist(&state, "compute_amortization", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "compute_amortization",
@@ -52,12 +58,18 @@ async fn compute_amortization(req: actix_web::HttpRequest, body: web::Json<serde
     }))
 }
 
-async fn early_repayment(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn early_repayment(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let monthly_debt = input.get("monthly_debt").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let monthly_income = input.get("monthly_income").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = dti_ratio(monthly_debt, monthly_income);
+    let _result_data = json!({"endpoint": "early_repayment"});
+    db_persist(&state, "early_repayment", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "early_repayment",
@@ -65,12 +77,18 @@ async fn early_repayment(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn affordability_check(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn affordability_check(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let loan_amount = input.get("loan_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let property_value = input.get("property_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = ltv_ratio(loan_amount, property_value);
+    let _result_data = json!({"endpoint": "affordability_check"});
+    db_persist(&state, "affordability_check", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "affordability_check",
@@ -213,6 +231,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "mortgage_servicing_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"mortgage-servicing-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

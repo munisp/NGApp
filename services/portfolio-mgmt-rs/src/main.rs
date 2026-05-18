@@ -36,13 +36,19 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn portfolio_analytics(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn portfolio_analytics(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let returns = input.get("returns").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let risk_free = input.get("risk_free").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let volatility = input.get("volatility").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = sharpe_ratio(returns, risk_free, volatility);
+    let _result_data = json!({"endpoint": "portfolio_analytics"});
+    db_persist(&state, "portfolio_analytics", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "portfolio_analytics",
@@ -50,13 +56,19 @@ async fn portfolio_analytics(req: actix_web::HttpRequest, body: web::Json<serde_
     }))
 }
 
-async fn rebalance(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn rebalance(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let portfolio_value = input.get("portfolio_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let volatility = input.get("volatility").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let confidence = input.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = portfolio_var_parametric(portfolio_value, volatility, confidence);
+    let _result_data = json!({"endpoint": "rebalance"});
+    db_persist(&state, "rebalance", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "rebalance",
@@ -64,13 +76,19 @@ async fn rebalance(req: actix_web::HttpRequest, body: web::Json<serde_json::Valu
     }))
 }
 
-async fn performance_attribution(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn performance_attribution(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let current_weight = input.get("current_weight").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let target_weight = input.get("target_weight").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let portfolio_value = input.get("portfolio_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = rebalance_trade(current_weight, target_weight, portfolio_value);
+    let _result_data = json!({"endpoint": "performance_attribution"});
+    db_persist(&state, "performance_attribution", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "performance_attribution",
@@ -213,6 +231,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "portfolio_mgmt_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"portfolio-mgmt-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]

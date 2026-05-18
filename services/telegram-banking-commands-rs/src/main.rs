@@ -35,12 +35,18 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn process_command(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn process_command(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let text_s = input.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let text = text_s.as_str();
     let result = parse_command(text);
+    let _result_data = json!({"endpoint": "process_command"});
+    db_persist(&state, "process_command", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "process_command",
@@ -48,11 +54,17 @@ async fn process_command(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn balance_inquiry(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn balance_inquiry(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let result = format_currency(amount);
+    let _result_data = json!({"endpoint": "balance_inquiry"});
+    db_persist(&state, "balance_inquiry", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "balance_inquiry",
@@ -60,12 +72,18 @@ async fn balance_inquiry(req: actix_web::HttpRequest, body: web::Json<serde_json
     }))
 }
 
-async fn mini_statement(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn mini_statement(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let account_s = input.get("account").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let account = account_s.as_str();
     let result = mask_account(account);
+    let _result_data = json!({"endpoint": "mini_statement"});
+    db_persist(&state, "mini_statement", &_result_data).await;
+
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "mini_statement",
@@ -208,6 +226,35 @@ fn sanitize_input(s: &str) -> String {
     let s = s.replace('<', "&lt;").replace('>', "&gt;")
         .replace('\'', "&#39;").replace('"', "&quot;");
     if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "telegram_banking_commands_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &"telegram-banking-commands-rs" as &str, &endpoint, &"active" as &str, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
 }
 
 #[actix_web::main]
