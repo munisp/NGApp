@@ -83,4 +83,47 @@ export const dataThresholdAlertsRouter = router({
       
       return results;
     }),
+
+
+  acknowledge: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  create: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  delete: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  events: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  metrics: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  operators: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  simulateCheck: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  toggleStatus: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

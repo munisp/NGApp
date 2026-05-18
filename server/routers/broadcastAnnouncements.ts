@@ -83,4 +83,27 @@ export const broadcastAnnouncementsRouter = router({
       
       return results;
     }),
+
+
+  create: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  delete: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  stats: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  togglePin: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

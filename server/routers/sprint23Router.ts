@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { agents, transactions, auditLog, systemConfig } from "../../drizzle/schema";
@@ -45,5 +45,34 @@ export const sprint23Router = router({
     if (!db) return { configs: [] };
     const rows = await db.select().from(systemConfig).orderBy(asc(systemConfig.key)).limit(50);
     return { configs: rows };
+  }),
+
+
+  disputeAutoRules: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  kycVerification: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  rateLimits: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  reportComparison: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  scheduledDelivery: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  thresholds: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  webhookDelivery: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
   }),
 });

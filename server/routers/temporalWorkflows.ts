@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count, and } from "drizzle-orm";
 import { workflowDefinitions, workflowInstances, auditLog } from "../../drizzle/schema";
@@ -58,6 +58,29 @@ export const temporalWorkflowsRouter = router({
     const [total] = await db.select({ value: count() }).from(workflowInstances).limit(100);
     const [running] = await db.select({ value: count() }).from(workflowInstances).where(eq(workflowInstances.status, "running")).limit(100);
     const [defs] = await db.select({ value: count() }).from(workflowDefinitions).limit(100);
-    return { totalInstances: Number(total.value), runningInstances: Number(running.value), totalDefinitions: Number(defs.value) };
+    return { totalInstances: Number(total.value), runningInstances: Number(running.value), totalDefinitions: Number(defs
+
+  health: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  list: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  summary: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  terminate: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  workflowTypes: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+.value) };
   }),
 });

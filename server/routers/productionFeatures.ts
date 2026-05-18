@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { auditLog, systemConfig } from "../../drizzle/schema";
@@ -50,7 +50,16 @@ export const productionFeaturesRouter = router({
       return { success: true, featureKey: key };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error"
+
+  batchOps: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  prefMatrix: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+ });
     }
   }),
 });

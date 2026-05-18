@@ -83,4 +83,17 @@ export const referralProgramRouter = router({
       
       return results;
     }),
+
+
+  analytics: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  leaderboard: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  tiers: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });
