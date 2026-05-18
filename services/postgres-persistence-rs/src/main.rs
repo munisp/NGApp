@@ -22,9 +22,11 @@ async fn persist(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
     let table_s = input.get("table").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let table = table_s.as_str();
-    let columns_s = input.get("columns").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let columns = columns_s.as_str();
-    let result = build_upsert_sql(table, columns);
+    let columns_vec: Vec<String> = input.get("columns").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|c| c.as_str().map(String::from)).collect()
+    }).unwrap_or_default();
+    let columns_refs: Vec<&str> = columns_vec.iter().map(|s| s.as_str()).collect();
+    let result = build_upsert_sql(table, &columns_refs);
     HttpResponse::Ok().json(json!({
         "service": "postgres-persistence-rs",
         "endpoint": "persist",
