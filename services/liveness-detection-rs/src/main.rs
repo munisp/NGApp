@@ -174,6 +174,8 @@ struct LivenessScoreRequest {
     noise_level: Option<f64>,
     noise_category: Option<String>,
     noise_threshold_adjustment: Option<f64>,
+    motion_score: Option<f64>,
+    motion_detected: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -555,6 +557,62 @@ async fn get_methods(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
+#[derive(Deserialize)]
+struct MotionScoreRequest {
+    motion_score: Option<f64>,
+    motion_detected: Option<bool>,
+    challenge_type: Option<String>,
+    liveness_score: Option<f64>,
+    anti_spoof_passed: Option<bool>,
+    deepfake_probability: Option<f64>,
+    noise_level: Option<f64>,
+    noise_threshold_adjustment: Option<f64>,
+    device_platform: Option<String>,
+}
+
+async fn score_motion(body: web::Json<MotionScoreRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let motion = body.motion_score.unwrap_or(0.0);
+    let liveness = body.liveness_score.unwrap_or(0.0);
+    let anti_spoof_ok = body.anti_spoof_passed.unwrap_or(true);
+    let deepfake_prob = body.deepfake_probability.unwrap_or(0.05);
+    let noise_adj = body.noise_threshold_adjustment.unwrap_or(0.0);
+    let challenge_type = body.challenge_type.clone().unwrap_or_default();
+
+    // Challenge-type-specific weight tuning
+    let motion_weight = match challenge_type.as_str() {
+        "head_turn_left" | "head_turn_right" => 0.65,
+        "blink" => 0.55,
+        "smile" => 0.55,
+        "nod" => 0.60,
+        "random_pose" => 0.50,
+        _ => 0.60,
+    };
+    let liveness_weight = 1.0 - motion_weight;
+
+    let combined = motion * motion_weight + liveness * liveness_weight;
+
+    // Adaptive threshold
+    let pass_threshold = (0.50 - noise_adj).max(0.30);
+    let challenge_passed = combined >= pass_threshold
+        && anti_spoof_ok
+        && deepfake_prob < state.config.deepfake_threshold
+        && body.motion_detected.unwrap_or(false);
+
+    HttpResponse::Ok().json(json!({
+        "combined_score": combined,
+        "motion_score": motion,
+        "liveness_score": liveness,
+        "motion_weight": motion_weight,
+        "liveness_weight": liveness_weight,
+        "challenge_type": challenge_type,
+        "challenge_passed": challenge_passed,
+        "pass_threshold": pass_threshold,
+        "anti_spoof_passed": anti_spoof_ok,
+        "deepfake_probability": deepfake_prob,
+        "noise_adjustment": noise_adj,
+    }))
+}
+
 async fn get_config(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
         "scoring": state.config,
@@ -606,5 +664,6 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/stats", web::get().to(get_stats))
             .route("/v1/methods", web::get().to(get_methods))
             .route("/v1/config", web::get().to(get_config))
+            .route("/v1/score/motion", web::post().to(score_motion))
     }).bind(format!("0.0.0.0:{}", port))?.run().await
 }

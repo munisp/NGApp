@@ -1,6 +1,9 @@
+import { useState } from "react";
 import CrudWorkspace from "@/components/CrudWorkspace";
 import type { CrudConfig } from "@/components/CrudWorkspace";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Camera, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ActiveLivenessChallenge from "./ActiveLivenessChallenge";
 
 const config: CrudConfig = {
   domainKey: "liveness-detection",
@@ -31,5 +34,37 @@ const config: CrudConfig = {
 };
 
 export default function LivenessDetectionWorkspace() {
-  return <CrudWorkspace config={config} />;
+  const [mode, setMode] = useState<"list" | "challenge">("list");
+  const [testCustomerId] = useState(`CUST-${Date.now().toString(36).toUpperCase()}`);
+
+  if (mode === "challenge") {
+    return (
+      <div className="p-4">
+        <Button variant="ghost" onClick={() => setMode("list")} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+        </Button>
+        <ActiveLivenessChallenge
+          customerId={testCustomerId}
+          onComplete={(session) => {
+            console.log("Liveness session complete:", session);
+            setMode("list");
+          }}
+          onCancel={() => setMode("list")}
+          challengeCount={3}
+          mode="active"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-end p-4 pb-0">
+        <Button onClick={() => setMode("challenge")} variant="default">
+          <Camera className="w-4 h-4 mr-1" /> Start Live Liveness Check
+        </Button>
+      </div>
+      <CrudWorkspace config={config} />
+    </div>
+  );
 }

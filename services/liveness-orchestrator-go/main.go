@@ -21,6 +21,32 @@ import (
 // Inference engine URL (liveness-inference-py)
 var inferenceURL = getEnv("INFERENCE_URL", "http://localhost:8230")
 
+// callMotionAnalysis calls the Python inference service for multi-frame motion analysis
+func callMotionAnalysis(referenceFrame string, actionFrames []string, challengeType string, devicePlatform string, deviceModel string) (map[string]interface{}, error) {
+	payload := map[string]interface{}{
+		"referenceFrame": referenceFrame,
+		"actionFrames":   actionFrames,
+		"challengeType":  challengeType,
+		"devicePlatform": devicePlatform,
+		"deviceModel":    deviceModel,
+	}
+	jsonData, _ := json.Marshal(payload)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Post(inferenceURL+"/v1/motion/analyze", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("motion analysis engine unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("invalid motion analysis response: %w", err)
+	}
+	return result, nil
+}
+
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -558,6 +584,182 @@ func handleFaceMatch(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, 200, result)
 }
 
+// handleSubmitChallenge handles multi-frame active liveness challenge submission.
+// Accepts reference frame + action frames, calls motion analysis, scores the challenge.
+func handleSubmitChallenge(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		respondJSON(w, 405, map[string]string{"error": "POST required"})
+		return
+	}
+	var body struct {
+		SessionID      string   `json:"sessionId"`
+		ChallengeID    string   `json:"challengeId"`
+		ReferenceFrame string   `json:"referenceFrame"`
+		ActionFrames   []string `json:"actionFrames"`
+		ChallengeType  string   `json:"challengeType"`
+		DevicePlatform string   `json:"devicePlatform"`
+		DeviceModel    string   `json:"deviceModel"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+
+	mu.Lock()
+	session, exists := sessions[body.SessionID]
+	if !exists {
+		mu.Unlock()
+		respondJSON(w, 404, map[string]string{"error": "Session not found"})
+		return
+	}
+
+	session.Status = StatusInProgress
+
+	var challenge *Challenge
+	for i := range session.Challenges {
+		if session.Challenges[i].ID == body.ChallengeID {
+			challenge = &session.Challenges[i]
+			break
+		}
+	}
+
+	if challenge == nil {
+		mu.Unlock()
+		respondJSON(w, 404, map[string]string{"error": "Challenge not found"})
+		return
+	}
+
+	challenge.Attempts++
+	challenge.StartedAt = time.Now().UTC().Format(time.RFC3339)
+	mu.Unlock()
+
+	// Call motion analysis endpoint (this does landmark extraction + pose comparison)
+	motionResult, motionErr := callMotionAnalysis(
+		body.ReferenceFrame, body.ActionFrames, body.ChallengeType,
+		session.DevicePlatform, session.DeviceModel,
+	)
+
+	var motionScore float64
+	var motionDetected bool
+	var challengePassed bool
+	var userGuidance string
+	var noiseAssessment interface{}
+
+	if motionErr != nil {
+		log.Printf("[WARN] motion analysis error: %v — using single-frame fallback", motionErr)
+		// Fallback to single-frame liveness check on reference
+		inferenceResult, _ := callInferenceEngine(body.ReferenceFrame, body.SessionID, session.DevicePlatform, session.DeviceModel)
+		if inferenceResult != nil {
+			motionScore = inferenceResult.OverallScore
+			challengePassed = motionScore >= 0.70
+			motionDetected = true
+			noiseAssessment = inferenceResult.NoiseAssessment
+		} else {
+			motionScore = 0.5
+			challengePassed = false
+		}
+	} else {
+		// Extract motion analysis results
+		if v, ok := motionResult["motion_score"].(float64); ok {
+			motionScore = v
+		}
+		if v, ok := motionResult["motion_detected"].(bool); ok {
+			motionDetected = v
+		}
+		if v, ok := motionResult["challenge_passed"].(bool); ok {
+			challengePassed = v
+		}
+		noiseAssessment = motionResult["noise_assessment"]
+
+		// Generate user guidance based on motion analysis
+		if !motionDetected {
+			switch body.ChallengeType {
+			case "head_turn_left":
+				userGuidance = "Please turn your head slowly to the left"
+			case "head_turn_right":
+				userGuidance = "Please turn your head slowly to the right"
+			case "blink":
+				userGuidance = "Please blink naturally — close and open your eyes"
+			case "smile":
+				userGuidance = "Please smile naturally"
+			case "nod":
+				userGuidance = "Please nod your head up and down slowly"
+			default:
+				userGuidance = "Please perform the motion more clearly"
+			}
+		}
+	}
+
+	// Adaptive pass threshold based on noise
+	passThreshold := 0.45
+	if noiseMap, ok := noiseAssessment.(map[string]interface{}); ok {
+		if adj, ok := noiseMap["threshold_adjustment"].(float64); ok {
+			passThreshold -= adj
+			if passThreshold < 0.30 {
+				passThreshold = 0.30
+			}
+		}
+	}
+
+	mu.Lock()
+	if challengePassed && motionScore >= passThreshold {
+		challenge.Status = "passed"
+		challenge.Score = motionScore
+		challenge.CompletedAt = time.Now().UTC().Format(time.RFC3339)
+		session.ChallengesPassed++
+		stats.ChallengesPassed++
+	} else {
+		challenge.Status = "failed"
+		challenge.Score = motionScore
+	}
+
+	// Check if all challenges are done
+	allDone := true
+	for _, ch := range session.Challenges {
+		if ch.Status == "pending" {
+			allDone = false
+			break
+		}
+	}
+
+	if allDone {
+		session.OverallScore = calculateOverallScore(session)
+		session.IsLive = session.OverallScore >= 0.50 && session.ChallengesPassed >= session.ChallengesTotal/2+1
+		if session.IsLive {
+			session.Verdict = "LIVE"
+			session.Status = StatusCompleted
+			stats.CompletedLive++
+		} else {
+			session.Verdict = "SPOOF"
+			session.Status = StatusFailed
+			stats.CompletedSpoof++
+		}
+		session.CompletedAt = time.Now().UTC().Format(time.RFC3339)
+		stats.ActiveSessions--
+		publishEvent("session_completed", session.ID, session.CustomerID, session.TenantID, map[string]interface{}{
+			"verdict": session.Verdict, "score": session.OverallScore,
+		})
+	}
+	mu.Unlock()
+
+	responsePayload := map[string]interface{}{
+		"challengeId":      challenge.ID,
+		"challengeStatus":  challenge.Status,
+		"motionDetected":   motionDetected,
+		"motionScore":      motionScore,
+		"score":            challenge.Score,
+		"sessionStatus":    session.Status,
+		"overallScore":     session.OverallScore,
+		"isLive":           session.IsLive,
+		"verdict":          session.Verdict,
+		"passThreshold":    passThreshold,
+	}
+	if userGuidance != "" {
+		responsePayload["userGuidance"] = userGuidance
+	}
+	if noiseAssessment != nil {
+		responsePayload["noiseAssessment"] = noiseAssessment
+	}
+	respondJSON(w, 200, responsePayload)
+}
+
 func handleGetSession(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Path[len("/v1/sessions/"):]
 	mu.RLock()
@@ -689,6 +891,7 @@ func main() {
 	})
 	mux.HandleFunc("/v1/sessions/", handleGetSession)
 	mux.HandleFunc("/v1/submit-frame", handleSubmitFrame)
+	mux.HandleFunc("/v1/submit-challenge", handleSubmitChallenge)
 	mux.HandleFunc("/v1/passive-liveness", handlePassiveLiveness)
 	mux.HandleFunc("/v1/face-match", handleFaceMatch)
 	mux.HandleFunc("/v1/face-matches", handleGetFaceMatches)

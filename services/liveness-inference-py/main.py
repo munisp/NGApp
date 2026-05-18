@@ -292,6 +292,253 @@ def apply_noise_compensation(scores: dict, noise: NoiseAssessment) -> dict:
 _frame_buffers: dict = {}  # session_id -> list of (score, noise_level)
 
 
+# ─── Active Liveness Motion Analysis ─────────────────────────────────────────
+
+def _compute_head_pose_from_landmarks(landmarks: list) -> dict:
+    """Estimate yaw/pitch/roll from 68-point landmarks using geometry.
+    Uses nose tip (point 30), chin (point 8), left eye corner (36), right eye corner (45).
+    """
+    if len(landmarks) < 48:
+        return {"yaw": 0.0, "pitch": 0.0, "roll": 0.0}
+
+    nose = landmarks[30] if len(landmarks) > 30 else landmarks[-1]
+    chin = landmarks[8] if len(landmarks) > 8 else landmarks[0]
+    left_eye = landmarks[36] if len(landmarks) > 36 else landmarks[17]
+    right_eye = landmarks[45] if len(landmarks) > 45 else landmarks[26]
+
+    nx, ny = nose["x"], nose["y"]
+    cx, cy = chin["x"], chin["y"]
+    lx, ly = left_eye["x"], left_eye["y"]
+    rx, ry = right_eye["x"], right_eye["y"]
+
+    # Eye center
+    eye_cx = (lx + rx) / 2.0
+    eye_cy = (ly + ry) / 2.0
+    eye_dist = math.sqrt((rx - lx) ** 2 + (ry - ly) ** 2)
+    if eye_dist < 1:
+        eye_dist = 1
+
+    # Yaw: nose offset from eye center, normalized by eye distance
+    yaw = math.degrees(math.atan2(nx - eye_cx, eye_dist)) * 2.0
+
+    # Pitch: nose-to-chin vertical vs nose-to-eye vertical
+    face_height = abs(cy - eye_cy)
+    if face_height < 1:
+        face_height = 1
+    pitch = math.degrees(math.atan2(ny - eye_cy, face_height)) * 1.5 - 15
+
+    # Roll: angle of eye line
+    roll = math.degrees(math.atan2(ry - ly, rx - lx))
+
+    return {"yaw": round(yaw, 2), "pitch": round(pitch, 2), "roll": round(roll, 2)}
+
+
+def _compute_eye_aspect_ratio(landmarks: list, eye_indices: list) -> float:
+    """Compute Eye Aspect Ratio (EAR) for blink detection.
+    EAR = (|p2-p6| + |p3-p5|) / (2 * |p1-p4|)
+    When eye is open, EAR ~ 0.25-0.35. When closed, EAR < 0.15.
+    """
+    if len(eye_indices) != 6:
+        return 0.3
+    pts = []
+    for idx in eye_indices:
+        if idx < len(landmarks):
+            pts.append((landmarks[idx]["x"], landmarks[idx]["y"]))
+        else:
+            return 0.3
+
+    # Vertical distances
+    v1 = math.sqrt((pts[1][0] - pts[5][0]) ** 2 + (pts[1][1] - pts[5][1]) ** 2)
+    v2 = math.sqrt((pts[2][0] - pts[4][0]) ** 2 + (pts[2][1] - pts[4][1]) ** 2)
+    # Horizontal distance
+    h = math.sqrt((pts[0][0] - pts[3][0]) ** 2 + (pts[0][1] - pts[3][1]) ** 2)
+    if h < 1:
+        h = 1
+    return (v1 + v2) / (2.0 * h)
+
+
+def _compute_mouth_aspect_ratio(landmarks: list) -> float:
+    """Compute Mouth Aspect Ratio for smile detection.
+    Uses outer mouth landmarks (48-59) and inner (60-67).
+    Smile: wider mouth (larger horizontal), slightly open.
+    """
+    if len(landmarks) < 68:
+        return 0.0
+    # Outer mouth corners: 48 (left), 54 (right)
+    # Outer mouth top: 51, bottom: 57
+    left = landmarks[48]
+    right = landmarks[54]
+    top = landmarks[51]
+    bottom = landmarks[57]
+
+    width = math.sqrt((right["x"] - left["x"]) ** 2 + (right["y"] - left["y"]) ** 2)
+    height = math.sqrt((bottom["x"] - top["x"]) ** 2 + (bottom["y"] - top["y"]) ** 2)
+    if height < 1:
+        height = 1
+    return width / height
+
+
+def analyze_motion(reference_frame: bytes, action_frames: list, challenge_type: str,
+                   device_platform: str = "unknown") -> dict:
+    """Analyze motion between reference frame and action frames for active liveness.
+    Compares facial landmarks, head pose, EAR, and mouth ratio across frames
+    to verify the user performed the requested challenge.
+
+    Returns:
+        motion_detected: bool
+        motion_score: 0.0-1.0
+        motion_details: per-frame analysis
+        challenge_passed: bool
+    """
+    start = time.time()
+
+    # Detect face and landmarks in reference frame
+    ref_face = detect_face(reference_frame)
+    if not ref_face.face_detected:
+        return {
+            "motion_detected": False,
+            "motion_score": 0.0,
+            "error": "no_face_in_reference",
+            "challenge_passed": False,
+            "processing_time_ms": round((time.time() - start) * 1000, 2),
+        }
+
+    ref_landmarks = ref_face.landmarks_68
+    ref_pose = _compute_head_pose_from_landmarks(ref_landmarks)
+    ref_ear_left = _compute_eye_aspect_ratio(ref_landmarks, [36, 37, 38, 39, 40, 41])
+    ref_ear_right = _compute_eye_aspect_ratio(ref_landmarks, [42, 43, 44, 45, 46, 47])
+    ref_ear = (ref_ear_left + ref_ear_right) / 2.0
+    ref_mar = _compute_mouth_aspect_ratio(ref_landmarks)
+
+    # Analyze each action frame
+    frame_analyses = []
+    max_yaw_delta = 0.0
+    max_pitch_delta = 0.0
+    min_ear = ref_ear
+    max_mar = ref_mar
+    motion_frames_count = 0
+
+    for i, frame_data in enumerate(action_frames):
+        frame_bytes = frame_data.encode() if isinstance(frame_data, str) else frame_data
+        act_face = detect_face(frame_bytes)
+        if not act_face.face_detected:
+            frame_analyses.append({"frame": i, "face_detected": False})
+            continue
+
+        act_landmarks = act_face.landmarks_68
+        act_pose = _compute_head_pose_from_landmarks(act_landmarks)
+        act_ear_left = _compute_eye_aspect_ratio(act_landmarks, [36, 37, 38, 39, 40, 41])
+        act_ear_right = _compute_eye_aspect_ratio(act_landmarks, [42, 43, 44, 45, 46, 47])
+        act_ear = (act_ear_left + act_ear_right) / 2.0
+        act_mar = _compute_mouth_aspect_ratio(act_landmarks)
+
+        yaw_delta = act_pose["yaw"] - ref_pose["yaw"]
+        pitch_delta = act_pose["pitch"] - ref_pose["pitch"]
+
+        if abs(yaw_delta) > abs(max_yaw_delta):
+            max_yaw_delta = yaw_delta
+        if abs(pitch_delta) > abs(max_pitch_delta):
+            max_pitch_delta = pitch_delta
+        if act_ear < min_ear:
+            min_ear = act_ear
+        if act_mar > max_mar:
+            max_mar = act_mar
+
+        has_motion = abs(yaw_delta) > 3 or abs(pitch_delta) > 3 or abs(act_ear - ref_ear) > 0.03 or abs(act_mar - ref_mar) > 0.3
+        if has_motion:
+            motion_frames_count += 1
+
+        frame_analyses.append({
+            "frame": i,
+            "face_detected": True,
+            "yaw_delta": round(yaw_delta, 2),
+            "pitch_delta": round(pitch_delta, 2),
+            "ear": round(act_ear, 4),
+            "mar": round(act_mar, 4),
+            "has_motion": has_motion,
+        })
+
+    # Device-aware thresholds: relax for budget phones
+    dev = (device_platform or "").lower()
+    threshold_factor = 1.0
+    if any(kw in dev for kw in ["tecno", "itel", "infinix", "gionee"]):
+        threshold_factor = 0.7  # budget phones: 30% more tolerant
+    elif any(kw in dev for kw in ["samsung_a", "redmi", "poco", "realme"]):
+        threshold_factor = 0.85
+
+    # Score based on challenge type
+    motion_detected = False
+    motion_score = 0.0
+
+    if challenge_type in ("head_turn_left", "head_turn_right"):
+        expected_direction = -1 if "left" in challenge_type else 1
+        yaw_threshold = 12.0 * threshold_factor
+        actual_yaw = max_yaw_delta if expected_direction > 0 else -max_yaw_delta
+        if actual_yaw > yaw_threshold * 0.5:  # at least half the threshold in right direction
+            motion_detected = True
+            motion_score = min(abs(max_yaw_delta) / (yaw_threshold * 1.5), 1.0)
+        elif abs(max_yaw_delta) > yaw_threshold * 0.5:  # any significant yaw change
+            motion_detected = True
+            motion_score = min(abs(max_yaw_delta) / (yaw_threshold * 2.0), 0.85)
+
+    elif challenge_type == "blink":
+        ear_threshold = 0.06 * threshold_factor
+        ear_drop = ref_ear - min_ear
+        if ear_drop > ear_threshold:
+            motion_detected = True
+            motion_score = min(ear_drop / (ear_threshold * 2.0), 1.0)
+
+    elif challenge_type == "smile":
+        mar_threshold = 0.5 * threshold_factor
+        mar_increase = max_mar - ref_mar
+        if mar_increase > mar_threshold * 0.3:
+            motion_detected = True
+            motion_score = min(mar_increase / (mar_threshold * 1.5), 1.0)
+
+    elif challenge_type == "nod":
+        pitch_threshold = 8.0 * threshold_factor
+        if abs(max_pitch_delta) > pitch_threshold * 0.5:
+            motion_detected = True
+            motion_score = min(abs(max_pitch_delta) / (pitch_threshold * 1.5), 1.0)
+
+    elif challenge_type == "random_pose":
+        total_motion = abs(max_yaw_delta) + abs(max_pitch_delta)
+        pose_threshold = 10.0 * threshold_factor
+        if total_motion > pose_threshold:
+            motion_detected = True
+            motion_score = min(total_motion / (pose_threshold * 2.0), 1.0)
+
+    # Boost score based on fraction of frames with motion (consistency)
+    total_valid_frames = sum(1 for f in frame_analyses if f.get("face_detected", False))
+    if total_valid_frames > 0:
+        consistency = motion_frames_count / total_valid_frames
+        motion_score = motion_score * 0.7 + consistency * 0.3
+
+    # Clamp
+    motion_score = round(min(max(motion_score, 0.0), 1.0), 4)
+    challenge_passed = motion_detected and motion_score >= 0.45
+
+    return {
+        "motion_detected": motion_detected,
+        "motion_score": motion_score,
+        "challenge_type": challenge_type,
+        "challenge_passed": challenge_passed,
+        "reference_pose": ref_pose,
+        "max_yaw_delta": round(max_yaw_delta, 2),
+        "max_pitch_delta": round(max_pitch_delta, 2),
+        "min_ear": round(min_ear, 4),
+        "max_mar": round(max_mar, 4),
+        "reference_ear": round(ref_ear, 4),
+        "reference_mar": round(ref_mar, 4),
+        "motion_frames": motion_frames_count,
+        "total_frames": len(action_frames),
+        "valid_frames": total_valid_frames,
+        "frame_analyses": frame_analyses,
+        "device_threshold_factor": threshold_factor,
+        "processing_time_ms": round((time.time() - start) * 1000, 2),
+    }
+
+
 def accumulate_frame_score(session_id: str, score: float, noise_level: float) -> dict:
     """Accumulate frame scores for multi-frame averaging on noisy cameras.
     Returns running average and stability metrics.
@@ -852,6 +1099,8 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_noise_assessment(body)
         elif path == "/v1/frame/accumulate":
             self._handle_frame_accumulate(body)
+        elif path == "/v1/motion/analyze":
+            self._handle_motion_analysis(body)
         else:
             self._json(404, {"error": "Not found"})
 
@@ -1041,6 +1290,48 @@ class Handler(BaseHTTPRequestHandler):
         result["noise_compensation_applied"] = noise.noise_category != "clean"
         result["customer_id"] = body.get("customerId", "unknown")
         result["timestamp"] = datetime.now(timezone.utc).isoformat()
+        self._json(200, result)
+
+    def _handle_motion_analysis(self, body: dict):
+        """Analyze motion between reference and action frames for active liveness.
+        Accepts: referenceFrame (base64), actionFrames (list of base64),
+                 challengeType, devicePlatform, deviceModel.
+        Returns: motion_detected, motion_score, challenge_passed, frame_analyses.
+        """
+        ref_b64 = body.get("referenceFrame", "")
+        action_b64s = body.get("actionFrames", [])
+        challenge_type = body.get("challengeType", "head_turn_left")
+        device = body.get("devicePlatform", "unknown")
+        device_model = body.get("deviceModel", "")
+
+        ref_data = ref_b64.encode() if ref_b64 else b"ref_frame"
+
+        # Also run anti-spoofing on reference frame
+        noise = assess_image_noise(ref_data, device or device_model)
+        anti_spoof = classify_anti_spoofing(ref_data)
+        deepfake_prob = detect_deepfake(ref_data)
+
+        # Run motion analysis
+        motion = analyze_motion(ref_data, action_b64s, challenge_type, device or device_model)
+
+        # Combine motion score with liveness checks
+        liveness_score = 0.0
+        if not anti_spoof.is_spoof and deepfake_prob < DEEPFAKE_THRESHOLD:
+            liveness_score = 0.85  # base liveness passed
+        else:
+            liveness_score = 0.3  # suspected spoof
+
+        combined_score = motion["motion_score"] * 0.6 + liveness_score * 0.4
+
+        result = {
+            **motion,
+            "liveness_score": round(liveness_score, 4),
+            "combined_score": round(combined_score, 4),
+            "anti_spoof": asdict(anti_spoof),
+            "deepfake_probability": deepfake_prob,
+            "noise_assessment": asdict(noise),
+            "noise_compensation_applied": noise.noise_category != "clean",
+        }
         self._json(200, result)
 
     def _handle_noise_assessment(self, body: dict):

@@ -8252,6 +8252,19 @@ async function startServer() {
   app.get("/api/platform/liveness-orchestrator/v1/face-matches", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/face-matches", req, res); });
   app.get("/api/platform/liveness-orchestrator/v1/events", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/events", req, res); });
   app.get("/api/platform/liveness-orchestrator/v1/stats", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/stats", req, res); });
+  app.post("/api/platform/liveness-orchestrator/v1/submit-challenge", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/submit-challenge", req, res); });
+
+  // Client-friendly liveness API routes (used by ActiveLivenessChallenge component)
+  app.post("/api/liveness/v1/sessions", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/sessions", req, res); });
+  app.get("/api/liveness/v1/sessions/:id", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, `/v1/sessions/${req.params.id}`, req, res); });
+  app.post("/api/liveness/v1/submit-challenge", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/submit-challenge", req, res); });
+  app.post("/api/liveness/v1/submit-frame", (req, res) => { void proxyToService(LIVENESS_ORCH_URL, "/v1/submit-frame", req, res); });
+
+  // Motion analysis endpoint (Python inference service)
+  app.post("/api/platform/liveness-inference/v1/motion/analyze", (req, res) => { void proxyToService(LIVENESS_INFERENCE_URL, "/v1/motion/analyze", req, res); });
+
+  // Motion scoring endpoint (Rust scoring engine)
+  app.post("/api/platform/liveness-detection/v1/score/motion", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/score/motion", req, res); });
 
   // Face Match Engine — ArcFace R100, 512-dim cosine similarity (Rust :8227)
   const FACE_MATCH_URL = process.env.FACE_MATCH_URL || "http://localhost:8227";
