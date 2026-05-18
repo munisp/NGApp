@@ -1596,6 +1596,33 @@ def _shutdown_handler(signum, frame):
         threading.Thread(target=_server.shutdown).start()
 
 signal.signal(signal.SIGTERM, _shutdown_handler)
+
+# --- OpenTelemetry Export ---
+OTEL_ENDPOINT = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+
+def init_tracing(service_name):
+    """Initialize OpenTelemetry tracing with OTLP export if configured."""
+    if not OTEL_ENDPOINT:
+        return
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        resource = Resource.create({"service.name": service_name, "deployment.environment": os.environ.get("ENV", "development")})
+        provider = TracerProvider(resource=resource)
+        try:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+            exporter = OTLPSpanExporter(endpoint=OTEL_ENDPOINT, insecure=True)
+        except ImportError:
+            exporter = ConsoleSpanExporter()
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+        logger.info(f"OpenTelemetry tracing initialized: {OTEL_ENDPOINT}")
+    except ImportError:
+        logger.debug("OpenTelemetry SDK not installed, tracing disabled")
+    except Exception as e:
+        logger.warning(f"Failed to init tracing: {e}")
 signal.signal(signal.SIGINT, _shutdown_handler)
 
 if __name__ == "__main__":

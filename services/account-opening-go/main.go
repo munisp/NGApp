@@ -686,6 +686,49 @@ func getTLSConfig() (bool, string, string) {
 	return true, cert, key
 }
 
+// --- Rate Limiter (token bucket) ---
+type tokenBucket struct {
+	mu       sync.Mutex
+	tokens   float64
+	max      float64
+	refill   float64
+	lastTime int64
+}
+
+var _rl = &tokenBucket{max: 100, refill: 100, tokens: 100, lastTime: time.Now().UnixNano()}
+
+func (tb *tokenBucket) allow() bool {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+	now := time.Now().UnixNano()
+	elapsed := float64(now-tb.lastTime) / float64(time.Second)
+	tb.lastTime = now
+	tb.tokens = min64f(tb.max, tb.tokens+elapsed*tb.refill)
+	if tb.tokens < 1 {
+		return false
+	}
+	tb.tokens--
+	return true
+}
+
+func min64f(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !_rl.allow() {
+			w.Header().Set("Retry-After", "1")
+			jsonResp(w, 429, map[string]interface{}{"error": "rate limit exceeded", "retry_after": 1})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 

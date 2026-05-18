@@ -95,6 +95,10 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
 // --- Production Hardening: readyz / livez / metrics ---
 static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
 static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+static _RATE_WINDOW_START: AtomicU64 = AtomicU64::new(0);
+static _RATE_WINDOW_COUNT: AtomicU64 = AtomicU64::new(0);
+const RATE_LIMIT_PER_SECOND: u64 = 100;
+
 
 async fn readyz() -> HttpResponse {
     HttpResponse::Ok().json(json!({"ready": true, "service": "relationship-pricing-rs"}))

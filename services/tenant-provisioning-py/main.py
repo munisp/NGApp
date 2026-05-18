@@ -79,24 +79,32 @@ def inc_errors():
         error_count += 1
 
 # --- Database ---
-db_conn = None
+_db_pool = None
 
 def get_db():
-    global db_conn
-    if db_conn is not None:
-        return db_conn
+    global _db_pool
     if not DB_URL:
         return None
     try:
-        import psycopg2
-        import psycopg2.extras
-        db_conn = psycopg2.connect(DB_URL)
-        db_conn.autocommit = True
-        logger.info("Database connected")
-        return db_conn
+        if _db_pool is None:
+            from psycopg2.pool import SimpleConnectionPool
+            _db_pool = SimpleConnectionPool(minconn=2, maxconn=10, dsn=DB_URL)
+            logger.info("Database connection pool initialized (2-10 connections)")
+        conn = _db_pool.getconn()
+        conn.autocommit = True
+        return conn
     except Exception as e:
-        logger.warning(f"DB connection failed: {e}")
+        logger.warning(f"DB pool connection failed: {e}")
         return None
+
+def release_db(conn):
+    """Return a connection to the pool."""
+    global _db_pool
+    if _db_pool and conn:
+        try:
+            _db_pool.putconn(conn)
+        except Exception:
+            pass
 
 def db_insert(table, record):
     conn = get_db()

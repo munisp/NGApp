@@ -79,24 +79,32 @@ def inc_errors():
         error_count += 1
 
 # --- Database ---
-db_conn = None
+_db_pool = None
 
 def get_db():
-    global db_conn
-    if db_conn is not None:
-        return db_conn
+    global _db_pool
     if not DB_URL:
         return None
     try:
-        import psycopg2
-        import psycopg2.extras
-        db_conn = psycopg2.connect(DB_URL)
-        db_conn.autocommit = True
-        logger.info("Database connected")
-        return db_conn
+        if _db_pool is None:
+            from psycopg2.pool import SimpleConnectionPool
+            _db_pool = SimpleConnectionPool(minconn=2, maxconn=10, dsn=DB_URL)
+            logger.info("Database connection pool initialized (2-10 connections)")
+        conn = _db_pool.getconn()
+        conn.autocommit = True
+        return conn
     except Exception as e:
-        logger.warning(f"DB connection failed: {e}")
+        logger.warning(f"DB pool connection failed: {e}")
         return None
+
+def release_db(conn):
+    """Return a connection to the pool."""
+    global _db_pool
+    if _db_pool and conn:
+        try:
+            _db_pool.putconn(conn)
+        except Exception:
+            pass
 
 def db_insert(table, record):
     conn = get_db()
@@ -249,6 +257,33 @@ def shutdown_handler(signum, frame):
         threading.Thread(target=server.shutdown).start()
 
 signal.signal(signal.SIGTERM, shutdown_handler)
+
+# --- OpenTelemetry Export ---
+OTEL_ENDPOINT = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+
+def init_tracing(service_name):
+    """Initialize OpenTelemetry tracing with OTLP export if configured."""
+    if not OTEL_ENDPOINT:
+        return
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        resource = Resource.create({"service.name": service_name, "deployment.environment": os.environ.get("ENV", "development")})
+        provider = TracerProvider(resource=resource)
+        try:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+            exporter = OTLPSpanExporter(endpoint=OTEL_ENDPOINT, insecure=True)
+        except ImportError:
+            exporter = ConsoleSpanExporter()
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+        logger.info(f"OpenTelemetry tracing initialized: {OTEL_ENDPOINT}")
+    except ImportError:
+        logger.debug("OpenTelemetry SDK not installed, tracing disabled")
+    except Exception as e:
+        logger.warning(f"Failed to init tracing: {e}")
 signal.signal(signal.SIGINT, shutdown_handler)
 
 if __name__ == "__main__":
