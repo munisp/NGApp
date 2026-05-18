@@ -7,7 +7,7 @@ import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/sc
 export const networkStatusDashboardRouter = router({
   list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "network_status")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.serviceName, "network_status")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
     return { items: rows, total: rows.length };
   }),
   getConfig: protectedProcedure.query(async () => {
@@ -29,9 +29,9 @@ export const networkStatusDashboardRouter = router({
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "network_status"));
-    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "network_status"), eq(platform_health_checks.status, "healthy")));
-    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "network_status"));
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.serviceName, "network_status"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.serviceName, "network_status"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.responseTime) }).from(platform_health_checks).where(eq(platform_health_checks.serviceName, "network_status"));
     return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

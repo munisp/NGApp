@@ -9,7 +9,7 @@ export const apiAnalyticsDashRouter = router({
     const db = (await getDb())!;
     const [totalKeys] = await db.select({ value: count() }).from(apiKeys);
     const [totalUsage] = await db.select({ value: count() }).from(apiKeyUsage);
-    const [avgLatency] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [avgLatency] = await db.select({ value: avg(platform_health_checks.responseTime) }).from(platform_health_checks);
     return { totalApiKeys: Number(totalKeys.value), totalRequests: Number(totalUsage.value), avgLatencyMs: Math.round(Number(avgLatency.value ?? 0)), periodHours: input?.hoursBack ?? 24 };
   }),
   getTopEndpoints: protectedProcedure.input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional()).query(async ({ input }) => {

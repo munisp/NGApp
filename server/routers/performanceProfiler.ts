@@ -20,7 +20,7 @@ export const performanceProfilerRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(platform_health_checks);
-    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.responseTime) }).from(platform_health_checks);
     return { totalProfiles: Number(total.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)) };
   }),
 });

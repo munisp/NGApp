@@ -12,7 +12,7 @@ export const apiGatewayRouter = router({
   }),
   getHealth: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [checks] = await db.select({ total: count(), avgLatency: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [checks] = await db.select({ total: count(), avgLatency: avg(platform_health_checks.responseTime) }).from(platform_health_checks);
     return { status: "healthy", totalChecks: Number(checks.total), avgLatencyMs: Math.round(Number(checks.avgLatency ?? 0)) };
   }),
   updateRateLimit: protectedProcedure.input(z.object({ ruleId: z.number(), maxRequests: z.number().int().min(1).max(100000), windowMs: z.number().int().min(1000).max(3600000) })).mutation(async ({ input }) => {

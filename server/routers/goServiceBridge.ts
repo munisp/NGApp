@@ -17,8 +17,8 @@ export const goServiceBridgeRouter = router({
   }),
   getServiceHealth: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64) })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const checks = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, input.serviceName)).orderBy(desc(platform_health_checks.checkedAt)).limit(10);
-    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, input.serviceName));
+    const checks = await db.select().from(platform_health_checks).where(eq(platform_health_checks.serviceName, input.serviceName)).orderBy(desc(platform_health_checks.checkedAt)).limit(10);
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.responseTime) }).from(platform_health_checks).where(eq(platform_health_checks.serviceName, input.serviceName));
     return { serviceName: input.serviceName, recentChecks: checks, avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), status: checks.length > 0 && checks[0].status === "healthy" ? "healthy" : "unknown" };
   }),
   restartService: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64), force: z.boolean().default(false) })).mutation(async ({ input }) => {
@@ -28,7 +28,7 @@ export const goServiceBridgeRouter = router({
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [checks] = await db.select({ total: count(), avgLat: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [checks] = await db.select({ total: count(), avgLat: avg(platform_health_checks.responseTime) }).from(platform_health_checks);
     return { totalHealthChecks: Number(checks.total), avgLatencyMs: Math.round(Number(checks.avgLat ?? 0)) };
   }),
 });

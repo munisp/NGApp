@@ -7,12 +7,12 @@ import { connectivityLog, platform_health_checks, auditLog } from "../../drizzle
 export const networkResilienceRouter = router({
   getCircuitBreakers: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const components = await db.select({ component: platform_health_checks.component, total: count(), healthy: sql<number>`COUNT(*) FILTER (WHERE ${platform_health_checks.status} = 'healthy')` }).from(platform_health_checks).groupBy(platform_health_checks.component).limit(20);
+    const components = await db.select({ component: platform_health_checks.serviceName, total: count(), healthy: sql<number>`COUNT(*) FILTER (WHERE ${platform_health_checks.status} = 'healthy')` }).from(platform_health_checks).groupBy(platform_health_checks.serviceName).limit(20);
     return { circuitBreakers: components.map(c => ({ service: c.component, totalChecks: Number(c.total), healthyChecks: Number(c.healthy), state: Number(c.healthy) / Number(c.total) > 0.5 ? "closed" : "open" })) };
   }),
   getConnectivityLog: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), quality: z.string().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(connectivityLog).orderBy(desc(connectivityLog.createdAt)).limit(input?.limit ?? 50);
+    const rows = await db.select().from(connectivityLog).orderBy(desc(connectivityLog.recordedAt)).limit(input?.limit ?? 50);
     return { logs: rows, total: rows.length };
   }),
   testEndpoint: protectedProcedure.input(z.object({ url: z.string().url(), timeoutMs: z.number().min(100).max(30000).default(5000) })).mutation(async ({ input }) => {

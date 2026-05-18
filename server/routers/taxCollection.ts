@@ -14,14 +14,14 @@ export const taxCollectionRouter = router({
     const db = (await getDb())!;
     const [agent] = await db.select().from(agents).where(eq(agents.id, input.agentId)).limit(1);
     if (!agent) throw new Error("Agent not found");
-    const reference = "TAX-" + crypto.randomUUID().slice(0, 12).toUpperCase();
-    const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: String(input.amount), type: "Tax", status: "success", channel: "POS", reference }).returning();
-    await db.insert(auditLog).values({ action: "tax_collected", resource: "tax_collection", resourceId: reference, status: "success", metadata: { taxpayerId: input.taxpayerId, taxType: input.taxType, period: input.period, amount: input.amount, transactionId: tx.id } });
-    return { reference, transactionId: tx.id, amount: input.amount, taxType: input.taxType, status: "success" };
+    const ref = "TAX-" + crypto.randomUUID().slice(0, 12).toUpperCase();
+    const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: String(input.amount), type: "Bill Payment", status: "success", channel: "Cash", ref }).returning();
+    await db.insert(auditLog).values({ action: "tax_collected", resource: "tax_collection", resourceId: ref, status: "success", metadata: { taxpayerId: input.taxpayerId, taxType: input.taxType, period: input.period, amount: input.amount, transactionId: tx.id } });
+    return { ref, transactionId: tx.id, amount: input.amount, taxType: input.taxType, status: "success" };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [stats] = await db.select({ totalCollections: count(), totalVolume: sum(sql`CAST(amount AS numeric)`) }).from(transactions).where(eq(transactions.type, "Tax"));
+    const [stats] = await db.select({ totalCollections: count(), totalVolume: sum(transactions.amount) }).from(vatRecords);
     return { totalCollections: Number(stats.totalCollections), totalVolume: Number(stats.totalVolume ?? 0) };
   }),
 });

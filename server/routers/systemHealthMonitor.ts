@@ -17,7 +17,7 @@ export const systemHealthMonitorRouter = router({
   }),
   getIncidents: protectedProcedure.input(z.object({ limit: z.number().default(10) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(platform_incidents).orderBy(desc(platform_incidents.createdAt)).limit(input?.limit ?? 10);
+    const rows = await db.select().from(platform_incidents).orderBy(desc(platform_incidents.startedAt)).limit(input?.limit ?? 10);
     return { incidents: rows, total: rows.length };
   }),
   getStats: protectedProcedure.query(async () => {

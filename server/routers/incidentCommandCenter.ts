@@ -7,7 +7,7 @@ import { platform_incidents, auditLog } from "../../drizzle/schema";
 export const incidentCommandCenterRouter = router({
   listIncidents: protectedProcedure.input(z.object({ limit: z.number().default(50), severity: z.string().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = input?.severity ? await db.select().from(platform_incidents).where(eq(platform_incidents.severity, input.severity)).orderBy(desc(platform_incidents.createdAt)).limit(input?.limit ?? 50) : await db.select().from(platform_incidents).orderBy(desc(platform_incidents.createdAt)).limit(input?.limit ?? 50);
+    const rows = input?.severity ? await db.select().from(platform_incidents).where(eq(platform_incidents.severity, input.severity)).orderBy(desc(platform_incidents.startedAt)).limit(input?.limit ?? 50) : await db.select().from(platform_incidents).orderBy(desc(platform_incidents.startedAt)).limit(input?.limit ?? 50);
     return { incidents: rows, total: rows.length };
   }),
   getIncident: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {

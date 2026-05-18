@@ -31,7 +31,7 @@ export const platformProxyRouter = router({
   }),
   getUpstreamHealth: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [stats] = await db.select({ total: count(), avgLat: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [stats] = await db.select({ total: count(), avgLat: avg(platform_health_checks.responseTime) }).from(platform_health_checks);
     return { status: "healthy", totalChecks: Number(stats.total), avgLatencyMs: Math.round(Number(stats.avgLat ?? 0)) };
   }),
   getStats: protectedProcedure.query(async () => {
