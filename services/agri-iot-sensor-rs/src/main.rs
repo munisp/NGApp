@@ -143,3 +143,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_ndvi() { let r = compute_ndvi(10000.0); assert!(r >= 0.0); }
+}

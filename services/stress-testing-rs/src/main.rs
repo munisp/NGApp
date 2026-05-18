@@ -144,3 +144,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_shock() { let r = apply_shock(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_gdp_impact_on_pd() { let r = gdp_impact_on_pd(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_capital_post_stress() { let r = capital_post_stress(10000.0); assert!(r >= 0.0); }
+}

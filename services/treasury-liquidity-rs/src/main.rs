@@ -183,3 +183,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_net_liquidity() { let r = net_liquidity(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_days_liquidity_cover() { let r = days_liquidity_cover(10000.0); assert!(r >= 0.0); }
+}

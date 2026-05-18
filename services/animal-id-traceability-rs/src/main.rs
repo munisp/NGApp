@@ -147,3 +147,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_nlis_tag() { let r = generate_nlis_tag("test"); assert!(!r.is_empty()); }
+
+    #[test]
+    fn test_movement_record() { let r = movement_record("test"); assert!(!r.is_empty()); }
+}

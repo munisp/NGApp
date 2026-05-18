@@ -143,3 +143,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_phone_ng() { assert!(validate_phone_ng("0123456789")); assert!(!validate_phone_ng("")); }
+}

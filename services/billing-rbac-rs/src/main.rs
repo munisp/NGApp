@@ -193,3 +193,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_has_permission() { assert!(has_permission("0123456789")); assert!(!has_permission("")); }
+}

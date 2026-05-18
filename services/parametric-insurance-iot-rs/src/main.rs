@@ -151,3 +151,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weather_trigger() { assert!(weather_trigger("0123456789")); assert!(!weather_trigger("")); }
+
+    #[test]
+    fn test_payout_scale() { let r = payout_scale(10000.0); assert!(r >= 0.0); }
+}

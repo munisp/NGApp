@@ -184,3 +184,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_flow_completion_rate() { let r = flow_completion_rate(100, 80); assert!(r >= 0.0); }
+}

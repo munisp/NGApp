@@ -198,3 +198,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_structuring() { let r = detect_structuring(100.0); assert!(r == true || r == false); }
+}

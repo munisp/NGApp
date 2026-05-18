@@ -188,3 +188,21 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_monthly_payment() { let r = monthly_payment(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_dti_ratio() { let r = dti_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_ltv_ratio() { let r = ltv_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_prepayment_penalty() { let r = prepayment_penalty(10000.0); assert!(r >= 0.0); }
+}

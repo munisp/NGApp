@@ -182,3 +182,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_nibor() { let r = compute_nibor(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_overnight_rate() { let r = overnight_rate(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_collateral_required() { let r = collateral_required(10000.0); assert!(r >= 0.0); }
+}

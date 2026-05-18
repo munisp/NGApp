@@ -186,3 +186,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_supported_mime() { assert!(supported_mime("0123456789")); assert!(!supported_mime("")); }
+}

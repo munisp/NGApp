@@ -181,3 +181,21 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_nuban() { assert!(validate_nuban("0123456789")); assert!(!validate_nuban("")); }
+
+    #[test]
+    fn test_compute_batch_hash() { assert_eq!(compute_batch_hash(&[10.0, 20.0, 30.0]), 60.0); }
+
+    #[test]
+    fn test_batch_success_rate() { let r = batch_success_rate(100, 80); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_nibss_fee() { let r = nibss_fee(10000.0); assert!(r >= 0.0); }
+}

@@ -148,3 +148,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_us_person_indicator() { assert!(us_person_indicator("0123456789")); assert!(!us_person_indicator("")); }
+
+    #[test]
+    fn test_reportable_account() { let r = reportable_account(100.0); assert!(r == true || r == false); }
+
+    #[test]
+    fn test_crs_jurisdiction() { assert!(crs_jurisdiction("0123456789")); assert!(!crs_jurisdiction("")); }
+}

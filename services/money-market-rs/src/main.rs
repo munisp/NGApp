@@ -183,3 +183,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tbill_price() { let r = tbill_price(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_tbill_yield() { let r = tbill_yield(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_repo_margin() { let r = repo_margin(10000.0); assert!(r >= 0.0); }
+}

@@ -146,3 +146,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_verify_claim() { assert!(verify_claim("0123456789")); assert!(!verify_claim("")); }
+
+    #[test]
+    fn test_payout_amount() { let r = payout_amount(10000.0); assert!(r >= 0.0); }
+}

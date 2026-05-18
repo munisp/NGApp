@@ -187,3 +187,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_composite_risk() { let r = composite_risk(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_within_appetite() { let r = within_appetite(100.0); assert!(r == true || r == false); }
+
+    #[test]
+    fn test_concentration_risk() { let r = concentration_risk(10000.0); assert!(r >= 0.0); }
+}

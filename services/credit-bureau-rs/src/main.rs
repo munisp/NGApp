@@ -145,3 +145,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_dti_for_score() { let r = max_dti_for_score(100); assert!(r >= 0.0); }
+}

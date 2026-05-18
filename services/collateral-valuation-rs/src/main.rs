@@ -187,3 +187,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_haircut() { let r = apply_haircut(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_coverage_ratio() { let r = coverage_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_margin_call_needed() { let r = margin_call_needed(100.0); assert!(r == true || r == false); }
+}

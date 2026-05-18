@@ -185,3 +185,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_revalue_position() { let r = revalue_position(10000.0); assert!(r >= 0.0); }
+}

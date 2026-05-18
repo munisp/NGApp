@@ -187,3 +187,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_price_irs() { let r = price_irs(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_cva() { let r = compute_cva(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_initial_margin() { let r = initial_margin(10000.0); assert!(r >= 0.0); }
+}

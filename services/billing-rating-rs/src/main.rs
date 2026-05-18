@@ -210,3 +210,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_fee() { let r = compute_fee(10000.0); assert!(r >= 0.0); }
+}

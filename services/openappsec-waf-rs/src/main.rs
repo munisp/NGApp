@@ -143,3 +143,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_sqli() { assert!(detect_sqli("0123456789")); assert!(!detect_sqli("")); }
+
+    #[test]
+    fn test_detect_xss() { assert!(detect_xss("0123456789")); assert!(!detect_xss("")); }
+}

@@ -145,3 +145,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rainfall_adequacy() { let r = rainfall_adequacy(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_yield_estimate() { let r = yield_estimate(10000.0); assert!(r >= 0.0); }
+}

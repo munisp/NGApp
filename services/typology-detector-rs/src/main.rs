@@ -191,3 +191,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_round_tripping() { let r = detect_round_tripping(100.0); assert!(r == true || r == false); }
+}

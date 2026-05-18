@@ -179,3 +179,24 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_rwa_credit() { let r = compute_rwa_credit(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_rwa_market() { let r = compute_rwa_market(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_rwa_operational() { let r = compute_rwa_operational(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_capital_adequacy_ratio() { let r = capital_adequacy_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_countercyclical_buffer() { let r = countercyclical_buffer(10000.0); assert!(r >= 0.0); }
+}

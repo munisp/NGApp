@@ -185,3 +185,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_bic() { assert!(validate_bic("0123456789")); assert!(!validate_bic("")); }
+
+    #[test]
+    fn test_validate_iban() { assert!(validate_iban("0123456789")); assert!(!validate_iban("")); }
+}

@@ -147,3 +147,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_livestock_value() { let r = livestock_value(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_insurance_premium() { let r = insurance_premium(10000.0); assert!(r >= 0.0); }
+}

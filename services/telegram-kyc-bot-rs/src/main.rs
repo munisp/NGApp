@@ -180,3 +180,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_bvn() { assert!(validate_bvn("0123456789")); assert!(!validate_bvn("")); }
+
+    #[test]
+    fn test_validate_nin() { assert!(validate_nin("0123456789")); assert!(!validate_nin("")); }
+}

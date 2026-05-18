@@ -188,3 +188,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sharpe_ratio() { let r = sharpe_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_portfolio_var_parametric() { let r = portfolio_var_parametric(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_rebalance_trade() { let r = rebalance_trade(10000.0); assert!(r >= 0.0); }
+}

@@ -389,3 +389,12 @@ async fn main() -> std::io::Result<()> {
             .route("/metrics", web::get().to(prom_metrics))
     }).bind(format!("0.0.0.0:{}", port))?.run().await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rand_id() { let r = rand_id("test"); assert!(!r.is_empty()); }
+}

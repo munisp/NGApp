@@ -198,3 +198,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ensemble_max() { assert_eq!(ensemble_max(&[10.0, 20.0, 30.0]), 60.0); }
+
+    #[test]
+    fn test_f1_score() { let r = f1_score(10000.0); assert!(r >= 0.0); }
+}

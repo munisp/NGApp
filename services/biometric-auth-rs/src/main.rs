@@ -163,3 +163,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_multi_factor_score() { let r = multi_factor_score(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_liveness_score() { let r = liveness_score(10000.0); assert!(r >= 0.0); }
+}

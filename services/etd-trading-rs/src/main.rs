@@ -192,3 +192,21 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_black_scholes_call() { let r = black_scholes_call(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_norm_cdf() { let r = norm_cdf(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_erf() { let r = erf(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_delta() { let r = delta(10000.0); assert!(r >= 0.0); }
+}

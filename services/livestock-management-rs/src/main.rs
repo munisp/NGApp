@@ -150,3 +150,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_herd_growth_rate() { let r = herd_growth_rate(100, 80); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_feed_cost_per_day() { let r = feed_cost_per_day(100); assert!(r >= 0.0); }
+}

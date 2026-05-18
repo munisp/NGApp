@@ -144,3 +144,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_phyto_required() { assert!(phyto_required("0123456789")); assert!(!phyto_required("")); }
+
+    #[test]
+    fn test_compute_fob_value() { let r = compute_fob_value(10000.0); assert!(r >= 0.0); }
+}

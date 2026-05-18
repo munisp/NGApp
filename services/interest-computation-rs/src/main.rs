@@ -197,3 +197,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_simple_interest() { let r = compute_simple_interest(100, 80); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_compound_interest() { let r = compute_compound_interest(100, 80); assert!(r >= 0.0); }
+}

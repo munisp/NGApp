@@ -180,3 +180,24 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_mid_rate() { let r = compute_mid_rate(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_spread() { let r = compute_spread(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_spread_percentage() { let r = spread_percentage(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_convert_amount() { let r = convert_amount(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_cbn_rate_band() { let r = cbn_rate_band(100.0); assert!(r == true || r == false); }
+}

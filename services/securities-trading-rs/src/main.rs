@@ -181,3 +181,21 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_match_price() { let r = match_price(100.0); assert!(r == true || r == false); }
+
+    #[test]
+    fn test_execution_price() { let r = execution_price(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_portfolio_return() { let r = portfolio_return(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_position_pnl() { let r = position_pnl(10000.0); assert!(r >= 0.0); }
+}

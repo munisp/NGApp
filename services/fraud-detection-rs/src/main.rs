@@ -197,3 +197,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_velocity_score() { let r = velocity_score(100, 80); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_amount_anomaly_score() { let r = amount_anomaly_score(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_combined_fraud_score() { let r = combined_fraud_score(10000.0); assert!(r >= 0.0); }
+}

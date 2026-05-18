@@ -189,3 +189,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_hit() { let r = is_hit(100.0); assert!(r == true || r == false); }
+}

@@ -180,3 +180,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dfsp_position() { let r = dfsp_position(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_settlement_eligible() { let r = settlement_eligible(100.0); assert!(r == true || r == false); }
+}

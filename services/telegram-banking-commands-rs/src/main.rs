@@ -183,3 +183,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mask_account() { let r = mask_account("test"); assert!(!r.is_empty()); }
+}

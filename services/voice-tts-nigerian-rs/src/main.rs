@@ -183,3 +183,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_phoneme_replace_nigerian() { let r = phoneme_replace_nigerian("test"); assert!(!r.is_empty()); }
+}

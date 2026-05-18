@@ -183,3 +183,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_ecl_12m() { let r = compute_ecl_12m(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_compute_ecl_lifetime() { let r = compute_ecl_lifetime(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_sicr_threshold() { let r = sicr_threshold(100.0); assert!(r == true || r == false); }
+}

@@ -156,3 +156,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_permission_check() { assert!(permission_check("0123456789")); assert!(!permission_check("")); }
+
+    #[test]
+    fn test_can_escalate() { assert!(can_escalate("0123456789")); assert!(!can_escalate("")); }
+}

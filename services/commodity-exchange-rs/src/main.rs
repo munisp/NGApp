@@ -182,3 +182,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_futures_price() { let r = futures_price(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_basis() { let r = basis(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_margin_requirement() { let r = margin_requirement(10000.0); assert!(r >= 0.0); }
+}

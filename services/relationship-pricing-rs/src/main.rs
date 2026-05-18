@@ -186,3 +186,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_relationship_value() { let r = relationship_value(100, 80); assert!(r >= 0.0); }
+}

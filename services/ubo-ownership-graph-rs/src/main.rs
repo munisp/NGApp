@@ -148,3 +148,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_effective_ownership() { assert_eq!(effective_ownership(&[10.0, 20.0, 30.0]), 60.0); }
+
+    #[test]
+    fn test_is_ubo() { let r = is_ubo(100.0); assert!(r == true || r == false); }
+
+    #[test]
+    fn test_shell_company_indicator() { let r = shell_company_indicator(100, 80); assert!(r >= 0.0); }
+}

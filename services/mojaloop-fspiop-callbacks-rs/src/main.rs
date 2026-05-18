@@ -180,3 +180,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_ilp_condition() { assert!(validate_ilp_condition("0123456789")); assert!(!validate_ilp_condition("")); }
+
+    #[test]
+    fn test_compute_ilp_fulfilment() { let r = compute_ilp_fulfilment("test"); assert!(!r.is_empty()); }
+}

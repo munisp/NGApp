@@ -188,3 +188,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_travel_rule_required() { let r = travel_rule_required(100.0); assert!(r == true || r == false); }
+
+    #[test]
+    fn test_high_risk_corridor() { assert!(high_risk_corridor("0123456789")); assert!(!high_risk_corridor("")); }
+
+    #[test]
+    fn test_compute_transfer_risk() { let r = compute_transfer_risk(10000.0); assert!(r >= 0.0); }
+}

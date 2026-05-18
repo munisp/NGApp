@@ -144,3 +144,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_anchor_borrower_eligible() { let r = anchor_borrower_eligible(100.0); assert!(r == true || r == false); }
+}

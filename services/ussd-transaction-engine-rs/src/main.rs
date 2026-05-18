@@ -186,3 +186,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_pin() { assert!(validate_pin("0123456789")); assert!(!validate_pin("")); }
+}

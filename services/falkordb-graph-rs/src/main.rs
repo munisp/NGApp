@@ -149,3 +149,15 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cypher_match() { let r = cypher_match("test"); assert!(!r.is_empty()); }
+
+    #[test]
+    fn test_shortest_path() { let r = shortest_path("test"); assert!(!r.is_empty()); }
+}

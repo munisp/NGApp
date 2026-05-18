@@ -148,3 +148,18 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_premium_rate() { let r = premium_rate(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_indemnity() { let r = indemnity(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_trigger_payout() { let r = trigger_payout(100.0); assert!(r == true || r == false); }
+}

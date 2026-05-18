@@ -147,3 +147,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rule_match() { assert!(rule_match("0123456789")); assert!(!rule_match("")); }
+}
