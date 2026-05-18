@@ -82,6 +82,8 @@ def inc_errors():
 # --- Database ---
 _db_pool = None
 
+db_conn = None
+
 def get_db():
     global _db_pool
     if not DB_URL:
