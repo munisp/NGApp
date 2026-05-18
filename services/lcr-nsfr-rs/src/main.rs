@@ -31,7 +31,7 @@ async fn health() -> HttpResponse {
 }
 
 
-async fn compute_lcr(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_lcr_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     let input = body.into_inner();
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -44,7 +44,7 @@ async fn compute_lcr(body: web::Json<serde_json::Value>, state: web::Data<AppSta
     }))
 }
 
-async fn compute_nsfr(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_nsfr_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     let input = body.into_inner();
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -98,8 +98,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .route("/healthz", web::get().to(health))
-            .route("/v1/lcr", web::post().to(compute_lcr))
-            .route("/v1/nsfr", web::post().to(compute_nsfr))
+            .route("/v1/lcr", web::post().to(compute_lcr_handler))
+            .route("/v1/nsfr", web::post().to(compute_nsfr_handler))
             .route("/v1/liquidity_stress", web::post().to(liquidity_stress))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))

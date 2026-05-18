@@ -21,7 +21,7 @@ async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "healthy", "service": "pbac-engine-rs"}))
 }
 
-async fn evaluate_policy(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn evaluate_policy_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
     HttpResponse::Ok().json(json!({"service": "pbac-engine-rs", "action": "evaluate_policy", "processed": true, "input": input}))
 }
@@ -52,7 +52,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .route("/healthz", web::get().to(health))
-            .route("/v1/evaluate_policy", web::post().to(evaluate_policy))
+            .route("/v1/evaluate_policy", web::post().to(evaluate_policy_handler))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))
     })

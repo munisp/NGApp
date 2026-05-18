@@ -45,7 +45,7 @@ async fn price_swap(body: web::Json<serde_json::Value>, state: web::Data<AppStat
     }))
 }
 
-async fn compute_cva(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_cva_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     let input = body.into_inner();
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -100,7 +100,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(state.clone())
             .route("/healthz", web::get().to(health))
             .route("/v1/price", web::post().to(price_swap))
-            .route("/v1/cva", web::post().to(compute_cva))
+            .route("/v1/cva", web::post().to(compute_cva_handler))
             .route("/v1/margin", web::post().to(margin_call))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))

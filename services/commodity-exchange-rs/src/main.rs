@@ -55,7 +55,7 @@ async fn spot_price(body: web::Json<serde_json::Value>, state: web::Data<AppStat
     }))
 }
 
-async fn futures_price(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn futures_price_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     let input = body.into_inner();
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -98,7 +98,7 @@ async fn main() -> std::io::Result<()> {
             .route("/healthz", web::get().to(health))
             .route("/v1/order", web::post().to(place_commodity_order))
             .route("/v1/spot", web::post().to(spot_price))
-            .route("/v1/futures", web::post().to(futures_price))
+            .route("/v1/futures", web::post().to(futures_price_handler))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))
     })

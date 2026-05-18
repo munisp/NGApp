@@ -61,7 +61,7 @@ async fn revalue(body: web::Json<serde_json::Value>, state: web::Data<AppState>)
     }))
 }
 
-async fn coverage_ratio(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn coverage_ratio_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     let input = body.into_inner();
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -104,7 +104,7 @@ async fn main() -> std::io::Result<()> {
             .route("/healthz", web::get().to(health))
             .route("/v1/value", web::post().to(value_collateral))
             .route("/v1/revalue", web::post().to(revalue))
-            .route("/v1/coverage", web::post().to(coverage_ratio))
+            .route("/v1/coverage", web::post().to(coverage_ratio_handler))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))
     })

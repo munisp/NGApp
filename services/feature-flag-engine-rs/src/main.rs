@@ -22,7 +22,7 @@ async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "healthy", "service": "feature-flag-engine-rs"}))
 }
 
-async fn evaluate_flag(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn evaluate_flag_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
     HttpResponse::Ok().json(json!({"service": "feature-flag-engine-rs", "action": "evaluate_flag", "processed": true, "input": input}))
 }
@@ -53,7 +53,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .route("/healthz", web::get().to(health))
-            .route("/v1/evaluate_flag", web::post().to(evaluate_flag))
+            .route("/v1/evaluate_flag", web::post().to(evaluate_flag_handler))
             .route("/v1/records", web::get().to(list_records))
             .route("/v1/stats", web::get().to(stats))
     })
