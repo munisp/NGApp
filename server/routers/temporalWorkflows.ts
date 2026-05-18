@@ -58,7 +58,8 @@ export const temporalWorkflowsRouter = router({
     const [total] = await db.select({ value: count() }).from(workflowInstances).limit(100);
     const [running] = await db.select({ value: count() }).from(workflowInstances).where(eq(workflowInstances.status, "running")).limit(100);
     const [defs] = await db.select({ value: count() }).from(workflowDefinitions).limit(100);
-    return { totalInstances: Number(total.value), runningInstances: Number(running.value), totalDefinitions: Number(defs
+    return { totalInstances: Number(total.value), runningInstances: Number(running.value), totalDefinitions: Number(defs.value) };
+  }),
 
   health: publicProcedure.query(async () => {
     return { data: [], total: 0 };
@@ -80,7 +81,5 @@ export const temporalWorkflowsRouter = router({
 
   workflowTypes: publicProcedure.query(async () => {
     return { data: [], total: 0 };
-  }),
-.value) };
   }),
 });

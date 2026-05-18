@@ -50,7 +50,9 @@ export const productionFeaturesRouter = router({
       return { success: true, featureKey: key };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error"
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
+  }),
 
   batchOps: publicProcedure.query(async () => {
     return { data: [], total: 0 };
@@ -60,6 +62,4 @@ export const productionFeaturesRouter = router({
     return { data: [], total: 0 };
   }),
  });
-    }
-  }),
-});
+

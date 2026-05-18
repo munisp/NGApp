@@ -55,7 +55,9 @@ export const reportTemplateDesignerRouter = router({
       return { success: true, reportId: "RPT-" + crypto.randomUUID().toUpperCase(), status: "generating" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error"
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
+  }),
 
   create: publicProcedure
     .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
@@ -83,6 +85,4 @@ export const reportTemplateDesignerRouter = router({
     return { data: [], total: 0 };
   }),
  });
-    }
-  }),
-});
+
