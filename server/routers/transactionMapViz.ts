@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../_core/db";
+import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
@@ -12,7 +12,7 @@ export const transactionMapVizRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const database = await db();
+      const database = await getDb();
       const results = await database
         .select()
         .from(transactions)
@@ -35,7 +35,7 @@ export const transactionMapVizRouter = router({
   getById: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const database = await db();
+      const database = await getDb();
       const [record] = await database
         .select()
         .from(transactions)
@@ -50,7 +50,7 @@ export const transactionMapVizRouter = router({
 
   getSummary: publicProcedure
     .query(async () => {
-      const database = await db();
+      const database = await getDb();
       const [totalResult] = await database
         .select({ total: count() })
         .from(transactions);
@@ -67,7 +67,7 @@ export const transactionMapVizRouter = router({
       limit: z.number().min(1).max(50).default(10),
     }))
     .query(async ({ input }) => {
-      const database = await db();
+      const database = await getDb();
       const since = new Date();
       since.setDate(since.getDate() - input.days);
       
