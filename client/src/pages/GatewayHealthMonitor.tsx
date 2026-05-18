@@ -5,8 +5,10 @@ import { Activity } from "lucide-react";
 // Gateway Health — Uptime tracking for NIBSS, Interswitch, Paystack
 // Sprint 42: Final Production Features
 
-// @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-const { data: liveData, isLoading } = trpc.gatewayHealthMonitor.list.useQuery(
+
+export default function GatewayHealthMonitor() {
+  // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
+  const { data: liveData, isLoading } = trpc.gatewayHealthMonitor.list.useQuery(
     undefined,
     { retry: 1 }
   );
@@ -18,8 +20,6 @@ const { data: liveData, isLoading } = trpc.gatewayHealthMonitor.list.useQuery(
     col4: `${(Math.random() * 100).toFixed(1)}`,
     col5: new Date(Date.now() - i * 3600000).toLocaleString(),
   }));
-
-export default function GatewayHealthMonitor() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "details" | "history" | "settings">("overview");
 

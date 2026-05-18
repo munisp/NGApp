@@ -5,8 +5,9 @@ import { Settings } from "lucide-react";
 // System Config — Feature flags, rate limits, and platform settings
 // Sprint 42: Final Production Features
 
-// @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-const { data: liveData, isLoading } = trpc.systemConfigManager.list.useQuery(
+export default function SystemConfigManager() {
+  // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
+  const { data: liveData, isLoading } = trpc.systemConfigManager.list.useQuery(
     undefined,
     { retry: 1 }
   );
@@ -18,8 +19,6 @@ const { data: liveData, isLoading } = trpc.systemConfigManager.list.useQuery(
     col4: `${(Math.random() * 100).toFixed(1)}`,
     col5: new Date(Date.now() - i * 3600000).toLocaleString(),
   }));
-
-export default function SystemConfigManager() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "details" | "history" | "settings">("overview");
 

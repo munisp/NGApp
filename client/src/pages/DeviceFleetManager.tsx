@@ -5,8 +5,10 @@ import { Smartphone } from "lucide-react";
 // Device Fleet — Terminal inventory and firmware tracking
 // Sprint 42: Final Production Features
 
-// @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-const { data: liveData, isLoading } = trpc.deviceFleetManager.list.useQuery(
+
+export default function DeviceFleetManager() {
+  // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
+  const { data: liveData, isLoading } = trpc.deviceFleetManager.list.useQuery(
     undefined,
     { retry: 1 }
   );
@@ -18,8 +20,6 @@ const { data: liveData, isLoading } = trpc.deviceFleetManager.list.useQuery(
     col4: `${(Math.random() * 100).toFixed(1)}`,
     col5: new Date(Date.now() - i * 3600000).toLocaleString(),
   }));
-
-export default function DeviceFleetManager() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "details" | "history" | "settings">("overview");
 

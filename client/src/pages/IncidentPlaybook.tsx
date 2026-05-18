@@ -5,8 +5,10 @@ import { AlertTriangle } from "lucide-react";
 // Incident Playbook — Automated runbook for security incidents
 // Sprint 42: Final Production Features
 
-// @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-const { data: liveData, isLoading } = trpc.incidentPlaybook.list.useQuery(
+
+export default function IncidentPlaybook() {
+  // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
+  const { data: liveData, isLoading } = trpc.incidentPlaybook.list.useQuery(
     undefined,
     { retry: 1 }
   );
@@ -18,8 +20,6 @@ const { data: liveData, isLoading } = trpc.incidentPlaybook.list.useQuery(
     col4: `${(Math.random() * 100).toFixed(1)}`,
     col5: new Date(Date.now() - i * 3600000).toLocaleString(),
   }));
-
-export default function IncidentPlaybook() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "details" | "history" | "settings">("overview");
 

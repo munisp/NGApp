@@ -5,8 +5,10 @@ import { Search } from "lucide-react";
 // Revenue Leakage — Identifies missed commissions and fee discrepancies
 // Sprint 42: Final Production Features
 
-// @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-const { data: liveData, isLoading } = trpc.revenueLeakageDetector.list.useQuery(
+
+export default function RevenueLeakageDetector() {
+  // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
+  const { data: liveData, isLoading } = trpc.revenueLeakageDetector.list.useQuery(
     undefined,
     { retry: 1 }
   );
@@ -18,8 +20,6 @@ const { data: liveData, isLoading } = trpc.revenueLeakageDetector.list.useQuery(
     col4: `${(Math.random() * 100).toFixed(1)}`,
     col5: new Date(Date.now() - i * 3600000).toLocaleString(),
   }));
-
-export default function RevenueLeakageDetector() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "details" | "history" | "settings">("overview");
 
