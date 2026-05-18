@@ -135,4 +135,45 @@ export const webhookManagementRouter = router({
     "payout.initiated", "payout.completed", "payout.failed",
     "fraud.alert", "fraud.confirmed",
   ]),
+  listEndpoints: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const items = await db.select().from(webhookEndpoints).orderBy(desc(webhookEndpoints.createdAt));
+    return { endpoints: items, total: items.length };
+  }),
+  createEndpoint: protectedProcedure.input(z.object({ name: z.string(), url: z.string().url(), events: z.array(z.string()), secret: z.string().optional() })).mutation(async ({ input, ctx }) => {
+    const db = (await getDb())!;
+    const secret = input.secret || crypto.randomBytes(32).toString("hex");
+    const [ep] = await db.insert(webhookEndpoints).values({ name: input.name, url: input.url, events: input.events, secret, isActive: true, createdBy: ctx.user?.id }).returning();
+    return { id: ep.id, name: input.name, url: input.url, events: input.events, secret, status: "active" };
+  }),
+  updateEndpoint: protectedProcedure.input(z.object({ endpointId: z.number(), name: z.string().optional(), url: z.string().url().optional(), events: z.array(z.string()).optional(), isActive: z.boolean().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (input.name !== undefined) updates.name = input.name;
+    if (input.url !== undefined) updates.url = input.url;
+    if (input.events !== undefined) updates.events = input.events;
+    if (input.isActive !== undefined) updates.isActive = input.isActive;
+    await db.update(webhookEndpoints).set(updates).where(eq(webhookEndpoints.id, input.endpointId));
+    return { success: true, endpointId: input.endpointId };
+  }),
+  deleteEndpoint: protectedProcedure.input(z.object({ endpointId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.endpointId));
+    return { success: true, endpointId: input.endpointId };
+  }),
+  listDeliveries: protectedProcedure.input(z.object({ limit: z.number().default(50), endpointId: z.number().optional(), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.endpointId) conditions.push(eq(webhookDeliveries.endpointId, input.endpointId));
+    if (input?.status) conditions.push(eq(webhookDeliveries.status, input.status as any));
+    const rows = await db.select().from(webhookDeliveries).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(webhookDeliveries.createdAt)).limit(input?.limit ?? 50);
+    return { deliveries: rows, total: rows.length };
+  }),
+  retryDelivery: protectedProcedure.input(z.object({ deliveryId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [log] = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.id, input.deliveryId));
+    if (!log) throw new Error("Delivery not found");
+    await db.update(webhookDeliveries).set({ status: "retrying", retryCount: (log.retryCount || 0) + 1, updatedAt: new Date() }).where(eq(webhookDeliveries.id, input.deliveryId));
+    return { success: true, deliveryId: input.deliveryId, retryCount: (log.retryCount || 0) + 1 };
+  }),
 });

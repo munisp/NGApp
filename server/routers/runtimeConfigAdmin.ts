@@ -40,4 +40,21 @@ export const runtimeConfigAdminRouter = router({
     await db.insert(auditLog).values({ action: "config_deleted", resource: "system_config", resourceId: input.key, status: "success", metadata: {} });
     return { success: true };
   }),
+  get: protectedProcedure.input(z.object({ key: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, input.key)).limit(1);
+    return rows.length > 0 ? { key: rows[0].key, value: rows[0].value, updatedAt: rows[0].updatedAt } : null;
+  }),
+  batchUpdate: protectedProcedure.input(z.object({ configs: z.array(z.object({ key: z.string(), value: z.string() })) })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    const results = [];
+    for (const cfg of input.configs) {
+      await db.insert(systemConfig).values({ key: cfg.key, value: cfg.value }).onConflictDoUpdate({ target: systemConfig.key, set: { value: cfg.value, updatedAt: new Date() } });
+      results.push({ key: cfg.key, success: true });
+    }
+    await db.insert(auditLog).values({ action: "config_batch_updated", resource: "system_config", status: "success", metadata: { count: input.configs.length, keys: input.configs.map(c => c.key) } });
+    return { updated: results.length, results };
+  }),
 });

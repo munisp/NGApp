@@ -468,6 +468,19 @@ import { terminalLeasingRouter } from "./routers/terminalLeasing";
 import { posDisputeRouter } from "./routers/posDispute";
 import { crossBorderRemittanceRouter } from "./routers/crossBorderRemittance";
 import { agentTrainingGamificationRouter } from "./routers/agentTrainingGamification";
+// Sprint 97: Frontend-Backend Gap Closure
+import { activityAuditLogRouter } from "./routers/activityAuditLog";
+import { agentOnboardingWorkflowRouter } from "./routers/agentOnboardingWorkflow";
+import { auditTrailExportRouter } from "./routers/auditTrailExport";
+import { dailyPnlReportRouter } from "./routers/dailyPnlReport";
+import { floatManagementRouter } from "./routers/floatManagement";
+import { fraudMlScoringEngineRouter as fraudMlScoringEngineRouterV2 } from "./routers/fraudMlScoringEngine";
+import { regulatoryComplianceChecksRouter } from "./routers/regulatoryComplianceChecks";
+import { runtimeConfigAdminRouter as runtimeConfigAdminRouterV2 } from "./routers/runtimeConfigAdmin";
+import { transactionDisputeResolutionRouter } from "./routers/transactionDisputeResolution";
+import { transactionMonitoringRouter } from "./routers/transactionMonitoring";
+import { transactionReversalWorkflowRouter } from "./routers/transactionReversalWorkflow";
+import { ussdLocalizationRouter } from "./routers/ussdLocalization";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -1031,6 +1044,21 @@ export const appRouter = router({
   posDispute: posDisputeRouter,
   crossBorderRemittance: crossBorderRemittanceRouter,
   agentTrainingGamification: agentTrainingGamificationRouter,
+  // Sprint 97: Frontend-Backend Gap Closure
+  activityAuditLog: activityAuditLogRouter,
+  agentOnboardingWorkflow: agentOnboardingWorkflowRouter,
+  auditTrailExport: auditTrailExportRouter,
+  backupDisasterRecovery: backupDisasterRecoveryRouter,  // re-uses import from line 136
+  dailyPnlReport: dailyPnlReportRouter,
+  floatManagement: floatManagementRouter,
+  fraudMlScoringEngine: fraudMlScoringEngineRouterV2,
+  regulatoryComplianceChecks: regulatoryComplianceChecksRouter,
+  runtimeConfigAdmin: runtimeConfigAdminRouterV2,
+  transactionDisputeResolution: transactionDisputeResolutionRouter,
+  transactionMonitoring: transactionMonitoringRouter,
+  transactionReversalWorkflow: transactionReversalWorkflowRouter,
+  ussdLocalization: ussdLocalizationRouter,
+  webhookManagement: webhookManagementRouter,  // re-uses import from line 139
 });
 
 export type AppRouter = typeof appRouter;
