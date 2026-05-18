@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -86,37 +85,26 @@ var (
 // ─── KYC Enforcement ────────────────────────────────────────────────────────
 
 func checkKYCForLoan(customerID string, loanType string, amount float64) (bool, string, string) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	payload, _ := json.Marshal(map[string]interface{}{
-		"customerId": customerID,
-		"serviceId":  "loan-origination-go",
-		"operation":  "loan_application",
-	})
-
 	gatewayURL := os.Getenv("GATEWAY_URL")
 	if gatewayURL == "" {
 		gatewayURL = "http://localhost:5000"
 	}
 
-	resp, err := client.Post(gatewayURL+"/api/platform/kyc-enforcement/check", "application/json", bytes.NewReader(payload))
+	result, err := callService("POST", gatewayURL+"/api/platform/kyc-enforcement/check", map[string]interface{}{
+		"customerId": customerID,
+		"serviceId":  "loan-origination-go",
+		"operation":  "loan_application",
+	})
 	if err != nil {
-		log.Printf("[loan-origination-go] KYC check failed: %v — degraded mode", err)
-		return true, "gateway_unreachable", "KYC gateway unreachable — degraded mode"
+		log.Printf("[loan-origination-go] KYC check failed (circuit breaker / retries exhausted): %v — BLOCKING (fail-closed)", err)
+		return false, "gateway_unreachable", fmt.Sprintf("KYC enforcement unavailable — fail-closed: %v", err)
 	}
-	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	var result struct {
-		Allowed   bool   `json:"allowed"`
-		Reason    string `json:"reason"`
-		KYCStatus struct {
-			Level    string `json:"level"`
-			Status   string `json:"status"`
-			Verified bool   `json:"verified"`
-		} `json:"kycStatus"`
-	}
-	json.Unmarshal(body, &result)
-	return result.Allowed, result.KYCStatus.Level, result.Reason
+	allowed, _ := result["allowed"].(bool)
+	reason, _ := result["reason"].(string)
+	kycStatus, _ := result["kycStatus"].(map[string]interface{})
+	level, _ := kycStatus["level"].(string)
+	return allowed, level, reason
 }
 
 func requiredKYCLevel(loanType string, amount float64) string {
@@ -507,6 +495,29 @@ func callDisburseLoan(loanID string, accountID string, amount float64) (map[stri
         "loan_id": loanID, "to_account": accountID, "amount": amount, "currency": "NGN",
     })
 }
+
+// --- Counting Middleware ---
+func countingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        atomic.AddUint64(&_reqCount, 1)
+        rw := &responseWriter{ResponseWriter: w, status: 200}
+        next.ServeHTTP(rw, r)
+        if rw.status >= 400 {
+            atomic.AddUint64(&_errCount, 1)
+        }
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
 
 func main() {
 	port := os.Getenv("PORT")

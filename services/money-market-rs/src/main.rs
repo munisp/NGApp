@@ -112,6 +112,17 @@ async fn main() -> std::io::Result<()> {
     println!("money-market-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
             .app_data(state.clone())
             .route("/healthz", web::get().to(health))
             .route("/v1/tbill", web::post().to(price_tbill))

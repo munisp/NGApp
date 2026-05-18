@@ -304,6 +304,17 @@ async fn main() -> std::io::Result<()> {
     println!("Operations Control GL (Rust) on :{} — Gaps 21-23, 14 middleware", port);
     HttpServer::new(|| {
         App::new()
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
             .route("/healthz", web::get().to(healthz))
             .route("/v1/maker-checker/gl", web::get().to(maker_checker_gl))
             .route("/v1/limits/gl", web::get().to(limit_management_gl))

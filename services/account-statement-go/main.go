@@ -148,6 +148,29 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// --- Counting Middleware ---
+func countingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        atomic.AddUint64(&_reqCount, 1)
+        rw := &responseWriter{ResponseWriter: w, status: 200}
+        next.ServeHTTP(rw, r)
+        if rw.status >= 400 {
+            atomic.AddUint64(&_errCount, 1)
+        }
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8080" }
@@ -172,7 +195,7 @@ func main() {
 	log.Printf("account-statement-go listening on port %s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: mux,
+        Handler: countingMiddleware(mux),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

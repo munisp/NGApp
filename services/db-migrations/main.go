@@ -5,6 +5,10 @@
 package main
 
 import (
+	"context"
+	"os/signal"
+	"syscall"
+	"sync/atomic"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,6 +20,31 @@ import (
 )
 
 var startTime = time.Now()
+var (
+	_reqCount uint64
+	_errCount uint64
+)
+
+func countingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddUint64(&_reqCount, 1)
+		rw := &responseWriter{ResponseWriter: w, status: 200}
+		next.ServeHTTP(rw, r)
+		if rw.status >= 400 {
+			atomic.AddUint64(&_errCount, 1)
+		}
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
 
 // ─── Domain Types ───────────────────────────────────────────────────────────
 
@@ -222,6 +251,20 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9345" }
 	http.HandleFunc("/healthz", handleHealthz)
+	http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(w, 200, map[string]interface{}{"ready": true, "service": "db-migrations"})
+	})
+	http.HandleFunc("/livez", func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(w, 200, map[string]interface{}{"alive": true})
+	})
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		reqs := atomic.LoadUint64(&_reqCount)
+		errs := atomic.LoadUint64(&_errCount)
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "# TYPE requests_total counter\nrequests_total{service=\"db-migrations\"} %d\n", reqs)
+		fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"db-migrations\"} %d\n", errs)
+		fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"db-migrations\"} %.0f\n", time.Since(startTime).Seconds())
+	})
 	http.HandleFunc("/v1/db-migrations/list", handleList)
 	http.HandleFunc("/v1/db-migrations/create", handleCreate)
 	http.HandleFunc("/v1/db-migrations/update", handleUpdate)
@@ -229,5 +272,26 @@ func main() {
 	http.HandleFunc("/v1/db-migrations/audit", handleAudit)
 	http.HandleFunc("/v1/db-migrations/stats", handleStats)
 	log.Printf("Db Migrations v2.0 (Infrastructure/Data) on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      countingMiddleware(http.DefaultServeMux),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+	<-quit
+	log.Println("[db-migrations] Shutting down gracefully...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Forced shutdown: %v", err)
+	}
+	log.Println("[db-migrations] Server stopped")
 }

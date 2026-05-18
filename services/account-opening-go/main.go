@@ -5,12 +5,14 @@
 package main
 
 import (
-"sync/atomic"
+	"context"
+	"os/signal"
+	"syscall"
+	"sync/atomic"
 	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -75,46 +77,37 @@ var auditLog []map[string]interface{}
 // ── KYC Enforcement ─────────────────────────────────────────────────────────
 
 func checkKYCStatus(customerID, requiredLevel string) KYCCheckResult {
-	client := &http.Client{Timeout: 5 * time.Second}
-	payload, _ := json.Marshal(map[string]string{
-		"customerId": customerID,
-		"serviceId":  "account-opening-go",
-		"operation":  "account_open",
-	})
-
 	gatewayURL := os.Getenv("GATEWAY_URL")
 	if gatewayURL == "" {
 		gatewayURL = "http://localhost:5000"
 	}
 
-	resp, err := client.Post(gatewayURL+"/api/platform/kyc-enforcement/check", "application/json", bytes.NewReader(payload))
+	result, err := callService("POST", gatewayURL+"/api/platform/kyc-enforcement/check", map[string]string{
+		"customerId": customerID,
+		"serviceId":  "account-opening-go",
+		"operation":  "account_open",
+	})
 	if err != nil {
-		log.Printf("[account-opening-go] KYC check failed (gateway unreachable): %v — allowing with degraded mode", err)
-		return KYCCheckResult{Allowed: true, CustomerID: customerID, Status: "gateway_unreachable", Reason: "KYC gateway unreachable — degraded mode"}
+		log.Printf("[account-opening-go] KYC check failed (circuit breaker / retries exhausted): %v — BLOCKING (fail-closed)", err)
+		return KYCCheckResult{Allowed: false, CustomerID: customerID, Status: "gateway_unreachable", Reason: fmt.Sprintf("KYC enforcement unavailable — fail-closed: %v", err)}
 	}
-	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	var result struct {
-		Allowed   bool `json:"allowed"`
-		KYCStatus struct {
-			Level    string `json:"level"`
-			Status   string `json:"status"`
-			Verified bool   `json:"verified"`
-		} `json:"kycStatus"`
-		RequiredLevel string `json:"requiredLevel"`
-		Reason        string `json:"reason"`
-	}
-	json.Unmarshal(body, &result)
+	allowed, _ := result["allowed"].(bool)
+	reason, _ := result["reason"].(string)
+	reqLevel, _ := result["requiredLevel"].(string)
+	kycStatus, _ := result["kycStatus"].(map[string]interface{})
+	level, _ := kycStatus["level"].(string)
+	status, _ := kycStatus["status"].(string)
+	verified, _ := kycStatus["verified"].(bool)
 
 	return KYCCheckResult{
-		Allowed:       result.Allowed,
+		Allowed:       allowed,
 		CustomerID:    customerID,
-		Status:        result.KYCStatus.Status,
-		Level:         result.KYCStatus.Level,
-		Verified:      result.KYCStatus.Verified,
-		Reason:        result.Reason,
-		RequiredLevel: result.RequiredLevel,
+		Status:        status,
+		Level:         level,
+		Verified:      verified,
+		Reason:        reason,
+		RequiredLevel: reqLevel,
 	}
 }
 
@@ -604,6 +597,29 @@ func callCreateAccount(customerID string, accountType string) (map[string]interf
     })
 }
 
+// --- Counting Middleware ---
+func countingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        atomic.AddUint64(&_reqCount, 1)
+        rw := &responseWriter{ResponseWriter: w, status: 200}
+        next.ServeHTTP(rw, r)
+        if rw.status >= 400 {
+            atomic.AddUint64(&_errCount, 1)
+        }
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
+
 func main() {
 	port := os.Getenv("PORT")
 
@@ -640,7 +656,26 @@ func main() {
 	mux.HandleFunc("/v1/accounts/tier-limits", tierLimitsHandler)
 
 	log.Printf("[account-opening-go] Starting on :%s (KYC enforcement enabled)", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      countingMiddleware(mux),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+	<-quit
+	log.Println("[account-opening-go] Shutting down gracefully...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Forced shutdown: %v", err)
+	}
+	log.Println("[account-opening-go] Server stopped")
 }

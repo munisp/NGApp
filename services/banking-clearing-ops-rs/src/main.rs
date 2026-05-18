@@ -289,6 +289,17 @@ async fn main() -> std::io::Result<()> {
     println!("Banking Clearing & Ops (Rust) listening on :{} — Gaps 13-16, 14 middleware", port);
     HttpServer::new(|| {
         App::new()
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
             .route("/healthz", web::get().to(healthz))
             .route("/v1/cheque/clearing-gl", web::get().to(cheque_clearing_gl))
             .route("/v1/collateral/gl", web::get().to(collateral_gl))

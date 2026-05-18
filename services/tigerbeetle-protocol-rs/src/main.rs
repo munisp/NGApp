@@ -134,6 +134,17 @@ async fn main() -> std::io::Result<()> {
     println!("TigerBeetle Protocol Engine (Rust) on :{} — accounts + transfers + 2PC", port);
     HttpServer::new(move || {
         App::new()
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
             .app_data(web::Data::new(state.clone()))
             .route("/healthz", web::get().to(healthz))
             .route("/v1/tigerbeetle/accounts", web::get().to(list_accounts))

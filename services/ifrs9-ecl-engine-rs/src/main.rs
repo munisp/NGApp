@@ -197,6 +197,17 @@ async fn main() -> std::io::Result<()> {
     println!("IFRS9 ECL Engine (Rust) listening on :{} — 14 middleware connected", port);
     HttpServer::new(|| {
         App::new()
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
             .route("/healthz", web::get().to(healthz))
             .route("/v1/ifrs9/ecl", web::get().to(compute_ecl))
             .route("/readyz", web::get().to(readyz))

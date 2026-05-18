@@ -4,7 +4,10 @@
 package main
 
 import (
-"sync/atomic"
+	"context"
+	"os/signal"
+	"syscall"
+	"sync/atomic"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -830,6 +833,29 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// --- Counting Middleware ---
+func countingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        atomic.AddUint64(&_reqCount, 1)
+        rw := &responseWriter{ResponseWriter: w, status: 200}
+        next.ServeHTTP(rw, r)
+        if rw.status >= 400 {
+            atomic.AddUint64(&_errCount, 1)
+        }
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -883,5 +909,26 @@ func main() {
 	})
 	
 	log.Printf("kpi-engine-go starting on :%s (11 roles, weighted scoring, RBAC, flow-down roll-up)", port)
-	log.Fatal(http.ListenAndServe(":"+port, handler))
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+	<-quit
+	log.Println("[kpi-engine-go] Shutting down gracefully...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Forced shutdown: %v", err)
+	}
+	log.Println("[kpi-engine-go] Server stopped")
 }
