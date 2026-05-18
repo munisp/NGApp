@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn crop_cycle_months(crop: &str) -> u32 { match crop { "maize" => 4, "rice" => 5, "cassava" => 12, "cocoa" => 36, "yam" => 8, _ => 6 } }
 fn seasonal_repayment(principal: f64, crop: &str) -> Vec<(u32, f64)> { let months = crop_cycle_months(crop); vec![(months, principal * 1.1)] }
 fn anchor_borrower_eligible(farm_size_ha: f64, registered: bool) -> bool { farm_size_ha >= 0.5 && registered }
@@ -23,7 +22,14 @@ async fn health() -> HttpResponse {
 
 async fn assess_farm(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "agriculture-banking-rs", "action": "assess_farm", "processed": true, "input": input}))
+    let crop_s = input.get("crop").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let crop = crop_s.as_str();
+    let result = crop_cycle_months(crop);
+    HttpResponse::Ok().json(json!({
+        "service": "agriculture-banking-rs",
+        "endpoint": "assess_farm",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

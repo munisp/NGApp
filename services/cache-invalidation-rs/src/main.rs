@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn invalidate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "cache-invalidation-rs", "action": "invalidate", "processed": true, "input": input}))
+    let key_s = input.get("key").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let key = key_s.as_str();
+    let result = invalidation_pattern(key);
+    HttpResponse::Ok().json(json!({
+        "service": "cache-invalidation-rs",
+        "endpoint": "invalidate",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

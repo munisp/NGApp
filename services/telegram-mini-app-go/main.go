@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func telegram_mini_appComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func telegram_mini_appValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func telegram_mini_appScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := telegram_mini_appComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func telegram_mini_appValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := telegram_mini_appValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9442" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/telegram-mini-app/process", handleProcess)
 	http.HandleFunc("/v1/telegram-mini-app/audit", handleAudit)
 	http.HandleFunc("/v1/telegram-mini-app/stats", handleStats)
+	http.HandleFunc("/v1/telegram-mini-app/score", telegram_mini_appScoreHandler)
+	http.HandleFunc("/v1/telegram-mini-app/validate", telegram_mini_appValidateRequestHandler)
 	log.Printf("Telegram Mini App v2.0 (Messaging/Channels) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn tbill_price(face: f64, discount_rate: f64, days: u32) -> f64 { face * (1.0 - discount_rate / 100.0 * days as f64 / 360.0) }
 fn tbill_yield(price: f64, face: f64, days: u32) -> f64 { (face - price) / price * 365.0 / days as f64 * 100.0 }
 fn repo_haircut(collateral_type: &str) -> f64 {
@@ -29,43 +28,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn price_tbill(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn price_tbill(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let face = input.get("face").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let discount_rate = input.get("discount_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let days = input.get("days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = tbill_price(face, discount_rate, days);
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "price_tbill",
-        "description": "Price treasury bill (discount basis)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn repo_rate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn repo_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let price = input.get("price").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let face = input.get("face").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let days = input.get("days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = tbill_yield(price, face, days);
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "repo_rate",
-        "description": "Calculate repo rate and haircut",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn cp_yield(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn cp_yield(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let collateral_type_s = input.get("collateral_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let collateral_type = collateral_type_s.as_str();
+    let result = repo_haircut(collateral_type);
     HttpResponse::Ok().json(json!({
         "service": "money-market-rs",
         "endpoint": "cp_yield",
-        "description": "Compute commercial paper yield",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -83,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

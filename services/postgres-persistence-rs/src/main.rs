@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn persist(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "postgres-persistence-rs", "action": "persist", "processed": true, "input": input}))
+    let table_s = input.get("table").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let table = table_s.as_str();
+    let columns_s = input.get("columns").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let columns = columns_s.as_str();
+    let result = build_upsert_sql(table, columns);
+    HttpResponse::Ok().json(json!({
+        "service": "postgres-persistence-rs",
+        "endpoint": "persist",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn rotate_secret(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "secrets-rotation-rs", "action": "rotate_secret", "processed": true, "input": input}))
+    let last_rotation_days = input.get("last_rotation_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let policy_days = input.get("policy_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = rotation_due(last_rotation_days, policy_days);
+    HttpResponse::Ok().json(json!({
+        "service": "secrets-rotation-rs",
+        "endpoint": "rotate_secret",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

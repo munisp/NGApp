@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn detect_round_tripping(sends: &[f64], receives: &[f64], tolerance: f64) -> bool {
     sends.iter().any(|s| receives.iter().any(|r| (s - r).abs() / s < tolerance))
 }
@@ -36,43 +35,42 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn detect_typologies(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn detect_typologies(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let sends_v: Vec<f64> = input.get("sends").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let sends = sends_v.as_slice();
+    let receives_v: Vec<f64> = input.get("receives").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let receives = receives_v.as_slice();
+    let tolerance = input.get("tolerance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = detect_round_tripping(sends, receives, tolerance);
     HttpResponse::Ok().json(json!({
         "service": "typology-detector-rs",
         "endpoint": "detect_typologies",
-        "description": "Detect FATF money laundering typologies in transaction patterns",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn pattern_library(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn pattern_library(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let unique_senders = input.get("unique_senders").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let unique_receivers = input.get("unique_receivers").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = detect_funnel_account(unique_senders, unique_receivers);
     HttpResponse::Ok().json(json!({
         "service": "typology-detector-rs",
         "endpoint": "pattern_library",
-        "description": "Manage typology pattern definitions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn alert_generate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn alert_generate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let txn_count = input.get("txn_count").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let time_window_hours = input.get("time_window_hours").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = detect_rapid_layering(txn_count, time_window_hours);
     HttpResponse::Ok().json(json!({
         "service": "typology-detector-rs",
         "endpoint": "alert_generate",
-        "description": "Generate typology-based alerts",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -90,7 +88,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

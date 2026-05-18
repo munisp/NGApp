@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn tune_keepalive(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "keepalive-tuner-rs", "action": "tune_keepalive", "processed": true, "input": input}))
+    let latency_ms = input.get("latency_ms").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = optimal_interval(latency_ms);
+    HttpResponse::Ok().json(json!({
+        "service": "keepalive-tuner-rs",
+        "endpoint": "tune_keepalive",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

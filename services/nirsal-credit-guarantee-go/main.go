@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"math"
 	"net/http"
 	"os"
 	"sync"
@@ -218,6 +219,46 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func computeEMI(principal float64, annualRate float64, tenorMonths int) float64 {
+    if tenorMonths <= 0 || annualRate <= 0 { return principal / float64(tenorMonths) }
+    r := annualRate / 100.0 / 12.0
+    n := float64(tenorMonths)
+    emi := principal * r * math.Pow(1+r, n) / (math.Pow(1+r, n) - 1)
+    return math.Round(emi*100) / 100
+}
+
+func assessCreditRisk(income float64, existingDebt float64, requestedAmount float64) map[string]interface{} {
+    dti := (existingDebt + requestedAmount*0.03) / income * 100
+    eligible := dti < 40
+    maxAmount := (income * 0.4 - existingDebt) / 0.03
+    if maxAmount < 0 { maxAmount = 0 }
+    return map[string]interface{}{"dti_ratio": math.Round(dti*100)/100, "eligible": eligible, "max_loan_amount": math.Round(maxAmount)}
+}
+
+func nirsal_credit_guaranteeEMIHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Principal   float64 `json:"principal"`
+        AnnualRate  float64 `json:"annual_rate"`
+        TenorMonths int     `json:"tenor_months"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    emi := computeEMI(req.Principal, req.AnnualRate, req.TenorMonths)
+    total := emi * float64(req.TenorMonths)
+    respondJSON(w, 200, map[string]interface{}{"emi": emi, "total_repayment": total, "total_interest": total - req.Principal})
+}
+
+func nirsal_credit_guaranteeCreditCheckHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Income          float64 `json:"monthly_income"`
+        ExistingDebt    float64 `json:"existing_debt"`
+        RequestedAmount float64 `json:"requested_amount"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := assessCreditRisk(req.Income, req.ExistingDebt, req.RequestedAmount)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9397" }
@@ -228,6 +269,8 @@ func main() {
 	http.HandleFunc("/v1/nirsal-credit-guarantee/process", handleProcess)
 	http.HandleFunc("/v1/nirsal-credit-guarantee/audit", handleAudit)
 	http.HandleFunc("/v1/nirsal-credit-guarantee/stats", handleStats)
+	http.HandleFunc("/v1/nirsal-credit-guarantee/compute-emi", nirsal_credit_guaranteeEMIHandler)
+	http.HandleFunc("/v1/nirsal-credit-guarantee/credit-check", nirsal_credit_guaranteeCreditCheckHandler)
 	log.Printf("Nirsal Credit Guarantee v2.0 (Agriculture) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

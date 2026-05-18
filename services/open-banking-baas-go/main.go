@@ -201,6 +201,42 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+func open_banking_baasComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func open_banking_baasValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func open_banking_baasScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := open_banking_baasComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, map[string]interface{}{"score": score})
+}
+
+func open_banking_baasValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := open_banking_baasValidateRequest(body)
+    respondJSON(w, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8102" }
@@ -208,6 +244,8 @@ func main() {
 	http.HandleFunc("/v1/open-banking/apis", openBankingAPIs)
 	http.HandleFunc("/v1/ai/credit-scoring", aiCreditScoring)
 	http.HandleFunc("/v1/embedded-finance", embeddedFinance)
+	http.HandleFunc("/v1/open-banking-baas/score", open_banking_baasScoreHandler)
+	http.HandleFunc("/v1/open-banking-baas/validate", open_banking_baasValidateRequestHandler)
 	log.Printf("Open Banking & BaaS (Go) on :%s — Enhancements 1, 2, 5", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

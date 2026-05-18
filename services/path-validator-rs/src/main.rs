@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn validate_path(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "path-validator-rs", "action": "validate_path", "processed": true, "input": input}))
+    let path_s = input.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let path = path_s.as_str();
+    let result = is_path_traversal(path);
+    HttpResponse::Ok().json(json!({
+        "service": "path-validator-rs",
+        "endpoint": "validate_path",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_distribution(corpus: f64, beneficiaries: &[(String, f64)]) -> Vec<(String, f64)> {
     let total_share: f64 = beneficiaries.iter().map(|(_, s)| s).sum();
     beneficiaries.iter().map(|(name, share)| (name.clone(), corpus * share / total_share)).collect()
@@ -31,43 +30,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn create_trust(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_trust(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // Extract parameters from input and call domain logic
+    let result = serde_json::to_value(compute_distribution_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
     HttpResponse::Ok().json(json!({
         "service": "trust-estate-rs",
         "endpoint": "create_trust",
-        "description": "Create trust account with beneficiaries",
+        "result": result,
         "input": input,
-        "records_count": records.len(),
-        "status": "processed",
     }))
 }
 
-async fn distribute(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn distribute(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let corpus = input.get("corpus").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let annual_rate = input.get("annual_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = management_fee(corpus, annual_rate);
     HttpResponse::Ok().json(json!({
         "service": "trust-estate-rs",
         "endpoint": "distribute",
-        "description": "Calculate and process trust distributions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn estate_valuation(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn estate_valuation(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let trust_type_s = input.get("trust_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let trust_type = trust_type_s.as_str();
+    let result = trust_type_rules(trust_type);
     HttpResponse::Ok().json(json!({
         "service": "trust-estate-rs",
         "endpoint": "estate_valuation",
-        "description": "Compute estate valuation",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -85,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

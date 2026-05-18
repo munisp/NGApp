@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func hpa_autoscalerComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func hpa_autoscalerValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func hpa_autoscalerScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := hpa_autoscalerComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func hpa_autoscalerValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := hpa_autoscalerValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9367" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/hpa-autoscaler/process", handleProcess)
 	http.HandleFunc("/v1/hpa-autoscaler/audit", handleAudit)
 	http.HandleFunc("/v1/hpa-autoscaler/stats", handleStats)
+	http.HandleFunc("/v1/hpa-autoscaler/score", hpa_autoscalerScoreHandler)
+	http.HandleFunc("/v1/hpa-autoscaler/validate", hpa_autoscalerValidateRequestHandler)
 	log.Printf("Hpa Autoscaler v2.0 (Infrastructure/Ops) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

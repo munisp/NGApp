@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func identity_channelsComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func identity_channelsValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func identity_channelsScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := identity_channelsComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func identity_channelsValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := identity_channelsValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9370" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/identity-channels/process", handleProcess)
 	http.HandleFunc("/v1/identity-channels/audit", handleAudit)
 	http.HandleFunc("/v1/identity-channels/stats", handleStats)
+	http.HandleFunc("/v1/identity-channels/score", identity_channelsScoreHandler)
+	http.HandleFunc("/v1/identity-channels/validate", identity_channelsValidateRequestHandler)
 	log.Printf("Identity Channels v2.0 (KYC/Identity) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func corporate_monitoringComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func corporate_monitoringValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func corporate_monitoringScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := corporate_monitoringComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func corporate_monitoringValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := corporate_monitoringValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9336" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/corporate-monitoring/process", handleProcess)
 	http.HandleFunc("/v1/corporate-monitoring/audit", handleAudit)
 	http.HandleFunc("/v1/corporate-monitoring/stats", handleStats)
+	http.HandleFunc("/v1/corporate-monitoring/score", corporate_monitoringScoreHandler)
+	http.HandleFunc("/v1/corporate-monitoring/validate", corporate_monitoringValidateRequestHandler)
 	log.Printf("Corporate Monitoring v2.0 (General) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func helm_validatorComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func helm_validatorValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func helm_validatorScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := helm_validatorComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func helm_validatorValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := helm_validatorValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9366" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/helm-validator/process", handleProcess)
 	http.HandleFunc("/v1/helm-validator/audit", handleAudit)
 	http.HandleFunc("/v1/helm-validator/stats", handleStats)
+	http.HandleFunc("/v1/helm-validator/score", helm_validatorScoreHandler)
+	http.HandleFunc("/v1/helm-validator/validate", helm_validatorValidateRequestHandler)
 	log.Printf("Helm Validator v2.0 (Infrastructure/Ops) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

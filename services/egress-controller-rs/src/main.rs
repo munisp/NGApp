@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn check_egress(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "egress-controller-rs", "action": "check_egress", "processed": true, "input": input}))
+    let host_s = input.get("host").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let host = host_s.as_str();
+    let whitelist_s = input.get("whitelist").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let whitelist = whitelist_s.as_str();
+    let result = allowed_destination(host, whitelist);
+    HttpResponse::Ok().json(json!({
+        "service": "egress-controller-rs",
+        "endpoint": "check_egress",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

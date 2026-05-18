@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn fuzzy_match_score(name1: &str, name2: &str) -> f64 {
     let n1 = name1.to_lowercase(); let n2 = name2.to_lowercase();
     if n1 == n2 { return 1.0; }
@@ -35,43 +34,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn screen_name(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn screen_name(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let name1_s = input.get("name1").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let name1 = name1_s.as_str();
+    let name2_s = input.get("name2").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let name2 = name2_s.as_str();
+    let result = fuzzy_match_score(name1, name2);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-screening-rs",
         "endpoint": "screen_name",
-        "description": "Screen name against sanctions lists with fuzzy matching",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn batch_screen(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn batch_screen(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let score = input.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = is_hit(score, threshold);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-screening-rs",
         "endpoint": "batch_screen",
-        "description": "Batch screen multiple names",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn list_update(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn list_update(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let list_s = input.get("list").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let list = list_s.as_str();
+    let result = sanctions_list_priority(list);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-screening-rs",
         "endpoint": "list_update",
-        "description": "Update sanctions list data",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -89,7 +86,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn flow_completion_rate(started: u32, completed: u32) -> f64 { if started == 0 { 0.0 } else { completed as f64 / started as f64 * 100.0 } }
 fn avg_flow_duration(durations_ms: &[u64]) -> u64 {
     if durations_ms.is_empty() { 0 } else { durations_ms.iter().sum::<u64>() / durations_ms.len() as u64 }
@@ -30,43 +29,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn create_flow(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_flow(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let started = input.get("started").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let completed = input.get("completed").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = flow_completion_rate(started, completed);
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-banking-flows-rs",
         "endpoint": "create_flow",
-        "description": "Create WhatsApp interactive banking flow",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn process_response(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn process_response(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let durations_ms_v: Vec<u64> = input.get("durations_ms").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_u64()).collect()).unwrap_or_default();
+    let durations_ms = durations_ms_v.as_slice();
+    let result = avg_flow_duration(durations_ms);
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-banking-flows-rs",
         "endpoint": "process_response",
-        "description": "Process customer response in flow",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn flow_analytics(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn flow_analytics(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // TODO: extract current: u8
+    let current = Default::default();
+    let response_s = input.get("response").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let response = response_s.as_str();
+    let result = next_step(current, response);
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-banking-flows-rs",
         "endpoint": "flow_analytics",
-        "description": "Get flow completion analytics",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -84,7 +81,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn rule_match(amount: f64, threshold: f64, operator: &str) -> bool {
     match operator { "gt" => amount > threshold, "lt" => amount < threshold, "eq" => (amount - threshold).abs() < 0.01, "gte" => amount >= threshold, _ => false }
 }
@@ -24,7 +23,16 @@ async fn health() -> HttpResponse {
 
 async fn evaluate_txn(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "txn-monitoring-rules-rs", "action": "evaluate_txn", "processed": true, "input": input}))
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let operator_s = input.get("operator").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let operator = operator_s.as_str();
+    let result = rule_match(amount, threshold, operator);
+    HttpResponse::Ok().json(json!({
+        "service": "txn-monitoring-rules-rs",
+        "endpoint": "evaluate_txn",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

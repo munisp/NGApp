@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn velocity_score(txn_count_1h: u32, txn_count_24h: u32, avg_1h: f64, avg_24h: f64) -> f64 {
     let h_ratio = if avg_1h > 0.0 { txn_count_1h as f64 / avg_1h } else { txn_count_1h as f64 };
     let d_ratio = if avg_24h > 0.0 { txn_count_24h as f64 / avg_24h } else { txn_count_24h as f64 };
@@ -39,43 +38,45 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn evaluate_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn evaluate_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let txn_count_1h = input.get("txn_count_1h").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let txn_count_24h = input.get("txn_count_24h").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let avg_1h = input.get("avg_1h").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let avg_24h = input.get("avg_24h").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = velocity_score(txn_count_1h, txn_count_24h, avg_1h, avg_24h);
     HttpResponse::Ok().json(json!({
         "service": "fraud-detection-rs",
         "endpoint": "evaluate_transaction",
-        "description": "Score transaction for fraud indicators",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn velocity_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn velocity_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let avg_amount = input.get("avg_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let std_dev = input.get("std_dev").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = amount_anomaly_score(amount, avg_amount, std_dev);
     HttpResponse::Ok().json(json!({
         "service": "fraud-detection-rs",
         "endpoint": "velocity_check",
-        "description": "Check transaction velocity against thresholds",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn device_fingerprint(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn device_fingerprint(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let current_country_s = input.get("current_country").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let current_country = current_country_s.as_str();
+    let usual_country_s = input.get("usual_country").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let usual_country = usual_country_s.as_str();
+    let minutes_since_last = input.get("minutes_since_last").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = geo_anomaly(current_country, usual_country, minutes_since_last);
     HttpResponse::Ok().json(json!({
         "service": "fraud-detection-rs",
         "endpoint": "device_fingerprint",
-        "description": "Validate device fingerprint and anomaly",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -93,7 +94,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

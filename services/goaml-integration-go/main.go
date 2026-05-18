@@ -218,6 +218,49 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func computeAMLRiskScore(txnAmount float64, isPEP bool, highRiskCountry bool, cashIntensive bool) float64 {
+    score := 0.0
+    if isPEP { score += 30 }
+    if highRiskCountry { score += 25 }
+    if cashIntensive { score += 20 }
+    if txnAmount > 5000000 { score += 25 } else if txnAmount > 1000000 { score += 15 }
+    if score > 100 { score = 100 }
+    return score
+}
+
+func screenTransaction(amount float64, currency string, originCountry string) map[string]interface{} {
+    highRisk := originCountry == "IR" || originCountry == "KP" || originCountry == "SY"
+    threshold := 5000000.0
+    if currency == "USD" { threshold = 10000.0 }
+    return map[string]interface{}{"flagged": amount > threshold || highRisk, "threshold": threshold, "high_risk_country": highRisk, "report_required": amount > threshold}
+}
+
+func goaml_integrationScreenHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Amount  float64 `json:"amount"`
+        Currency string  `json:"currency"`
+        Country  string  `json:"origin_country"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := screenTransaction(req.Amount, req.Currency, req.Country)
+    respondJSON(w, 200, result)
+}
+
+func goaml_integrationRiskScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Amount       float64 `json:"amount"`
+        IsPEP        bool    `json:"is_pep"`
+        HighRisk     bool    `json:"high_risk_country"`
+        CashIntensive bool   `json:"cash_intensive"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := computeAMLRiskScore(req.Amount, req.IsPEP, req.HighRisk, req.CashIntensive)
+    level := "low"
+    if score >= 60 { level = "high" } else if score >= 30 { level = "medium" }
+    respondJSON(w, 200, map[string]interface{}{"risk_score": score, "risk_level": level})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9362" }
@@ -228,6 +271,8 @@ func main() {
 	http.HandleFunc("/v1/goaml-integration/process", handleProcess)
 	http.HandleFunc("/v1/goaml-integration/audit", handleAudit)
 	http.HandleFunc("/v1/goaml-integration/stats", handleStats)
+	http.HandleFunc("/v1/goaml-integration/screen", goaml_integrationScreenHandler)
+	http.HandleFunc("/v1/goaml-integration/risk-score", goaml_integrationRiskScoreHandler)
 	log.Printf("Goaml Integration v2.0 (AML/Compliance) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

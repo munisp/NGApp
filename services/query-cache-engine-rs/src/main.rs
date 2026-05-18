@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn cache_result(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "query-cache-engine-rs", "action": "cache_result", "processed": true, "input": input}))
+    let query_type_s = input.get("query_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let query_type = query_type_s.as_str();
+    let result = ttl_for_query(query_type);
+    HttpResponse::Ok().json(json!({
+        "service": "query-cache-engine-rs",
+        "endpoint": "cache_result",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func bvn_nin_verificationComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func bvn_nin_verificationValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func bvn_nin_verificationScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := bvn_nin_verificationComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func bvn_nin_verificationValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := bvn_nin_verificationValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9327" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/bvn-nin-verification/process", handleProcess)
 	http.HandleFunc("/v1/bvn-nin-verification/audit", handleAudit)
 	http.HandleFunc("/v1/bvn-nin-verification/stats", handleStats)
+	http.HandleFunc("/v1/bvn-nin-verification/score", bvn_nin_verificationScoreHandler)
+	http.HandleFunc("/v1/bvn-nin-verification/validate", bvn_nin_verificationValidateRequestHandler)
 	log.Printf("Bvn Nin Verification v2.0 (KYC/Identity) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

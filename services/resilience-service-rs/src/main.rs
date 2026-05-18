@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn circuit_state(failures: u32, threshold: u32, last_failure_ms: u64, recovery_ms: u64) -> &'static str {
     let now_ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
     if failures >= threshold { if now_ms - last_failure_ms > recovery_ms { "half_open" } else { "open" } } else { "closed" }
@@ -25,7 +24,16 @@ async fn health() -> HttpResponse {
 
 async fn check_circuit(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "resilience-service-rs", "action": "check_circuit", "processed": true, "input": input}))
+    let failures = input.get("failures").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let threshold = input.get("threshold").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let last_failure_ms = input.get("last_failure_ms").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let recovery_ms = input.get("recovery_ms").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = circuit_state(failures, threshold, last_failure_ms, recovery_ms);
+    HttpResponse::Ok().json(json!({
+        "service": "resilience-service-rs",
+        "endpoint": "check_circuit",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

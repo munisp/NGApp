@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn futures_price(spot: f64, risk_free_rate: f64, storage_cost: f64, tenor_days: u32) -> f64 {
     spot * (1.0 + (risk_free_rate + storage_cost) / 100.0 * tenor_days as f64 / 365.0)
 }
@@ -28,43 +27,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn place_commodity_order(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn place_commodity_order(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let spot = input.get("spot").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let risk_free_rate = input.get("risk_free_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let storage_cost = input.get("storage_cost").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let tenor_days = input.get("tenor_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = futures_price(spot, risk_free_rate, storage_cost, tenor_days);
     HttpResponse::Ok().json(json!({
         "service": "commodity-exchange-rs",
         "endpoint": "place_commodity_order",
-        "description": "Place commodity buy/sell order",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn spot_price(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn spot_price(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let spot = input.get("spot").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let futures = input.get("futures").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = basis(spot, futures);
     HttpResponse::Ok().json(json!({
         "service": "commodity-exchange-rs",
         "endpoint": "spot_price",
-        "description": "Get commodity spot price",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn futures_price_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn futures_price_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let contract_value = input.get("contract_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let initial_margin_pct = input.get("initial_margin_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = margin_requirement(contract_value, initial_margin_pct);
     HttpResponse::Ok().json(json!({
         "service": "commodity-exchange-rs",
-        "endpoint": "futures_price",
-        "description": "Calculate futures price from spot + carry cost",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "endpoint": "futures_price_handler",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -82,7 +79,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

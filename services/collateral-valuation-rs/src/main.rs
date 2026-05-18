@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn apply_haircut(market_value: f64, collateral_type: &str) -> f64 {
     let haircut = match collateral_type {
         "cash" => 0.0, "government_securities" => 0.05, "property" => 0.30,
@@ -34,43 +33,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn value_collateral(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn value_collateral(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let market_value = input.get("market_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let collateral_type_s = input.get("collateral_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let collateral_type = collateral_type_s.as_str();
+    let result = apply_haircut(market_value, collateral_type);
     HttpResponse::Ok().json(json!({
         "service": "collateral-valuation-rs",
         "endpoint": "value_collateral",
-        "description": "Compute collateral value with haircuts",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn revalue(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn revalue(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let collateral_value = input.get("collateral_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let loan_outstanding = input.get("loan_outstanding").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = coverage_ratio(collateral_value, loan_outstanding);
     HttpResponse::Ok().json(json!({
         "service": "collateral-valuation-rs",
         "endpoint": "revalue",
-        "description": "Revalue collateral portfolio",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn coverage_ratio_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn coverage_ratio_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let coverage = input.get("coverage").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let minimum_coverage = input.get("minimum_coverage").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = margin_call_needed(coverage, minimum_coverage);
     HttpResponse::Ok().json(json!({
         "service": "collateral-valuation-rs",
-        "endpoint": "coverage_ratio",
-        "description": "Compute loan-to-collateral coverage ratio",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "endpoint": "coverage_ratio_handler",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -88,7 +84,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

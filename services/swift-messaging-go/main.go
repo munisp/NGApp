@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func swift_messagingComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func swift_messagingValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func swift_messagingScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := swift_messagingComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func swift_messagingValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := swift_messagingValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9439" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/swift-messaging/process", handleProcess)
 	http.HandleFunc("/v1/swift-messaging/audit", handleAudit)
 	http.HandleFunc("/v1/swift-messaging/stats", handleStats)
+	http.HandleFunc("/v1/swift-messaging/score", swift_messagingScoreHandler)
+	http.HandleFunc("/v1/swift-messaging/validate", swift_messagingValidateRequestHandler)
 	log.Printf("Swift Messaging v2.0 (Cross-Border) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

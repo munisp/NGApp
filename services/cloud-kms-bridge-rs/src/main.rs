@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn key_rotation_due(last_rotation_days: u32, max_days: u32) -> bool { last_rotation_days >= max_days }
 fn key_usage_type(purpose: &str) -> &str { match purpose { "encrypt" => "ENCRYPT_DECRYPT", "sign" => "ASYMMETRIC_SIGN", "wrap" => "KEY_WRAP", _ => "ENCRYPT_DECRYPT" } }
 
@@ -22,7 +21,14 @@ async fn health() -> HttpResponse {
 
 async fn manage_key(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "cloud-kms-bridge-rs", "action": "manage_key", "processed": true, "input": input}))
+    let last_rotation_days = input.get("last_rotation_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let max_days = input.get("max_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = key_rotation_due(last_rotation_days, max_days);
+    HttpResponse::Ok().json(json!({
+        "service": "cloud-kms-bridge-rs",
+        "endpoint": "manage_key",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

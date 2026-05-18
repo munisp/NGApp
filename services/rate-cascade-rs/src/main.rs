@@ -33,7 +33,26 @@ async fn health() -> HttpResponse {
 
 async fn cascade_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "rate-cascade-rs", "action": "cascade_rate", "processed": true, "input": input}))
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let tiers: Vec<(f64, f64)> = input.get("tiers").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|t| {
+            let threshold = t.get("threshold").and_then(|v| v.as_f64())?;
+            let rate = t.get("rate").and_then(|v| v.as_f64())?;
+            Some((threshold, rate))
+        }).collect()
+    }).unwrap_or_default();
+    let flat_rate = cascade_lookup(&tiers, amount);
+    let blended = blended_rate(&tiers, amount);
+    HttpResponse::Ok().json(json!({
+        "service": "rate-cascade-rs",
+        "endpoint": "cascade_rate",
+        "result": {
+            "amount": amount,
+            "flat_rate": flat_rate,
+            "blended_rate": blended,
+            "tiers_applied": tiers.len()
+        },
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

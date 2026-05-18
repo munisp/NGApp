@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_ecl_12m(pd_12m: f64, lgd: f64, ead: f64) -> f64 { pd_12m * lgd * ead }
 fn compute_ecl_lifetime(pd_lifetime: f64, lgd: f64, ead: f64) -> f64 { pd_lifetime * lgd * ead }
 fn classify_stage(dpd: u32, pd_increase: f64) -> u8 {
@@ -30,43 +29,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn compute_ecl(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_ecl(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let pd_lifetime = input.get("pd_lifetime").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let lgd = input.get("lgd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ead = input.get("ead").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_ecl_lifetime(pd_lifetime, lgd, ead);
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "compute_ecl",
-        "description": "12-month and lifetime ECL using PD × LGD × EAD",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn stage_classification(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn stage_classification(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let dpd = input.get("dpd").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let pd_increase = input.get("pd_increase").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = classify_stage(dpd, pd_increase);
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "stage_classification",
-        "description": "Classify exposures into Stage 1/2/3",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn provision_waterfall(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn provision_waterfall(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let origination_pd = input.get("origination_pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let current_pd = input.get("current_pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = sicr_threshold(origination_pd, current_pd);
     HttpResponse::Ok().json(json!({
         "service": "ifrs9-engine-rs",
         "endpoint": "provision_waterfall",
-        "description": "Compute provision adequacy waterfall",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -84,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

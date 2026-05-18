@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn rotate_token(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "token-rotation-rs", "action": "rotate_token", "processed": true, "input": input}))
+    let issued_at = input.get("issued_at").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = token_age_seconds(issued_at);
+    HttpResponse::Ok().json(json!({
+        "service": "token-rotation-rs",
+        "endpoint": "rotate_token",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

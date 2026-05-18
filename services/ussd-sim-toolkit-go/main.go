@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func ussd_sim_toolkitComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func ussd_sim_toolkitValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func ussd_sim_toolkitScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := ussd_sim_toolkitComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func ussd_sim_toolkitValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := ussd_sim_toolkitValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9454" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/ussd-sim-toolkit/process", handleProcess)
 	http.HandleFunc("/v1/ussd-sim-toolkit/audit", handleAudit)
 	http.HandleFunc("/v1/ussd-sim-toolkit/stats", handleStats)
+	http.HandleFunc("/v1/ussd-sim-toolkit/score", ussd_sim_toolkitScoreHandler)
+	http.HandleFunc("/v1/ussd-sim-toolkit/validate", ussd_sim_toolkitValidateRequestHandler)
 	log.Printf("Ussd Sim Toolkit v2.0 (Messaging/Channels) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

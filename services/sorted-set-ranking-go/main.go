@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func sorted_set_rankingComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func sorted_set_rankingValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func sorted_set_rankingScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := sorted_set_rankingComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func sorted_set_rankingValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := sorted_set_rankingValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9433" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/sorted-set-ranking/process", handleProcess)
 	http.HandleFunc("/v1/sorted-set-ranking/audit", handleAudit)
 	http.HandleFunc("/v1/sorted-set-ranking/stats", handleStats)
+	http.HandleFunc("/v1/sorted-set-ranking/score", sorted_set_rankingScoreHandler)
+	http.HandleFunc("/v1/sorted-set-ranking/validate", sorted_set_rankingValidateRequestHandler)
 	log.Printf("Sorted Set Ranking v2.0 (Platform/Infra) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

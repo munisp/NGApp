@@ -20,7 +20,15 @@ async fn health() -> HttpResponse {
 
 async fn compress(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "response-compressor-rs", "action": "compress", "processed": true, "input": input}))
+    let content_type_s = input.get("content_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let content_type = content_type_s.as_str();
+    let size = input.get("size").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = should_compress(content_type, size);
+    HttpResponse::Ok().json(json!({
+        "service": "response-compressor-rs",
+        "endpoint": "compress",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

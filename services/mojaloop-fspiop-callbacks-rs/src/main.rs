@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_ilp_condition(condition: &str) -> bool { condition.len() == 48 }
 fn transfer_state(fulfilled: bool, expired: bool) -> &str {
     if fulfilled { "COMMITTED" } else if expired { "ABORTED" } else { "RESERVED" }
@@ -28,43 +27,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn handle_transfer_callback(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn handle_transfer_callback(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let condition_s = input.get("condition").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let condition = condition_s.as_str();
+    let result = validate_ilp_condition(condition);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-fspiop-callbacks-rs",
         "endpoint": "handle_transfer_callback",
-        "description": "Handle transfer fulfil/error callbacks",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn handle_quote_callback(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn handle_quote_callback(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let fulfilled = input.get("fulfilled").and_then(|v| v.as_bool()).unwrap_or(false);
+    let expired = input.get("expired").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = transfer_state(fulfilled, expired);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-fspiop-callbacks-rs",
         "endpoint": "handle_quote_callback",
-        "description": "Handle quote response callbacks",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn handle_party_callback(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn handle_party_callback(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let condition_s = input.get("condition").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let condition = condition_s.as_str();
+    let result = compute_ilp_fulfilment(condition);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-fspiop-callbacks-rs",
         "endpoint": "handle_party_callback",
-        "description": "Handle party lookup callbacks",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -82,7 +77,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

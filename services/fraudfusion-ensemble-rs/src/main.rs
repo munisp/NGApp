@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn ensemble_weighted_avg(scores: &[(f64, f64)]) -> f64 {
     let total_w: f64 = scores.iter().map(|(_, w)| w).sum();
     if total_w == 0.0 { return 0.0; }
@@ -36,43 +35,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn ensemble_score(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn ensemble_score(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // Extract parameters from input and call domain logic
+    let result = serde_json::to_value(ensemble_weighted_avg_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
     HttpResponse::Ok().json(json!({
         "service": "fraudfusion-ensemble-rs",
         "endpoint": "ensemble_score",
-        "description": "Run transaction through multiple fraud models and combine scores",
+        "result": result,
         "input": input,
-        "records_count": records.len(),
-        "status": "processed",
     }))
 }
 
-async fn model_performance(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn model_performance(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let scores_v: Vec<f64> = input.get("scores").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let scores = scores_v.as_slice();
+    let result = ensemble_max(scores);
     HttpResponse::Ok().json(json!({
         "service": "fraudfusion-ensemble-rs",
         "endpoint": "model_performance",
-        "description": "Track individual model accuracy and F1 scores",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn threshold_optimize(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn threshold_optimize(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let scores_v: Vec<f64> = input.get("scores").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let scores = scores_v.as_slice();
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = ensemble_voting(scores, threshold);
     HttpResponse::Ok().json(json!({
         "service": "fraudfusion-ensemble-rs",
         "endpoint": "threshold_optimize",
-        "description": "Optimize decision thresholds per model",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -90,7 +86,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

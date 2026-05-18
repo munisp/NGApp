@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn route_query(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "read-replica-router-rs", "action": "route_query", "processed": true, "input": input}))
+    let query_s = input.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let query = query_s.as_str();
+    let result = should_use_replica(query);
+    HttpResponse::Ok().json(json!({
+        "service": "read-replica-router-rs",
+        "endpoint": "route_query",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -218,6 +218,40 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func estimateThroughput(batchSize int, intervalMs int) float64 {
+    if intervalMs <= 0 { return 0 }
+    return float64(batchSize) / (float64(intervalMs) / 1000.0)
+}
+
+func partitionKey(customerID string, numPartitions int) int {
+    hash := 0
+    for _, c := range customerID { hash = hash*31 + int(c) }
+    if hash < 0 { hash = -hash }
+    return hash % numPartitions
+}
+
+func prepared_stmt_cacheThroughputHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        BatchSize  int `json:"batch_size"`
+        IntervalMs int `json:"interval_ms"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    tps := estimateThroughput(req.BatchSize, req.IntervalMs)
+    respondJSON(w, 200, map[string]interface{}{"throughput_per_sec": tps, "batch_size": req.BatchSize})
+}
+
+func prepared_stmt_cachePartitionHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        CustomerID    string `json:"customer_id"`
+        NumPartitions int    `json:"num_partitions"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    if req.NumPartitions <= 0 { req.NumPartitions = 12 }
+    partition := partitionKey(req.CustomerID, req.NumPartitions)
+    respondJSON(w, 200, map[string]interface{}{"partition": partition, "customer_id": req.CustomerID, "total_partitions": req.NumPartitions})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9413" }
@@ -228,6 +262,8 @@ func main() {
 	http.HandleFunc("/v1/prepared-stmt-cache/process", handleProcess)
 	http.HandleFunc("/v1/prepared-stmt-cache/audit", handleAudit)
 	http.HandleFunc("/v1/prepared-stmt-cache/stats", handleStats)
+	http.HandleFunc("/v1/prepared-stmt-cache/throughput", prepared_stmt_cacheThroughputHandler)
+	http.HandleFunc("/v1/prepared-stmt-cache/partition", prepared_stmt_cachePartitionHandler)
 	log.Printf("Prepared Stmt Cache v2.0 (KYC/Identity) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

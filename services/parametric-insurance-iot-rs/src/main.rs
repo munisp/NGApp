@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn weather_trigger(actual: f64, threshold: f64, direction: &str) -> bool {
     match direction { "below" => actual < threshold, "above" => actual > threshold, _ => false }
 }
@@ -28,7 +27,16 @@ async fn health() -> HttpResponse {
 
 async fn evaluate_trigger(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "parametric-insurance-iot-rs", "action": "evaluate_trigger", "processed": true, "input": input}))
+    let actual = input.get("actual").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let direction_s = input.get("direction").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let direction = direction_s.as_str();
+    let result = weather_trigger(actual, threshold, direction);
+    HttpResponse::Ok().json(json!({
+        "service": "parametric-insurance-iot-rs",
+        "endpoint": "evaluate_trigger",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

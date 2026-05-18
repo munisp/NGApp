@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func body_limit_enforcerComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func body_limit_enforcerValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func body_limit_enforcerScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := body_limit_enforcerComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func body_limit_enforcerValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := body_limit_enforcerValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9324" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/body-limit-enforcer/process", handleProcess)
 	http.HandleFunc("/v1/body-limit-enforcer/audit", handleAudit)
 	http.HandleFunc("/v1/body-limit-enforcer/stats", handleStats)
+	http.HandleFunc("/v1/body-limit-enforcer/score", body_limit_enforcerScoreHandler)
+	http.HandleFunc("/v1/body-limit-enforcer/validate", body_limit_enforcerValidateRequestHandler)
 	log.Printf("Body Limit Enforcer v2.0 (Security) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

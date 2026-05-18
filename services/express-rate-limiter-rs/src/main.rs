@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn check_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "express-rate-limiter-rs", "action": "check_rate", "processed": true, "input": input}))
+    let timestamps_v: Vec<u64> = input.get("timestamps").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_u64()).collect()).unwrap_or_default();
+    let timestamps = timestamps_v.as_slice();
+    let window_ms = input.get("window_ms").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let now = input.get("now").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = sliding_window_count(timestamps, window_ms, now);
+    HttpResponse::Ok().json(json!({
+        "service": "express-rate-limiter-rs",
+        "endpoint": "check_rate",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

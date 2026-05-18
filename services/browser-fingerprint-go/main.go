@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func browser_fingerprintComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func browser_fingerprintValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func browser_fingerprintScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := browser_fingerprintComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func browser_fingerprintValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := browser_fingerprintValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9326" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/browser-fingerprint/process", handleProcess)
 	http.HandleFunc("/v1/browser-fingerprint/audit", handleAudit)
 	http.HandleFunc("/v1/browser-fingerprint/stats", handleStats)
+	http.HandleFunc("/v1/browser-fingerprint/score", browser_fingerprintScoreHandler)
+	http.HandleFunc("/v1/browser-fingerprint/validate", browser_fingerprintValidateRequestHandler)
 	log.Printf("Browser Fingerprint v2.0 (Security) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

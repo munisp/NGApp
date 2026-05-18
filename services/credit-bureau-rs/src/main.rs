@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn credit_score_band(score: u32) -> &'static str {
     if score >= 700 { "excellent" } else if score >= 600 { "good" } else if score >= 500 { "fair" } else { "poor" }
 }
@@ -25,7 +24,13 @@ async fn health() -> HttpResponse {
 
 async fn query_bureau(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "credit-bureau-rs", "action": "query_bureau", "processed": true, "input": input}))
+    let score = input.get("score").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = credit_score_band(score);
+    HttpResponse::Ok().json(json!({
+        "service": "credit-bureau-rs",
+        "endpoint": "query_bureau",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

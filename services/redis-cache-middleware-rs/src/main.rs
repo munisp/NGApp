@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn cache_middleware(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "redis-cache-middleware-rs", "action": "cache_middleware", "processed": true, "input": input}))
+    let method_s = input.get("method").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let method = method_s.as_str();
+    let path_s = input.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let path = path_s.as_str();
+    let result = cache_control(method, path);
+    HttpResponse::Ok().json(json!({
+        "service": "redis-cache-middleware-rs",
+        "endpoint": "cache_middleware",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

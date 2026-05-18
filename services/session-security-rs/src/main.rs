@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn session_valid(created_at: u64, max_age_secs: u64, last_activity: u64, idle_timeout: u64) -> bool {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
     now - created_at <= max_age_secs && now - last_activity <= idle_timeout
@@ -24,7 +23,16 @@ async fn health() -> HttpResponse {
 
 async fn validate_session(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "session-security-rs", "action": "validate_session", "processed": true, "input": input}))
+    let created_at = input.get("created_at").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let max_age_secs = input.get("max_age_secs").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let last_activity = input.get("last_activity").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let idle_timeout = input.get("idle_timeout").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = session_valid(created_at, max_age_secs, last_activity, idle_timeout);
+    HttpResponse::Ok().json(json!({
+        "service": "session-security-rs",
+        "endpoint": "validate_session",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

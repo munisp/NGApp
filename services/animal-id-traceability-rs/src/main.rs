@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn generate_nlis_tag(state: &str, species: &str, seq: u32) -> String { format!("{}-{}-{:06}", state, species, seq) }
 fn movement_record(from: &str, to: &str) -> String { format!("{} -> {}", from, to) }
 fn quarantine_required(disease_zone: bool) -> bool { disease_zone }
@@ -23,7 +22,17 @@ async fn health() -> HttpResponse {
 
 async fn trace_animal(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "animal-id-traceability-rs", "action": "trace_animal", "processed": true, "input": input}))
+    let state_s = input.get("state").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let state = state_s.as_str();
+    let species_s = input.get("species").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let species = species_s.as_str();
+    let seq = input.get("seq").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = generate_nlis_tag(state, species, seq);
+    HttpResponse::Ok().json(json!({
+        "service": "animal-id-traceability-rs",
+        "endpoint": "trace_animal",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

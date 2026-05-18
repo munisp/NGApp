@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn produce_batch(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "kafka-batch-producer-rs", "action": "produce_batch", "processed": true, "input": input}))
+    let msg_size_bytes = input.get("msg_size_bytes").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let max_batch_bytes = input.get("max_batch_bytes").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = optimal_batch_size(msg_size_bytes, max_batch_bytes);
+    HttpResponse::Ok().json(json!({
+        "service": "kafka-batch-producer-rs",
+        "endpoint": "produce_batch",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

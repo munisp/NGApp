@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn dfsp_position(credits: f64, debits: f64) -> f64 { credits - debits }
 fn settlement_eligible(position: f64, ndc: f64) -> bool { position.abs() <= ndc }
 fn window_status(open: bool, settled: bool) -> &str {
@@ -28,43 +27,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn sync_transfer(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn sync_transfer(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let credits = input.get("credits").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let debits = input.get("debits").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = dfsp_position(credits, debits);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-tb-bridge-rs",
         "endpoint": "sync_transfer",
-        "description": "Synchronize Mojaloop transfer to TigerBeetle ledger",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn reconcile_positions(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn reconcile_positions(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let position = input.get("position").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ndc = input.get("ndc").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = settlement_eligible(position, ndc);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-tb-bridge-rs",
         "endpoint": "reconcile_positions",
-        "description": "Reconcile DFSP positions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn settlement_window(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn settlement_window(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let open = input.get("open").and_then(|v| v.as_bool()).unwrap_or(false);
+    let settled = input.get("settled").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = window_status(open, settled);
     HttpResponse::Ok().json(json!({
         "service": "mojaloop-tb-bridge-rs",
         "endpoint": "settlement_window",
-        "description": "Manage settlement windows",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -82,7 +77,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

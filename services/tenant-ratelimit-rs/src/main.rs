@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn check_tenant_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "tenant-ratelimit-rs", "action": "check_tenant_rate", "processed": true, "input": input}))
+    let tier_s = input.get("tier").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let tier = tier_s.as_str();
+    let result = tenant_limit(tier);
+    HttpResponse::Ok().json(json!({
+        "service": "tenant-ratelimit-rs",
+        "endpoint": "check_tenant_rate",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_nibor(submissions: &mut Vec<f64>) -> f64 {
     if submissions.len() < 5 { return 0.0; }
     submissions.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -31,43 +30,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn quote_rate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn quote_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let submissions_s = input.get("submissions").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let submissions_ref = submissions_s.as_str();
+    let result = compute_nibor(submissions_ref);
     HttpResponse::Ok().json(json!({
         "service": "interbank-lending-rs",
         "endpoint": "quote_rate",
-        "description": "Quote interbank lending rate",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn accept_bid(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn accept_bid(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let nibor = input.get("nibor").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let spread = input.get("spread").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = overnight_rate(nibor, spread);
     HttpResponse::Ok().json(json!({
         "service": "interbank-lending-rs",
         "endpoint": "accept_bid",
-        "description": "Accept interbank bid/offer",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn nibor_compute(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn nibor_compute(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let unsecured_limit = input.get("unsecured_limit").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = collateral_required(amount, unsecured_limit);
     HttpResponse::Ok().json(json!({
         "service": "interbank-lending-rs",
         "endpoint": "nibor_compute",
-        "description": "Compute NIBOR from bank submissions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -85,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

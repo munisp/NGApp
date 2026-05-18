@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn transcode(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "grpc-gateway-rs", "action": "transcode", "processed": true, "input": input}))
+    let code = input.get("code").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = grpc_status_to_http(code);
+    HttpResponse::Ok().json(json!({
+        "service": "grpc-gateway-rs",
+        "endpoint": "transcode",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

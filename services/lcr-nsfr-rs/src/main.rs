@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_lcr(hqla: f64, net_outflows_30d: f64) -> f64 { if net_outflows_30d > 0.0 { hqla / net_outflows_30d * 100.0 } else { 999.0 } }
 fn compute_nsfr(asf: f64, rsf: f64) -> f64 { if rsf > 0.0 { asf / rsf * 100.0 } else { 999.0 } }
 fn hqla_haircut(asset_type: &str) -> f64 {
@@ -30,43 +29,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn compute_lcr_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_lcr_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let hqla = input.get("hqla").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let net_outflows_30d = input.get("net_outflows_30d").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_lcr(hqla, net_outflows_30d);
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
-        "endpoint": "compute_lcr",
-        "description": "Calculate LCR = HQLA / Net cash outflows over 30 days",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "endpoint": "compute_lcr_handler",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn compute_nsfr_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_nsfr_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let asf = input.get("asf").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let rsf = input.get("rsf").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_nsfr(asf, rsf);
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
-        "endpoint": "compute_nsfr",
-        "description": "Calculate NSFR = Available stable funding / Required stable funding",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "endpoint": "compute_nsfr_handler",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn liquidity_stress(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn liquidity_stress(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let asset_type_s = input.get("asset_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let asset_type = asset_type_s.as_str();
+    let result = hqla_haircut(asset_type);
     HttpResponse::Ok().json(json!({
         "service": "lcr-nsfr-rs",
         "endpoint": "liquidity_stress",
-        "description": "Run liquidity stress scenarios",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -84,7 +79,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func safe_depositComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func safe_depositValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func safe_depositScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := safe_depositComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func safe_depositValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := safe_depositValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9423" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/safe-deposit/process", handleProcess)
 	http.HandleFunc("/v1/safe-deposit/audit", handleAudit)
 	http.HandleFunc("/v1/safe-deposit/stats", handleStats)
+	http.HandleFunc("/v1/safe-deposit/score", safe_depositScoreHandler)
+	http.HandleFunc("/v1/safe-deposit/validate", safe_depositValidateRequestHandler)
 	log.Printf("Safe Deposit v2.0 (Payments) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

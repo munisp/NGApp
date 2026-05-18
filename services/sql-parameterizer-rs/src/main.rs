@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn parameterize(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "sql-parameterizer-rs", "action": "parameterize", "processed": true, "input": input}))
+    let query_s = input.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let query = query_s.as_str();
+    let result = has_injection_risk(query);
+    HttpResponse::Ok().json(json!({
+        "service": "sql-parameterizer-rs",
+        "endpoint": "parameterize",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

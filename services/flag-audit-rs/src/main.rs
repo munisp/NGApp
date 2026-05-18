@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn audit_change(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "flag-audit-rs", "action": "audit_change", "processed": true, "input": input}))
+    let old = input.get("old").and_then(|v| v.as_bool()).unwrap_or(false);
+    let new = input.get("new").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = change_type(old, new);
+    HttpResponse::Ok().json(json!({
+        "service": "flag-audit-rs",
+        "endpoint": "audit_change",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

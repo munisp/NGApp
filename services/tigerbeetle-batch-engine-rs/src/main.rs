@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn process_batch(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "tigerbeetle-batch-engine-rs", "action": "process_batch", "processed": true, "input": input}))
+    let total = input.get("total").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let max_batch = input.get("max_batch").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = optimal_batch_size(total, max_batch);
+    HttpResponse::Ok().json(json!({
+        "service": "tigerbeetle-batch-engine-rs",
+        "endpoint": "process_batch",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -307,6 +307,42 @@ func getFloat(m map[string]interface{}, key string) float64 {
 	return 0
 }
 
+
+func agent_kyc_captureComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func agent_kyc_captureValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func agent_kyc_captureScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := agent_kyc_captureComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func agent_kyc_captureValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := agent_kyc_captureValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -321,6 +357,8 @@ func main() {
 	http.HandleFunc("/v1/agent-kyc/agents", handleAgents)
 	http.HandleFunc("/v1/agent-kyc/sync-queue", handleSyncQueue)
 	http.HandleFunc("/v1/agent-kyc/stats", handleStats)
+	http.HandleFunc("/v1/agent-kyc-capture/score", agent_kyc_captureScoreHandler)
+	http.HandleFunc("/v1/agent-kyc-capture/validate", agent_kyc_captureValidateRequestHandler)
 	log.Printf("Agent KYC Capture v2.0 (Go) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

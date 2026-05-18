@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn match_price(buy_price: f64, sell_price: f64) -> bool { buy_price >= sell_price }
 fn execution_price(buy: f64, sell: f64) -> f64 { (buy + sell) / 2.0 }
 fn portfolio_return(current_value: f64, cost_basis: f64) -> f64 {
@@ -29,43 +28,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn place_order(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn place_order(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let buy_price = input.get("buy_price").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let sell_price = input.get("sell_price").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = match_price(buy_price, sell_price);
     HttpResponse::Ok().json(json!({
         "service": "securities-trading-rs",
         "endpoint": "place_order",
-        "description": "Place buy/sell order",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn match_orders(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn match_orders(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let buy = input.get("buy").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let sell = input.get("sell").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = execution_price(buy, sell);
     HttpResponse::Ok().json(json!({
         "service": "securities-trading-rs",
         "endpoint": "match_orders",
-        "description": "Match buy and sell orders",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn portfolio_value(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn portfolio_value(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let current_value = input.get("current_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let cost_basis = input.get("cost_basis").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = portfolio_return(current_value, cost_basis);
     HttpResponse::Ok().json(json!({
         "service": "securities-trading-rs",
         "endpoint": "portfolio_value",
-        "description": "Compute portfolio mark-to-market value",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -83,7 +78,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

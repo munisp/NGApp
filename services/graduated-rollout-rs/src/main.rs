@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn rollout_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "graduated-rollout-rs", "action": "rollout_check", "processed": true, "input": input}))
+    let user_hash = input.get("user_hash").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let current_pct = input.get("current_pct").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = rollout_eligible(user_hash, current_pct);
+    HttpResponse::Ok().json(json!({
+        "service": "graduated-rollout-rs",
+        "endpoint": "rollout_check",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn generate_otp(length: u32) -> String { use std::time::SystemTime; let seed = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos(); (0..length).map(|i| ((seed >> (i * 4)) % 10).to_string()).collect() }
 fn otp_expiry_seconds() -> u64 { 300 }
 fn validate_phone_ng(phone: &str) -> bool { (phone.starts_with("+234") && phone.len() == 14) || (phone.starts_with("0") && phone.len() == 11) }
@@ -23,7 +22,13 @@ async fn health() -> HttpResponse {
 
 async fn send_otp(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "sms-otp-service-rs", "action": "send_otp", "processed": true, "input": input}))
+    let length = input.get("length").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = generate_otp(length);
+    HttpResponse::Ok().json(json!({
+        "service": "sms-otp-service-rs",
+        "endpoint": "send_otp",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

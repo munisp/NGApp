@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn detect_structuring(amounts: &[f64], threshold: f64) -> bool {
     let below_threshold: Vec<&f64> = amounts.iter().filter(|&&a| a < threshold && a > threshold * 0.8).collect();
     below_threshold.len() >= 3
@@ -42,43 +41,43 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn screen_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn screen_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amounts_v: Vec<f64> = input.get("amounts").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let amounts = amounts_v.as_slice();
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = detect_structuring(amounts, threshold);
     HttpResponse::Ok().json(json!({
         "service": "aml-engine-rs",
         "endpoint": "screen_transaction",
-        "description": "Screen transaction against AML rules (structuring, layering, smurfing)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn generate_str(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn generate_str(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let timestamps_v: Vec<u64> = input.get("timestamps").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_u64()).collect()).unwrap_or_default();
+    let timestamps = timestamps_v.as_slice();
+    let threshold_minutes = input.get("threshold_minutes").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = detect_rapid_movement(timestamps, threshold_minutes);
     HttpResponse::Ok().json(json!({
         "service": "aml-engine-rs",
         "endpoint": "generate_str",
-        "description": "Generate Suspicious Transaction Report",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn risk_profile(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn risk_profile(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let pep = input.get("pep").and_then(|v| v.as_bool()).unwrap_or(false);
+    let high_risk_country = input.get("high_risk_country").and_then(|v| v.as_bool()).unwrap_or(false);
+    let cash_intensive = input.get("cash_intensive").and_then(|v| v.as_bool()).unwrap_or(false);
+    let unusual_pattern = input.get("unusual_pattern").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = aml_risk_score(pep, high_risk_country, cash_intensive, unusual_pattern);
     HttpResponse::Ok().json(json!({
         "service": "aml-engine-rs",
         "endpoint": "risk_profile",
-        "description": "Compute customer AML risk profile",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -96,7 +95,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

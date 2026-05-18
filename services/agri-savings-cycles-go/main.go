@@ -218,6 +218,43 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func computeYieldScore(rainfall float64, soilPH float64, seedQuality float64) float64 {
+    score := (rainfall / 1200.0) * 40.0 + (soilPH / 7.0) * 30.0 + seedQuality * 30.0
+    if score > 100 { score = 100 }
+    return score
+}
+
+func assessCropRisk(hectares float64, region string, season string) map[string]interface{} {
+    baseRisk := 0.15
+    if region == "north" { baseRisk += 0.10 }
+    if season == "dry" { baseRisk += 0.20 }
+    lossEstimate := hectares * 250000.0 * baseRisk
+    return map[string]interface{}{"risk_pct": baseRisk * 100, "estimated_loss_ngn": lossEstimate, "recommendation": func() string { if baseRisk > 0.30 { return "insurance_required" }; return "standard" }()}
+}
+
+func agri_savings_cyclesYieldHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Rainfall    float64 `json:"rainfall"`
+        SoilPH      float64 `json:"soil_ph"`
+        SeedQuality float64 `json:"seed_quality"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := computeYieldScore(req.Rainfall, req.SoilPH, req.SeedQuality)
+    respondJSON(w, 200, map[string]interface{}{"yield_score": score, "grade": func() string { if score >= 80 { return "A" }; if score >= 60 { return "B" }; return "C" }()})
+}
+
+func agri_savings_cyclesRiskHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Hectares float64 `json:"hectares"`
+        Region   string  `json:"region"`
+        Season   string  `json:"season"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    risk := assessCropRisk(req.Hectares, req.Region, req.Season)
+    respondJSON(w, 200, risk)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9307" }
@@ -228,6 +265,8 @@ func main() {
 	http.HandleFunc("/v1/agri-savings-cycles/process", handleProcess)
 	http.HandleFunc("/v1/agri-savings-cycles/audit", handleAudit)
 	http.HandleFunc("/v1/agri-savings-cycles/stats", handleStats)
+	http.HandleFunc("/v1/agri-savings-cycles/yield-score", agri_savings_cyclesYieldHandler)
+	http.HandleFunc("/v1/agri-savings-cycles/risk-assess", agri_savings_cyclesRiskHandler)
 	log.Printf("Agri Savings Cycles v2.0 (Agriculture) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

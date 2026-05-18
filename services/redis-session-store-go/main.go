@@ -218,6 +218,41 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func validateToken(token string, maxAge int) map[string]interface{} {
+    valid := len(token) >= 32
+    expired := false  // In production, check exp claim
+    return map[string]interface{}{"valid": valid && !expired, "token_length": len(token), "max_age_seconds": maxAge}
+}
+
+func rateLimitCheck(clientID string, requestCount int, windowSec int) map[string]interface{} {
+    limit := 1000
+    remaining := limit - requestCount
+    if remaining < 0 { remaining = 0 }
+    return map[string]interface{}{"client": clientID, "allowed": remaining > 0, "limit": limit, "remaining": remaining, "window_seconds": windowSec}
+}
+
+func redis_session_storeValidateHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Token  string `json:"token"`
+        MaxAge int    `json:"max_age"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := validateToken(req.Token, req.MaxAge)
+    respondJSON(w, 200, result)
+}
+
+func redis_session_storeRateLimitHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        ClientID     string `json:"client_id"`
+        RequestCount int    `json:"request_count"`
+        WindowSec    int    `json:"window_seconds"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := rateLimitCheck(req.ClientID, req.RequestCount, req.WindowSec)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9417" }
@@ -228,6 +263,8 @@ func main() {
 	http.HandleFunc("/v1/redis-session-store/process", handleProcess)
 	http.HandleFunc("/v1/redis-session-store/audit", handleAudit)
 	http.HandleFunc("/v1/redis-session-store/stats", handleStats)
+	http.HandleFunc("/v1/redis-session-store/validate", redis_session_storeValidateHandler)
+	http.HandleFunc("/v1/redis-session-store/rate-limit", redis_session_storeRateLimitHandler)
 	log.Printf("Redis Session Store v2.0 (Infrastructure/Data) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

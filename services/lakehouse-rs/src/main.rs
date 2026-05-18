@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn query_lake(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "lakehouse-rs", "action": "query_lake", "processed": true, "input": input}))
+    let table_s = input.get("table").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let table = table_s.as_str();
+    let date_s = input.get("date").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let date = date_s.as_str();
+    let result = partition_path(table, date);
+    HttpResponse::Ok().json(json!({
+        "service": "lakehouse-rs",
+        "endpoint": "query_lake",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -20,7 +20,15 @@ async fn health() -> HttpResponse {
 
 async fn process_stream(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "fluvio-streams-rs", "action": "process_stream", "processed": true, "input": input}))
+    let key_s = input.get("key").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let key = key_s.as_str();
+    let partitions = input.get("partitions").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = partition_key(key, partitions);
+    HttpResponse::Ok().json(json!({
+        "service": "fluvio-streams-rs",
+        "endpoint": "process_stream",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

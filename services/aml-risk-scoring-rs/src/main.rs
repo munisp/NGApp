@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn weighted_score(factors: &[(f64, f64)]) -> f64 {
     let total_weight: f64 = factors.iter().map(|(_, w)| w).sum();
     if total_weight == 0.0 { return 0.0; }
@@ -32,43 +31,37 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn score_customer(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn score_customer(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // Extract parameters from input and call domain logic
+    let result = serde_json::to_value(weighted_score_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
     HttpResponse::Ok().json(json!({
         "service": "aml-risk-scoring-rs",
         "endpoint": "score_customer",
-        "description": "Compute composite AML risk score",
+        "result": result,
         "input": input,
-        "records_count": records.len(),
-        "status": "processed",
     }))
 }
 
-async fn calibrate_model(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn calibrate_model(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let score = input.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = risk_band(score);
     HttpResponse::Ok().json(json!({
         "service": "aml-risk-scoring-rs",
         "endpoint": "calibrate_model",
-        "description": "Calibrate scoring model weights",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn batch_rescore(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn batch_rescore(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let score = input.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = edd_required(score);
     HttpResponse::Ok().json(json!({
         "service": "aml-risk-scoring-rs",
         "endpoint": "batch_rescore",
-        "description": "Batch rescore customers after model update",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -86,7 +79,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

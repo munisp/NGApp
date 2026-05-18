@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn black_scholes_call(s: f64, k: f64, r: f64, sigma: f64, t: f64) -> f64 {
     let d1 = ((s / k).ln() + (r + sigma * sigma / 2.0) * t) / (sigma * t.sqrt());
     let d2 = d1 - sigma * t.sqrt();
@@ -39,43 +38,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn price_option(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn price_option(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let s = input.get("s").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let k = input.get("k").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let r = input.get("r").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let sigma = input.get("sigma").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let t = input.get("t").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = black_scholes_call(s, k, r, sigma, t);
     HttpResponse::Ok().json(json!({
         "service": "etd-trading-rs",
         "endpoint": "price_option",
-        "description": "Price option using Black-Scholes",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn compute_greeks(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_greeks(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let x = input.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = norm_cdf(x);
     HttpResponse::Ok().json(json!({
         "service": "etd-trading-rs",
         "endpoint": "compute_greeks",
-        "description": "Compute option Greeks (delta, gamma, theta, vega)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn hedge_ratio(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn hedge_ratio(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let x = input.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = erf(x);
     HttpResponse::Ok().json(json!({
         "service": "etd-trading-rs",
         "endpoint": "hedge_ratio",
-        "description": "Calculate optimal hedge ratio",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -93,7 +89,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

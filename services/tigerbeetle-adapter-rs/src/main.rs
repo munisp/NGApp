@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn tb_operation(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "tigerbeetle-adapter-rs", "action": "tb_operation", "processed": true, "input": input}))
+    let debit = input.get("debit").and_then(|v| v.as_bool()).unwrap_or(false);
+    let credit = input.get("credit").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = account_flags(debit, credit);
+    HttpResponse::Ok().json(json!({
+        "service": "tigerbeetle-adapter-rs",
+        "endpoint": "tb_operation",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

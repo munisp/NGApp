@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func billing_orchestratorComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func billing_orchestratorValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func billing_orchestratorScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := billing_orchestratorComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func billing_orchestratorValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := billing_orchestratorValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9323" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/billing-orchestrator/process", handleProcess)
 	http.HandleFunc("/v1/billing-orchestrator/audit", handleAudit)
 	http.HandleFunc("/v1/billing-orchestrator/stats", handleStats)
+	http.HandleFunc("/v1/billing-orchestrator/score", billing_orchestratorScoreHandler)
+	http.HandleFunc("/v1/billing-orchestrator/validate", billing_orchestratorValidateRequestHandler)
 	log.Printf("Billing Orchestrator v2.0 (Billing) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

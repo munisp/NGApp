@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn dynamic_price(base: f64, demand_factor: f64, supply_factor: f64) -> f64 { base * demand_factor / supply_factor.max(0.1) }
 fn spread_markup(cost: f64, target_margin: f64) -> f64 { cost * (1.0 + target_margin / 100.0) }
 
@@ -22,7 +21,15 @@ async fn health() -> HttpResponse {
 
 async fn compute_price(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "realtime-pricing-rs", "action": "compute_price", "processed": true, "input": input}))
+    let base = input.get("base").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let demand_factor = input.get("demand_factor").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let supply_factor = input.get("supply_factor").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = dynamic_price(base, demand_factor, supply_factor);
+    HttpResponse::Ok().json(json!({
+        "service": "realtime-pricing-rs",
+        "endpoint": "compute_price",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn sync_offline(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "offline-resilience-rs", "action": "sync_offline", "processed": true, "input": input}))
+    let local_ts = input.get("local_ts").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let remote_ts = input.get("remote_ts").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = conflict_resolution(local_ts, remote_ts);
+    HttpResponse::Ok().json(json!({
+        "service": "offline-resilience-rs",
+        "endpoint": "sync_offline",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

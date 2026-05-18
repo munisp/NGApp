@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn evaluate_flag(flag: &str, user_id: &str, rollout_pct: u32) -> bool {
     let hash: u32 = user_id.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32));
     (hash % 100) < rollout_pct
@@ -24,7 +23,17 @@ async fn health() -> HttpResponse {
 
 async fn evaluate_flag_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "feature-flag-engine-rs", "action": "evaluate_flag", "processed": true, "input": input}))
+    let flag_s = input.get("flag").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let flag = flag_s.as_str();
+    let user_id_s = input.get("user_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let user_id = user_id_s.as_str();
+    let rollout_pct = input.get("rollout_pct").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = evaluate_flag(flag, user_id, rollout_pct);
+    HttpResponse::Ok().json(json!({
+        "service": "feature-flag-engine-rs",
+        "endpoint": "evaluate_flag_handler",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

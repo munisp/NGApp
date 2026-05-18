@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func mojaloop_pispComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func mojaloop_pispValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func mojaloop_pispScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := mojaloop_pispComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func mojaloop_pispValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := mojaloop_pispValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9393" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/mojaloop-pisp/process", handleProcess)
 	http.HandleFunc("/v1/mojaloop-pisp/audit", handleAudit)
 	http.HandleFunc("/v1/mojaloop-pisp/stats", handleStats)
+	http.HandleFunc("/v1/mojaloop-pisp/score", mojaloop_pispScoreHandler)
+	http.HandleFunc("/v1/mojaloop-pisp/validate", mojaloop_pispValidateRequestHandler)
 	log.Printf("Mojaloop Pisp v2.0 (Cross-Border) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

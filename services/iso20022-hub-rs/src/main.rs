@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn message_type(msg_id: &str) -> &str {
     if msg_id.starts_with("pacs.008") { "FI_TO_FI_CREDIT_TRANSFER" }
     else if msg_id.starts_with("pain.001") { "CUSTOMER_CREDIT_TRANSFER" }
@@ -33,43 +32,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn parse_message(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn parse_message(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let msg_id_s = input.get("msg_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let msg_id = msg_id_s.as_str();
+    let result = message_type(msg_id);
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "parse_message",
-        "description": "Parse ISO 20022 XML message (pacs.008, pain.001, camt.053)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn generate_message(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn generate_message(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let bic_s = input.get("bic").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let bic = bic_s.as_str();
+    let result = validate_bic(bic);
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "generate_message",
-        "description": "Generate ISO 20022 message from transaction data",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn validate_message(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn validate_message(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let iban_s = input.get("iban").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let iban = iban_s.as_str();
+    let result = validate_iban(iban);
     HttpResponse::Ok().json(json!({
         "service": "iso20022-hub-rs",
         "endpoint": "validate_message",
-        "description": "Validate message against XSD schema",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -87,7 +82,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

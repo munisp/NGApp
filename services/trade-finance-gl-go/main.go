@@ -257,6 +257,42 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+func trade_finance_glComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func trade_finance_glValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func trade_finance_glScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := trade_finance_glComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, map[string]interface{}{"score": score})
+}
+
+func trade_finance_glValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := trade_finance_glValidateRequest(body)
+    respondJSON(w, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8098" }
@@ -265,6 +301,8 @@ func main() {
 	http.HandleFunc("/v1/trade-finance/collections-gl", docCollectionsGL)
 	http.HandleFunc("/v1/islamic/murabaha-gl", murabahaGL)
 	http.HandleFunc("/v1/disputes/chargeback-gl", disputeChargebackGL)
+	http.HandleFunc("/v1/trade-finance-gl/score", trade_finance_glScoreHandler)
+	http.HandleFunc("/v1/trade-finance-gl/validate", trade_finance_glValidateRequestHandler)
 	log.Printf("Trade Finance & Specialized Banking GL (Go) on :%s — Gaps 17-20", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn batch_progress(processed: u64, total: u64) -> f64 { if total == 0 { 0.0 } else { processed as f64 / total as f64 * 100.0 } }
 fn estimated_completion(processed: u64, total: u64, elapsed_ms: u64) -> u64 {
     if processed == 0 { return 0; }
@@ -32,43 +31,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn schedule_resscreen(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn schedule_resscreen(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let processed = input.get("processed").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let total = input.get("total").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = batch_progress(processed, total);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-batch-rescreener-rs",
         "endpoint": "schedule_resscreen",
-        "description": "Schedule batch rescreening job",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn resscreen_progress(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn resscreen_progress(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let processed = input.get("processed").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let total = input.get("total").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let elapsed_ms = input.get("elapsed_ms").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = estimated_completion(processed, total, elapsed_ms);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-batch-rescreener-rs",
         "endpoint": "resscreen_progress",
-        "description": "Check rescreening job progress",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn false_positive_manage(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn false_positive_manage(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let is_false_positive = input.get("is_false_positive").and_then(|v| v.as_bool()).unwrap_or(false);
+    let reviewed = input.get("reviewed").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = disposition_status(is_false_positive, reviewed);
     HttpResponse::Ok().json(json!({
         "service": "sanctions-batch-rescreener-rs",
         "endpoint": "false_positive_manage",
-        "description": "Manage false positive dispositions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -86,7 +82,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

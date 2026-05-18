@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn verify_signature(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "signature-verification-rs", "action": "verify_signature", "processed": true, "input": input}))
+    let alg_s = input.get("alg").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let alg = alg_s.as_str();
+    let result = signature_algorithm(alg);
+    HttpResponse::Ok().json(json!({
+        "service": "signature-verification-rs",
+        "endpoint": "verify_signature",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

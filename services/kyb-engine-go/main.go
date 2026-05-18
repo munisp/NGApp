@@ -328,6 +328,42 @@ func getFloat(m map[string]interface{}, key string) float64 {
 	return 0
 }
 
+
+func kyb_engineComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func kyb_engineValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func kyb_engineScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := kyb_engineComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func kyb_engineValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := kyb_engineValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -338,6 +374,8 @@ func main() {
 	http.HandleFunc("/v1/kyb-structure/list", handleStructures)
 	http.HandleFunc("/v1/kyb-structure/voting-rights", handleVotingRights)
 	http.HandleFunc("/v1/kyb-structure/stats", handleStats)
+	http.HandleFunc("/v1/kyb-engine/score", kyb_engineScoreHandler)
+	http.HandleFunc("/v1/kyb-engine/validate", kyb_engineValidateRequestHandler)
 	log.Printf("KYB Engine — Corporate Structure v2.0 (Go) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn cache_op(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "redis-cache-rs", "action": "cache_op", "processed": true, "input": input}))
+    let memory_pct = input.get("memory_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = eviction_policy(memory_pct);
+    HttpResponse::Ok().json(json!({
+        "service": "redis-cache-rs",
+        "endpoint": "cache_op",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

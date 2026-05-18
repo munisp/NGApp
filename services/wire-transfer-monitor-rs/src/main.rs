@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn travel_rule_required(amount_usd: f64) -> bool { amount_usd >= 1000.0 }
 fn high_risk_corridor(origin: &str, destination: &str) -> bool {
     let high_risk = ["IR", "KP", "SY", "MM", "SD"];
@@ -34,43 +33,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn monitor_transfer(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn monitor_transfer(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount_usd = input.get("amount_usd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = travel_rule_required(amount_usd);
     HttpResponse::Ok().json(json!({
         "service": "wire-transfer-monitor-rs",
         "endpoint": "monitor_transfer",
-        "description": "Monitor wire transfer for compliance flags",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn travel_rule_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn travel_rule_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let origin_s = input.get("origin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let origin = origin_s.as_str();
+    let destination_s = input.get("destination").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let destination = destination_s.as_str();
+    let result = high_risk_corridor(origin, destination);
     HttpResponse::Ok().json(json!({
         "service": "wire-transfer-monitor-rs",
         "endpoint": "travel_rule_check",
-        "description": "FATF Travel Rule compliance check",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn correspondent_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn correspondent_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let corridor_risk = input.get("corridor_risk").and_then(|v| v.as_bool()).unwrap_or(false);
+    let pep = input.get("pep").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = compute_transfer_risk(amount, corridor_risk, pep);
     HttpResponse::Ok().json(json!({
         "service": "wire-transfer-monitor-rs",
         "endpoint": "correspondent_check",
-        "description": "Verify correspondent bank status",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -88,7 +85,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

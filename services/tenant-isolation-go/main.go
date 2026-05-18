@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func tenant_isolationComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func tenant_isolationValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func tenant_isolationScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := tenant_isolationComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func tenant_isolationValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := tenant_isolationValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9448" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/tenant-isolation/process", handleProcess)
 	http.HandleFunc("/v1/tenant-isolation/audit", handleAudit)
 	http.HandleFunc("/v1/tenant-isolation/stats", handleStats)
+	http.HandleFunc("/v1/tenant-isolation/score", tenant_isolationScoreHandler)
+	http.HandleFunc("/v1/tenant-isolation/validate", tenant_isolationValidateRequestHandler)
 	log.Printf("Tenant Isolation v2.0 (Platform) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

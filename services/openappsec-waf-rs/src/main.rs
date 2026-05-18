@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn detect_sqli(input: &str) -> bool { let lower = input.to_lowercase(); lower.contains("' or ") || lower.contains("union select") || lower.contains("drop table") || lower.contains("1=1") }
 fn detect_xss(input: &str) -> bool { input.contains("<script") || input.contains("javascript:") || input.contains("onerror=") }
 
@@ -22,7 +21,14 @@ async fn health() -> HttpResponse {
 
 async fn evaluate_request(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "openappsec-waf-rs", "action": "evaluate_request", "processed": true, "input": input}))
+    let input_s = input.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let input = input_s.as_str();
+    let result = detect_sqli(input);
+    HttpResponse::Ok().json(json!({
+        "service": "openappsec-waf-rs",
+        "endpoint": "evaluate_request",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_nuban(account: &str) -> bool { account.len() == 10 && account.chars().all(|c| c.is_ascii_digit()) }
 fn compute_batch_hash(amounts: &[f64]) -> f64 { amounts.iter().sum() }
 fn batch_success_rate(total: u32, successful: u32) -> f64 { if total == 0 { 0.0 } else { successful as f64 / total as f64 * 100.0 } }
@@ -29,43 +28,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn process_batch(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn process_batch(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let account_s = input.get("account").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let account = account_s.as_str();
+    let result = validate_nuban(account);
     HttpResponse::Ok().json(json!({
         "service": "bulk-payments-rs",
         "endpoint": "process_batch",
-        "description": "Process bulk payment batch with validation",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn batch_status(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn batch_status(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amounts_v: Vec<f64> = input.get("amounts").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let amounts = amounts_v.as_slice();
+    let result = compute_batch_hash(amounts);
     HttpResponse::Ok().json(json!({
         "service": "bulk-payments-rs",
         "endpoint": "batch_status",
-        "description": "Check batch processing status",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn generate_return_file(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn generate_return_file(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let total = input.get("total").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let successful = input.get("successful").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = batch_success_rate(total, successful);
     HttpResponse::Ok().json(json!({
         "service": "bulk-payments-rs",
         "endpoint": "generate_return_file",
-        "description": "Generate return file for failed items",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -83,7 +78,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

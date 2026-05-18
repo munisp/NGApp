@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_transfer(debit_id: u128, credit_id: u128, amount: u64) -> Result<(), String> {
     if debit_id == credit_id { return Err("Cannot transfer to same account".into()); }
     if amount == 0 { return Err("Amount must be positive".into()); }
@@ -32,43 +31,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn create_accounts_batch(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_accounts_batch(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // TODO: extract debit_id: u128
+    let debit_id = Default::default();
+    // TODO: extract credit_id: u128
+    let credit_id = Default::default();
+    let amount = input.get("amount").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = validate_transfer(debit_id, credit_id, amount);
     HttpResponse::Ok().json(json!({
         "service": "tigerbeetle-ledger-rs",
         "endpoint": "create_accounts_batch",
-        "description": "Batch create accounts in TigerBeetle",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn create_transfers_batch(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_transfers_batch(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+
+    let result = generate_transfer_id();
     HttpResponse::Ok().json(json!({
         "service": "tigerbeetle-ledger-rs",
         "endpoint": "create_transfers_batch",
-        "description": "Batch create transfers with two-phase commit",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn lookup_accounts(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn lookup_accounts(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let pending = input.get("pending").and_then(|v| v.as_bool()).unwrap_or(false);
+    let posted = input.get("posted").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = two_phase_status(pending, posted);
     HttpResponse::Ok().json(json!({
         "service": "tigerbeetle-ledger-rs",
         "endpoint": "lookup_accounts",
-        "description": "Look up account balances and history",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -86,7 +83,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_claims(exp: u64, nbf: u64, iss: &str) -> Vec<String> {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
     let mut errors = Vec::new();
@@ -28,7 +27,16 @@ async fn health() -> HttpResponse {
 
 async fn validate_jwt(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "jwt-validator-rs", "action": "validate_jwt", "processed": true, "input": input}))
+    let exp = input.get("exp").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let nbf = input.get("nbf").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let iss_s = input.get("iss").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let iss = iss_s.as_str();
+    let result = validate_claims(exp, nbf, iss);
+    HttpResponse::Ok().json(json!({
+        "service": "jwt-validator-rs",
+        "endpoint": "validate_jwt",
+        "result": serde_json::to_value(&result).unwrap_or(json!([])),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

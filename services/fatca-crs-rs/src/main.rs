@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn us_person_indicator(citizenship: &str, green_card: bool, substantial_presence: bool) -> bool {
     citizenship == "US" || green_card || substantial_presence
 }
@@ -25,7 +24,16 @@ async fn health() -> HttpResponse {
 
 async fn generate_report(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "fatca-crs-rs", "action": "generate_report", "processed": true, "input": input}))
+    let citizenship_s = input.get("citizenship").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let citizenship = citizenship_s.as_str();
+    let green_card = input.get("green_card").and_then(|v| v.as_bool()).unwrap_or(false);
+    let substantial_presence = input.get("substantial_presence").and_then(|v| v.as_bool()).unwrap_or(false);
+    let result = us_person_indicator(citizenship, green_card, substantial_presence);
+    HttpResponse::Ok().json(json!({
+        "service": "fatca-crs-rs",
+        "endpoint": "generate_report",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

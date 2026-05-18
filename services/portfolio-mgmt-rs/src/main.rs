@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn sharpe_ratio(returns: f64, risk_free: f64, volatility: f64) -> f64 {
     if volatility == 0.0 { 0.0 } else { (returns - risk_free) / volatility }
 }
@@ -33,43 +32,42 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn portfolio_analytics(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn portfolio_analytics(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let returns = input.get("returns").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let risk_free = input.get("risk_free").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let volatility = input.get("volatility").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = sharpe_ratio(returns, risk_free, volatility);
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "portfolio_analytics",
-        "description": "Compute portfolio analytics (Sharpe, Sortino, VaR)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn rebalance(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn rebalance(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let portfolio_value = input.get("portfolio_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let volatility = input.get("volatility").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let confidence = input.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = portfolio_var_parametric(portfolio_value, volatility, confidence);
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "rebalance",
-        "description": "Generate rebalancing trades",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn performance_attribution(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn performance_attribution(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let current_weight = input.get("current_weight").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let target_weight = input.get("target_weight").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let portfolio_value = input.get("portfolio_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = rebalance_trade(current_weight, target_weight, portfolio_value);
     HttpResponse::Ok().json(json!({
         "service": "portfolio-mgmt-rs",
         "endpoint": "performance_attribution",
-        "description": "Performance attribution analysis",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -87,7 +85,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

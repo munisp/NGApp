@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_rwa_credit(exposure: f64, risk_weight: f64) -> f64 { exposure * risk_weight / 100.0 }
 fn compute_rwa_market(var_10day: f64) -> f64 { var_10day * 3.0 }
 fn compute_rwa_operational(gross_income_3yr_avg: f64) -> f64 { gross_income_3yr_avg * 0.15 }
@@ -29,43 +28,37 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn compute_rwa(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_rwa(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let exposure = input.get("exposure").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let risk_weight = input.get("risk_weight").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_rwa_credit(exposure, risk_weight);
     HttpResponse::Ok().json(json!({
         "service": "basel-engine-rs",
         "endpoint": "compute_rwa",
-        "description": "Calculate Risk-Weighted Assets (RWA) for credit, market, operational risk",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn capital_ratio(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn capital_ratio(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let var_10day = input.get("var_10day").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_rwa_market(var_10day);
     HttpResponse::Ok().json(json!({
         "service": "basel-engine-rs",
         "endpoint": "capital_ratio",
-        "description": "Compute CET1, Tier 1, Total Capital ratios",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn stress_scenario(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn stress_scenario(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let gross_income_3yr_avg = input.get("gross_income_3yr_avg").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_rwa_operational(gross_income_3yr_avg);
     HttpResponse::Ok().json(json!({
         "service": "basel-engine-rs",
         "endpoint": "stress_scenario",
-        "description": "Run stress test scenarios on capital buffers",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -83,7 +76,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

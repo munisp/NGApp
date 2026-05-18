@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn estimate_json_size(fields: u32, avg_value_len: u32) -> u64 { (fields * (avg_value_len + 10) + 2) as u64 }
 fn should_compress(size_bytes: u64) -> bool { size_bytes > 1024 }
 
@@ -22,7 +21,14 @@ async fn health() -> HttpResponse {
 
 async fn serialize(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "fast-json-serializer-rs", "action": "serialize", "processed": true, "input": input}))
+    let fields = input.get("fields").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let avg_value_len = input.get("avg_value_len").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = estimate_json_size(fields, avg_value_len);
+    HttpResponse::Ok().json(json!({
+        "service": "fast-json-serializer-rs",
+        "endpoint": "serialize",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

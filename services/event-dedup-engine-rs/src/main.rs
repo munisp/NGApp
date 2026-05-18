@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_event_hash(event_type: &str, payload: &str) -> u64 {
     let mut hash: u64 = 5381;
     for c in event_type.bytes().chain(payload.bytes()) { hash = hash.wrapping_mul(33).wrapping_add(c as u64); }
@@ -26,7 +25,16 @@ async fn health() -> HttpResponse {
 
 async fn check_dedup(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "event-dedup-engine-rs", "action": "check_dedup", "processed": true, "input": input}))
+    let event_type_s = input.get("event_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let event_type = event_type_s.as_str();
+    let payload_s = input.get("payload").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let payload = payload_s.as_str();
+    let result = compute_event_hash(event_type, payload);
+    HttpResponse::Ok().json(json!({
+        "service": "event-dedup-engine-rs",
+        "endpoint": "check_dedup",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

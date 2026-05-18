@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn soil_moisture_status(pct: f64) -> &'static str { if pct < 20.0 { "critical_dry" } else if pct < 40.0 { "dry" } else if pct < 70.0 { "optimal" } else { "waterlogged" } }
 fn compute_ndvi(nir: f64, red: f64) -> f64 { if nir + red == 0.0 { 0.0 } else { (nir - red) / (nir + red) } }
 fn irrigation_recommendation(moisture: f64, crop: &str) -> &str { if moisture < 30.0 { "irrigate_now" } else { "no_action" } }
@@ -23,7 +22,13 @@ async fn health() -> HttpResponse {
 
 async fn process_sensor(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "agri-iot-sensor-rs", "action": "process_sensor", "processed": true, "input": input}))
+    let pct = input.get("pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = soil_moisture_status(pct);
+    HttpResponse::Ok().json(json!({
+        "service": "agri-iot-sensor-rs",
+        "endpoint": "process_sensor",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

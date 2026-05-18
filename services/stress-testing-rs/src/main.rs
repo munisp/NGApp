@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn apply_shock(value: f64, shock_pct: f64) -> f64 { value * (1.0 - shock_pct / 100.0) }
 fn gdp_impact_on_pd(base_pd: f64, gdp_shock: f64) -> f64 { (base_pd * (1.0 + gdp_shock.abs() * 2.0)).min(1.0) }
 fn capital_post_stress(capital: f64, losses: f64) -> f64 { (capital - losses).max(0.0) }
@@ -23,7 +22,14 @@ async fn health() -> HttpResponse {
 
 async fn run_stress(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "stress-testing-rs", "action": "run_stress", "processed": true, "input": input}))
+    let value = input.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let shock_pct = input.get("shock_pct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = apply_shock(value, shock_pct);
+    HttpResponse::Ok().json(json!({
+        "service": "stress-testing-rs",
+        "endpoint": "run_stress",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

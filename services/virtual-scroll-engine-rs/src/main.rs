@@ -20,7 +20,15 @@ async fn health() -> HttpResponse {
 
 async fn compute_window(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "virtual-scroll-engine-rs", "action": "compute_window", "processed": true, "input": input}))
+    let scroll_top = input.get("scroll_top").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let item_height = input.get("item_height").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let viewport_height = input.get("viewport_height").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = visible_items(scroll_top, item_height, viewport_height);
+    HttpResponse::Ok().json(json!({
+        "service": "virtual-scroll-engine-rs",
+        "endpoint": "compute_window",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

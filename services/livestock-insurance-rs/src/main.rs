@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn verify_claim(cause: &str, covered_causes: &[&str]) -> bool { covered_causes.contains(&cause) }
 fn payout_amount(insured_value: f64, deductible_pct: f64) -> f64 { insured_value * (1.0 - deductible_pct / 100.0) }
 fn claim_status(verified: bool, approved: bool) -> &'static str { match (verified, approved) { (true, true) => "approved", (true, false) => "denied", _ => "pending" } }
@@ -23,7 +22,16 @@ async fn health() -> HttpResponse {
 
 async fn process_claim(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "livestock-insurance-rs", "action": "process_claim", "processed": true, "input": input}))
+    let cause_s = input.get("cause").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let cause = cause_s.as_str();
+    let covered_causes_s = input.get("covered_causes").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let covered_causes = covered_causes_s.as_str();
+    let result = verify_claim(cause, covered_causes);
+    HttpResponse::Ok().json(json!({
+        "service": "livestock-insurance-rs",
+        "endpoint": "process_claim",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

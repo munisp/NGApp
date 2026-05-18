@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func leasingComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func leasingValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func leasingScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := leasingComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func leasingValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := leasingValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9382" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/leasing/process", handleProcess)
 	http.HandleFunc("/v1/leasing/audit", handleAudit)
 	http.HandleFunc("/v1/leasing/stats", handleStats)
+	http.HandleFunc("/v1/leasing/score", leasingScoreHandler)
+	http.HandleFunc("/v1/leasing/validate", leasingValidateRequestHandler)
 	log.Printf("Leasing v2.0 (Lending) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

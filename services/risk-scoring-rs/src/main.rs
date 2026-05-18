@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn composite_risk(credit: f64, market: f64, operational: f64, liquidity: f64) -> f64 {
     credit * 0.35 + market * 0.25 + operational * 0.20 + liquidity * 0.20
 }
@@ -34,43 +33,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn score_entity(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn score_entity(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let credit = input.get("credit").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let market = input.get("market").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let operational = input.get("operational").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let liquidity = input.get("liquidity").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = composite_risk(credit, market, operational, liquidity);
     HttpResponse::Ok().json(json!({
         "service": "risk-scoring-rs",
         "endpoint": "score_entity",
-        "description": "Compute risk score for customer/transaction/product",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn risk_matrix(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn risk_matrix(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let score = input.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = risk_rating(score);
     HttpResponse::Ok().json(json!({
         "service": "risk-scoring-rs",
         "endpoint": "risk_matrix",
-        "description": "Generate risk heat map matrix",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn risk_appetite_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn risk_appetite_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let exposure = input.get("exposure").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let limit = input.get("limit").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = within_appetite(exposure, limit);
     HttpResponse::Ok().json(json!({
         "service": "risk-scoring-rs",
         "endpoint": "risk_appetite_check",
-        "description": "Check if exposure within risk appetite limits",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -88,7 +84,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

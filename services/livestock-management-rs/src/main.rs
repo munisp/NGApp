@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn herd_growth_rate(births: u32, deaths: u32, sales: u32, initial: u32) -> f64 {
     if initial == 0 { 0.0 } else { (births as f64 - deaths as f64 - sales as f64) / initial as f64 * 100.0 }
 }
@@ -27,7 +26,16 @@ async fn health() -> HttpResponse {
 
 async fn manage_herd(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "livestock-management-rs", "action": "manage_herd", "processed": true, "input": input}))
+    let births = input.get("births").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let deaths = input.get("deaths").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let sales = input.get("sales").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let initial = input.get("initial").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = herd_growth_rate(births, deaths, sales, initial);
+    HttpResponse::Ok().json(json!({
+        "service": "livestock-management-rs",
+        "endpoint": "manage_herd",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func computeTransferFee(amount float64, channel string) float64 {
+    switch channel {
+    case "NIP": if amount <= 5000 { return 10 }; if amount <= 50000 { return 25 }; return 50
+    case "NEFT": return 0
+    case "RTGS": return amount * 0.001
+    default: return 25
+    }
+}
+
+func routePayment(amount float64, bank string) string {
+    if amount >= 10000000 { return "RTGS" }
+    if bank == "same_bank" { return "INTERNAL" }
+    return "NIP"
+}
+
+func remittanceFeeHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Amount  float64 `json:"amount"`
+        Channel string  `json:"channel"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    fee := computeTransferFee(req.Amount, req.Channel)
+    respondJSON(w, 200, map[string]interface{}{"amount": req.Amount, "fee": fee, "total": req.Amount + fee, "channel": req.Channel})
+}
+
+func remittanceRouteHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Amount float64 `json:"amount"`
+        Bank   string  `json:"destination_bank"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    route := routePayment(req.Amount, req.Bank)
+    respondJSON(w, 200, map[string]interface{}{"route": route, "amount": req.Amount})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9420" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/remittance/process", handleProcess)
 	http.HandleFunc("/v1/remittance/audit", handleAudit)
 	http.HandleFunc("/v1/remittance/stats", handleStats)
+	http.HandleFunc("/v1/remittance/compute-fee", remittanceFeeHandler)
+	http.HandleFunc("/v1/remittance/route", remittanceRouteHandler)
 	log.Printf("Remittance v2.0 (Payments) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

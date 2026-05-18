@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn phyto_required(commodity: &str) -> bool { matches!(commodity, "cocoa" | "cashew" | "sesame" | "shea") }
 fn export_duty_rate(commodity: &str) -> f64 { match commodity { "raw_cocoa" => 0.0, "processed_cocoa" => 0.0, "raw_timber" => 0.15, _ => 0.02 } }
 fn compute_fob_value(quantity_mt: f64, price_per_mt: f64, logistics: f64) -> f64 { quantity_mt * price_per_mt + logistics }
@@ -23,7 +22,14 @@ async fn health() -> HttpResponse {
 
 async fn assess_trade(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "crossborder-agri-trade-rs", "action": "assess_trade", "processed": true, "input": input}))
+    let commodity_s = input.get("commodity").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let commodity = commodity_s.as_str();
+    let result = phyto_required(commodity);
+    HttpResponse::Ok().json(json!({
+        "service": "crossborder-agri-trade-rs",
+        "endpoint": "assess_trade",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

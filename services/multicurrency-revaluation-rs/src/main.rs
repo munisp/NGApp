@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn revalue_position(notional: f64, book_rate: f64, market_rate: f64) -> f64 { notional * (market_rate - book_rate) }
 fn unrealized_pnl(positions: &[(f64, f64, f64)]) -> f64 { positions.iter().map(|(n, br, mr)| revalue_position(*n, *br, *mr)).sum() }
 fn translation_rate(method: &str) -> &str { match method { "current" => "closing_rate", "temporal" => "historical_rate", _ => "closing_rate" } }
@@ -26,43 +25,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn revalue_positions(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn revalue_positions(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let notional = input.get("notional").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let book_rate = input.get("book_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let market_rate = input.get("market_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = revalue_position(notional, book_rate, market_rate);
     HttpResponse::Ok().json(json!({
         "service": "multicurrency-revaluation-rs",
         "endpoint": "revalue_positions",
-        "description": "Revalue open FX positions at current rates",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn compute_pnl(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_pnl(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // Extract parameters from input and call domain logic
+    let result = serde_json::to_value(unrealized_pnl_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
     HttpResponse::Ok().json(json!({
         "service": "multicurrency-revaluation-rs",
         "endpoint": "compute_pnl",
-        "description": "Compute realized/unrealized P&L per currency pair",
+        "result": result,
         "input": input,
-        "records_count": records.len(),
-        "status": "processed",
     }))
 }
 
-async fn translation_adjustment(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn translation_adjustment(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let method_s = input.get("method").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let method = method_s.as_str();
+    let result = translation_rate(method);
     HttpResponse::Ok().json(json!({
         "service": "multicurrency-revaluation-rs",
         "endpoint": "translation_adjustment",
-        "description": "Calculate CTA for financial reporting",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -80,7 +76,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn supported_mime(mime: &str) -> bool {
     matches!(mime, "image/jpeg" | "image/png" | "application/pdf" | "image/webp")
 }
@@ -35,43 +34,38 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn process_document(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn process_document(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let mime_s = input.get("mime").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let mime = mime_s.as_str();
+    let result = supported_mime(mime);
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-document-service-rs",
         "endpoint": "process_document",
-        "description": "Process document sent via WhatsApp",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn extract_text(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn extract_text(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+
+    let result = max_file_size_mb();
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-document-service-rs",
         "endpoint": "extract_text",
-        "description": "Extract text from document image",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn classify_document(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn classify_document(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let text_s = input.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let text = text_s.as_str();
+    let result = document_type_from_text(text);
     HttpResponse::Ok().json(json!({
         "service": "whatsapp-document-service-rs",
         "endpoint": "classify_document",
-        "description": "Classify document type",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -89,7 +83,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

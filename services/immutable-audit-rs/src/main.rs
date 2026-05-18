@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn append_entry(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "immutable-audit-rs", "action": "append_entry", "processed": true, "input": input}))
+    let prev_hash_s = input.get("prev_hash").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let prev_hash = prev_hash_s.as_str();
+    let entry_s = input.get("entry").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let entry = entry_s.as_str();
+    let result = compute_chain_hash(prev_hash, entry);
+    HttpResponse::Ok().json(json!({
+        "service": "immutable-audit-rs",
+        "endpoint": "append_entry",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

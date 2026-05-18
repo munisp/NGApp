@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn hash_pin(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "pin-hasher-rs", "action": "hash_pin", "processed": true, "input": input}))
+    let pin_s = input.get("pin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let pin = pin_s.as_str();
+    let result = pin_complexity_check(pin);
+    HttpResponse::Ok().json(json!({
+        "service": "pin-hasher-rs",
+        "endpoint": "hash_pin",
+        "result": serde_json::to_value(&result).unwrap_or(json!([])),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

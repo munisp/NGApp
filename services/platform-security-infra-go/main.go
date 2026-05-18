@@ -11,6 +11,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"os"
 )
@@ -292,6 +293,46 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+func computeFXRate(baseCurrency string, quoteCurrency string, amount float64) map[string]interface{} {
+    rates := map[string]float64{"USDNGN": 1550.0, "GBPNGN": 1960.0, "EURNGN": 1680.0, "USDGBP": 0.79}
+    pair := baseCurrency + quoteCurrency
+    rate, ok := rates[pair]
+    if !ok { rate = 1.0 }
+    return map[string]interface{}{"pair": pair, "rate": rate, "converted_amount": amount * rate, "spread": rate * 0.002}
+}
+
+func portfolioRisk(positions []float64) float64 {
+    if len(positions) == 0 { return 0 }
+    sum := 0.0
+    for _, p := range positions { sum += p }
+    mean := sum / float64(len(positions))
+    variance := 0.0
+    for _, p := range positions { variance += (p - mean) * (p - mean) }
+    variance /= float64(len(positions))
+    return math.Sqrt(variance)
+}
+
+func platform_security_infraFXHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Base   string  `json:"base_currency"`
+        Quote  string  `json:"quote_currency"`
+        Amount float64 `json:"amount"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := computeFXRate(req.Base, req.Quote, req.Amount)
+    respondJSON(w, result)
+}
+
+func platform_security_infraRiskHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Positions []float64 `json:"positions"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    risk := portfolioRisk(req.Positions)
+    respondJSON(w, map[string]interface{}{"volatility": math.Round(risk*100)/100, "position_count": len(req.Positions)})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8101" }
@@ -300,6 +341,8 @@ func main() {
 	http.HandleFunc("/v1/gap-g/webhooks", webhookDelivery)
 	http.HandleFunc("/v1/gap-h/api-documentation", apiDocumentation)
 	http.HandleFunc("/v1/gap-i/input-validation", inputValidation)
+	http.HandleFunc("/v1/platform-security-infra/fx-convert", platform_security_infraFXHandler)
+	http.HandleFunc("/v1/platform-security-infra/risk-calc", platform_security_infraRiskHandler)
 	log.Printf("Platform Security & Infra (Go) on :%s — Gaps F-I, 14 middleware", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

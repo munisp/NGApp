@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn parse_ussd_input(input: &str) -> Vec<&str> { input.split('*').collect() }
 fn ussd_menu(level: u8) -> Vec<(&'static str, &'static str)> {
     match level {
@@ -34,43 +33,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn process_ussd(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn process_ussd(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let input_s = input.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let input = input_s.as_str();
+    let result = parse_ussd_input(input);
     HttpResponse::Ok().json(json!({
         "service": "ussd-transaction-engine-rs",
         "endpoint": "process_ussd",
-        "description": "Process USSD session input",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn menu_navigate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn menu_navigate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // TODO: extract level: u8
+    let level = Default::default();
+    let result = ussd_menu(level);
     HttpResponse::Ok().json(json!({
         "service": "ussd-transaction-engine-rs",
         "endpoint": "menu_navigate",
-        "description": "Handle USSD menu navigation",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn execute_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn execute_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let pin_s = input.get("pin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let pin = pin_s.as_str();
+    let result = validate_pin(pin);
     HttpResponse::Ok().json(json!({
         "service": "ussd-transaction-engine-rs",
         "endpoint": "execute_transaction",
-        "description": "Execute banking transaction from USSD",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -88,7 +83,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_product_config(min_balance: f64, max_balance: f64, interest_rate: f64) -> Vec<String> {
     let mut errors = Vec::new();
     if min_balance < 0.0 { errors.push("min_balance must be non-negative".into()); }
@@ -32,43 +31,44 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn create_product(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_product(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let min_balance = input.get("min_balance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let max_balance = input.get("max_balance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let interest_rate = input.get("interest_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = validate_product_config(min_balance, max_balance, interest_rate);
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "create_product",
-        "description": "Create new banking product with rules",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn configure_features(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn configure_features(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let category_s = input.get("category").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let category = category_s.as_str();
+    let sub_s = input.get("sub").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let sub = sub_s.as_str();
+    let result = product_code(category, sub);
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "configure_features",
-        "description": "Configure product features and limits",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn product_eligibility(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn product_eligibility(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let age = input.get("age").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let income = input.get("income").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let min_age = input.get("min_age").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let min_income = input.get("min_income").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = eligible(age, income, min_age, min_income);
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
         "endpoint": "product_eligibility",
-        "description": "Check customer eligibility for product",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -86,7 +86,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

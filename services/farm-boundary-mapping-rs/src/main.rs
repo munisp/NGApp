@@ -27,7 +27,25 @@ async fn health() -> HttpResponse {
 
 async fn map_boundary(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "farm-boundary-mapping-rs", "action": "map_boundary", "processed": true, "input": input}))
+    let coords: Vec<(f64, f64)> = input.get("coordinates").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|c| {
+            let lat = c.get("lat").or(c.get(0)).and_then(|v| v.as_f64())?;
+            let lon = c.get("lon").or(c.get(1)).and_then(|v| v.as_f64())?;
+            Some((lat, lon))
+        }).collect()
+    }).unwrap_or_default();
+    let is_valid = valid_polygon(&coords);
+    let area = compute_area_hectares(&coords);
+    HttpResponse::Ok().json(json!({
+        "service": "farm-boundary-mapping-rs",
+        "endpoint": "map_boundary",
+        "result": {
+            "valid_polygon": is_valid,
+            "area_hectares": area,
+            "vertices": coords.len(),
+            "boundary_closed": coords.first() == coords.last()
+        },
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

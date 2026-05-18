@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn validate_contract(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "contract-test-rs", "action": "validate_contract", "processed": true, "input": input}))
+    let expected_s = input.get("expected").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let expected = expected_s.as_str();
+    let actual_s = input.get("actual").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let actual = actual_s.as_str();
+    let result = schema_match(expected, actual);
+    HttpResponse::Ok().json(json!({
+        "service": "contract-test-rs",
+        "endpoint": "validate_contract",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn evaluate_policy(subject_role: &str, resource: &str, action: &str, context: &str) -> bool {
     match (subject_role, action) { ("admin", _) => true, ("manager", "write") | ("manager", "read") => true, ("user", "read") => true, _ => false }
 }
@@ -23,7 +22,20 @@ async fn health() -> HttpResponse {
 
 async fn evaluate_policy_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "pbac-engine-rs", "action": "evaluate_policy", "processed": true, "input": input}))
+    let subject_role_s = input.get("subject_role").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let subject_role = subject_role_s.as_str();
+    let resource_s = input.get("resource").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let resource = resource_s.as_str();
+    let action_s = input.get("action").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let action = action_s.as_str();
+    let context_s = input.get("context").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let context = context_s.as_str();
+    let result = evaluate_policy(subject_role, resource, action, context);
+    HttpResponse::Ok().json(json!({
+        "service": "pbac-engine-rs",
+        "endpoint": "evaluate_policy_handler",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

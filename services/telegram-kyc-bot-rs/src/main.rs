@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn validate_bvn(bvn: &str) -> bool { bvn.len() == 11 && bvn.chars().all(|c| c.is_ascii_digit()) }
 fn validate_nin(nin: &str) -> bool { nin.len() == 11 && nin.chars().all(|c| c.is_ascii_digit()) }
 fn kyc_step_name(step: u8) -> &'static str {
@@ -28,43 +27,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn initiate_kyc(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn initiate_kyc(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let bvn_s = input.get("bvn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let bvn = bvn_s.as_str();
+    let result = validate_bvn(bvn);
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "initiate_kyc",
-        "description": "Start KYC verification flow via Telegram",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn verify_document(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn verify_document(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let nin_s = input.get("nin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let nin = nin_s.as_str();
+    let result = validate_nin(nin);
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "verify_document",
-        "description": "Process uploaded ID document",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn kyc_status(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn kyc_status(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // TODO: extract step: u8
+    let step = Default::default();
+    let result = kyc_step_name(step);
     HttpResponse::Ok().json(json!({
         "service": "telegram-kyc-bot-rs",
         "endpoint": "kyc_status",
-        "description": "Check KYC verification status",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -82,7 +77,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

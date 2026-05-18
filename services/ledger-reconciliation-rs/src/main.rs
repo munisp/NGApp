@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn match_entries(entry1_amount: f64, entry2_amount: f64, tolerance: f64) -> bool { (entry1_amount - entry2_amount).abs() <= tolerance }
 fn match_score(ref_val: &str, cmp_val: &str) -> f64 {
     if ref_val == cmp_val { 1.0 } else {
@@ -33,43 +32,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn reconcile_accounts(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn reconcile_accounts(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let entry1_amount = input.get("entry1_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let entry2_amount = input.get("entry2_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let tolerance = input.get("tolerance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = match_entries(entry1_amount, entry2_amount, tolerance);
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "reconcile_accounts",
-        "description": "Match and reconcile entries across GL, sub-ledger, and external sources",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn find_exceptions(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn find_exceptions(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let ref_val_s = input.get("ref_val").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let ref_val = ref_val_s.as_str();
+    let cmp_val_s = input.get("cmp_val").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let cmp_val = cmp_val_s.as_str();
+    let result = match_score(ref_val, cmp_val);
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "find_exceptions",
-        "description": "Identify unmatched/mismatched entries",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn auto_match(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn auto_match(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let age_days = input.get("age_days").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = classify_exception(age_days);
     HttpResponse::Ok().json(json!({
         "service": "ledger-reconciliation-rs",
         "endpoint": "auto_match",
-        "description": "Auto-match entries using fuzzy rules",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -87,7 +84,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

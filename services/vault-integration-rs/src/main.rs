@@ -20,7 +20,18 @@ async fn health() -> HttpResponse {
 
 async fn vault_operation(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "vault-integration-rs", "action": "vault_operation", "processed": true, "input": input}))
+    let engine_s = input.get("engine").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let engine = engine_s.as_str();
+    let env_s = input.get("env").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let env = env_s.as_str();
+    let name_s = input.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let name = name_s.as_str();
+    let result = secret_path(engine, env, name);
+    HttpResponse::Ok().json(json!({
+        "service": "vault-integration-rs",
+        "endpoint": "vault_operation",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

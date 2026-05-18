@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_fee(amount: f64, fee_type: &str, tier: &str) -> f64 {
     match (fee_type, tier) {
         ("transfer_fee", "tier1") => if amount <= 5000.0 { 10.0 } else if amount <= 50000.0 { 25.0 } else { 50.0 },
@@ -39,43 +38,58 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn rate_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn rate_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let fee_type_s = input.get("fee_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let fee_type = fee_type_s.as_str();
+    let tier_s = input.get("tier").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let tier = tier_s.as_str();
+    let result = compute_fee(amount, fee_type, tier);
     HttpResponse::Ok().json(json!({
         "service": "billing-rating-rs",
         "endpoint": "rate_transaction",
-        "description": "Rate transaction and compute applicable fees",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn fee_schedule(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn fee_schedule(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let fees_v: Vec<f64> = input.get("fees").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let fees = fees_v.as_slice();
+    let vat_rate = input.get("vat_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = total_charges(fees, vat_rate);
     HttpResponse::Ok().json(json!({
         "service": "billing-rating-rs",
         "endpoint": "fee_schedule",
-        "description": "Get fee schedule for product/tier",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn revenue_forecast(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn revenue_forecast(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let monthly_txns = input.get("monthly_transactions").and_then(|v| v.as_u64()).unwrap_or(0) as f64;
+    let avg_amount = input.get("avg_transaction_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let tier_s = input.get("tier").and_then(|v| v.as_str()).unwrap_or("tier1").to_string();
+    let vat_rate = input.get("vat_rate").and_then(|v| v.as_f64()).unwrap_or(7.5);
+    let transfer_fee = compute_fee(avg_amount, "transfer_fee", &tier_s);
+    let monthly_fee_revenue = transfer_fee * monthly_txns;
+    let maintenance = compute_fee(0.0, "maintenance_fee", &tier_s);
+    let sms = compute_fee(0.0, "sms_alert", &tier_s);
+    let fees = vec![monthly_fee_revenue, maintenance, sms];
+    let (subtotal, vat, total) = total_charges(&fees, vat_rate);
     HttpResponse::Ok().json(json!({
         "service": "billing-rating-rs",
         "endpoint": "revenue_forecast",
-        "description": "Forecast fee revenue",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": {
+            "monthly_fee_revenue": monthly_fee_revenue,
+            "maintenance_fee": maintenance,
+            "sms_fee": sms,
+            "subtotal": subtotal,
+            "vat": vat,
+            "total_monthly": total,
+            "annual_projection": total * 12.0
+        },
     }))
 }
 
@@ -93,7 +107,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

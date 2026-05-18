@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func ctr_auto_filerComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func ctr_auto_filerValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func ctr_auto_filerScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := ctr_auto_filerComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func ctr_auto_filerValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := ctr_auto_filerValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9340" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/ctr-auto-filer/process", handleProcess)
 	http.HandleFunc("/v1/ctr-auto-filer/audit", handleAudit)
 	http.HandleFunc("/v1/ctr-auto-filer/stats", handleStats)
+	http.HandleFunc("/v1/ctr-auto-filer/score", ctr_auto_filerScoreHandler)
+	http.HandleFunc("/v1/ctr-auto-filer/validate", ctr_auto_filerValidateRequestHandler)
 	log.Printf("Ctr Auto Filer v2.0 (AML/Compliance) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

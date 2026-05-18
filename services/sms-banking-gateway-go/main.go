@@ -218,6 +218,41 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func healthScore(errorRate float64, latencyP99 float64, uptime float64) float64 {
+    score := uptime * 40 + (1 - errorRate) * 100 * 30 / 100 + (1000 - latencyP99) / 1000 * 30
+    if score < 0 { score = 0 }
+    if score > 100 { score = 100 }
+    return score
+}
+
+func circuitState(errorRate float64, threshold float64) string {
+    if errorRate >= threshold { return "open" }
+    if errorRate >= threshold * 0.5 { return "half_open" }
+    return "closed"
+}
+
+func sms_banking_gatewayHealthScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        ErrorRate  float64 `json:"error_rate"`
+        LatencyP99 float64 `json:"latency_p99_ms"`
+        Uptime     float64 `json:"uptime_pct"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := healthScore(req.ErrorRate, req.LatencyP99, req.Uptime)
+    respondJSON(w, 200, map[string]interface{}{"health_score": score, "status": func() string { if score >= 80 { return "healthy" }; if score >= 50 { return "degraded" }; return "unhealthy" }()})
+}
+
+func sms_banking_gatewayCircuitHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        ErrorRate float64 `json:"error_rate"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    state := circuitState(req.ErrorRate, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"circuit_state": state, "error_rate": req.ErrorRate})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9431" }
@@ -228,6 +263,8 @@ func main() {
 	http.HandleFunc("/v1/sms-banking-gateway/process", handleProcess)
 	http.HandleFunc("/v1/sms-banking-gateway/audit", handleAudit)
 	http.HandleFunc("/v1/sms-banking-gateway/stats", handleStats)
+	http.HandleFunc("/v1/sms-banking-gateway/health-score", sms_banking_gatewayHealthScoreHandler)
+	http.HandleFunc("/v1/sms-banking-gateway/circuit-state", sms_banking_gatewayCircuitHandler)
 	log.Printf("Sms Banking Gateway v2.0 (Messaging/Channels) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

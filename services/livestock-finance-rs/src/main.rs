@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn livestock_value(species: &str, count: u32) -> f64 {
     let unit = match species { "cattle" => 250000.0, "goat" => 35000.0, "sheep" => 30000.0, "poultry" => 2500.0, _ => 10000.0 };
     unit * count as f64
@@ -25,7 +24,15 @@ async fn health() -> HttpResponse {
 
 async fn assess_livestock(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "livestock-finance-rs", "action": "assess_livestock", "processed": true, "input": input}))
+    let species_s = input.get("species").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let species = species_s.as_str();
+    let count = input.get("count").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = livestock_value(species, count);
+    HttpResponse::Ok().json(json!({
+        "service": "livestock-finance-rs",
+        "endpoint": "assess_livestock",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

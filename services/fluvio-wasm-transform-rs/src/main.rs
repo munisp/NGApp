@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn transform(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "fluvio-wasm-transform-rs", "action": "transform", "processed": true, "input": input}))
+    let input_s = input.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let input = input_s.as_str();
+    let transform_type_s = input.get("transform_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let transform_type = transform_type_s.as_str();
+    let result = transform_record(input, transform_type);
+    HttpResponse::Ok().json(json!({
+        "service": "fluvio-wasm-transform-rs",
+        "endpoint": "transform",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

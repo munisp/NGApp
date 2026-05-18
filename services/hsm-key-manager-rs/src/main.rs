@@ -20,7 +20,15 @@ async fn health() -> HttpResponse {
 
 async fn manage_key(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "hsm-key-manager-rs", "action": "manage_key", "processed": true, "input": input}))
+    let algorithm_s = input.get("algorithm").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let algorithm = algorithm_s.as_str();
+    let bits = input.get("bits").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = key_strength(algorithm, bits);
+    HttpResponse::Ok().json(json!({
+        "service": "hsm-key-manager-rs",
+        "endpoint": "manage_key",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

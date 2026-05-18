@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn verify_voice(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "voice-biometric-auth-rs", "action": "verify_voice", "processed": true, "input": input}))
+    let embedding1_v: Vec<f64> = input.get("embedding1").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let embedding1 = embedding1_v.as_slice();
+    let embedding2_v: Vec<f64> = input.get("embedding2").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let embedding2 = embedding2_v.as_slice();
+    let result = voiceprint_similarity(embedding1, embedding2);
+    HttpResponse::Ok().json(json!({
+        "service": "voice-biometric-auth-rs",
+        "endpoint": "verify_voice",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

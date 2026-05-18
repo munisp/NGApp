@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn price_irs(notional: f64, fixed_rate: f64, floating_rate: f64, tenor_years: f64) -> f64 {
     notional * (fixed_rate - floating_rate) / 100.0 * tenor_years
 }
@@ -31,43 +30,43 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn price_swap(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn price_swap(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let notional = input.get("notional").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let fixed_rate = input.get("fixed_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let floating_rate = input.get("floating_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let tenor_years = input.get("tenor_years").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = price_irs(notional, fixed_rate, floating_rate, tenor_years);
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
         "endpoint": "price_swap",
-        "description": "Price interest rate swap",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn compute_cva_handler(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_cva_handler(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let expected_exposure = input.get("expected_exposure").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let pd = input.get("pd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let lgd = input.get("lgd").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_cva(expected_exposure, pd, lgd);
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
-        "endpoint": "compute_cva",
-        "description": "Compute Credit Valuation Adjustment",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "endpoint": "compute_cva_handler",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn margin_call(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn margin_call(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let notional = input.get("notional").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let asset_class_s = input.get("asset_class").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let asset_class = asset_class_s.as_str();
+    let result = initial_margin(notional, asset_class);
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
         "endpoint": "margin_call",
-        "description": "Calculate margin requirements",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -85,7 +84,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

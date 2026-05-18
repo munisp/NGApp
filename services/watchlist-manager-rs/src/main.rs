@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn search_score(query: &str, entry_name: &str) -> f64 {
     let q = query.to_lowercase(); let e = entry_name.to_lowercase();
     if e.contains(&q) { 0.9 } else {
@@ -35,43 +34,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn search_watchlist(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn search_watchlist(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let query_s = input.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let query = query_s.as_str();
+    let entry_name_s = input.get("entry_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let entry_name = entry_name_s.as_str();
+    let result = search_score(query, entry_name);
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "search_watchlist",
-        "description": "Search consolidated watchlist",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn add_entry(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn add_entry(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let list_type_s = input.get("list_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let list_type = list_type_s.as_str();
+    let result = list_type_priority(list_type);
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "add_entry",
-        "description": "Add entry to internal watchlist",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn merge_lists(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn merge_lists(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    // Extract parameters from input and call domain logic
+    let result = serde_json::to_value(dedup_entries_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "merge_lists",
-        "description": "Merge external list updates into consolidated list",
+        "result": result,
         "input": input,
-        "records_count": records.len(),
-        "status": "processed",
     }))
 }
 
@@ -89,7 +86,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

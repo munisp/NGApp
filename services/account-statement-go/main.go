@@ -79,6 +79,42 @@ func mt940Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
+func account_statementComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func account_statementValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func account_statementScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := account_statementComputeScore(req.Value, req.Weight, req.Threshold)
+    jsonResp(w, 200, map[string]interface{}{"score": score})
+}
+
+func account_statementValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := account_statementValidateRequest(body)
+    jsonResp(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8080" }
@@ -92,6 +128,8 @@ func main() {
 	mux.HandleFunc("/v1/statement/generate", generateStatementHandler)
 	mux.HandleFunc("/v1/statement/mt940", mt940Handler)
 
+	mux.HandleFunc("/v1/account-statement/score", account_statementScoreHandler)
+	mux.HandleFunc("/v1/account-statement/validate", account_statementValidateRequestHandler)
 	log.Printf("account-statement-go listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":" + port, mux))
 }

@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn verify_cert(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "mtls-mesh-rs", "action": "verify_cert", "processed": true, "input": input}))
+    let not_before = input.get("not_before").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let not_after = input.get("not_after").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = cert_valid(not_before, not_after);
+    HttpResponse::Ok().json(json!({
+        "service": "mtls-mesh-rs",
+        "endpoint": "verify_cert",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

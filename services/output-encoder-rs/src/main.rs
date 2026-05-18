@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn encode_output(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "output-encoder-rs", "action": "encode_output", "processed": true, "input": input}))
+    let input_s = input.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let input = input_s.as_str();
+    let result = html_encode(input);
+    HttpResponse::Ok().json(json!({
+        "service": "output-encoder-rs",
+        "endpoint": "encode_output",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

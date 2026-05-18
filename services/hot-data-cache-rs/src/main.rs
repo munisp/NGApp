@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn cache_get(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "hot-data-cache-rs", "action": "cache_get", "processed": true, "input": input}))
+    let hits = input.get("hits").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let misses = input.get("misses").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = cache_hit_rate(hits, misses);
+    HttpResponse::Ok().json(json!({
+        "service": "hot-data-cache-rs",
+        "endpoint": "cache_get",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

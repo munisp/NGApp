@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn convert_currency(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "tigerbeetle-multicurrency-rs", "action": "convert_currency", "processed": true, "input": input}))
+    let code_s = input.get("code").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let code = code_s.as_str();
+    let result = currency_code_to_ledger(code);
+    HttpResponse::Ok().json(json!({
+        "service": "tigerbeetle-multicurrency-rs",
+        "endpoint": "convert_currency",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

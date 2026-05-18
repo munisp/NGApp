@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn ndvi_health(ndvi: f64) -> &'static str {
     if ndvi > 0.6 { "healthy" } else if ndvi > 0.3 { "moderate" } else if ndvi > 0.1 { "stressed" } else { "bare_soil" }
 }
@@ -25,7 +24,13 @@ async fn health() -> HttpResponse {
 
 async fn analyze_imagery(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "satellite-crop-monitor-rs", "action": "analyze_imagery", "processed": true, "input": input}))
+    let ndvi = input.get("ndvi").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = ndvi_health(ndvi);
+    HttpResponse::Ok().json(json!({
+        "service": "satellite-crop-monitor-rs",
+        "endpoint": "analyze_imagery",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn classify_contingency(probability: f64) -> &'static str {
     if probability > 0.75 { "probable" } else if probability > 0.25 { "possible" } else { "remote" }
 }
@@ -30,43 +29,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn assess_probability(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn assess_probability(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let probability = input.get("probability").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = classify_contingency(probability);
     HttpResponse::Ok().json(json!({
         "service": "contingent-liabilities-rs",
         "endpoint": "assess_probability",
-        "description": "Assess probability and estimate contingent liability provisions",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn monitor_triggers(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn monitor_triggers(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let classification_s = input.get("classification").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let classification = classification_s.as_str();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = provision_required(classification, amount);
     HttpResponse::Ok().json(json!({
         "service": "contingent-liabilities-rs",
         "endpoint": "monitor_triggers",
-        "description": "Monitor event triggers that may crystallize contingencies",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn disclosure_report(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn disclosure_report(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let classification_s = input.get("classification").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let classification = classification_s.as_str();
+    let result = disclosure_required(classification);
     HttpResponse::Ok().json(json!({
         "service": "contingent-liabilities-rs",
         "endpoint": "disclosure_report",
-        "description": "Generate IFRS/IAS 37 disclosure reports",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -84,7 +79,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

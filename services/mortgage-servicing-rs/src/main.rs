@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn monthly_payment(principal: f64, annual_rate: f64, months: u32) -> f64 {
     let r = annual_rate / 100.0 / 12.0;
     if r == 0.0 { return principal / months as f64; }
@@ -35,43 +34,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn compute_amortization(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_amortization(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let principal = input.get("principal").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let annual_rate = input.get("annual_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let months = input.get("months").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = monthly_payment(principal, annual_rate, months);
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "compute_amortization",
-        "description": "Generate full amortization schedule",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn early_repayment(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn early_repayment(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let monthly_debt = input.get("monthly_debt").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let monthly_income = input.get("monthly_income").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = dti_ratio(monthly_debt, monthly_income);
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "early_repayment",
-        "description": "Calculate early repayment penalty",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn affordability_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn affordability_check(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let loan_amount = input.get("loan_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let property_value = input.get("property_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = ltv_ratio(loan_amount, property_value);
     HttpResponse::Ok().json(json!({
         "service": "mortgage-servicing-rs",
         "endpoint": "affordability_check",
-        "description": "Check borrower affordability (DTI ratio)",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -89,7 +85,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

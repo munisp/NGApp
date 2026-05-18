@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn premium_rate(crop: &str, zone_risk: f64) -> f64 {
     let base = match crop { "maize" => 0.05, "rice" => 0.06, "cassava" => 0.03, "cocoa" => 0.08, _ => 0.06 };
     base * (1.0 + zone_risk)
@@ -26,7 +25,15 @@ async fn health() -> HttpResponse {
 
 async fn assess_risk(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "multi-peril-crop-insurance-rs", "action": "assess_risk", "processed": true, "input": input}))
+    let crop_s = input.get("crop").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let crop = crop_s.as_str();
+    let zone_risk = input.get("zone_risk").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = premium_rate(crop, zone_risk);
+    HttpResponse::Ok().json(json!({
+        "service": "multi-peril-crop-insurance-rs",
+        "endpoint": "assess_risk",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn check_frame(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "clickjack-defender-rs", "action": "check_frame", "processed": true, "input": input}))
+    let origin_s = input.get("origin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let origin = origin_s.as_str();
+    let allowed_s = input.get("allowed").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let allowed = allowed_s.as_str();
+    let result = frame_policy(origin, allowed);
+    HttpResponse::Ok().json(json!({
+        "service": "clickjack-defender-rs",
+        "endpoint": "check_frame",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

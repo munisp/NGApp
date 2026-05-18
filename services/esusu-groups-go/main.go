@@ -78,6 +78,42 @@ func recordContributionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
+func esusu_groupsComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func esusu_groupsValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func esusu_groupsScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := esusu_groupsComputeScore(req.Value, req.Weight, req.Threshold)
+    jsonResp(w, 200, map[string]interface{}{"score": score})
+}
+
+func esusu_groupsValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := esusu_groupsValidateRequest(body)
+    jsonResp(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8080" }
@@ -91,6 +127,8 @@ func main() {
 	mux.HandleFunc("/v1/esusu/create-group", createGroupHandler)
 	mux.HandleFunc("/v1/esusu/contribute", recordContributionHandler)
 
+	mux.HandleFunc("/v1/esusu-groups/score", esusu_groupsScoreHandler)
+	mux.HandleFunc("/v1/esusu-groups/validate", esusu_groupsValidateRequestHandler)
 	log.Printf("esusu-groups-go listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":" + port, mux))
 }

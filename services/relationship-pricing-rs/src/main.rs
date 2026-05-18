@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn relationship_value(avg_balance: f64, txn_volume: f64, products_held: u32, tenure_months: u32) -> f64 {
     avg_balance * 0.3 + txn_volume * 0.2 + products_held as f64 * 10000.0 + tenure_months as f64 * 500.0
 }
@@ -33,43 +32,40 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn compute_discount(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn compute_discount(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let avg_balance = input.get("avg_balance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let txn_volume = input.get("txn_volume").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let products_held = input.get("products_held").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let tenure_months = input.get("tenure_months").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = relationship_value(avg_balance, txn_volume, products_held, tenure_months);
     HttpResponse::Ok().json(json!({
         "service": "relationship-pricing-rs",
         "endpoint": "compute_discount",
-        "description": "Compute relationship discount",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn tier_assignment(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn tier_assignment(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let value = input.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = tier_from_value(value);
     HttpResponse::Ok().json(json!({
         "service": "relationship-pricing-rs",
         "endpoint": "tier_assignment",
-        "description": "Assign customer relationship tier",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn pricing_override(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn pricing_override(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let tier_s = input.get("tier").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let tier = tier_s.as_str();
+    let result = discount_rate(tier);
     HttpResponse::Ok().json(json!({
         "service": "relationship-pricing-rs",
         "endpoint": "pricing_override",
-        "description": "Process pricing override request",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -87,7 +83,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

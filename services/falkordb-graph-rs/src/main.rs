@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn cypher_match(node_type: &str, property: &str, value: &str) -> String {
     format!("MATCH (n:{} {{{}: '{}'}}) RETURN n", node_type, property, value)
 }
@@ -24,7 +23,18 @@ async fn health() -> HttpResponse {
 
 async fn query_graph(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "falkordb-graph-rs", "action": "query_graph", "processed": true, "input": input}))
+    let node_type_s = input.get("node_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let node_type = node_type_s.as_str();
+    let property_s = input.get("property").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let property = property_s.as_str();
+    let value_s = input.get("value").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let value = value_s.as_str();
+    let result = cypher_match(node_type, property, value);
+    HttpResponse::Ok().json(json!({
+        "service": "falkordb-graph-rs",
+        "endpoint": "query_graph",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

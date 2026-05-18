@@ -218,6 +218,38 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func generateReportID(reportType string) string {
+    return fmt.Sprintf("%s-%d", reportType, time.Now().UnixNano()/1000000)
+}
+
+func validateReportingPeriod(startDate string, endDate string) map[string]interface{} {
+    valid := len(startDate) == 10 && len(endDate) == 10 && endDate >= startDate
+    return map[string]interface{}{"valid": valid, "start": startDate, "end": endDate}
+}
+
+func regulatory_reportingGenerateHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        ReportType string `json:"report_type"`
+        StartDate  string `json:"start_date"`
+        EndDate    string `json:"end_date"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    validation := validateReportingPeriod(req.StartDate, req.EndDate)
+    reportID := generateReportID(req.ReportType)
+    respondJSON(w, 200, map[string]interface{}{"report_id": reportID, "validation": validation, "status": "generated"})
+}
+
+func regulatory_reportingValidateHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        StartDate string `json:"start_date"`
+        EndDate   string `json:"end_date"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := validateReportingPeriod(req.StartDate, req.EndDate)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9418" }
@@ -228,6 +260,8 @@ func main() {
 	http.HandleFunc("/v1/regulatory-reporting/process", handleProcess)
 	http.HandleFunc("/v1/regulatory-reporting/audit", handleAudit)
 	http.HandleFunc("/v1/regulatory-reporting/stats", handleStats)
+	http.HandleFunc("/v1/regulatory-reporting/generate", regulatory_reportingGenerateHandler)
+	http.HandleFunc("/v1/regulatory-reporting/validate-period", regulatory_reportingValidateHandler)
 	log.Printf("Regulatory Reporting v2.0 (Regulatory) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

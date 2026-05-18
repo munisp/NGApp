@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn loading_state(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "skeleton-loading-rs", "action": "loading_state", "processed": true, "input": input}))
+    let content_s = input.get("content").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let content = content_s.as_str();
+    let result = skeleton_type(content);
+    HttpResponse::Ok().json(json!({
+        "service": "skeleton-loading-rs",
+        "endpoint": "loading_state",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

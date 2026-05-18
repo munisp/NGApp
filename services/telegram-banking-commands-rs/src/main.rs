@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn parse_command(text: &str) -> (&str, Vec<&str>) {
     let parts: Vec<&str> = text.split_whitespace().collect();
     if parts.is_empty() { return ("unknown", vec![]); }
@@ -32,43 +31,38 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn process_command(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn process_command(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let text_s = input.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let text = text_s.as_str();
+    let result = parse_command(text);
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "process_command",
-        "description": "Process banking command from Telegram message",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
-async fn balance_inquiry(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn balance_inquiry(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = format_currency(amount);
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "balance_inquiry",
-        "description": "Handle balance inquiry command",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn mini_statement(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn mini_statement(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let account_s = input.get("account").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let account = account_s.as_str();
+    let result = mask_account(account);
     HttpResponse::Ok().json(json!({
         "service": "telegram-banking-commands-rs",
         "endpoint": "mini_statement",
-        "description": "Handle mini-statement request",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -86,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

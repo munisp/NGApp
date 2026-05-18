@@ -640,6 +640,42 @@ func getSampleEFASSLines() []EFASSLine {
 
 // ─── MAIN ───────────────────────────────────────────────────────────────────
 
+
+func gl_engineComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func gl_engineValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func gl_engineScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := gl_engineComputeScore(req.Value, req.Weight, req.Threshold)
+    writeJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func gl_engineValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := gl_engineValidateRequest(body)
+    writeJSON(w, 200, result)
+}
+
 func main() {
 	app := NewApp()
 
@@ -658,6 +694,8 @@ func main() {
 		port = "8090"
 	}
 
+	mux.HandleFunc("/v1/gl-engine/score", gl_engineScoreHandler)
+	mux.HandleFunc("/v1/gl-engine/validate", gl_engineValidateRequestHandler)
 	log.Printf("GL Engine (Go) listening on :%s — 14 middleware connected", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

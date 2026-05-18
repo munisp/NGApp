@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func cash_poolingComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func cash_poolingValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func cash_poolingScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := cash_poolingComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func cash_poolingValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := cash_poolingValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9329" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/cash-pooling/process", handleProcess)
 	http.HandleFunc("/v1/cash-pooling/audit", handleAudit)
 	http.HandleFunc("/v1/cash-pooling/stats", handleStats)
+	http.HandleFunc("/v1/cash-pooling/score", cash_poolingScoreHandler)
+	http.HandleFunc("/v1/cash-pooling/validate", cash_poolingValidateRequestHandler)
 	log.Printf("Cash Pooling v2.0 (Treasury/Markets) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

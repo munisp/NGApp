@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn effective_ownership(direct: f64, indirect_chains: &[f64]) -> f64 {
     let indirect: f64 = indirect_chains.iter().product();
     (direct + indirect).min(100.0)
@@ -26,7 +25,15 @@ async fn health() -> HttpResponse {
 
 async fn resolve_ubo(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "ubo-ownership-graph-rs", "action": "resolve_ubo", "processed": true, "input": input}))
+    let direct = input.get("direct").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let indirect_chains_v: Vec<f64> = input.get("indirect_chains").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let indirect_chains = indirect_chains_v.as_slice();
+    let result = effective_ownership(direct, indirect_chains);
+    HttpResponse::Ok().json(json!({
+        "service": "ubo-ownership-graph-rs",
+        "endpoint": "resolve_ubo",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

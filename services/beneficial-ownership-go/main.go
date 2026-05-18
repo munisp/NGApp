@@ -368,6 +368,42 @@ func getBool(m map[string]interface{}, key string) bool {
 	return false
 }
 
+
+func beneficial_ownershipComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func beneficial_ownershipValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func beneficial_ownershipScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := beneficial_ownershipComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func beneficial_ownershipValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := beneficial_ownershipValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -379,6 +415,8 @@ func main() {
 	http.HandleFunc("/v1/beneficial-ownership/identify-ubos", handleIdentifyUBOs)
 	http.HandleFunc("/v1/beneficial-ownership/register/add", handleAddToRegister)
 	http.HandleFunc("/v1/beneficial-ownership/stats", handleStats)
+	http.HandleFunc("/v1/beneficial-ownership/score", beneficial_ownershipScoreHandler)
+	http.HandleFunc("/v1/beneficial-ownership/validate", beneficial_ownershipValidateRequestHandler)
 	log.Printf("Beneficial Ownership Register v2.0 (Go) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

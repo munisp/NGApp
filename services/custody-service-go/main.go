@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"math"
 	"net/http"
 	"os"
 	"sync"
@@ -218,6 +219,46 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func computeFXRate(baseCurrency string, quoteCurrency string, amount float64) map[string]interface{} {
+    rates := map[string]float64{"USDNGN": 1550.0, "GBPNGN": 1960.0, "EURNGN": 1680.0, "USDGBP": 0.79}
+    pair := baseCurrency + quoteCurrency
+    rate, ok := rates[pair]
+    if !ok { rate = 1.0 }
+    return map[string]interface{}{"pair": pair, "rate": rate, "converted_amount": amount * rate, "spread": rate * 0.002}
+}
+
+func portfolioRisk(positions []float64) float64 {
+    if len(positions) == 0 { return 0 }
+    sum := 0.0
+    for _, p := range positions { sum += p }
+    mean := sum / float64(len(positions))
+    variance := 0.0
+    for _, p := range positions { variance += (p - mean) * (p - mean) }
+    variance /= float64(len(positions))
+    return math.Sqrt(variance)
+}
+
+func custody_serviceFXHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Base   string  `json:"base_currency"`
+        Quote  string  `json:"quote_currency"`
+        Amount float64 `json:"amount"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    result := computeFXRate(req.Base, req.Quote, req.Amount)
+    respondJSON(w, 200, result)
+}
+
+func custody_serviceRiskHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Positions []float64 `json:"positions"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    risk := portfolioRisk(req.Positions)
+    respondJSON(w, 200, map[string]interface{}{"volatility": math.Round(risk*100)/100, "position_count": len(req.Positions)})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9341" }
@@ -228,6 +269,8 @@ func main() {
 	http.HandleFunc("/v1/custody-service/process", handleProcess)
 	http.HandleFunc("/v1/custody-service/audit", handleAudit)
 	http.HandleFunc("/v1/custody-service/stats", handleStats)
+	http.HandleFunc("/v1/custody-service/fx-convert", custody_serviceFXHandler)
+	http.HandleFunc("/v1/custody-service/risk-calc", custody_serviceRiskHandler)
 	log.Printf("Custody Service v2.0 (Treasury/Markets) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

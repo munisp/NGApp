@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn multiplex(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "http2-multiplexer-rs", "action": "multiplex", "processed": true, "input": input}))
+    let available_memory_mb = input.get("available_memory_mb").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = max_concurrent_streams(available_memory_mb);
+    HttpResponse::Ok().json(json!({
+        "service": "http2-multiplexer-rs",
+        "endpoint": "multiplex",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

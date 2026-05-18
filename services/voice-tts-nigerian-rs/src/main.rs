@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn select_voice(language: &str, gender: &str) -> &str {
     match (language, gender) { ("en-NG", "male") => "ng-en-male-1", ("en-NG", "female") => "ng-en-female-1",
         ("yo", _) => "ng-yo-1", ("ig", _) => "ng-ig-1", ("ha", _) => "ng-ha-1", ("pcm", _) => "ng-pcm-1", _ => "ng-en-male-1" }
@@ -29,43 +28,41 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn synthesize(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn synthesize(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let language_s = input.get("language").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let language = language_s.as_str();
+    let gender_s = input.get("gender").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let gender = gender_s.as_str();
+    let result = select_voice(language, gender);
     HttpResponse::Ok().json(json!({
         "service": "voice-tts-nigerian-rs",
         "endpoint": "synthesize",
-        "description": "Convert text to speech with Nigerian accent",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn available_voices(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn available_voices(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let text_s = input.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let text = text_s.as_str();
+    let result = estimate_duration_ms(text);
     HttpResponse::Ok().json(json!({
         "service": "voice-tts-nigerian-rs",
         "endpoint": "available_voices",
-        "description": "List available Nigerian voice models",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn ssml_parse(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn ssml_parse(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let text_s = input.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let text = text_s.as_str();
+    let result = phoneme_replace_nigerian(text);
     HttpResponse::Ok().json(json!({
         "service": "voice-tts-nigerian-rs",
         "endpoint": "ssml_parse",
-        "description": "Parse SSML markup for synthesis",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -83,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn net_liquidity(inflows: f64, outflows: f64, reserves: f64) -> f64 { inflows - outflows + reserves }
 fn days_liquidity_cover(liquid_assets: f64, avg_daily_outflow: f64) -> f64 {
     if avg_daily_outflow == 0.0 { 999.0 } else { liquid_assets / avg_daily_outflow }
@@ -31,43 +30,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn liquidity_position(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn liquidity_position(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let inflows = input.get("inflows").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let outflows = input.get("outflows").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let reserves = input.get("reserves").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = net_liquidity(inflows, outflows, reserves);
     HttpResponse::Ok().json(json!({
         "service": "treasury-liquidity-rs",
         "endpoint": "liquidity_position",
-        "description": "Compute real-time liquidity position",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn cash_forecast(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn cash_forecast(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let liquid_assets = input.get("liquid_assets").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let avg_daily_outflow = input.get("avg_daily_outflow").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = days_liquidity_cover(liquid_assets, avg_daily_outflow);
     HttpResponse::Ok().json(json!({
         "service": "treasury-liquidity-rs",
         "endpoint": "cash_forecast",
-        "description": "Generate cash flow forecast",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn optimize_placement(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn optimize_placement(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let surplus = input.get("surplus").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = optimal_placement(surplus);
     HttpResponse::Ok().json(json!({
         "service": "treasury-liquidity-rs",
         "endpoint": "optimize_placement",
-        "description": "Optimize surplus placement",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": format!("{:?}", result)}),
     }))
 }
 
@@ -85,7 +80,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

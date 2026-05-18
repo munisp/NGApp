@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn format_pin_block(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "pin-block-engine-rs", "action": "format_pin_block", "processed": true, "input": input}))
+    let pin_s = input.get("pin").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let pin = pin_s.as_str();
+    let pan_s = input.get("pan").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let pan = pan_s.as_str();
+    let result = pin_block_format0(pin, pan);
+    HttpResponse::Ok().json(json!({
+        "service": "pin-block-engine-rs",
+        "endpoint": "format_pin_block",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

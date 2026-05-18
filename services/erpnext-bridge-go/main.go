@@ -498,6 +498,42 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 
 
 
+
+func erpnext_bridgeComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func erpnext_bridgeValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func erpnext_bridgeScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := erpnext_bridgeComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, map[string]interface{}{"score": score})
+}
+
+func erpnext_bridgeValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := erpnext_bridgeValidateRequest(body)
+    respondJSON(w, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8110" }
@@ -512,6 +548,8 @@ func main() {
 	http.HandleFunc("/v1/erpnext-bridge/sync-streams", handleSyncStreams)
 	http.HandleFunc("/v1/erpnext-bridge/summary", handleSyncSummary)
 
+	http.HandleFunc("/v1/erpnext-bridge/score", erpnext_bridgeScoreHandler)
+	http.HandleFunc("/v1/erpnext-bridge/validate", erpnext_bridgeValidateRequestHandler)
 	log.Printf("ERPNext Bridge (Go) on :%s — 5 gaps closed", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

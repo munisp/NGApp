@@ -20,7 +20,15 @@ async fn health() -> HttpResponse {
 
 async fn check_membership(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "bloom-filter-cache-rs", "action": "check_membership", "processed": true, "input": input}))
+    let item_s = input.get("item").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let item = item_s.as_str();
+    let seed = input.get("seed").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = bloom_hash(item, seed);
+    HttpResponse::Ok().json(json!({
+        "service": "bloom-filter-cache-rs",
+        "endpoint": "check_membership",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

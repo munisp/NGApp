@@ -20,7 +20,13 @@ async fn health() -> HttpResponse {
 
 async fn pool_stats(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "connection-pooler-rs", "action": "pool_stats", "processed": true, "input": input}))
+    let cpu_cores = input.get("cpu_cores").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = optimal_pool_size(cpu_cores);
+    HttpResponse::Ok().json(json!({
+        "service": "connection-pooler-rs",
+        "endpoint": "pool_stats",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

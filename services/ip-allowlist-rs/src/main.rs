@@ -20,7 +20,16 @@ async fn health() -> HttpResponse {
 
 async fn check_ip(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "ip-allowlist-rs", "action": "check_ip", "processed": true, "input": input}))
+    let ip_s = input.get("ip").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let ip = ip_s.as_str();
+    let cidr_s = input.get("cidr").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let cidr = cidr_s.as_str();
+    let result = ip_in_cidr(ip, cidr);
+    HttpResponse::Ok().json(json!({
+        "service": "ip-allowlist-rs",
+        "endpoint": "check_ip",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

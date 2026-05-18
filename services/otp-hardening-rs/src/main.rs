@@ -20,7 +20,18 @@ async fn health() -> HttpResponse {
 
 async fn validate_otp(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "otp-hardening-rs", "action": "validate_otp", "processed": true, "input": input}))
+    let submitted_s = input.get("submitted").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let submitted = submitted_s.as_str();
+    let expected_s = input.get("expected").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let expected = expected_s.as_str();
+    let attempts = input.get("attempts").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let max_attempts = input.get("max_attempts").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = otp_valid(submitted, expected, attempts, max_attempts);
+    HttpResponse::Ok().json(json!({
+        "service": "otp-hardening-rs",
+        "endpoint": "validate_otp",
+        "result": json!({"value": format!("{:?}", result)}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

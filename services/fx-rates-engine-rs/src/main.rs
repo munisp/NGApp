@@ -12,7 +12,6 @@ struct AppState {
     db_url: Option<String>,
 }
 
-
 fn compute_mid_rate(bid: f64, ask: f64) -> f64 { (bid + ask) / 2.0 }
 fn compute_spread(bid: f64, ask: f64) -> f64 { ask - bid }
 fn spread_percentage(bid: f64, ask: f64) -> f64 { if bid == 0.0 { 0.0 } else { (ask - bid) / bid * 100.0 } }
@@ -28,43 +27,39 @@ async fn health() -> HttpResponse {
     }))
 }
 
-
-async fn get_rate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn get_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let bid = input.get("bid").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ask = input.get("ask").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_mid_rate(bid, ask);
     HttpResponse::Ok().json(json!({
         "service": "fx-rates-engine-rs",
         "endpoint": "get_rate",
-        "description": "Get current FX rate with bid/ask spread",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn convert(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn convert(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let bid = input.get("bid").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ask = input.get("ask").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = compute_spread(bid, ask);
     HttpResponse::Ok().json(json!({
         "service": "fx-rates-engine-rs",
         "endpoint": "convert",
-        "description": "Convert amount between currencies",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
-async fn rate_history(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn rate_history(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let records = state.records.lock().unwrap();
+    let bid = input.get("bid").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ask = input.get("ask").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = spread_percentage(bid, ask);
     HttpResponse::Ok().json(json!({
         "service": "fx-rates-engine-rs",
         "endpoint": "rate_history",
-        "description": "Get historical rate data",
-        "input": input,
-        "records_count": records.len(),
-        "status": "processed",
+        "result": json!({"value": result}),
     }))
 }
 
@@ -82,7 +77,6 @@ async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

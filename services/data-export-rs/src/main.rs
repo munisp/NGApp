@@ -20,7 +20,14 @@ async fn health() -> HttpResponse {
 
 async fn export_data(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    HttpResponse::Ok().json(json!({"service": "data-export-rs", "action": "export_data", "processed": true, "input": input}))
+    let rows = input.get("rows").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let avg_row_bytes = input.get("avg_row_bytes").and_then(|v| v.as_u64()).unwrap_or(0) as u64;
+    let result = estimate_export_size(rows, avg_row_bytes);
+    HttpResponse::Ok().json(json!({
+        "service": "data-export-rs",
+        "endpoint": "export_data",
+        "result": json!({"value": result}),
+    }))
 }
 
 async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {

@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func supply_chain_financeComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func supply_chain_financeValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func supply_chain_financeScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := supply_chain_financeComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func supply_chain_financeValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := supply_chain_financeValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9437" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/supply-chain-finance/process", handleProcess)
 	http.HandleFunc("/v1/supply-chain-finance/audit", handleAudit)
 	http.HandleFunc("/v1/supply-chain-finance/stats", handleStats)
+	http.HandleFunc("/v1/supply-chain-finance/score", supply_chain_financeScoreHandler)
+	http.HandleFunc("/v1/supply-chain-finance/validate", supply_chain_financeValidateRequestHandler)
 	log.Printf("Supply Chain Finance v2.0 (General) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

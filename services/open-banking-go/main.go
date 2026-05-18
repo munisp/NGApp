@@ -218,6 +218,42 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
+
+func open_bankingComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func open_bankingValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
+}
+
+func open_bankingScoreHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Value     float64 `json:"value"`
+        Weight    float64 `json:"weight"`
+        Threshold float64 `json:"threshold"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+    score := open_bankingComputeScore(req.Value, req.Weight, req.Threshold)
+    respondJSON(w, 200, map[string]interface{}{"score": score})
+}
+
+func open_bankingValidateRequestHandler(w http.ResponseWriter, r *http.Request) {
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
+    result := open_bankingValidateRequest(body)
+    respondJSON(w, 200, result)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9401" }
@@ -228,6 +264,8 @@ func main() {
 	http.HandleFunc("/v1/open-banking/process", handleProcess)
 	http.HandleFunc("/v1/open-banking/audit", handleAudit)
 	http.HandleFunc("/v1/open-banking/stats", handleStats)
+	http.HandleFunc("/v1/open-banking/score", open_bankingScoreHandler)
+	http.HandleFunc("/v1/open-banking/validate", open_bankingValidateRequestHandler)
 	log.Printf("Open Banking v2.0 (Banking Ops) on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
