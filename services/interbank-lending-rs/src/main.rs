@@ -32,9 +32,8 @@ async fn health() -> HttpResponse {
 
 async fn quote_rate(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    let submissions_s = input.get("submissions").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let submissions_ref = submissions_s.as_str();
-    let result = compute_nibor(submissions_ref);
+    let mut submissions: Vec<f64> = input.get("submissions").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
+    let result = compute_nibor(&mut submissions);
     HttpResponse::Ok().json(json!({
         "service": "interbank-lending-rs",
         "endpoint": "quote_rate",
