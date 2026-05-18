@@ -15,7 +15,7 @@ export const dynamicQrPaymentRouter = router({
   generate: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.number().positive(), description: z.string().optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const code = `QR-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const [qr] = await db.insert(qrCodes).values({ code, agentId: input.agentId, type: "payment", status: "active", amount: String(input.amount), description: input.description ?? "Dynamic QR Payment" } as any).returning();
+    const [qr] = await db.insert(qrCodes).values({ code, agentId: input.agentId, type: "payment", status: "active", amount: String(input.amount), currency: "NGN", description: input.description ?? "Dynamic QR Payment" } as any).returning();
     await db.insert(auditLog).values({ action: "qr_code_generated", resource: "qr_codes", resourceId: String(qr.id), status: "success", metadata: { agentId: input.agentId, amount: input.amount } });
     return { id: qr.id, agentId: input.agentId, amount: input.amount, status: "active" };
   }),
