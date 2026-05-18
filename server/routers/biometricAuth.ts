@@ -194,7 +194,7 @@ export const biometricAuthRouter = router({
       if (input.sessionRef) {
         const db = getDb();
         try {
-          await db.update(kycSessions)
+          await ((await db())).update(kycSessions)
             .set({
               livenessScore: String(result.liveness?.confidence ?? 0),
               livenessPassed: result.liveness?.result === "real",
@@ -272,7 +272,7 @@ export const biometricAuthRouter = router({
   // ── List Biometric Records ──────────────────────────────────────────────
   list: protectedProcedure.query(async ({ ctx }) => {
     const db = getDb();
-    const sessions = await db.select()
+    const sessions = await ((await db())).select()
       .from(kycSessions)
       .where(and(
         eq(kycSessions.agentId, ctx.user.id),
@@ -300,21 +300,21 @@ export const biometricAuthRouter = router({
   analytics: protectedProcedure.query(async ({ ctx }) => {
     const db = getDb();
 
-    const [totalResult] = await db.select({ count: count() })
+    const [totalResult] = await ((await db())).select({ count: count() })
       .from(kycSessions)
       .where(and(
         eq(kycSessions.agentId, ctx.user.id),
         sql`${kycSessions.livenessScore} IS NOT NULL`,
       ));
 
-    const [passedResult] = await db.select({ count: count() })
+    const [passedResult] = await ((await db())).select({ count: count() })
       .from(kycSessions)
       .where(and(
         eq(kycSessions.agentId, ctx.user.id),
         eq(kycSessions.livenessPassed, true),
       ));
 
-    const [failedResult] = await db.select({ count: count() })
+    const [failedResult] = await ((await db())).select({ count: count() })
       .from(kycSessions)
       .where(and(
         eq(kycSessions.agentId, ctx.user.id),

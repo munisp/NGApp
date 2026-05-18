@@ -59,7 +59,7 @@ export const merchantPaymentsRouter = router({
 
       // Agent commission
       await db.update(agents).set({
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(agentCommission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(agentCommission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({

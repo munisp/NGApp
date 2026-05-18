@@ -9,13 +9,13 @@ export const customerWalletSystemRouter = router({
     const db = (await getDb())!;
     const [customer] = await db.select().from(customers).where(eq(customers.id, input.customerId)).limit(1);
     if (!customer) return null;
-    const [credits] = await db.select({ total: sum(transactions.amount) }).from(transactions).where(and(eq(transactions.customerId, input.customerId), eq(transactions.type, "Cash In")));
-    const [debits] = await db.select({ total: sum(transactions.amount) }).from(transactions).where(and(eq(transactions.customerId, input.customerId), eq(transactions.type, "Cash Out")));
+    const [credits] = await db.select({ total: sum(transactions.amount) }).from(transactions).where(and(eq(transactions.agentId, input.customerId), eq(transactions.type, "Cash In")));
+    const [debits] = await db.select({ total: sum(transactions.amount) }).from(transactions).where(and(eq(transactions.agentId, input.customerId), eq(transactions.type, "Cash Out")));
     return { customerId: input.customerId, balance: Number(credits.total ?? 0) - Number(debits.total ?? 0), currency: "NGN" };
   }),
   getTransactions: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().default(50) })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(transactions).where(eq(transactions.customerId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(input.limit);
+    const rows = await db.select().from(transactions).where(eq(transactions.agentId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(input.limit);
     return { transactions: rows, total: rows.length };
   }),
   topUp: protectedProcedure.input(z.object({ customerId: z.number(), amount: z.number().positive(), source: z.string() })).mutation(async ({ input }) => {

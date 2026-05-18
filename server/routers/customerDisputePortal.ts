@@ -7,7 +7,7 @@ import { disputes, disputeMessages, disputeEvidence, transactions, auditLog } fr
 export const customerDisputePortalRouter = router({
   listMyDisputes: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().default(20), status: z.string().optional() })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = input.status ? await db.select().from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, input.status))).orderBy(desc(disputes.createdAt)).limit(input.limit) : await db.select().from(disputes).where(eq(disputes.customerId, input.customerId)).orderBy(desc(disputes.createdAt)).limit(input.limit);
+    const rows = input.status ? await db.select().from(disputes).where(and(eq(disputes.agentId, input.customerId), eq(disputes.status, input.status))).orderBy(desc(disputes.createdAt)).limit(input.limit) : await db.select().from(disputes).where(eq(disputes.agentId, input.customerId)).orderBy(desc(disputes.createdAt)).limit(input.limit);
     return { disputes: rows, total: rows.length };
   }),
   getDispute: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
@@ -31,8 +31,8 @@ export const customerDisputePortalRouter = router({
   }),
   getStats: protectedProcedure.input(z.object({ customerId: z.number() })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(disputes).where(eq(disputes.customerId, input.customerId));
-    const [open] = await db.select({ value: count() }).from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, "open")));
+    const [total] = await db.select({ value: count() }).from(disputes).where(eq(disputes.agentId, input.customerId));
+    const [open] = await db.select({ value: count() }).from(disputes).where(and(eq(disputes.agentId, input.customerId), eq(disputes.status, "open")));
     return { totalDisputes: Number(total.value), openDisputes: Number(open.value) };
   }),
 });

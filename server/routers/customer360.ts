@@ -9,9 +9,9 @@ export const customer360Router = router({
     const db = (await getDb())!;
     const [customer] = await db.select().from(customers).where(eq(customers.id, input.customerId)).limit(1);
     if (!customer) return null;
-    const [txStats] = await db.select({ txCount: count(), volume: sum(transactions.amount) }).from(transactions).where(eq(transactions.customerId, input.customerId));
-    const [disputeCount] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.customerId, input.customerId));
-    const [loyaltyPoints] = await db.select({ total: sum(loyaltyHistory.points) }).from(loyaltyHistory).where(eq(loyaltyHistory.customerId, input.customerId));
+    const [txStats] = await db.select({ txCount: count(), volume: sum(transactions.amount) }).from(transactions).where(eq(transactions.agentId, input.customerId));
+    const [disputeCount] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.agentId, input.customerId));
+    const [loyaltyPoints] = await db.select({ total: sum(loyaltyHistory.points) }).from(loyaltyHistory).where(eq(loyaltyHistory.agentId, input.customerId));
     return { ...customer, metrics: { totalTransactions: Number(txStats.txCount), totalVolume: Number(txStats.volume ?? 0), totalDisputes: Number(disputeCount.cnt), loyaltyPoints: Number(loyaltyPoints.total ?? 0) } };
   }),
   listCustomers: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {

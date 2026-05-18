@@ -76,7 +76,7 @@ export const airtimeVendingRouter = router({
 
       await db.update(agents).set({
         floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(commission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({
@@ -120,7 +120,7 @@ export const airtimeVendingRouter = router({
 
       await db.update(agents).set({
         floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(bundle.price)}`,
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(commission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({

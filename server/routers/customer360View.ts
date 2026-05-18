@@ -11,7 +11,7 @@ export const customer360ViewRouter = router({
     if (!customer) throw new Error("Customer not found");
     const recentTx = await db.select().from(transactions).where(eq(transactions.agentId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(10);
     const [txStats] = await db.select({ total: count(), volume: sum(sql`CAST(amount AS numeric)`) }).from(transactions).where(eq(transactions.agentId, input.customerId));
-    const openDisputes = await db.select().from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, "open"))).limit(5);
+    const openDisputes = await db.select().from(disputes).where(and(eq(disputes.agentId, input.customerId), eq(disputes.status, "open"))).limit(5);
     return { customer, recentTransactions: recentTx, transactionStats: { totalCount: Number(txStats.total), totalVolume: Number(txStats.volume ?? 0) }, openDisputes, riskScore: customer.riskScore ?? 0 };
   }),
   getTimeline: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().min(1).max(200).default(50) })).query(async ({ input }) => {

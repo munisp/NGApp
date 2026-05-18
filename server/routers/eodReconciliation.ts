@@ -53,7 +53,7 @@ export const eodReconciliationRouter = router({
       )).groupBy(transactions.type);
 
       const [agent] = await db.select({
-        floatBalance: agents.floatBalance, commission: agents.commission,
+        floatBalance: agents.floatBalance, commission: agents.commissionBalance,
       }).from(agents).where(eq(agents.id, session.id)).limit(1);
 
       const reportId = `EOD-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;

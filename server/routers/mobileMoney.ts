@@ -69,7 +69,7 @@ export const mobileMoneyRouter = router({
 
       await db.update(agents).set({
         floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount + fee)}`,
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(commission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({
@@ -111,7 +111,7 @@ export const mobileMoneyRouter = router({
 
       await db.update(agents).set({
         floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(commission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({
@@ -147,7 +147,7 @@ export const mobileMoneyRouter = router({
 
       await db.update(agents).set({
         floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(input.amount)}`,
-        commission: sql`CAST(${agents.commission} AS numeric) + ${String(commission)}`,
+        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
       }).where(eq(agents.id, session.id));
 
       await writeAuditLog({
@@ -207,7 +207,7 @@ export const mobileMoneyRouter = router({
     if (!db) return { wallets: [] };
 
     const [agent] = await db.select({
-      floatBalance: agents.floatBalance, commission: agents.commission,
+      floatBalance: agents.floatBalance, commission: agents.commissionBalance,
     }).from(agents).where(eq(agents.id, session.id)).limit(1);
 
     return { wallets: [{ type: "agent_float", balance: Number(agent?.floatBalance ?? 0), currency: "NGN" }] };
