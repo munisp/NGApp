@@ -22,7 +22,7 @@ export const merchantSettlementDashboardRouter = router({
   processSettlement: protectedProcedure.input(z.object({ merchantId: z.number(), amount: z.number(), reference: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const settlementId = "STL-" + Date.now().toString(36).toUpperCase();
+    const settlementId = "STL-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "settlement_processed", resource: "settlements", resourceId: String(input.merchantId), status: "success", metadata: { amount: input.amount, reference: input.reference, settlementId } });
     return { success: true, settlementId };
   }),

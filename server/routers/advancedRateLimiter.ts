@@ -21,7 +21,7 @@ export const advancedRateLimiterRouter = router({
   createRule: protectedProcedure.input(z.object({ name: z.string(), endpoint: z.string(), maxRequests: z.number(), windowSeconds: z.number(), action: z.enum(["throttle", "block", "queue"]).default("throttle") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ruleId = "RL-" + Date.now().toString(36).toUpperCase();
+    const ruleId = "RL-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "rate_limit_" + ruleId, value: JSON.stringify({ ...input, enabled: true, createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "rate_limit_rule_created", resource: "rate_limits", resourceId: ruleId, status: "success", metadata: { name: input.name, endpoint: input.endpoint } });
     return { success: true, ruleId };

@@ -15,7 +15,7 @@ export const publishReadinessCheckerRouter = router({
   runChecks: protectedProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "readiness_check_run", resource: "readiness", resourceId: "check-" + Date.now().toString(36), status: "success", metadata: { score: 97 } });
+    await db.insert(auditLog).values({ action: "readiness_check_run", resource: "readiness", resourceId: "check-" + crypto.randomUUID(), status: "success", metadata: { score: 97 } });
     return { success: true, score: 97, checks: [
       { name: "Database connectivity", status: "pass" },
       { name: "API health", status: "pass" },

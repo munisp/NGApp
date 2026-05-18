@@ -15,7 +15,7 @@ export const operationalCommandBridgeRouter = router({
   executeCommand: protectedProcedure.input(z.object({ command: z.string(), target: z.string(), parameters: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const cmdId = "CMD-" + Date.now().toString(36).toUpperCase();
+    const cmdId = "CMD-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "command_executed", resource: "command_bridge", resourceId: cmdId, status: "success", metadata: { command: input.command, target: input.target, parameters: input.parameters } });
     return { success: true, commandId: cmdId };
   }),

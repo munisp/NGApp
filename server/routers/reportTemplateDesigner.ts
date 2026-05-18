@@ -20,7 +20,7 @@ export const reportTemplateDesignerRouter = router({
   createTemplate: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), category: z.string(), columns: z.array(z.string()), filters: z.array(z.string()).optional(), format: z.enum(["pdf", "csv", "xlsx"]).default("pdf") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const templateId = "RPT-" + Date.now().toString(36).toUpperCase();
+    const templateId = "RPT-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "report_template_" + templateId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "report_template_created", resource: "report_templates", resourceId: templateId, status: "success", metadata: { name: input.name, category: input.category } });
     return { success: true, templateId };
@@ -35,6 +35,6 @@ export const reportTemplateDesignerRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     await db.insert(auditLog).values({ action: "report_generated", resource: "report_templates", resourceId: input.templateId, status: "success", metadata: { dateFrom: input.dateFrom, dateTo: input.dateTo, filters: input.filters } });
-    return { success: true, reportId: "RPT-" + Date.now().toString(36).toUpperCase(), status: "generating" };
+    return { success: true, reportId: "RPT-" + crypto.randomUUID().toUpperCase(), status: "generating" };
   }),
 });

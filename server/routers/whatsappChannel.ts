@@ -24,7 +24,7 @@ export const whatsappChannelRouter = router({
   sendMessage: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), template: z.string().optional(), mediaUrl: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const messageId = "WA-" + Date.now().toString(36).toUpperCase();
+    const messageId = "WA-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "whatsapp_sent", resource: "whatsapp", resourceId: messageId, status: "success", metadata: { to: input.to, template: input.template, hasMedia: !!input.mediaUrl } });
     return { success: true, messageId };
   }),

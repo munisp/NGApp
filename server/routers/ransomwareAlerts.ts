@@ -24,7 +24,7 @@ export const ransomwareAlertsRouter = router({
   createAlert: protectedProcedure.input(z.object({ eventType: z.string(), severity: z.enum(["low", "medium", "high", "critical"]), source: z.string(), description: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const alertId = "RA-" + Date.now().toString(36).toUpperCase();
+    const alertId = "RA-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "ransomware_alert", resource: "security", resourceId: alertId, status: "warning", metadata: { eventType: input.eventType, severity: input.severity, source: input.source, description: input.description, resolved: false } });
     return { success: true, alertId };
   }),

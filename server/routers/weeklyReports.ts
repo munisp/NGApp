@@ -17,7 +17,7 @@ export const weeklyReportsRouter = router({
     const weekStart = input?.weekStart ? new Date(input.weekStart) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const [txCount] = await db.select({ value: count() }).from(transactions).where(gte(transactions.createdAt, weekStart));
     const [agentCount] = await db.select({ value: count() }).from(agents);
-    const reportId = "WR-" + Date.now().toString(36).toUpperCase();
+    const reportId = "WR-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "weekly_report_generated", resource: "reports", resourceId: reportId, status: "success", metadata: { weekStart: weekStart.toISOString(), transactionCount: Number(txCount.value), agentCount: Number(agentCount.value) } });
     return { success: true, reportId, summary: { transactionCount: Number(txCount.value), agentCount: Number(agentCount.value), weekStart: weekStart.toISOString() } };
   }),

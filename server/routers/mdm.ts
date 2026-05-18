@@ -559,7 +559,7 @@ export const mdmRouter = router({
       }
 
       // Generate a persistent device token for transaction signing
-      const persistentToken = `DT-${device.id}-${Date.now().toString(36).toUpperCase()}-${randomBytes(8).toString('hex').toUpperCase()}`;
+      const persistentToken = `DT-${device.id}-${crypto.randomUUID().toUpperCase()}-${randomBytes(8).toString('hex').toUpperCase()}`;
 
       // Complete enrollment
       await db.update(devices).set({

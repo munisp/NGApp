@@ -21,7 +21,7 @@ export const transactionEnrichmentServiceRouter = router({
   createRule: protectedProcedure.input(z.object({ name: z.string(), source: z.string(), field: z.string(), transformationType: z.enum(["mapping", "lookup", "calculation", "regex"]).default("mapping") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ruleId = "ER-" + Date.now().toString(36).toUpperCase();
+    const ruleId = "ER-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "enrichment_rule_" + ruleId, value: JSON.stringify({ ...input, status: "active", enriched24h: 0, accuracy: 0, createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "enrichment_rule_created", resource: "enrichment", resourceId: ruleId, status: "success", metadata: { name: input.name, source: input.source } });
     return { success: true, ruleId };

@@ -588,7 +588,7 @@ export const commissionEngineRouter = router({
   triggerBatchPayout: protectedProcedure
     .input(z.object({ period: z.string(), agentIds: z.array(z.number()) }))
     .mutation(async ({ input }) => {
-      const batchId = `BATCH-${Date.now().toString(36).toUpperCase()}`;
+      const batchId = `BATCH-${crypto.randomUUID().toUpperCase()}`;
       const workflowId = await triggerCommissionPayoutWorkflow({
         batchId,
         agentIds: input.agentIds,
@@ -608,7 +608,7 @@ export const commissionEngineRouter = router({
         amount: input.amount,
         currency: input.currency,
         agentCode: input.agentCode,
-        transactionRef: `ILP-COMM-${Date.now().toString(36)}`,
+        transactionRef: `ILP-COMM-${crypto.randomUUID()}`,
       });
       return { success: !!result, transfer: result };
     }),

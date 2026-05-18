@@ -13,7 +13,7 @@ title = "54Link Gitleaks Configuration"
 
 # ── Extend the default ruleset ────────────────────────────────────────────────
 [extend]
-useDefault = true
+path = "https://raw.githubusercontent.com/gitleaks/gitleaks/master/config/gitleaks.toml"
 
 # ── Custom rules for 54Link-specific patterns ─────────────────────────────────
 

@@ -21,7 +21,7 @@ export const agentTerritoryOptimizerRouter = router({
   optimize: protectedProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "territory_optimization", resource: "territories", resourceId: "opt-" + Date.now().toString(36), status: "success", metadata: { score: 85 } });
+    await db.insert(auditLog).values({ action: "territory_optimization", resource: "territories", resourceId: "opt-" + crypto.randomUUID(), status: "success", metadata: { score: 85 } });
     return { success: true, optimizationScore: 85 };
   }),
 });

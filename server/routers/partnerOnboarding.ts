@@ -20,7 +20,7 @@ export const partnerOnboardingRouter = router({
   onboardPartner: protectedProcedure.input(z.object({ businessName: z.string(), ownerName: z.string(), phone: z.string(), email: z.string().optional(), category: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const code = "MER-" + Date.now().toString(36).toUpperCase();
+    const code = "MER-" + crypto.randomUUID().toUpperCase();
     const [partner] = await db.insert(merchants).values({ merchantCode: code, businessName: input.businessName, ownerName: input.ownerName, phone: input.phone, email: input.email, status: "pending" }).returning();
     await db.insert(auditLog).values({ action: "partner_onboarded", resource: "merchants", resourceId: String(partner.id), status: "success", metadata: { businessName: input.businessName } });
     return { success: true, partner };

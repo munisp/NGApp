@@ -20,7 +20,7 @@ export const dataQualityRouter = router({
   runCheck: protectedProcedure.input(z.object({ checkType: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "data_quality_check", resource: "data_quality", resourceId: "check-" + Date.now().toString(36), status: "success", metadata: { checkType: input.checkType, score: 95 } });
+    await db.insert(auditLog).values({ action: "data_quality_check", resource: "data_quality", resourceId: "check-" + crypto.randomUUID(), status: "success", metadata: { checkType: input.checkType, score: 95 } });
     return { success: true, score: 95, checks: [
       { name: "Null value check", status: "pass", score: 100 },
       { name: "Referential integrity", status: "pass", score: 98 },

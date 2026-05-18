@@ -20,7 +20,7 @@ export const dataThresholdAlertsRouter = router({
   createThreshold: protectedProcedure.input(z.object({ metric: z.string(), operator: z.enum(["gt", "lt", "gte", "lte", "eq"]), value: z.number(), severity: z.enum(["info", "warning", "critical"]).default("warning"), notifyChannels: z.array(z.string()).default(["in_app"]) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const thresholdId = "THR-" + Date.now().toString(36).toUpperCase();
+    const thresholdId = "THR-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "threshold_" + thresholdId, value: JSON.stringify(input) });
     await db.insert(auditLog).values({ action: "threshold_created", resource: "thresholds", resourceId: thresholdId, status: "success", metadata: input as any });
     return { success: true, thresholdId };

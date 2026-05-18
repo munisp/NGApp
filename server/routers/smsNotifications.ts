@@ -15,14 +15,14 @@ export const smsNotificationsRouter = router({
   send: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), template: z.string().optional(), priority: z.enum(["low", "normal", "high"]).default("normal") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const msgId = "SMS-" + Date.now().toString(36).toUpperCase();
+    const msgId = "SMS-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "sms_sent", resource: "sms", resourceId: msgId, status: "success", metadata: { to: input.to, template: input.template, priority: input.priority } });
     return { success: true, messageId: msgId };
   }),
   sendBulk: protectedProcedure.input(z.object({ recipients: z.array(z.string()), message: z.string(), template: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const batchId = "SMSBATCH-" + Date.now().toString(36).toUpperCase();
+    const batchId = "SMSBATCH-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "sms_bulk_sent", resource: "sms", resourceId: batchId, status: "success", metadata: { recipientCount: input.recipients.length, template: input.template } });
     return { success: true, batchId, recipientCount: input.recipients.length };
   }),

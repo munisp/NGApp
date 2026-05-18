@@ -21,7 +21,7 @@ export const platformChangelogRouter = router({
   createRelease: protectedProcedure.input(z.object({ version: z.string(), title: z.string(), features: z.array(z.string()), breakingChanges: z.array(z.string()).optional(), migrationGuide: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const releaseId = "REL-" + Date.now().toString(36).toUpperCase();
+    const releaseId = "REL-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "release_" + releaseId, value: JSON.stringify({ ...input, status: "current", date: new Date().toISOString().split("T")[0], knownIssues: [] }) });
     await db.insert(auditLog).values({ action: "release_published", resource: "changelog", resourceId: releaseId, status: "success", metadata: { version: input.version, title: input.title } });
     return { success: true, releaseId };

@@ -24,7 +24,7 @@ export const temporalWorkflowsRouter = router({
   startWorkflow: protectedProcedure.input(z.object({ workflowType: z.string(), taskQueue: z.string().default("default"), input: z.record(z.string(), z.any()).optional(), retryPolicy: z.object({ maxRetries: z.number().default(3), backoffCoefficient: z.number().default(2) }).optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const workflowId = "WF-" + Date.now().toString(36).toUpperCase();
+    const workflowId = "WF-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "workflow_started", resource: "temporal_workflow", resourceId: workflowId, status: "success", metadata: { workflowType: input.workflowType, taskQueue: input.taskQueue, status: "running" } });
     return { success: true, workflowId, status: "running" };
   }),

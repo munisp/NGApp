@@ -89,7 +89,7 @@ const FLOAT_DEBIT_TYPES = new Set(["Cash Out", "Transfer"]);
 const FLOAT_CREDIT_TYPES = new Set(["Cash In"]);
 
 function generateRef(): string {
-  const ts = Date.now().toString(36).toUpperCase();
+  const ts = crypto.randomUUID().toUpperCase();
   const rand = crypto.randomBytes(6).toString("hex").slice(0, 6).toUpperCase();
   return `TXN${ts}${rand}`;
 }

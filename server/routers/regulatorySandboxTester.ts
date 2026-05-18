@@ -14,7 +14,7 @@ export const regulatorySandboxTesterRouter = router({
   runTest: protectedProcedure.input(z.object({ testSuite: z.string(), environment: z.enum(["sandbox", "staging"]).default("sandbox"), parameters: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const testId = "SBX-" + Date.now().toString(36).toUpperCase();
+    const testId = "SBX-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "sandbox_test_run", resource: "sandbox", resourceId: testId, status: "success", metadata: { testSuite: input.testSuite, environment: input.environment } });
     return { success: true, testId, status: "completed" };
   }),

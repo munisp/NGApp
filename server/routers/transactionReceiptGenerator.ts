@@ -20,7 +20,7 @@ export const transactionReceiptGeneratorRouter = router({
   createTemplate: protectedProcedure.input(z.object({ name: z.string(), type: z.enum(["thermal", "email", "sms", "pdf"]), format: z.string().optional(), fields: z.array(z.string()) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const templateId = "TPL-" + Date.now().toString(36).toUpperCase();
+    const templateId = "TPL-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "receipt_template_" + templateId, value: JSON.stringify({ ...input, active: true, usageCount: 0, createdAt: new Date().toISOString() }) });
     return { success: true, templateId };
   }),
@@ -30,7 +30,7 @@ export const transactionReceiptGeneratorRouter = router({
     const txRows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
     if (txRows.length === 0) return { success: false, error: "Transaction not found" };
     const tx = txRows[0];
-    const receiptId = "RCT-" + Date.now().toString(36).toUpperCase();
+    const receiptId = "RCT-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "receipt_generated", resource: "receipts", resourceId: receiptId, status: "success", metadata: { transactionId: input.transactionId, amount: tx.amount, type: tx.type } });
     return { success: true, receiptId, receipt: { id: receiptId, transactionId: input.transactionId, amount: tx.amount, type: tx.type, generatedAt: new Date().toISOString() } };
   }),

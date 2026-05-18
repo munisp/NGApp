@@ -20,7 +20,7 @@ export const multiChannelPaymentOrchRouter = router({
   processPayment: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.string(), channel: z.string(), recipientPhone: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ref = "PAY" + Date.now().toString(36).toUpperCase();
+    const ref = "PAY" + crypto.randomUUID().toUpperCase();
     const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: input.amount, type: "Transfer", channel: "Cash", status: "success", customerPhone: input.recipientPhone, ref }).returning();
     await db.insert(auditLog).values({ action: "payment_processed", resource: "transactions", resourceId: String(tx.id), status: "success", metadata: { channel: input.channel, amount: input.amount } });
     return { success: true, transaction: tx };

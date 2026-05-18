@@ -22,7 +22,7 @@ export const insuranceProductsRouter = router({
   createProduct: protectedProcedure.input(z.object({ name: z.string(), category: z.enum(["life", "health", "property", "device", "crop", "livestock"]), premium: z.number(), coverageAmount: z.number(), description: z.string(), tenure: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const productId = "INS-" + Date.now().toString(36).toUpperCase();
+    const productId = "INS-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "insurance_product_" + productId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "insurance_product_created", resource: "insurance_products", resourceId: productId, status: "success", metadata: { name: input.name, category: input.category } });
     return { success: true, productId };

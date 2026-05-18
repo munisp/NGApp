@@ -8,7 +8,7 @@ export const financialNlEngineRouter = router({
   query: protectedProcedure.input(z.object({ question: z.string(), context: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { answer: "Database not available", confidence: 0, data: [] };
-    await db.insert(auditLog).values({ action: "financial_nl_query", resource: "nl_engine", resourceId: "query-" + Date.now().toString(36), status: "success", metadata: { question: input.question } });
+    await db.insert(auditLog).values({ action: "financial_nl_query", resource: "nl_engine", resourceId: "query-" + crypto.randomUUID(), status: "success", metadata: { question: input.question } });
     const q = input.question.toLowerCase();
     if (q.includes("agent")) {
       const [result] = await db.select({ value: count() }).from(agents);

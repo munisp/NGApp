@@ -20,7 +20,7 @@ export const rateAlertsRouter = router({
   createAlert: protectedProcedure.input(z.object({ metric: z.string(), threshold: z.number(), operator: z.enum(["gt", "lt", "gte", "lte"]), windowMinutes: z.number().default(5), notifyChannels: z.array(z.string()).default(["in_app"]) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const alertId = "RATE-" + Date.now().toString(36).toUpperCase();
+    const alertId = "RATE-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "rate_alert_" + alertId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     return { success: true, alertId };
   }),

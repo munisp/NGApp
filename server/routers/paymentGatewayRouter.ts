@@ -15,7 +15,7 @@ export const paymentGatewayRouterRouter = router({
   processPayment: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.string(), type: z.string(), recipientPhone: z.string(), channel: z.string().default("Cash") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ref = "GW" + Date.now().toString(36).toUpperCase();
+    const ref = "GW" + crypto.randomUUID().toUpperCase();
     const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: input.amount, type: input.type as any, channel: input.channel as any, status: "success", customerPhone: input.recipientPhone, ref }).returning();
     await db.insert(auditLog).values({ action: "payment_gateway_tx", resource: "transactions", resourceId: String(tx.id), status: "success" });
     return { success: true, transaction: tx, reference: ref };

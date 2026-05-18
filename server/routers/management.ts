@@ -578,7 +578,7 @@ export const managementRouter = router({
       .mutation(async ({ input }) => {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const slug = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString("hex").slice(0, 6)}`;
+        const slug = `${crypto.randomUUID()}-${crypto.randomBytes(6).toString("hex").slice(0, 6)}`;
         const [link] = await db.insert(shareableLinks).values({ ...input, slug }).returning();
         return link;
       }),

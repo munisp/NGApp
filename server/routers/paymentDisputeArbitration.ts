@@ -23,7 +23,7 @@ export const paymentDisputeArbitrationRouter = router({
   fileDispute: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string(), amount: z.number(), evidence: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const disputeId = "DSP-" + Date.now().toString(36).toUpperCase();
+    const disputeId = "DSP-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "dispute_filed", resource: "disputes", resourceId: disputeId, status: "success", metadata: { transactionId: input.transactionId, reason: input.reason, amount: input.amount, status: "pending" } });
     return { success: true, disputeId };
   }),

@@ -21,7 +21,7 @@ export const carrierSwitchingRouter = router({
   requestSwitch: protectedProcedure.input(z.object({ fromCarrier: z.string(), toCarrier: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const switchId = "SW-" + Date.now().toString(36).toUpperCase();
+    const switchId = "SW-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "carrier_switch", resource: "carriers", resourceId: switchId, status: "success", metadata: { fromCarrier: input.fromCarrier, toCarrier: input.toCarrier, reason: input.reason } });
     return { success: true, switchId };
   }),

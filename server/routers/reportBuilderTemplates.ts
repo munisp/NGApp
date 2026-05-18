@@ -22,7 +22,7 @@ export const reportBuilderTemplatesRouter = router({
   createTemplate: protectedProcedure.input(z.object({ name: z.string(), category: z.string(), description: z.string().optional(), columns: z.array(z.object({ field: z.string(), label: z.string(), type: z.string().default("text") })), filters: z.array(z.object({ field: z.string(), operator: z.string(), value: z.string().optional() })).optional(), format: z.enum(["pdf", "csv", "xlsx"]).default("pdf") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const templateId = "RPTB-" + Date.now().toString(36).toUpperCase();
+    const templateId = "RPTB-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "rpt_builder_" + templateId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "report_builder_template_created", resource: "report_builder", resourceId: templateId, status: "success", metadata: { name: input.name, category: input.category } });
     return { success: true, templateId };
@@ -36,7 +36,7 @@ export const reportBuilderTemplatesRouter = router({
   generateReport: protectedProcedure.input(z.object({ templateId: z.string(), dateRange: z.object({ from: z.string(), to: z.string() }).optional(), filters: z.record(z.string(), z.string()).optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const reportId = "RPT-" + Date.now().toString(36).toUpperCase();
+    const reportId = "RPT-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "report_generated", resource: "report_builder", resourceId: reportId, status: "success", metadata: { templateId: input.templateId, dateRange: input.dateRange } });
     return { success: true, reportId, status: "generating" };
   }),

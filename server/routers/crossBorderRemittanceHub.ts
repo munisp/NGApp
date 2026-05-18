@@ -20,7 +20,7 @@ export const crossBorderRemittanceHubRouter = router({
   sendRemittance: protectedProcedure.input(z.object({ senderAgentId: z.number(), recipientPhone: z.string(), amount: z.number(), currency: z.string().default("NGN"), destinationCountry: z.string(), corridor: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const remittanceId = "REM-" + Date.now().toString(36).toUpperCase();
+    const remittanceId = "REM-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "remittance_sent", resource: "remittances", resourceId: remittanceId, status: "success", metadata: { ...input } as any });
     return { success: true, remittanceId };
   }),

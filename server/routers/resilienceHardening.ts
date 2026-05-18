@@ -34,7 +34,7 @@ export const resilienceHardeningRouter = router({
       { name: "Log aggregation", status: "pass" },
       { name: "Monitoring alerts", status: "pass" },
     ];
-    await db.insert(auditLog).values({ action: "resilience_check", resource: "resilience", resourceId: "check-" + Date.now().toString(36), status: "success", metadata: { score: 94, checks: checks.length, passing: checks.filter(c => c.status === "pass").length } });
+    await db.insert(auditLog).values({ action: "resilience_check", resource: "resilience", resourceId: "check-" + crypto.randomUUID(), status: "success", metadata: { score: 94, checks: checks.length, passing: checks.filter(c => c.status === "pass").length } });
     return { success: true, score: 94, checks };
   }),
   getConfig: protectedProcedure.query(async () => {

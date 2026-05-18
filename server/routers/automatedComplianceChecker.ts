@@ -25,12 +25,12 @@ export const automatedComplianceCheckerRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     await db.insert(auditLog).values({ action: "compliance_check_run", resource: "compliance", resourceId: input.ruleId ?? "all", status: "success", metadata: { ruleId: input.ruleId, runAt: new Date().toISOString() } });
-    return { success: true, checkId: "CHK-" + Date.now().toString(36).toUpperCase(), status: "completed" };
+    return { success: true, checkId: "CHK-" + crypto.randomUUID().toUpperCase(), status: "completed" };
   }),
   createRule: protectedProcedure.input(z.object({ name: z.string(), category: z.enum(["AML", "CBN", "KYC", "PCI", "NDPR"]), severity: z.enum(["low", "medium", "high", "critical"]), automated: z.boolean().default(true), description: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ruleId = "CR-" + Date.now().toString(36).toUpperCase();
+    const ruleId = "CR-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "compliance_rule_" + ruleId, value: JSON.stringify({ ...input, status: "passing", lastCheck: new Date().toISOString(), createdAt: new Date().toISOString() }) });
     return { success: true, ruleId };
   }),

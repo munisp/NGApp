@@ -22,7 +22,7 @@ export const autoComplianceWorkflowRouter = router({
   createWorkflow: protectedProcedure.input(z.object({ name: z.string(), type: z.string(), steps: z.array(z.string()), schedule: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const wfId = "CWF-" + Date.now().toString(36).toUpperCase();
+    const wfId = "CWF-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "compliance_wf_" + wfId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "compliance_workflow_created", resource: "compliance_workflows", resourceId: wfId, status: "success", metadata: { name: input.name } });
     return { success: true, workflowId: wfId };
@@ -31,6 +31,6 @@ export const autoComplianceWorkflowRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     await db.insert(auditLog).values({ action: "compliance_workflow_triggered", resource: "compliance_workflows", resourceId: input.workflowId, status: "success", metadata: {} });
-    return { success: true, runId: "RUN-" + Date.now().toString(36).toUpperCase() };
+    return { success: true, runId: "RUN-" + crypto.randomUUID().toUpperCase() };
   }),
 });

@@ -217,7 +217,7 @@ export const agentBankingRouter = router({
       .mutation(async ({ input }) => {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const slug = `${input.agentId}-${Date.now().toString(36)}-${crypto.randomBytes(5).toString("hex").slice(0, 5)}`;
+        const slug = `${input.agentId}-${crypto.randomUUID()}-${crypto.randomBytes(5).toString("hex").slice(0, 5)}`;
         const [link] = await db.insert(shareableLinks).values({ ...input, slug }).returning();
         return link;
       }),
@@ -243,7 +243,7 @@ export const agentBankingRouter = router({
       .mutation(async ({ input }) => {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const ref = `DSP-${Date.now().toString(36).toUpperCase()}`;
+        const ref = `DSP-${crypto.randomUUID().toUpperCase()}`;
         const [dispute] = await db.insert(disputes).values({
           ref,
           agentId: input.agentId,

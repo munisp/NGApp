@@ -22,7 +22,7 @@ export const bulkTransactionProcessingRouter = router({
   submitBatch: protectedProcedure.input(z.object({ transactions: z.array(z.object({ agentId: z.number(), amount: z.number(), type: z.string() })) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const batchId = "BATCH-" + Date.now().toString(36).toUpperCase();
+    const batchId = "BATCH-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "bulk_tx_batch", resource: "transactions", resourceId: batchId, status: "success", metadata: { transactionCount: input.transactions.length } });
     return { success: true, batchId, transactionCount: input.transactions.length };
   }),

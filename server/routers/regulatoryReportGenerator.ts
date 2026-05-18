@@ -20,7 +20,7 @@ export const regulatoryReportGeneratorRouter = router({
   generateReport: protectedProcedure.input(z.object({ reportType: z.string(), regulatoryBody: z.enum(["CBN", "NDIC", "SEC", "NFIU", "FIRS"]), dateFrom: z.string(), dateTo: z.string(), format: z.enum(["pdf", "csv", "xml"]).default("pdf") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const reportId = "REG-" + Date.now().toString(36).toUpperCase();
+    const reportId = "REG-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "regulatory_report_generated", resource: "regulatory_reports", resourceId: reportId, status: "success", metadata: { ...input } as any });
     return { success: true, reportId, status: "generating" };
   }),

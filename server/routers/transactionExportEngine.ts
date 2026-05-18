@@ -14,7 +14,7 @@ export const transactionExportEngineRouter = router({
   export: protectedProcedure.input(z.object({ format: z.enum(["csv", "xlsx", "pdf"]).default("csv"), dateFrom: z.string().optional(), dateTo: z.string().optional(), agentId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const exportId = "EXP-" + Date.now().toString(36).toUpperCase();
+    const exportId = "EXP-" + crypto.randomUUID().toUpperCase();
     const conditions: any[] = [];
     if (input.dateFrom) conditions.push(gte(transactions.createdAt, new Date(input.dateFrom)));
     if (input.dateTo) conditions.push(lte(transactions.createdAt, new Date(input.dateTo)));

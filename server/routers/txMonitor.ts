@@ -21,7 +21,7 @@ export const txMonitorRouter = router({
   createAlertRule: protectedProcedure.input(z.object({ name: z.string(), conditionType: z.string(), threshold: z.number(), severity: z.enum(["info", "warning", "critical"]).default("warning"), windowSeconds: z.number().default(300), enabled: z.boolean().default(true) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const ruleId = "TXR-" + Date.now().toString(36).toUpperCase();
+    const ruleId = "TXR-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "tx_alert_rule_" + ruleId, value: JSON.stringify({ ...input, createdAt: new Date().toISOString(), cooldownSeconds: 300, triggeredCount: 0 }) });
     await db.insert(auditLog).values({ action: "tx_alert_rule_created", resource: "tx_monitor", resourceId: ruleId, status: "success", metadata: { name: input.name, conditionType: input.conditionType } });
     return { success: true, ruleId };

@@ -63,7 +63,7 @@ export const settlementRouter = router({
    * [Fluvio] Streams settlement events via Rust sidecar.
    */
   runNow: agentAdminProcedure.mutation(async ({ ctx }) => {
-    const batchId = `SETTLE-${Date.now().toString(36).toUpperCase()}`;
+    const batchId = `SETTLE-${crypto.randomUUID().toUpperCase()}`;
 
     // [Redis] Acquire distributed lock
     const lockAcquired = await acquireSettlementLock(batchId);

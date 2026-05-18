@@ -24,7 +24,7 @@ export const incidentManagementRouter = router({
   createIncident: protectedProcedure.input(z.object({ title: z.string(), description: z.string(), severity: z.enum(["low", "medium", "high", "critical"]), assignee: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const incidentId = "INC-" + Date.now().toString(36).toUpperCase();
+    const incidentId = "INC-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "incident_created", resource: "incidents", resourceId: incidentId, status: "warning", metadata: { title: input.title, description: input.description, severity: input.severity, assignee: input.assignee, resolved: false } });
     return { success: true, incidentId };
   }),

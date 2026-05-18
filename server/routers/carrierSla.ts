@@ -29,6 +29,6 @@ export const carrierSlaRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     await db.insert(auditLog).values({ action: "sla_breach_reported", resource: "carrier_sla", resourceId: input.carrierId, status: "warning", metadata: { breachType: input.breachType, description: input.description, downtimeMinutes: input.downtimeMinutes } });
-    return { success: true, breachId: "SLA-" + Date.now().toString(36).toUpperCase() };
+    return { success: true, breachId: "SLA-" + crypto.randomUUID().toUpperCase() };
   }),
 });

@@ -165,7 +165,7 @@ export const customerRouter = router({
       .input(z.object({ transactionRef: z.string(), transactionId: z.number(), reason: z.string(), evidence: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         const { db, customer } = await resolveCustomer(ctx.user.id);
-        const ref = `DSP-C-${Date.now().toString(36).toUpperCase()}`;
+        const ref = `DSP-C-${crypto.randomUUID().toUpperCase()}`;
         const [dispute] = await db.insert(disputes).values({
           ref,
           agentId: customer.preferredAgentId ?? 0,

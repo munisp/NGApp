@@ -23,7 +23,7 @@ export const securityHardeningRouter = router({
   runSecurityScan: protectedProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const scanId = "SCAN-" + Date.now().toString(36).toUpperCase();
+    const scanId = "SCAN-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "security_scan", resource: "security", resourceId: scanId, status: "success", metadata: { score: 92, vulnerabilities: 0, passed: 24, failed: 2 } });
     return { success: true, scanId, score: 92, checks: [
       { name: "SQL injection prevention", status: "pass" },
@@ -43,7 +43,7 @@ export const securityHardeningRouter = router({
   reportEvent: protectedProcedure.input(z.object({ eventType: z.string(), severity: z.enum(["low", "medium", "high", "critical"]), source: z.string(), description: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const eventId = "SEC-" + Date.now().toString(36).toUpperCase();
+    const eventId = "SEC-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "security_event", resource: "security", resourceId: eventId, status: "warning", metadata: { eventType: input.eventType, severity: input.severity, source: input.source, description: input.description } });
     return { success: true, eventId };
   }),

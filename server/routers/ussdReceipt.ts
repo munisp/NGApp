@@ -17,7 +17,7 @@ export const ussdReceiptRouter = router({
     const txRows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
     if (txRows.length === 0) return { success: false, error: "Transaction not found" };
     const tx = txRows[0];
-    const receiptId = "RCP-" + Date.now().toString(36).toUpperCase();
+    const receiptId = "RCP-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "receipt_generated", resource: "receipts", resourceId: receiptId, status: "success", metadata: { transactionId: input.transactionId, channel: input.channel, amount: tx.amount, type: tx.type } });
     return { success: true, receiptId, receipt: { id: receiptId, transactionId: input.transactionId, amount: tx.amount, type: tx.type, channel: input.channel, generatedAt: new Date().toISOString() } };
   }),

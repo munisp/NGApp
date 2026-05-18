@@ -20,7 +20,7 @@ export const scheduledReportsRouter = router({
   createSchedule: protectedProcedure.input(z.object({ reportType: z.string(), frequency: z.enum(["daily", "weekly", "monthly"]), recipients: z.array(z.string().email()), format: z.enum(["pdf", "csv", "xlsx"]).default("pdf"), time: z.string().default("08:00") })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const scheduleId = "SCH-" + Date.now().toString(36).toUpperCase();
+    const scheduleId = "SCH-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "scheduled_report_" + scheduleId, value: JSON.stringify({ ...input, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "report_schedule_created", resource: "scheduled_reports", resourceId: scheduleId, status: "success", metadata: { reportType: input.reportType, frequency: input.frequency } });
     return { success: true, scheduleId };

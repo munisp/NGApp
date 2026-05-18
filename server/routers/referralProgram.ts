@@ -23,7 +23,7 @@ export const referralProgramRouter = router({
   createReferral: protectedProcedure.input(z.object({ referrerId: z.number(), referredName: z.string(), referredPhone: z.string(), referredEmail: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const referralCode = "REF-" + Date.now().toString(36).toUpperCase();
+    const referralCode = "REF-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "referral_created", resource: "referrals", resourceId: referralCode, status: "success", metadata: { referrerId: input.referrerId, referredName: input.referredName, referredPhone: input.referredPhone, referredEmail: input.referredEmail, status: "pending", rewardAmount: 500 } });
     return { success: true, referralCode };
   }),

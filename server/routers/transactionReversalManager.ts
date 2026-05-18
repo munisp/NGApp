@@ -25,7 +25,7 @@ export const transactionReversalManagerRouter = router({
     if (!db) throw new Error("DB not available");
     const txRows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
     if (txRows.length === 0) return { success: false, error: "Transaction not found" };
-    const reversalId = "REV-" + Date.now().toString(36).toUpperCase();
+    const reversalId = "REV-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "reversal_requested", resource: "transactions", resourceId: reversalId, status: "success", metadata: { transactionId: input.transactionId, reason: input.reason, amount: txRows[0].amount, status: "pending" } });
     return { success: true, reversalId };
   }),

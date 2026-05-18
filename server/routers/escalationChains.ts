@@ -20,7 +20,7 @@ export const escalationChainsRouter = router({
   createChain: protectedProcedure.input(z.object({ name: z.string(), levels: z.array(z.object({ level: z.number(), assignee: z.string(), timeoutMinutes: z.number() })), triggerConditions: z.string().optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const chainId = "ESC-" + Date.now().toString(36).toUpperCase();
+    const chainId = "ESC-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "escalation_chain_" + chainId, value: JSON.stringify({ name: input.name, levels: input.levels, triggerConditions: input.triggerConditions, status: "active", createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "escalation_chain_created", resource: "escalation_chains", resourceId: chainId, status: "success", metadata: { name: input.name, levels: input.levels.length } });
     return { success: true, chainId };

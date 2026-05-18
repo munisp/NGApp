@@ -31,6 +31,6 @@ export const agentMicroInsuranceRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     await db.insert(auditLog).values({ action: "insurance_claim_filed", resource: "insurance", resourceId: input.policyId, status: "success", metadata: { amount: input.amount, description: input.description } });
-    return { success: true, claimId: "CLM-" + Date.now().toString(36).toUpperCase(), status: "under_review" };
+    return { success: true, claimId: "CLM-" + crypto.randomUUID().toUpperCase(), status: "under_review" };
   }),
 });

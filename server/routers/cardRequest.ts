@@ -24,7 +24,7 @@ export const cardRequestRouter = router({
   submitRequest: protectedProcedure.input(z.object({ agentId: z.number(), cardType: z.enum(["debit", "prepaid", "virtual"]), quantity: z.number().min(1).max(100), deliveryAddress: z.string() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const requestId = "CARD-" + Date.now().toString(36).toUpperCase();
+    const requestId = "CARD-" + crypto.randomUUID().toUpperCase();
     await db.insert(auditLog).values({ action: "card_request_submitted", resource: "card_requests", resourceId: requestId, status: "success", metadata: { agentId: input.agentId, cardType: input.cardType, quantity: input.quantity, deliveryAddress: input.deliveryAddress, status: "pending" } });
     return { success: true, requestId };
   }),

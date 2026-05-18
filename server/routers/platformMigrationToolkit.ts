@@ -20,7 +20,7 @@ export const platformMigrationToolkitRouter = router({
   create: protectedProcedure.input(z.object({ name: z.string(), data: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
-    const itemId = "MIGRATIONS-" + Date.now().toString(36).toUpperCase();
+    const itemId = "MIGRATIONS-" + crypto.randomUUID().toUpperCase();
     await db.insert(systemConfig).values({ key: "migrations_" + itemId, value: JSON.stringify({ name: input.name, ...input.data, createdAt: new Date().toISOString() }) });
     await db.insert(auditLog).values({ action: "migrations_created", resource: "migrations", resourceId: itemId, status: "success", metadata: { name: input.name } });
     return { success: true, itemId };

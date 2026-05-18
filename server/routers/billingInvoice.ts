@@ -90,7 +90,7 @@ export const billingInvoiceRouter = router({
       const subtotal = lineItems.reduce((sum: any, item: any) => sum + item.total, 0);
       const taxAmount = subtotal * (input.taxRate / 100);
       const total = subtotal + taxAmount;
-      const invoiceNumber = `INV-${input.tenantId}-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Date.now().toString(36).toUpperCase()}`;
+      const invoiceNumber = `INV-${input.tenantId}-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${crypto.randomUUID().toUpperCase()}`;
 
       const invoice: Invoice = {
         id: `inv_${Date.now()}`,
@@ -120,7 +120,7 @@ export const billingInvoiceRouter = router({
   generateCreditNote: protectedProcedure
     .input(z.object({ invoiceId: z.string(), amount: z.number(), reason: z.string() }))
     .mutation(async ({ input }) => {
-      return { creditNoteNumber: `CN-${Date.now().toString(36).toUpperCase()}`, invoiceId: input.invoiceId, amount: input.amount, reason: input.reason, status: "issued" };
+      return { creditNoteNumber: `CN-${crypto.randomUUID().toUpperCase()}`, invoiceId: input.invoiceId, amount: input.amount, reason: input.reason, status: "issued" };
     }),
 
   exportInvoices: protectedProcedure
