@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import time
+import re
 import signal
 import logging
 import threading
@@ -175,6 +176,12 @@ def calculate_risk(app):
     return {"score": min(score, 100), "category": cat, "factors": factors,
         "requires_edd": cat in ("high", "critical"), "auto_approvable": cat == "low"}
 
+CBN_TIER_REQUIREMENTS = {
+    "tier1": {"max_balance": 300000, "docs": ["bvn"], "description": "Basic - BVN only"},
+    "tier2": {"max_balance": 500000, "docs": ["bvn", "id_document", "liveness"], "description": "Standard - BVN + ID + Liveness"},
+    "tier3": {"max_balance": None, "docs": ["bvn", "nin", "address_proof", "liveness"], "description": "Full KYC - All documents"},
+}
+
 def determine_tier(app):
     docs = set(app.get("docs_submitted", []))
     has_bvn, has_nin = bool(app.get("bvn")), bool(app.get("nin"))
@@ -233,7 +240,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path in ("/v1/records", "/v1/list"):
             claims, err = validate_jwt(dict(self.headers))
             if err:
-                logger.warning(f"Auth warning: {err}")
+                self.respond(401, {"error": "unauthorized", "detail": err})
+                return
             items, total = db_query("kyc_engine_py")
             self.respond(200, {"items": items, "total": total, "source": "database" if get_db() else "no_db"})
         elif path == "/v1/stats":
@@ -258,7 +266,8 @@ class Handler(BaseHTTPRequestHandler):
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
         if err:
-            logger.warning(f"Auth warning on {path}: {err}")
+            self.respond(401, {"error": "unauthorized", "detail": err})
+            return
 
         if path == "/v1/create":
             result = db_insert("kyc_engine_py", body)

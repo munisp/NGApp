@@ -219,7 +219,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path in ("/v1/records", "/v1/list"):
             claims, err = validate_jwt(dict(self.headers))
             if err:
-                logger.warning(f"Auth warning: {err}")
+                self.respond(401, {"error": "unauthorized", "detail": err})
+                return
             items, total = db_query("insurance_portfolio_analytics_py")
             self.respond(200, {"items": items, "total": total, "source": "database" if get_db() else "no_db"})
         elif path == "/v1/stats":
@@ -244,7 +245,8 @@ class Handler(BaseHTTPRequestHandler):
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
         if err:
-            logger.warning(f"Auth warning on {path}: {err}")
+            self.respond(401, {"error": "unauthorized", "detail": err})
+            return
 
         if path == "/v1/create":
             result = db_insert("insurance_portfolio_analytics_py", body)

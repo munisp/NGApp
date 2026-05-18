@@ -53,7 +53,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "database"})
+	jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": dbSourceTag()})
 }
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
@@ -419,6 +419,11 @@ func getTLSConfig() (bool, string, string) {
 	if cert == "" { cert = "/etc/54bank/certs/service.crt" }
 	if key == "" { key = "/etc/54bank/certs/service.key" }
 	return true, cert, key
+}
+
+func dbSourceTag() string {
+    if os.Getenv("DATABASE_URL") != "" { return "database" }
+    return "in-memory"
 }
 
 func main() {
