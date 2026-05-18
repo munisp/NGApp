@@ -43,6 +43,20 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def generate_ctr(transaction, customer):
+    """Generate Currency Transaction Report for NFIU (>5M NGN or >10K USD)"""
+    amount = transaction.get("amount", 0)
+    currency = transaction.get("currency", "NGN")
+    threshold = 5000000 if currency == "NGN" else 10000
+    reportable = amount >= threshold
+    return {"reportable": reportable, "report_type": "CTR", "threshold": threshold, "currency": currency, "amount": amount, "customer_name": customer.get("name",""), "bvn": customer.get("bvn",""), "filing_deadline": "T+1 business day", "status": "pending_filing" if reportable else "below_threshold"}
+
+def generate_str(indicators, transaction):
+    """Generate Suspicious Transaction Report for NFIU"""
+    risk_indicators = {"structuring": 40, "unusual_pattern": 30, "no_economic_justification": 35, "pep_involvement": 25, "high_risk_jurisdiction": 30, "rapid_movement": 20}
+    score = sum(risk_indicators.get(i, 10) for i in indicators)
+    return {"report_type": "STR", "suspicion_score": min(100, score), "indicators": indicators, "amount": transaction.get("amount", 0), "narrative_required": score >= 30, "filing_deadline": "immediately" if score >= 60 else "within 24 hours", "escalate_to_cbn": score >= 80}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +152,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/nfiu-ctr-str-filing/ctr":
+            result = generate_ctr(body.get("transaction",{}), body.get("customer",{}))
+            self.respond(200, result)
+        elif path == "/v1/nfiu-ctr-str-filing/str":
+            result = generate_str(body.get("indicators",[]), body.get("transaction",{}))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

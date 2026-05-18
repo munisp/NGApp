@@ -43,6 +43,15 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def classify_intent(utterance, language="en"):
+    """Classify banking voice command intent"""
+    intents = {"balance": ["balance", "how much", "owo mi", "ego m"], "transfer": ["transfer", "send", "firanṣẹ", "zipu"], "airtime": ["airtime", "recharge", "top up"], "loan": ["loan", "borrow", "awin"], "statement": ["statement", "history"]}
+    utterance_lower = utterance.lower()
+    for intent, keywords in intents.items():
+        if any(kw in utterance_lower for kw in keywords):
+            return {"intent": intent, "confidence": 0.85, "utterance": utterance, "language": language}
+    return {"intent": "unknown", "confidence": 0.3, "utterance": utterance, "language": language}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +147,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/voice-nlu-banking/process":
+            result = classify_intent(**body) if isinstance(body, dict) else classify_intent(body)
+            self.respond(200, {"service": "voice-nlu-banking-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

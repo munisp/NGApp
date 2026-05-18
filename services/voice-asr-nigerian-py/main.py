@@ -43,6 +43,12 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def transcribe_audio(audio_format, language, duration_seconds):
+    """Nigerian-accented ASR configuration"""
+    supported = {"en-NG": "English (Nigerian)", "yo": "Yoruba", "ha": "Hausa", "ig": "Igbo", "pcm": "Nigerian Pidgin"}
+    lang_name = supported.get(language, "Unknown")
+    return {"language": language, "language_name": lang_name, "supported": language in supported, "audio_format": audio_format, "duration_seconds": duration_seconds, "estimated_processing_ms": int(duration_seconds * 200)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +144,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/voice-asr-nigerian/process":
+            result = transcribe_audio(**body) if isinstance(body, dict) else transcribe_audio(body)
+            self.respond(200, {"service": "voice-asr-nigerian-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

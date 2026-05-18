@@ -43,6 +43,18 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def assess_security_posture(controls):
+    """Assess security control effectiveness"""
+    if not controls: return {"score": 0, "status": "no_controls"}
+    effective = sum(1 for c in controls if c.get("status") == "effective")
+    score = round(effective / len(controls) * 100, 1)
+    return {"score": score, "effective": effective, "total": len(controls), "gaps": [c for c in controls if c.get("status") != "effective"], "compliant": score >= 80}
+
+def log_security_event(event_type, severity, details):
+    """Log and classify security event"""
+    priority = {"critical": 1, "high": 2, "medium": 3, "low": 4}.get(severity, 3)
+    return {"event_type": event_type, "severity": severity, "priority": priority, "details": details, "timestamp": now_iso(), "requires_response": priority <= 2, "sla_hours": {1: 1, 2: 4, 3: 24, 4: 72}.get(priority, 24)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +150,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/siem-exporter/assess":
+            result = assess_security_posture(body.get("controls", []))
+            self.respond(200, result)
+        elif path == "/v1/siem-exporter/log-event":
+            result = log_security_event(body.get("event_type",""), body.get("severity","medium"), body.get("details",{{}}))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

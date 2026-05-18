@@ -43,6 +43,18 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def screen_pep(name, nationality, position):
+    """Screen for Politically Exposed Persons"""
+    pep_positions = {"president": "tier1", "governor": "tier1", "minister": "tier1", "senator": "tier1", "judge": "tier2", "ambassador": "tier2", "military_general": "tier2", "cbn_director": "tier2", "local_chairman": "tier3", "state_commissioner": "tier3"}
+    tier = pep_positions.get(position.lower().replace(" ","_"), None)
+    is_pep = tier is not None
+    edd_requirements = []
+    if is_pep:
+        edd_requirements = ["source_of_wealth", "source_of_funds", "senior_management_approval", "ongoing_monitoring"]
+        if tier == "tier1":
+            edd_requirements.extend(["board_approval", "external_verification", "annual_review"])
+    return {"name": name, "is_pep": is_pep, "pep_tier": tier, "edd_requirements": edd_requirements, "risk_rating": "very_high" if tier == "tier1" else "high" if tier == "tier2" else "elevated" if tier == "tier3" else "standard", "monitoring_frequency": "quarterly" if is_pep else "annual"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +150,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/pep-enhanced-dd/screen":
+            result = screen_pep(body.get("name",""), body.get("nationality","NG"), body.get("position",""))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

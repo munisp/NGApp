@@ -43,6 +43,19 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def validate_pipeline_config(config):
+    """Validate data pipeline configuration"""
+    required = ["source", "destination", "schedule"]
+    missing = [f for f in required if f not in config]
+    return {"valid": len(missing) == 0, "missing_fields": missing, "config": config}
+
+def estimate_throughput(record_count, avg_record_size_bytes, parallelism=4):
+    """Estimate pipeline processing throughput"""
+    bytes_total = record_count * avg_record_size_bytes
+    mb_total = bytes_total / (1024 * 1024)
+    est_seconds = mb_total / (50 * parallelism)
+    return {"records": record_count, "total_mb": round(mb_total, 2), "parallelism": parallelism, "estimated_seconds": round(est_seconds, 1), "throughput_mb_s": round(50 * parallelism, 1)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +151,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/opensearch-indexer/validate-config":
+            result = validate_pipeline_config(body.get("config", body))
+            self.respond(200, result)
+        elif path == "/v1/opensearch-indexer/estimate-throughput":
+            result = estimate_throughput(body.get("record_count",0), body.get("avg_record_size_bytes",512), body.get("parallelism",4))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

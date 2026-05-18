@@ -43,6 +43,23 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def process_input(session_id, input_text, current_menu):
+    """Process USSD/voice input and return next menu"""
+    menus = {
+        "main": {"text": "Welcome to 54Bank\n1. Balance\n2. Transfer\n3. Airtime", "options": {"1": "balance", "2": "transfer", "3": "airtime"}},
+        "balance": {"text": "Your balance is NGN ***,***.**\nPress 0 to go back", "options": {"0": "main"}},
+        "transfer": {"text": "Enter account number:", "options": {}, "expects_input": True},
+    }
+    menu = menus.get(current_menu, menus["main"])
+    next_menu = menu.get("options", {}).get(input_text, current_menu)
+    next_content = menus.get(next_menu, menus["main"])
+    return {"session_id": session_id, "display": next_content["text"], "next_menu": next_menu, "expects_input": next_content.get("expects_input", False)}
+
+def validate_session(session_id, phone_number):
+    """Validate USSD/voice session"""
+    valid = len(phone_number) >= 10 and phone_number.startswith(("0", "+234", "234"))
+    return {"session_id": session_id, "phone": phone_number, "valid": valid, "channel": "interactive"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +155,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/interactive-ussd-agri/process":
+            result = process_input(body.get("session_id",""), body.get("input",""), body.get("current_menu","main"))
+            self.respond(200, result)
+        elif path == "/v1/interactive-ussd-agri/validate-session":
+            result = validate_session(body.get("session_id",""), body.get("phone_number",""))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

@@ -43,6 +43,30 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def detect_fraud_pattern(transactions, threshold=0.7):
+    """Graph-based fraud pattern detection"""
+    if not transactions: return {"fraud_score": 0, "patterns": [], "flagged": False}
+    amounts = [t.get("amount", 0) for t in transactions]
+    avg = sum(amounts) / len(amounts) if amounts else 0
+    std = (sum((a - avg)**2 for a in amounts) / max(len(amounts)-1, 1)) ** 0.5 if len(amounts) > 1 else 0
+    patterns = []
+    for t in transactions:
+        zscore = abs(t.get("amount",0) - avg) / max(std, 1)
+        if zscore > 2: patterns.append({"txn_id": t.get("id",""), "type": "anomalous_amount", "z_score": round(zscore, 2)})
+    velocity = len([t for t in transactions if t.get("channel") == "online"]) / max(len(transactions), 1)
+    if velocity > 0.8: patterns.append({"type": "high_velocity_online", "ratio": round(velocity, 2)})
+    unique_recipients = len(set(t.get("recipient","") for t in transactions))
+    if unique_recipients > len(transactions) * 0.9: patterns.append({"type": "fan_out", "unique_recipients": unique_recipients})
+    score = min(1.0, len(patterns) * 0.25)
+    return {"fraud_score": round(score, 2), "patterns": patterns, "flagged": score >= threshold, "transactions_analyzed": len(transactions)}
+
+def network_risk_score(entity_id, connections):
+    """Score entity risk based on network connections"""
+    risky = sum(1 for c in connections if c.get("risk_level","low") in ("high","critical"))
+    total = max(len(connections), 1)
+    score = round(risky / total * 100, 1)
+    return {"entity_id": entity_id, "network_risk_score": score, "risky_connections": risky, "total_connections": total, "risk_level": "high" if score > 50 else "medium" if score > 20 else "low"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +162,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/gnn-fraud-detection/detect":
+            result = detect_fraud_pattern(body.get("transactions", []), body.get("threshold", 0.7))
+            self.respond(200, result)
+        elif path == "/v1/gnn-fraud-detection/network-risk":
+            result = network_risk_score(body.get("entity_id",""), body.get("connections", []))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

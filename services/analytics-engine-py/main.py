@@ -32,6 +32,17 @@ def get_db():
         logger.warning(f"DB connection failed: {e}")
         return None
 
+
+def compute_metrics(data_points):
+    """Compute analytics metrics"""
+    if not data_points: return {"count": 0, "avg": 0, "min_val": 0, "max_val": 0}
+    values = [d.get("value", 0) for d in data_points]
+    return {"count": len(values), "avg": round(sum(values)/len(values), 2), "min_val": min(values), "max_val": max(values), "sum": round(sum(values), 2), "trend": "up" if len(values) > 1 and values[-1] > values[0] else "down"}
+
+def generate_report(metrics, period):
+    """Generate analytics report"""
+    return {"period": period, "metrics": metrics, "generated_at": now_iso(), "status": "complete"}
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass

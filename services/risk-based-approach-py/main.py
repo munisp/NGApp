@@ -43,6 +43,23 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def assess_customer_risk(customer_type, products, geography, transaction_volume, pep=False, adverse_media=False):
+    """Risk-based approach assessment per CBN AML/CFT guidelines"""
+    score = 0
+    factors = {}
+    type_scores = {"individual": 10, "sme": 20, "corporate": 30, "ngo": 40, "pfi": 25}
+    score += type_scores.get(customer_type, 20)
+    factors["customer_type"] = type_scores.get(customer_type, 20)
+    high_risk_products = ["correspondent_banking", "private_banking", "trade_finance", "wire_transfer"]
+    product_score = sum(15 for p in products if p in high_risk_products)
+    score += product_score
+    factors["products"] = product_score
+    if pep: score += 30; factors["pep"] = 30
+    if adverse_media: score += 25; factors["adverse_media"] = 25
+    risk_level = "very_high" if score >= 80 else "high" if score >= 60 else "medium" if score >= 30 else "low"
+    edd_required = score >= 60
+    return {"risk_score": min(100, score), "risk_level": risk_level, "factors": factors, "edd_required": edd_required, "review_frequency": "quarterly" if edd_required else "annually", "sdd_eligible": score < 20}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +155,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/risk-based-approach/assess":
+            result = assess_customer_risk(body.get("customer_type","individual"), body.get("products",[]), body.get("geography","NG"), body.get("transaction_volume",0), body.get("pep",False), body.get("adverse_media",False))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

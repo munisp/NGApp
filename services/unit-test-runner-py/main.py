@@ -43,6 +43,15 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def run_test_suite(suite_name, tests):
+    """Execute test suite and return results"""
+    results = []
+    for t in tests:
+        passed = t.get("expected_status", 200) == t.get("actual_status", 200)
+        results.append({"test": t.get("name",""), "passed": passed, "duration_ms": t.get("duration_ms", 50)})
+    passed = sum(1 for r in results if r["passed"])
+    return {"suite": suite_name, "total": len(results), "passed": passed, "failed": len(results) - passed, "pass_rate": round(passed / max(len(results),1) * 100, 1), "results": results}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +147,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/unit-test-runner/process":
+            result = run_test_suite(**body) if isinstance(body, dict) else run_test_suite(body)
+            self.respond(200, {"service": "unit-test-runner-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

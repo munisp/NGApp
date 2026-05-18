@@ -43,6 +43,20 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def check_compliance(bank_metrics):
+    """Check bank against CBN prudential guidelines"""
+    results = []
+    car = bank_metrics.get("capital_adequacy_ratio", 0)
+    results.append({"metric": "CAR", "value": car, "minimum": 15.0 if bank_metrics.get("sifi") else 10.0, "passed": car >= (15.0 if bank_metrics.get("sifi") else 10.0)})
+    lr = bank_metrics.get("liquidity_ratio", 0)
+    results.append({"metric": "Liquidity Ratio", "value": lr, "minimum": 30.0, "passed": lr >= 30.0})
+    crr = bank_metrics.get("cash_reserve_ratio", 0)
+    results.append({"metric": "CRR", "value": crr, "minimum": 32.5, "passed": crr >= 32.5})
+    npl = bank_metrics.get("npl_ratio", 0)
+    results.append({"metric": "NPL Ratio", "value": npl, "maximum": 5.0, "passed": npl <= 5.0})
+    passed = sum(1 for r in results if r["passed"])
+    return {"results": results, "overall_compliant": passed == len(results), "passed": passed, "total": len(results)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +152,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/cbn-compliance-checker/check":
+            result = check_compliance(body.get("metrics", body))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

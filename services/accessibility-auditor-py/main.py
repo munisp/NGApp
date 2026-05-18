@@ -43,6 +43,31 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def audit_wcag_compliance(page_url, elements):
+    """WCAG 2.1 AA compliance scoring"""
+    issues = []
+    score = 100.0
+    for el in elements:
+        if el.get("type") == "image" and not el.get("alt_text"):
+            issues.append({"element": el.get("id",""), "rule": "1.1.1", "severity": "critical", "issue": "Missing alt text"})
+            score -= 10
+        if el.get("type") == "input" and not el.get("label"):
+            issues.append({"element": el.get("id",""), "rule": "1.3.1", "severity": "major", "issue": "Missing form label"})
+            score -= 5
+        if el.get("contrast_ratio", 999) < 4.5:
+            issues.append({"element": el.get("id",""), "rule": "1.4.3", "severity": "major", "issue": f"Low contrast: {el.get('contrast_ratio')}"})
+            score -= 5
+    return {"score": max(0, score), "level": "AA" if score >= 80 else "A" if score >= 60 else "fail", "issues": issues, "page_url": page_url}
+
+def keyboard_navigation_check(elements):
+    """Check tab order and focus management"""
+    focusable = [e for e in elements if e.get("focusable")]
+    tab_issues = []
+    for i, el in enumerate(focusable):
+        if el.get("tab_index", i) != i:
+            tab_issues.append({"element": el.get("id",""), "expected_order": i, "actual": el.get("tab_index")})
+    return {"focusable_count": len(focusable), "tab_order_issues": tab_issues, "passed": len(tab_issues) == 0}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +163,17 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/accessibility-auditor/audit-wcag":
+            page_url = body.get("page_url", "")
+            elements = body.get("elements", [])
+            result = audit_wcag_compliance(page_url, elements)
+            self.respond(200, result)
+        elif path == "/v1/accessibility-auditor/keyboard-check":
+            elements = body.get("elements", [])
+            result = keyboard_navigation_check(elements)
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

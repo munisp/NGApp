@@ -43,6 +43,22 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def process_request(action, params):
+    """Process domain-specific request for cbn-agri-returns"""
+    result = {"action": action, "params": params, "processed_at": now_iso(), "status": "completed"}
+    if action == "validate":
+        required = params.get("required_fields", [])
+        data = params.get("data", {})
+        missing = [f for f in required if f not in data]
+        result["valid"] = len(missing) == 0
+        result["missing"] = missing
+    elif action == "compute":
+        values = params.get("values", [])
+        if values:
+            result["sum"] = sum(values)
+            result["avg"] = round(sum(values) / len(values), 2)
+    return result
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +154,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/cbn-agri-returns/process":
+            result = process_request(body.get("action","validate"), body.get("params",{{}}))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

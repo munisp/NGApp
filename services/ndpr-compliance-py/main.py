@@ -43,6 +43,20 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def assess_data_processing(data_categories, purpose, consent_obtained, retention_days):
+    """NDPR (Nigeria Data Protection Regulation) compliance assessment"""
+    sensitive = ["biometric", "health", "financial", "political", "religious", "genetic"]
+    has_sensitive = any(c in sensitive for c in data_categories)
+    issues = []
+    if not consent_obtained:
+        issues.append({"rule": "NDPR 2.3", "severity": "critical", "issue": "Consent not obtained for data processing"})
+    if has_sensitive and not consent_obtained:
+        issues.append({"rule": "NDPR 2.5", "severity": "critical", "issue": "Explicit consent required for sensitive data"})
+    if retention_days > 365 and "financial" not in data_categories:
+        issues.append({"rule": "NDPR 2.7", "severity": "major", "issue": f"Retention period ({retention_days} days) exceeds necessity"})
+    dpia_required = has_sensitive or len(data_categories) > 3
+    return {"compliant": len(issues) == 0, "issues": issues, "dpia_required": dpia_required, "has_sensitive_data": has_sensitive, "lawful_basis": "consent" if consent_obtained else "none", "recommended_retention_days": min(retention_days, 365)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +152,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/ndpr-compliance/assess":
+            result = assess_data_processing(body.get("data_categories",[]), body.get("purpose",""), body.get("consent_obtained",False), body.get("retention_days",365))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

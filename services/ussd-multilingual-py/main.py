@@ -43,6 +43,17 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def process_ussd_input(session_id, input_text, language="en"):
+    """Process multilingual USSD input"""
+    menus = {
+        "en": {"main": "Welcome\n1. Balance\n2. Transfer\n3. Airtime"},
+        "yo": {"main": "Kaabo\n1. Owo to ku\n2. Firanṣẹ owo\n3. Airtime"},
+        "ha": {"main": "Sannu\n1. Balance\n2. Aikawa kudi\n3. Airtime"},
+        "ig": {"main": "Nnọọ\n1. Ego fọdụrụ\n2. Zipu ego\n3. Airtime"},
+    }
+    lang_menus = menus.get(language, menus["en"])
+    return {"session_id": session_id, "display": lang_menus.get("main", ""), "language": language}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +149,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/ussd-multilingual/process":
+            result = process_ussd_input(**body) if isinstance(body, dict) else process_ussd_input(body)
+            self.respond(200, {"service": "ussd-multilingual-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

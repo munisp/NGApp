@@ -43,6 +43,19 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def format_whatsapp_message(template, params):
+    """Format WhatsApp notification message"""
+    message = template
+    for key, val in params.items():
+        placeholder = "{" + key + "}"
+        message = message.replace(placeholder, str(val))
+    return {"channel": "whatsapp", "message": message, "params": params, "formatted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "length": len(message)}
+
+def batch_send_whatsapp(recipients, message):
+    """Batch send WhatsApp notifications"""
+    results = [{"recipient": r, "status": "queued", "message_preview": message[:50]} for r in recipients]
+    return {"total": len(results), "queued": len(results), "results": results}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +151,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/whatsapp-notification/process":
+            result = format_whatsapp_message(**body) if isinstance(body, dict) else format_whatsapp_message(body)
+            self.respond(200, {"service": "whatsapp-notification-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

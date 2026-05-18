@@ -43,6 +43,21 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def validate_config(config):
+    """Validate infrastructure configuration"""
+    issues = []
+    if not config.get("enabled"): issues.append("Service not enabled")
+    if not config.get("schedule"): issues.append("No schedule configured")
+    return {"valid": len(issues) == 0, "issues": issues, "config_keys": list(config.keys())}
+
+def compute_resource_usage(metrics):
+    """Compute resource utilization metrics"""
+    cpu = metrics.get("cpu_pct", 0)
+    memory = metrics.get("memory_pct", 0)
+    disk = metrics.get("disk_pct", 0)
+    status = "critical" if max(cpu, memory, disk) > 90 else "warning" if max(cpu, memory, disk) > 75 else "healthy"
+    return {"cpu_pct": cpu, "memory_pct": memory, "disk_pct": disk, "status": status, "recommendation": "Scale up" if status == "critical" else "Monitor" if status == "warning" else "OK"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +153,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/bundle-splitter/validate-config":
+            result = validate_config(body.get("config", body))
+            self.respond(200, result)
+        elif path == "/v1/bundle-splitter/resource-usage":
+            result = compute_resource_usage(body.get("metrics", body))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

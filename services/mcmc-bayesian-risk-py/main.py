@@ -43,6 +43,32 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def bayesian_risk_estimate(prior_default_rate, observed_defaults, total_loans, confidence_level=0.95):
+    """Bayesian estimation of portfolio default rate using conjugate Beta prior"""
+    alpha_prior = prior_default_rate * 100
+    beta_prior = (1 - prior_default_rate) * 100
+    alpha_post = alpha_prior + observed_defaults
+    beta_post = beta_prior + (total_loans - observed_defaults)
+    posterior_mean = alpha_post / (alpha_post + beta_post)
+    posterior_var = (alpha_post * beta_post) / ((alpha_post + beta_post)**2 * (alpha_post + beta_post + 1))
+    ci_width = 1.96 * (posterior_var ** 0.5)
+    return {"posterior_mean": round(posterior_mean, 6), "posterior_std": round(posterior_var**0.5, 6), "ci_lower": round(max(0, posterior_mean - ci_width), 6), "ci_upper": round(min(1, posterior_mean + ci_width), 6), "prior_rate": prior_default_rate, "observed_rate": round(observed_defaults / max(total_loans,1), 6)}
+
+def stress_test_portfolio(base_pd, lgd, exposure, stress_multiplier=2.0):
+    """Monte Carlo stress test for credit portfolio"""
+    import random
+    random.seed(42)
+    losses = []
+    for _ in range(1000):
+        stressed_pd = min(1.0, base_pd * stress_multiplier * (0.8 + random.random() * 0.4))
+        default = random.random() < stressed_pd
+        loss = exposure * lgd if default else 0
+        losses.append(loss)
+    avg_loss = sum(losses) / len(losses)
+    sorted_losses = sorted(losses)
+    var_95 = sorted_losses[int(0.95 * len(sorted_losses))]
+    return {"expected_loss": round(avg_loss, 2), "var_95": round(var_95, 2), "max_loss": round(max(losses), 2), "default_frequency": round(sum(1 for l in losses if l > 0) / len(losses), 4)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +164,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/mcmc-bayesian-risk/estimate":
+            result = bayesian_risk_estimate(body.get("prior_default_rate", 0.05), body.get("observed_defaults", 0), body.get("total_loans", 100), body.get("confidence_level", 0.95))
+            self.respond(200, result)
+        elif path == "/v1/mcmc-bayesian-risk/stress-test":
+            result = stress_test_portfolio(body.get("base_pd", 0.05), body.get("lgd", 0.45), body.get("exposure", 1000000), body.get("stress_multiplier", 2.0))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

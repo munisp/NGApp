@@ -43,6 +43,20 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def format_transaction_alert(txn_type, amount, account_suffix, balance, channel):
+    """Format Nigerian bank SMS alert"""
+    prefix = "CR" if txn_type == "credit" else "DR"
+    template = f"Acct: ***{account_suffix}\n{prefix}: NGN{amount:,.2f}\nBal: NGN{balance:,.2f}\nChannel: {channel}\nDate: {now_iso()}"
+    return {"message": template, "type": txn_type, "priority": "high" if amount >= 1000000 else "normal", "characters": len(template), "sms_parts": (len(template) // 160) + 1}
+
+def batch_notifications(notifications):
+    """Process batch of SMS notifications with rate limiting"""
+    processed = []
+    for n in notifications:
+        formatted = format_transaction_alert(n.get("type","debit"), n.get("amount",0), n.get("account_suffix","0000"), n.get("balance",0), n.get("channel","POS"))
+        processed.append({**formatted, "recipient": n.get("phone","")})
+    return {"total": len(processed), "notifications": processed, "estimated_cost_ngn": len(processed) * 4.0}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +152,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/sms-alert-notification/format":
+            result = format_transaction_alert(body.get("type","debit"), body.get("amount",0), body.get("account_suffix","0000"), body.get("balance",0), body.get("channel","POS"))
+            self.respond(200, result)
+        elif path == "/v1/sms-alert-notification/batch":
+            result = batch_notifications(body.get("notifications", []))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

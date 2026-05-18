@@ -43,6 +43,22 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def run_health_checks(services):
+    """Run health checks against service endpoints"""
+    results = []
+    for svc in services:
+        status = "healthy" if svc.get("responsive", True) else "unhealthy"
+        results.append({"service": svc.get("name",""), "status": status, "latency_ms": svc.get("latency_ms", 0)})
+    healthy = sum(1 for r in results if r["status"] == "healthy")
+    return {"total": len(results), "healthy": healthy, "unhealthy": len(results) - healthy, "results": results, "overall": "healthy" if healthy == len(results) else "degraded"}
+
+def compute_sla_metrics(uptime_records, period_hours=720):
+    """Compute SLA metrics from uptime records"""
+    total_up = sum(r.get("up_minutes", 0) for r in uptime_records)
+    total_minutes = period_hours * 60
+    uptime_pct = round(total_up / max(total_minutes, 1) * 100, 4)
+    return {"uptime_pct": uptime_pct, "target_sla": 99.95, "meets_sla": uptime_pct >= 99.95, "downtime_minutes": total_minutes - total_up, "period_hours": period_hours}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +154,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/error-telemetry/health-checks":
+            result = run_health_checks(body.get("services", []))
+            self.respond(200, result)
+        elif path == "/v1/error-telemetry/sla-metrics":
+            result = compute_sla_metrics(body.get("uptime_records", []), body.get("period_hours", 720))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

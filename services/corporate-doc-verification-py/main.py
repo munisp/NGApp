@@ -30,6 +30,23 @@ verifications = []
 stats = {"total": 0, "paddleocr_extractions": 0, "vlm_classifications": 0, "docling_parsings": 0,
     "fraud_detected": 0, "avg_confidence": 0.91, "avg_processing_ms": 850}
 
+
+def process_request(action, params):
+    """Process domain-specific request for corporate-doc-verification"""
+    result = {"action": action, "params": params, "processed_at": now_iso(), "status": "completed"}
+    if action == "validate":
+        required = params.get("required_fields", [])
+        data = params.get("data", {})
+        missing = [f for f in required if f not in data]
+        result["valid"] = len(missing) == 0
+        result["missing"] = missing
+    elif action == "compute":
+        values = params.get("values", [])
+        if values:
+            result["sum"] = sum(values)
+            result["avg"] = round(sum(values) / len(values), 2)
+    return result
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         p = urlparse(self.path).path.rstrip("/")

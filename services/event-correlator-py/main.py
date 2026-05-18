@@ -43,6 +43,14 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def analyze_data(items, metric_key="value"):
+    """Analyze data series"""
+    if not items: return {"count": 0, "avg": 0}
+    values = [i.get(metric_key, 0) for i in items]
+    avg = sum(values) / len(values)
+    variance = sum((v - avg)**2 for v in values) / max(len(values)-1, 1)
+    return {"count": len(values), "avg": round(avg, 2), "std_dev": round(variance**0.5, 2), "min": min(values), "max": max(values), "trend": "up" if len(values) > 1 and values[-1] > values[0] else "down"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +146,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/event-correlator/analyze":
+            result = analyze_data(body.get("items", []), body.get("metric_key", "value"))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

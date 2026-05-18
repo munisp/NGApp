@@ -43,6 +43,22 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def compute_dividend(total_surplus, member_contributions, total_contributions, reserves_pct=0.20):
+    """Compute cooperative member dividend"""
+    distributable = total_surplus * (1 - reserves_pct)
+    member_share = (member_contributions / max(total_contributions, 1)) * distributable
+    return {"total_surplus": total_surplus, "reserves": round(total_surplus * reserves_pct, 2), "distributable": round(distributable, 2), "member_share": round(member_share, 2), "dividend_rate": round(distributable / max(total_contributions, 1) * 100, 2)}
+
+def loan_interest_computation(principal, rate_pct, tenure_months):
+    """Compute cooperative loan repayment schedule"""
+    monthly_rate = rate_pct / 100 / 12
+    if monthly_rate == 0:
+        emi = principal / max(tenure_months, 1)
+    else:
+        emi = principal * monthly_rate * (1 + monthly_rate)**tenure_months / ((1 + monthly_rate)**tenure_months - 1)
+    total_payment = emi * tenure_months
+    return {"principal": principal, "rate": rate_pct, "tenure_months": tenure_months, "emi": round(emi, 2), "total_payment": round(total_payment, 2), "total_interest": round(total_payment - principal, 2)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +154,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/cooperative-financials/dividend":
+            result = compute_dividend(body.get("total_surplus",0), body.get("member_contributions",0), body.get("total_contributions",0), body.get("reserves_pct",0.20))
+            self.respond(200, result)
+        elif path == "/v1/cooperative-financials/loan-interest":
+            result = loan_interest_computation(body.get("principal",0), body.get("rate_pct",0), body.get("tenure_months",12))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

@@ -43,6 +43,28 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def generate_cbn_return(return_type, period, data):
+    """Generate CBN regulatory return"""
+    templates = {
+        "mbr900": {"name": "Monthly Balance Sheet Return", "frequency": "monthly", "fields": ["total_assets", "total_liabilities", "shareholders_funds", "contingent_liabilities"]},
+        "mbr300": {"name": "Monthly Profit & Loss", "frequency": "monthly", "fields": ["interest_income", "interest_expense", "fee_income", "operating_expenses", "provisions"]},
+        "efass": {"name": "Enhanced Financial Analysis", "frequency": "quarterly", "fields": ["capital_adequacy", "asset_quality", "management_quality", "earnings", "liquidity", "sensitivity"]},
+        "aml_ctr": {"name": "Currency Transaction Report", "frequency": "daily", "fields": ["transaction_count", "total_amount", "cash_deposits", "cash_withdrawals"]},
+    }
+    template = templates.get(return_type, {"name": "Unknown", "fields": []})
+    values = {f: data.get(f, 0) for f in template.get("fields", [])}
+    return {"return_type": return_type, "template": template["name"], "period": period, "values": values, "status": "generated", "generated_at": now_iso()}
+
+def validate_return(return_type, values):
+    """Validate CBN return data before submission"""
+    errors = []
+    if return_type == "mbr900":
+        assets = values.get("total_assets", 0)
+        liabilities = values.get("total_liabilities", 0) + values.get("shareholders_funds", 0)
+        if abs(assets - liabilities) > 0.01:
+            errors.append(f"Balance sheet imbalance: assets={assets}, liab+equity={liabilities}")
+    return {"valid": len(errors) == 0, "errors": errors}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +160,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/cbn-returns/generate":
+            result = generate_cbn_return(body.get("return_type","mbr900"), body.get("period","2026-Q1"), body.get("data",{}))
+            self.respond(200, result)
+        elif path == "/v1/cbn-returns/validate":
+            result = validate_return(body.get("return_type","mbr900"), body.get("values",{}))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

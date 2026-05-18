@@ -32,6 +32,31 @@ def get_db():
         logger.warning(f"DB connection failed: {e}")
         return None
 
+
+def compute_credit_score(income, debt, employment_years, loan_history_count, defaults, age):
+    """Nigerian credit scoring model (CBN-aligned)"""
+    score = 300
+    dti = debt / max(income, 1) * 100
+    if dti < 30: score += 150
+    elif dti < 50: score += 100
+    elif dti < 70: score += 50
+    if employment_years >= 5: score += 100
+    elif employment_years >= 2: score += 60
+    elif employment_years >= 1: score += 30
+    if loan_history_count >= 3 and defaults == 0: score += 150
+    elif loan_history_count >= 1 and defaults == 0: score += 100
+    elif defaults > 0: score -= defaults * 50
+    if 25 <= age <= 55: score += 50
+    score = max(300, min(850, score))
+    band = "excellent" if score >= 750 else "good" if score >= 650 else "fair" if score >= 550 else "poor"
+    return {"score": score, "band": band, "dti_ratio": round(dti, 2), "max_loan_amount": round(income * 12 * (0.4 if band in ("excellent","good") else 0.2), 2), "approved": score >= 550}
+
+def affordability_check(monthly_income, monthly_expenses, proposed_emi):
+    """Check if borrower can afford the proposed EMI"""
+    disposable = monthly_income - monthly_expenses
+    affordable = proposed_emi <= disposable * 0.5
+    return {"disposable_income": round(disposable, 2), "proposed_emi": proposed_emi, "affordable": affordable, "max_emi": round(disposable * 0.5, 2)}
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass

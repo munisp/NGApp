@@ -43,6 +43,17 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def compute_premium(sum_assured, risk_factor, tenure_years):
+    """Compute insurance premium"""
+    base_rate = 0.02 * risk_factor
+    premium = sum_assured * base_rate * tenure_years
+    return {"sum_assured": sum_assured, "annual_premium": round(premium / max(tenure_years,1), 2), "total_premium": round(premium, 2), "risk_factor": risk_factor}
+
+def assess_claim(claim_amount, policy_limit, deductible):
+    """Assess insurance claim payout"""
+    payable = min(claim_amount - deductible, policy_limit) if claim_amount > deductible else 0
+    return {"claim_amount": claim_amount, "deductible": deductible, "payable": round(max(0, payable), 2), "status": "approved" if payable > 0 else "below_deductible"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +149,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/insurance-portfolio-analytics/compute-premium":
+            result = compute_premium(body.get("sum_assured",0), body.get("risk_factor",1.0), body.get("tenure_years",1))
+            self.respond(200, result)
+        elif path == "/v1/insurance-portfolio-analytics/assess-claim":
+            result = assess_claim(body.get("claim_amount",0), body.get("policy_limit",0), body.get("deductible",0))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

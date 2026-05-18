@@ -43,6 +43,16 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def compute_metrics(data_points):
+    """Compute analytics metrics"""
+    if not data_points: return {"count": 0, "avg": 0, "min_val": 0, "max_val": 0}
+    values = [d.get("value", 0) for d in data_points]
+    return {"count": len(values), "avg": round(sum(values)/len(values), 2), "min_val": min(values), "max_val": max(values), "sum": round(sum(values), 2), "trend": "up" if len(values) > 1 and values[-1] > values[0] else "down"}
+
+def generate_report(metrics, period):
+    """Generate analytics report"""
+    return {"period": period, "metrics": metrics, "generated_at": now_iso(), "status": "complete"}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +148,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/customer-360-dashboard/compute-metrics":
+            result = compute_metrics(body.get("data_points", []))
+            self.respond(200, result)
+        elif path == "/v1/customer-360-dashboard/generate-report":
+            result = generate_report(body.get("metrics",{{}}), body.get("period",""))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

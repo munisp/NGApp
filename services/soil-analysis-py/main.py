@@ -43,6 +43,44 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def analyze_soil(ph, nitrogen, phosphorus, potassium, organic_matter, moisture):
+    """Soil fertility analysis for Nigerian agricultural zones"""
+    fertility_score = 0
+    recommendations = []
+    if 6.0 <= ph <= 7.5:
+        fertility_score += 25
+    else:
+        recommendations.append(f"pH {ph} outside optimal range (6.0-7.5), apply {'lime' if ph < 6.0 else 'sulfur'}")
+    if nitrogen >= 0.15:
+        fertility_score += 25
+    else:
+        recommendations.append(f"Low nitrogen ({nitrogen}%), apply urea or NPK")
+    if phosphorus >= 15:
+        fertility_score += 25
+    else:
+        recommendations.append(f"Low phosphorus ({phosphorus} mg/kg), apply SSP or DAP")
+    if potassium >= 0.3:
+        fertility_score += 25
+    else:
+        recommendations.append(f"Low potassium ({potassium} cmol/kg), apply MOP")
+    crop_suitability = {
+        "maize": fertility_score >= 60 and ph >= 5.5,
+        "rice": fertility_score >= 50 and moisture >= 40,
+        "cassava": fertility_score >= 40 and ph >= 4.5,
+        "yam": fertility_score >= 65 and organic_matter >= 2.0,
+        "cocoa": fertility_score >= 70 and ph >= 6.0,
+    }
+    return {"fertility_score": fertility_score, "grade": "A" if fertility_score >= 75 else "B" if fertility_score >= 50 else "C", "recommendations": recommendations, "crop_suitability": crop_suitability}
+
+def predict_yield(crop, soil_score, rainfall_mm, farm_size_ha):
+    """Estimate crop yield based on soil and weather"""
+    base_yields = {"maize": 2.5, "rice": 3.0, "cassava": 15.0, "yam": 8.0, "cocoa": 0.5}
+    base = base_yields.get(crop, 1.0)
+    soil_factor = soil_score / 100.0
+    rain_factor = min(1.0, rainfall_mm / 1200)
+    estimated_yield = base * soil_factor * rain_factor * farm_size_ha
+    return {"crop": crop, "estimated_yield_tonnes": round(estimated_yield, 2), "yield_per_ha": round(estimated_yield / max(farm_size_ha, 0.01), 2)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +176,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/soil-analysis/analyze":
+            result = analyze_soil(body.get("ph", 7.0), body.get("nitrogen", 0), body.get("phosphorus", 0), body.get("potassium", 0), body.get("organic_matter", 0), body.get("moisture", 0))
+            self.respond(200, result)
+        elif path == "/v1/soil-analysis/predict-yield":
+            result = predict_yield(body.get("crop","maize"), body.get("soil_score", 50), body.get("rainfall_mm", 1000), body.get("farm_size_ha", 1))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

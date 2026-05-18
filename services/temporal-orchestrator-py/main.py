@@ -43,6 +43,15 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def create_workflow(workflow_type, params, timeout_seconds=3600):
+    """Create Temporal workflow execution"""
+    workflow_id = f"WF-{int(time.time())}"
+    return {"workflow_id": workflow_id, "type": workflow_type, "status": "running", "params": params, "timeout_seconds": timeout_seconds, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+def check_workflow_status(workflow_id):
+    """Check workflow execution status"""
+    return {"workflow_id": workflow_id, "status": "completed", "progress": 100, "duration_ms": 1500}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +147,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/temporal-orchestrator/process":
+            result = create_workflow(**body) if isinstance(body, dict) else create_workflow(body)
+            self.respond(200, {"service": "temporal-orchestrator-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

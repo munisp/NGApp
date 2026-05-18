@@ -32,6 +32,18 @@ def get_db():
         logger.warning(f"DB connection failed: {e}")
         return None
 
+
+def generate_regulatory_report(report_type, period, data):
+    """Generate regulatory reports (CBN, NDIC, FIRS, SEC)"""
+    configs = {
+        "cbn_monthly": {"regulator": "CBN", "frequency": "monthly", "deadline_days": 10},
+        "ndic_quarterly": {"regulator": "NDIC", "frequency": "quarterly", "deadline_days": 30},
+        "firs_annual": {"regulator": "FIRS", "frequency": "annual", "deadline_days": 90},
+        "sec_quarterly": {"regulator": "SEC", "frequency": "quarterly", "deadline_days": 21},
+    }
+    config = configs.get(report_type, {"regulator": "Unknown", "frequency": "unknown", "deadline_days": 30})
+    return {"report_type": report_type, "regulator": config["regulator"], "period": period, "deadline_days": config["deadline_days"], "data_points": len(data) if isinstance(data, (list, dict)) else 0, "status": "generated", "generated_at": now_iso()}
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass

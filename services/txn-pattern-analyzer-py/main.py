@@ -43,6 +43,21 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def analyze_patterns(transactions, window_days=30):
+    """Analyze transaction patterns for AML/fraud detection"""
+    if not transactions: return {"patterns": [], "risk_score": 0}
+    amounts = [t.get("amount", 0) for t in transactions]
+    avg = sum(amounts) / len(amounts) if amounts else 0
+    patterns = []
+    structuring = [a for a in amounts if 900000 <= a < 1000000]
+    if len(structuring) >= 3:
+        patterns.append({"type": "structuring", "count": len(structuring), "severity": "high"})
+    round_amounts = [a for a in amounts if a > 0 and a % 10000 == 0]
+    if len(round_amounts) > len(amounts) * 0.5:
+        patterns.append({"type": "round_tripping", "ratio": round(len(round_amounts)/len(amounts), 2), "severity": "medium"})
+    risk = min(100, len(patterns) * 30)
+    return {"patterns": patterns, "risk_score": risk, "transactions_analyzed": len(transactions), "average_amount": round(avg, 2)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +153,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/txn-pattern-analyzer/process":
+            result = analyze_patterns(**body) if isinstance(body, dict) else analyze_patterns(body)
+            self.respond(200, {"service": "txn-pattern-analyzer-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

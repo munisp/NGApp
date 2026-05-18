@@ -43,6 +43,14 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def analyze_call_metrics(calls):
+    """Analyze voice call center metrics"""
+    if not calls: return {"total": 0}
+    durations = [c.get("duration_seconds", 0) for c in calls]
+    avg_duration = sum(durations) / len(durations)
+    resolved = sum(1 for c in calls if c.get("resolved"))
+    return {"total_calls": len(calls), "avg_duration_seconds": round(avg_duration, 1), "resolution_rate": round(resolved / len(calls) * 100, 1), "total_duration_hours": round(sum(durations) / 3600, 2)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +146,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/voice-call-analytics/process":
+            result = analyze_call_metrics(**body) if isinstance(body, dict) else analyze_call_metrics(body)
+            self.respond(200, {"service": "voice-call-analytics-py", "result": result})
+
 
         else:
             self.respond(404, {"error": "Not found"})

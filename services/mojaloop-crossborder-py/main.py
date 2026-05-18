@@ -43,6 +43,22 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def validate_transfer(payer, payee, amount, currency):
+    """Validate Mojaloop transfer request"""
+    issues = []
+    if not payer.get("fspId"): issues.append("Missing payer FSP ID")
+    if not payee.get("fspId"): issues.append("Missing payee FSP ID")
+    if amount <= 0: issues.append("Amount must be positive")
+    if payer.get("fspId") == payee.get("fspId"): issues.append("Intra-FSP transfer not allowed via Mojaloop")
+    return {"valid": len(issues) == 0, "issues": issues, "payer_fsp": payer.get("fspId",""), "payee_fsp": payee.get("fspId",""), "amount": amount, "currency": currency}
+
+def compute_fees(amount, currency, corridor):
+    """Compute cross-border transfer fees"""
+    fee_rates = {"ngn_to_ghs": 0.015, "ngn_to_kes": 0.02, "ngn_to_xof": 0.01, "default": 0.025}
+    rate = fee_rates.get(corridor, fee_rates["default"])
+    fee = round(amount * rate, 2)
+    return {"amount": amount, "currency": currency, "corridor": corridor, "fee": fee, "total": round(amount + fee, 2), "fee_rate_pct": rate * 100}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +154,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/mojaloop-crossborder/validate-transfer":
+            result = validate_transfer(body.get("payer",{{}}), body.get("payee",{{}}), body.get("amount",0), body.get("currency","NGN"))
+            self.respond(200, result)
+        elif path == "/v1/mojaloop-crossborder/compute-fees":
+            result = compute_fees(body.get("amount",0), body.get("currency","NGN"), body.get("corridor","default"))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

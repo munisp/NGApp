@@ -43,6 +43,23 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def score_cooperative_member(contribution_history, repayment_history, membership_years, guarantors_count):
+    """Score cooperative member creditworthiness"""
+    score = 300
+    if contribution_history.get("consistency_pct", 0) >= 90: score += 150
+    elif contribution_history.get("consistency_pct", 0) >= 70: score += 100
+    else: score += 50
+    defaults = repayment_history.get("defaults", 0)
+    if defaults == 0: score += 200
+    elif defaults <= 2: score += 100
+    else: score -= defaults * 30
+    if membership_years >= 3: score += 100
+    elif membership_years >= 1: score += 50
+    if guarantors_count >= 2: score += 50
+    score = max(300, min(850, score))
+    max_loan = contribution_history.get("total_savings", 0) * (3 if score >= 700 else 2 if score >= 550 else 1)
+    return {"score": score, "band": "A" if score >= 700 else "B" if score >= 550 else "C", "max_loan_multiple": 3 if score >= 700 else 2 if score >= 550 else 1, "max_loan_amount": round(max_loan, 2), "eligible": score >= 450}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +155,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/cooperative-credit-scoring/score":
+            result = score_cooperative_member(body.get("contribution_history",{}), body.get("repayment_history",{}), body.get("membership_years",0), body.get("guarantors_count",0))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

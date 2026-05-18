@@ -43,6 +43,21 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def generate_statement(account_id, transactions, period_start, period_end, currency="NGN"):
+    """Generate account statement with running balance"""
+    sorted_txns = sorted(transactions, key=lambda t: t.get("date", ""))
+    balance = 0
+    entries = []
+    for t in sorted_txns:
+        amount = t.get("amount", 0)
+        txn_type = t.get("type", "debit")
+        if txn_type == "credit":
+            balance += amount
+        else:
+            balance -= amount
+        entries.append({"date": t.get("date",""), "description": t.get("description",""), "debit": amount if txn_type == "debit" else 0, "credit": amount if txn_type == "credit" else 0, "balance": round(balance, 2)})
+    return {"account_id": account_id, "period": {"start": period_start, "end": period_end}, "currency": currency, "entries": entries, "opening_balance": 0, "closing_balance": round(balance, 2), "total_debits": round(sum(e["debit"] for e in entries), 2), "total_credits": round(sum(e["credit"] for e in entries), 2), "transaction_count": len(entries)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +153,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/statement-generator/generate":
+            result = generate_statement(body.get("account_id",""), body.get("transactions",[]), body.get("period_start",""), body.get("period_end",""), body.get("currency","NGN"))
+            self.respond(200, result)
+
 
         else:
             self.respond(404, {"error": "Not found"})

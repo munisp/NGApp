@@ -43,6 +43,29 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def compute_withholding_tax(income_type, amount, resident=True):
+    """Nigerian withholding tax computation (FIRS rates)"""
+    rates = {
+        "dividend": 0.10, "interest": 0.10, "rent": 0.10, "royalty": 0.10,
+        "commission": 0.10, "consultancy": 0.10 if resident else 0.10,
+        "contract": 0.05, "director_fee": 0.10,
+    }
+    rate = rates.get(income_type, 0.10)
+    wht = round(amount * rate, 2)
+    return {"income_type": income_type, "gross_amount": amount, "wht_rate": rate * 100, "wht_amount": wht, "net_amount": round(amount - wht, 2), "resident": resident}
+
+def compute_vat(amount, exempt=False):
+    """Nigerian VAT computation (7.5%)"""
+    rate = 0.0 if exempt else 0.075
+    vat = round(amount * rate, 2)
+    return {"amount": amount, "vat_rate": rate * 100, "vat_amount": vat, "total": round(amount + vat, 2), "exempt": exempt}
+
+def annual_tax_summary(transactions):
+    """Generate annual tax summary for reporting"""
+    total_wht = sum(t.get("wht_amount", 0) for t in transactions)
+    total_vat = sum(t.get("vat_amount", 0) for t in transactions)
+    return {"total_wht": round(total_wht, 2), "total_vat": round(total_vat, 2), "transaction_count": len(transactions), "total_tax": round(total_wht + total_vat, 2)}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +161,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/tax-reporting/withholding-tax":
+            result = compute_withholding_tax(body.get("income_type","dividend"), body.get("amount",0), body.get("resident",True))
+            self.respond(200, result)
+        elif path == "/v1/tax-reporting/vat":
+            result = compute_vat(body.get("amount",0), body.get("exempt",False))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})

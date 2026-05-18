@@ -43,6 +43,24 @@ def gen_id():
 def now_iso():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def screen_entity(name, aliases=None, sources=None):
+    """Screen entity against adverse media databases"""
+    risk_indicators = {"fraud": 30, "money_laundering": 40, "terrorism_financing": 50, "sanctions_evasion": 35, "tax_evasion": 25, "corruption": 30}
+    hits = []
+    search_terms = [name.lower()] + [a.lower() for a in (aliases or [])]
+    for term in search_terms:
+        for indicator, weight in risk_indicators.items():
+            if any(kw in term for kw in ["blacklist", "wanted", "suspect"]):
+                hits.append({"term": term, "category": indicator, "weight": weight, "source": "internal"})
+    score = min(100, sum(h["weight"] for h in hits))
+    return {"entity": name, "hits": hits, "risk_score": score, "risk_level": "high" if score >= 60 else "medium" if score >= 30 else "low", "screening_date": now_iso()}
+
+def batch_screen(entities):
+    """Batch screening of multiple entities"""
+    results = [screen_entity(e.get("name",""), e.get("aliases")) for e in entities]
+    flagged = [r for r in results if r["risk_score"] > 0]
+    return {"total": len(entities), "flagged": len(flagged), "results": results}
+
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -138,6 +156,14 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {"processed": True, "record": rec})
                     return
             self.respond(404, {"error": f"Record not found or not processable: {rid}"})
+        elif path == "/v1/adverse-media-screening/screen":
+            result = screen_entity(body.get("name",""), body.get("aliases"), body.get("sources"))
+            self.respond(200, result)
+        elif path == "/v1/adverse-media-screening/batch-screen":
+            result = batch_screen(body.get("entities", []))
+            self.respond(200, result)
+
+
 
         else:
             self.respond(404, {"error": "Not found"})
