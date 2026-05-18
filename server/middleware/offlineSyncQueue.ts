@@ -23,7 +23,12 @@ const syncQueue: Array<{ tx: any; priority: string }> = [];
 function push(tx: any, priority: string = "normal") {
   syncQueue.push({ tx, priority });
   syncQueue.sort((a, b) => {
-    const order: Record<string, number> = { critical: 0, high: 1, normal: 2, low: 3 };
+    const order: Record<string, number> = {
+      critical: 0,
+      high: 1,
+      normal: 2,
+      low: 3,
+    };
     return (order[a.priority] ?? 2) - (order[b.priority] ?? 2);
   });
 }
@@ -135,7 +140,11 @@ function validateTransaction(tx: OfflineTransaction): string | null {
 
 export function computeHash(tx: OfflineTransaction): string {
   const data = `${tx.id}:${tx.type}:${tx.amount}:${tx.currency}:${tx.agentId}:${tx.clientTimestamp}`;
-  return crypto.createHash("sha256").update(data).digest("hex").substring(0, 16);
+  return crypto
+    .createHash("sha256")
+    .update(data)
+    .digest("hex")
+    .substring(0, 16);
 }
 
 // ── Sync Queue Stats ─────────────────────────────────────────────────────────
@@ -158,7 +167,11 @@ export const offlineSyncRouter = Router();
 offlineSyncRouter.post("/push", (req: Request, res: Response) => {
   const body = req.body as SyncRequest;
 
-  if (!body.terminalId || !body.transactions || !Array.isArray(body.transactions)) {
+  if (
+    !body.terminalId ||
+    !body.transactions ||
+    !Array.isArray(body.transactions)
+  ) {
     res.status(400).json({ error: "Invalid sync request" });
     return;
   }
@@ -201,7 +214,10 @@ offlineSyncRouter.post("/push", (req: Request, res: Response) => {
   }
 
   // Determine next sync interval based on network tier
-  const nextSync = getRecommendedSyncInterval(body.networkTier, body.queueDepth);
+  const nextSync = getRecommendedSyncInterval(
+    body.networkTier,
+    body.queueDepth
+  );
 
   const response: SyncResponse = {
     accepted,
@@ -243,7 +259,8 @@ offlineSyncRouter.post("/status", (req: Request, res: Response) => {
 
   if (staleness > 3600000) {
     syncHealth = "stale";
-    recommendedAction = "Force full sync — terminal has been offline for over 1 hour";
+    recommendedAction =
+      "Force full sync — terminal has been offline for over 1 hour";
   } else if (staleness > 300000) {
     syncHealth = "degraded";
     recommendedAction = "Increase sync frequency — terminal sync is delayed";
@@ -269,13 +286,16 @@ offlineSyncRouter.get("/stats", (_req: Request, res: Response) => {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function getRecommendedSyncInterval(networkTier: string, queueDepth: number): number {
+function getRecommendedSyncInterval(
+  networkTier: string,
+  queueDepth: number
+): number {
   const baseIntervals: Record<string, number> = {
-    "2g_gprs": 120000,  // 2 min
-    "2g_edge": 60000,   // 1 min
-    "3g": 30000,        // 30s
-    "4g_lte": 10000,    // 10s
-    "5g_wifi": 5000,    // 5s
+    "2g_gprs": 120000, // 2 min
+    "2g_edge": 60000, // 1 min
+    "3g": 30000, // 30s
+    "4g_lte": 10000, // 10s
+    "5g_wifi": 5000, // 5s
   };
 
   let interval = baseIntervals[networkTier] || 30000;

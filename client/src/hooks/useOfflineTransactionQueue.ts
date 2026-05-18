@@ -71,7 +71,9 @@ function openDB(): Promise<IDBDatabase> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
         store.createIndex("status", "status", { unique: false });
         store.createIndex("priority", "priority", { unique: false });
-        store.createIndex("clientTimestamp", "clientTimestamp", { unique: false });
+        store.createIndex("clientTimestamp", "clientTimestamp", {
+          unique: false,
+        });
         store.createIndex("idempotencyKey", "idempotencyKey", { unique: true });
       }
     };
@@ -85,8 +87,14 @@ async function dbPut(tx: QueuedTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     transaction.objectStore(STORE_NAME).put(tx);
-    transaction.oncomplete = () => { db.close(); resolve(); };
-    transaction.onerror = () => { db.close(); reject(transaction.error); };
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
   });
 }
 
@@ -95,8 +103,14 @@ async function dbGetAll(): Promise<QueuedTransaction[]> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const request = transaction.objectStore(STORE_NAME).getAll();
-    request.onsuccess = () => { db.close(); resolve(request.result); };
-    request.onerror = () => { db.close(); reject(request.error); };
+    request.onsuccess = () => {
+      db.close();
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
   });
 }
 
@@ -106,8 +120,14 @@ async function dbGetByStatus(status: string): Promise<QueuedTransaction[]> {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const index = transaction.objectStore(STORE_NAME).index("status");
     const request = index.getAll(status);
-    request.onsuccess = () => { db.close(); resolve(request.result); };
-    request.onerror = () => { db.close(); reject(request.error); };
+    request.onsuccess = () => {
+      db.close();
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
   });
 }
 
@@ -116,8 +136,14 @@ async function dbDelete(id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     transaction.objectStore(STORE_NAME).delete(id);
-    transaction.oncomplete = () => { db.close(); resolve(); };
-    transaction.onerror = () => { db.close(); reject(transaction.error); };
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
   });
 }
 
@@ -126,8 +152,14 @@ async function dbClear(): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     transaction.objectStore(STORE_NAME).clear();
-    transaction.oncomplete = () => { db.close(); resolve(); };
-    transaction.onerror = () => { db.close(); reject(transaction.error); };
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
   });
 }
 
@@ -136,18 +168,33 @@ async function dbClear(): Promise<void> {
 async function computeHash(tx: Partial<QueuedTransaction>): Promise<string> {
   const data = `${tx.id}:${tx.type}:${tx.amount}:${tx.currency}:${tx.agentId}:${tx.clientTimestamp}`;
   const encoder = new TextEncoder();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(data));
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(data)
+  );
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").substring(0, 16);
+  return hashArray
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 16);
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useOfflineTransactionQueue(terminalId: string, agentId: string) {
+export function useOfflineTransactionQueue(
+  terminalId: string,
+  agentId: string
+) {
   const [queue, setQueue] = useState<QueuedTransaction[]>([]);
   const [stats, setStats] = useState<QueueStats>({
-    total: 0, queued: 0, syncing: 0, synced: 0, failed: 0, conflict: 0,
-    oldestTimestamp: null, totalAmount: 0,
+    total: 0,
+    queued: 0,
+    syncing: 0,
+    synced: 0,
+    failed: 0,
+    conflict: 0,
+    oldestTimestamp: null,
+    totalAmount: 0,
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -164,7 +211,9 @@ export function useOfflineTransactionQueue(terminalId: string, agentId: string) 
       const synced = all.filter(t => t.status === "synced").length;
       const failed = all.filter(t => t.status === "failed").length;
       const conflict = all.filter(t => t.status === "conflict").length;
-      const timestamps = all.filter(t => t.status === "queued").map(t => t.clientTimestamp);
+      const timestamps = all
+        .filter(t => t.status === "queued")
+        .map(t => t.clientTimestamp);
       const amounts = all.filter(t => t.status !== "synced").map(t => t.amount);
 
       setStats({
@@ -183,30 +232,46 @@ export function useOfflineTransactionQueue(terminalId: string, agentId: string) 
   }, []);
 
   // Enqueue a transaction
-  const enqueue = useCallback(async (tx: Omit<QueuedTransaction, "id" | "idempotencyKey" | "hash" | "status" | "retryCount" | "offlineDuration" | "clientTimestamp">) => {
-    const id = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const clientTimestamp = Date.now();
-    const offlineDuration = isOnline ? 0 : Date.now() - (stats.oldestTimestamp || Date.now());
+  const enqueue = useCallback(
+    async (
+      tx: Omit<
+        QueuedTransaction,
+        | "id"
+        | "idempotencyKey"
+        | "hash"
+        | "status"
+        | "retryCount"
+        | "offlineDuration"
+        | "clientTimestamp"
+      >
+    ) => {
+      const id = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const clientTimestamp = Date.now();
+      const offlineDuration = isOnline
+        ? 0
+        : Date.now() - (stats.oldestTimestamp || Date.now());
 
-    const fullTx: QueuedTransaction = {
-      ...tx,
-      id,
-      clientTimestamp,
-      offlineDuration,
-      idempotencyKey: `${agentId}_${tx.type}_${tx.amount}_${clientTimestamp}`,
-      retryCount: 0,
-      maxRetries: 10,
-      status: "queued",
-      hash: "",
-      terminalId,
-    };
+      const fullTx: QueuedTransaction = {
+        ...tx,
+        id,
+        clientTimestamp,
+        offlineDuration,
+        idempotencyKey: `${agentId}_${tx.type}_${tx.amount}_${clientTimestamp}`,
+        retryCount: 0,
+        maxRetries: 10,
+        status: "queued",
+        hash: "",
+        terminalId,
+      };
 
-    fullTx.hash = await computeHash(fullTx);
+      fullTx.hash = await computeHash(fullTx);
 
-    await dbPut(fullTx);
-    await refreshQueue();
-    return fullTx;
-  }, [agentId, terminalId, isOnline, stats.oldestTimestamp, refreshQueue]);
+      await dbPut(fullTx);
+      await refreshQueue();
+      return fullTx;
+    },
+    [agentId, terminalId, isOnline, stats.oldestTimestamp, refreshQueue]
+  );
 
   // Sync queued transactions to server
   const sync = useCallback(async (): Promise<SyncResult | null> => {
@@ -215,7 +280,9 @@ export function useOfflineTransactionQueue(terminalId: string, agentId: string) 
     setIsSyncing(true);
     try {
       const queued = await dbGetByStatus("queued");
-      const failed = (await dbGetByStatus("failed")).filter(t => t.retryCount < t.maxRetries);
+      const failed = (await dbGetByStatus("failed")).filter(
+        t => t.retryCount < t.maxRetries
+      );
       const toSync = [...queued, ...failed]
         .sort((a, b) => {
           // Priority order: critical > high > normal > low

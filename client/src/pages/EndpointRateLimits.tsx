@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Shield, Plus, Zap, Clock, Settings2 } from "lucide-react";
@@ -24,7 +30,9 @@ export default function EndpointRateLimits() {
       utils.sprint23.rateLimits.list.invalidate();
       toast.success("Rate limit configured");
       setDialogOpen(false);
-      setNewEndpoint(""); setNewMaxReqs("100"); setNewWindowMs("60000");
+      setNewEndpoint("");
+      setNewMaxReqs("100");
+      setNewWindowMs("60000");
     },
   });
 
@@ -49,25 +57,51 @@ export default function EndpointRateLimits() {
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Limit</Button>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Add Limit
+              </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Configure Rate Limit</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Configure Rate Limit</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4 pt-2">
-                <Input placeholder="Endpoint (e.g., transactions.create)" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} />
+                <Input
+                  placeholder="Endpoint (e.g., transactions.create)"
+                  value={newEndpoint}
+                  onChange={e => setNewEndpoint(e.target.value)}
+                />
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-muted-foreground">Max Requests</label>
-                    <Input type="number" value={newMaxReqs} onChange={(e) => setNewMaxReqs(e.target.value)} />
+                    <label className="text-xs text-muted-foreground">
+                      Max Requests
+                    </label>
+                    <Input
+                      type="number"
+                      value={newMaxReqs}
+                      onChange={e => setNewMaxReqs(e.target.value)}
+                    />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Window (ms)</label>
-                    <Input type="number" value={newWindowMs} onChange={(e) => setNewWindowMs(e.target.value)} />
+                    <label className="text-xs text-muted-foreground">
+                      Window (ms)
+                    </label>
+                    <Input
+                      type="number"
+                      value={newWindowMs}
+                      onChange={e => setNewWindowMs(e.target.value)}
+                    />
                   </div>
                 </div>
                 <Button
                   className="w-full"
-                  onClick={() => setMutation.mutate({ endpoint: newEndpoint, maxRequests: parseInt(newMaxReqs), windowMs: parseInt(newWindowMs) })}
+                  onClick={() =>
+                    setMutation.mutate({
+                      endpoint: newEndpoint,
+                      maxRequests: parseInt(newMaxReqs),
+                      windowMs: parseInt(newWindowMs),
+                    })
+                  }
                   disabled={!newEndpoint}
                 >
                   Save Rate Limit
@@ -83,23 +117,33 @@ export default function EndpointRateLimits() {
             <CardContent className="pt-6 text-center">
               <Settings2 className="w-8 h-8 mx-auto text-blue-400 mb-2" />
               <p className="text-2xl font-bold">{limits.data?.length ?? 0}</p>
-              <p className="text-sm text-muted-foreground">Configured Endpoints</p>
+              <p className="text-sm text-muted-foreground">
+                Configured Endpoints
+              </p>
             </CardContent>
           </Card>
           <Card className="border-green-500/30">
             <CardContent className="pt-6 text-center">
               <Zap className="w-8 h-8 mx-auto text-green-400 mb-2" />
               <p className="text-2xl font-bold">
-                {limits.data?.reduce((sum: any, l: any) => sum + l.maxRequests, 0) ?? 0}
+                {limits.data?.reduce(
+                  (sum: any, l: any) => sum + l.maxRequests,
+                  0
+                ) ?? 0}
               </p>
-              <p className="text-sm text-muted-foreground">Total Capacity (req/window)</p>
+              <p className="text-sm text-muted-foreground">
+                Total Capacity (req/window)
+              </p>
             </CardContent>
           </Card>
           <Card className="border-purple-500/30">
             <CardContent className="pt-6 text-center">
               <Clock className="w-8 h-8 mx-auto text-purple-400 mb-2" />
               <p className="text-2xl font-bold">
-                {limits.data?.reduce((sum: any, l: any) => sum + l.currentCount, 0) ?? 0}
+                {limits.data?.reduce(
+                  (sum: any, l: any) => sum + l.currentCount,
+                  0
+                ) ?? 0}
               </p>
               <p className="text-sm text-muted-foreground">Current Usage</p>
             </CardContent>
@@ -126,15 +170,37 @@ export default function EndpointRateLimits() {
                 </thead>
                 <tbody>
                   {limits.data?.map((limit: any) => {
-                    const utilization = limit.maxRequests > 0 ? (limit.currentCount / limit.maxRequests) * 100 : 0;
+                    const utilization =
+                      limit.maxRequests > 0
+                        ? (limit.currentCount / limit.maxRequests) * 100
+                        : 0;
                     return (
-                      <tr key={limit.endpoint} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="py-2 px-3 font-mono text-xs">{limit.endpoint}</td>
-                        <td className="text-right py-2 px-3">{limit.maxRequests}</td>
-                        <td className="text-right py-2 px-3">{formatWindow(limit.windowMs)}</td>
-                        <td className="text-right py-2 px-3">{limit.currentCount}</td>
+                      <tr
+                        key={limit.endpoint}
+                        className="border-b border-border/50 hover:bg-muted/30"
+                      >
+                        <td className="py-2 px-3 font-mono text-xs">
+                          {limit.endpoint}
+                        </td>
+                        <td className="text-right py-2 px-3">
+                          {limit.maxRequests}
+                        </td>
+                        <td className="text-right py-2 px-3">
+                          {formatWindow(limit.windowMs)}
+                        </td>
+                        <td className="text-right py-2 px-3">
+                          {limit.currentCount}
+                        </td>
                         <td className="text-center py-2 px-3">
-                          <Badge variant={utilization > 80 ? "destructive" : utilization > 50 ? "secondary" : "outline"}>
+                          <Badge
+                            variant={
+                              utilization > 80
+                                ? "destructive"
+                                : utilization > 50
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
                             {utilization.toFixed(0)}%
                           </Badge>
                         </td>

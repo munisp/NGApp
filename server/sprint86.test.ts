@@ -10,21 +10,39 @@ const ROOT = path.resolve(__dirname, "..");
 
 describe("Sprint 86: Orphan Table CRUD Routers (S86-01 to S86-20)", () => {
   const orphanRouters = [
-    "agentBankAccountsCrud", "agentPerformanceScoresCrud", "agentSuspensionLogCrud",
-    "analyticsDashboardsCrud", "biReportDefinitionsCrud", "billingRevenuePeriodsCrud",
-    "commissionCascadeHistoryCrud", "customerJourneyEventsCrud", "dataConsentRecordsCrud",
-    "emailDeliveryLogCrud", "encryptedFieldsCrud", "floatReconciliationsCrud",
-    "geoFencesCrud", "glAccountsCrud", "glJournalEntriesCrud",
-    "kycDocumentsCrud", "notificationChannelsCrud", "notificationLogsCrud",
-    "observabilityAlertsCrud", "pnlReportsCrud", "realtimeTxAlertsCrud",
-    "tenantBrandingCrud", "tenantFeeOverridesCrud", "trainingCoursesCrud",
+    "agentBankAccountsCrud",
+    "agentPerformanceScoresCrud",
+    "agentSuspensionLogCrud",
+    "analyticsDashboardsCrud",
+    "biReportDefinitionsCrud",
+    "billingRevenuePeriodsCrud",
+    "commissionCascadeHistoryCrud",
+    "customerJourneyEventsCrud",
+    "dataConsentRecordsCrud",
+    "emailDeliveryLogCrud",
+    "encryptedFieldsCrud",
+    "floatReconciliationsCrud",
+    "geoFencesCrud",
+    "glAccountsCrud",
+    "glJournalEntriesCrud",
+    "kycDocumentsCrud",
+    "notificationChannelsCrud",
+    "notificationLogsCrud",
+    "observabilityAlertsCrud",
+    "pnlReportsCrud",
+    "realtimeTxAlertsCrud",
+    "tenantBrandingCrud",
+    "tenantFeeOverridesCrud",
+    "trainingCoursesCrud",
     "trainingEnrollmentsCrud",
   ];
 
   it("should have all 25 orphan table CRUD router files", () => {
     for (const router of orphanRouters) {
       const filePath = path.join(ROOT, "server", "routers", `${router}.ts`);
-      expect(fs.existsSync(filePath), `Missing router: ${router}.ts`).toBe(true);
+      expect(fs.existsSync(filePath), `Missing router: ${router}.ts`).toBe(
+        true
+      );
     }
   });
 
@@ -34,13 +52,31 @@ describe("Sprint 86: Orphan Table CRUD Routers (S86-01 to S86-20)", () => {
       const content = fs.readFileSync(filePath, "utf-8");
       expect(content).toContain("list:");
       // Each router must have at least one write operation
-      const hasWrite = content.includes("create:") || content.includes("delete:") || content.includes("update:") || content.includes("calculate") || content.includes("record") || content.includes("submit") || content.includes("encrypt") || content.includes("enroll") || content.includes("warn:") || content.includes("suspend:") || content.includes("reinstate:") || content.includes("validate");
-      expect(hasWrite, `${router} should have at least one write operation`).toBe(true);
+      const hasWrite =
+        content.includes("create:") ||
+        content.includes("delete:") ||
+        content.includes("update:") ||
+        content.includes("calculate") ||
+        content.includes("record") ||
+        content.includes("submit") ||
+        content.includes("encrypt") ||
+        content.includes("enroll") ||
+        content.includes("warn:") ||
+        content.includes("suspend:") ||
+        content.includes("reinstate:") ||
+        content.includes("validate");
+      expect(
+        hasWrite,
+        `${router} should have at least one write operation`
+      ).toBe(true);
     }
   });
 
   it("should have all orphan routers wired in routers.ts", () => {
-    const routersFile = fs.readFileSync(path.join(ROOT, "server", "routers.ts"), "utf-8");
+    const routersFile = fs.readFileSync(
+      path.join(ROOT, "server", "routers.ts"),
+      "utf-8"
+    );
     for (const router of orphanRouters) {
       expect(routersFile).toContain(router);
     }
@@ -49,7 +85,13 @@ describe("Sprint 86: Orphan Table CRUD Routers (S86-01 to S86-20)", () => {
 
 describe("Sprint 86: Security Hardening (S86-21 to S86-25)", () => {
   it("S86-21: PBAC engine (Go) exists with Permify integration", () => {
-    const filePath = path.join(ROOT, "services", "go", "pbac-engine", "main.go");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "go",
+      "pbac-engine",
+      "main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("Policy");
@@ -57,7 +99,14 @@ describe("Sprint 86: Security Hardening (S86-21 to S86-25)", () => {
   });
 
   it("S86-23: Ransomware guard immutable backup module (Rust)", () => {
-    const filePath = path.join(ROOT, "services", "rust", "ransomware-guard", "src", "immutable_backup.rs");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "rust",
+      "ransomware-guard",
+      "src",
+      "immutable_backup.rs"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("ImmutableBackup");
@@ -65,7 +114,13 @@ describe("Sprint 86: Security Hardening (S86-21 to S86-25)", () => {
   });
 
   it("S86-24: Security scanner auto-remediation (Python)", () => {
-    const filePath = path.join(ROOT, "services", "python", "security-scanner", "auto_remediation.py");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "python",
+      "security-scanner",
+      "auto_remediation.py"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("SecurityRemediationEngine");
@@ -73,7 +128,12 @@ describe("Sprint 86: Security Hardening (S86-21 to S86-25)", () => {
   });
 
   it("S86-25: Input sanitization middleware (TypeScript)", () => {
-    const filePath = path.join(ROOT, "server", "middleware", "inputSanitization.ts");
+    const filePath = path.join(
+      ROOT,
+      "server",
+      "middleware",
+      "inputSanitization.ts"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("sanitize");
@@ -83,7 +143,12 @@ describe("Sprint 86: Security Hardening (S86-21 to S86-25)", () => {
 
 describe("Sprint 86: Resilience (S86-26 to S86-28)", () => {
   it("S86-26: WebSocket resilience layer (TypeScript)", () => {
-    const filePath = path.join(ROOT, "server", "middleware", "websocketResilience.ts");
+    const filePath = path.join(
+      ROOT,
+      "server",
+      "middleware",
+      "websocketResilience.ts"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("WebSocket");
@@ -91,7 +156,13 @@ describe("Sprint 86: Resilience (S86-26 to S86-28)", () => {
   });
 
   it("S86-27: Bandwidth optimizer (Go)", () => {
-    const filePath = path.join(ROOT, "services", "go", "bandwidth-optimizer", "main.go");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "go",
+      "bandwidth-optimizer",
+      "main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("BandwidthOptimizer");
@@ -101,7 +172,14 @@ describe("Sprint 86: Resilience (S86-26 to S86-28)", () => {
   });
 
   it("S86-28: Transaction queue fallback (Rust)", () => {
-    const filePath = path.join(ROOT, "services", "rust", "transaction-queue", "src", "main.rs");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "rust",
+      "transaction-queue",
+      "src",
+      "main.rs"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("TransactionQueueEngine");
@@ -123,7 +201,13 @@ describe("Sprint 86: Middleware Integration (S86-29 to S86-34)", () => {
   });
 
   it("S86-30: Dapr sidecar proxy (Go)", () => {
-    const filePath = path.join(ROOT, "services", "go", "dapr-sidecar", "main.go");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "go",
+      "dapr-sidecar",
+      "main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("DaprSidecar");
@@ -134,7 +218,13 @@ describe("Sprint 86: Middleware Integration (S86-29 to S86-34)", () => {
   });
 
   it("S86-31: Redis cache layer (Python)", () => {
-    const filePath = path.join(ROOT, "services", "python", "redis-cache-layer", "main.py");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "python",
+      "redis-cache-layer",
+      "main.py"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("RedisCacheLayer");
@@ -144,7 +234,13 @@ describe("Sprint 86: Middleware Integration (S86-29 to S86-34)", () => {
   });
 
   it("S86-32: Mojaloop ILP connector (Python)", () => {
-    const filePath = path.join(ROOT, "services", "python", "mojaloop-connector", "main.py");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "python",
+      "mojaloop-connector",
+      "main.py"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("MojaloopConnector");
@@ -155,7 +251,13 @@ describe("Sprint 86: Middleware Integration (S86-29 to S86-34)", () => {
   });
 
   it("S86-33: OpenSearch analytics engine (Go)", () => {
-    const filePath = path.join(ROOT, "services", "go", "opensearch-analytics", "main.go");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "go",
+      "opensearch-analytics",
+      "main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("AnalyticsEngine");
@@ -165,7 +267,13 @@ describe("Sprint 86: Middleware Integration (S86-29 to S86-34)", () => {
   });
 
   it("S86-34: APISIX API gateway (Go)", () => {
-    const filePath = path.join(ROOT, "services", "go", "apisix-gateway", "main.go");
+    const filePath = path.join(
+      ROOT,
+      "services",
+      "go",
+      "apisix-gateway",
+      "main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("APIGateway");
@@ -217,19 +325,26 @@ describe("Sprint 86: TypeScript Compilation", () => {
 
 describe("Sprint 86: Project Scale Metrics", () => {
   it("should have 416+ page components", () => {
-    const pages = fs.readdirSync(path.join(ROOT, "client", "src", "pages"))
+    const pages = fs
+      .readdirSync(path.join(ROOT, "client", "src", "pages"))
       .filter(f => f.endsWith(".tsx"));
     expect(pages.length).toBeGreaterThanOrEqual(416);
   });
 
   it("should have 139+ database tables in schema", () => {
-    const schema = fs.readFileSync(path.join(ROOT, "drizzle", "schema.ts"), "utf-8");
+    const schema = fs.readFileSync(
+      path.join(ROOT, "drizzle", "schema.ts"),
+      "utf-8"
+    );
     const tableCount = (schema.match(/pgTable\(/g) || []).length;
     expect(tableCount).toBeGreaterThanOrEqual(139);
   });
 
   it("should have 199+ relation definitions", () => {
-    const relations = fs.readFileSync(path.join(ROOT, "drizzle", "relations.ts"), "utf-8");
+    const relations = fs.readFileSync(
+      path.join(ROOT, "drizzle", "relations.ts"),
+      "utf-8"
+    );
     const relationCount = (relations.match(/Relations\s*=/g) || []).length;
     expect(relationCount).toBeGreaterThanOrEqual(100);
   });

@@ -20,15 +20,21 @@ describe("Sprint 26: Final Production Completion", () => {
   // ─── Grafana Dashboards ───
   describe("Grafana Dashboards", () => {
     it("should have Grafana provisioning datasource config", () => {
-      expect(fileExists("infra/grafana/provisioning/datasources/prometheus.yml")).toBe(true);
+      expect(
+        fileExists("infra/grafana/provisioning/datasources/prometheus.yml")
+      ).toBe(true);
     });
 
     it("should have Grafana dashboard provisioning config", () => {
-      expect(fileExists("infra/grafana/provisioning/dashboards/dashboards.yml")).toBe(true);
+      expect(
+        fileExists("infra/grafana/provisioning/dashboards/dashboards.yml")
+      ).toBe(true);
     });
 
     it("should have POS Operations dashboard", () => {
-      expect(fileExists("infra/grafana/dashboards/pos-operations.json")).toBe(true);
+      expect(fileExists("infra/grafana/dashboards/pos-operations.json")).toBe(
+        true
+      );
       const content = readFile("infra/grafana/dashboards/pos-operations.json");
       const parsed = JSON.parse(content);
       expect(parsed.title).toContain("POS Operations");
@@ -36,18 +42,24 @@ describe("Sprint 26: Final Production Completion", () => {
     });
 
     it("should have Fraud Detection dashboard", () => {
-      expect(fileExists("infra/grafana/dashboards/fraud-detection.json")).toBe(true);
+      expect(fileExists("infra/grafana/dashboards/fraud-detection.json")).toBe(
+        true
+      );
       const content = readFile("infra/grafana/dashboards/fraud-detection.json");
       const parsed = JSON.parse(content);
       expect(parsed.title).toContain("Fraud Detection");
     });
 
     it("should have Agent Performance dashboard", () => {
-      expect(fileExists("infra/grafana/dashboards/agent-performance.json")).toBe(true);
+      expect(
+        fileExists("infra/grafana/dashboards/agent-performance.json")
+      ).toBe(true);
     });
 
     it("should have System Health dashboard", () => {
-      expect(fileExists("infra/grafana/dashboards/system-health.json")).toBe(true);
+      expect(fileExists("infra/grafana/dashboards/system-health.json")).toBe(
+        true
+      );
     });
   });
 

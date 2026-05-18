@@ -1,6 +1,6 @@
 /**
  * VideoTutorials — Interactive video tutorial hub for the 5 most complex features
- * 
+ *
  * Each tutorial includes:
  * - Embedded video player placeholder (with chapter markers)
  * - Step-by-step transcript/walkthrough
@@ -15,10 +15,28 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Play, Pause, CheckCircle2, Clock, BarChart2, ChevronRight,
-  ChevronDown, Search, BookOpen, Star, Monitor, Shield,
-  FileCheck, Wallet, Settings, ArrowRight, RotateCcw,
-  Video, Layers, Target, Award, ExternalLink
+  Play,
+  Pause,
+  CheckCircle2,
+  Clock,
+  BarChart2,
+  ChevronRight,
+  ChevronDown,
+  Search,
+  BookOpen,
+  Star,
+  Monitor,
+  Shield,
+  FileCheck,
+  Wallet,
+  Settings,
+  ArrowRight,
+  RotateCcw,
+  Video,
+  Layers,
+  Target,
+  Award,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -52,12 +70,16 @@ const tutorials: Tutorial[] = [
   {
     id: "cash-transactions",
     title: "Processing Cash-In & Cash-Out Transactions",
-    description: "Master the complete cash-in and cash-out workflow, including customer verification, float management, receipt generation, and error handling.",
+    description:
+      "Master the complete cash-in and cash-out workflow, including customer verification, float management, receipt generation, and error handling.",
     icon: Wallet,
     difficulty: "beginner",
     duration: "12 min",
     tags: ["cash-in", "cash-out", "transactions", "float", "receipt"],
-    prerequisites: ["Active agent account with valid KYC", "Sufficient float balance"],
+    prerequisites: [
+      "Active agent account with valid KYC",
+      "Sufficient float balance",
+    ],
     relatedPages: [
       { label: "POS Terminal", path: "/" },
       { label: "User Guide: Transactions", path: "/user-guide" },
@@ -68,20 +90,24 @@ const tutorials: Tutorial[] = [
         title: "Understanding Cash Operations",
         timestamp: "00:00",
         duration: "2 min",
-        content: "Cash-in (deposits) and cash-out (withdrawals) are the most common POS operations. Cash-in adds money to a customer's account while cash-out allows them to withdraw. Both operations require proper customer identification and affect your float balance.",
+        content:
+          "Cash-in (deposits) and cash-out (withdrawals) are the most common POS operations. Cash-in adds money to a customer's account while cash-out allows them to withdraw. Both operations require proper customer identification and affect your float balance.",
         steps: [
           "Navigate to the POS Terminal from the Hub",
           "Select either 'Cash In' or 'Cash Out' from the transaction menu",
           "The system will check your current float balance before proceeding",
         ],
-        tips: ["Always verify the customer's identity before processing any transaction"],
+        tips: [
+          "Always verify the customer's identity before processing any transaction",
+        ],
       },
       {
         id: "cash-in-process",
         title: "Processing a Cash-In (Deposit)",
         timestamp: "02:00",
         duration: "3 min",
-        content: "A cash-in transaction involves collecting physical cash from the customer and crediting their account. The amount is deducted from your float balance and the customer receives a deposit confirmation.",
+        content:
+          "A cash-in transaction involves collecting physical cash from the customer and crediting their account. The amount is deducted from your float balance and the customer receives a deposit confirmation.",
         steps: [
           "Select 'Cash In' from the POS Terminal menu",
           "Enter the customer's account number or phone number",
@@ -101,7 +127,8 @@ const tutorials: Tutorial[] = [
         title: "Processing a Cash-Out (Withdrawal)",
         timestamp: "05:00",
         duration: "3 min",
-        content: "A cash-out transaction involves debiting the customer's account and dispensing physical cash. This increases your float balance. Ensure you have sufficient physical cash before starting.",
+        content:
+          "A cash-out transaction involves debiting the customer's account and dispensing physical cash. This increases your float balance. Ensure you have sufficient physical cash before starting.",
         steps: [
           "Select 'Cash Out' from the POS Terminal menu",
           "Enter the customer's account number or phone number",
@@ -121,7 +148,8 @@ const tutorials: Tutorial[] = [
         title: "Managing Your Float Balance",
         timestamp: "08:00",
         duration: "2 min",
-        content: "Your float balance determines how many cash-in transactions you can process. Cash-in reduces float, cash-out increases it. Monitor your float regularly and request top-ups when running low.",
+        content:
+          "Your float balance determines how many cash-in transactions you can process. Cash-in reduces float, cash-out increases it. Monitor your float regularly and request top-ups when running low.",
         steps: [
           "Check your current float in the POS Terminal header bar",
           "Navigate to Admin Panel > Float Requests to request a top-up",
@@ -139,7 +167,8 @@ const tutorials: Tutorial[] = [
         title: "Handling Transaction Errors",
         timestamp: "10:00",
         duration: "2 min",
-        content: "Transactions can fail due to network issues, insufficient funds, or system errors. Understanding error codes helps you resolve issues quickly and maintain customer trust.",
+        content:
+          "Transactions can fail due to network issues, insufficient funds, or system errors. Understanding error codes helps you resolve issues quickly and maintain customer trust.",
         steps: [
           "Note the error code displayed (e.g., E001 = Network timeout)",
           "For network errors: wait 30 seconds and retry the transaction",
@@ -158,7 +187,8 @@ const tutorials: Tutorial[] = [
   {
     id: "fraud-detection",
     title: "Fraud Detection & Alert Management",
-    description: "Learn to identify, investigate, and resolve fraud alerts using the AI-powered fraud detection system, including pattern analysis and escalation workflows.",
+    description:
+      "Learn to identify, investigate, and resolve fraud alerts using the AI-powered fraud detection system, including pattern analysis and escalation workflows.",
     icon: Shield,
     difficulty: "advanced",
     duration: "18 min",
@@ -174,21 +204,25 @@ const tutorials: Tutorial[] = [
         title: "Understanding the Fraud Detection System",
         timestamp: "00:00",
         duration: "3 min",
-        content: "The 54Link fraud detection system uses AI and rule-based engines to monitor transactions in real-time. It assigns fraud scores (0-100) and categorizes alerts by severity: Critical (80+), High (60-79), Medium (40-59), and Low (0-39).",
+        content:
+          "The 54Link fraud detection system uses AI and rule-based engines to monitor transactions in real-time. It assigns fraud scores (0-100) and categorizes alerts by severity: Critical (80+), High (60-79), Medium (40-59), and Low (0-39).",
         steps: [
           "Navigate to Admin Panel > Fraud tab or the dedicated Fraud Dashboard",
           "Review the overview panel showing active alerts by severity",
           "Critical alerts require immediate attention within 15 minutes",
           "The AI engine analyzes transaction patterns, velocity, amounts, and geolocation",
         ],
-        tips: ["Critical alerts trigger real-time notifications via push and SMS"],
+        tips: [
+          "Critical alerts trigger real-time notifications via push and SMS",
+        ],
       },
       {
         id: "investigating-alerts",
         title: "Investigating a Fraud Alert",
         timestamp: "03:00",
         duration: "4 min",
-        content: "Each fraud alert contains detailed information including the transaction details, customer history, AI analysis explanation, and recommended actions. Proper investigation follows a structured workflow.",
+        content:
+          "Each fraud alert contains detailed information including the transaction details, customer history, AI analysis explanation, and recommended actions. Proper investigation follows a structured workflow.",
         steps: [
           "Click on an alert to open the detail panel",
           "Review the AI Explanation field for the detection rationale",
@@ -207,7 +241,8 @@ const tutorials: Tutorial[] = [
         title: "Resolving & Escalating Alerts",
         timestamp: "07:00",
         duration: "4 min",
-        content: "After investigation, you can resolve an alert as legitimate, confirm fraud, or escalate for further review. Each action is logged in the audit trail.",
+        content:
+          "After investigation, you can resolve an alert as legitimate, confirm fraud, or escalate for further review. Each action is logged in the audit trail.",
         steps: [
           "Click 'Resolve' to mark as legitimate (false positive)",
           "Click 'Confirm Fraud' to flag and block the transaction",
@@ -226,7 +261,8 @@ const tutorials: Tutorial[] = [
         title: "Configuring Auto-Resolution Rules",
         timestamp: "11:00",
         duration: "4 min",
-        content: "The dispute auto-resolution engine can automatically handle certain alert types based on configurable rules. This reduces manual workload for common false-positive patterns.",
+        content:
+          "The dispute auto-resolution engine can automatically handle certain alert types based on configurable rules. This reduces manual workload for common false-positive patterns.",
         steps: [
           "Navigate to Dispute Auto Rules page",
           "Create a new rule with conditions (amount range, type, score threshold)",
@@ -244,7 +280,8 @@ const tutorials: Tutorial[] = [
         title: "Fraud Analytics & Reporting",
         timestamp: "15:00",
         duration: "3 min",
-        content: "The fraud analytics dashboard provides insights into detection patterns, false positive rates, resolution times, and trending fraud types. Use these metrics to optimize your fraud prevention strategy.",
+        content:
+          "The fraud analytics dashboard provides insights into detection patterns, false positive rates, resolution times, and trending fraud types. Use these metrics to optimize your fraud prevention strategy.",
         steps: [
           "View the fraud trend chart in Admin Analytics",
           "Monitor the false positive rate (target: below 15%)",
@@ -258,7 +295,8 @@ const tutorials: Tutorial[] = [
   {
     id: "kyc-verification",
     title: "KYC Document Verification Workflow",
-    description: "Complete guide to the Know Your Customer verification process, including document submission, review procedures, approval workflows, and compliance requirements.",
+    description:
+      "Complete guide to the Know Your Customer verification process, including document submission, review procedures, approval workflows, and compliance requirements.",
     icon: FileCheck,
     difficulty: "intermediate",
     duration: "15 min",
@@ -274,7 +312,8 @@ const tutorials: Tutorial[] = [
         title: "KYC Requirements Overview",
         timestamp: "00:00",
         duration: "3 min",
-        content: "Know Your Customer (KYC) verification is mandatory for all agents and high-value customers. Nigerian CBN regulations require identity verification before processing transactions above ₦50,000. The platform supports NIN, BVN, International Passport, and Driver's License verification.",
+        content:
+          "Know Your Customer (KYC) verification is mandatory for all agents and high-value customers. Nigerian CBN regulations require identity verification before processing transactions above ₦50,000. The platform supports NIN, BVN, International Passport, and Driver's License verification.",
         steps: [
           "Navigate to KYC Verification from the sidebar",
           "Review the required document types for your verification tier",
@@ -289,7 +328,8 @@ const tutorials: Tutorial[] = [
         title: "Submitting KYC Documents",
         timestamp: "03:00",
         duration: "4 min",
-        content: "Document submission requires clear, legible copies of identity documents. The system performs automated checks on document validity before human review.",
+        content:
+          "Document submission requires clear, legible copies of identity documents. The system performs automated checks on document validity before human review.",
         steps: [
           "Click 'Submit New Document' on the KYC Verification page",
           "Select the document type (NIN Slip, BVN Printout, Passport, etc.)",
@@ -310,7 +350,8 @@ const tutorials: Tutorial[] = [
         title: "The Review Process (Admin View)",
         timestamp: "07:00",
         duration: "4 min",
-        content: "Admins and compliance officers review submitted documents against CBN guidelines. The review includes document authenticity checks, data cross-referencing, and risk assessment.",
+        content:
+          "Admins and compliance officers review submitted documents against CBN guidelines. The review includes document authenticity checks, data cross-referencing, and risk assessment.",
         steps: [
           "Open the KYC Verification page as an admin",
           "Filter by 'Pending Review' to see the queue",
@@ -330,7 +371,8 @@ const tutorials: Tutorial[] = [
         title: "Tracking Verification Status",
         timestamp: "11:00",
         duration: "2 min",
-        content: "Both agents and customers can track their KYC verification status in real-time. The system sends notifications at each stage of the process.",
+        content:
+          "Both agents and customers can track their KYC verification status in real-time. The system sends notifications at each stage of the process.",
         steps: [
           "View your current KYC status on the KYC Verification page",
           "Status flow: Submitted → Under Review → Approved/Rejected",
@@ -344,7 +386,8 @@ const tutorials: Tutorial[] = [
         title: "Compliance & Regulatory Requirements",
         timestamp: "13:00",
         duration: "2 min",
-        content: "The platform enforces CBN regulatory requirements including periodic KYC renewal, transaction monitoring thresholds, and suspicious activity reporting.",
+        content:
+          "The platform enforces CBN regulatory requirements including periodic KYC renewal, transaction monitoring thresholds, and suspicious activity reporting.",
         steps: [
           "KYC documents expire annually — renewal reminders are sent 30 days before",
           "Transaction limits are enforced based on current KYC tier",
@@ -358,14 +401,21 @@ const tutorials: Tutorial[] = [
   {
     id: "float-settlement",
     title: "Agent Float Management & Settlement",
-    description: "Comprehensive guide to float balance management, top-up requests, daily settlement processes, reconciliation, and commission payouts.",
+    description:
+      "Comprehensive guide to float balance management, top-up requests, daily settlement processes, reconciliation, and commission payouts.",
     icon: BarChart2,
     difficulty: "intermediate",
     duration: "14 min",
     tags: ["float", "settlement", "reconciliation", "commission", "payout"],
-    prerequisites: ["Active agent account", "Completed at least 10 transactions"],
+    prerequisites: [
+      "Active agent account",
+      "Completed at least 10 transactions",
+    ],
     relatedPages: [
-      { label: "Settlement Reconciliation", path: "/settlement-reconciliation" },
+      {
+        label: "Settlement Reconciliation",
+        path: "/settlement-reconciliation",
+      },
       { label: "Commission Payouts", path: "/commission-payouts" },
       { label: "User Guide: Reports", path: "/user-guide" },
     ],
@@ -375,7 +425,8 @@ const tutorials: Tutorial[] = [
         title: "Understanding Float Balance",
         timestamp: "00:00",
         duration: "3 min",
-        content: "Float is the working capital that enables agents to process transactions. Cash-in transactions reduce your float (you give the customer credit and collect cash), while cash-out transactions increase it (customer's account is debited and you dispense cash).",
+        content:
+          "Float is the working capital that enables agents to process transactions. Cash-in transactions reduce your float (you give the customer credit and collect cash), while cash-out transactions increase it (customer's account is debited and you dispense cash).",
         steps: [
           "View your current float balance in the POS Terminal header",
           "Monitor float changes in real-time as you process transactions",
@@ -392,7 +443,8 @@ const tutorials: Tutorial[] = [
         title: "Float Top-Up Request Workflow",
         timestamp: "03:00",
         duration: "3 min",
-        content: "When your float runs low, submit a top-up request through the platform. Requests go through an approval workflow with your supervisor or admin.",
+        content:
+          "When your float runs low, submit a top-up request through the platform. Requests go through an approval workflow with your supervisor or admin.",
         steps: [
           "Navigate to Admin Panel > Float Requests",
           "Click 'Request Top-Up' and enter the desired amount",
@@ -408,7 +460,8 @@ const tutorials: Tutorial[] = [
         title: "Daily Settlement Process",
         timestamp: "06:00",
         duration: "3 min",
-        content: "Settlement runs automatically at 5:00 PM WAT daily. It aggregates all transactions, calculates commissions, and generates settlement reports for each agent.",
+        content:
+          "Settlement runs automatically at 5:00 PM WAT daily. It aggregates all transactions, calculates commissions, and generates settlement reports for each agent.",
         steps: [
           "Settlement triggers automatically at 5:00 PM WAT",
           "The system aggregates: transaction count, total volume, commissions, failed transactions",
@@ -426,7 +479,8 @@ const tutorials: Tutorial[] = [
         title: "Settlement Reconciliation",
         timestamp: "09:00",
         duration: "3 min",
-        content: "Reconciliation compares your transaction records with the bank's records to identify discrepancies. Any mismatches are flagged for investigation.",
+        content:
+          "Reconciliation compares your transaction records with the bank's records to identify discrepancies. Any mismatches are flagged for investigation.",
         steps: [
           "Navigate to Settlement Reconciliation page",
           "Review the reconciliation summary for the selected period",
@@ -442,7 +496,8 @@ const tutorials: Tutorial[] = [
         title: "Commission Payouts",
         timestamp: "12:00",
         duration: "2 min",
-        content: "Commissions are calculated per transaction based on type and amount. They accumulate daily and are paid out during settlement.",
+        content:
+          "Commissions are calculated per transaction based on type and amount. They accumulate daily and are paid out during settlement.",
         steps: [
           "View your commission breakdown on the Commission Payouts page",
           "Commission rates vary by transaction type (cash-in: 0.5%, cash-out: 0.3%, etc.)",
@@ -456,11 +511,19 @@ const tutorials: Tutorial[] = [
   {
     id: "admin-analytics",
     title: "Admin Panel & Analytics Dashboard",
-    description: "Master the admin panel features including real-time analytics, agent management, system monitoring, report generation, and platform configuration.",
+    description:
+      "Master the admin panel features including real-time analytics, agent management, system monitoring, report generation, and platform configuration.",
     icon: Settings,
     difficulty: "advanced",
     duration: "20 min",
-    tags: ["admin", "analytics", "dashboard", "monitoring", "reports", "management"],
+    tags: [
+      "admin",
+      "analytics",
+      "dashboard",
+      "monitoring",
+      "reports",
+      "management",
+    ],
     prerequisites: ["Admin role", "Platform admin training"],
     relatedPages: [
       { label: "Admin Panel", path: "/admin" },
@@ -473,7 +536,8 @@ const tutorials: Tutorial[] = [
         title: "Admin Panel Overview",
         timestamp: "00:00",
         duration: "3 min",
-        content: "The Admin Panel is the central management hub for platform administrators. It provides real-time visibility into all operations, agent performance, system health, and compliance status.",
+        content:
+          "The Admin Panel is the central management hub for platform administrators. It provides real-time visibility into all operations, agent performance, system health, and compliance status.",
         steps: [
           "Access the Admin Panel via the sidebar or the ⬡ button in the POS header",
           "The Overview tab shows key KPIs: transaction volume, active agents, fraud rate",
@@ -487,7 +551,8 @@ const tutorials: Tutorial[] = [
         title: "Analytics Dashboard Deep Dive",
         timestamp: "03:00",
         duration: "4 min",
-        content: "The analytics dashboard provides comprehensive data visualization including transaction trends, agent performance comparisons, revenue breakdowns, and predictive insights.",
+        content:
+          "The analytics dashboard provides comprehensive data visualization including transaction trends, agent performance comparisons, revenue breakdowns, and predictive insights.",
         steps: [
           "Navigate to the Analytics tab in Admin Panel",
           "Use date range pickers to filter data (today, this week, this month, custom)",
@@ -506,7 +571,8 @@ const tutorials: Tutorial[] = [
         title: "Managing Agents",
         timestamp: "07:00",
         duration: "4 min",
-        content: "The Agents tab provides full lifecycle management for field agents including onboarding, role assignment, performance monitoring, and account suspension.",
+        content:
+          "The Agents tab provides full lifecycle management for field agents including onboarding, role assignment, performance monitoring, and account suspension.",
         steps: [
           "View all agents with their status, tier, float, and performance metrics",
           "Promote agents to admin role using the role dropdown",
@@ -521,7 +587,8 @@ const tutorials: Tutorial[] = [
         title: "System Health Monitoring",
         timestamp: "11:00",
         duration: "4 min",
-        content: "The System Health page provides real-time monitoring of all platform services including API endpoints, database connections, external integrations, and infrastructure metrics.",
+        content:
+          "The System Health page provides real-time monitoring of all platform services including API endpoints, database connections, external integrations, and infrastructure metrics.",
         steps: [
           "Navigate to System Health from the sidebar",
           "Green indicators: service healthy and responding normally",
@@ -540,7 +607,8 @@ const tutorials: Tutorial[] = [
         title: "Generating & Scheduling Reports",
         timestamp: "15:00",
         duration: "3 min",
-        content: "The platform supports automated weekly reports, on-demand report generation, and scheduled email delivery to stakeholders.",
+        content:
+          "The platform supports automated weekly reports, on-demand report generation, and scheduled email delivery to stakeholders.",
         steps: [
           "Navigate to Weekly Reports for automated summaries",
           "Use Report Comparison to compare any two report periods",
@@ -554,7 +622,8 @@ const tutorials: Tutorial[] = [
         title: "Platform Configuration",
         timestamp: "18:00",
         duration: "2 min",
-        content: "Platform-wide settings control security policies, notification preferences, API rate limits, and integration configurations.",
+        content:
+          "Platform-wide settings control security policies, notification preferences, API rate limits, and integration configurations.",
         steps: [
           "Access Settings from the sidebar",
           "Configure notification channels and quiet hours",
@@ -607,14 +676,20 @@ export default function VideoTutorials() {
       // Text search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const matchesText = t.title.toLowerCase().includes(q) ||
+        const matchesText =
+          t.title.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
           t.tags.some(tag => tag.includes(q)) ||
-          t.chapters.some(c => c.title.toLowerCase().includes(q) || c.content.toLowerCase().includes(q));
+          t.chapters.some(
+            c =>
+              c.title.toLowerCase().includes(q) ||
+              c.content.toLowerCase().includes(q)
+          );
         if (!matchesText) return false;
       }
       // Difficulty filter
-      if (difficultyFilter !== "all" && t.difficulty !== difficultyFilter) return false;
+      if (difficultyFilter !== "all" && t.difficulty !== difficultyFilter)
+        return false;
       // Tag filter
       if (tagFilter !== "all" && !t.tags.includes(tagFilter)) return false;
       return true;
@@ -622,16 +697,22 @@ export default function VideoTutorials() {
   }, [searchQuery, difficultyFilter, tagFilter]);
 
   const activeTutorial = tutorials.find(t => t.id === selectedTutorial);
-  const activeChapter = activeTutorial?.chapters.find(c => c.id === selectedChapter);
+  const activeChapter = activeTutorial?.chapters.find(
+    c => c.id === selectedChapter
+  );
 
-  const handleMarkComplete = useCallback((tutorialId: string, chapterId: string) => {
-    saveProgress(tutorialId, chapterId);
-    setProgress(getProgress());
-  }, []);
+  const handleMarkComplete = useCallback(
+    (tutorialId: string, chapterId: string) => {
+      saveProgress(tutorialId, chapterId);
+      setProgress(getProgress());
+    },
+    []
+  );
 
   const getTutorialProgress = (tutorialId: string) => {
     const completed = progress[tutorialId]?.length || 0;
-    const total = tutorials.find(t => t.id === tutorialId)?.chapters.length || 1;
+    const total =
+      tutorials.find(t => t.id === tutorialId)?.chapters.length || 1;
     return Math.round((completed / total) * 100);
   };
 
@@ -647,7 +728,14 @@ export default function VideoTutorials() {
       <DashboardLayout>
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Back button */}
-          <Button variant="ghost" size="sm" onClick={() => { setSelectedTutorial(null); setSelectedChapter(null); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedTutorial(null);
+              setSelectedChapter(null);
+            }}
+          >
             ← Back to Tutorials
           </Button>
 
@@ -658,16 +746,22 @@ export default function VideoTutorials() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{activeTutorial.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{activeTutorial.description}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {activeTutorial.description}
+              </p>
               <div className="flex items-center gap-3 mt-2">
-                <Badge variant="outline" className={difficultyColors[activeTutorial.difficulty]}>
+                <Badge
+                  variant="outline"
+                  className={difficultyColors[activeTutorial.difficulty]}
+                >
                   {activeTutorial.difficulty}
                 </Badge>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {activeTutorial.duration}
                 </span>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Layers className="h-3 w-3" /> {activeTutorial.chapters.length} chapters
+                  <Layers className="h-3 w-3" />{" "}
+                  {activeTutorial.chapters.length} chapters
                 </span>
                 <span className="text-xs text-primary font-medium">
                   {getTutorialProgress(activeTutorial.id)}% complete
@@ -679,10 +773,15 @@ export default function VideoTutorials() {
           {/* Prerequisites */}
           {activeTutorial.prerequisites && (
             <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-              <p className="text-xs font-semibold text-amber-400 mb-1">Prerequisites</p>
+              <p className="text-xs font-semibold text-amber-400 mb-1">
+                Prerequisites
+              </p>
               <ul className="space-y-0.5">
                 {activeTutorial.prerequisites.map((p, i) => (
-                  <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <li
+                    key={i}
+                    className="text-xs text-muted-foreground flex items-center gap-1.5"
+                  >
                     <CheckCircle2 className="h-3 w-3 text-amber-400" /> {p}
                   </li>
                 ))}
@@ -697,7 +796,9 @@ export default function VideoTutorials() {
               <h3 className="text-sm font-semibold mb-3">Chapters</h3>
               <div className="space-y-1.5">
                 {activeTutorial.chapters.map((chapter, idx) => {
-                  const isComplete = progress[activeTutorial.id]?.includes(chapter.id);
+                  const isComplete = progress[activeTutorial.id]?.includes(
+                    chapter.id
+                  );
                   const isActive = selectedChapter === chapter.id;
 
                   return (
@@ -706,19 +807,33 @@ export default function VideoTutorials() {
                       onClick={() => setSelectedChapter(chapter.id)}
                       className={cn(
                         "w-full text-left p-3 rounded-lg border transition-colors",
-                        isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                        isActive
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0",
-                          isComplete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
-                        )}>
-                          {isComplete ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
+                        <div
+                          className={cn(
+                            "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0",
+                            isComplete
+                              ? "bg-green-500 text-white"
+                              : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {isComplete ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : (
+                            idx + 1
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{chapter.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{chapter.timestamp} · {chapter.duration}</p>
+                          <p className="text-xs font-medium truncate">
+                            {chapter.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {chapter.timestamp} · {chapter.duration}
+                          </p>
                         </div>
                       </div>
                     </button>
@@ -754,33 +869,48 @@ export default function VideoTutorials() {
                       <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
                         <Play className="h-8 w-8 text-primary ml-1" />
                       </div>
-                      <p className="text-sm font-semibold">{activeChapter.title}</p>
+                      <p className="text-sm font-semibold">
+                        {activeChapter.title}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Chapter {activeTutorial.chapters.indexOf(activeChapter) + 1} · {activeChapter.duration}
+                        Chapter{" "}
+                        {activeTutorial.chapters.indexOf(activeChapter) + 1} ·{" "}
+                        {activeChapter.duration}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-2 max-w-xs mx-auto">
-                        Video content will be available once the media library is configured.
-                        Follow the step-by-step guide below.
+                        Video content will be available once the media library
+                        is configured. Follow the step-by-step guide below.
                       </p>
                     </div>
                   </div>
 
                   {/* Chapter Content */}
                   <div>
-                    <h2 className="text-lg font-semibold mb-2">{activeChapter.title}</h2>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{activeChapter.content}</p>
+                    <h2 className="text-lg font-semibold mb-2">
+                      {activeChapter.title}
+                    </h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {activeChapter.content}
+                    </p>
                   </div>
 
                   {/* Steps */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Step-by-Step Guide</h3>
+                    <h3 className="text-sm font-semibold mb-3">
+                      Step-by-Step Guide
+                    </h3>
                     <div className="space-y-2">
                       {activeChapter.steps.map((step, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                        <div
+                          key={i}
+                          className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                        >
                           <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0 mt-0.5">
                             {i + 1}
                           </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{step}</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {step}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -794,7 +924,10 @@ export default function VideoTutorials() {
                       </h3>
                       <ul className="space-y-1.5">
                         {activeChapter.tips.map((tip, i) => (
-                          <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                          <li
+                            key={i}
+                            className="text-xs text-muted-foreground flex items-start gap-1.5"
+                          >
                             <Target className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
                             {tip}
                           </li>
@@ -805,9 +938,16 @@ export default function VideoTutorials() {
 
                   {/* Mark Complete / Next Chapter */}
                   <div className="flex items-center gap-3 pt-2">
-                    {!progress[activeTutorial.id]?.includes(activeChapter.id) ? (
+                    {!progress[activeTutorial.id]?.includes(
+                      activeChapter.id
+                    ) ? (
                       <Button
-                        onClick={() => handleMarkComplete(activeTutorial.id, activeChapter.id)}
+                        onClick={() =>
+                          handleMarkComplete(
+                            activeTutorial.id,
+                            activeChapter.id
+                          )
+                        }
                         className="flex-1"
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -819,12 +959,16 @@ export default function VideoTutorials() {
                         Completed
                       </Button>
                     )}
-                    {activeTutorial.chapters.indexOf(activeChapter) < activeTutorial.chapters.length - 1 && (
+                    {activeTutorial.chapters.indexOf(activeChapter) <
+                      activeTutorial.chapters.length - 1 && (
                       <Button
                         variant="outline"
                         onClick={() => {
-                          const nextIdx = activeTutorial.chapters.indexOf(activeChapter) + 1;
-                          setSelectedChapter(activeTutorial.chapters[nextIdx].id);
+                          const nextIdx =
+                            activeTutorial.chapters.indexOf(activeChapter) + 1;
+                          setSelectedChapter(
+                            activeTutorial.chapters[nextIdx].id
+                          );
                         }}
                       >
                         Next Chapter <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -835,12 +979,16 @@ export default function VideoTutorials() {
               ) : (
                 <div className="text-center py-20">
                   <Video className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">Select a chapter to begin</p>
+                  <p className="text-sm text-muted-foreground">
+                    Select a chapter to begin
+                  </p>
                   <Button
                     variant="outline"
                     size="sm"
                     className="mt-3"
-                    onClick={() => setSelectedChapter(activeTutorial.chapters[0].id)}
+                    onClick={() =>
+                      setSelectedChapter(activeTutorial.chapters[0].id)
+                    }
                   >
                     Start from Chapter 1
                   </Button>
@@ -871,7 +1019,16 @@ export default function VideoTutorials() {
           <div className="flex items-center gap-2">
             <Award className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">
-              {Object.values(progress).reduce((sum: any, arr: any) => sum + arr.length, 0)} / {tutorials.reduce((sum: any, t: any) => sum + t.chapters.length, 0)} chapters completed
+              {Object.values(progress).reduce(
+                (sum: any, arr: any) => sum + arr.length,
+                0
+              )}{" "}
+              /{" "}
+              {tutorials.reduce(
+                (sum: any, t: any) => sum + t.chapters.length,
+                0
+              )}{" "}
+              chapters completed
             </span>
           </div>
         </div>
@@ -904,11 +1061,23 @@ export default function VideoTutorials() {
           >
             <option value="all">All Topics</option>
             {allTags.map(tag => (
-              <option key={tag} value={tag}>{tag.charAt(0).toUpperCase() + tag.slice(1)}</option>
+              <option key={tag} value={tag}>
+                {tag.charAt(0).toUpperCase() + tag.slice(1)}
+              </option>
             ))}
           </select>
-          {(searchQuery || difficultyFilter !== "all" || tagFilter !== "all") && (
-            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(""); setDifficultyFilter("all"); setTagFilter("all"); }}>
+          {(searchQuery ||
+            difficultyFilter !== "all" ||
+            tagFilter !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setDifficultyFilter("all");
+                setTagFilter("all");
+              }}
+            >
               <RotateCcw className="h-3 w-3 mr-1" /> Clear filters
             </Button>
           )}
@@ -923,7 +1092,10 @@ export default function VideoTutorials() {
             return (
               <button
                 key={tutorial.id}
-                onClick={() => { setSelectedTutorial(tutorial.id); setSelectedChapter(null); }}
+                onClick={() => {
+                  setSelectedTutorial(tutorial.id);
+                  setSelectedChapter(null);
+                }}
                 className="text-left rounded-xl border border-border p-5 hover:border-primary/30 hover:bg-primary/5 transition-all group"
               >
                 <div className="flex items-start gap-3">
@@ -938,21 +1110,32 @@ export default function VideoTutorials() {
                       {tutorial.description}
                     </p>
                     <div className="flex items-center gap-3 mt-3">
-                      <Badge variant="outline" className={cn("text-[10px]", difficultyColors[tutorial.difficulty])}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px]",
+                          difficultyColors[tutorial.difficulty]
+                        )}
+                      >
                         {tutorial.difficulty}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {tutorial.duration}
                       </span>
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Layers className="h-3 w-3" /> {tutorial.chapters.length} chapters
+                        <Layers className="h-3 w-3" />{" "}
+                        {tutorial.chapters.length} chapters
                       </span>
                     </div>
                     {/* Progress Bar */}
                     <div className="mt-3">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-muted-foreground">Progress</span>
-                        <span className="text-[10px] font-medium text-primary">{progressPct}%</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Progress
+                        </span>
+                        <span className="text-[10px] font-medium text-primary">
+                          {progressPct}%
+                        </span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
@@ -971,7 +1154,9 @@ export default function VideoTutorials() {
         {filteredTutorials.length === 0 && (
           <div className="text-center py-12">
             <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No tutorials match your search</p>
+            <p className="text-sm text-muted-foreground">
+              No tutorials match your search
+            </p>
           </div>
         )}
       </div>

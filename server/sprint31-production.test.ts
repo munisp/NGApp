@@ -167,36 +167,58 @@ describe("Docker & Infrastructure Files", () => {
 
   it("should have docker-compose.yml", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.yml")
+    ).toBe(true);
   });
 
   it("should have K8s deployment YAML", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/infrastructure/k8s/deployment.yaml")).toBe(true);
+    expect(
+      fs.existsSync(
+        "/home/ubuntu/pos-shell-demo/infrastructure/k8s/deployment.yaml"
+      )
+    ).toBe(true);
   });
 
   it("should have dbt project config", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/infrastructure/dbt/dbt_project.yml")).toBe(true);
+    expect(
+      fs.existsSync(
+        "/home/ubuntu/pos-shell-demo/infrastructure/dbt/dbt_project.yml"
+      )
+    ).toBe(true);
   });
 
   it("should have Airflow DAGs", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/infrastructure/airflow/dags/posshell_daily_pipeline.py")).toBe(true);
+    expect(
+      fs.existsSync(
+        "/home/ubuntu/pos-shell-demo/infrastructure/airflow/dags/posshell_daily_pipeline.py"
+      )
+    ).toBe(true);
   });
 
   it("should have NiFi flow template", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/infrastructure/nifi/posshell-flow-template.json")).toBe(true);
+    expect(
+      fs.existsSync(
+        "/home/ubuntu/pos-shell-demo/infrastructure/nifi/posshell-flow-template.json"
+      )
+    ).toBe(true);
   });
 
   it("should have seed data script", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/seed-data.mjs")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/seed-data.mjs")
+    ).toBe(true);
   });
 
   it("should have smoke test script", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs")
+    ).toBe(true);
   });
 });

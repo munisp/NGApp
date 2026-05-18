@@ -73,10 +73,13 @@ describe("SMS Service", () => {
   describe("sendSmsWithRetry", () => {
     it("should succeed on first attempt with console provider", async () => {
       const { sendSmsWithRetry } = await import("./lib/smsService");
-      const result = await sendSmsWithRetry({
-        to: "+2348012345678",
-        body: "Retry test",
-      }, 3);
+      const result = await sendSmsWithRetry(
+        {
+          to: "+2348012345678",
+          body: "Retry test",
+        },
+        3
+      );
       expect(result.success).toBe(true);
       expect(result.provider).toBe("console");
     });
@@ -157,9 +160,14 @@ describe("SMS Service", () => {
       const status = getSmsProviderStatus();
       expect(status).toBeInstanceOf(Array);
       expect(status.length).toBe(4);
-      expect(status.map((s) => s.name)).toEqual(["twilio", "africastalking", "termii", "console"]);
+      expect(status.map(s => s.name)).toEqual([
+        "twilio",
+        "africastalking",
+        "termii",
+        "console",
+      ]);
       // Console should always be enabled
-      const consoleProv = status.find((s) => s.name === "console");
+      const consoleProv = status.find(s => s.name === "console");
       expect(consoleProv?.enabled).toBe(true);
     });
   });
@@ -192,7 +200,9 @@ describe("SMS Service", () => {
 describe("Notification Inbox", () => {
   describe("createNotification", () => {
     it("should create a notification with all fields", async () => {
-      const { createNotification } = await import("./routers/notificationInbox");
+      const { createNotification } = await import(
+        "./routers/notificationInbox"
+      );
       const notif = createNotification({
         channel: "email",
         category: "rate_alert",
@@ -215,7 +225,9 @@ describe("Notification Inbox", () => {
     });
 
     it("should create notification without optional fields", async () => {
-      const { createNotification } = await import("./routers/notificationInbox");
+      const { createNotification } = await import(
+        "./routers/notificationInbox"
+      );
       const notif = createNotification({
         channel: "in_app",
         category: "system",
@@ -239,8 +251,15 @@ describe("Notification Inbox", () => {
 
     it("should support all category types", () => {
       const categories = [
-        "rate_alert", "fraud", "transaction", "security",
-        "system", "settlement", "kyc", "compliance", "general",
+        "rate_alert",
+        "fraud",
+        "transaction",
+        "security",
+        "system",
+        "settlement",
+        "kyc",
+        "compliance",
+        "general",
       ];
       expect(categories).toHaveLength(9);
     });

@@ -64,7 +64,13 @@ describe("F6-F10: Business Rules Completion", () => {
     expect(mod.calculateClawback).toBeDefined();
     // calculateClawback(agentId, originalCommission, transactionDate, reversalDate, reason)
     const txDate = new Date(Date.now() - 2 * 86400000); // 2 days ago
-    const result = mod.calculateClawback("agent-1", 1500, txDate, new Date(), "fraud");
+    const result = mod.calculateClawback(
+      "agent-1",
+      1500,
+      txDate,
+      new Date(),
+      "fraud"
+    );
     expect(result).toHaveProperty("clawbackAmount");
     expect(result.clawbackAmount).toBeGreaterThan(0);
   });
@@ -140,7 +146,7 @@ describe("F11-F15: UI Completion", () => {
     // executeBulkOperation(ids, operation, options)
     const result = await mod.executeBulkOperation(
       ["a1", "a2", "a3"],
-      async (id) => ({ activated: id }),
+      async id => ({ activated: id }),
       { concurrency: 2 }
     );
     expect(result).toHaveProperty("totalRequested", 3);
@@ -198,20 +204,32 @@ describe("F16-F20: Platform Hardening", () => {
     const mod = await import("../../lib/platformHardening");
     expect(mod.validateAttachment).toBeDefined();
     // validateAttachment(fileName, mimeType, sizeBytes)
-    const result = mod.validateAttachment("report.pdf", "application/pdf", 1024 * 1024);
+    const result = mod.validateAttachment(
+      "report.pdf",
+      "application/pdf",
+      1024 * 1024
+    );
     expect(result).toHaveProperty("valid");
     expect(result.valid).toBe(true);
   });
 
   it("should reject oversized files", async () => {
     const mod = await import("../../lib/platformHardening");
-    const result = mod.validateAttachment("huge.zip", "application/zip", 100 * 1024 * 1024);
+    const result = mod.validateAttachment(
+      "huge.zip",
+      "application/zip",
+      100 * 1024 * 1024
+    );
     expect(result.valid).toBe(false);
   });
 
   it("should reject dangerous file types", async () => {
     const mod = await import("../../lib/platformHardening");
-    const result = mod.validateAttachment("malware.exe", "application/x-msdownload", 1024);
+    const result = mod.validateAttachment(
+      "malware.exe",
+      "application/x-msdownload",
+      1024
+    );
     expect(result.valid).toBe(false);
   });
 
@@ -221,7 +239,9 @@ describe("F16-F20: Platform Hardening", () => {
     // renderTemplate takes templateId and variables, returns null if template not found
     expect(typeof mod.renderTemplate).toBe("function");
     // Test with non-existent template returns null
-    const result = mod.renderTemplate("non_existent_template", { name: "John" });
+    const result = mod.renderTemplate("non_existent_template", {
+      name: "John",
+    });
     expect(result).toBeNull();
     // getMessageTemplates should exist
     expect(mod.getMessageTemplates).toBeDefined();
@@ -291,31 +311,43 @@ describe("Security Audit Modules", () => {
 describe("Infrastructure Configs", () => {
   it("should have K8s deployment manifest", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/k8s/deployment.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/k8s/deployment.yml")
+    ).toBe(true);
   });
 
   it("should have Docker Compose final config", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.final.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.final.yml")
+    ).toBe(true);
   });
 
   it("should have CI/CD pipeline", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/.github/workflows/ci-cd.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/.github/workflows/ci-cd.yml")
+    ).toBe(true);
   });
 
   it("should have security audit report", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/SECURITY_AUDIT_FINAL.md")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/SECURITY_AUDIT_FINAL.md")
+    ).toBe(true);
   });
 
   it("should have Prometheus config", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")
+    ).toBe(true);
   });
 
   it("should have Nginx config", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/nginx.conf")).toBe(true);
+    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/nginx.conf")).toBe(
+      true
+    );
   });
 });

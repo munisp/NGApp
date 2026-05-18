@@ -1,13 +1,17 @@
 /**
  * Sprint 89 Tests — 54Link POS Shell
- * 
+ *
  * Covers:
  *   - webhookHandler: test event detection, calculateNextRetry, publishBillingEvent
  *   - adminDashboard router: system stats, user list, role update guard
  *   - analyticsQuery router: metrics query, search, pipeline health
  */
 import { describe, expect, it, vi } from "vitest";
-import { DUNNING_CONFIG, calculateNextRetry, publishBillingEvent } from "./stripe/webhookHandler";
+import {
+  DUNNING_CONFIG,
+  calculateNextRetry,
+  publishBillingEvent,
+} from "./stripe/webhookHandler";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -25,7 +29,10 @@ function createAdminContext(): TrpcContext {
       updatedAt: new Date(),
       lastSignedIn: new Date(),
     },
-    req: { protocol: "https", headers: { origin: "http://localhost:3000" } } as TrpcContext["req"],
+    req: {
+      protocol: "https",
+      headers: { origin: "http://localhost:3000" },
+    } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
 }
@@ -43,7 +50,10 @@ function createUserContext(): TrpcContext {
       updatedAt: new Date(),
       lastSignedIn: new Date(),
     },
-    req: { protocol: "https", headers: { origin: "http://localhost:3000" } } as TrpcContext["req"],
+    req: {
+      protocol: "https",
+      headers: { origin: "http://localhost:3000" },
+    } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
 }
@@ -55,7 +65,9 @@ describe("webhookHandler", () => {
       expect(DUNNING_CONFIG.maxRetries).toBe(3);
       expect(DUNNING_CONFIG.retryIntervals).toHaveLength(3);
       expect(DUNNING_CONFIG.gracePeriodDays).toBeGreaterThan(0);
-      expect(DUNNING_CONFIG.suspensionAfterDays).toBeGreaterThan(DUNNING_CONFIG.gracePeriodDays);
+      expect(DUNNING_CONFIG.suspensionAfterDays).toBeGreaterThan(
+        DUNNING_CONFIG.gracePeriodDays
+      );
       expect(DUNNING_CONFIG.notificationChannels).toContain("email");
       expect(DUNNING_CONFIG.notificationChannels).toContain("kafka");
     });

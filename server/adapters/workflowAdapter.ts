@@ -18,19 +18,37 @@ export interface WorkflowCreateInput {
   steps: Array<{ name: string; type: string; assigneeRole?: string }>;
 }
 
-export async function createWorkflow(input: WorkflowCreateInput): Promise<AdapterResponse<WorkflowDefinition>> {
-  return workflowOrchestrator.post<WorkflowDefinition>("/api/v1/workflow/create", input);
+export async function createWorkflow(
+  input: WorkflowCreateInput
+): Promise<AdapterResponse<WorkflowDefinition>> {
+  return workflowOrchestrator.post<WorkflowDefinition>(
+    "/api/v1/workflow/create",
+    input
+  );
 }
 
-export async function advanceWorkflow(workflowId: string, stepIndex: number): Promise<AdapterResponse<WorkflowDefinition>> {
-  return workflowOrchestrator.post<WorkflowDefinition>("/api/v1/workflow/advance", { workflowId, stepIndex });
+export async function advanceWorkflow(
+  workflowId: string,
+  stepIndex: number
+): Promise<AdapterResponse<WorkflowDefinition>> {
+  return workflowOrchestrator.post<WorkflowDefinition>(
+    "/api/v1/workflow/advance",
+    { workflowId, stepIndex }
+  );
 }
 
-export async function listWorkflows(status?: string): Promise<AdapterResponse<WorkflowDefinition[]>> {
+export async function listWorkflows(
+  status?: string
+): Promise<AdapterResponse<WorkflowDefinition[]>> {
   const params = status ? { status } : undefined;
-  return workflowOrchestrator.get<WorkflowDefinition[]>("/api/v1/workflow/list", params);
+  return workflowOrchestrator.get<WorkflowDefinition[]>(
+    "/api/v1/workflow/list",
+    params
+  );
 }
 
-export async function getWorkflowHealth(): Promise<AdapterResponse<{ status: string }>> {
+export async function getWorkflowHealth(): Promise<
+  AdapterResponse<{ status: string }>
+> {
   return workflowOrchestrator.healthCheck();
 }

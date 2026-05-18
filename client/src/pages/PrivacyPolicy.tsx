@@ -4,11 +4,11 @@
  */
 import { Link } from "wouter";
 
-const BG     = "oklch(0.10 0.015 260)";
-const CARD   = "oklch(0.14 0.015 260)";
+const BG = "oklch(0.10 0.015 260)";
+const CARD = "oklch(0.14 0.015 260)";
 const BORDER = "oklch(0.22 0.015 260)";
-const BLUE   = "oklch(0.65 0.22 260)";
-const DISP   = "'Inter', sans-serif";
+const BLUE = "oklch(0.65 0.22 260)";
+const DISP = "'Inter', sans-serif";
 
 const SECTIONS = [
   {
@@ -71,15 +71,34 @@ const SECTIONS = [
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: BG, fontFamily: DISP }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: BG, fontFamily: DISP }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: BORDER, background: CARD }}>
+      <div
+        className="flex items-center justify-between px-6 py-4 border-b"
+        style={{ borderColor: BORDER, background: CARD }}
+      >
         <div className="flex items-center gap-3">
           <Link href="/hub">
-            <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ borderColor: BORDER, color: BLUE }}>← Hub</button>
+            <button
+              className="text-xs px-3 py-1.5 rounded-lg border"
+              style={{ borderColor: BORDER, color: BLUE }}
+            >
+              ← Hub
+            </button>
           </Link>
-          <div className="text-lg font-black text-white" style={{ fontFamily: DISP }}>Privacy Policy</div>
-          <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "oklch(0.65 0.22 260 / 0.15)", color: BLUE }}>
+          <div
+            className="text-lg font-black text-white"
+            style={{ fontFamily: DISP }}
+          >
+            Privacy Policy
+          </div>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-semibold"
+            style={{ background: "oklch(0.65 0.22 260 / 0.15)", color: BLUE }}
+          >
             NDPR / GDPR Compliant
           </span>
         </div>
@@ -89,23 +108,41 @@ export default function PrivacyPolicy() {
       {/* Content */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
         {/* Intro banner */}
-        <div className="rounded-xl p-5 mb-8" style={{ background: "oklch(0.65 0.22 260 / 0.08)", border: `1px solid ${BORDER}` }}>
-          <div className="text-sm font-bold text-white mb-1">54Link Financial Services Limited — Privacy Policy</div>
+        <div
+          className="rounded-xl p-5 mb-8"
+          style={{
+            background: "oklch(0.65 0.22 260 / 0.08)",
+            border: `1px solid ${BORDER}`,
+          }}
+        >
+          <div className="text-sm font-bold text-white mb-1">
+            54Link Financial Services Limited — Privacy Policy
+          </div>
           <div className="text-xs text-gray-400">
-            This document governs the collection, use, and protection of personal data on the 54Link Agency Banking Platform.
-            It is compliant with the Nigeria Data Protection Regulation (NDPR) 2019, the Nigeria Data Protection Act (NDPA) 2023,
-            and applicable GDPR standards. Last updated: 1 April 2026.
+            This document governs the collection, use, and protection of
+            personal data on the 54Link Agency Banking Platform. It is compliant
+            with the Nigeria Data Protection Regulation (NDPR) 2019, the Nigeria
+            Data Protection Act (NDPA) 2023, and applicable GDPR standards. Last
+            updated: 1 April 2026.
           </div>
         </div>
 
         {/* Table of Contents */}
-        <div className="rounded-xl p-5 mb-8" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <div className="text-sm font-bold text-white mb-3">Table of Contents</div>
+        <div
+          className="rounded-xl p-5 mb-8"
+          style={{ background: CARD, border: `1px solid ${BORDER}` }}
+        >
+          <div className="text-sm font-bold text-white mb-3">
+            Table of Contents
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
             {SECTIONS.map((s, i) => (
-              <a key={i} href={`#section-${i}`}
+              <a
+                key={i}
+                href={`#section-${i}`}
                 className="text-xs hover:underline"
-                style={{ color: BLUE }}>
+                style={{ color: BLUE }}
+              >
                 {s.title}
               </a>
             ))}
@@ -115,9 +152,16 @@ export default function PrivacyPolicy() {
         {/* Sections */}
         <div className="flex flex-col gap-6">
           {SECTIONS.map((s, i) => (
-            <div key={i} id={`section-${i}`} className="rounded-xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <div
+              key={i}
+              id={`section-${i}`}
+              className="rounded-xl p-5"
+              style={{ background: CARD, border: `1px solid ${BORDER}` }}
+            >
               <div className="text-sm font-bold text-white mb-3">{s.title}</div>
-              <div className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">{s.content}</div>
+              <div className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
+                {s.content}
+              </div>
             </div>
           ))}
         </div>
@@ -126,7 +170,8 @@ export default function PrivacyPolicy() {
         <div className="mt-8 text-center text-xs text-gray-500 pb-8">
           © 2026 54Link Financial Services Limited. All rights reserved.
           <br />
-          Regulated by the Central Bank of Nigeria (CBN) | RC No. 1234567 | NDPC Registration No. NDPC-2024-001234
+          Regulated by the Central Bank of Nigeria (CBN) | RC No. 1234567 | NDPC
+          Registration No. NDPC-2024-001234
         </div>
       </div>
     </div>

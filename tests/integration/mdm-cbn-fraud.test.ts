@@ -49,8 +49,8 @@ describe.skipIf(!INTEGRATION)("MDM Heartbeat", () => {
       terminalModel: "PAX A920 MAX",
       batteryLevel: 10,
       signalStrength: -100,
-      appVersion: "1.0.0",  // outdated
-      osVersion: "Android 8",  // outdated
+      appVersion: "1.0.0", // outdated
+      osVersion: "Android 8", // outdated
       latitude: 6.5244,
       longitude: 3.3792,
       isCompliant: false,
@@ -92,7 +92,7 @@ describe.skipIf(!INTEGRATION)("Fraud Detection", () => {
       )
     );
     // At least one should have elevated fraud score
-    const highRisk = results.filter((r) => r.fraudScore > 0.5);
+    const highRisk = results.filter(r => r.fraudScore > 0.5);
     expect(highRisk.length).toBeGreaterThan(0);
   });
 });
@@ -105,7 +105,9 @@ describe.skipIf(!INTEGRATION)("Settlement", () => {
       to: new Date(),
     });
     expect(result).toBeDefined();
-    expect(Array.isArray(result.batches) || result.batches === undefined).toBe(true);
+    expect(Array.isArray(result.batches) || result.batches === undefined).toBe(
+      true
+    );
   });
 });
 

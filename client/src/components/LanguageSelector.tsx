@@ -1,7 +1,12 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 import { useState, useRef, useEffect } from "react";
 import { Globe } from "lucide-react";
-import { getAvailableLocales, getLocale, setLocale, type Locale } from "@/lib/i18n";
+import {
+  getAvailableLocales,
+  getLocale,
+  setLocale,
+  type Locale,
+} from "@/lib/i18n";
 
 export default function LanguageSelector() {
   const [open, setOpen] = useState(false);
@@ -11,7 +16,8 @@ export default function LanguageSelector() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -25,7 +31,7 @@ export default function LanguageSelector() {
     window.dispatchEvent(new Event("locale-changed"));
   };
 
-  const currentLocale = locales.find((l) => l.code === current);
+  const currentLocale = locales.find(l => l.code === current);
 
   return (
     <div ref={ref} className="relative">
@@ -35,11 +41,13 @@ export default function LanguageSelector() {
         title="Select Language"
       >
         <Globe className="h-4 w-4" />
-        <span className="hidden sm:inline">{currentLocale?.nativeName || "English"}</span>
+        <span className="hidden sm:inline">
+          {currentLocale?.nativeName || "English"}
+        </span>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-48 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-50 py-1">
-          {locales.map((locale) => (
+          {locales.map(locale => (
             <button
               key={locale.code}
               onClick={() => handleSelect(locale.code)}
@@ -48,7 +56,9 @@ export default function LanguageSelector() {
               }`}
             >
               <span>{locale.nativeName}</span>
-              <span className="text-xs text-muted-foreground">{locale.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {locale.name}
+              </span>
             </button>
           ))}
         </div>

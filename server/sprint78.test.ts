@@ -11,7 +11,9 @@ import { describe, it, expect } from "vitest";
 // --- USSD Session Replay Router Tests ---
 describe("ussdSessionReplayRouter", () => {
   it("should list all sessions", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.listSessions();
     expect(result.sessions.length).toBeGreaterThan(0);
@@ -19,14 +21,20 @@ describe("ussdSessionReplayRouter", () => {
   });
 
   it("should filter sessions by status", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.listSessions({ status: "completed" });
-    expect(result.sessions.every((s: any) => s.status === undefined || true)).toBe(true);
+    expect(
+      result.sessions.every((s: any) => s.status === undefined || true)
+    ).toBe(true);
   });
 
   it("should get a specific session with keystrokes", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.getSession({ sessionId: "SESS-001" });
     expect(result.sessionId).toBe("SESS-001");
@@ -35,7 +43,9 @@ describe("ussdSessionReplayRouter", () => {
   });
 
   it("should replay a session step by step", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.replaySession({ sessionId: "SESS-001" });
     expect(result.totalSteps).toBe(4);
@@ -43,13 +53,19 @@ describe("ussdSessionReplayRouter", () => {
   });
 
   it("should throw for non-existent session", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
-    await expect(caller.getSession({ sessionId: "NONEXISTENT" })).rejects.toThrow("Session not found");
+    await expect(
+      caller.getSession({ sessionId: "NONEXISTENT" })
+    ).rejects.toThrow("Session not found");
   });
 
   it("should return analytics with drop-off screens", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.getAnalytics();
     expect(result.totalSessions).toBeGreaterThan(0);
@@ -59,7 +75,9 @@ describe("ussdSessionReplayRouter", () => {
   });
 
   it("should filter sessions by carrier", async () => {
-    const { ussdSessionReplayRouter } = await import("./routers/ussdSessionReplay");
+    const { ussdSessionReplayRouter } = await import(
+      "./routers/ussdSessionReplay"
+    );
     const caller = ussdSessionReplayRouter.createCaller({});
     const result = await caller.listSessions({ carrier: "MTN_NG" });
     expect(result.total).toBeGreaterThan(0);
@@ -69,7 +87,9 @@ describe("ussdSessionReplayRouter", () => {
 // --- Carrier Live Pricing Router Tests ---
 describe("carrierLivePricingRouter", () => {
   it("should return all carrier rates", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
     const result = await caller.getAllRates();
     expect(result.carriers.length).toBeGreaterThanOrEqual(10);
@@ -77,7 +97,9 @@ describe("carrierLivePricingRouter", () => {
   });
 
   it("should filter rates by country", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
     const result = await caller.getAllRates({ country: "NG" });
     expect(result.carriers.every((c: any) => c.country === "NG")).toBe(true);
@@ -85,7 +107,9 @@ describe("carrierLivePricingRouter", () => {
   });
 
   it("should get a specific carrier rate", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
     const result = await caller.getCarrierRate({ carrierId: "mtn_ng" });
     expect(result.carrierName).toBe("MTN Nigeria");
@@ -94,14 +118,20 @@ describe("carrierLivePricingRouter", () => {
   });
 
   it("should compare multiple carriers", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
-    const result = await caller.compareCarriers({ carrierIds: ["mtn_ng", "airtel_ng", "glo_ng"] });
+    const result = await caller.compareCarriers({
+      carrierIds: ["mtn_ng", "airtel_ng", "glo_ng"],
+    });
     expect(result.comparison.length).toBe(3);
   });
 
   it("should estimate cost correctly", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
     const result = await caller.estimateCost({
       carrierId: "mtn_ng",
@@ -117,7 +147,9 @@ describe("carrierLivePricingRouter", () => {
   });
 
   it("should return available countries", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
     const result = await caller.getCountries();
     expect(result.length).toBeGreaterThanOrEqual(6);
@@ -127,9 +159,13 @@ describe("carrierLivePricingRouter", () => {
   });
 
   it("should throw for non-existent carrier", async () => {
-    const { carrierLivePricingRouter } = await import("./routers/carrierLivePricing");
+    const { carrierLivePricingRouter } = await import(
+      "./routers/carrierLivePricing"
+    );
     const caller = carrierLivePricingRouter.createCaller({});
-    await expect(caller.getCarrierRate({ carrierId: "fake_carrier" })).rejects.toThrow("Carrier not found");
+    await expect(
+      caller.getCarrierRate({ carrierId: "fake_carrier" })
+    ).rejects.toThrow("Carrier not found");
   });
 });
 
@@ -147,7 +183,9 @@ describe("agentKycRouter", () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
     const caller = agentKycRouter.createCaller({});
     const result = await caller.listProfiles({ status: "complete" });
-    expect(result.profiles.every((p: any) => p.overallStatus === "complete")).toBe(true);
+    expect(
+      result.profiles.every((p: any) => p.overallStatus === "complete")
+    ).toBe(true);
   });
 
   it("should get a specific agent profile", async () => {
@@ -236,7 +274,9 @@ describe("txMonitorRouter", () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
     const caller = txMonitorRouter.createCaller({});
     const result = await caller.getAlerts({ severity: "critical" });
-    expect(result.alerts.every((a: any) => a.severity === "critical")).toBe(true);
+    expect(result.alerts.every((a: any) => a.severity === "critical")).toBe(
+      true
+    );
   });
 
   it("should acknowledge an alert", async () => {
@@ -249,7 +289,10 @@ describe("txMonitorRouter", () => {
   it("should resolve an alert", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
     const caller = txMonitorRouter.createCaller({});
-    const result = await caller.resolveAlert({ alertId: "ALT-002", resolution: "False positive" });
+    const result = await caller.resolveAlert({
+      alertId: "ALT-002",
+      resolution: "False positive",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -266,7 +309,9 @@ describe("txMonitorRouter", () => {
 // --- Commission Calculator Router Tests ---
 describe("commissionCalculatorRouter", () => {
   it("should return all tiers and multipliers", async () => {
-    const { commissionCalculatorRouter } = await import("./routers/commissionCalculator");
+    const { commissionCalculatorRouter } = await import(
+      "./routers/commissionCalculator"
+    );
     const caller = commissionCalculatorRouter.createCaller({});
     const result = await caller.getTiers();
     expect(result.tiers.length).toBe(5);
@@ -275,13 +320,20 @@ describe("commissionCalculatorRouter", () => {
   });
 
   it("should calculate commission for Bronze tier", async () => {
-    const { commissionCalculatorRouter } = await import("./routers/commissionCalculator");
+    const { commissionCalculatorRouter } = await import(
+      "./routers/commissionCalculator"
+    );
     const caller = commissionCalculatorRouter.createCaller({});
     const result = await caller.calculate({
       agentId: "AGT-001",
       transactions: [
         { ref: "TX-001", type: "cash_in", amount: 100000, status: "completed" },
-        { ref: "TX-002", type: "cash_out", amount: 200000, status: "completed" },
+        {
+          ref: "TX-002",
+          type: "cash_out",
+          amount: 200000,
+          status: "completed",
+        },
       ],
     });
     expect(result.tier).toBe("Bronze");
@@ -291,18 +343,28 @@ describe("commissionCalculatorRouter", () => {
   });
 
   it("should apply bonus for Silver tier with enough transactions", async () => {
-    const { commissionCalculatorRouter } = await import("./routers/commissionCalculator");
+    const { commissionCalculatorRouter } = await import(
+      "./routers/commissionCalculator"
+    );
     const caller = commissionCalculatorRouter.createCaller({});
     const txs = Array.from({ length: 60 }, (_, i) => ({
-      ref: `TX-${i}`, type: "cash_in", amount: 20000, status: "completed",
+      ref: `TX-${i}`,
+      type: "cash_in",
+      amount: 20000,
+      status: "completed",
     }));
-    const result = await caller.calculate({ agentId: "AGT-001", transactions: txs });
+    const result = await caller.calculate({
+      agentId: "AGT-001",
+      transactions: txs,
+    });
     expect(result.tier).toBe("Silver");
     expect(result.bonusCommission).toBeGreaterThan(0);
   });
 
   it("should handle clawback for reversed transactions", async () => {
-    const { commissionCalculatorRouter } = await import("./routers/commissionCalculator");
+    const { commissionCalculatorRouter } = await import(
+      "./routers/commissionCalculator"
+    );
     const caller = commissionCalculatorRouter.createCaller({});
     const result = await caller.calculate({
       agentId: "AGT-001",
@@ -316,9 +378,15 @@ describe("commissionCalculatorRouter", () => {
   });
 
   it("should simulate commission for given volume", async () => {
-    const { commissionCalculatorRouter } = await import("./routers/commissionCalculator");
+    const { commissionCalculatorRouter } = await import(
+      "./routers/commissionCalculator"
+    );
     const caller = commissionCalculatorRouter.createCaller({});
-    const result = await caller.simulate({ volume: 5000000, txCount: 300, txType: "cash_in" });
+    const result = await caller.simulate({
+      volume: 5000000,
+      txCount: 300,
+      txType: "cash_in",
+    });
     expect(result.tier).toBe("Gold");
     expect(result.totalCommission).toBeGreaterThan(0);
     expect(result.nextTier).toBe("Platinum");
@@ -329,7 +397,9 @@ describe("commissionCalculatorRouter", () => {
 // --- Vulnerability Scanner Middleware Tests ---
 describe("vulnerabilityScannerMiddleware", () => {
   it("should detect SQL injection patterns", async () => {
-    const { detectSqlInjection } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { detectSqlInjection } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     expect(detectSqlInjection("SELECT * FROM users")).toBe(true);
     expect(detectSqlInjection("1 OR 1=1")).toBe(true);
     expect(detectSqlInjection("WAITFOR DELAY '0:0:5'")).toBe(true);
@@ -338,22 +408,28 @@ describe("vulnerabilityScannerMiddleware", () => {
   });
 
   it("should detect XSS patterns", async () => {
-    const { detectXss } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { detectXss } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     expect(detectXss("<script>alert('xss')</script>")).toBe(true);
     expect(detectXss("javascript:void(0)")).toBe(true);
-    expect(detectXss("onclick=\"alert(1)\"")).toBe(true);
+    expect(detectXss('onclick="alert(1)"')).toBe(true);
     expect(detectXss("normal text")).toBe(false);
   });
 
   it("should detect path traversal", async () => {
-    const { detectPathTraversal } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { detectPathTraversal } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     expect(detectPathTraversal("../../../etc/passwd")).toBe(true);
     expect(detectPathTraversal("%2e%2e/secret")).toBe(true);
     expect(detectPathTraversal("/home/user/file.txt")).toBe(false);
   });
 
   it("should detect SSRF attempts", async () => {
-    const { detectSsrf } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { detectSsrf } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     expect(detectSsrf("http://127.0.0.1:8080/admin")).toBe(true);
     expect(detectSsrf("http://localhost/secret")).toBe(true);
     expect(detectSsrf("file:///etc/passwd")).toBe(true);
@@ -361,28 +437,36 @@ describe("vulnerabilityScannerMiddleware", () => {
   });
 
   it("should sanitize input correctly", async () => {
-    const { sanitizeInput } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { sanitizeInput } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     const result = sanitizeInput("<script>alert('xss')</script>");
     expect(result).not.toContain("<script>");
     expect(result).toContain("&lt;script&gt;");
   });
 
   it("should run PCI-DSS compliance checks", async () => {
-    const { runPciDssChecks } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { runPciDssChecks } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     const result = runPciDssChecks();
     expect(result.passed.length).toBeGreaterThan(10);
     expect(result.failed.length).toBe(0);
   });
 
   it("should return OWASP Top 10 coverage", async () => {
-    const { getOwaspCoverage } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { getOwaspCoverage } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     const result = getOwaspCoverage();
     expect(result.length).toBe(10);
     expect(result.every((r: any) => r.covered)).toBe(true);
   });
 
   it("should generate a full vulnerability report", async () => {
-    const { generateVulnerabilityReport } = await import("./middleware/vulnerabilityScannerMiddleware");
+    const { generateVulnerabilityReport } = await import(
+      "./middleware/vulnerabilityScannerMiddleware"
+    );
     const report = generateVulnerabilityReport();
     expect(report.scanId).toBeTruthy();
     expect(report.complianceScore).toBeGreaterThanOrEqual(90);
@@ -394,7 +478,9 @@ describe("vulnerabilityScannerMiddleware", () => {
 // --- Offline Queue Middleware Tests ---
 describe("offlineQueueMiddleware", () => {
   it("should calculate backoff with jitter", async () => {
-    const { calculateBackoff } = await import("./middleware/offlineQueueMiddleware");
+    const { calculateBackoff } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
     const delay1 = calculateBackoff(0, "4g");
     expect(delay1).toBeGreaterThan(0);
     expect(delay1).toBeLessThan(2000);
@@ -403,7 +489,9 @@ describe("offlineQueueMiddleware", () => {
   });
 
   it("should generate consistent checksums", async () => {
-    const { generateChecksum } = await import("./middleware/offlineQueueMiddleware");
+    const { generateChecksum } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
     const cs1 = generateChecksum({ a: 1, b: 2 });
     const cs2 = generateChecksum({ b: 2, a: 1 });
     expect(cs1).toBe(cs2); // Order-independent
@@ -412,15 +500,35 @@ describe("offlineQueueMiddleware", () => {
   });
 
   it("should detect conflicts", async () => {
-    const { detectConflict, createQueueEntry } = await import("./middleware/offlineQueueMiddleware");
-    const entry = createQueueEntry("cash_in", { amount: 50000 }, "AGT-001", "DEV-001", "3g");
-    expect(detectConflict(entry, { checksum: entry.checksum, updatedAt: Date.now() })).toBe(false);
-    expect(detectConflict(entry, { checksum: "different", updatedAt: Date.now() })).toBe(true);
+    const { detectConflict, createQueueEntry } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
+    const entry = createQueueEntry(
+      "cash_in",
+      { amount: 50000 },
+      "AGT-001",
+      "DEV-001",
+      "3g"
+    );
+    expect(
+      detectConflict(entry, { checksum: entry.checksum, updatedAt: Date.now() })
+    ).toBe(false);
+    expect(
+      detectConflict(entry, { checksum: "different", updatedAt: Date.now() })
+    ).toBe(true);
   });
 
   it("should resolve conflicts with different strategies", async () => {
-    const { resolveConflict, createQueueEntry } = await import("./middleware/offlineQueueMiddleware");
-    const entry = createQueueEntry("cash_in", { amount: 50000 }, "AGT-001", "DEV-001", "3g");
+    const { resolveConflict, createQueueEntry } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
+    const entry = createQueueEntry(
+      "cash_in",
+      { amount: 50000 },
+      "AGT-001",
+      "DEV-001",
+      "3g"
+    );
     const remote = { payload: { amount: 60000 }, updatedAt: Date.now() };
     const clientWins = resolveConflict(entry, remote, "client_wins");
     expect(clientWins.amount).toBe(50000);
@@ -431,19 +539,38 @@ describe("offlineQueueMiddleware", () => {
   });
 
   it("should create queue entries with correct priority", async () => {
-    const { createQueueEntry } = await import("./middleware/offlineQueueMiddleware");
+    const { createQueueEntry } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
     const cashIn = createQueueEntry("cash_in", {}, "AGT-001", "DEV-001", "4g");
     expect(cashIn.priority).toBe(1);
-    const notification = createQueueEntry("notification", {}, "AGT-001", "DEV-001", "4g");
+    const notification = createQueueEntry(
+      "notification",
+      {},
+      "AGT-001",
+      "DEV-001",
+      "4g"
+    );
     expect(notification.priority).toBe(5);
   });
 
   it("should compute queue stats", async () => {
-    const { createQueueEntry, getQueueStats } = await import("./middleware/offlineQueueMiddleware");
+    const { createQueueEntry, getQueueStats } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
     const queue = [
-      { ...createQueueEntry("cash_in", {}, "A", "D", "3g"), status: "pending" as const },
-      { ...createQueueEntry("cash_out", {}, "A", "D", "3g"), status: "completed" as const },
-      { ...createQueueEntry("transfer", {}, "A", "D", "3g"), status: "failed" as const },
+      {
+        ...createQueueEntry("cash_in", {}, "A", "D", "3g"),
+        status: "pending" as const,
+      },
+      {
+        ...createQueueEntry("cash_out", {}, "A", "D", "3g"),
+        status: "completed" as const,
+      },
+      {
+        ...createQueueEntry("transfer", {}, "A", "D", "3g"),
+        status: "failed" as const,
+      },
     ];
     const stats = getQueueStats(queue);
     expect(stats.totalQueued).toBe(3);
@@ -453,9 +580,17 @@ describe("offlineQueueMiddleware", () => {
   });
 
   it("should compress batch for low-bandwidth", async () => {
-    const { createQueueEntry, compressBatch } = await import("./middleware/offlineQueueMiddleware");
+    const { createQueueEntry, compressBatch } = await import(
+      "./middleware/offlineQueueMiddleware"
+    );
     const queue = Array.from({ length: 10 }, (_, i) =>
-      createQueueEntry("cash_in", { amount: (i + 1) * 10000 }, `AGT-${i}`, `DEV-${i}`, "2g")
+      createQueueEntry(
+        "cash_in",
+        { amount: (i + 1) * 10000 },
+        `AGT-${i}`,
+        `DEV-${i}`,
+        "2g"
+      )
     );
     const result = compressBatch(queue);
     expect(result.compressedSize).toBeLessThanOrEqual(result.originalSize);
@@ -544,7 +679,10 @@ describe("Sprint 78 Rust microservices", () => {
 describe("Sprint 78 router registration", () => {
   it("should have all Sprint 78 routers in routers.ts", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync(`${process.cwd()}/server/routers.ts`, "utf-8");
+    const content = fs.readFileSync(
+      `${process.cwd()}/server/routers.ts`,
+      "utf-8"
+    );
     const routers = [
       "ussdSessionReplay",
       "carrierLivePricing",
@@ -562,7 +700,10 @@ describe("Sprint 78 router registration", () => {
 describe("Sprint 78 page routing", () => {
   it("should have all Sprint 78 pages in App.tsx", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync(`${process.cwd()}/client/src/App.tsx`, "utf-8");
+    const content = fs.readFileSync(
+      `${process.cwd()}/client/src/App.tsx`,
+      "utf-8"
+    );
     const pages = [
       "UssdSessionReplayPage",
       "AgentKycPage",

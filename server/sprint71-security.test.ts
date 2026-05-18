@@ -8,11 +8,13 @@ import { join } from "path";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("Sprint 71: Security Posture Audit", () => {
-
   // ── 1. Rust DDoS Shield Service ──────────────────────────────────────────
   describe("Rust DDoS Shield (services/rust/ddos-shield)", () => {
     it("should have Cargo.toml with required dependencies", () => {
-      const cargoPath = join(__dirname, "../services/rust/ddos-shield/Cargo.toml");
+      const cargoPath = join(
+        __dirname,
+        "../services/rust/ddos-shield/Cargo.toml"
+      );
       expect(existsSync(cargoPath)).toBe(true);
       const cargo = readFileSync(cargoPath, "utf-8");
       expect(cargo).toContain("actix-web");
@@ -22,7 +24,10 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should have main.rs with all DDoS protection components", () => {
-      const mainPath = join(__dirname, "../services/rust/ddos-shield/src/main.rs");
+      const mainPath = join(
+        __dirname,
+        "../services/rust/ddos-shield/src/main.rs"
+      );
       expect(existsSync(mainPath)).toBe(true);
       const main = readFileSync(mainPath, "utf-8");
       // Core protection features
@@ -39,14 +44,20 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should implement adaptive rate limiting with token bucket", () => {
-      const main = readFileSync(join(__dirname, "../services/rust/ddos-shield/src/main.rs"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/rust/ddos-shield/src/main.rs"),
+        "utf-8"
+      );
       expect(main).toContain("tokens");
       expect(main).toContain("max_tokens");
       expect(main).toContain("refill_rate");
     });
 
     it("should implement circuit breaker pattern", () => {
-      const main = readFileSync(join(__dirname, "../services/rust/ddos-shield/src/main.rs"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/rust/ddos-shield/src/main.rs"),
+        "utf-8"
+      );
       expect(main).toContain("Closed");
       expect(main).toContain("Open");
       expect(main).toContain("HalfOpen");
@@ -55,13 +66,19 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should implement IP reputation scoring", () => {
-      const main = readFileSync(join(__dirname, "../services/rust/ddos-shield/src/main.rs"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/rust/ddos-shield/src/main.rs"),
+        "utf-8"
+      );
       expect(main).toContain("reputation_score");
       expect(main).toContain("blocked_ips");
     });
 
     it("should have Dockerfile for containerized deployment", () => {
-      const dockerPath = join(__dirname, "../services/rust/ddos-shield/Dockerfile");
+      const dockerPath = join(
+        __dirname,
+        "../services/rust/ddos-shield/Dockerfile"
+      );
       expect(existsSync(dockerPath)).toBe(true);
       const docker = readFileSync(dockerPath, "utf-8");
       expect(docker).toContain("rust");
@@ -97,7 +114,10 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should implement deny-overrides-allow precedence", () => {
-      const main = readFileSync(join(__dirname, "../services/go/pbac-engine/main.go"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/go/pbac-engine/main.go"),
+        "utf-8"
+      );
       expect(main).toContain("deny");
       // Should have explicit deny check before allow
       const denyIndex = main.indexOf("deny");
@@ -105,7 +125,10 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should have default security policies", () => {
-      const main = readFileSync(join(__dirname, "../services/go/pbac-engine/main.go"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/go/pbac-engine/main.go"),
+        "utf-8"
+      );
       // Check for default policies
       expect(main).toContain("admin");
       expect(main).toContain("mfa");
@@ -114,14 +137,20 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should have CRUD endpoints for policy management", () => {
-      const main = readFileSync(join(__dirname, "../services/go/pbac-engine/main.go"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/go/pbac-engine/main.go"),
+        "utf-8"
+      );
       expect(main).toContain("/policies");
       expect(main).toContain("/authorize");
       expect(main).toContain("/health");
     });
 
     it("should have test file with policy evaluation tests", () => {
-      const testPath = join(__dirname, "../services/go/pbac-engine/main_test.go");
+      const testPath = join(
+        __dirname,
+        "../services/go/pbac-engine/main_test.go"
+      );
       expect(existsSync(testPath)).toBe(true);
       const test = readFileSync(testPath, "utf-8");
       expect(test).toContain("TestPBAC");
@@ -129,12 +158,21 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should implement condition-based access control (not just roles)", () => {
-      const main = readFileSync(join(__dirname, "../services/go/pbac-engine/main.go"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/go/pbac-engine/main.go"),
+        "utf-8"
+      );
       // PBAC conditions beyond simple role checks
       expect(main).toContain("Condition");
       expect(main).toContain("operator");
       // Should support multiple condition types
-      const conditionTypes = ["equals", "greater_than", "less_than", "contains", "in"];
+      const conditionTypes = [
+        "equals",
+        "greater_than",
+        "less_than",
+        "contains",
+        "in",
+      ];
       const foundTypes = conditionTypes.filter(t => main.includes(t));
       expect(foundTypes.length).toBeGreaterThanOrEqual(3);
     });
@@ -143,7 +181,10 @@ describe("Sprint 71: Security Posture Audit", () => {
   // ── 3. Python Fraud ML Service ───────────────────────────────────────────
   describe("Python Fraud ML Service (services/python/fraud-ml-service)", () => {
     it("should have requirements.txt with ML dependencies", () => {
-      const reqPath = join(__dirname, "../services/python/fraud-ml-service/requirements.txt");
+      const reqPath = join(
+        __dirname,
+        "../services/python/fraud-ml-service/requirements.txt"
+      );
       expect(existsSync(reqPath)).toBe(true);
       const reqs = readFileSync(reqPath, "utf-8");
       expect(reqs).toContain("fastapi");
@@ -152,7 +193,10 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should have main.py with fraud detection endpoints", () => {
-      const mainPath = join(__dirname, "../services/python/fraud-ml-service/main.py");
+      const mainPath = join(
+        __dirname,
+        "../services/python/fraud-ml-service/main.py"
+      );
       expect(existsSync(mainPath)).toBe(true);
       const main = readFileSync(mainPath, "utf-8");
       // Core ML components
@@ -165,23 +209,35 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should implement anomaly detection with Isolation Forest", () => {
-      const main = readFileSync(join(__dirname, "../services/python/fraud-ml-service/main.py"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/python/fraud-ml-service/main.py"),
+        "utf-8"
+      );
       expect(main).toContain("IsolationForest");
       expect(main).toContain("anomaly");
     });
 
     it("should implement velocity analysis", () => {
-      const main = readFileSync(join(__dirname, "../services/python/fraud-ml-service/main.py"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/python/fraud-ml-service/main.py"),
+        "utf-8"
+      );
       expect(main).toContain("velocity");
     });
 
     it("should implement behavioral profiling", () => {
-      const main = readFileSync(join(__dirname, "../services/python/fraud-ml-service/main.py"), "utf-8");
+      const main = readFileSync(
+        join(__dirname, "../services/python/fraud-ml-service/main.py"),
+        "utf-8"
+      );
       expect(main).toContain("behavior");
     });
 
     it("should have Dockerfile for containerized deployment", () => {
-      const dockerPath = join(__dirname, "../services/python/fraud-ml-service/Dockerfile");
+      const dockerPath = join(
+        __dirname,
+        "../services/python/fraud-ml-service/Dockerfile"
+      );
       expect(existsSync(dockerPath)).toBe(true);
       const docker = readFileSync(dockerPath, "utf-8");
       expect(docker).toContain("python");
@@ -192,39 +248,57 @@ describe("Sprint 71: Security Posture Audit", () => {
   // ── 4. TypeScript Security Orchestrator ──────────────────────────────────
   describe("Security Orchestrator (server/middleware/securityOrchestrator.ts)", () => {
     it("should exist and export applySecurityOrchestrator", () => {
-      const orchPath = join(__dirname, "../server/middleware/securityOrchestrator.ts");
+      const orchPath = join(
+        __dirname,
+        "../server/middleware/securityOrchestrator.ts"
+      );
       expect(existsSync(orchPath)).toBe(true);
       const orch = readFileSync(orchPath, "utf-8");
       expect(orch).toContain("export function applySecurityOrchestrator");
     });
 
     it("should integrate with Rust DDoS shield", () => {
-      const orch = readFileSync(join(__dirname, "../server/middleware/securityOrchestrator.ts"), "utf-8");
+      const orch = readFileSync(
+        join(__dirname, "../server/middleware/securityOrchestrator.ts"),
+        "utf-8"
+      );
       expect(orch).toContain("DDOS_SHIELD_URL");
       expect(orch).toContain("ddos");
     });
 
     it("should integrate with Go PBAC engine", () => {
-      const orch = readFileSync(join(__dirname, "../server/middleware/securityOrchestrator.ts"), "utf-8");
+      const orch = readFileSync(
+        join(__dirname, "../server/middleware/securityOrchestrator.ts"),
+        "utf-8"
+      );
       expect(orch).toContain("PBAC_ENGINE_URL");
       expect(orch).toContain("pbac");
     });
 
     it("should integrate with Python fraud ML service", () => {
-      const orch = readFileSync(join(__dirname, "../server/middleware/securityOrchestrator.ts"), "utf-8");
+      const orch = readFileSync(
+        join(__dirname, "../server/middleware/securityOrchestrator.ts"),
+        "utf-8"
+      );
       expect(orch).toContain("FRAUD_ML_URL");
       expect(orch).toContain("fraud");
     });
 
     it("should implement fail-open pattern for service unavailability", () => {
-      const orch = readFileSync(join(__dirname, "../server/middleware/securityOrchestrator.ts"), "utf-8");
+      const orch = readFileSync(
+        join(__dirname, "../server/middleware/securityOrchestrator.ts"),
+        "utf-8"
+      );
       // Should catch errors and allow request through when services are down
       expect(orch).toContain("catch");
       expect(orch).toContain("next()");
     });
 
     it("should expose security health endpoint", () => {
-      const orch = readFileSync(join(__dirname, "../server/middleware/securityOrchestrator.ts"), "utf-8");
+      const orch = readFileSync(
+        join(__dirname, "../server/middleware/securityOrchestrator.ts"),
+        "utf-8"
+      );
       expect(orch).toContain("/api/security/health");
     });
   });
@@ -232,41 +306,62 @@ describe("Sprint 71: Security Posture Audit", () => {
   // ── 5. Financial Attack Prevention ───────────────────────────────────────
   describe("Financial Attack Prevention (server/middleware/financialAttackPrevention.ts)", () => {
     it("should exist and export applyFinancialAttackPrevention", () => {
-      const fapPath = join(__dirname, "../server/middleware/financialAttackPrevention.ts");
+      const fapPath = join(
+        __dirname,
+        "../server/middleware/financialAttackPrevention.ts"
+      );
       expect(existsSync(fapPath)).toBe(true);
       const fap = readFileSync(fapPath, "utf-8");
       expect(fap).toContain("export function applyFinancialAttackPrevention");
     });
 
     it("should implement replay attack prevention", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("replayAttackPrevention");
       expect(fap).toContain("nonce");
     });
 
     it("should implement card testing detection", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("cardTestingDetection");
     });
 
     it("should implement account takeover prevention", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("accountTakeoverPrevention");
       expect(fap).toContain("lockout");
     });
 
     it("should implement split transaction detection", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("splitTransactionDetection");
     });
 
     it("should implement credential stuffing detection", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("credentialStuffingDetection");
     });
 
     it("should implement data exfiltration prevention", () => {
-      const fap = readFileSync(join(__dirname, "../server/middleware/financialAttackPrevention.ts"), "utf-8");
+      const fap = readFileSync(
+        join(__dirname, "../server/middleware/financialAttackPrevention.ts"),
+        "utf-8"
+      );
       expect(fap).toContain("dataExfiltrationPrevention");
     });
   });
@@ -274,24 +369,36 @@ describe("Sprint 71: Security Posture Audit", () => {
   // ── 6. DDoS Protection (TypeScript layer) ────────────────────────────────
   describe("DDoS Protection (server/middleware/ddosProtection.ts)", () => {
     it("should exist and export applyDDoSProtection", () => {
-      const ddosPath = join(__dirname, "../server/middleware/ddosProtection.ts");
+      const ddosPath = join(
+        __dirname,
+        "../server/middleware/ddosProtection.ts"
+      );
       expect(existsSync(ddosPath)).toBe(true);
       const ddos = readFileSync(ddosPath, "utf-8");
       expect(ddos).toContain("applyDDoSProtection");
     });
 
     it("should implement per-IP rate limiting", () => {
-      const ddos = readFileSync(join(__dirname, "../server/middleware/ddosProtection.ts"), "utf-8");
+      const ddos = readFileSync(
+        join(__dirname, "../server/middleware/ddosProtection.ts"),
+        "utf-8"
+      );
       expect(ddos).toContain("requestCount");
     });
 
     it("should implement circuit breaker", () => {
-      const ddos = readFileSync(join(__dirname, "../server/middleware/ddosProtection.ts"), "utf-8");
+      const ddos = readFileSync(
+        join(__dirname, "../server/middleware/ddosProtection.ts"),
+        "utf-8"
+      );
       expect(ddos).toContain("circuitBreaker");
     });
 
     it("should implement slowloris protection", () => {
-      const ddos = readFileSync(join(__dirname, "../server/middleware/ddosProtection.ts"), "utf-8");
+      const ddos = readFileSync(
+        join(__dirname, "../server/middleware/ddosProtection.ts"),
+        "utf-8"
+      );
       expect(ddos).toContain("slowloris");
     });
   });
@@ -299,24 +406,36 @@ describe("Sprint 71: Security Posture Audit", () => {
   // ── 7. Security Hardening (existing) ─────────────────────────────────────
   describe("Security Hardening (server/middleware/securityHardening.ts)", () => {
     it("should exist and export applySecurityMiddleware", () => {
-      const shPath = join(__dirname, "../server/middleware/securityHardening.ts");
+      const shPath = join(
+        __dirname,
+        "../server/middleware/securityHardening.ts"
+      );
       expect(existsSync(shPath)).toBe(true);
       const sh = readFileSync(shPath, "utf-8");
       expect(sh).toContain("applySecurityMiddleware");
     });
 
     it("should implement CSRF protection", () => {
-      const sh = readFileSync(join(__dirname, "../server/middleware/securityHardening.ts"), "utf-8");
+      const sh = readFileSync(
+        join(__dirname, "../server/middleware/securityHardening.ts"),
+        "utf-8"
+      );
       expect(sh).toContain("csrf");
     });
 
     it("should implement XSS prevention", () => {
-      const sh = readFileSync(join(__dirname, "../server/middleware/securityHardening.ts"), "utf-8");
+      const sh = readFileSync(
+        join(__dirname, "../server/middleware/securityHardening.ts"),
+        "utf-8"
+      );
       expect(sh).toContain("xss");
     });
 
     it("should implement SQL injection detection", () => {
-      const sh = readFileSync(join(__dirname, "../server/middleware/securityHardening.ts"), "utf-8");
+      const sh = readFileSync(
+        join(__dirname, "../server/middleware/securityHardening.ts"),
+        "utf-8"
+      );
       expect(sh).toContain("sql");
     });
   });
@@ -331,40 +450,62 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should register security orchestrator", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       expect(index).toContain("securityOrchestrator");
       expect(index).toContain("applySecurityOrchestrator");
     });
 
     it("should register financial attack prevention", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       expect(index).toContain("financialAttackPrevention");
       expect(index).toContain("applyFinancialAttackPrevention");
     });
 
     it("should use dynamic import() not require()", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       // The Sprint 70/71 middleware block should use await import()
       expect(index).toContain('await import("../middleware/securityHardening');
-      expect(index).toContain('await import("../middleware/securityOrchestrator');
-      expect(index).toContain('await import("../middleware/financialAttackPrevention');
+      expect(index).toContain(
+        'await import("../middleware/securityOrchestrator'
+      );
+      expect(index).toContain(
+        'await import("../middleware/financialAttackPrevention'
+      );
     });
 
     it("should have Helmet CSP headers configured", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       expect(index).toContain("helmet");
       expect(index).toContain("contentSecurityPolicy");
       expect(index).toContain("hsts");
     });
 
     it("should have rate limiting configured", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       expect(index).toContain("rateLimit");
       expect(index).toContain("windowMs");
     });
 
     it("should have compression enabled", () => {
-      const index = readFileSync(join(__dirname, "../server/_core/index.ts"), "utf-8");
+      const index = readFileSync(
+        join(__dirname, "../server/_core/index.ts"),
+        "utf-8"
+      );
       expect(index).toContain("compression");
     });
   });
@@ -406,17 +547,26 @@ describe("Sprint 71: Security Posture Audit", () => {
     });
 
     it("should have AML trigger checks", () => {
-      const bre = readFileSync(join(__dirname, "../server/lib/businessRulesEngine.ts"), "utf-8");
+      const bre = readFileSync(
+        join(__dirname, "../server/lib/businessRulesEngine.ts"),
+        "utf-8"
+      );
       expect(bre).toContain("checkAmlTriggers");
     });
 
     it("should have KYC limit checks", () => {
-      const bre = readFileSync(join(__dirname, "../server/lib/businessRulesEngine.ts"), "utf-8");
+      const bre = readFileSync(
+        join(__dirname, "../server/lib/businessRulesEngine.ts"),
+        "utf-8"
+      );
       expect(bre).toContain("checkKycLimits");
     });
 
     it("should have transaction limit checks", () => {
-      const bre = readFileSync(join(__dirname, "../server/lib/businessRulesEngine.ts"), "utf-8");
+      const bre = readFileSync(
+        join(__dirname, "../server/lib/businessRulesEngine.ts"),
+        "utf-8"
+      );
       expect(bre).toContain("checkTransactionLimits");
     });
   });

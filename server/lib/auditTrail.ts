@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Enhanced Audit Trail Middleware
- * 
+ *
  * Logs all significant actions with:
  * - User identity (who)
  * - Action type (what)
@@ -16,7 +16,17 @@ export interface AuditEntry {
   timestamp: Date;
   userId: string | null;
   userRole: string;
-  action: "CREATE" | "READ" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT" | "EXPORT" | "APPROVE" | "REJECT" | "ESCALATE";
+  action:
+    | "CREATE"
+    | "READ"
+    | "UPDATE"
+    | "DELETE"
+    | "LOGIN"
+    | "LOGOUT"
+    | "EXPORT"
+    | "APPROVE"
+    | "REJECT"
+    | "ESCALATE";
   resource: string;
   resourceId: string | null;
   description: string;
@@ -36,7 +46,9 @@ let nextId = 1;
 /**
  * Log an audit entry
  */
-export function logAudit(entry: Omit<AuditEntry, "id" | "timestamp">): AuditEntry {
+export function logAudit(
+  entry: Omit<AuditEntry, "id" | "timestamp">
+): AuditEntry {
   const auditEntry: AuditEntry = {
     ...entry,
     id: `AUD-${String(nextId++).padStart(8, "0")}`,
@@ -51,7 +63,9 @@ export function logAudit(entry: Omit<AuditEntry, "id" | "timestamp">): AuditEntr
 
   // Log critical actions to console
   if (entry.severity === "critical" || entry.severity === "high") {
-    console.log(`[AUDIT:${entry.severity.toUpperCase()}] ${entry.action} ${entry.resource} by ${entry.userId || "anonymous"}: ${entry.description}`);
+    console.log(
+      `[AUDIT:${entry.severity.toUpperCase()}] ${entry.action} ${entry.resource} by ${entry.userId || "anonymous"}: ${entry.description}`
+    );
   }
 
   return auditEntry;
@@ -73,13 +87,20 @@ export function queryAuditLog(filters: {
 }): { entries: AuditEntry[]; total: number } {
   let filtered = [...auditLog];
 
-  if (filters.userId) filtered = filtered.filter((e) => e.userId === filters.userId);
-  if (filters.action) filtered = filtered.filter((e) => e.action === filters.action);
-  if (filters.resource) filtered = filtered.filter((e) => e.resource === filters.resource);
-  if (filters.severity) filtered = filtered.filter((e) => e.severity === filters.severity);
-  if (filters.category) filtered = filtered.filter((e) => e.category === filters.category);
-  if (filters.startDate) filtered = filtered.filter((e) => e.timestamp >= filters.startDate!);
-  if (filters.endDate) filtered = filtered.filter((e) => e.timestamp <= filters.endDate!);
+  if (filters.userId)
+    filtered = filtered.filter(e => e.userId === filters.userId);
+  if (filters.action)
+    filtered = filtered.filter(e => e.action === filters.action);
+  if (filters.resource)
+    filtered = filtered.filter(e => e.resource === filters.resource);
+  if (filters.severity)
+    filtered = filtered.filter(e => e.severity === filters.severity);
+  if (filters.category)
+    filtered = filtered.filter(e => e.category === filters.category);
+  if (filters.startDate)
+    filtered = filtered.filter(e => e.timestamp >= filters.startDate!);
+  if (filters.endDate)
+    filtered = filtered.filter(e => e.timestamp <= filters.endDate!);
 
   // Sort by newest first
   filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -100,38 +121,38 @@ export function getAuditStats() {
   const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const recent24h = auditLog.filter((e) => e.timestamp >= last24h);
-  const recent7d = auditLog.filter((e) => e.timestamp >= last7d);
+  const recent24h = auditLog.filter(e => e.timestamp >= last24h);
+  const recent7d = auditLog.filter(e => e.timestamp >= last7d);
 
   return {
     total: auditLog.length,
     last24h: recent24h.length,
     last7d: recent7d.length,
     bySeverity: {
-      critical: auditLog.filter((e) => e.severity === "critical").length,
-      high: auditLog.filter((e) => e.severity === "high").length,
-      medium: auditLog.filter((e) => e.severity === "medium").length,
-      low: auditLog.filter((e) => e.severity === "low").length,
+      critical: auditLog.filter(e => e.severity === "critical").length,
+      high: auditLog.filter(e => e.severity === "high").length,
+      medium: auditLog.filter(e => e.severity === "medium").length,
+      low: auditLog.filter(e => e.severity === "low").length,
     },
     byCategory: {
-      auth: auditLog.filter((e) => e.category === "auth").length,
-      data: auditLog.filter((e) => e.category === "data").length,
-      config: auditLog.filter((e) => e.category === "config").length,
-      financial: auditLog.filter((e) => e.category === "financial").length,
-      compliance: auditLog.filter((e) => e.category === "compliance").length,
-      system: auditLog.filter((e) => e.category === "system").length,
+      auth: auditLog.filter(e => e.category === "auth").length,
+      data: auditLog.filter(e => e.category === "data").length,
+      config: auditLog.filter(e => e.category === "config").length,
+      financial: auditLog.filter(e => e.category === "financial").length,
+      compliance: auditLog.filter(e => e.category === "compliance").length,
+      system: auditLog.filter(e => e.category === "system").length,
     },
     byAction: {
-      CREATE: auditLog.filter((e) => e.action === "CREATE").length,
-      READ: auditLog.filter((e) => e.action === "READ").length,
-      UPDATE: auditLog.filter((e) => e.action === "UPDATE").length,
-      DELETE: auditLog.filter((e) => e.action === "DELETE").length,
-      LOGIN: auditLog.filter((e) => e.action === "LOGIN").length,
-      LOGOUT: auditLog.filter((e) => e.action === "LOGOUT").length,
-      EXPORT: auditLog.filter((e) => e.action === "EXPORT").length,
-      APPROVE: auditLog.filter((e) => e.action === "APPROVE").length,
-      REJECT: auditLog.filter((e) => e.action === "REJECT").length,
-      ESCALATE: auditLog.filter((e) => e.action === "ESCALATE").length,
+      CREATE: auditLog.filter(e => e.action === "CREATE").length,
+      READ: auditLog.filter(e => e.action === "READ").length,
+      UPDATE: auditLog.filter(e => e.action === "UPDATE").length,
+      DELETE: auditLog.filter(e => e.action === "DELETE").length,
+      LOGIN: auditLog.filter(e => e.action === "LOGIN").length,
+      LOGOUT: auditLog.filter(e => e.action === "LOGOUT").length,
+      EXPORT: auditLog.filter(e => e.action === "EXPORT").length,
+      APPROVE: auditLog.filter(e => e.action === "APPROVE").length,
+      REJECT: auditLog.filter(e => e.action === "REJECT").length,
+      ESCALATE: auditLog.filter(e => e.action === "ESCALATE").length,
     },
   };
 }
@@ -140,8 +161,20 @@ export function getAuditStats() {
  * Export audit log as CSV
  */
 export function exportAuditCsv(entries: AuditEntry[]): string {
-  const headers = ["ID", "Timestamp", "User ID", "Role", "Action", "Resource", "Resource ID", "Description", "Severity", "Category", "IP Address"];
-  const rows = entries.map((e) => [
+  const headers = [
+    "ID",
+    "Timestamp",
+    "User ID",
+    "Role",
+    "Action",
+    "Resource",
+    "Resource ID",
+    "Description",
+    "Severity",
+    "Category",
+    "IP Address",
+  ];
+  const rows = entries.map(e => [
     e.id,
     e.timestamp.toISOString(),
     e.userId || "",
@@ -154,15 +187,40 @@ export function exportAuditCsv(entries: AuditEntry[]): string {
     e.category,
     e.ipAddress,
   ]);
-  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  return [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
 }
 
 // Seed some initial audit entries
 function seedAuditEntries() {
-  const actions: AuditEntry["action"][] = ["CREATE", "UPDATE", "LOGIN", "APPROVE", "REJECT", "EXPORT"];
-  const resources = ["agent", "transaction", "kyc_document", "settlement_batch", "fraud_alert", "commission_rule"];
-  const severities: AuditEntry["severity"][] = ["low", "medium", "high", "critical"];
-  const categories: AuditEntry["category"][] = ["auth", "data", "financial", "compliance", "system"];
+  const actions: AuditEntry["action"][] = [
+    "CREATE",
+    "UPDATE",
+    "LOGIN",
+    "APPROVE",
+    "REJECT",
+    "EXPORT",
+  ];
+  const resources = [
+    "agent",
+    "transaction",
+    "kyc_document",
+    "settlement_batch",
+    "fraud_alert",
+    "commission_rule",
+  ];
+  const severities: AuditEntry["severity"][] = [
+    "low",
+    "medium",
+    "high",
+    "critical",
+  ];
+  const categories: AuditEntry["category"][] = [
+    "auth",
+    "data",
+    "financial",
+    "compliance",
+    "system",
+  ];
 
   for (let i = 0; i < 100; i++) {
     const action = actions[i % actions.length];

@@ -80,7 +80,10 @@ export async function tbCreateTransfer(
     if (err instanceof Error && err.name === "AbortError") {
       console.warn("[tbClient] sidecar timeout — falling back to direct PG");
     } else {
-      console.warn("[tbClient] sidecar unreachable — falling back to direct PG:", err);
+      console.warn(
+        "[tbClient] sidecar unreachable — falling back to direct PG:",
+        err
+      );
     }
     return null;
   }
@@ -90,7 +93,9 @@ export async function tbCreateTransfer(
  * Ensure an agent float account exists in the sidecar ledger.
  * Called once on agent login / first transaction.
  */
-export async function tbEnsureAgentAccount(agentCode: string): Promise<boolean> {
+export async function tbEnsureAgentAccount(
+  agentCode: string
+): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TB_TIMEOUT_MS);
@@ -102,7 +107,7 @@ export async function tbEnsureAgentAccount(agentCode: string): Promise<boolean> 
         id: `float-${agentCode}`,
         agentCode,
         ledger: 2000, // LedgerAgentAccounts
-        code: 300,    // CodeAgentFloat
+        code: 300, // CodeAgentFloat
       }),
       signal: controller.signal,
     });
@@ -165,7 +170,9 @@ export async function tbIsHealthy(): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 1000);
-    const res = await fetch(`${TB_SIDECAR_URL}/health`, { signal: controller.signal });
+    const res = await fetch(`${TB_SIDECAR_URL}/health`, {
+      signal: controller.signal,
+    });
     clearTimeout(timer);
     return res.ok;
   } catch {

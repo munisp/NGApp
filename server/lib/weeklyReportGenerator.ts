@@ -190,7 +190,9 @@ function collectTransactionMetrics(
     successCount += Math.floor(count * (0.94 + Math.random() * 0.05));
   }
 
-  const dailyCounts = days.map(() => Math.floor(totalCount / 7 * (0.7 + Math.random() * 0.6)));
+  const dailyCounts = days.map(() =>
+    Math.floor((totalCount / 7) * (0.7 + Math.random() * 0.6))
+  );
   const peakIdx = dailyCounts.indexOf(Math.max(...dailyCounts));
 
   return {
@@ -228,11 +230,26 @@ function collectApiPerformanceMetrics(): WeeklyReportMetrics["apiPerformance"] {
     p95Ms: Math.round(avgLatency * 2.5),
     p99Ms: Math.round(avgLatency * 5),
     slowestEndpoints: [
-      { endpoint: "/api/trpc/analytics.dashboard", avgMs: 320 + Math.floor(Math.random() * 200) },
-      { endpoint: "/api/trpc/settlement.process", avgMs: 250 + Math.floor(Math.random() * 150) },
-      { endpoint: "/api/trpc/kyc.verify", avgMs: 200 + Math.floor(Math.random() * 100) },
-      { endpoint: "/api/trpc/fraud.check", avgMs: 150 + Math.floor(Math.random() * 80) },
-      { endpoint: "/api/trpc/export.transactionsCsv", avgMs: 120 + Math.floor(Math.random() * 60) },
+      {
+        endpoint: "/api/trpc/analytics.dashboard",
+        avgMs: 320 + Math.floor(Math.random() * 200),
+      },
+      {
+        endpoint: "/api/trpc/settlement.process",
+        avgMs: 250 + Math.floor(Math.random() * 150),
+      },
+      {
+        endpoint: "/api/trpc/kyc.verify",
+        avgMs: 200 + Math.floor(Math.random() * 100),
+      },
+      {
+        endpoint: "/api/trpc/fraud.check",
+        avgMs: 150 + Math.floor(Math.random() * 80),
+      },
+      {
+        endpoint: "/api/trpc/export.transactionsCsv",
+        avgMs: 120 + Math.floor(Math.random() * 60),
+      },
     ],
     requestsPerMinute: Math.round(totalRequests / (7 * 24 * 60)),
   };
@@ -245,9 +262,21 @@ function collectErrorMetrics(): WeeklyReportMetrics["errors"] {
     totalErrors,
     errorRate: Math.round((totalErrors / totalRequests) * 10000) / 100,
     topErrors: [
-      { endpoint: "/api/trpc/transactions.create", count: Math.floor(totalErrors * 0.3), message: "Insufficient float balance" },
-      { endpoint: "/api/trpc/agent.login", count: Math.floor(totalErrors * 0.2), message: "Invalid PIN" },
-      { endpoint: "/api/trpc/kyc.verify", count: Math.floor(totalErrors * 0.15), message: "KYC provider timeout" },
+      {
+        endpoint: "/api/trpc/transactions.create",
+        count: Math.floor(totalErrors * 0.3),
+        message: "Insufficient float balance",
+      },
+      {
+        endpoint: "/api/trpc/agent.login",
+        count: Math.floor(totalErrors * 0.2),
+        message: "Invalid PIN",
+      },
+      {
+        endpoint: "/api/trpc/kyc.verify",
+        count: Math.floor(totalErrors * 0.15),
+        message: "KYC provider timeout",
+      },
     ],
     criticalErrors: Math.floor(totalErrors * 0.05),
     resolvedErrors: Math.floor(totalErrors * 0.85),
@@ -257,11 +286,14 @@ function collectErrorMetrics(): WeeklyReportMetrics["errors"] {
 function collectSecurityMetrics(): WeeklyReportMetrics["security"] {
   const secSummary = getSecuritySummary();
   return {
-    blockedIPs: secSummary.blockedIps ?? (5 + Math.floor(Math.random() * 15)),
-    failedLogins: secSummary.warningEvents ?? (30 + Math.floor(Math.random() * 50)),
-    rateLimitHits: secSummary.criticalEvents ?? (100 + Math.floor(Math.random() * 200)),
+    blockedIPs: secSummary.blockedIps ?? 5 + Math.floor(Math.random() * 15),
+    failedLogins:
+      secSummary.warningEvents ?? 30 + Math.floor(Math.random() * 50),
+    rateLimitHits:
+      secSummary.criticalEvents ?? 100 + Math.floor(Math.random() * 200),
     suspiciousActivities: 2 + Math.floor(Math.random() * 8),
-    accountLockouts: secSummary.lockedAccounts ?? (1 + Math.floor(Math.random() * 5)),
+    accountLockouts:
+      secSummary.lockedAccounts ?? 1 + Math.floor(Math.random() * 5),
     csrfBlocked: 0,
   };
 }
@@ -273,7 +305,9 @@ async function collectSystemMetrics(): Promise<WeeklyReportMetrics["system"]> {
     uptimePercent: getUptimePercentage(),
     dbLatencyAvgMs: getAverageLatency(),
     dbConnectionPoolUsage: dbHealth.connected
-      ? Math.round((dbHealth.activeConnections / Math.max(dbHealth.poolSize, 1)) * 100)
+      ? Math.round(
+          (dbHealth.activeConnections / Math.max(dbHealth.poolSize, 1)) * 100
+        )
       : 0,
     memoryUsageMB: Math.round(mem.heapUsed / 1024 / 1024),
     cpuUsagePercent: 15 + Math.round(Math.random() * 30),
@@ -315,19 +349,33 @@ function generateAlerts(metrics: WeeklyReportMetrics): string[] {
   const alerts: string[] = [];
 
   if (metrics.transactions.successRate < 95)
-    alerts.push(`Transaction success rate dropped to ${metrics.transactions.successRate}% (target: >95%)`);
+    alerts.push(
+      `Transaction success rate dropped to ${metrics.transactions.successRate}% (target: >95%)`
+    );
   if (metrics.apiPerformance.p99Ms > 1000)
-    alerts.push(`API p99 latency at ${metrics.apiPerformance.p99Ms}ms exceeds 1s threshold`);
+    alerts.push(
+      `API p99 latency at ${metrics.apiPerformance.p99Ms}ms exceeds 1s threshold`
+    );
   if (metrics.errors.criticalErrors > 0)
-    alerts.push(`${metrics.errors.criticalErrors} critical error(s) detected this week`);
+    alerts.push(
+      `${metrics.errors.criticalErrors} critical error(s) detected this week`
+    );
   if (metrics.security.suspiciousActivities > 5)
-    alerts.push(`${metrics.security.suspiciousActivities} suspicious activities flagged`);
+    alerts.push(
+      `${metrics.security.suspiciousActivities} suspicious activities flagged`
+    );
   if (metrics.system.uptimePercent < 99.5)
-    alerts.push(`System uptime at ${metrics.system.uptimePercent}% — below 99.5% SLA target`);
+    alerts.push(
+      `System uptime at ${metrics.system.uptimePercent}% — below 99.5% SLA target`
+    );
   if (metrics.system.memoryUsageMB > 512)
-    alerts.push(`Memory usage at ${metrics.system.memoryUsageMB}MB — consider scaling`);
+    alerts.push(
+      `Memory usage at ${metrics.system.memoryUsageMB}MB — consider scaling`
+    );
   if (metrics.security.accountLockouts > 10)
-    alerts.push(`${metrics.security.accountLockouts} account lockouts — possible brute-force attempt`);
+    alerts.push(
+      `${metrics.security.accountLockouts} account lockouts — possible brute-force attempt`
+    );
 
   return alerts;
 }
@@ -339,17 +387,27 @@ function generateRecommendations(
   const recs: string[] = [];
 
   if (metrics.apiPerformance.slowestEndpoints[0]?.avgMs > 400)
-    recs.push(`Optimize ${metrics.apiPerformance.slowestEndpoints[0].endpoint} — averaging ${metrics.apiPerformance.slowestEndpoints[0].avgMs}ms`);
+    recs.push(
+      `Optimize ${metrics.apiPerformance.slowestEndpoints[0].endpoint} — averaging ${metrics.apiPerformance.slowestEndpoints[0].avgMs}ms`
+    );
   if (metrics.errors.topErrors[0]?.count > 20)
-    recs.push(`Investigate frequent error on ${metrics.errors.topErrors[0].endpoint}: "${metrics.errors.topErrors[0].message}"`);
+    recs.push(
+      `Investigate frequent error on ${metrics.errors.topErrors[0].endpoint}: "${metrics.errors.topErrors[0].message}"`
+    );
   if (metrics.userActivity.returningUserRate < 70)
     recs.push("Returning user rate below 70% — consider engagement campaigns");
   if (metrics.system.dbConnectionPoolUsage > 70)
-    recs.push("DB connection pool usage above 70% — consider increasing pool size");
+    recs.push(
+      "DB connection pool usage above 70% — consider increasing pool size"
+    );
   if (score < 80)
-    recs.push("Overall health score below 80 — review alerts and prioritize fixes");
+    recs.push(
+      "Overall health score below 80 — review alerts and prioritize fixes"
+    );
   if (metrics.transactions.totalCount < 500)
-    recs.push("Low transaction volume this week — review agent activity and onboarding");
+    recs.push(
+      "Low transaction volume this week — review agent activity and onboarding"
+    );
 
   return recs;
 }
@@ -440,7 +498,10 @@ export async function generateWeeklyReport(
   const systemMetrics = await collectSystemMetrics();
 
   const metrics: WeeklyReportMetrics = {
-    period: { start: start.toISOString().split("T")[0], end: end.toISOString().split("T")[0] },
+    period: {
+      start: start.toISOString().split("T")[0],
+      end: end.toISOString().split("T")[0],
+    },
     transactions: txMetrics,
     userActivity: userMetrics,
     apiPerformance: apiMetrics,
@@ -504,7 +565,7 @@ export function getReportHistory(): WeeklyReport[] {
  * Get a specific report by ID.
  */
 export function getReportById(id: string): WeeklyReport | undefined {
-  return reportHistory.find((r) => r.id === id);
+  return reportHistory.find(r => r.id === id);
 }
 
 /**
@@ -539,38 +600,43 @@ export function startWeeklyReportCron() {
   if (cronInterval) return;
 
   // Check every hour
-  cronInterval = setInterval(async () => {
-    if (!scheduleConfig.enabled) return;
+  cronInterval = setInterval(
+    async () => {
+      if (!scheduleConfig.enabled) return;
 
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay();
-    const hour = now.getUTCHours();
-    const minute = now.getUTCMinutes();
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay();
+      const hour = now.getUTCHours();
+      const minute = now.getUTCMinutes();
 
-    // Check if it is the scheduled time (within the hour window)
-    if (
-      dayOfWeek === scheduleConfig.dayOfWeek &&
-      hour === scheduleConfig.hourUtc &&
-      minute < 60 // Within the scheduled hour
-    ) {
-      // Check if we already generated a report this week
-      const lastReport = reportHistory[0];
-      if (lastReport) {
-        const lastGenTime = new Date(lastReport.generatedAt).getTime();
-        const sixDaysAgo = Date.now() - 6 * 24 * 60 * 60 * 1000;
-        if (lastGenTime > sixDaysAgo) {
-          return; // Already generated this week
+      // Check if it is the scheduled time (within the hour window)
+      if (
+        dayOfWeek === scheduleConfig.dayOfWeek &&
+        hour === scheduleConfig.hourUtc &&
+        minute < 60 // Within the scheduled hour
+      ) {
+        // Check if we already generated a report this week
+        const lastReport = reportHistory[0];
+        if (lastReport) {
+          const lastGenTime = new Date(lastReport.generatedAt).getTime();
+          const sixDaysAgo = Date.now() - 6 * 24 * 60 * 60 * 1000;
+          if (lastGenTime > sixDaysAgo) {
+            return; // Already generated this week
+          }
+        }
+
+        console.log(
+          "[WeeklyReport] Cron triggered — generating weekly report..."
+        );
+        try {
+          await generateWeeklyReport(true);
+        } catch (err) {
+          console.error("[WeeklyReport] Cron generation failed:", err);
         }
       }
-
-      console.log("[WeeklyReport] Cron triggered — generating weekly report...");
-      try {
-        await generateWeeklyReport(true);
-      } catch (err) {
-        console.error("[WeeklyReport] Cron generation failed:", err);
-      }
-    }
-  }, 60 * 60 * 1000); // Check every hour
+    },
+    60 * 60 * 1000
+  ); // Check every hour
 
   console.log(
     `[WeeklyReport] Cron started — Day: ${scheduleConfig.dayOfWeek}, ` +

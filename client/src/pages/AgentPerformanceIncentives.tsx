@@ -6,7 +6,11 @@ import { Loader2, RefreshCw, Download, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AgentPerformanceIncentives() {
-  const { data: stats, isLoading, refetch } = trpc.agentPerformanceIncentives.getStats.useQuery();
+  const {
+    data: stats,
+    isLoading,
+    refetch,
+  } = trpc.agentPerformanceIncentives.getStats.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
 
   return (
@@ -15,7 +19,9 @@ export default function AgentPerformanceIncentives() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Performance Incentives</h1>
-            <p className="text-gray-400 text-sm mt-1">Gamified performance rewards with tier-based incentive programs</p>
+            <p className="text-gray-400 text-sm mt-1">
+              Gamified performance rewards with tier-based incentive programs
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -24,12 +30,15 @@ export default function AgentPerformanceIncentives() {
                 type="text"
                 placeholder="Search..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-9 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64"
               />
             </div>
             <button
-              onClick={() => { refetch(); toast.success("Data refreshed"); }}
+              onClick={() => {
+                refetch();
+                toast.success("Data refreshed");
+              }}
               className="flex items-center gap-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm hover:bg-gray-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" /> Refresh
@@ -43,50 +52,74 @@ export default function AgentPerformanceIncentives() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            <span className="ml-3 text-gray-400">Loading dashboard data...</span>
+            <span className="ml-3 text-gray-400">
+              Loading dashboard data...
+            </span>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Agents</p>
-              <p className="text-xl font-bold text-blue-400">{String(stats?.totalAgents ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Platinum</p>
-              <p className="text-xl font-bold text-emerald-400">{String(stats?.platinumAgents ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Gold</p>
-              <p className="text-xl font-bold text-amber-400">{String(stats?.goldAgents ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Silver</p>
-              <p className="text-xl font-bold text-rose-400">{String(stats?.silverAgents ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Points Issued</p>
-              <p className="text-xl font-bold text-purple-400">{String(stats?.totalPointsIssued ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Rewards Value</p>
-              <p className="text-xl font-bold text-cyan-400">{String(stats?.totalRewardsValue ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Avg Achievement %</p>
-              <p className="text-xl font-bold text-indigo-400">{String(stats?.avgAchievement ?? "—")}</p>
-            </div>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-1">Top Performer</p>
-              <p className="text-xl font-bold text-orange-400">{String(stats?.topPerformer ?? "—")}</p>
-            </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Agents</p>
+                <p className="text-xl font-bold text-blue-400">
+                  {String(stats?.totalAgents ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Platinum</p>
+                <p className="text-xl font-bold text-emerald-400">
+                  {String(stats?.platinumAgents ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Gold</p>
+                <p className="text-xl font-bold text-amber-400">
+                  {String(stats?.goldAgents ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Silver</p>
+                <p className="text-xl font-bold text-rose-400">
+                  {String(stats?.silverAgents ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Points Issued</p>
+                <p className="text-xl font-bold text-purple-400">
+                  {String(stats?.totalPointsIssued ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Rewards Value</p>
+                <p className="text-xl font-bold text-cyan-400">
+                  {String(stats?.totalRewardsValue ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Avg Achievement %</p>
+                <p className="text-xl font-bold text-indigo-400">
+                  {String(stats?.avgAchievement ?? "—")}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-400 mb-1">Top Performer</p>
+                <p className="text-xl font-bold text-orange-400">
+                  {String(stats?.topPerformer ?? "—")}
+                </p>
+              </div>
             </div>
 
             <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Overview</h2>
               <div className="text-gray-400 text-sm">
-                <p>This module provides comprehensive management capabilities for performance incentives.</p>
-                <p className="mt-2">Use the search and filter controls above to find specific records. Click Refresh to update data in real-time.</p>
+                <p>
+                  This module provides comprehensive management capabilities for
+                  performance incentives.
+                </p>
+                <p className="mt-2">
+                  Use the search and filter controls above to find specific
+                  records. Click Refresh to update data in real-time.
+                </p>
               </div>
             </div>
 
@@ -98,13 +131,20 @@ export default function AgentPerformanceIncentives() {
                 </button>
               </div>
               <div className="space-y-3">
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} className="flex items-center justify-between py-3 border-b border-gray-700/50 last:border-0">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-3 border-b border-gray-700/50 last:border-0"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span className="text-sm text-gray-300">Activity record #{i}</span>
+                      <span className="text-sm text-gray-300">
+                        Activity record #{i}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">{new Date(Date.now() - i * 3600000).toLocaleString()}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(Date.now() - i * 3600000).toLocaleString()}
+                    </span>
                   </div>
                 ))}
               </div>

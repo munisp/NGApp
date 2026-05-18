@@ -56,7 +56,10 @@ export async function sendSms(to: string, message: string): Promise<SmsResult> {
       return { success: false, error: `Termii ${response.status}: ${text}` };
     }
 
-    const data = (await response.json()) as { message_id?: string; message?: string };
+    const data = (await response.json()) as {
+      message_id?: string;
+      message?: string;
+    };
     return { success: true, messageId: data.message_id };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
@@ -122,7 +125,9 @@ export function buildReceiptSms(data: {
   if (data.fee > 0) lines.push(`Fee: NGN ${data.fee.toFixed(2)}`);
   if (data.customerName) lines.push(`Customer: ${data.customerName}`);
   lines.push(`Agent: ${data.agentName} (${data.agentCode})`);
-  lines.push(`Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`);
+  lines.push(
+    `Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`
+  );
   lines.push(`Powered by 54Link Agency Banking`);
   return lines.join("\n");
 }

@@ -15,36 +15,52 @@ export default function PaymentLinkGenerator() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payment Link Generator</h1>
-          <p className="text-muted-foreground">Create and manage shareable payment links</p>
+          <p className="text-muted-foreground">
+            Create and manage shareable payment links
+          </p>
         </div>
-        <Button onClick={() => toast.success("Action triggered")}>New Entry</Button>
+        <Button onClick={() => toast.success("Action triggered")}>
+          New Entry
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.data && Object.entries(stats.data).slice(0, 8).map(([key, value]) => (
-          <Card key={key}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground capitalize">
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {typeof value === "number" ? value.toLocaleString() : String(value)}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.data &&
+          Object.entries(stats.data)
+            .slice(0, 8)
+            .map(([key, value]) => (
+              <Card key={key}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground capitalize">
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {typeof value === "number"
+                      ? value.toLocaleString()
+                      : String(value)}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Records</CardTitle>
-          <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <Input
+            placeholder="Search..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground text-center py-8">
-            {stats.isLoading ? "Loading data..." : "Data loaded — connect to live database for full records"}
+            {stats.isLoading
+              ? "Loading data..."
+              : "Data loaded — connect to live database for full records"}
           </div>
         </CardContent>
       </Card>

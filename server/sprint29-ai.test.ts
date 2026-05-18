@@ -9,7 +9,10 @@ import { describe, it, expect } from "vitest";
 describe("Qdrant Vector Search Router", () => {
   it("should have health endpoint returning status", () => {
     // Validates health check structure
-    const expected = { qdrantConnected: expect.any(Boolean), fallbackAvailable: true };
+    const expected = {
+      qdrantConnected: expect.any(Boolean),
+      fallbackAvailable: true,
+    };
     expect(expected.fallbackAvailable).toBe(true);
   });
 
@@ -29,7 +32,12 @@ describe("Qdrant Vector Search Router", () => {
   it("should return collection statistics", () => {
     const stats = {
       collections: [
-        { name: "transactions", vectorCount: 50000, dimension: 384, status: "active" },
+        {
+          name: "transactions",
+          vectorCount: 50000,
+          dimension: 384,
+          status: "active",
+        },
       ],
       totalVectors: 125000,
     };
@@ -38,7 +46,11 @@ describe("Qdrant Vector Search Router", () => {
   });
 
   it("should support document upsert with content and metadata", () => {
-    const input = { content: "Test document", metadata: { type: "test" }, collection: "knowledge_base" };
+    const input = {
+      content: "Test document",
+      metadata: { type: "test" },
+      collection: "knowledge_base",
+    };
     expect(input.content).toBeTruthy();
     expect(input.collection).toBeTruthy();
   });
@@ -48,7 +60,8 @@ describe("Qdrant Vector Search Router", () => {
 describe("FalkorDB Graph Router", () => {
   it("should return graph statistics", () => {
     const stats = {
-      nodeCount: 8500, edgeCount: 24000,
+      nodeCount: 8500,
+      edgeCount: 24000,
       nodeTypes: ["Agent", "SuperAgent", "Terminal", "Customer"],
       edgeTypes: ["MANAGES", "TRANSACTS_WITH", "LOCATED_AT"],
     };
@@ -58,14 +71,17 @@ describe("FalkorDB Graph Router", () => {
   });
 
   it("should support Cypher query execution", () => {
-    const query = "MATCH (a:Agent)-[:MANAGES]->(s:SubAgent) RETURN a, s LIMIT 10";
+    const query =
+      "MATCH (a:Agent)-[:MANAGES]->(s:SubAgent) RETURN a, s LIMIT 10";
     expect(query).toContain("MATCH");
     expect(query).toContain("RETURN");
   });
 
   it("should detect fraud rings via GNN community detection", () => {
     const result = {
-      communities: [{ id: "ring-1", members: ["AGT-001", "AGT-002"], riskScore: 0.85 }],
+      communities: [
+        { id: "ring-1", members: ["AGT-001", "AGT-002"], riskScore: 0.85 },
+      ],
       totalRings: 3,
     };
     expect(result.communities.length).toBeGreaterThan(0);
@@ -89,15 +105,29 @@ describe("FalkorDB Graph Router", () => {
 describe("CocoIndex Pipeline Router", () => {
   it("should list all configured pipelines", () => {
     const pipelines = [
-      { id: "pipe-001", name: "PostgreSQL CDC → Qdrant", status: "active", sinkType: "qdrant" },
-      { id: "pipe-002", name: "Agent Hierarchy → FalkorDB", status: "active", sinkType: "falkordb" },
+      {
+        id: "pipe-001",
+        name: "PostgreSQL CDC → Qdrant",
+        status: "active",
+        sinkType: "qdrant",
+      },
+      {
+        id: "pipe-002",
+        name: "Agent Hierarchy → FalkorDB",
+        status: "active",
+        sinkType: "falkordb",
+      },
     ];
     expect(pipelines.length).toBeGreaterThan(0);
     expect(pipelines[0].status).toBe("active");
   });
 
   it("should support pipeline trigger with run tracking", () => {
-    const result = { runId: "run-001", pipelineId: "pipe-001", status: "running" };
+    const result = {
+      runId: "run-001",
+      pipelineId: "pipe-001",
+      status: "running",
+    };
     expect(result.runId).toBeTruthy();
     expect(result.status).toBe("running");
   });
@@ -109,8 +139,10 @@ describe("CocoIndex Pipeline Router", () => {
 
   it("should return pipeline analytics", () => {
     const analytics = {
-      totalPipelines: 6, activePipelines: 5,
-      totalRuns: 48, successRate: 0.96,
+      totalPipelines: 6,
+      activePipelines: 5,
+      totalRuns: 48,
+      successRate: 0.96,
       recordsProcessed: 250000,
     };
     expect(analytics.totalPipelines).toBeGreaterThan(0);
@@ -122,7 +154,8 @@ describe("CocoIndex Pipeline Router", () => {
 describe("Ollama LLM Router", () => {
   it("should check health and list available models", () => {
     const health = {
-      ollamaConnected: false, fallbackAvailable: true,
+      ollamaConnected: false,
+      fallbackAvailable: true,
       recommendedModels: ["llama3.2", "nomic-embed-text", "codellama"],
     };
     expect(health.fallbackAvailable).toBe(true);
@@ -130,14 +163,22 @@ describe("Ollama LLM Router", () => {
   });
 
   it("should support chat with session management", () => {
-    const input = { message: "Explain this fraud pattern", sessionId: "sess-001" };
+    const input = {
+      message: "Explain this fraud pattern",
+      sessionId: "sess-001",
+    };
     expect(input.message).toBeTruthy();
   });
 
   it("should classify transactions into categories", () => {
-    const input = { description: "Cash withdrawal of 50000 NGN at night", amount: 50000 };
+    const input = {
+      description: "Cash withdrawal of 50000 NGN at night",
+      amount: 50000,
+    };
     const expected = {
-      category: expect.stringMatching(/cash_withdrawal|transfer|payment|deposit|other/),
+      category: expect.stringMatching(
+        /cash_withdrawal|transfer|payment|deposit|other/
+      ),
       confidence: expect.any(Number),
       riskFlag: expect.any(Boolean),
     };
@@ -147,7 +188,8 @@ describe("Ollama LLM Router", () => {
   it("should explain fraud alerts with domain context", () => {
     const input = {
       alertId: "ALERT-001",
-      description: "Multiple high-value transactions from same terminal in 10 minutes",
+      description:
+        "Multiple high-value transactions from same terminal in 10 minutes",
       riskScore: 0.87,
     };
     expect(input.riskScore).toBeGreaterThan(0);
@@ -175,7 +217,9 @@ describe("ART Robustness Router", () => {
       robustnessScore: 0.851,
       samplesGenerated: 1000,
     };
-    expect(result.adversarialAccuracy).toBeLessThanOrEqual(result.originalAccuracy);
+    expect(result.adversarialAccuracy).toBeLessThanOrEqual(
+      result.originalAccuracy
+    );
     expect(result.robustnessScore).toBeGreaterThan(0);
     expect(result.robustnessScore).toBeLessThanOrEqual(1);
   });
@@ -184,7 +228,10 @@ describe("ART Robustness Router", () => {
     const report = {
       overallScore: 0.82,
       vulnerabilities: 2,
-      recommendations: ["Add adversarial training", "Implement input validation"],
+      recommendations: [
+        "Add adversarial training",
+        "Implement input validation",
+      ],
     };
     expect(report.overallScore).toBeGreaterThan(0);
     expect(report.recommendations.length).toBeGreaterThan(0);
@@ -215,10 +262,24 @@ describe("Lakehouse AI Integration Router", () => {
 
   it("should maintain model registry with versioning", () => {
     const models = [
-      { id: "mdl-001", name: "Fraud XGBoost", version: "3.2.1", status: "production", framework: "xgboost" },
-      { id: "mdl-002", name: "Agent Risk", version: "2.0.0", status: "staging", framework: "xgboost" },
+      {
+        id: "mdl-001",
+        name: "Fraud XGBoost",
+        version: "3.2.1",
+        status: "production",
+        framework: "xgboost",
+      },
+      {
+        id: "mdl-002",
+        name: "Agent Risk",
+        version: "2.0.0",
+        status: "staging",
+        framework: "xgboost",
+      },
     ];
-    expect(models.filter(m => m.status === "production").length).toBeGreaterThan(0);
+    expect(
+      models.filter(m => m.status === "production").length
+    ).toBeGreaterThan(0);
   });
 
   it("should track batch inference jobs", () => {
@@ -295,7 +356,9 @@ describe("ML Scoring Service Router", () => {
     expect(result.finalScore).toBeGreaterThanOrEqual(0);
     expect(result.finalScore).toBeLessThanOrEqual(1);
     expect(["low", "medium", "high", "critical"]).toContain(result.riskLevel);
-    expect(["approve", "review", "block", "escalate"]).toContain(result.recommendation);
+    expect(["approve", "review", "block", "escalate"]).toContain(
+      result.recommendation
+    );
     expect(result.confidence).toBeGreaterThan(0.5);
   });
 
@@ -340,8 +403,12 @@ describe("ML Scoring Service Router", () => {
       { feature: "deviceTrustScore", weight: -0.14, direction: "trust" },
     ];
     // Features should be sorted by absolute weight
-    const sorted = features.sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
-    expect(Math.abs(sorted[0].weight)).toBeGreaterThanOrEqual(Math.abs(sorted[1].weight));
+    const sorted = features.sort(
+      (a, b) => Math.abs(b.weight) - Math.abs(a.weight)
+    );
+    expect(Math.abs(sorted[0].weight)).toBeGreaterThanOrEqual(
+      Math.abs(sorted[1].weight)
+    );
   });
 });
 

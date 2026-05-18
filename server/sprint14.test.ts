@@ -130,24 +130,26 @@ describe("Threshold Alert Dispatch", () => {
     expect(result.dispatched.length).toBeGreaterThan(0);
 
     // Check that email was dispatched
-    const emailNotifs = result.dispatched.filter((n) => n.channel === "email");
+    const emailNotifs = result.dispatched.filter(n => n.channel === "email");
     expect(emailNotifs.length).toBeGreaterThanOrEqual(1);
     expect(emailNotifs[0].status).toBe("sent");
 
     // Check that SMS was dispatched (critical enables SMS)
-    const smsNotifs = result.dispatched.filter((n) => n.channel === "sms");
+    const smsNotifs = result.dispatched.filter(n => n.channel === "sms");
     expect(smsNotifs.length).toBeGreaterThanOrEqual(1);
 
     // Check push
-    const pushNotifs = result.dispatched.filter((n) => n.channel === "push");
+    const pushNotifs = result.dispatched.filter(n => n.channel === "push");
     expect(pushNotifs.length).toBe(1);
 
     // Check webhook
-    const webhookNotifs = result.dispatched.filter((n) => n.channel === "webhook");
+    const webhookNotifs = result.dispatched.filter(
+      n => n.channel === "webhook"
+    );
     expect(webhookNotifs.length).toBe(1);
 
     // Check in-app
-    const inAppNotifs = result.dispatched.filter((n) => n.channel === "in-app");
+    const inAppNotifs = result.dispatched.filter(n => n.channel === "in-app");
     expect(inAppNotifs.length).toBe(1);
   });
 
@@ -159,7 +161,7 @@ describe("Threshold Alert Dispatch", () => {
       channels: ["sms"],
     });
     const result = await dispatchThresholdAlert(event, 60);
-    const smsSkipped = result.skipped.filter((n) => n.channel === "sms");
+    const smsSkipped = result.skipped.filter(n => n.channel === "sms");
     expect(smsSkipped.length).toBe(1);
   });
 
@@ -200,13 +202,16 @@ describe("Notification History", () => {
   });
 
   it("filters by channel", () => {
-    const emailHistory = getNotificationHistory({ channel: "email", limit: 50 });
-    emailHistory.forEach((r) => expect(r.channel).toBe("email"));
+    const emailHistory = getNotificationHistory({
+      channel: "email",
+      limit: 50,
+    });
+    emailHistory.forEach(r => expect(r.channel).toBe("email"));
   });
 
   it("filters by status", () => {
     const sentHistory = getNotificationHistory({ status: "sent", limit: 50 });
-    sentHistory.forEach((r) => expect(r.status).toBe("sent"));
+    sentHistory.forEach(r => expect(r.status).toBe("sent"));
   });
 });
 
@@ -249,7 +254,9 @@ describe("AnnouncementBanner tRPC Wiring", () => {
   it("AnnouncementBanner component exists and uses trpc", async () => {
     const fs = await import("fs");
     const path = await import("path");
-    const bannerPath = path.resolve("client/src/components/AnnouncementBanner.tsx");
+    const bannerPath = path.resolve(
+      "client/src/components/AnnouncementBanner.tsx"
+    );
     expect(fs.existsSync(bannerPath)).toBe(true);
     const content = fs.readFileSync(bannerPath, "utf-8");
     expect(content).toContain("trpc");

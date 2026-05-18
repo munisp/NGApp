@@ -73,7 +73,10 @@ vi.mock("./_core/platformClient", () => ({
 }));
 
 vi.mock("bcryptjs", () => ({
-  default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue("$2b$10$hash") },
+  default: {
+    compare: vi.fn().mockResolvedValue(true),
+    hash: vi.fn().mockResolvedValue("$2b$10$hash"),
+  },
   compare: vi.fn().mockResolvedValue(true),
   hash: vi.fn().mockResolvedValue("$2b$10$hash"),
 }));
@@ -86,7 +89,13 @@ vi.mock("jose", () => ({
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "ADM001", name: "Admin User", role: "admin", tier: "Gold" },
+    payload: {
+      sub: "1",
+      agentCode: "ADM001",
+      name: "Admin User",
+      role: "admin",
+      tier: "Gold",
+    },
   }),
   createRemoteJWKSet: vi.fn(),
 }));
@@ -106,7 +115,7 @@ describe("settlement.getHistory — graceful fallback", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.settlement.getHistory({ limit: 10, offset: 0 });
     // getHistory returns { source, settlements } from local DB fallback
-    expect(result).toHaveProperty('settlements');
+    expect(result).toHaveProperty("settlements");
     expect(Array.isArray(result.settlements)).toBe(true);
   });
 });
@@ -130,7 +139,7 @@ describe("settlement.getHistory — pagination validation", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.settlement.getHistory({ limit: 20, offset: 0 });
     // getHistory returns { source, settlements } from local DB fallback
-    expect(result).toHaveProperty('settlements');
+    expect(result).toHaveProperty("settlements");
     expect(Array.isArray(result.settlements)).toBe(true);
   });
 });
@@ -147,8 +156,8 @@ describe("settlement.runNow — access control", () => {
     } as any);
 
     const caller = appRouter.createCaller(makeCtx());
-    await expect(
-      caller.settlement.runNow()
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.settlement.runNow()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 });

@@ -37,10 +37,14 @@ interface DashboardLayoutEditorProps {
   userId?: string;
 }
 
-export function DashboardLayoutEditor({ children, userId = "default" }: DashboardLayoutEditorProps) {
+export function DashboardLayoutEditor({
+  children,
+  userId = "default",
+}: DashboardLayoutEditorProps) {
   const [editMode, setEditMode] = useState(false);
 
-  const { data: layoutData, isLoading } = trpc.dashboardLayout.getLayout.useQuery({ userId });
+  const { data: layoutData, isLoading } =
+    trpc.dashboardLayout.getLayout.useQuery({ userId });
   const { data: presets } = trpc.dashboardLayout.presets.useQuery();
   const utils = trpc.useUtils();
 
@@ -69,7 +73,7 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
     if (!layoutData?.layout?.layouts) return { lg: [], md: [], sm: [] };
     // Filter to only include widgets that have corresponding children
     const filterLayout = (items: LayoutItem[]) =>
-      items.filter((item) => item.i in children);
+      items.filter(item => item.i in children);
     return {
       lg: filterLayout(layoutData.layout.layouts.lg),
       md: filterLayout(layoutData.layout.layouts.md),
@@ -78,7 +82,10 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
   }, [layoutData, children]);
 
   const handleLayoutChange = useCallback(
-    (_currentLayout: LayoutItem[], allLayouts: Record<string, LayoutItem[]>) => {
+    (
+      _currentLayout: LayoutItem[],
+      allLayouts: Record<string, LayoutItem[]>
+    ) => {
       if (!editMode) return;
       // Debounced save handled by button
     },
@@ -96,7 +103,11 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
   }, [layoutData, userId, saveMutation]);
 
   if (isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Loading dashboard layout...</div>;
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Loading dashboard layout...
+      </div>
+    );
   }
 
   return (
@@ -105,7 +116,9 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-2">
           {layoutData?.isCustom && (
-            <Badge variant="outline" className="text-[10px]">Custom Layout</Badge>
+            <Badge variant="outline" className="text-[10px]">
+              Custom Layout
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -117,11 +130,18 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {presets?.map((p) => (
-                <DropdownMenuItem key={p.id} onClick={() => presetMutation.mutate({ userId, presetId: p.id })}>
+              {presets?.map(p => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onClick={() =>
+                    presetMutation.mutate({ userId, presetId: p.id })
+                  }
+                >
                   <div>
                     <div className="font-medium text-xs">{p.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{p.description}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {p.description}
+                    </div>
                   </div>
                 </DropdownMenuItem>
               ))}
@@ -130,19 +150,58 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
 
           {editMode ? (
             <>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetMutation.mutate({ userId }); setEditMode(false); }}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => {
+                  resetMutation.mutate({ userId });
+                  setEditMode(false);
+                }}
+              >
                 Reset
               </Button>
-              <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saveMutation.isPending}>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+              >
                 {saveMutation.isPending ? "Saving..." : "Save Layout"}
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditMode(false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setEditMode(false)}
+              >
                 Cancel
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditMode(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setEditMode(true)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-1"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
               Edit Layout
             </Button>
           )}
@@ -164,15 +223,34 @@ export function DashboardLayoutEditor({ children, userId = "default" }: Dashboar
         margin={[16, 16]}
       >
         {Object.entries(children).map(([key, child]) => (
-          <div key={key} className={`relative ${editMode ? "ring-1 ring-dashed ring-primary/30 rounded-lg" : ""}`}>
+          <div
+            key={key}
+            className={`relative ${editMode ? "ring-1 ring-dashed ring-primary/30 rounded-lg" : ""}`}
+          >
             {editMode && (
               <div className="drag-handle absolute top-0 left-0 right-0 h-6 bg-primary/10 rounded-t-lg cursor-move flex items-center justify-center z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/50"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-primary/50"
+                >
+                  <circle cx="9" cy="5" r="1" />
+                  <circle cx="15" cy="5" r="1" />
+                  <circle cx="9" cy="12" r="1" />
+                  <circle cx="15" cy="12" r="1" />
+                  <circle cx="9" cy="19" r="1" />
+                  <circle cx="15" cy="19" r="1" />
+                </svg>
               </div>
             )}
-            <div className={editMode ? "pt-6 h-full" : "h-full"}>
-              {child}
-            </div>
+            <div className={editMode ? "pt-6 h-full" : "h-full"}>{child}</div>
           </div>
         ))}
       </ResponsiveGridLayout>

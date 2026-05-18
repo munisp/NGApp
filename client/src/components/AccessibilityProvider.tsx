@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * AccessibilityProvider — Global accessibility enhancements
- * 
+ *
  * Provides:
  * - Skip-to-content link
  * - Focus visible management
@@ -9,7 +9,14 @@
  * - Screen reader announcements
  * - Keyboard navigation indicators
  */
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 
 interface A11yContextValue {
   prefersReducedMotion: boolean;
@@ -31,13 +38,16 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isKeyboardUser, setIsKeyboardUser] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const [announcementPriority, setAnnouncementPriority] = useState<"polite" | "assertive">("polite");
+  const [announcementPriority, setAnnouncementPriority] = useState<
+    "polite" | "assertive"
+  >("polite");
 
   // Detect reduced motion preference
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setPrefersReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    const handler = (e: MediaQueryListEvent) =>
+      setPrefersReducedMotion(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
@@ -63,15 +73,20 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Screen reader announcement
-  const announce = useCallback((message: string, priority: "polite" | "assertive" = "polite") => {
-    setAnnouncementPriority(priority);
-    setAnnouncement("");
-    // Force re-render for screen readers
-    requestAnimationFrame(() => setAnnouncement(message));
-  }, []);
+  const announce = useCallback(
+    (message: string, priority: "polite" | "assertive" = "polite") => {
+      setAnnouncementPriority(priority);
+      setAnnouncement("");
+      // Force re-render for screen readers
+      requestAnimationFrame(() => setAnnouncement(message));
+    },
+    []
+  );
 
   return (
-    <A11yContext.Provider value={{ prefersReducedMotion, isKeyboardUser, announce }}>
+    <A11yContext.Provider
+      value={{ prefersReducedMotion, isKeyboardUser, announce }}
+    >
       {/* Skip to content link */}
       <a
         href="#main-content"

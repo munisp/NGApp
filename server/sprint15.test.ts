@@ -9,7 +9,12 @@ describe("Sprint 15: Escalation Chains", () => {
       expect(chain.id).toMatch(/^esc_/);
       expect(chain.name).toBeTruthy();
       expect(chain.levels.length).toBeGreaterThanOrEqual(1);
-      expect(["threshold_alert", "fraud_alert", "system_alert", "custom"]).toContain(chain.triggerSource);
+      expect([
+        "threshold_alert",
+        "fraud_alert",
+        "system_alert",
+        "custom",
+      ]).toContain(chain.triggerSource);
       expect(["critical", "high", "medium", "low"]).toContain(chain.severity);
     }
   });
@@ -20,7 +25,9 @@ describe("Sprint 15: Escalation Chains", () => {
       for (const level of chain.levels) {
         expect(level.timeoutMinutes).toBeGreaterThan(0);
         expect(level.level).toBeGreaterThan(0);
-        expect(["email", "sms", "push", "webhook"]).toContain(level.recipientType);
+        expect(["email", "sms", "push", "webhook"]).toContain(
+          level.recipientType
+        );
       }
     }
   });
@@ -30,14 +37,21 @@ describe("Sprint 15: Escalation Chains", () => {
     expect(_activeEvents.length).toBeGreaterThanOrEqual(1);
     const event = _activeEvents[0];
     expect(event.history.length).toBeGreaterThanOrEqual(1);
-    expect(["escalating", "acknowledged", "resolved", "expired"]).toContain(event.status);
+    expect(["escalating", "acknowledged", "resolved", "expired"]).toContain(
+      event.status
+    );
   });
 
   it("should dispatch escalation via correct channel", async () => {
     const { dispatchEscalation } = await import("./routers/escalationChains");
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const result = dispatchEscalation(
-      { level: 1, recipientType: "email", recipient: "test@example.com", timeoutMinutes: 5 },
+      {
+        level: 1,
+        recipientType: "email",
+        recipient: "test@example.com",
+        timeoutMinutes: 5,
+      },
       "Test Alert"
     );
     expect(result.status).toBe("sent");
@@ -216,7 +230,9 @@ describe("Sprint 15: Bulk Notification Campaigns", () => {
     for (const camp of _campaigns) {
       expect(camp.id).toMatch(/^camp_/);
       expect(camp.name).toBeTruthy();
-      expect(["draft", "sending", "completed", "failed", "paused"]).toContain(camp.status);
+      expect(["draft", "sending", "completed", "failed", "paused"]).toContain(
+        camp.status
+      );
       expect(camp.progress).toBeGreaterThanOrEqual(0);
       expect(camp.progress).toBeLessThanOrEqual(100);
       expect(camp.sentCount).toBeLessThanOrEqual(camp.recipientCount);
@@ -226,7 +242,9 @@ describe("Sprint 15: Bulk Notification Campaigns", () => {
   it("should track sent and failed counts", async () => {
     const { _campaigns } = await import("./routers/sprint15Features");
     for (const camp of _campaigns) {
-      expect(camp.sentCount + camp.failedCount).toBeLessThanOrEqual(camp.recipientCount);
+      expect(camp.sentCount + camp.failedCount).toBeLessThanOrEqual(
+        camp.recipientCount
+      );
     }
   });
 });
@@ -244,21 +262,41 @@ describe("Sprint 15: Notification Retry Queue", () => {
       expect(entry.id).toMatch(/^retry_/);
       expect(entry.attempt).toBeGreaterThanOrEqual(1);
       expect(entry.attempt).toBeLessThanOrEqual(entry.maxAttempts);
-      expect(["pending", "retrying", "delivered", "dead_letter"]).toContain(entry.status);
+      expect(["pending", "retrying", "delivered", "dead_letter"]).toContain(
+        entry.status
+      );
     }
   });
 
   it("should have exponential backoff", async () => {
     const { calculateBackoff } = await import("./routers/sprint15Features");
-    const b1 = calculateBackoff(1, { maxAttempts: 5, initialBackoffMs: 1000, maxBackoffMs: 300000, backoffMultiplier: 2, timeoutMs: 30000 });
-    const b2 = calculateBackoff(2, { maxAttempts: 5, initialBackoffMs: 1000, maxBackoffMs: 300000, backoffMultiplier: 2, timeoutMs: 30000 });
+    const b1 = calculateBackoff(1, {
+      maxAttempts: 5,
+      initialBackoffMs: 1000,
+      maxBackoffMs: 300000,
+      backoffMultiplier: 2,
+      timeoutMs: 30000,
+    });
+    const b2 = calculateBackoff(2, {
+      maxAttempts: 5,
+      initialBackoffMs: 1000,
+      maxBackoffMs: 300000,
+      backoffMultiplier: 2,
+      timeoutMs: 30000,
+    });
     // b2 should be roughly 2x b1 (with jitter)
     expect(b2).toBeGreaterThan(b1);
   });
 
   it("should cap backoff at maxBackoffMs", async () => {
     const { calculateBackoff } = await import("./routers/sprint15Features");
-    const config = { maxAttempts: 10, initialBackoffMs: 1000, maxBackoffMs: 5000, backoffMultiplier: 10, timeoutMs: 30000 };
+    const config = {
+      maxAttempts: 10,
+      initialBackoffMs: 1000,
+      maxBackoffMs: 5000,
+      backoffMultiplier: 10,
+      timeoutMs: 30000,
+    };
     const backoff = calculateBackoff(10, config);
     expect(backoff).toBeLessThanOrEqual(config.maxBackoffMs + 1000); // +1000 for jitter
   });
@@ -272,7 +310,9 @@ describe("Sprint 15: System Configuration", () => {
     expect(_systemConfig.defaultCurrency).toBe("NGN");
     expect(_systemConfig.maxTransactionAmount).toBeGreaterThan(0);
     expect(_systemConfig.minTransactionAmount).toBeGreaterThan(0);
-    expect(_systemConfig.maxTransactionAmount).toBeGreaterThan(_systemConfig.minTransactionAmount);
+    expect(_systemConfig.maxTransactionAmount).toBeGreaterThan(
+      _systemConfig.minTransactionAmount
+    );
   });
 
   it("should have feature flags", async () => {
@@ -362,14 +402,21 @@ describe("Sprint 15: Cache Management", () => {
 describe("Sprint 15: Cross-Feature Integration", () => {
   it("escalation chains should reference valid trigger sources", async () => {
     const { _chains } = await import("./routers/escalationChains");
-    const validSources = ["threshold_alert", "fraud_alert", "system_alert", "custom"];
+    const validSources = [
+      "threshold_alert",
+      "fraud_alert",
+      "system_alert",
+      "custom",
+    ];
     for (const chain of _chains) {
       expect(validSources).toContain(chain.triggerSource);
     }
   });
 
   it("analytics channels should match template channels", async () => {
-    const { _analyticsData, _templates } = await import("./routers/sprint15Features");
+    const { _analyticsData, _templates } = await import(
+      "./routers/sprint15Features"
+    );
     const analyticsChannels = new Set(_analyticsData.map(a => a.channel));
     const templateChannels = new Set(_templates.map(t => t.channel));
     // Template channels should be a subset of analytics channels
@@ -400,7 +447,9 @@ describe("Sprint 15: Cross-Feature Integration", () => {
     expect(names.some(n => n.includes("dapr"))).toBe(true);
     expect(names.some(n => n.includes("fluvio"))).toBe(true);
     expect(names.some(n => n.includes("lakehouse"))).toBe(true);
-    expect(names.some(n => n.includes("postgresql") || n.includes("postgres"))).toBe(true);
+    expect(
+      names.some(n => n.includes("postgresql") || n.includes("postgres"))
+    ).toBe(true);
   });
 
   it("retry queue dead letter entries should have max attempts reached", async () => {

@@ -11,12 +11,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Download, Play, Save, Wifi, WifiOff, Copy, Zap, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  Download,
+  Play,
+  Save,
+  Wifi,
+  WifiOff,
+  Copy,
+  Zap,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 
 interface TopicMapping {
   mqttTopic: string;
@@ -33,23 +58,32 @@ const FLUVIO_TOPICS = [
 ];
 
 export function MQTTBridgeTab() {
-  const [activeTab, setActiveTab] = useState<"config" | "test" | "spec">("config");
+  const [activeTab, setActiveTab] = useState<"config" | "test" | "spec">(
+    "config"
+  );
 
   // ── Server state ─────────────────────────────────────────────────────────────
-  const { data: config, isLoading, refetch } = trpc.mqttBridge.getConfig.useQuery();
+  const {
+    data: config,
+    isLoading,
+    refetch,
+  } = trpc.mqttBridge.getConfig.useQuery();
   const saveMutation = trpc.mqttBridge.saveConfig.useMutation({
-    onSuccess: () => { toast.success("Configuration saved"); refetch(); },
-    onError: (e) => toast.error(`Save failed: ${e.message}`),
+    onSuccess: () => {
+      toast.success("Configuration saved");
+      refetch();
+    },
+    onError: e => toast.error(`Save failed: ${e.message}`),
   });
   const testMutation = trpc.mqttBridge.testMqttBridge.useMutation({
-    onSuccess: (r) => {
+    onSuccess: r => {
       if (r.success) toast.success(`Connection successful: ${r.message}`);
       else toast.error(`Connection failed: ${r.message}`);
     },
-    onError: (e) => toast.error(`Test failed: ${e.message}`),
+    onError: e => toast.error(`Test failed: ${e.message}`),
   });
   const publishTestMutation = trpc.mqttBridge.publishTest.useMutation({
-    onSuccess: (r) => {
+    onSuccess: r => {
       if (r.success) {
         toast.success(`Published to '${r.topic}' in ${r.latencyMs}ms`);
         setLastPublishResult(r);
@@ -58,7 +92,7 @@ export function MQTTBridgeTab() {
         setLastPublishResult(r);
       }
     },
-    onError: (e) => toast.error(`Publish failed: ${e.message}`),
+    onError: e => toast.error(`Publish failed: ${e.message}`),
   });
 
   // ── Local form state ──────────────────────────────────────────────────────────
@@ -77,18 +111,25 @@ export function MQTTBridgeTab() {
   // ── Publish test state ────────────────────────────────────────────────────────
   const [testTopic, setTestTopic] = useState("pos.transactions.created");
   const [testPayloadStr, setTestPayloadStr] = useState(
-    JSON.stringify({
-      type: "MQTT_BRIDGE_TEST",
-      ref: "TEST-001",
-      agentCode: "AGT-54LINK",
-      amount: 5000,
-      currency: "NGN",
-      channel: "POS",
-      source: "mqtt-bridge-test-harness",
-    }, null, 2)
+    JSON.stringify(
+      {
+        type: "MQTT_BRIDGE_TEST",
+        ref: "TEST-001",
+        agentCode: "AGT-54LINK",
+        amount: 5000,
+        currency: "NGN",
+        channel: "POS",
+        source: "mqtt-bridge-test-harness",
+      },
+      null,
+      2
+    )
   );
   const [lastPublishResult, setLastPublishResult] = useState<{
-    success: boolean; latencyMs: number; topic: string; message: string;
+    success: boolean;
+    latencyMs: number;
+    topic: string;
+    message: string;
   } | null>(null);
 
   // Populate form from server data once
@@ -108,12 +149,33 @@ export function MQTTBridgeTab() {
 
   // ── Connector spec query ──────────────────────────────────────────────────────
   const specQuery = trpc.mqttBridge.generateConnectorSpec.useQuery(
-    { brokerUrl, port, username: username || undefined, password: password || undefined, useTls, clientId, topicMappings, qos, keepAliveSeconds: keepAlive },
+    {
+      brokerUrl,
+      port,
+      username: username || undefined,
+      password: password || undefined,
+      useTls,
+      clientId,
+      topicMappings,
+      qos,
+      keepAliveSeconds: keepAlive,
+    },
     { enabled: activeTab === "spec" && topicMappings.length > 0 }
   );
 
   const handleSave = () => {
-    saveMutation.mutate({ brokerUrl, port, useTls, username, password, clientId, topicMappings, qos, keepAliveSeconds: keepAlive, enabled });
+    saveMutation.mutate({
+      brokerUrl,
+      port,
+      useTls,
+      username,
+      password,
+      clientId,
+      topicMappings,
+      qos,
+      keepAliveSeconds: keepAlive,
+      enabled,
+    });
   };
 
   const handleTest = () => {
@@ -132,15 +194,28 @@ export function MQTTBridgeTab() {
   };
 
   const addTopicMapping = () => {
-    setTopicMappings(prev => [...prev, { mqttTopic: "pos/+/transactions", fluvioTopic: "pos.transactions.created", transform: "json" }]);
+    setTopicMappings(prev => [
+      ...prev,
+      {
+        mqttTopic: "pos/+/transactions",
+        fluvioTopic: "pos.transactions.created",
+        transform: "json",
+      },
+    ]);
   };
 
   const removeTopicMapping = (idx: number) => {
     setTopicMappings(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const updateTopicMapping = (idx: number, field: keyof TopicMapping, value: string) => {
-    setTopicMappings(prev => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m));
+  const updateTopicMapping = (
+    idx: number,
+    field: keyof TopicMapping,
+    value: string
+  ) => {
+    setTopicMappings(prev =>
+      prev.map((m, i) => (i === idx ? { ...m, [field]: value } : m))
+    );
   };
 
   const downloadSpec = (name: string, yaml: string) => {
@@ -154,7 +229,9 @@ export function MQTTBridgeTab() {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success("Copied to clipboard"));
+    navigator.clipboard
+      .writeText(text)
+      .then(() => toast.success("Copied to clipboard"));
   };
 
   if (isLoading) {
@@ -174,25 +251,41 @@ export function MQTTBridgeTab() {
         <div>
           <h2 className="text-xl font-semibold">MQTT Bridge Configuration</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Configure InfinyOn MQTT Source Connector to bridge POS terminal events into Fluvio topics.
+            Configure InfinyOn MQTT Source Connector to bridge POS terminal
+            events into Fluvio topics.
           </p>
         </div>
         <div className="flex items-center gap-3">
           {lastTestStatus === "success" ? (
-            <Badge variant="default" className="gap-1 bg-green-600"><Wifi className="w-3 h-3" /> Reachable</Badge>
+            <Badge variant="default" className="gap-1 bg-green-600">
+              <Wifi className="w-3 h-3" /> Reachable
+            </Badge>
           ) : lastTestStatus === "failed" ? (
-            <Badge variant="destructive" className="gap-1"><WifiOff className="w-3 h-3" /> Unreachable</Badge>
+            <Badge variant="destructive" className="gap-1">
+              <WifiOff className="w-3 h-3" /> Unreachable
+            </Badge>
           ) : (
-            <Badge variant="secondary" className="gap-1">Not tested</Badge>
+            <Badge variant="secondary" className="gap-1">
+              Not tested
+            </Badge>
           )}
           <div className="flex items-center gap-2">
-            <Label htmlFor="bridge-enabled" className="text-sm">Enabled</Label>
-            <Switch id="bridge-enabled" checked={enabled} onCheckedChange={setEnabled} />
+            <Label htmlFor="bridge-enabled" className="text-sm">
+              Enabled
+            </Label>
+            <Switch
+              id="bridge-enabled"
+              checked={enabled}
+              onCheckedChange={setEnabled}
+            />
           </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "config" | "test" | "spec")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={v => setActiveTab(v as "config" | "test" | "spec")}
+      >
         <TabsList>
           <TabsTrigger value="config">⚙️ Broker Config</TabsTrigger>
           <TabsTrigger value="test">⚡ Publish Test</TabsTrigger>
@@ -205,7 +298,9 @@ export function MQTTBridgeTab() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Broker Connection</CardTitle>
-              <CardDescription>MQTT broker endpoint and authentication settings.</CardDescription>
+              <CardDescription>
+                MQTT broker endpoint and authentication settings.
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 space-y-1">
@@ -215,23 +310,44 @@ export function MQTTBridgeTab() {
                   onChange={e => setBrokerUrl(e.target.value)}
                   placeholder="mqtt://broker.54link.io:1883"
                 />
-                <p className="text-xs text-muted-foreground">Use <code>mqtt://</code> or <code>mqtts://</code> for TLS. Default: <code>mqtt://broker.54link.io:1883</code></p>
+                <p className="text-xs text-muted-foreground">
+                  Use <code>mqtt://</code> or <code>mqtts://</code> for TLS.
+                  Default: <code>mqtt://broker.54link.io:1883</code>
+                </p>
               </div>
               <div className="space-y-1">
                 <Label>Port</Label>
-                <Input type="number" value={port} onChange={e => setPort(Number(e.target.value))} placeholder="1883 (plain) / 8883 (TLS)" />
+                <Input
+                  type="number"
+                  value={port}
+                  onChange={e => setPort(Number(e.target.value))}
+                  placeholder="1883 (plain) / 8883 (TLS)"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Client ID</Label>
-                <Input value={clientId} onChange={e => setClientId(e.target.value)} placeholder="54link-fluvio-bridge" />
+                <Input
+                  value={clientId}
+                  onChange={e => setClientId(e.target.value)}
+                  placeholder="54link-fluvio-bridge"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Username</Label>
-                <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Optional" />
+                <Input
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="Optional"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Password</Label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Optional" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Optional"
+                />
               </div>
               <div className="flex items-center gap-3">
                 <Switch id="tls" checked={useTls} onCheckedChange={setUseTls} />
@@ -248,18 +364,35 @@ export function MQTTBridgeTab() {
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <Label>QoS Level</Label>
-                <Select value={qos} onValueChange={(v) => setQos(v as "0" | "1" | "2")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={qos}
+                  onValueChange={v => setQos(v as "0" | "1" | "2")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">0 — At most once (fire and forget)</SelectItem>
-                    <SelectItem value="1">1 — At least once (acknowledged)</SelectItem>
-                    <SelectItem value="2">2 — Exactly once (guaranteed)</SelectItem>
+                    <SelectItem value="0">
+                      0 — At most once (fire and forget)
+                    </SelectItem>
+                    <SelectItem value="1">
+                      1 — At least once (acknowledged)
+                    </SelectItem>
+                    <SelectItem value="2">
+                      2 — Exactly once (guaranteed)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <Label>Keep-Alive (seconds)</Label>
-                <Input type="number" value={keepAlive} onChange={e => setKeepAlive(Number(e.target.value))} min={10} max={3600} />
+                <Input
+                  type="number"
+                  value={keepAlive}
+                  onChange={e => setKeepAlive(Number(e.target.value))}
+                  min={10}
+                  max={3600}
+                />
               </div>
             </CardContent>
           </Card>
@@ -270,7 +403,10 @@ export function MQTTBridgeTab() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Topic Mappings</CardTitle>
-                  <CardDescription>Map MQTT topics to Fluvio topics. Wildcards (+, #) are supported.</CardDescription>
+                  <CardDescription>
+                    Map MQTT topics to Fluvio topics. Wildcards (+, #) are
+                    supported.
+                  </CardDescription>
                 </div>
                 <Button size="sm" variant="outline" onClick={addTopicMapping}>
                   <Plus className="w-4 h-4 mr-1" /> Add Mapping
@@ -279,37 +415,58 @@ export function MQTTBridgeTab() {
             </CardHeader>
             <CardContent className="space-y-3">
               {topicMappings.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No topic mappings. Click "Add Mapping" to start.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No topic mappings. Click "Add Mapping" to start.
+                </p>
               )}
               {topicMappings.map((m, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
+                <div
+                  key={i}
+                  className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-center"
+                >
                   <Input
                     value={m.mqttTopic}
-                    onChange={e => updateTopicMapping(i, "mqttTopic", e.target.value)}
+                    onChange={e =>
+                      updateTopicMapping(i, "mqttTopic", e.target.value)
+                    }
                     placeholder="pos/+/transactions"
                     className="font-mono text-sm"
                   />
                   <Input
                     value={m.fluvioTopic}
-                    onChange={e => updateTopicMapping(i, "fluvioTopic", e.target.value)}
+                    onChange={e =>
+                      updateTopicMapping(i, "fluvioTopic", e.target.value)
+                    }
                     placeholder="pos.transactions.created"
                     className="font-mono text-sm"
                   />
-                  <Select value={m.transform ?? "none"} onValueChange={v => updateTopicMapping(i, "transform", v === "none" ? "" : v)}>
-                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={m.transform ?? "none"}
+                    onValueChange={v =>
+                      updateTopicMapping(i, "transform", v === "none" ? "" : v)
+                    }
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="json">JSON</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button size="icon" variant="ghost" onClick={() => removeTopicMapping(i)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeTopicMapping(i)}
+                  >
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </div>
               ))}
               {topicMappings.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  MQTT topic → Fluvio topic → Transform. Use <code>+</code> for single-level wildcard, <code>#</code> for multi-level.
+                  MQTT topic → Fluvio topic → Transform. Use <code>+</code> for
+                  single-level wildcard, <code>#</code> for multi-level.
                 </p>
               )}
             </CardContent>
@@ -318,11 +475,23 @@ export function MQTTBridgeTab() {
           {/* Actions */}
           <div className="flex gap-3">
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {saveMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Save Configuration
             </Button>
-            <Button variant="outline" onClick={handleTest} disabled={testMutation.isPending || !brokerUrl}>
-              {testMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+            <Button
+              variant="outline"
+              onClick={handleTest}
+              disabled={testMutation.isPending || !brokerUrl}
+            >
+              {testMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 mr-2" />
+              )}
               Test TCP Connection
             </Button>
           </div>
@@ -334,8 +503,9 @@ export function MQTTBridgeTab() {
             <CardHeader>
               <CardTitle className="text-base">Publish Test Event</CardTitle>
               <CardDescription>
-                Send a synthetic event directly to a Fluvio topic to validate the full MQTT → Fluvio pipeline.
-                The event is published via the server-side Fluvio producer and round-trip latency is measured.
+                Send a synthetic event directly to a Fluvio topic to validate
+                the full MQTT → Fluvio pipeline. The event is published via the
+                server-side Fluvio producer and round-trip latency is measured.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -347,7 +517,9 @@ export function MQTTBridgeTab() {
                   </SelectTrigger>
                   <SelectContent>
                     {FLUVIO_TOPICS.map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -361,35 +533,53 @@ export function MQTTBridgeTab() {
                   placeholder='{"type": "MQTT_BRIDGE_TEST", ...}'
                 />
               </div>
-              <Button onClick={handlePublishTest} disabled={publishTestMutation.isPending}>
-                {publishTestMutation.isPending
-                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  : <Zap className="w-4 h-4 mr-2" />
-                }
+              <Button
+                onClick={handlePublishTest}
+                disabled={publishTestMutation.isPending}
+              >
+                {publishTestMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
                 Publish Test Event
               </Button>
 
               {/* Result */}
               {lastPublishResult && (
-                <div className={`rounded-md border p-4 space-y-2 ${lastPublishResult.success ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                <div
+                  className={`rounded-md border p-4 space-y-2 ${lastPublishResult.success ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}
+                >
                   <div className="flex items-center gap-2">
-                    {lastPublishResult.success
-                      ? <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      : <XCircle className="w-5 h-5 text-destructive" />
-                    }
+                    {lastPublishResult.success ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-destructive" />
+                    )}
                     <span className="font-medium text-sm">
-                      {lastPublishResult.success ? "Published successfully" : "Publish failed"}
+                      {lastPublishResult.success
+                        ? "Published successfully"
+                        : "Publish failed"}
                     </span>
-                    <Badge variant="outline" className="ml-auto font-mono text-xs">
+                    <Badge
+                      variant="outline"
+                      className="ml-auto font-mono text-xs"
+                    >
                       {lastPublishResult.latencyMs}ms
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{lastPublishResult.message}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {lastPublishResult.message}
+                  </p>
                   <p className="text-xs text-muted-foreground font-mono">
-                    Topic: <span className="text-foreground">{lastPublishResult.topic}</span>
+                    Topic:{" "}
+                    <span className="text-foreground">
+                      {lastPublishResult.topic}
+                    </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Check the <strong>Fluvio Stream</strong> tab above to see the event appear in the live feed.
+                    Check the <strong>Fluvio Stream</strong> tab above to see
+                    the event appear in the live feed.
                   </p>
                 </div>
               )}
@@ -401,32 +591,46 @@ export function MQTTBridgeTab() {
         <TabsContent value="spec" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">InfinyOn Connector YAML</CardTitle>
+              <CardTitle className="text-base">
+                InfinyOn Connector YAML
+              </CardTitle>
               <CardDescription>
                 Generated YAML specs for each topic mapping. Deploy with{" "}
-                <code className="text-xs bg-muted px-1 rounded">fluvio cloud connector create --config &lt;file&gt;.yaml</code>
+                <code className="text-xs bg-muted px-1 rounded">
+                  fluvio cloud connector create --config &lt;file&gt;.yaml
+                </code>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {specQuery.isLoading && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Generating connector specs...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Generating
+                  connector specs...
                 </div>
               )}
               {topicMappings.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Add topic mappings in the Broker Config tab to generate connector YAML.
+                  Add topic mappings in the Broker Config tab to generate
+                  connector YAML.
                 </p>
               )}
-              {specQuery.data?.connectors.map((c) => (
+              {specQuery.data?.connectors.map(c => (
                 <div key={c.name} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <code className="text-sm font-medium">{c.name}.yaml</code>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(c.yaml)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(c.yaml)}
+                      >
                         <Copy className="w-3 h-3 mr-1" /> Copy
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => downloadSpec(c.name, c.yaml)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadSpec(c.name, c.yaml)}
+                      >
                         <Download className="w-3 h-3 mr-1" /> Download
                       </Button>
                     </div>
@@ -441,12 +645,29 @@ export function MQTTBridgeTab() {
               {specQuery.data && specQuery.data.connectors.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <code className="text-sm font-medium">install-mqtt-connectors.sh</code>
+                    <code className="text-sm font-medium">
+                      install-mqtt-connectors.sh
+                    </code>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(specQuery.data!.installScript)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          copyToClipboard(specQuery.data!.installScript)
+                        }
+                      >
                         <Copy className="w-3 h-3 mr-1" /> Copy
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => downloadSpec("install-mqtt-connectors", specQuery.data!.installScript)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          downloadSpec(
+                            "install-mqtt-connectors",
+                            specQuery.data!.installScript
+                          )
+                        }
+                      >
                         <Download className="w-3 h-3 mr-1" /> Download
                       </Button>
                     </div>
@@ -457,8 +678,10 @@ export function MQTTBridgeTab() {
                     className="font-mono text-xs h-32 bg-muted"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Run this script on any machine with the Fluvio CLI installed and authenticated to InfinyOn Cloud.
-                    All {specQuery.data.topicCount} connector(s) will be deployed in sequence.
+                    Run this script on any machine with the Fluvio CLI installed
+                    and authenticated to InfinyOn Cloud. All{" "}
+                    {specQuery.data.topicCount} connector(s) will be deployed in
+                    sequence.
                   </p>
                 </div>
               )}

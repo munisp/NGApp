@@ -38,12 +38,42 @@ describe("Sprint 75: USSD Integration Router", () => {
       title: "54Link POS",
       shortcode: "*384#",
       children: [
-        { id: "cash_in", title: "Cash In", shortcode: "*384*1#", action: "cash_in" },
-        { id: "cash_out", title: "Cash Out", shortcode: "*384*2#", action: "cash_out" },
-        { id: "balance", title: "Balance Inquiry", shortcode: "*384*3#", action: "balance" },
-        { id: "transfer", title: "Transfer", shortcode: "*384*4#", action: "transfer" },
-        { id: "airtime", title: "Airtime Purchase", shortcode: "*384*5#", action: "airtime" },
-        { id: "bills", title: "Bill Payment", shortcode: "*384*6#", action: "bills" },
+        {
+          id: "cash_in",
+          title: "Cash In",
+          shortcode: "*384*1#",
+          action: "cash_in",
+        },
+        {
+          id: "cash_out",
+          title: "Cash Out",
+          shortcode: "*384*2#",
+          action: "cash_out",
+        },
+        {
+          id: "balance",
+          title: "Balance Inquiry",
+          shortcode: "*384*3#",
+          action: "balance",
+        },
+        {
+          id: "transfer",
+          title: "Transfer",
+          shortcode: "*384*4#",
+          action: "transfer",
+        },
+        {
+          id: "airtime",
+          title: "Airtime Purchase",
+          shortcode: "*384*5#",
+          action: "airtime",
+        },
+        {
+          id: "bills",
+          title: "Bill Payment",
+          shortcode: "*384*6#",
+          action: "bills",
+        },
       ],
     };
 
@@ -97,7 +127,8 @@ describe("Sprint 75: USSD Integration Router", () => {
     });
 
     it("should validate PIN length", () => {
-      const validatePin = (input: string) => input.length >= 4 && input.length <= 6;
+      const validatePin = (input: string) =>
+        input.length >= 4 && input.length <= 6;
       expect(validatePin("1234")).toBe(true);
       expect(validatePin("123456")).toBe(true);
       expect(validatePin("123")).toBe(false);
@@ -136,12 +167,26 @@ describe("Sprint 75: Carrier Switching Router", () => {
     });
 
     it("should compute quality score from metrics", () => {
-      const computeQuality = (signal: number, latency: number, bandwidth: number, loss: number): number => {
-        const sigScore = Math.max(0, Math.min(100, (signal + 120) * (100 / 70)));
+      const computeQuality = (
+        signal: number,
+        latency: number,
+        bandwidth: number,
+        loss: number
+      ): number => {
+        const sigScore = Math.max(
+          0,
+          Math.min(100, (signal + 120) * (100 / 70))
+        );
         const latScore = Math.max(0, Math.min(100, 100 - latency / 10));
         const bwScore = Math.max(0, Math.min(100, bandwidth / 100));
         const lossScore = Math.max(0, Math.min(100, 100 - loss * 10));
-        return sigScore * 0.2 + latScore * 0.3 + bwScore * 0.25 + lossScore * 0.15 + 10;
+        return (
+          sigScore * 0.2 +
+          latScore * 0.3 +
+          bwScore * 0.25 +
+          lossScore * 0.15 +
+          10
+        );
       };
       // Good signal
       const good = computeQuality(-60, 50, 5000, 0.5);
@@ -177,7 +222,9 @@ describe("Sprint 75: Carrier Switching Router", () => {
         { name: "Airtel", qualityScore: 65 },
         { name: "Glo", qualityScore: 55 },
       ];
-      const ranked = [...carriers].sort((a, b) => b.qualityScore - a.qualityScore);
+      const ranked = [...carriers].sort(
+        (a, b) => b.qualityScore - a.qualityScore
+      );
       expect(ranked[0].name).toBe("Safaricom");
       expect(ranked[3].name).toBe("Glo");
     });
@@ -289,13 +336,19 @@ describe("Sprint 75: Network Status Dashboard Router", () => {
     const regions = [
       { region: "Lagos", country: "NG", qualityScore: 78, activeAgents: 245 },
       { region: "Nairobi", country: "KE", qualityScore: 85, activeAgents: 310 },
-      { region: "Johannesburg", country: "ZA", qualityScore: 88, activeAgents: 200 },
+      {
+        region: "Johannesburg",
+        country: "ZA",
+        qualityScore: 88,
+        activeAgents: 200,
+      },
       { region: "Kano", country: "NG", qualityScore: 58, activeAgents: 95 },
       { region: "Dakar", country: "SN", qualityScore: 62, activeAgents: 65 },
     ];
 
     it("should compute correct KPI averages", () => {
-      const avgQuality = regions.reduce((s, r) => s + r.qualityScore, 0) / regions.length;
+      const avgQuality =
+        regions.reduce((s, r) => s + r.qualityScore, 0) / regions.length;
       expect(avgQuality).toBeCloseTo(74.2, 1);
       const totalAgents = regions.reduce((s, r) => s + r.activeAgents, 0);
       expect(totalAgents).toBe(915);
@@ -309,7 +362,9 @@ describe("Sprint 75: Network Status Dashboard Router", () => {
     });
 
     it("should sort regions by quality score", () => {
-      const sorted = [...regions].sort((a, b) => b.qualityScore - a.qualityScore);
+      const sorted = [...regions].sort(
+        (a, b) => b.qualityScore - a.qualityScore
+      );
       expect(sorted[0].region).toBe("Johannesburg");
       expect(sorted[sorted.length - 1].region).toBe("Kano");
     });
@@ -337,7 +392,9 @@ describe("Sprint 75: Network Status Dashboard Router", () => {
       ];
       const buckets = new Map<string, number[]>();
       for (const p of data) {
-        const hour = new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit" });
+        const hour = new Date(p.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+        });
         if (!buckets.has(hour)) buckets.set(hour, []);
         buckets.get(hour)!.push(p.quality);
       }
@@ -392,7 +449,14 @@ describe("Sprint 75: Network Status Dashboard Router", () => {
 describe("Sprint 75: Microservices", () => {
   describe("Go: ussd-tx-processor", () => {
     it("should define correct USSD transaction types", () => {
-      const txTypes = ["cash_in", "cash_out", "balance", "transfer", "airtime", "bills"];
+      const txTypes = [
+        "cash_in",
+        "cash_out",
+        "balance",
+        "transfer",
+        "airtime",
+        "bills",
+      ];
       expect(txTypes).toHaveLength(6);
       expect(txTypes).toContain("cash_in");
       expect(txTypes).toContain("cash_out");
@@ -449,12 +513,25 @@ describe("Sprint 75: Microservices", () => {
     it("should recommend carrier with highest composite score", () => {
       const carriers = [
         { name: "MTN", signal: 0.8, latency: 0.7, bandwidth: 0.9, loss: 0.95 },
-        { name: "Airtel", signal: 0.7, latency: 0.8, bandwidth: 0.6, loss: 0.9 },
-        { name: "Safaricom", signal: 0.9, latency: 0.9, bandwidth: 0.85, loss: 0.98 },
+        {
+          name: "Airtel",
+          signal: 0.7,
+          latency: 0.8,
+          bandwidth: 0.6,
+          loss: 0.9,
+        },
+        {
+          name: "Safaricom",
+          signal: 0.9,
+          latency: 0.9,
+          bandwidth: 0.85,
+          loss: 0.98,
+        },
       ];
       const scored = carriers.map(c => ({
         name: c.name,
-        score: c.signal * 0.2 + c.latency * 0.3 + c.bandwidth * 0.25 + c.loss * 0.15,
+        score:
+          c.signal * 0.2 + c.latency * 0.3 + c.bandwidth * 0.25 + c.loss * 0.15,
       }));
       scored.sort((a, b) => b.score - a.score);
       expect(scored[0].name).toBe("Safaricom");
@@ -481,8 +558,19 @@ describe("Sprint 75: Microservices", () => {
 
   describe("Rust: carrier-ranking-engine", () => {
     it("should apply weighted scoring with correct weights", () => {
-      const weights = { signal: 0.2, latency: 0.3, bandwidth: 0.25, packetLoss: 0.15, base: 0.1 };
-      const total = weights.signal + weights.latency + weights.bandwidth + weights.packetLoss + weights.base;
+      const weights = {
+        signal: 0.2,
+        latency: 0.3,
+        bandwidth: 0.25,
+        packetLoss: 0.15,
+        base: 0.1,
+      };
+      const total =
+        weights.signal +
+        weights.latency +
+        weights.bandwidth +
+        weights.packetLoss +
+        weights.base;
       expect(total).toBeCloseTo(1.0, 5);
     });
 

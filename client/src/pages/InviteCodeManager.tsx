@@ -1,15 +1,32 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Ban, Copy, Key, Loader2, Plus, RefreshCw, Ticket } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  Copy,
+  Key,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Ticket,
+} from "lucide-react";
 
 export default function InviteCodeManager() {
-  const [codeType, setCodeType] = useState<"one_time" | "multi_use">("one_time");
+  const [codeType, setCodeType] = useState<"one_time" | "multi_use">(
+    "one_time"
+  );
   const [maxUses, setMaxUses] = useState(1);
   const [partnerName, setPartnerName] = useState("");
   const [partnerEmail, setPartnerEmail] = useState("");
@@ -19,12 +36,12 @@ export default function InviteCodeManager() {
 
   const stats = trpc.inviteCodes.stats.useQuery();
   const codesList = trpc.inviteCodes.list.useQuery({
-    status: filterStatus ? filterStatus as any : undefined,
+    status: filterStatus ? (filterStatus as any) : undefined,
     search: search || undefined,
   });
 
   const generateCode = trpc.inviteCodes.generate.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Invite code generated: ${data.code}`);
       navigator.clipboard.writeText(data.code);
       setPartnerName("");
@@ -33,7 +50,7 @@ export default function InviteCodeManager() {
       codesList.refetch();
       stats.refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const revokeCode = trpc.inviteCodes.revoke.useMutation({
@@ -50,7 +67,11 @@ export default function InviteCodeManager() {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card/50 backdrop-blur sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.history.back()}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Ticket className="h-5 w-5 text-primary" />
@@ -69,7 +90,9 @@ export default function InviteCodeManager() {
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold text-green-500">{s?.active ?? 0}</p>
+              <p className="text-2xl font-bold text-green-500">
+                {s?.active ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Active</p>
             </CardContent>
           </Card>
@@ -81,13 +104,17 @@ export default function InviteCodeManager() {
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold text-amber-500">{s?.expired ?? 0}</p>
+              <p className="text-2xl font-bold text-amber-500">
+                {s?.expired ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Expired</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold text-red-500">{s?.revoked ?? 0}</p>
+              <p className="text-2xl font-bold text-red-500">
+                {s?.revoked ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Revoked</p>
             </CardContent>
           </Card>
@@ -96,7 +123,9 @@ export default function InviteCodeManager() {
         {/* Generate new code */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> Generate Invite Code</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" /> Generate Invite Code
+            </CardTitle>
             <CardDescription>Create a new partner invite code</CardDescription>
           </CardHeader>
           <CardContent>
@@ -105,7 +134,7 @@ export default function InviteCodeManager() {
                 <Label>Code Type</Label>
                 <select
                   value={codeType}
-                  onChange={(e) => setCodeType(e.target.value as any)}
+                  onChange={e => setCodeType(e.target.value as any)}
                   className="w-full h-10 rounded-md border bg-background px-3 text-sm"
                 >
                   <option value="one_time">One-Time Use</option>
@@ -115,34 +144,59 @@ export default function InviteCodeManager() {
               {codeType === "multi_use" && (
                 <div>
                   <Label>Max Uses</Label>
-                  <Input type="number" value={maxUses} onChange={(e) => setMaxUses(Number(e.target.value))} min={1} max={1000} />
+                  <Input
+                    type="number"
+                    value={maxUses}
+                    onChange={e => setMaxUses(Number(e.target.value))}
+                    min={1}
+                    max={1000}
+                  />
                 </div>
               )}
               <div>
                 <Label>Partner Name</Label>
-                <Input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} placeholder="Acme Corp" />
+                <Input
+                  value={partnerName}
+                  onChange={e => setPartnerName(e.target.value)}
+                  placeholder="Acme Corp"
+                />
               </div>
               <div>
                 <Label>Partner Email</Label>
-                <Input type="email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} placeholder="partner@acme.com" />
+                <Input
+                  type="email"
+                  value={partnerEmail}
+                  onChange={e => setPartnerEmail(e.target.value)}
+                  placeholder="partner@acme.com"
+                />
               </div>
               <div className="md:col-span-2">
                 <Label>Notes</Label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes about this partner..." />
+                <Input
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Internal notes about this partner..."
+                />
               </div>
             </div>
             <Button
-              onClick={() => generateCode.mutate({
-                type: codeType,
-                maxUses: codeType === "multi_use" ? maxUses : 1,
-                partnerName: partnerName || undefined,
-                partnerEmail: partnerEmail || undefined,
-                notes: notes || undefined,
-              })}
+              onClick={() =>
+                generateCode.mutate({
+                  type: codeType,
+                  maxUses: codeType === "multi_use" ? maxUses : 1,
+                  partnerName: partnerName || undefined,
+                  partnerEmail: partnerEmail || undefined,
+                  notes: notes || undefined,
+                })
+              }
               className="mt-4"
               disabled={generateCode.isPending}
             >
-              {generateCode.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              {generateCode.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
               Generate Code
             </Button>
           </CardContent>
@@ -153,7 +207,11 @@ export default function InviteCodeManager() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>All Invite Codes</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => codesList.refetch()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => codesList.refetch()}
+              >
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
@@ -161,12 +219,12 @@ export default function InviteCodeManager() {
               <Input
                 placeholder="Search codes or partners..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="max-w-xs"
               />
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={e => setFilterStatus(e.target.value)}
                 className="h-10 rounded-md border bg-background px-3 text-sm"
               >
                 <option value="">All Status</option>
@@ -196,31 +254,52 @@ export default function InviteCodeManager() {
                       <tr key={c.id} className="border-t">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-2">
-                            <code className="font-mono text-xs bg-muted px-2 py-1 rounded">{c.code}</code>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                              navigator.clipboard.writeText(c.code);
-                              toast.success("Copied!");
-                            }}>
+                            <code className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                              {c.code}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                navigator.clipboard.writeText(c.code);
+                                toast.success("Copied!");
+                              }}
+                            >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         </td>
                         <td className="px-4 py-2">
-                          <Badge variant="outline">{c.type === "one_time" ? "One-Time" : "Multi-Use"}</Badge>
+                          <Badge variant="outline">
+                            {c.type === "one_time" ? "One-Time" : "Multi-Use"}
+                          </Badge>
                         </td>
                         <td className="px-4 py-2">
                           <div>
-                            <p className="font-medium">{c.partnerName || "-"}</p>
-                            <p className="text-xs text-muted-foreground">{c.partnerEmail || ""}</p>
+                            <p className="font-medium">
+                              {c.partnerName || "-"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.partnerEmail || ""}
+                            </p>
                           </div>
                         </td>
-                        <td className="px-4 py-2">{c.usedCount}/{c.maxUses}</td>
                         <td className="px-4 py-2">
-                          <Badge variant={
-                            c.status === "active" ? "default" :
-                            c.status === "used" ? "secondary" :
-                            c.status === "revoked" ? "destructive" : "outline"
-                          }>
+                          {c.usedCount}/{c.maxUses}
+                        </td>
+                        <td className="px-4 py-2">
+                          <Badge
+                            variant={
+                              c.status === "active"
+                                ? "default"
+                                : c.status === "used"
+                                  ? "secondary"
+                                  : c.status === "revoked"
+                                    ? "destructive"
+                                    : "outline"
+                            }
+                          >
                             {c.status}
                           </Badge>
                         </td>
@@ -242,7 +321,9 @@ export default function InviteCodeManager() {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No invite codes generated yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No invite codes generated yet.
+              </p>
             )}
           </CardContent>
         </Card>

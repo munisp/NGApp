@@ -1,6 +1,6 @@
 /**
  * Sprint 23 — Final Production Features — Vitest Tests
- * 
+ *
  * Covers: Report Comparison, Threshold Manager, Endpoint Rate Limits,
  * Webhook Delivery Monitor, Agent Performance Scoring, Dispute Auto-Rules,
  * KYC Verification Workflow, Scheduled Email Delivery, Global Search
@@ -44,7 +44,10 @@ const mockFeatures = {
   globalSearch: vi.fn(),
 };
 
-vi.mock("./lib/sprint23Features", () => ({ default: mockFeatures, ...mockFeatures }));
+vi.mock("./lib/sprint23Features", () => ({
+  default: mockFeatures,
+  ...mockFeatures,
+}));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. Report Comparison
@@ -54,13 +57,35 @@ describe("Report Comparison", () => {
 
   it("should compare two weekly reports side by side", async () => {
     const mockComparison = {
-      weekA: { weekStart: "2026-04-06", weekEnd: "2026-04-12", totalTransactions: 12500, totalVolume: 45000000, avgResponseTime: 850, uptime: 99.92 },
-      weekB: { weekStart: "2026-04-13", weekEnd: "2026-04-19", totalTransactions: 13200, totalVolume: 48500000, avgResponseTime: 780, uptime: 99.95 },
-      deltas: { transactionsDelta: 5.6, volumeDelta: 7.8, responseTimeDelta: -8.2, uptimeDelta: 0.03 },
+      weekA: {
+        weekStart: "2026-04-06",
+        weekEnd: "2026-04-12",
+        totalTransactions: 12500,
+        totalVolume: 45000000,
+        avgResponseTime: 850,
+        uptime: 99.92,
+      },
+      weekB: {
+        weekStart: "2026-04-13",
+        weekEnd: "2026-04-19",
+        totalTransactions: 13200,
+        totalVolume: 48500000,
+        avgResponseTime: 780,
+        uptime: 99.95,
+      },
+      deltas: {
+        transactionsDelta: 5.6,
+        volumeDelta: 7.8,
+        responseTimeDelta: -8.2,
+        uptimeDelta: 0.03,
+      },
     };
     mockFeatures.getWeeklyReportComparison.mockResolvedValue(mockComparison);
 
-    const result = await mockFeatures.getWeeklyReportComparison("2026-04-06", "2026-04-13");
+    const result = await mockFeatures.getWeeklyReportComparison(
+      "2026-04-06",
+      "2026-04-13"
+    );
     expect(result.weekA.totalTransactions).toBe(12500);
     expect(result.weekB.totalTransactions).toBe(13200);
     expect(result.deltas.transactionsDelta).toBeGreaterThan(0);
@@ -70,11 +95,18 @@ describe("Report Comparison", () => {
   it("should handle missing week data gracefully", async () => {
     mockFeatures.getWeeklyReportComparison.mockResolvedValue({
       weekA: null,
-      weekB: { weekStart: "2026-04-13", weekEnd: "2026-04-19", totalTransactions: 13200 },
+      weekB: {
+        weekStart: "2026-04-13",
+        weekEnd: "2026-04-19",
+        totalTransactions: 13200,
+      },
       deltas: null,
     });
 
-    const result = await mockFeatures.getWeeklyReportComparison("2025-01-01", "2026-04-13");
+    const result = await mockFeatures.getWeeklyReportComparison(
+      "2025-01-01",
+      "2026-04-13"
+    );
     expect(result.weekA).toBeNull();
     expect(result.deltas).toBeNull();
   });
@@ -114,8 +146,26 @@ describe("Threshold Manager", () => {
 
   it("should list all thresholds", async () => {
     mockFeatures.listThresholds.mockResolvedValue([
-      { id: "th-001", metricKey: "system.cpuAvgPercent", label: "CPU > 90%", operator: "gt", value: 90, severity: "critical", enabled: true, triggerCount: 3 },
-      { id: "th-002", metricKey: "system.memoryUsedPercent", label: "Memory > 85%", operator: "gt", value: 85, severity: "warning", enabled: true, triggerCount: 1 },
+      {
+        id: "th-001",
+        metricKey: "system.cpuAvgPercent",
+        label: "CPU > 90%",
+        operator: "gt",
+        value: 90,
+        severity: "critical",
+        enabled: true,
+        triggerCount: 3,
+      },
+      {
+        id: "th-002",
+        metricKey: "system.memoryUsedPercent",
+        label: "Memory > 85%",
+        operator: "gt",
+        value: 85,
+        severity: "warning",
+        enabled: true,
+        triggerCount: 1,
+      },
     ]);
 
     const result = await mockFeatures.listThresholds();
@@ -125,8 +175,18 @@ describe("Threshold Manager", () => {
 
   it("should evaluate thresholds against current metrics", async () => {
     mockFeatures.evaluateThresholds.mockResolvedValue([
-      { thresholdId: "th-001", triggered: true, currentValue: 92.5, message: "CPU at 92.5% exceeds 90% threshold" },
-      { thresholdId: "th-002", triggered: false, currentValue: 72.3, message: "Memory at 72.3% within 85% threshold" },
+      {
+        thresholdId: "th-001",
+        triggered: true,
+        currentValue: 92.5,
+        message: "CPU at 92.5% exceeds 90% threshold",
+      },
+      {
+        thresholdId: "th-002",
+        triggered: false,
+        currentValue: 72.3,
+        message: "Memory at 72.3% within 85% threshold",
+      },
     ]);
 
     const result = await mockFeatures.evaluateThresholds();
@@ -135,8 +195,14 @@ describe("Threshold Manager", () => {
   });
 
   it("should update threshold enabled state", async () => {
-    mockFeatures.updateThreshold.mockResolvedValue({ id: "th-001", enabled: false });
-    const result = await mockFeatures.updateThreshold({ id: "th-001", enabled: false });
+    mockFeatures.updateThreshold.mockResolvedValue({
+      id: "th-001",
+      enabled: false,
+    });
+    const result = await mockFeatures.updateThreshold({
+      id: "th-001",
+      enabled: false,
+    });
     expect(result.enabled).toBe(false);
   });
 
@@ -173,8 +239,20 @@ describe("Endpoint Rate Limits", () => {
 
   it("should list all configured rate limits", async () => {
     mockFeatures.listRateLimits.mockResolvedValue([
-      { endpoint: "transactions.create", maxRequests: 100, windowMs: 60000, currentCount: 45, lastReset: Date.now() },
-      { endpoint: "auth.login", maxRequests: 5, windowMs: 300000, currentCount: 2, lastReset: Date.now() },
+      {
+        endpoint: "transactions.create",
+        maxRequests: 100,
+        windowMs: 60000,
+        currentCount: 45,
+        lastReset: Date.now(),
+      },
+      {
+        endpoint: "auth.login",
+        maxRequests: 5,
+        windowMs: 300000,
+        currentCount: 2,
+        lastReset: Date.now(),
+      },
     ]);
 
     const result = await mockFeatures.listRateLimits();
@@ -191,17 +269,41 @@ describe("Webhook Delivery Monitor", () => {
 
   it("should list webhook deliveries with status filter", async () => {
     mockFeatures.listWebhookDeliveries.mockResolvedValue([
-      { id: "wd-001", url: "https://partner.com/webhook", status: "success", attempts: 1, maxAttempts: 3, responseCode: 200 },
-      { id: "wd-002", url: "https://partner.com/webhook", status: "failed", attempts: 3, maxAttempts: 3, responseCode: 500 },
+      {
+        id: "wd-001",
+        url: "https://partner.com/webhook",
+        status: "success",
+        attempts: 1,
+        maxAttempts: 3,
+        responseCode: 200,
+      },
+      {
+        id: "wd-002",
+        url: "https://partner.com/webhook",
+        status: "failed",
+        attempts: 3,
+        maxAttempts: 3,
+        responseCode: 500,
+      },
     ]);
 
-    const result = await mockFeatures.listWebhookDeliveries({ status: "failed" });
+    const result = await mockFeatures.listWebhookDeliveries({
+      status: "failed",
+    });
     expect(result).toHaveLength(2);
   });
 
   it("should return dead letter queue entries", async () => {
     mockFeatures.getDeadLetterQueue.mockResolvedValue([
-      { id: "wd-003", url: "https://partner.com/webhook", status: "dead_letter", attempts: 3, maxAttempts: 3, responseCode: 502, payload: { event: "transaction.completed" } },
+      {
+        id: "wd-003",
+        url: "https://partner.com/webhook",
+        status: "dead_letter",
+        attempts: 3,
+        maxAttempts: 3,
+        responseCode: 502,
+        payload: { event: "transaction.completed" },
+      },
     ]);
 
     const result = await mockFeatures.getDeadLetterQueue();
@@ -210,7 +312,11 @@ describe("Webhook Delivery Monitor", () => {
   });
 
   it("should retry a dead letter delivery", async () => {
-    mockFeatures.retryDeadLetter.mockResolvedValue({ id: "wd-003", status: "pending", attempts: 0 });
+    mockFeatures.retryDeadLetter.mockResolvedValue({
+      id: "wd-003",
+      status: "pending",
+      attempts: 0,
+    });
     const result = await mockFeatures.retryDeadLetter({ deliveryId: "wd-003" });
     expect(result.status).toBe("pending");
     expect(result.attempts).toBe(0);
@@ -232,7 +338,7 @@ describe("Agent Performance Scoring", () => {
         trend: "improving",
         breakdown: {
           transactionVolume: { score: 95, weight: 0.25, raw: 1250 },
-          successRate: { score: 98.2, weight: 0.20, raw: 98.2 },
+          successRate: { score: 98.2, weight: 0.2, raw: 98.2 },
         },
       },
     ]);
@@ -245,8 +351,18 @@ describe("Agent Performance Scoring", () => {
 
   it("should return performance tiers with thresholds", async () => {
     mockFeatures.getPerformanceTiers.mockResolvedValue([
-      { tier: "platinum", minScore: 90, maxScore: 100, benefits: ["Priority support", "Reduced commission"] },
-      { tier: "gold", minScore: 75, maxScore: 89.99, benefits: ["Standard support"] },
+      {
+        tier: "platinum",
+        minScore: 90,
+        maxScore: 100,
+        benefits: ["Priority support", "Reduced commission"],
+      },
+      {
+        tier: "gold",
+        minScore: 75,
+        maxScore: 89.99,
+        benefits: ["Standard support"],
+      },
       { tier: "silver", minScore: 60, maxScore: 74.99, benefits: [] },
       { tier: "bronze", minScore: 0, maxScore: 59.99, benefits: [] },
     ]);
@@ -294,14 +410,22 @@ describe("Dispute Auto-Resolution Rules", () => {
       confidence: 0.95,
     });
 
-    const result = await mockFeatures.evaluateDisputeRules({ amount: 3000, reason: "duplicate charge", category: "transaction" });
+    const result = await mockFeatures.evaluateDisputeRules({
+      amount: 3000,
+      reason: "duplicate charge",
+      category: "transaction",
+    });
     expect(result.action).toBe("auto_refund");
     expect(result.confidence).toBeGreaterThan(0.9);
   });
 
   it("should return null when no rule matches", async () => {
     mockFeatures.evaluateDisputeRules.mockResolvedValue(null);
-    const result = await mockFeatures.evaluateDisputeRules({ amount: 500000, reason: "unauthorized", category: "fraud" });
+    const result = await mockFeatures.evaluateDisputeRules({
+      amount: 500000,
+      reason: "unauthorized",
+      category: "fraud",
+    });
     expect(result).toBeNull();
   });
 });
@@ -377,14 +501,22 @@ describe("KYC Verification Workflow", () => {
       ],
     });
 
-    const result = await mockFeatures.getAgentKycStatus({ agentId: "agent-001" });
+    const result = await mockFeatures.getAgentKycStatus({
+      agentId: "agent-001",
+    });
     expect(result.completionPercent).toBe(66);
     expect(result.documents).toHaveLength(3);
   });
 
   it("should list pending KYC reviews", async () => {
     mockFeatures.getPendingKycReviews.mockResolvedValue([
-      { id: "kyc-003", agentId: "agent-001", documentType: "cac_certificate", status: "pending", submittedAt: Date.now() },
+      {
+        id: "kyc-003",
+        agentId: "agent-001",
+        documentType: "cac_certificate",
+        status: "pending",
+        submittedAt: Date.now(),
+      },
     ]);
 
     const result = await mockFeatures.getPendingKycReviews();
@@ -407,7 +539,12 @@ describe("Scheduled Email Delivery", () => {
       recipients: ["admin@54link.com", "ops@54link.com"],
       nextDelivery: Date.now() + 86400000,
       deliveryHistory: [
-        { sentAt: Date.now() - 604800000, recipientCount: 2, status: "success", errors: [] },
+        {
+          sentAt: Date.now() - 604800000,
+          recipientCount: 2,
+          status: "success",
+          errors: [],
+        },
       ],
     });
 
@@ -418,8 +555,12 @@ describe("Scheduled Email Delivery", () => {
   });
 
   it("should update delivery configuration", async () => {
-    mockFeatures.updateScheduledDeliveryConfig.mockResolvedValue({ enabled: false });
-    const result = await mockFeatures.updateScheduledDeliveryConfig({ enabled: false });
+    mockFeatures.updateScheduledDeliveryConfig.mockResolvedValue({
+      enabled: false,
+    });
+    const result = await mockFeatures.updateScheduledDeliveryConfig({
+      enabled: false,
+    });
     expect(result.enabled).toBe(false);
   });
 
@@ -465,7 +606,9 @@ describe("Global Search", () => {
       totalResults: 0,
     });
 
-    const result = await mockFeatures.globalSearch({ query: "nonexistent12345" });
+    const result = await mockFeatures.globalSearch({
+      query: "nonexistent12345",
+    });
     expect(result.totalResults).toBe(0);
   });
 
@@ -477,7 +620,10 @@ describe("Global Search", () => {
       totalResults: 1,
     });
 
-    const result = await mockFeatures.globalSearch({ query: "Adebayo", entityType: "agents" });
+    const result = await mockFeatures.globalSearch({
+      query: "Adebayo",
+      entityType: "agents",
+    });
     expect(result.agents).toHaveLength(1);
     expect(result.transactions).toHaveLength(0);
   });

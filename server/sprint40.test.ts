@@ -8,19 +8,49 @@ const sprint40Routers = [
   { name: "autoComplianceWorkflow", file: "./routers/autoComplianceWorkflow" },
   { name: "paymentTokenVault", file: "./routers/paymentTokenVault" },
   { name: "dynamicQrPayment", file: "./routers/dynamicQrPayment" },
-  { name: "agentRevenueAttribution", file: "./routers/agentRevenueAttribution" },
+  {
+    name: "agentRevenueAttribution",
+    file: "./routers/agentRevenueAttribution",
+  },
   { name: "platformCostAllocator", file: "./routers/platformCostAllocator" },
-  { name: "intelligentRoutingEngine", file: "./routers/intelligentRoutingEngine" },
-  { name: "regulatorySandboxTester", file: "./routers/regulatorySandboxTester" },
+  {
+    name: "intelligentRoutingEngine",
+    file: "./routers/intelligentRoutingEngine",
+  },
+  {
+    name: "regulatorySandboxTester",
+    file: "./routers/regulatorySandboxTester",
+  },
   { name: "agentDeviceFingerprint", file: "./routers/agentDeviceFingerprint" },
-  { name: "settlementNettingEngine", file: "./routers/settlementNettingEngine" },
-  { name: "platformCapacityPlanner", file: "./routers/platformCapacityPlanner" },
-  { name: "merchantAcquirerGateway", file: "./routers/merchantAcquirerGateway" },
+  {
+    name: "settlementNettingEngine",
+    file: "./routers/settlementNettingEngine",
+  },
+  {
+    name: "platformCapacityPlanner",
+    file: "./routers/platformCapacityPlanner",
+  },
+  {
+    name: "merchantAcquirerGateway",
+    file: "./routers/merchantAcquirerGateway",
+  },
   { name: "agentMicroInsurance", file: "./routers/agentMicroInsurance" },
-  { name: "transactionGraphAnalyzer", file: "./routers/transactionGraphAnalyzer" },
-  { name: "platformRevenueOptimizer", file: "./routers/platformRevenueOptimizer" },
-  { name: "crossBorderRemittanceHub", file: "./routers/crossBorderRemittanceHub" },
-  { name: "operationalCommandBridge", file: "./routers/operationalCommandBridge" },
+  {
+    name: "transactionGraphAnalyzer",
+    file: "./routers/transactionGraphAnalyzer",
+  },
+  {
+    name: "platformRevenueOptimizer",
+    file: "./routers/platformRevenueOptimizer",
+  },
+  {
+    name: "crossBorderRemittanceHub",
+    file: "./routers/crossBorderRemittanceHub",
+  },
+  {
+    name: "operationalCommandBridge",
+    file: "./routers/operationalCommandBridge",
+  },
 ];
 describe("Sprint 40 — Enterprise Scaling & Operational Excellence", () => {
   it("should have exactly 20 routers in Sprint 40", () => {
@@ -53,7 +83,9 @@ describe("Sprint 40 — Enterprise Scaling & Operational Excellence", () => {
       const fs = await import("fs");
       const path = await import("path");
       const routerDir = path.resolve(__dirname, "routers");
-      const files = fs.readdirSync(routerDir).filter((f: string) => f.endsWith(".ts"));
+      const files = fs
+        .readdirSync(routerDir)
+        .filter((f: string) => f.endsWith(".ts"));
       for (const file of files) {
         const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
         expect(content).not.toMatch(/sk_live_[a-zA-Z0-9]{20,}/);
@@ -65,7 +97,9 @@ describe("Sprint 40 — Enterprise Scaling & Operational Excellence", () => {
       const fs = await import("fs");
       const path = await import("path");
       const routerDir = path.resolve(__dirname, "routers");
-      const files = fs.readdirSync(routerDir).filter((f: string) => f.endsWith(".ts"));
+      const files = fs
+        .readdirSync(routerDir)
+        .filter((f: string) => f.endsWith(".ts"));
       for (const file of files) {
         const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
         expect(content).not.toMatch(/query\s*\(\s*`[^`]*\$\{.*input/i);
@@ -86,7 +120,10 @@ describe("Sprint 40 — Enterprise Scaling & Operational Excellence", () => {
     it("should use protectedProcedure for all procedures", async () => {
       for (const { file } of sprint40Routers) {
         const content = await import("fs").then(fs =>
-          fs.readFileSync(require("path").resolve(__dirname, file.replace("./", "")) + ".ts", "utf-8")
+          fs.readFileSync(
+            require("path").resolve(__dirname, file.replace("./", "")) + ".ts",
+            "utf-8"
+          )
         );
         expect(content).toContain("protectedProcedure");
       }

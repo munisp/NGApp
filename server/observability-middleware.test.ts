@@ -19,22 +19,34 @@ const ROUTERS_DIR = path.join(PROJECT, "server", "routers");
 // ── 1. Observability middleware is wired into trpc.ts ──────────────────────
 describe("Observability middleware wiring", () => {
   it("trpc.ts imports createObservabilityMiddleware", () => {
-    const trpcTs = fs.readFileSync(path.join(PROJECT, "server/_core/trpc.ts"), "utf-8");
+    const trpcTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/trpc.ts"),
+      "utf-8"
+    );
     expect(trpcTs).toContain("createObservabilityMiddleware");
   });
 
   it("publicProcedure uses observability middleware", () => {
-    const trpcTs = fs.readFileSync(path.join(PROJECT, "server/_core/trpc.ts"), "utf-8");
+    const trpcTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/trpc.ts"),
+      "utf-8"
+    );
     expect(trpcTs).toContain("t.procedure.use(observability)");
   });
 
   it("protectedProcedure uses observability middleware", () => {
-    const trpcTs = fs.readFileSync(path.join(PROJECT, "server/_core/trpc.ts"), "utf-8");
+    const trpcTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/trpc.ts"),
+      "utf-8"
+    );
     expect(trpcTs).toMatch(/protectedProcedure.*use\(observability\)/);
   });
 
   it("adminProcedure uses observability middleware", () => {
-    const trpcTs = fs.readFileSync(path.join(PROJECT, "server/_core/trpc.ts"), "utf-8");
+    const trpcTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/trpc.ts"),
+      "utf-8"
+    );
     expect(trpcTs).toMatch(/adminProcedure.*use\(observability\)/);
   });
 });
@@ -65,20 +77,29 @@ describe("Middleware client libraries", () => {
 // ── 3. Observability middleware module exports correctly ────────────────────
 describe("Observability middleware module", () => {
   it("exports createObservabilityMiddleware function", () => {
-    const mwPath = path.join(PROJECT, "server/middleware/observabilityMiddleware.ts");
+    const mwPath = path.join(
+      PROJECT,
+      "server/middleware/observabilityMiddleware.ts"
+    );
     expect(fs.existsSync(mwPath)).toBe(true);
     const content = fs.readFileSync(mwPath, "utf-8");
     expect(content).toContain("export function createObservabilityMiddleware");
   });
 
   it("exports emitObservabilityEvent function", () => {
-    const mwPath = path.join(PROJECT, "server/middleware/observabilityMiddleware.ts");
+    const mwPath = path.join(
+      PROJECT,
+      "server/middleware/observabilityMiddleware.ts"
+    );
     const content = fs.readFileSync(mwPath, "utf-8");
     expect(content).toContain("export async function emitObservabilityEvent");
   });
 
   it("uses try/catch for all middleware calls (fail-open)", () => {
-    const mwPath = path.join(PROJECT, "server/middleware/observabilityMiddleware.ts");
+    const mwPath = path.join(
+      PROJECT,
+      "server/middleware/observabilityMiddleware.ts"
+    );
     const content = fs.readFileSync(mwPath, "utf-8");
     // Count try blocks - should have at least 4 (Kafka, Redis, Fluvio, TigerBeetle)
     const tryCount = (content.match(/try\s*{/g) || []).length;
@@ -86,7 +107,10 @@ describe("Observability middleware module", () => {
   });
 
   it("catches errors silently (catch blocks)", () => {
-    const mwPath = path.join(PROJECT, "server/middleware/observabilityMiddleware.ts");
+    const mwPath = path.join(
+      PROJECT,
+      "server/middleware/observabilityMiddleware.ts"
+    );
     const content = fs.readFileSync(mwPath, "utf-8");
     // Match catch blocks: both `catch {}` and `catch (error) {`
     const catchCount = (content.match(/catch\s*[{(]/g) || []).length;
@@ -107,7 +131,11 @@ describe("Router coverage", () => {
     let importCount = 0;
     for (const r of routers) {
       const content = fs.readFileSync(path.join(ROUTERS_DIR, r), "utf-8");
-      if (content.includes("publicProcedure") || content.includes("protectedProcedure") || content.includes("adminProcedure")) {
+      if (
+        content.includes("publicProcedure") ||
+        content.includes("protectedProcedure") ||
+        content.includes("adminProcedure")
+      ) {
         importCount++;
       }
     }
@@ -132,9 +160,13 @@ describe("Docker Compose files", () => {
   }
 
   it("production compose has 50+ service definitions", () => {
-    const content = fs.readFileSync(path.join(PROJECT, "docker-compose.production.yml"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(PROJECT, "docker-compose.production.yml"),
+      "utf-8"
+    );
     // Count lines with "image:" or "build:" which indicate service definitions
-    const serviceIndicators = (content.match(/^\s+(image|build):/gm) || []).length;
+    const serviceIndicators = (content.match(/^\s+(image|build):/gm) || [])
+      .length;
     expect(serviceIndicators).toBeGreaterThanOrEqual(30);
   });
 });
@@ -142,10 +174,19 @@ describe("Docker Compose files", () => {
 // ── 6. Environment defaults cover all middleware ───────────────────────────
 describe("Environment defaults", () => {
   it("env.ts has defaults for all 13 middleware", () => {
-    const envTs = fs.readFileSync(path.join(PROJECT, "server/_core/env.ts"), "utf-8");
+    const envTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/env.ts"),
+      "utf-8"
+    );
     const middlewareKeys = [
-      "KAFKA", "REDIS", "TIGERBEETLE", "TEMPORAL", "KEYCLOAK",
-      "PERMIFY", "APISIX", "FLUVIO",
+      "KAFKA",
+      "REDIS",
+      "TIGERBEETLE",
+      "TEMPORAL",
+      "KEYCLOAK",
+      "PERMIFY",
+      "APISIX",
+      "FLUVIO",
     ];
     for (const key of middlewareKeys) {
       expect(envTs.toUpperCase()).toContain(key);
@@ -153,7 +194,10 @@ describe("Environment defaults", () => {
   });
 
   it("all env vars have ?? defaults", () => {
-    const envTs = fs.readFileSync(path.join(PROJECT, "server/_core/env.ts"), "utf-8");
+    const envTs = fs.readFileSync(
+      path.join(PROJECT, "server/_core/env.ts"),
+      "utf-8"
+    );
     const envLines = envTs.split("\n").filter(l => l.includes("process.env."));
     const withDefaults = envLines.filter(l => l.includes("??"));
     // At least 90% should have defaults
@@ -164,7 +208,9 @@ describe("Environment defaults", () => {
 // ── 7. Seed data files exist ───────────────────────────────────────────────
 describe("Seed data", () => {
   it("has seed data scripts", () => {
-    const scripts = fs.readdirSync(path.join(PROJECT, "scripts")).filter(f => f.includes("seed"));
+    const scripts = fs
+      .readdirSync(path.join(PROJECT, "scripts"))
+      .filter(f => f.includes("seed"));
     expect(scripts.length).toBeGreaterThanOrEqual(2);
   });
 });
@@ -172,14 +218,22 @@ describe("Seed data", () => {
 // ── 8. Go, Rust, Python sidecars exist ─────────────────────────────────────
 describe("Sidecar services", () => {
   it("Go TigerBeetle sidecar exists", () => {
-    expect(fs.existsSync(path.join(PROJECT, "tb-commission-sidecar/cmd/sidecar/main.go"))).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(PROJECT, "tb-commission-sidecar/cmd/sidecar/main.go")
+      )
+    ).toBe(true);
   });
 
   it("Rust Fluvio producer sidecar exists", () => {
-    expect(fs.existsSync(path.join(PROJECT, "fluvio-producer/src/main.rs"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(PROJECT, "fluvio-producer/src/main.rs"))
+    ).toBe(true);
   });
 
   it("Python Lakehouse/Mojaloop sidecar exists", () => {
-    expect(fs.existsSync(path.join(PROJECT, "lakehouse-mojaloop/main.py"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(PROJECT, "lakehouse-mojaloop/main.py"))
+    ).toBe(true);
   });
 });

@@ -14,7 +14,9 @@ describe("KYC/KYB Service Architecture", () => {
         "GET /health",
       ];
       expect(endpoints).toHaveLength(6);
-      expect(endpoints.every((e) => e.startsWith("POST") || e.startsWith("GET"))).toBe(true);
+      expect(
+        endpoints.every(e => e.startsWith("POST") || e.startsWith("GET"))
+      ).toBe(true);
     });
 
     it("should support 8+ languages", () => {
@@ -24,8 +26,13 @@ describe("KYC/KYB Service Architecture", () => {
 
     it("should support all KYC document types", () => {
       const docTypes = [
-        "id_card", "passport", "drivers_license", "utility_bill",
-        "bank_statement", "business_registration", "tax_certificate",
+        "id_card",
+        "passport",
+        "drivers_license",
+        "utility_bill",
+        "bank_statement",
+        "business_registration",
+        "tax_certificate",
         "proof_of_address",
       ];
       expect(docTypes.length).toBe(8);
@@ -96,7 +103,9 @@ describe("KYC/KYB Service Architecture", () => {
       const vlmData = { full_name: "JOHN KAMAU", id_number: "12345678" };
       const ocrData = { full_name: "JOHN KAMAU", id_number: "12345678" };
       const matches = Object.keys(vlmData).filter(
-        (k) => vlmData[k as keyof typeof vlmData] === ocrData[k as keyof typeof ocrData]
+        k =>
+          vlmData[k as keyof typeof vlmData] ===
+          ocrData[k as keyof typeof ocrData]
       );
       expect(matches.length).toBe(Object.keys(vlmData).length);
     });
@@ -137,15 +146,22 @@ describe("KYC/KYB Service Architecture", () => {
         { label: "Date of Incorporation", type: "date" },
         { label: "Registrar Signature", type: "signature" },
       ];
-      expect(fields.every((f) => f.label && f.type)).toBe(true);
+      expect(fields.every(f => f.label && f.type)).toBe(true);
     });
   });
 
   describe("Liveness Detection Service", () => {
     it("should support all challenge types", () => {
       const challenges = [
-        "blink", "turn_left", "turn_right", "look_up",
-        "look_down", "smile", "open_mouth", "nod", "random_position",
+        "blink",
+        "turn_left",
+        "turn_right",
+        "look_up",
+        "look_down",
+        "smile",
+        "open_mouth",
+        "nod",
+        "random_position",
       ];
       expect(challenges).toHaveLength(9);
     });
@@ -154,9 +170,9 @@ describe("KYC/KYB Service Architecture", () => {
       const compliance = {
         iso_30107_3: true,
         pad_level: 2,
-        apcer: 0.02,  // Attack Presentation Classification Error Rate
-        bpcer: 0.05,  // Bona Fide Presentation Classification Error Rate
-        acer: 0.035,  // Average Classification Error Rate
+        apcer: 0.02, // Attack Presentation Classification Error Rate
+        bpcer: 0.05, // Bona Fide Presentation Classification Error Rate
+        acer: 0.035, // Average Classification Error Rate
       };
       expect(compliance.iso_30107_3).toBe(true);
       expect(compliance.pad_level).toBeGreaterThanOrEqual(2);
@@ -165,8 +181,13 @@ describe("KYC/KYB Service Architecture", () => {
 
     it("should detect all attack types", () => {
       const attacks = [
-        "genuine", "print_attack", "screen_replay",
-        "mask_3d", "deepfake", "video_replay", "partial_attack",
+        "genuine",
+        "print_attack",
+        "screen_replay",
+        "mask_3d",
+        "deepfake",
+        "video_replay",
+        "partial_attack",
       ];
       expect(attacks).toHaveLength(7);
     });
@@ -179,10 +200,10 @@ describe("KYC/KYB Service Architecture", () => {
     it("should calculate weighted ensemble score", () => {
       const weights = {
         texture: 0.25,
-        frequency: 0.20,
-        depth: 0.20,
-        reflection: 0.10,
-        edge: 0.10,
+        frequency: 0.2,
+        depth: 0.2,
+        reflection: 0.1,
+        edge: 0.1,
         color: 0.15,
       };
       const total = Object.values(weights).reduce((a, b) => a + b, 0);
@@ -235,8 +256,13 @@ describe("KYC/KYB Service Architecture", () => {
 
     it("should check security features", () => {
       const features = [
-        "hologram", "microprint", "watermark", "ghost_image",
-        "guilloche_pattern", "optically_variable_ink", "laser_perforation",
+        "hologram",
+        "microprint",
+        "watermark",
+        "ghost_image",
+        "guilloche_pattern",
+        "optically_variable_ink",
+        "laser_perforation",
         "UV_reactive_pattern",
       ];
       expect(features).toHaveLength(8);
@@ -245,9 +271,9 @@ describe("KYC/KYB Service Architecture", () => {
     it("should calculate weighted fraud score", () => {
       const scores = {
         metadata: 0.05 * 0.15,
-        ela: 0.08 * 0.30,
-        font: 0.05 * 0.20,
-        security: (1 - 0.875) * 0.20,
+        ela: 0.08 * 0.3,
+        font: 0.05 * 0.2,
+        security: (1 - 0.875) * 0.2,
         template: (1 - 0.92) * 0.15,
       };
       const total = Object.values(scores).reduce((a, b) => a + b, 0);
@@ -342,7 +368,7 @@ describe("KYC/KYB Service Architecture", () => {
         { name: "Jane Wanjiku", ownership: 30 },
         { name: "Peter Ochieng", ownership: 20 },
       ];
-      const ubos = shareholders.filter((s) => s.ownership >= uboThreshold);
+      const ubos = shareholders.filter(s => s.ownership >= uboThreshold);
       expect(ubos).toHaveLength(2);
     });
   });

@@ -69,17 +69,17 @@ nano .env.production
 
 **Required variables to set:**
 
-| Variable | Description |
-|----------|-------------|
-| `POSTGRES_PASSWORD` | Strong random password for PostgreSQL |
-| `JWT_SECRET` | 64-character random string for JWT signing |
-| `VAPID_PUBLIC_KEY` | Web Push VAPID public key |
-| `VAPID_PRIVATE_KEY` | Web Push VAPID private key |
-| `TERMII_API_KEY` | Termii SMS API key (from termii.com) |
-| `KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin console password |
-| `VAULT_ROOT_TOKEN` | Initial Vault root token (change after init) |
-| `MINIO_ROOT_PASSWORD` | MinIO admin password |
-| `DOMAIN` | Your production domain (e.g., pos.54link.io) |
+| Variable                  | Description                                  |
+| ------------------------- | -------------------------------------------- |
+| `POSTGRES_PASSWORD`       | Strong random password for PostgreSQL        |
+| `JWT_SECRET`              | 64-character random string for JWT signing   |
+| `VAPID_PUBLIC_KEY`        | Web Push VAPID public key                    |
+| `VAPID_PRIVATE_KEY`       | Web Push VAPID private key                   |
+| `TERMII_API_KEY`          | Termii SMS API key (from termii.com)         |
+| `KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin console password              |
+| `VAULT_ROOT_TOKEN`        | Initial Vault root token (change after init) |
+| `MINIO_ROOT_PASSWORD`     | MinIO admin password                         |
+| `DOMAIN`                  | Your production domain (e.g., pos.54link.io) |
 
 ---
 
@@ -122,6 +122,7 @@ make -f Makefile.production vault-init
 ```
 
 This runs `infra/vault/init-vault.sh` which:
+
 1. Initialises Vault (generates unseal keys + root token)
 2. Unseals Vault with 3 of 5 keys
 3. Enables AppRole auth method
@@ -139,6 +140,7 @@ make -f Makefile.production kafka-topics
 ```
 
 Creates:
+
 - `tx.created` (3 partitions, replication factor 1)
 - `tx.settled` (3 partitions)
 - `fraud.alert` (3 partitions)
@@ -154,6 +156,7 @@ make -f Makefile.production deploy
 ```
 
 This starts all services in the correct dependency order:
+
 1. PostgreSQL → Redis → Kafka
 2. Temporal → Fluvio → Keycloak → Permify
 3. POS Shell (runs `pnpm db:push` on startup)
@@ -181,6 +184,7 @@ make -f Makefile.production health
 ```
 
 Expected output:
+
 ```
 ✅ pos-shell      healthy (3000)
 ✅ postgres       healthy (5432)

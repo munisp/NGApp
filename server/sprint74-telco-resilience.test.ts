@@ -34,11 +34,15 @@ describe("F1: Go Africa's Talking USSD Handler", () => {
   });
 
   it("should implement USSD session state machine", () => {
-    expect(fileContains(filePath, "SessionState", "MENU", "AMOUNT", "CONFIRM")).toBe(true);
+    expect(
+      fileContains(filePath, "SessionState", "MENU", "AMOUNT", "CONFIRM")
+    ).toBe(true);
   });
 
   it("should handle Africa's Talking USSD callback format", () => {
-    expect(fileContains(filePath, "sessionId", "serviceCode", "phoneNumber", "text")).toBe(true);
+    expect(
+      fileContains(filePath, "sessionId", "serviceCode", "phoneNumber", "text")
+    ).toBe(true);
   });
 
   it("should implement CON and END response prefixes", () => {
@@ -46,7 +50,9 @@ describe("F1: Go Africa's Talking USSD Handler", () => {
   });
 
   it("should support cash-in, cash-out, balance, and transfer operations", () => {
-    expect(fileContains(filePath, "Cash In", "Cash Out", "Balance", "Transfer")).toBe(true);
+    expect(
+      fileContains(filePath, "Cash In", "Cash Out", "Balance", "Transfer")
+    ).toBe(true);
   });
 
   it("should have a Dockerfile", () => {
@@ -90,11 +96,15 @@ describe("F3: Python Africa's Talking SMS Sender", () => {
   });
 
   it("should use Africa's Talking SDK or API", () => {
-    expect(fileContains(filePath, "africastalking", "api_key", "username")).toBe(true);
+    expect(
+      fileContains(filePath, "africastalking", "api_key", "username")
+    ).toBe(true);
   });
 
   it("should implement send_sms function", () => {
-    expect(fileContains(filePath, "send_sms", "recipients", "message")).toBe(true);
+    expect(fileContains(filePath, "send_sms", "recipients", "message")).toBe(
+      true
+    );
   });
 
   it("should enforce 160 character SMS limit", () => {
@@ -106,7 +116,9 @@ describe("F3: Python Africa's Talking SMS Sender", () => {
   });
 
   it("should have requirements.txt", () => {
-    expect(fileExists("services/python/at-sms-sender/requirements.txt")).toBe(true);
+    expect(fileExists("services/python/at-sms-sender/requirements.txt")).toBe(
+      true
+    );
   });
 
   it("should have a Dockerfile", () => {
@@ -149,7 +161,9 @@ describe("F5: Rust Telemetry Ingestion Service", () => {
   });
 
   it("should define TelemetryEvent struct with latency, jitter, carrier fields", () => {
-    expect(fileContains(filePath, "TelemetryEvent", "latency", "jitter", "carrier")).toBe(true);
+    expect(
+      fileContains(filePath, "TelemetryEvent", "latency", "jitter", "carrier")
+    ).toBe(true);
   });
 
   it("should implement batch ingestion endpoint", () => {
@@ -161,11 +175,15 @@ describe("F5: Rust Telemetry Ingestion Service", () => {
   });
 
   it("should have Cargo.toml with actix-web", () => {
-    expect(fileContains("services/rust/telemetry-ingestion/Cargo.toml", "actix-web")).toBe(true);
+    expect(
+      fileContains("services/rust/telemetry-ingestion/Cargo.toml", "actix-web")
+    ).toBe(true);
   });
 
   it("should have a Dockerfile", () => {
-    expect(fileExists("services/rust/telemetry-ingestion/Dockerfile")).toBe(true);
+    expect(fileExists("services/rust/telemetry-ingestion/Dockerfile")).toBe(
+      true
+    );
   });
 });
 
@@ -241,7 +259,9 @@ describe("F8: Python ML Training Pipeline", () => {
   });
 
   it("should have requirements.txt with ML dependencies", () => {
-    expect(fileExists("services/python/network-ml-trainer/requirements.txt")).toBe(true);
+    expect(
+      fileExists("services/python/network-ml-trainer/requirements.txt")
+    ).toBe(true);
   });
 });
 
@@ -284,7 +304,9 @@ describe("F10: POSShell Offline Mode Indicator", () => {
   });
 
   it("should display network tier labels (OFFLINE, 2G GPRS, 3G, 4G LTE)", () => {
-    expect(fileContains(filePath, "OFFLINE", "2G GPRS", "3G", "4G LTE")).toBe(true);
+    expect(fileContains(filePath, "OFFLINE", "2G GPRS", "3G", "4G LTE")).toBe(
+      true
+    );
   });
 
   it("should show queued transaction count", () => {
@@ -445,7 +467,11 @@ describe("F16: Server-side Offline Sync Queue", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Sprint 74 Integration", () => {
   it("should have all 4 Go services with Dockerfiles", () => {
-    const goServices = ["at-ussd-handler", "at-sms-webhook", "telemetry-collector"];
+    const goServices = [
+      "at-ussd-handler",
+      "at-sms-webhook",
+      "telemetry-collector",
+    ];
     for (const svc of goServices) {
       expect(fileExists(`services/go/${svc}/Dockerfile`)).toBe(true);
       expect(fileExists(`services/go/${svc}/go.mod`)).toBe(true);
@@ -453,7 +479,11 @@ describe("Sprint 74 Integration", () => {
   });
 
   it("should have all 3 Python services with requirements.txt", () => {
-    const pyServices = ["at-sms-sender", "at-ussd-session", "network-ml-trainer"];
+    const pyServices = [
+      "at-sms-sender",
+      "at-ussd-session",
+      "network-ml-trainer",
+    ];
     for (const svc of pyServices) {
       expect(fileExists(`services/python/${svc}/requirements.txt`)).toBe(true);
       expect(fileExists(`services/python/${svc}/Dockerfile`)).toBe(true);
@@ -469,22 +499,32 @@ describe("Sprint 74 Integration", () => {
   });
 
   it("should have networkTelemetry router wired into appRouter", () => {
-    expect(fileContains("server/routers.ts", "networkTelemetryRouter", "networkTelemetry")).toBe(true);
+    expect(
+      fileContains(
+        "server/routers.ts",
+        "networkTelemetryRouter",
+        "networkTelemetry"
+      )
+    ).toBe(true);
   });
 
   it("should have offline indicator in POSShell with all tier labels", () => {
-    expect(fileContains(
-      "client/src/pages/POSShell.tsx",
-      "offline-mode-indicator",
-      "OFFLINE",
-      "2G GPRS",
-      "Last sync",
-      "queued"
-    )).toBe(true);
+    expect(
+      fileContains(
+        "client/src/pages/POSShell.tsx",
+        "offline-mode-indicator",
+        "OFFLINE",
+        "2G GPRS",
+        "Last sync",
+        "queued"
+      )
+    ).toBe(true);
   });
 
   it("should have all client hooks for offline support", () => {
-    expect(fileExists("client/src/hooks/useOfflineTransactionQueue.ts")).toBe(true);
+    expect(fileExists("client/src/hooks/useOfflineTransactionQueue.ts")).toBe(
+      true
+    );
     expect(fileExists("client/src/hooks/useAdaptiveNetwork.ts")).toBe(true);
   });
 
@@ -496,6 +536,8 @@ describe("Sprint 74 Integration", () => {
 
   it("should have service worker with offline caching", () => {
     expect(fileExists("client/public/sw.js")).toBe(true);
-    expect(fileContains("client/public/sw.js", "cache", "offline", "sync")).toBe(true);
+    expect(
+      fileContains("client/public/sw.js", "cache", "offline", "sync")
+    ).toBe(true);
   });
 });

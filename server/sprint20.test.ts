@@ -118,7 +118,9 @@ describe("CI/CD Configuration", () => {
     const path = await import("path");
     const e2eDir = path.resolve(import.meta.dirname, "../e2e");
     expect(fs.existsSync(e2eDir)).toBe(true);
-    const files = fs.readdirSync(e2eDir).filter((f: string) => f.endsWith(".spec.ts"));
+    const files = fs
+      .readdirSync(e2eDir)
+      .filter((f: string) => f.endsWith(".spec.ts"));
     expect(files.length).toBeGreaterThanOrEqual(4);
   });
 });

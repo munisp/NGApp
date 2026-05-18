@@ -175,9 +175,7 @@
         "agents_agentCode_unique": {
           "name": "agents_agentCode_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "agentCode"
-          ]
+          "columns": ["agentCode"]
         }
       },
       "policies": {},
@@ -406,9 +404,7 @@
         "chat_sessions_sessionRef_unique": {
           "name": "chat_sessions_sessionRef_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sessionRef"
-          ]
+          "columns": ["sessionRef"]
         }
       },
       "policies": {},
@@ -611,9 +607,7 @@
         "devices_serialNumber_unique": {
           "name": "devices_serialNumber_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "serialNumber"
-          ]
+          "columns": ["serialNumber"]
         }
       },
       "policies": {},
@@ -777,9 +771,7 @@
         "disputes_ref_unique": {
           "name": "disputes_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         }
       },
       "policies": {},
@@ -1159,9 +1151,7 @@
         "platform_settings_key_unique": {
           "name": "platform_settings_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -1394,9 +1384,7 @@
         "transactions_ref_unique": {
           "name": "transactions_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         }
       },
       "policies": {},
@@ -1474,9 +1462,7 @@
         "users_openId_unique": {
           "name": "users_openId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "policies": {},
@@ -1536,9 +1522,7 @@
         "velocity_limits_tier_unique": {
           "name": "velocity_limits_tier_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tier"
-          ]
+          "columns": ["tier"]
         }
       },
       "policies": {},
@@ -1550,154 +1534,77 @@
     "public.agent_tier": {
       "name": "agent_tier",
       "schema": "public",
-      "values": [
-        "Bronze",
-        "Silver",
-        "Gold",
-        "Platinum"
-      ]
+      "values": ["Bronze", "Silver", "Gold", "Platinum"]
     },
     "public.audit_status": {
       "name": "audit_status",
       "schema": "public",
-      "values": [
-        "success",
-        "failure",
-        "warning"
-      ]
+      "values": ["success", "failure", "warning"]
     },
     "public.chat_status": {
       "name": "chat_status",
       "schema": "public",
-      "values": [
-        "open",
-        "assigned",
-        "resolved",
-        "escalated"
-      ]
+      "values": ["open", "assigned", "resolved", "escalated"]
     },
     "public.command_status": {
       "name": "command_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "acknowledged",
-        "completed",
-        "failed",
-        "expired"
-      ]
+      "values": ["pending", "acknowledged", "completed", "failed", "expired"]
     },
     "public.device_command": {
       "name": "device_command",
       "schema": "public",
-      "values": [
-        "UPDATE",
-        "RECONFIG",
-        "RESTART",
-        "WIPE",
-        "PING"
-      ]
+      "values": ["UPDATE", "RECONFIG", "RESTART", "WIPE", "PING"]
     },
     "public.device_status": {
       "name": "device_status",
       "schema": "public",
-      "values": [
-        "online",
-        "offline",
-        "updating",
-        "error"
-      ]
+      "values": ["online", "offline", "updating", "error"]
     },
     "public.dispute_author_role": {
       "name": "dispute_author_role",
       "schema": "public",
-      "values": [
-        "agent",
-        "admin",
-        "supervisor",
-        "system"
-      ]
+      "values": ["agent", "admin", "supervisor", "system"]
     },
     "public.dispute_status": {
       "name": "dispute_status",
       "schema": "public",
-      "values": [
-        "raised",
-        "reviewing",
-        "resolved",
-        "rejected"
-      ]
+      "values": ["raised", "reviewing", "resolved", "rejected"]
     },
     "public.fraud_severity": {
       "name": "fraud_severity",
       "schema": "public",
-      "values": [
-        "critical",
-        "high",
-        "medium",
-        "low"
-      ]
+      "values": ["critical", "high", "medium", "low"]
     },
     "public.fraud_status": {
       "name": "fraud_status",
       "schema": "public",
-      "values": [
-        "open",
-        "investigating",
-        "escalated",
-        "dismissed",
-        "resolved"
-      ]
+      "values": ["open", "investigating", "escalated", "dismissed", "resolved"]
     },
     "public.loyalty_type": {
       "name": "loyalty_type",
       "schema": "public",
-      "values": [
-        "earned",
-        "redeemed",
-        "bonus",
-        "penalty",
-        "challenge"
-      ]
+      "values": ["earned", "redeemed", "bonus", "penalty", "challenge"]
     },
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "user",
-        "admin",
-        "supervisor"
-      ]
+      "values": ["user", "admin", "supervisor"]
     },
     "public.sender_type": {
       "name": "sender_type",
       "schema": "public",
-      "values": [
-        "agent",
-        "support",
-        "system"
-      ]
+      "values": ["agent", "support", "system"]
     },
     "public.topup_status": {
       "name": "topup_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "approved",
-        "rejected"
-      ]
+      "values": ["pending", "approved", "rejected"]
     },
     "public.tx_channel": {
       "name": "tx_channel",
       "schema": "public",
-      "values": [
-        "Cash",
-        "Card",
-        "USSD",
-        "QR",
-        "NFC",
-        "App"
-      ]
+      "values": ["Cash", "Card", "USSD", "QR", "NFC", "App"]
     },
     "public.tx_status": {
       "name": "tx_status",

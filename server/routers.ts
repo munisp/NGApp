@@ -1,4 +1,3 @@
-
 import { KC_SESSION_COOKIE } from "./_core/keycloakAuth";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -482,16 +481,21 @@ import { ussdLocalizationRouter } from "./routers/ussdLocalization";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
+  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     // Keycloak logout is handled by GET /api/auth/logout (redirect to end-session).
     // This tRPC mutation clears the session cookie for API clients that cannot
     // follow redirects (e.g. mobile apps using the tRPC client directly).
-    logout: publicProcedure.mutation(({ ctx 
-}) => {
-      ctx.res.clearCookie(KC_SESSION_COOKIE, { path: "/", maxAge: -1, httpOnly: true, sameSite: "none", secure: true });
+    logout: publicProcedure.mutation(({ ctx }) => {
+      ctx.res.clearCookie(KC_SESSION_COOKIE, {
+        path: "/",
+        maxAge: -1,
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+      });
       return { success: true } as const;
     }),
   }),
@@ -1044,7 +1048,7 @@ export const appRouter = router({
   activityAuditLog: activityAuditLogRouter,
   agentOnboardingWorkflow: agentOnboardingWorkflowRouter,
   auditTrailExport: auditTrailExportRouter,
-  backupDisasterRecovery: backupDisasterRecoveryRouter,  // re-uses import from line 136
+  backupDisasterRecovery: backupDisasterRecoveryRouter, // re-uses import from line 136
   dailyPnlReport: dailyPnlReportRouter,
   floatManagement: floatManagementRouter,
   fraudMlScoringEngine: fraudMlScoringEngineRouterV2,
@@ -1054,7 +1058,7 @@ export const appRouter = router({
   transactionMonitoring: transactionMonitoringRouter,
   transactionReversalWorkflow: transactionReversalWorkflowRouter,
   ussdLocalization: ussdLocalizationRouter,
-  webhookManagement: webhookManagementRouter,  // re-uses import from line 139
+  webhookManagement: webhookManagementRouter, // re-uses import from line 139
 });
 
 export type AppRouter = typeof appRouter;

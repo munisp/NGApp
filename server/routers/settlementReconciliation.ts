@@ -7,7 +7,12 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { settlementReconciliation, merchantSettlements, transactions, agents } from "../../drizzle/schema";
+import {
+  settlementReconciliation,
+  merchantSettlements,
+  transactions,
+  agents,
+} from "../../drizzle/schema";
 import { eq, desc, and, count, gte, lte, sql } from "drizzle-orm";
 import { writeAuditLog } from "../db";
 // ── Middleware Integration (Sprint 44) ──────────────────────────────
@@ -17,7 +22,6 @@ import { tbCreateTransfer } from "../tbClient";
 import { fluvioProduce } from "../fluvio";
 import { permifyCheck } from "../_core/permify";
 
-
 export const settlementReconciliationRouter = router({
   // ── List reconciliation records ───────────────────────────────────────────
   list: protectedProcedure
@@ -25,7 +29,9 @@ export const settlementReconciliationRouter = router({
       z.object({
         page: z.number().default(1),
         limit: z.number().default(20),
-        status: z.enum(["pending", "matched", "discrepancy", "resolved"]).optional(),
+        status: z
+          .enum(["pending", "matched", "discrepancy", "resolved"])
+          .optional(),
       })
     )
     .query(async ({ input }) => {
@@ -33,7 +39,9 @@ export const settlementReconciliationRouter = router({
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
         const offset = (input.page - 1) * input.limit;
-        const where = input.status ? eq(settlementReconciliation.status, input.status) : undefined;
+        const where = input.status
+          ? eq(settlementReconciliation.status, input.status)
+          : undefined;
         const [items, [{ c: total }]] = await Promise.all([
           db
             .select()
@@ -47,7 +55,11 @@ export const settlementReconciliationRouter = router({
         return { items, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -55,7 +67,9 @@ export const settlementReconciliationRouter = router({
   reconcileDate: protectedProcedure
     .input(
       z.object({
-        settlementDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+        settlementDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -76,7 +90,10 @@ export const settlementReconciliationRouter = router({
         for (const settlement of settlementsForDate) {
           // Sum completed transactions for this merchant on this date
           const txResult = await db
-            .select({ total: sql<string>`COALESCE(SUM("amount"), 0)`, txCount: count() })
+            .select({
+              total: sql<string>`COALESCE(SUM("amount"), 0)`,
+              txCount: count(),
+            })
             .from(transactions)
             .where(
               and(
@@ -90,7 +107,8 @@ export const settlementReconciliationRouter = router({
           const txTotal = parseFloat(txResult[0]?.total ?? "0");
           const settlementAmount = parseFloat(settlement.netAmount as string);
           const discrepancy = Math.abs(txTotal - settlementAmount);
-          const variancePct = settlementAmount > 0 ? (discrepancy / settlementAmount) * 100 : 0;
+          const variancePct =
+            settlementAmount > 0 ? (discrepancy / settlementAmount) * 100 : 0;
           const status = variancePct < 0.01 ? "matched" : "discrepancy";
 
           // Upsert reconciliation record
@@ -99,8 +117,14 @@ export const settlementReconciliationRouter = router({
             .from(settlementReconciliation)
             .where(
               and(
-                eq(settlementReconciliation.settlementDate, input.settlementDate),
-                eq(settlementReconciliation.agentCode, String(settlement.merchantId))
+                eq(
+                  settlementReconciliation.settlementDate,
+                  input.settlementDate
+                ),
+                eq(
+                  settlementReconciliation.agentCode,
+                  String(settlement.merchantId)
+                )
               )
             )
             .limit(1);
@@ -138,14 +162,20 @@ export const settlementReconciliationRouter = router({
           resource: "settlement_reconciliation",
           resourceId: input.settlementDate,
           status: "success",
-          metadata: { recordsProcessed: results.length, date: input.settlementDate },
+          metadata: {
+            recordsProcessed: results.length,
+            date: input.settlementDate,
+          },
         });
-
 
         return { processed: results.length, records: results };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -169,7 +199,10 @@ export const settlementReconciliationRouter = router({
           .limit(1);
         if (!record) throw new TRPCError({ code: "NOT_FOUND" });
         if (record.status !== "discrepancy") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Only discrepancy records can be resolved" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Only discrepancy records can be resolved",
+          });
         }
 
         const [updated] = await db
@@ -186,14 +219,19 @@ export const settlementReconciliationRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Summary stats ─────────────────────────────────────────────────────────
   stats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return { total: 0, matched: 0, discrepancy: 0, resolved: 0, pending: 0 };
+    if (!db)
+      return { total: 0, matched: 0, discrepancy: 0, resolved: 0, pending: 0 };
     const rows = await db.select().from(settlementReconciliation).limit(100);
     return {
       total: rows.length,

@@ -13,19 +13,49 @@
       "type": "stat",
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
       "targets": [
-        { "expr": "pos_cbn_reports_submitted_total{report_type=\"monthly_activity\"}", "legendFormat": "Monthly Reports Submitted" },
-        { "expr": "pos_cbn_reports_submitted_total{report_type=\"quarterly_fraud\"}", "legendFormat": "Quarterly Fraud Reports" },
-        { "expr": "pos_cbn_reports_submitted_total{report_type=\"annual_kyc\"}", "legendFormat": "Annual KYC Reports" },
-        { "expr": "pos_cbn_sar_submitted_total", "legendFormat": "SARs Submitted" },
+        {
+          "expr": "pos_cbn_reports_submitted_total{report_type=\"monthly_activity\"}",
+          "legendFormat": "Monthly Reports Submitted"
+        },
+        {
+          "expr": "pos_cbn_reports_submitted_total{report_type=\"quarterly_fraud\"}",
+          "legendFormat": "Quarterly Fraud Reports"
+        },
+        {
+          "expr": "pos_cbn_reports_submitted_total{report_type=\"annual_kyc\"}",
+          "legendFormat": "Annual KYC Reports"
+        },
+        {
+          "expr": "pos_cbn_sar_submitted_total",
+          "legendFormat": "SARs Submitted"
+        },
         { "expr": "pos_cbn_sar_pending_total", "legendFormat": "SARs Pending" }
       ],
       "fieldConfig": {
         "defaults": { "unit": "short" },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "SARs Pending" }, "properties": [{ "id": "color", "value": { "mode": "thresholds" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }] }
+          {
+            "matcher": { "id": "byName", "options": "SARs Pending" },
+            "properties": [
+              { "id": "color", "value": { "mode": "thresholds" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "red", "value": 1 }
+                  ]
+                }
+              }
+            ]
+          }
         ]
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      }
     },
     {
       "id": 2,
@@ -53,7 +83,10 @@
           }
         }
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true }
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": true
+      }
     },
     {
       "id": 3,
@@ -61,8 +94,14 @@
       "type": "timeseries",
       "gridPos": { "x": 8, "y": 4, "w": 16, "h": 8 },
       "targets": [
-        { "expr": "increase(pos_cbn_sar_threshold_breaches_total[1d])", "legendFormat": "Daily SAR Triggers" },
-        { "expr": "increase(pos_cbn_sar_submitted_total[1d])", "legendFormat": "Daily SARs Submitted" }
+        {
+          "expr": "increase(pos_cbn_sar_threshold_breaches_total[1d])",
+          "legendFormat": "Daily SAR Triggers"
+        },
+        {
+          "expr": "increase(pos_cbn_sar_submitted_total[1d])",
+          "legendFormat": "Daily SARs Submitted"
+        }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
@@ -72,16 +111,46 @@
       "type": "piechart",
       "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
       "targets": [
-        { "expr": "pos_kyc_agents_compliant_total", "legendFormat": "Compliant" },
-        { "expr": "pos_kyc_agents_expiring_soon_total", "legendFormat": "Expiring (30d)" },
+        {
+          "expr": "pos_kyc_agents_compliant_total",
+          "legendFormat": "Compliant"
+        },
+        {
+          "expr": "pos_kyc_agents_expiring_soon_total",
+          "legendFormat": "Expiring (30d)"
+        },
         { "expr": "pos_kyc_agents_expired_total", "legendFormat": "Expired" }
       ],
       "fieldConfig": {
         "defaults": { "unit": "short" },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Expired" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
-          { "matcher": { "id": "byName", "options": "Expiring (30d)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }] },
-          { "matcher": { "id": "byName", "options": "Compliant" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+          {
+            "matcher": { "id": "byName", "options": "Expired" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "red" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Expiring (30d)" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "yellow" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Compliant" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "green" }
+              }
+            ]
+          }
         ]
       },
       "options": { "pieType": "donut", "displayLabels": ["name", "percent"] }
@@ -92,15 +161,42 @@
       "type": "timeseries",
       "gridPos": { "x": 8, "y": 12, "w": 16, "h": 8 },
       "targets": [
-        { "expr": "sum(rate(pos_transaction_amount_ngn[1h])) * 3600", "legendFormat": "Hourly Volume (NGN)" },
+        {
+          "expr": "sum(rate(pos_transaction_amount_ngn[1h])) * 3600",
+          "legendFormat": "Hourly Volume (NGN)"
+        },
         { "expr": "5000000", "legendFormat": "SAR Single Threshold (NGN 5M)" },
         { "expr": "10000000", "legendFormat": "CTR Daily Threshold (NGN 10M)" }
       ],
       "fieldConfig": {
         "defaults": { "unit": "currencyNGN" },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "SAR Single Threshold (NGN 5M)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }, { "id": "custom.lineStyle", "value": { "fill": "dash" } }] },
-          { "matcher": { "id": "byName", "options": "CTR Daily Threshold (NGN 10M)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }, { "id": "custom.lineStyle", "value": { "fill": "dash" } }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SAR Single Threshold (NGN 5M)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "yellow" }
+              },
+              { "id": "custom.lineStyle", "value": { "fill": "dash" } }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CTR Daily Threshold (NGN 10M)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "red" }
+              },
+              { "id": "custom.lineStyle", "value": { "fill": "dash" } }
+            ]
+          }
         ]
       }
     },
@@ -110,14 +206,31 @@
       "type": "timeseries",
       "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
       "targets": [
-        { "expr": "pos_settlement_expected_amount_ngn", "legendFormat": "Expected (NGN)" },
-        { "expr": "pos_settlement_actual_amount_ngn", "legendFormat": "Actual (NGN)" },
-        { "expr": "abs(pos_settlement_expected_amount_ngn - pos_settlement_actual_amount_ngn)", "legendFormat": "Discrepancy (NGN)" }
+        {
+          "expr": "pos_settlement_expected_amount_ngn",
+          "legendFormat": "Expected (NGN)"
+        },
+        {
+          "expr": "pos_settlement_actual_amount_ngn",
+          "legendFormat": "Actual (NGN)"
+        },
+        {
+          "expr": "abs(pos_settlement_expected_amount_ngn - pos_settlement_actual_amount_ngn)",
+          "legendFormat": "Discrepancy (NGN)"
+        }
       ],
       "fieldConfig": {
         "defaults": { "unit": "currencyNGN" },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Discrepancy (NGN)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] }
+          {
+            "matcher": { "id": "byName", "options": "Discrepancy (NGN)" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "red" }
+              }
+            ]
+          }
         ]
       }
     },
@@ -136,7 +249,10 @@
       "fieldConfig": {
         "defaults": { "unit": "s" },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Duration (s)" }] }
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "displayName", "value": "Duration (s)" }]
+          }
         ]
       }
     }

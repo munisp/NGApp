@@ -10,7 +10,13 @@
 
 import { useLocation } from "wouter";
 import { usePosStore } from "@/store/posStore";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +34,8 @@ interface PortalCard {
 const PORTALS: PortalCard[] = [
   {
     title: "POS Shell",
-    description: "Core agency banking terminal — cash in/out, transfers, airtime, bills, NFC & QR payments.",
+    description:
+      "Core agency banking terminal — cash in/out, transfers, airtime, bills, NFC & QR payments.",
     path: "/",
     icon: "🏧",
     badge: "Core",
@@ -38,7 +45,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Agent Banking Portal",
-    description: "Finance dashboard, liquidity network, NFC/QR payments, scorecard, and training academy.",
+    description:
+      "Finance dashboard, liquidity network, NFC/QR payments, scorecard, and training academy.",
     path: "/agent",
     icon: "💼",
     badge: "Agent",
@@ -48,7 +56,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Customer Portal",
-    description: "Assisted customer onboarding, account overview, transaction history, and KYC status.",
+    description:
+      "Assisted customer onboarding, account overview, transaction history, and KYC status.",
     path: "/customer",
     icon: "👤",
     badge: "Customer",
@@ -58,7 +67,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Supervisor Dashboard",
-    description: "Agent oversight, dispute resolution, float approval, and team performance metrics.",
+    description:
+      "Agent oversight, dispute resolution, float approval, and team performance metrics.",
     path: "/supervisor",
     icon: "📊",
     badge: "Supervisor",
@@ -68,7 +78,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Management Portal",
-    description: "Full platform management — agents, transactions, KYC, commissions, POS terminals, analytics.",
+    description:
+      "Full platform management — agents, transactions, KYC, commissions, POS terminals, analytics.",
     path: "/management",
     icon: "⚙️",
     badge: "Admin",
@@ -78,7 +89,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Admin Panel",
-    description: "Fraud feed, audit log, agent directory, float top-up approvals, settlement controls.",
+    description:
+      "Fraud feed, audit log, agent directory, float top-up approvals, settlement controls.",
     path: "/admin",
     icon: "🛡️",
     badge: "Admin",
@@ -88,7 +100,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Super Admin Portal",
-    description: "Multi-tenant management, platform-wide analytics, tenant provisioning, and system health.",
+    description:
+      "Multi-tenant management, platform-wide analytics, tenant provisioning, and system health.",
     path: "/super-admin",
     icon: "🌐",
     badge: "Super Admin",
@@ -98,7 +111,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Data Lakehouse",
-    description: "Bronze→Silver→Gold medallion pipeline. Sedona spatial heatmaps, DataFusion SQL console, daily snapshots on MinIO/Iceberg.",
+    description:
+      "Bronze→Silver→Gold medallion pipeline. Sedona spatial heatmaps, DataFusion SQL console, daily snapshots on MinIO/Iceberg.",
     path: "/lakehouse",
     icon: "🏔️",
     badge: "Analytics",
@@ -108,7 +122,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Webhook Manager",
-    description: "Configure outbound webhooks, view delivery logs, retry failed events, and manage HMAC secrets.",
+    description:
+      "Configure outbound webhooks, view delivery logs, retry failed events, and manage HMAC secrets.",
     path: "/webhooks",
     icon: "🔗",
     badge: "Integrations",
@@ -118,7 +133,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Commission Payouts",
-    description: "Review, approve, and process agent commission payout requests with full audit trail.",
+    description:
+      "Review, approve, and process agent commission payout requests with full audit trail.",
     path: "/commission-payouts",
     icon: "💰",
     badge: "Finance",
@@ -128,7 +144,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Agent Onboarding",
-    description: "5-step wizard tracking Profile → KYC → Float → Terminal → Training for new agents.",
+    description:
+      "5-step wizard tracking Profile → KYC → Float → Terminal → Training for new agents.",
     path: "/agent-onboarding",
     icon: "📋",
     badge: "Operations",
@@ -138,7 +155,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Settlement Reconciliation",
-    description: "Run daily reconciliation, identify discrepancies between expected and actual settlement amounts.",
+    description:
+      "Run daily reconciliation, identify discrepancies between expected and actual settlement amounts.",
     path: "/settlement-reconciliation",
     icon: "⚖️",
     badge: "Finance",
@@ -148,7 +166,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Referral Program",
-    description: "Track agent referrals, activations, and bonus reward disbursements.",
+    description:
+      "Track agent referrals, activations, and bonus reward disbursements.",
     path: "/referral-program",
     icon: "🎁",
     badge: "Growth",
@@ -158,7 +177,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Audit Log",
-    description: "Full platform audit trail with search, filter by event type, and CSV export for compliance.",
+    description:
+      "Full platform audit trail with search, filter by event type, and CSV export for compliance.",
     path: "/admin/audit",
     icon: "🔍",
     badge: "Compliance",
@@ -168,7 +188,8 @@ const PORTALS: PortalCard[] = [
   },
   {
     title: "Infrastructure",
-    description: "TigerBeetle ledger, Kafka consumer lag, Temporal workflow management, and HashiCorp Vault secret rotation.",
+    description:
+      "TigerBeetle ledger, Kafka consumer lag, Temporal workflow management, and HashiCorp Vault secret rotation.",
     path: "/infrastructure",
     icon: "⚙️",
     badge: "DevOps",
@@ -180,11 +201,13 @@ const PORTALS: PortalCard[] = [
 
 export default function PlatformHub() {
   const [, navigate] = useLocation();
-  const agent = usePosStore((s) => s.agent);
+  const agent = usePosStore(s => s.agent);
   const role = agent?.role ?? "agent";
 
-  const visiblePortals = PORTALS.filter((p: any) =>
-    p.roles.includes("all") || p.roles.includes(role as "agent" | "admin" | "supervisor")
+  const visiblePortals = PORTALS.filter(
+    (p: any) =>
+      p.roles.includes("all") ||
+      p.roles.includes(role as "agent" | "admin" | "supervisor")
   );
 
   return (
@@ -195,18 +218,35 @@ export default function PlatformHub() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏦</span>
             <div>
-              <h1 className="text-lg font-bold text-foreground leading-tight">54Link POS Shell</h1>
-              <p className="text-xs text-muted-foreground">Agency Banking Platform</p>
+              <h1 className="text-lg font-bold text-foreground leading-tight">
+                54Link POS Shell
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Agency Banking Platform
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {agent && (
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-foreground">{agent.agentCode}</p>
-                <p className="text-xs text-muted-foreground capitalize">{role}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {agent.agentCode}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {role}
+                </p>
               </div>
             )}
-            <Badge variant={role === "admin" ? "destructive" : role === "supervisor" ? "outline" : "secondary"} className="capitalize">
+            <Badge
+              variant={
+                role === "admin"
+                  ? "destructive"
+                  : role === "supervisor"
+                    ? "outline"
+                    : "secondary"
+              }
+              className="capitalize"
+            >
               {role}
             </Badge>
           </div>
@@ -216,7 +256,9 @@ export default function PlatformHub() {
       {/* Main content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-1">Platform Hub</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-1">
+            Platform Hub
+          </h2>
           <p className="text-muted-foreground text-sm">
             Select a portal to navigate to. Access is based on your role
             {agent ? ` (${agent.agentCode} · ${role})` : ""}.
@@ -251,7 +293,10 @@ export default function PlatformHub() {
                   variant="ghost"
                   size="sm"
                   className="mt-3 w-full text-xs h-7 hover:bg-white/10"
-                  onClick={(e) => { e.stopPropagation(); navigate(portal.path); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    navigate(portal.path);
+                  }}
                 >
                   Open →
                 </Button>
@@ -264,15 +309,38 @@ export default function PlatformHub() {
         {agent && (
           <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Float Balance", value: `₦${(agent.floatBalance ?? 0).toLocaleString()}`, icon: "💰" },
-              { label: "Commission", value: `₦${(agent.commissionBalance ?? 0).toLocaleString()}`, icon: "📈" },
-              { label: "Loyalty Points", value: (agent.loyaltyPoints ?? 0).toLocaleString(), icon: "⭐" },
-              { label: "Agent Tier", value: agent.tier ?? "Bronze", icon: "🏅" },
+              {
+                label: "Float Balance",
+                value: `₦${(agent.floatBalance ?? 0).toLocaleString()}`,
+                icon: "💰",
+              },
+              {
+                label: "Commission",
+                value: `₦${(agent.commissionBalance ?? 0).toLocaleString()}`,
+                icon: "📈",
+              },
+              {
+                label: "Loyalty Points",
+                value: (agent.loyaltyPoints ?? 0).toLocaleString(),
+                icon: "⭐",
+              },
+              {
+                label: "Agent Tier",
+                value: agent.tier ?? "Bronze",
+                icon: "🏅",
+              },
             ].map((stat: any) => (
-              <div key={stat.label} className="bg-card/60 border border-border rounded-lg p-3 text-center">
+              <div
+                key={stat.label}
+                className="bg-card/60 border border-border rounded-lg p-3 text-center"
+              >
                 <div className="text-lg mb-1">{stat.icon}</div>
-                <div className="text-sm font-semibold text-foreground">{stat.value}</div>
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {stat.value}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>

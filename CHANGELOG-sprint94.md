@@ -16,12 +16,14 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 ## New Features
 
 ### S94-01: Real-Time WebSocket Push for Security Alerts
+
 - **File:** `server/services/securityAlertSocket.ts`
 - Socket.IO integration for instant admin notifications on security events
 - Broadcasts ransomware alerts, DDoS events, and PBAC violations in real-time
 - Room-based subscription for role-filtered alert delivery
 
 ### S94-02: Bulk Role Import Router
+
 - **File:** `server/routers/bulkRoleImport.ts`
 - CSV-based bulk PBAC role assignment for administrators
 - Validates role hierarchy constraints during import
@@ -29,6 +31,7 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 - Wired into `appRouter` at `bulkRoleImport.*`
 
 ### S94-03: Network Trends Router
+
 - **File:** `server/routers/networkTrends.ts`
 - Historical network quality trend charts (7d/30d sparklines per region)
 - Regional aggregation with latency, bandwidth, and packet loss metrics
@@ -40,18 +43,21 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 ## Security Fixes (S94-08)
 
 ### Open Redirect Prevention
+
 - **File:** `server/_core/index.ts` (line 399-402)
 - Fixed unvalidated `returnTo` query parameter in dev-login endpoint
 - Added inline validation: blocks protocol-relative URLs (`//evil.com`), absolute URLs, `javascript:` URIs
 - Only allows internal paths matching `/[a-zA-Z0-9\-_/]*`
 
 ### CORS Wildcard Fix
+
 - **File:** `server/lib/infrastructureCompletion.ts` (line 132-139)
 - Eliminated wildcard `*` fallback when `origin` header is empty
 - When credentials are enabled, never reflects `*` (browsers reject it)
 - Only sets `Access-Control-Allow-Origin` when origin is explicitly matched in whitelist
 
 ### Security Fixes Module
+
 - **File:** `server/middleware/securityFixes.ts` (NEW)
 - 8 security fix functions:
   1. `sanitizeRedirectUrl()` — open redirect prevention
@@ -68,10 +74,12 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 ## UI/UX Audit (S94-09)
 
 ### Broken Link Fixes
+
 - Fixed `/platform` → `/hub` in Home.tsx navigation
 - Fixed `/components` → `#` in ComponentShowcase.tsx breadcrumb (self-referential demo)
 
 ### Duplicate Route Cleanup
+
 - Removed 9 duplicate route entries in App.tsx:
   - `/agent-scorecard` (AgentPerformanceScorecardPage duplicate)
   - `/platform-health` (PlatformHealthMonitor duplicate)
@@ -85,6 +93,7 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 - Removed 5 unused imports for deduplicated components
 
 ### Verification Results
+
 - 433 routes → 424 routes (9 duplicates removed)
 - 428 page files — all exist on disk
 - All nav links in DashboardLayout match registered routes
@@ -96,16 +105,18 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 ## Deep Audit (S94-04)
 
 ### Codebase Inventory
-| Category | Count |
-|----------|-------|
-| tRPC router files | 424 |
-| React page files | 428 |
-| Python microservices | 2,080 |
-| Rust services | 246 |
-| Dockerfiles | 371 |
-| "Coming soon" items | 0 (all resolved) |
+
+| Category             | Count            |
+| -------------------- | ---------------- |
+| tRPC router files    | 424              |
+| React page files     | 428              |
+| Python microservices | 2,080            |
+| Rust services        | 246              |
+| Dockerfiles          | 371              |
+| "Coming soon" items  | 0 (all resolved) |
 
 ### Invoice Management Fix (S94-03 prerequisite)
+
 - Fixed PDF download button in InvoiceManagementPage (was "coming soon")
 - Fixed reminder sending button in InvoiceManagementPage (was "coming soon")
 
@@ -115,20 +126,20 @@ Sprint 94 completes the 16-point production readiness directive with comprehensi
 
 All 12 middleware connectors verified with circuit breaker pattern:
 
-| Connector | Status | Circuit Breaker | Graceful Fallback |
-|-----------|--------|-----------------|-------------------|
-| Kafka | ✅ | ✅ (5 failures → open) | ✅ |
-| Dapr | ✅ | ✅ | ✅ |
-| Fluvio | ✅ | ✅ | ✅ |
-| Temporal | ✅ | ✅ | ✅ (skips when unavailable) |
-| Keycloak | ✅ | ✅ | ✅ |
-| Permify | ✅ | ✅ | ✅ |
-| Redis | ✅ | ✅ | ✅ (in-memory fallback) |
-| Mojaloop | ✅ | ✅ | ✅ |
-| OpenSearch | ✅ | ✅ | ✅ |
-| APISIX | ✅ | ✅ | ✅ |
-| TigerBeetle | ✅ | ✅ | ✅ |
-| Lakehouse | ✅ | ✅ | ✅ |
+| Connector   | Status | Circuit Breaker        | Graceful Fallback           |
+| ----------- | ------ | ---------------------- | --------------------------- |
+| Kafka       | ✅     | ✅ (5 failures → open) | ✅                          |
+| Dapr        | ✅     | ✅                     | ✅                          |
+| Fluvio      | ✅     | ✅                     | ✅                          |
+| Temporal    | ✅     | ✅                     | ✅ (skips when unavailable) |
+| Keycloak    | ✅     | ✅                     | ✅                          |
+| Permify     | ✅     | ✅                     | ✅                          |
+| Redis       | ✅     | ✅                     | ✅ (in-memory fallback)     |
+| Mojaloop    | ✅     | ✅                     | ✅                          |
+| OpenSearch  | ✅     | ✅                     | ✅                          |
+| APISIX      | ✅     | ✅                     | ✅                          |
+| TigerBeetle | ✅     | ✅                     | ✅                          |
+| Lakehouse   | ✅     | ✅                     | ✅                          |
 
 - Service orchestrator (`serviceOrchestrator.ts`) imports and uses 8 connectors for event routing
 - Integration health (`integrationHealth.ts`) checks all 12 services
@@ -141,30 +152,31 @@ All 12 middleware connectors verified with circuit breaker pattern:
 **File:** `server/sprint94.test.ts`
 **Result:** 37/37 passing
 
-| Test Group | Tests | Status |
-|------------|-------|--------|
-| Security Fixes Module | 15 | ✅ |
-| WebSocket Alert Push | 2 | ✅ |
-| Bulk Role Import Router | 2 | ✅ |
-| Network Trends Router | 2 | ✅ |
-| App Router Wiring | 2 | ✅ |
-| CORS Fix | 2 | ✅ |
-| Open Redirect Fix | 1 | ✅ |
-| Middleware Connectors | 2 | ✅ |
-| Integration Health | 1 | ✅ |
-| Service Orchestrator | 2 | ✅ |
-| DDoS Shield Config | 1 | ✅ |
-| Ransomware Mitigation | 1 | ✅ |
-| PBAC Enforcement | 1 | ✅ |
-| Face Enrollment | 1 | ✅ |
-| Biometric Audit Dashboard | 1 | ✅ |
-| Offline Queue | 1 | ✅ |
+| Test Group                | Tests | Status |
+| ------------------------- | ----- | ------ |
+| Security Fixes Module     | 15    | ✅     |
+| WebSocket Alert Push      | 2     | ✅     |
+| Bulk Role Import Router   | 2     | ✅     |
+| Network Trends Router     | 2     | ✅     |
+| App Router Wiring         | 2     | ✅     |
+| CORS Fix                  | 2     | ✅     |
+| Open Redirect Fix         | 1     | ✅     |
+| Middleware Connectors     | 2     | ✅     |
+| Integration Health        | 1     | ✅     |
+| Service Orchestrator      | 2     | ✅     |
+| DDoS Shield Config        | 1     | ✅     |
+| Ransomware Mitigation     | 1     | ✅     |
+| PBAC Enforcement          | 1     | ✅     |
+| Face Enrollment           | 1     | ✅     |
+| Biometric Audit Dashboard | 1     | ✅     |
+| Offline Queue             | 1     | ✅     |
 
 ---
 
 ## Files Changed
 
 ### New Files
+
 - `server/middleware/securityFixes.ts` — 8 security fix functions
 - `server/services/securityAlertSocket.ts` — WebSocket push for security alerts
 - `server/routers/bulkRoleImport.ts` — CSV bulk role import router
@@ -173,6 +185,7 @@ All 12 middleware connectors verified with circuit breaker pattern:
 - `CHANGELOG-sprint94.md` — This file
 
 ### Modified Files
+
 - `server/_core/index.ts` — Open redirect fix (line 399-402)
 - `server/lib/infrastructureCompletion.ts` — CORS wildcard fix (line 132-139)
 - `server/routers.ts` — Wired bulkRoleImport, networkTrends, alertNotifications

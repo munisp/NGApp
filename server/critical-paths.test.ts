@@ -54,14 +54,14 @@ describe("Commission calculation", () => {
   const COMMISSION_RATES: Record<string, number> = {
     "Cash In": 0.003,
     "Cash Out": 0.005,
-    "Transfer": 0.004,
+    Transfer: 0.004,
     "Card Payment": 0.002,
     "QR Payment": 0.002,
     "NFC Payment": 0.002,
-    "Airtime": 0.015,
+    Airtime: 0.015,
     "Bill Payment": 0.01,
     "Nano Loan": 0.02,
-    "Insurance": 0.05,
+    Insurance: 0.05,
   };
 
   it("should calculate correct commission for Cash Out", () => {
@@ -84,9 +84,16 @@ describe("Commission calculation", () => {
 
   it("should handle all known transaction types", () => {
     const knownTypes = [
-      "Cash In", "Cash Out", "Transfer", "Card Payment",
-      "QR Payment", "NFC Payment", "Airtime", "Bill Payment",
-      "Nano Loan", "Insurance",
+      "Cash In",
+      "Cash Out",
+      "Transfer",
+      "Card Payment",
+      "QR Payment",
+      "NFC Payment",
+      "Airtime",
+      "Bill Payment",
+      "Nano Loan",
+      "Insurance",
     ];
     for (const type of knownTypes) {
       expect(COMMISSION_RATES[type]).toBeDefined();
@@ -133,7 +140,13 @@ describe("Velocity limit enforcement", () => {
 
 // ── KYC onboarding enforcement tests ──────────────────────────────────────────
 describe("KYC onboarding enforcement", () => {
-  const ONBOARDING_STAGES = ["profile", "kyc", "float", "terminal", "training"] as const;
+  const ONBOARDING_STAGES = [
+    "profile",
+    "kyc",
+    "float",
+    "terminal",
+    "training",
+  ] as const;
 
   it("should enforce sequential stage progression", () => {
     const currentStage = "profile";

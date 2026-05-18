@@ -1,6 +1,6 @@
 /**
  * Sprint 95 — Adaptive Bandwidth Management
- * 
+ *
  * Enhances connectivity resilience for 2G/3G African rural networks:
  * - Request compression with Brotli/gzip negotiation
  * - Response payload trimming for low-bandwidth clients
@@ -59,17 +59,47 @@ interface BandwidthBudget {
   includeMetadata: boolean;
 }
 
-export function getBandwidthBudget(quality: ConnectionQuality): BandwidthBudget {
+export function getBandwidthBudget(
+  quality: ConnectionQuality
+): BandwidthBudget {
   switch (quality) {
     case "offline":
     case "2g":
-      return { maxResponseBytes: 10240, allowImages: false, allowRichContent: false, compressionLevel: 9, maxListItems: 10, includeMetadata: false };
+      return {
+        maxResponseBytes: 10240,
+        allowImages: false,
+        allowRichContent: false,
+        compressionLevel: 9,
+        maxListItems: 10,
+        includeMetadata: false,
+      };
     case "3g":
-      return { maxResponseBytes: 51200, allowImages: false, allowRichContent: true, compressionLevel: 6, maxListItems: 25, includeMetadata: true };
+      return {
+        maxResponseBytes: 51200,
+        allowImages: false,
+        allowRichContent: true,
+        compressionLevel: 6,
+        maxListItems: 25,
+        includeMetadata: true,
+      };
     case "4g":
-      return { maxResponseBytes: 512000, allowImages: true, allowRichContent: true, compressionLevel: 4, maxListItems: 50, includeMetadata: true };
+      return {
+        maxResponseBytes: 512000,
+        allowImages: true,
+        allowRichContent: true,
+        compressionLevel: 4,
+        maxListItems: 50,
+        includeMetadata: true,
+      };
     case "wifi":
-      return { maxResponseBytes: 5242880, allowImages: true, allowRichContent: true, compressionLevel: 1, maxListItems: 100, includeMetadata: true };
+      return {
+        maxResponseBytes: 5242880,
+        allowImages: true,
+        allowRichContent: true,
+        compressionLevel: 1,
+        maxListItems: 100,
+        includeMetadata: true,
+      };
   }
 }
 
@@ -79,16 +109,28 @@ export function trimResponse(data: any, budget: BandwidthBudget): any {
 
   // Trim arrays to budget limit
   if (Array.isArray(data)) {
-    return data.slice(0, budget.maxListItems).map(item => trimObject(item, budget));
+    return data
+      .slice(0, budget.maxListItems)
+      .map(item => trimObject(item, budget));
   }
 
   if (typeof data === "object") {
     // Handle paginated responses
     if (data.rows && Array.isArray(data.rows)) {
-      return { ...data, rows: data.rows.slice(0, budget.maxListItems).map((item: any) => trimObject(item, budget)) };
+      return {
+        ...data,
+        rows: data.rows
+          .slice(0, budget.maxListItems)
+          .map((item: any) => trimObject(item, budget)),
+      };
     }
     if (data.items && Array.isArray(data.items)) {
-      return { ...data, items: data.items.slice(0, budget.maxListItems).map((item: any) => trimObject(item, budget)) };
+      return {
+        ...data,
+        items: data.items
+          .slice(0, budget.maxListItems)
+          .map((item: any) => trimObject(item, budget)),
+      };
     }
     return trimObject(data, budget);
   }
@@ -102,16 +144,27 @@ function trimObject(obj: any, budget: BandwidthBudget): any {
   const trimmed: any = {};
   for (const [key, value] of Object.entries(obj)) {
     // Skip large text fields on low bandwidth
-    if (!budget.allowRichContent && typeof value === "string" && (value as string).length > 200) {
+    if (
+      !budget.allowRichContent &&
+      typeof value === "string" &&
+      (value as string).length > 200
+    ) {
       trimmed[key] = (value as string).substring(0, 100) + "...";
       continue;
     }
     // Skip image URLs on low bandwidth
-    if (!budget.allowImages && typeof value === "string" && /\.(jpg|jpeg|png|gif|webp|svg)/i.test(value as string)) {
+    if (
+      !budget.allowImages &&
+      typeof value === "string" &&
+      /\.(jpg|jpeg|png|gif|webp|svg)/i.test(value as string)
+    ) {
       continue;
     }
     // Skip metadata fields
-    if (!budget.includeMetadata && ["metadata", "rawData", "debug", "trace"].includes(key)) {
+    if (
+      !budget.includeMetadata &&
+      ["metadata", "rawData", "debug", "trace"].includes(key)
+    ) {
       continue;
     }
     trimmed[key] = value;
@@ -120,7 +173,11 @@ function trimObject(obj: any, budget: BandwidthBudget): any {
 }
 
 // ─── 4. Adaptive Compression Middleware ─────────────────────────────────────
-export function adaptiveCompressionMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function adaptiveCompressionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const quality = detectConnectionQuality(req);
   const budget = getBandwidthBudget(quality);
 
@@ -130,7 +187,10 @@ export function adaptiveCompressionMiddleware(req: Request, res: Response, next:
 
   // Set cache headers based on connection quality
   if (quality === "2g" || quality === "3g") {
-    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=300, stale-while-revalidate=600"
+    );
   }
 
   // Add network quality hint to response
@@ -154,25 +214,54 @@ interface BatchedResponse {
   body: any;
 }
 
-const batchQueue = new Map<string, { requests: BatchedRequest[]; timer: NodeJS.Timeout | null; resolve: (responses: BatchedResponse[]) => void }>();
+const batchQueue = new Map<
+  string,
+  {
+    requests: BatchedRequest[];
+    timer: NodeJS.Timeout | null;
+    resolve: (responses: BatchedResponse[]) => void;
+  }
+>();
 
-export function createBatchProcessor(maxBatchSize: number = 10, maxWaitMs: number = 100) {
+export function createBatchProcessor(
+  maxBatchSize: number = 10,
+  maxWaitMs: number = 100
+) {
   return {
-    addToBatch(clientId: string, request: BatchedRequest): Promise<BatchedResponse[]> {
-      return new Promise((resolve) => {
+    addToBatch(
+      clientId: string,
+      request: BatchedRequest
+    ): Promise<BatchedResponse[]> {
+      return new Promise(resolve => {
         const existing = batchQueue.get(clientId);
         if (existing) {
           existing.requests.push(request);
           if (existing.requests.length >= maxBatchSize) {
             if (existing.timer) clearTimeout(existing.timer);
             batchQueue.delete(clientId);
-            resolve(existing.requests.map(r => ({ id: r.id, status: 200, body: { batched: true } })));
+            resolve(
+              existing.requests.map(r => ({
+                id: r.id,
+                status: 200,
+                body: { batched: true },
+              }))
+            );
           }
         } else {
-          const batch = { requests: [request], timer: null as NodeJS.Timeout | null, resolve };
+          const batch = {
+            requests: [request],
+            timer: null as NodeJS.Timeout | null,
+            resolve,
+          };
           batch.timer = setTimeout(() => {
             batchQueue.delete(clientId);
-            resolve(batch.requests.map(r => ({ id: r.id, status: 200, body: { batched: true } })));
+            resolve(
+              batch.requests.map(r => ({
+                id: r.id,
+                status: 200,
+                body: { batched: true },
+              }))
+            );
           }, maxWaitMs);
           batchQueue.set(clientId, batch);
         }
@@ -192,12 +281,21 @@ export interface ProgressiveLoadConfig {
   fields: string[];
 }
 
-export function getProgressiveLoadConfig(quality: ConnectionQuality, entityType: string): ProgressiveLoadConfig {
+export function getProgressiveLoadConfig(
+  quality: ConnectionQuality,
+  entityType: string
+): ProgressiveLoadConfig {
   if (quality === "2g" || quality === "offline") {
     return { phase: "critical", fields: getCriticalFields(entityType) };
   }
   if (quality === "3g") {
-    return { phase: "enhanced", fields: [...getCriticalFields(entityType), ...getEnhancedFields(entityType)] };
+    return {
+      phase: "enhanced",
+      fields: [
+        ...getCriticalFields(entityType),
+        ...getEnhancedFields(entityType),
+      ],
+    };
   }
   return { phase: "full", fields: [] }; // All fields
 }
@@ -225,10 +323,15 @@ function getEnhancedFields(entityType: string): string[] {
 }
 
 // ─── 7. Stale-While-Revalidate Cache ───────────────────────────────────────
-const responseCache = new Map<string, { data: any; timestamp: number; ttlMs: number }>();
+const responseCache = new Map<
+  string,
+  { data: any; timestamp: number; ttlMs: number }
+>();
 const MAX_CACHE_SIZE = 1000;
 
-export function getCachedResponse(key: string): { data: any; stale: boolean } | null {
+export function getCachedResponse(
+  key: string
+): { data: any; stale: boolean } | null {
   const entry = responseCache.get(key);
   if (!entry) return null;
   const age = Date.now() - entry.timestamp;
@@ -239,7 +342,11 @@ export function getCachedResponse(key: string): { data: any; stale: boolean } | 
   return { data: entry.data, stale: age > entry.ttlMs };
 }
 
-export function setCachedResponse(key: string, data: any, ttlMs: number = 30000): void {
+export function setCachedResponse(
+  key: string,
+  data: any,
+  ttlMs: number = 30000
+): void {
   if (responseCache.size >= MAX_CACHE_SIZE) {
     // Evict oldest entry
     const oldestKey = responseCache.keys().next().value;
@@ -260,20 +367,41 @@ interface ConnectionHealth {
 
 const connectionHealthMap = new Map<string, ConnectionHealth>();
 
-export function recordConnectionHealth(clientId: string, quality: ConnectionQuality, latencyMs: number): void {
+export function recordConnectionHealth(
+  clientId: string,
+  quality: ConnectionQuality,
+  latencyMs: number
+): void {
   const existing = connectionHealthMap.get(clientId);
   if (existing) {
     existing.quality = quality;
-    existing.avgLatencyMs = (existing.avgLatencyMs * 0.8) + (latencyMs * 0.2);
+    existing.avgLatencyMs = existing.avgLatencyMs * 0.8 + latencyMs * 0.2;
     existing.lastSeen = Date.now();
     existing.requestCount++;
   } else {
-    connectionHealthMap.set(clientId, { clientId, quality, avgLatencyMs: latencyMs, packetLoss: 0, lastSeen: Date.now(), requestCount: 1 });
+    connectionHealthMap.set(clientId, {
+      clientId,
+      quality,
+      avgLatencyMs: latencyMs,
+      packetLoss: 0,
+      lastSeen: Date.now(),
+      requestCount: 1,
+    });
   }
 }
 
-export function getConnectionHealthStats(): { total: number; byQuality: Record<ConnectionQuality, number>; avgLatency: number } {
-  const byQuality: Record<ConnectionQuality, number> = { offline: 0, "2g": 0, "3g": 0, "4g": 0, wifi: 0 };
+export function getConnectionHealthStats(): {
+  total: number;
+  byQuality: Record<ConnectionQuality, number>;
+  avgLatency: number;
+} {
+  const byQuality: Record<ConnectionQuality, number> = {
+    offline: 0,
+    "2g": 0,
+    "3g": 0,
+    "4g": 0,
+    wifi: 0,
+  };
   let totalLatency = 0;
   let count = 0;
   for (const [, health] of connectionHealthMap) {
@@ -281,5 +409,9 @@ export function getConnectionHealthStats(): { total: number; byQuality: Record<C
     totalLatency += health.avgLatencyMs;
     count++;
   }
-  return { total: count, byQuality, avgLatency: count > 0 ? totalLatency / count : 0 };
+  return {
+    total: count,
+    byQuality,
+    avgLatency: count > 0 ? totalLatency / count : 0,
+  };
 }

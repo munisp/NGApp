@@ -34,7 +34,10 @@ function createInMemoryCache() {
 
   return {
     get(key: string): string | null {
-      if (isExpired(key)) { store.delete(key); return null; }
+      if (isExpired(key)) {
+        store.delete(key);
+        return null;
+      }
       return store.get(key)?.value ?? null;
     },
     set(key: string, value: string, ttlSeconds?: number): boolean {
@@ -80,7 +83,10 @@ describe("Redis cache — in-memory fallback behaviour", () => {
   });
 
   it("cacheGet returns the value after cacheSet (cache hit)", () => {
-    cache.set("commission:rates:cash_in", JSON.stringify({ rate: 0.005, min: 50 }));
+    cache.set(
+      "commission:rates:cash_in",
+      JSON.stringify({ rate: 0.005, min: 50 })
+    );
     const raw = cache.get("commission:rates:cash_in");
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
@@ -112,10 +118,15 @@ describe("Redis cache — in-memory fallback behaviour", () => {
 
   it("TTL expiry — key is gone after TTL elapses (simulated)", () => {
     // Set with 1ms TTL and then check after a tick
-    const store = new Map<string, { value: string; expiresAt: number | null }>();
+    const store = new Map<
+      string,
+      { value: string; expiresAt: number | null }
+    >();
     store.set("ttl:key", { value: "temp", expiresAt: Date.now() - 1 }); // already expired
     const entry = store.get("ttl:key");
-    const isExpired = entry ? (entry.expiresAt !== null && Date.now() > entry.expiresAt) : true;
+    const isExpired = entry
+      ? entry.expiresAt !== null && Date.now() > entry.expiresAt
+      : true;
     expect(isExpired).toBe(true);
   });
 
@@ -136,9 +147,27 @@ describe("Redis cache — commission rate caching pattern", () => {
   const TTL_SECONDS = 300; // 5 minutes
 
   const mockRules = [
-    { txType: "cash_in", ruleType: "percentage", rate: "0.005", minFee: "50", maxFee: "500" },
-    { txType: "cash_out", ruleType: "percentage", rate: "0.008", minFee: "100", maxFee: "1000" },
-    { txType: "transfer", ruleType: "flat", rate: "0", minFee: "100", maxFee: "100" },
+    {
+      txType: "cash_in",
+      ruleType: "percentage",
+      rate: "0.005",
+      minFee: "50",
+      maxFee: "500",
+    },
+    {
+      txType: "cash_out",
+      ruleType: "percentage",
+      rate: "0.008",
+      minFee: "100",
+      maxFee: "1000",
+    },
+    {
+      txType: "transfer",
+      ruleType: "flat",
+      rate: "0",
+      minFee: "100",
+      maxFee: "100",
+    },
   ];
 
   it("cache miss triggers DB lookup (simulated)", () => {

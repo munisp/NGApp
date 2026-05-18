@@ -33,7 +33,9 @@ export function getRedisClient(): Redis | null {
     });
 
     _client.on("connect", () => logger.info("[Redis] Connected"));
-    _client.on("error", (err) => logger.warn({ err }, "[Redis] Connection error — cache disabled"));
+    _client.on("error", err =>
+      logger.warn({ err }, "[Redis] Connection error — cache disabled")
+    );
     _client.on("close", () => logger.warn("[Redis] Connection closed"));
 
     return _client;
@@ -45,25 +47,34 @@ export function getRedisClient(): Redis | null {
 
 // ── TTL constants ──────────────────────────────────────────────────────────────
 const TTL = {
-  SESSION: 60 * 60 * 12,   // 12 hours
-  FLOAT: 30,                // 30 seconds (write-through)
-  FRAUD_RULES: 60 * 5,      // 5 minutes
-  PROBE: 60,                // 60 seconds
+  SESSION: 60 * 60 * 12, // 12 hours
+  FLOAT: 30, // 30 seconds (write-through)
+  FRAUD_RULES: 60 * 5, // 5 minutes
+  PROBE: 60, // 60 seconds
 };
 
 // ── Agent session cache ────────────────────────────────────────────────────────
 
-export async function cacheAgentSession(agentCode: string, profile: object): Promise<void> {
+export async function cacheAgentSession(
+  agentCode: string,
+  profile: object
+): Promise<void> {
   const redis = getRedisClient();
   if (!redis) return;
   try {
-    await redis.setex(`agent:session:${agentCode}`, TTL.SESSION, JSON.stringify(profile));
+    await redis.setex(
+      `agent:session:${agentCode}`,
+      TTL.SESSION,
+      JSON.stringify(profile)
+    );
   } catch (err) {
     logger.warn({ err }, "[Redis] cacheAgentSession failed");
   }
 }
 
-export async function getCachedAgentSession<T>(agentCode: string): Promise<T | null> {
+export async function getCachedAgentSession<T>(
+  agentCode: string
+): Promise<T | null> {
   const redis = getRedisClient();
   if (!redis) return null;
   try {
@@ -87,17 +98,26 @@ export async function invalidateAgentSession(agentCode: string): Promise<void> {
 
 // ── Float balance cache (write-through) ───────────────────────────────────────
 
-export async function cacheAgentFloat(agentCode: string, balanceKobo: number): Promise<void> {
+export async function cacheAgentFloat(
+  agentCode: string,
+  balanceKobo: number
+): Promise<void> {
   const redis = getRedisClient();
   if (!redis) return;
   try {
-    await redis.setex(`agent:float:${agentCode}`, TTL.FLOAT, String(balanceKobo));
+    await redis.setex(
+      `agent:float:${agentCode}`,
+      TTL.FLOAT,
+      String(balanceKobo)
+    );
   } catch (err) {
     logger.warn({ err }, "[Redis] cacheAgentFloat failed");
   }
 }
 
-export async function getCachedAgentFloat(agentCode: string): Promise<number | null> {
+export async function getCachedAgentFloat(
+  agentCode: string
+): Promise<number | null> {
   const redis = getRedisClient();
   if (!redis) return null;
   try {
@@ -145,17 +165,26 @@ export async function invalidateFraudRules(): Promise<void> {
 
 // ── Connectivity probe cache ───────────────────────────────────────────────────
 
-export async function cacheProbeReading(terminalId: string, reading: object): Promise<void> {
+export async function cacheProbeReading(
+  terminalId: string,
+  reading: object
+): Promise<void> {
   const redis = getRedisClient();
   if (!redis) return;
   try {
-    await redis.setex(`probe:latest:${terminalId}`, TTL.PROBE, JSON.stringify(reading));
+    await redis.setex(
+      `probe:latest:${terminalId}`,
+      TTL.PROBE,
+      JSON.stringify(reading)
+    );
   } catch (err) {
     logger.warn({ err }, "[Redis] cacheProbeReading failed");
   }
 }
 
-export async function getCachedProbeReading<T>(terminalId: string): Promise<T | null> {
+export async function getCachedProbeReading<T>(
+  terminalId: string
+): Promise<T | null> {
   const redis = getRedisClient();
   if (!redis) return null;
   try {

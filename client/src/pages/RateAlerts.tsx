@@ -10,15 +10,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Bell, Plus, Trash2, RefreshCw, ArrowUp, ArrowDown, Pause, Play,
-  RotateCcw, TrendingUp, AlertTriangle, Clock, Activity, Search
+  Bell,
+  Plus,
+  Trash2,
+  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Pause,
+  Play,
+  RotateCcw,
+  TrendingUp,
+  AlertTriangle,
+  Clock,
+  Activity,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const CURRENCIES = [
-  "USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","CNY","INR",
-  "NGN","KES","GHS","ZAR","EGP","TZS","UGX","RWF","XOF","XAF",
-  "BRL","MXN","ARS","COP","PEN","CLP","SGD","HKD","KRW","THB",
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CHF",
+  "CAD",
+  "AUD",
+  "NZD",
+  "CNY",
+  "INR",
+  "NGN",
+  "KES",
+  "GHS",
+  "ZAR",
+  "EGP",
+  "TZS",
+  "UGX",
+  "RWF",
+  "XOF",
+  "XAF",
+  "BRL",
+  "MXN",
+  "ARS",
+  "COP",
+  "PEN",
+  "CLP",
+  "SGD",
+  "HKD",
+  "KRW",
+  "THB",
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,7 +68,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RateAlerts() {
-  const [filter, setFilter] = useState<"all" | "active" | "paused" | "triggered" | "expired">("all");
+  const [filter, setFilter] = useState<
+    "all" | "active" | "paused" | "triggered" | "expired"
+  >("all");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
@@ -63,23 +104,36 @@ export default function RateAlerts() {
   });
 
   const toggleAlert = trpc.rateAlerts.toggle.useMutation({
-    onSuccess: () => { utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
+    onSuccess: () => {
+      utils.rateAlerts.list.invalidate();
+      utils.rateAlerts.getStats.invalidate();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
   const rearmAlert = trpc.rateAlerts.rearm.useMutation({
-    onSuccess: () => { toast.success("Alert re-armed"); utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
+    onSuccess: () => {
+      toast.success("Alert re-armed");
+      utils.rateAlerts.list.invalidate();
+      utils.rateAlerts.getStats.invalidate();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
   const deleteAlert = trpc.rateAlerts.delete.useMutation({
-    onSuccess: () => { toast.success("Alert deleted"); utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
+    onSuccess: () => {
+      toast.success("Alert deleted");
+      utils.rateAlerts.list.invalidate();
+      utils.rateAlerts.getStats.invalidate();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
   const runCheck = trpc.rateAlerts.runCheck.useMutation({
     onSuccess: (d: any) => {
-      toast.success(`Check complete: ${d.checked} checked, ${d.triggered} triggered`);
+      toast.success(
+        `Check complete: ${d.checked} checked, ${d.triggered} triggered`
+      );
       utils.rateAlerts.list.invalidate();
       utils.rateAlerts.getStats.invalidate();
       utils.rateAlerts.getCheckerStatus.invalidate();
@@ -136,7 +190,9 @@ export default function RateAlerts() {
             onClick={() => runCheck.mutate()}
             disabled={runCheck.isPending}
           >
-            <RefreshCw className={`w-3 h-3 mr-1 ${runCheck.isPending ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-3 h-3 mr-1 ${runCheck.isPending ? "animate-spin" : ""}`}
+            />
             Check Now
           </Button>
           <Button
@@ -152,11 +208,36 @@ export default function RateAlerts() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Total", value: stats?.total ?? 0, icon: <Activity className="w-4 h-4" />, color: "text-slate-300" },
-          { label: "Active", value: stats?.active ?? 0, icon: <Play className="w-4 h-4" />, color: "text-emerald-400" },
-          { label: "Paused", value: stats?.paused ?? 0, icon: <Pause className="w-4 h-4" />, color: "text-amber-400" },
-          { label: "Triggered", value: stats?.triggered ?? 0, icon: <Bell className="w-4 h-4" />, color: "text-blue-400" },
-          { label: "Expired", value: stats?.expired ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-slate-500" },
+          {
+            label: "Total",
+            value: stats?.total ?? 0,
+            icon: <Activity className="w-4 h-4" />,
+            color: "text-slate-300",
+          },
+          {
+            label: "Active",
+            value: stats?.active ?? 0,
+            icon: <Play className="w-4 h-4" />,
+            color: "text-emerald-400",
+          },
+          {
+            label: "Paused",
+            value: stats?.paused ?? 0,
+            icon: <Pause className="w-4 h-4" />,
+            color: "text-amber-400",
+          },
+          {
+            label: "Triggered",
+            value: stats?.triggered ?? 0,
+            icon: <Bell className="w-4 h-4" />,
+            color: "text-blue-400",
+          },
+          {
+            label: "Expired",
+            value: stats?.expired ?? 0,
+            icon: <Clock className="w-4 h-4" />,
+            color: "text-slate-500",
+          },
         ].map((s: any) => (
           <Card key={s.label} className="bg-slate-900/50 border-slate-700">
             <CardContent className="p-3">
@@ -164,7 +245,9 @@ export default function RateAlerts() {
                 <span className="text-xs text-slate-500">{s.label}</span>
                 <span className={s.color}>{s.icon}</span>
               </div>
-              <div className={`text-xl font-bold mt-1 ${s.color}`}>{s.value}</div>
+              <div className={`text-xl font-bold mt-1 ${s.color}`}>
+                {s.value}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -174,13 +257,17 @@ export default function RateAlerts() {
       {checkerStatus && (
         <div className="flex items-center gap-4 text-xs text-slate-500 bg-slate-900/30 rounded-lg px-4 py-2">
           <span className="flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${checkerStatus.running ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+            <span
+              className={`w-2 h-2 rounded-full ${checkerStatus.running ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+            />
             Checker: {checkerStatus.running ? "Running" : "Stopped"}
           </span>
           <span>Checks: {checkerStatus.checksRun}</span>
           <span>Triggered: {checkerStatus.totalTriggered}</span>
           {checkerStatus.lastCheckAt && (
-            <span>Last: {new Date(checkerStatus.lastCheckAt).toLocaleTimeString()}</span>
+            <span>
+              Last: {new Date(checkerStatus.lastCheckAt).toLocaleTimeString()}
+            </span>
           )}
         </div>
       )}
@@ -189,52 +276,70 @@ export default function RateAlerts() {
       {showCreate && (
         <Card className="bg-slate-900/50 border-blue-500/30">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-white">Create Rate Alert</CardTitle>
+            <CardTitle className="text-sm text-white">
+              Create Rate Alert
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Base Currency</label>
+                <label className="text-xs text-slate-500 mb-1 block">
+                  Base Currency
+                </label>
                 <select
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-white"
                   value={baseCurrency}
-                  onChange={(e) => setBaseCurrency(e.target.value)}
+                  onChange={e => setBaseCurrency(e.target.value)}
                 >
                   {CURRENCIES.map((c: any) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Target Currency</label>
+                <label className="text-xs text-slate-500 mb-1 block">
+                  Target Currency
+                </label>
                 <select
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-white"
                   value={targetCurrency}
-                  onChange={(e) => setTargetCurrency(e.target.value)}
+                  onChange={e => setTargetCurrency(e.target.value)}
                 >
                   {CURRENCIES.map((c: any) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Target Rate</label>
+                <label className="text-xs text-slate-500 mb-1 block">
+                  Target Rate
+                </label>
                 <Input
                   type="number"
                   step="0.0001"
                   placeholder="e.g. 1600.00"
                   value={targetRate}
-                  onChange={(e) => setTargetRate(e.target.value)}
+                  onChange={e => setTargetRate(e.target.value)}
                   className="bg-slate-800 border-slate-600 text-white"
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Direction</label>
+                <label className="text-xs text-slate-500 mb-1 block">
+                  Direction
+                </label>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant={direction === "above" ? "default" : "outline"}
-                    className={direction === "above" ? "bg-emerald-600 flex-1" : "border-slate-600 text-slate-400 flex-1"}
+                    className={
+                      direction === "above"
+                        ? "bg-emerald-600 flex-1"
+                        : "border-slate-600 text-slate-400 flex-1"
+                    }
                     onClick={() => setDirection("above")}
                   >
                     <ArrowUp className="w-3 h-3 mr-1" /> Above
@@ -242,7 +347,11 @@ export default function RateAlerts() {
                   <Button
                     size="sm"
                     variant={direction === "below" ? "default" : "outline"}
-                    className={direction === "below" ? "bg-red-600 flex-1" : "border-slate-600 text-slate-400 flex-1"}
+                    className={
+                      direction === "below"
+                        ? "bg-red-600 flex-1"
+                        : "border-slate-600 text-slate-400 flex-1"
+                    }
                     onClick={() => setDirection("below")}
                   >
                     <ArrowDown className="w-3 h-3 mr-1" /> Below
@@ -251,19 +360,31 @@ export default function RateAlerts() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Note (optional)</label>
+              <label className="text-xs text-slate-500 mb-1 block">
+                Note (optional)
+              </label>
               <Input
                 placeholder="e.g. Sell USD when rate is high"
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={e => setNote(e.target.value)}
                 className="bg-slate-800 border-slate-600 text-white"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button size="sm" variant="outline" className="border-slate-600 text-slate-400" onClick={() => setShowCreate(false)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-600 text-slate-400"
+                onClick={() => setShowCreate(false)}
+              >
                 Cancel
               </Button>
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleCreate} disabled={createAlert.isPending}>
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleCreate}
+                disabled={createAlert.isPending}
+              >
                 {createAlert.isPending ? "Creating..." : "Create Alert"}
               </Button>
             </div>
@@ -278,34 +399,46 @@ export default function RateAlerts() {
           <Input
             placeholder="Search by currency or note..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             className="pl-9 bg-slate-900 border-slate-700 text-white text-sm"
           />
         </div>
         <div className="flex gap-1">
-          {(["all", "active", "paused", "triggered", "expired"] as const).map((s: any) => (
-            <Button
-              key={s}
-              size="sm"
-              variant={filter === s ? "default" : "outline"}
-              className={filter === s ? "bg-blue-600" : "border-slate-700 text-slate-400"}
-              onClick={() => setFilter(s)}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </Button>
-          ))}
+          {(["all", "active", "paused", "triggered", "expired"] as const).map(
+            (s: any) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={filter === s ? "default" : "outline"}
+                className={
+                  filter === s
+                    ? "bg-blue-600"
+                    : "border-slate-700 text-slate-400"
+                }
+                onClick={() => setFilter(s)}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button>
+            )
+          )}
         </div>
       </div>
 
       {/* Alerts List */}
       {isLoading ? (
-        <div className="text-center py-12 text-slate-500">Loading alerts...</div>
+        <div className="text-center py-12 text-slate-500">
+          Loading alerts...
+        </div>
       ) : alerts.length === 0 ? (
         <Card className="bg-slate-900/50 border-slate-700">
           <CardContent className="py-12 text-center">
             <AlertTriangle className="w-8 h-8 text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500">No rate alerts found</p>
-            <Button size="sm" className="mt-3 bg-blue-600" onClick={() => setShowCreate(true)}>
+            <Button
+              size="sm"
+              className="mt-3 bg-blue-600"
+              onClick={() => setShowCreate(true)}
+            >
               <Plus className="w-3 h-3 mr-1" /> Create Your First Alert
             </Button>
           </CardContent>
@@ -313,13 +446,20 @@ export default function RateAlerts() {
       ) : (
         <div className="space-y-2">
           {alerts.map((alert: any) => (
-            <Card key={alert.id} className="bg-slate-900/50 border-slate-700 hover:border-slate-600 transition-colors">
+            <Card
+              key={alert.id}
+              className="bg-slate-900/50 border-slate-700 hover:border-slate-600 transition-colors"
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      alert.direction === "above" ? "bg-emerald-500/20" : "bg-red-500/20"
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        alert.direction === "above"
+                          ? "bg-emerald-500/20"
+                          : "bg-red-500/20"
+                      }`}
+                    >
                       {alert.direction === "above" ? (
                         <TrendingUp className="w-5 h-5 text-emerald-400" />
                       ) : (
@@ -331,23 +471,41 @@ export default function RateAlerts() {
                         <span className="font-semibold text-white">
                           {alert.baseCurrency}/{alert.targetCurrency}
                         </span>
-                        <Badge variant="outline" className={STATUS_COLORS[alert.status]}>
+                        <Badge
+                          variant="outline"
+                          className={STATUS_COLORS[alert.status]}
+                        >
                           {alert.status}
                         </Badge>
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5">
                         Alert when rate goes{" "}
-                        <span className={alert.direction === "above" ? "text-emerald-400" : "text-red-400"}>
+                        <span
+                          className={
+                            alert.direction === "above"
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                          }
+                        >
                           {alert.direction}
                         </span>{" "}
-                        <span className="text-white font-medium">{alert.targetRate}</span>
+                        <span className="text-white font-medium">
+                          {alert.targetRate}
+                        </span>
                         {alert.currentRate && (
                           <span className="ml-2">
-                            Current: <span className="text-blue-400">{Number(alert.currentRate).toFixed(4)}</span>
+                            Current:{" "}
+                            <span className="text-blue-400">
+                              {Number(alert.currentRate).toFixed(4)}
+                            </span>
                           </span>
                         )}
                       </div>
-                      {alert.note && <div className="text-xs text-slate-600 mt-0.5">{alert.note}</div>}
+                      {alert.note && (
+                        <div className="text-xs text-slate-600 mt-0.5">
+                          {alert.note}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -420,12 +578,18 @@ export default function RateAlerts() {
       {stats?.topPairs && stats.topPairs.length > 0 && (
         <Card className="bg-slate-900/50 border-slate-700">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-white">Top Monitored Pairs</CardTitle>
+            <CardTitle className="text-sm text-white">
+              Top Monitored Pairs
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2 flex-wrap">
               {stats.topPairs.map((p: any) => (
-                <Badge key={p.pair} variant="outline" className="border-slate-600 text-slate-300">
+                <Badge
+                  key={p.pair}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300"
+                >
                   {p.pair} ({p.count})
                 </Badge>
               ))}

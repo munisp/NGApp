@@ -36,12 +36,18 @@ describe("sendSms — fallback mode (no TERMII_API_KEY)", () => {
   });
 
   it("returns success:true when TERMII_API_KEY is absent", async () => {
-    const result: SmsResult = await sendSms("+2348012345678", "Test OTP: 123456");
+    const result: SmsResult = await sendSms(
+      "+2348012345678",
+      "Test OTP: 123456"
+    );
     expect(result.success).toBe(true);
   });
 
   it("returns a CONSOLE-* messageId in fallback mode", async () => {
-    const result: SmsResult = await sendSms("+2348012345678", "Test OTP: 123456");
+    const result: SmsResult = await sendSms(
+      "+2348012345678",
+      "Test OTP: 123456"
+    );
     expect(result.messageId).toMatch(/^CONSOLE-\d+$/);
   });
 

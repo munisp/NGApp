@@ -24,7 +24,7 @@ describe("Sprint 83: billingProduction Router", () => {
   it("should have all 20 production billing procedures", () => {
     const procedures = Object.keys(billingProductionRouter._def.procedures);
     expect(procedures.length).toBeGreaterThanOrEqual(20);
-    
+
     // Verify key procedures exist
     const expectedProcedures = [
       "generateMonthlyInvoices",
@@ -48,7 +48,7 @@ describe("Sprint 83: billingProduction Router", () => {
       "getCreditBalance",
       "topUpCredits",
     ];
-    
+
     for (const proc of expectedProcedures) {
       expect(procedures).toContain(proc);
     }
@@ -175,7 +175,7 @@ describe("Sprint 83: Service Completeness", () => {
       const stat = fs.statSync(path.join(goDir, d));
       return stat.isDirectory() && d !== "shared";
     });
-    
+
     for (const dir of dirs) {
       const mainPath = path.join(goDir, dir, "main.go");
       expect(fs.existsSync(mainPath)).toBe(true);
@@ -190,7 +190,7 @@ describe("Sprint 83: Service Completeness", () => {
       const stat = fs.statSync(path.join(rustDir, d));
       return stat.isDirectory();
     });
-    
+
     for (const dir of dirs) {
       const mainPath = path.join(rustDir, dir, "src", "main.rs");
       expect(fs.existsSync(mainPath)).toBe(true);

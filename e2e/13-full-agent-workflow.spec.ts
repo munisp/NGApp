@@ -8,7 +8,9 @@ test.describe("Full Agent Workflow E2E", () => {
   test("should complete full agent transaction lifecycle", async ({ page }) => {
     // 1. Navigate to POS Shell
     await page.goto("/");
-    await expect(page.locator("text=54Link POS")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("text=54Link POS")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // 2. Enter agent code
     const agentInput = page.locator('input[placeholder*="AGT"]');
@@ -25,7 +27,9 @@ test.describe("Full Agent Workflow E2E", () => {
 
   test("should access admin dashboard via SSO", async ({ page }) => {
     await page.goto("/");
-    const ssoBtn = page.locator("button", { hasText: /supervisor|admin|sso/i }).first();
+    const ssoBtn = page
+      .locator("button", { hasText: /supervisor|admin|sso/i })
+      .first();
     if (await ssoBtn.isVisible()) {
       await ssoBtn.click();
       await page.waitForTimeout(3000);
@@ -36,9 +40,17 @@ test.describe("Full Agent Workflow E2E", () => {
 
   test("should navigate through all major sections", async ({ page }) => {
     const routes = [
-      "/dashboard", "/agents", "/transactions", "/float",
-      "/settlement", "/reports", "/fraud", "/compliance",
-      "/audit-trail", "/api-gateway", "/feature-flags"
+      "/dashboard",
+      "/agents",
+      "/transactions",
+      "/float",
+      "/settlement",
+      "/reports",
+      "/fraud",
+      "/compliance",
+      "/audit-trail",
+      "/api-gateway",
+      "/feature-flags",
     ];
     for (const route of routes) {
       await page.goto(route);
@@ -51,7 +63,9 @@ test.describe("Full Agent Workflow E2E", () => {
   test("should verify mobile responsive layout", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
-    await expect(page.locator("text=54Link POS")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("text=54Link POS")).toBeVisible({
+      timeout: 10_000,
+    });
     const body = await page.textContent("body");
     expect(body).toBeTruthy();
   });

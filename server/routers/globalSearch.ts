@@ -1,7 +1,6 @@
-
 /**
  * Global Search Router — 54Link Agency Banking Platform
- * 
+ *
  * Unified search across agents, transactions, customers, disputes.
  * Features:
  * - Full-text search with ILIKE across multiple columns
@@ -12,13 +11,20 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents, transactions, customers, disputes } from "../../drizzle/schema";
+import {
+  agents,
+  transactions,
+  customers,
+  disputes,
+} from "../../drizzle/schema";
 import { ilike, or, sql, desc, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 const SearchInputSchema = z.object({
   query: z.string().min(2).max(200),
-  entityTypes: z.array(z.enum(["agents", "transactions", "customers", "disputes"])).optional(),
+  entityTypes: z
+    .array(z.enum(["agents", "transactions", "customers", "disputes"]))
+    .optional(),
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(50).default(20),
 });
@@ -41,12 +47,35 @@ export const globalSearchRouter = router({
       const pattern = `%${query}%`;
       const results: SearchResult[] = [];
       let totalCount = 0;
-      
+
       const db = (await getDb())!;
-      if (!db) return { results: [], pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false }, query, searchedTypes: entityTypes ?? ["agents", "transactions", "customers", "disputes"] };
-      const searchTypes = entityTypes ?? ["agents", "transactions", "customers", "disputes"];
+      if (!db)
+        return {
+          results: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+          query,
+          searchedTypes: entityTypes ?? [
+            "agents",
+            "transactions",
+            "customers",
+            "disputes",
+          ],
+        };
+      const searchTypes = entityTypes ?? [
+        "agents",
+        "transactions",
+        "customers",
+        "disputes",
+      ];
       const perTypeLimit = Math.ceil(limit / searchTypes.length);
-      
+
       // ── Search Agents ───────────────────────────────────────────
       if (searchTypes.includes("agents")) {
         try {
@@ -70,12 +99,14 @@ export const globalSearchRouter = router({
             )
             .limit(perTypeLimit)
             .offset(offset);
-          
+
           for (const a of agentResults) {
             let matchField = "name";
-            if (a.agentCode?.toLowerCase().includes(query.toLowerCase())) matchField = "agentCode";
-            else if (a.phone?.toLowerCase().includes(query.toLowerCase())) matchField = "phone";
-            
+            if (a.agentCode?.toLowerCase().includes(query.toLowerCase()))
+              matchField = "agentCode";
+            else if (a.phone?.toLowerCase().includes(query.toLowerCase()))
+              matchField = "phone";
+
             results.push({
               id: a.id,
               entityType: "agent",
@@ -85,7 +116,7 @@ export const globalSearchRouter = router({
               createdAt: a.createdAt?.toISOString() ?? "",
             });
           }
-          
+
           const [agentCount] = await db
             .select({ count: count() })
             .from(agents)
@@ -101,7 +132,7 @@ export const globalSearchRouter = router({
           // Table may not have all columns, skip gracefully
         }
       }
-      
+
       // ── Search Transactions ─────────────────────────────────────
       if (searchTypes.includes("transactions")) {
         try {
@@ -119,32 +150,40 @@ export const globalSearchRouter = router({
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike((transactions as any).customerNameNameName ?? sql`''`, pattern),
+                ilike(
+                  (transactions as any).customerNameNameName ?? sql`''`,
+                  pattern
+                ),
                 ilike(transactions.type, pattern)
               )
             )
             .orderBy(desc(transactions.createdAt))
             .limit(perTypeLimit)
             .offset(offset);
-          
+
           for (const t of txResults) {
             results.push({
               id: t.id,
               entityType: "transaction",
               title: `${t.type?.toUpperCase()} — ₦${Number(t.amount).toLocaleString()}`,
               subtitle: `Ref: ${t.ref} | ${t.status} | ${t.customer ?? "N/A"}`,
-              matchField: t.ref?.toLowerCase().includes(query.toLowerCase()) ? "ref" : "customer",
+              matchField: t.ref?.toLowerCase().includes(query.toLowerCase())
+                ? "ref"
+                : "customer",
               createdAt: t.createdAt?.toISOString() ?? "",
             });
           }
-          
+
           const [txCount] = await db
             .select({ count: count() })
             .from(transactions)
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike((transactions as any).customerNameNameName ?? sql`''`, pattern)
+                ilike(
+                  (transactions as any).customerNameNameName ?? sql`''`,
+                  pattern
+                )
               )
             );
           totalCount += txCount?.count ?? 0;
@@ -152,7 +191,7 @@ export const globalSearchRouter = router({
           // Skip gracefully
         }
       }
-      
+
       // ── Search Customers ────────────────────────────────────────
       if (searchTypes.includes("customers")) {
         try {
@@ -174,7 +213,7 @@ export const globalSearchRouter = router({
             )
             .limit(perTypeLimit)
             .offset(offset);
-          
+
           for (const c of custResults) {
             results.push({
               id: c.id,
@@ -185,7 +224,7 @@ export const globalSearchRouter = router({
               createdAt: c.createdAt?.toISOString() ?? "",
             });
           }
-          
+
           const [custCount] = await db
             .select({ count: count() })
             .from(customers)
@@ -200,7 +239,7 @@ export const globalSearchRouter = router({
           // Skip gracefully
         }
       }
-      
+
       // ── Search Disputes ─────────────────────────────────────────
       if (searchTypes.includes("disputes")) {
         try {
@@ -221,7 +260,7 @@ export const globalSearchRouter = router({
             )
             .limit(perTypeLimit)
             .offset(offset);
-          
+
           for (const d of disputeResults) {
             results.push({
               id: d.id,
@@ -232,7 +271,7 @@ export const globalSearchRouter = router({
               createdAt: d.createdAt?.toISOString() ?? "",
             });
           }
-          
+
           const [dispCount] = await db
             .select({ count: count() })
             .from(disputes)
@@ -247,7 +286,7 @@ export const globalSearchRouter = router({
           // Skip gracefully
         }
       }
-      
+
       return {
         results,
         pagination: {

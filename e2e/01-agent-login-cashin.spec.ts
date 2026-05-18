@@ -5,10 +5,14 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Agent Login and Cash-In Flow", () => {
-  test("should login, perform cash-in, see receipt, and logout", async ({ page }) => {
+  test("should login, perform cash-in, see receipt, and logout", async ({
+    page,
+  }) => {
     // ── 1. Navigate to POS Shell ─────────────────────────────────────────────
     await page.goto("/");
-    await expect(page.locator("text=54Link POS")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("text=54Link POS")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // ── 2. Enter agent code ──────────────────────────────────────────────────
     const agentCodeInput = page.locator('input[placeholder*="AGT"]');
@@ -29,33 +33,50 @@ test.describe("Agent Login and Cash-In Flow", () => {
     await expect(page.locator("text=Cash In")).toBeVisible();
 
     // ── 6. Enter amount ──────────────────────────────────────────────────────
-    const amountInput = page.locator('input[placeholder*="amount"], input[placeholder*="Amount"]').first();
+    const amountInput = page
+      .locator('input[placeholder*="amount"], input[placeholder*="Amount"]')
+      .first();
     await amountInput.fill("5000");
 
     // Enter customer phone
-    const customerInput = page.locator('input[placeholder*="customer"], input[placeholder*="phone"], input[placeholder*="Customer"]').first();
+    const customerInput = page
+      .locator(
+        'input[placeholder*="customer"], input[placeholder*="phone"], input[placeholder*="Customer"]'
+      )
+      .first();
     if (await customerInput.isVisible()) {
       await customerInput.fill("08012345678");
     }
 
     // ── 7. Submit transaction ────────────────────────────────────────────────
-    await page.locator("button", { hasText: /confirm|proceed|submit/i }).first().click();
+    await page
+      .locator("button", { hasText: /confirm|proceed|submit/i })
+      .first()
+      .click();
 
     // ── 8. Verify receipt appears ────────────────────────────────────────────
-    await expect(page.locator("text=/receipt|success|₦5,000/i")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("text=/receipt|success|₦5,000/i")).toBeVisible({
+      timeout: 15_000,
+    });
 
     // ── 9. Close receipt ─────────────────────────────────────────────────────
-    const closeBtn = page.locator("button", { hasText: /close|done|ok/i }).first();
+    const closeBtn = page
+      .locator("button", { hasText: /close|done|ok/i })
+      .first();
     if (await closeBtn.isVisible()) {
       await closeBtn.click();
     }
 
     // ── 10. Logout ───────────────────────────────────────────────────────────
     // Find logout button (usually in header or settings)
-    const logoutBtn = page.locator("button", { hasText: /logout|sign out/i }).first();
+    const logoutBtn = page
+      .locator("button", { hasText: /logout|sign out/i })
+      .first();
     if (await logoutBtn.isVisible()) {
       await logoutBtn.click();
-      await expect(page.locator("text=54Link POS")).toBeVisible({ timeout: 5_000 });
+      await expect(page.locator("text=54Link POS")).toBeVisible({
+        timeout: 5_000,
+      });
     }
   });
 });

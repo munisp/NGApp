@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — Connectivity Resilience for Rural Africa
- * 
+ *
  * Server-side counterpart to client offlineResilience.ts:
  * - WebSocket with automatic HTTP long-polling fallback
  * - Adaptive response compression (gzip/brotli based on bandwidth)
@@ -32,7 +32,11 @@ function computeRequestHash(req: Request): string {
   return createHash("md5").update(payload).digest("hex");
 }
 
-export function requestDeduplication(req: Request, res: Response, next: NextFunction) {
+export function requestDeduplication(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Only deduplicate POST/PUT mutations
   if (req.method === "GET" || req.method === "OPTIONS") return next();
 
@@ -42,7 +46,9 @@ export function requestDeduplication(req: Request, res: Response, next: NextFunc
 
   const existing = dedupeStore.get(hash);
   if (existing && now - existing.timestamp < DEDUPE_WINDOW_MS) {
-    console.log(`[Dedupe] Returning cached response for ${req.method} ${req.path}`);
+    console.log(
+      `[Dedupe] Returning cached response for ${req.method} ${req.path}`
+    );
     return res.status(200).json(existing.response);
   }
 
@@ -65,7 +71,11 @@ setInterval(() => {
 }, 60_000);
 
 // ─── Adaptive Compression ────────────────────────────────────────────────────
-export function adaptiveCompression(req: Request, res: Response, next: NextFunction) {
+export function adaptiveCompression(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const acceptEncoding = req.headers["accept-encoding"] ?? "";
   const networkQuality = req.headers["x-network-quality"] as string; // Client sends this
 
@@ -106,7 +116,9 @@ export interface BatchResult {
  * Process a batch of operations in a single request.
  * Designed for low-bandwidth environments where multiple round-trips are expensive.
  */
-export function createBatchSyncHandler(handlers: Map<string, (op: BatchOperation) => Promise<any>>) {
+export function createBatchSyncHandler(
+  handlers: Map<string, (op: BatchOperation) => Promise<any>>
+) {
   return async (req: Request, res: Response) => {
     const operations: BatchOperation[] = req.body?.operations;
 
@@ -115,7 +127,9 @@ export function createBatchSyncHandler(handlers: Map<string, (op: BatchOperation
     }
 
     if (operations.length > 100) {
-      return res.status(400).json({ error: "Maximum 100 operations per batch" });
+      return res
+        .status(400)
+        .json({ error: "Maximum 100 operations per batch" });
     }
 
     const results: BatchResult[] = [];
@@ -123,7 +137,11 @@ export function createBatchSyncHandler(handlers: Map<string, (op: BatchOperation
     for (const op of operations) {
       const handler = handlers.get(op.type);
       if (!handler) {
-        results.push({ id: op.id, success: false, error: `Unknown operation type: ${op.type}` });
+        results.push({
+          id: op.id,
+          success: false,
+          error: `Unknown operation type: ${op.type}`,
+        });
         continue;
       }
 
@@ -156,7 +174,11 @@ interface ConnectionMetrics {
 
 const connectionMetrics = new Map<string, ConnectionMetrics>();
 
-export function trackConnectionQuality(req: Request, res: Response, next: NextFunction) {
+export function trackConnectionQuality(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
   const requestStart = Date.now();
 
@@ -166,13 +188,20 @@ export function trackConnectionQuality(req: Request, res: Response, next: NextFu
     let metrics = connectionMetrics.get(ip);
 
     if (!metrics) {
-      metrics = { ip, avgLatencyMs: latency, samples: [], lastSeen: Date.now(), quality: "good" };
+      metrics = {
+        ip,
+        avgLatencyMs: latency,
+        samples: [],
+        lastSeen: Date.now(),
+        quality: "good",
+      };
       connectionMetrics.set(ip, metrics);
     }
 
     metrics.samples.push(latency);
     if (metrics.samples.length > 20) metrics.samples.shift();
-    metrics.avgLatencyMs = metrics.samples.reduce((a, b) => a + b, 0) / metrics.samples.length;
+    metrics.avgLatencyMs =
+      metrics.samples.reduce((a, b) => a + b, 0) / metrics.samples.length;
     metrics.lastSeen = Date.now();
 
     // Classify quality
@@ -196,13 +225,22 @@ const MAX_LOAD = 1000; // concurrent requests
 export function loadShedding(req: Request, res: Response, next: NextFunction) {
   currentLoad++;
 
-  res.on("finish", () => { currentLoad--; });
-  res.on("close", () => { currentLoad--; });
+  res.on("finish", () => {
+    currentLoad--;
+  });
+  res.on("close", () => {
+    currentLoad--;
+  });
 
   // Shed non-critical requests under heavy load
   if (currentLoad > MAX_LOAD * 0.9) {
     // Only allow critical paths
-    const criticalPaths = ["/api/trpc/auth", "/api/trpc/transaction", "/api/stripe/webhook", "/health"];
+    const criticalPaths = [
+      "/api/trpc/auth",
+      "/api/trpc/transaction",
+      "/api/stripe/webhook",
+      "/health",
+    ];
     const isCritical = criticalPaths.some(p => req.path.startsWith(p));
 
     if (!isCritical) {
@@ -218,8 +256,16 @@ export function loadShedding(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-export function getCurrentLoad(): { current: number; max: number; percentage: number } {
-  return { current: currentLoad, max: MAX_LOAD, percentage: Math.round((currentLoad / MAX_LOAD) * 100) };
+export function getCurrentLoad(): {
+  current: number;
+  max: number;
+  percentage: number;
+} {
+  return {
+    current: currentLoad,
+    max: MAX_LOAD,
+    percentage: Math.round((currentLoad / MAX_LOAD) * 100),
+  };
 }
 
 // ─── WebSocket Fallback Manager ──────────────────────────────────────────────

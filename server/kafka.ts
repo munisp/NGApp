@@ -26,19 +26,21 @@ import { Kafka, Producer, Consumer, logLevel, CompressionTypes } from "kafkajs";
 // ─── Configuration ────────────────────────────────────────────────────────────
 
 const KAFKA_ENABLED = process.env.KAFKA_ENABLED !== "false";
-const KAFKA_BROKERS = (process.env.KAFKA_BROKERS ?? "localhost:9092").split(",").map(b => b.trim());
+const KAFKA_BROKERS = (process.env.KAFKA_BROKERS ?? "localhost:9092")
+  .split(",")
+  .map(b => b.trim());
 const KAFKA_CLIENT_ID = process.env.KAFKA_CLIENT_ID ?? "pos-shell-demo";
 
 // ─── Topic definitions ────────────────────────────────────────────────────────
 
 export const TOPICS = {
-  TX_CREATED:   "tx.created",
-  TX_SETTLED:   "tx.settled",
-  FRAUD_ALERT:  "fraud.alert",
+  TX_CREATED: "tx.created",
+  TX_SETTLED: "tx.settled",
+  FRAUD_ALERT: "fraud.alert",
   SIM_FAILOVER: "sim.failover",
 } as const;
 
-export type KafkaTopic = typeof TOPICS[keyof typeof TOPICS];
+export type KafkaTopic = (typeof TOPICS)[keyof typeof TOPICS];
 
 // ─── Kafka instance ───────────────────────────────────────────────────────────
 
@@ -77,7 +79,10 @@ async function getProducer(): Promise<Producer | null> {
     console.log("[Kafka] Producer connected to", KAFKA_BROKERS.join(", "));
     return producer;
   } catch (err) {
-    console.warn("[Kafka] Producer connection failed (non-critical):", (err as Error).message);
+    console.warn(
+      "[Kafka] Producer connection failed (non-critical):",
+      (err as Error).message
+    );
     producer = null;
     producerConnected = false;
     return null;
@@ -91,7 +96,7 @@ async function getProducer(): Promise<Producer | null> {
 export async function kafkaPublish(
   topic: KafkaTopic,
   key: string,
-  value: Record<string, unknown>,
+  value: Record<string, unknown>
 ): Promise<boolean> {
   if (!KAFKA_ENABLED) return false;
 
@@ -102,17 +107,19 @@ export async function kafkaPublish(
     await prod.send({
       topic,
       compression: CompressionTypes.GZIP,
-      messages: [{
-        key,
-        value: JSON.stringify({
-          ...value,
-          _meta: {
-            topic,
-            publishedAt: new Date().toISOString(),
-            clientId: KAFKA_CLIENT_ID,
-          },
-        }),
-      }],
+      messages: [
+        {
+          key,
+          value: JSON.stringify({
+            ...value,
+            _meta: {
+              topic,
+              publishedAt: new Date().toISOString(),
+              clientId: KAFKA_CLIENT_ID,
+            },
+          }),
+        },
+      ],
     });
     return true;
   } catch (err) {
@@ -133,7 +140,7 @@ export async function kafkaPublish(
 export async function kafkaConsume(
   groupId: string,
   topic: KafkaTopic,
-  handler: (key: string, value: Record<string, unknown>) => Promise<void>,
+  handler: (key: string, value: Record<string, unknown>) => Promise<void>
 ): Promise<(() => Promise<void>) | null> {
   if (!KAFKA_ENABLED) return null;
 
@@ -151,7 +158,10 @@ export async function kafkaConsume(
           const value = JSON.parse(raw) as Record<string, unknown>;
           await handler(key, value);
         } catch (err) {
-          console.warn(`[Kafka] Handler error for topic ${topic}:`, (err as Error).message);
+          console.warn(
+            `[Kafka] Handler error for topic ${topic}:`,
+            (err as Error).message
+          );
         }
       },
     });
@@ -163,7 +173,10 @@ export async function kafkaConsume(
       console.log(`[Kafka] Consumer '${groupId}' disconnected`);
     };
   } catch (err) {
-    console.warn(`[Kafka] Consumer '${groupId}' failed to start:`, (err as Error).message);
+    console.warn(
+      `[Kafka] Consumer '${groupId}' failed to start:`,
+      (err as Error).message
+    );
     await consumer?.disconnect().catch(() => {});
     return null;
   }
@@ -182,61 +195,85 @@ export async function kafkaDisconnect(): Promise<void> {
 // ─── Typed event publishers ───────────────────────────────────────────────────
 
 export interface TxCreatedEvent {
-  txRef:       string;
-  agentCode:   string;
+  txRef: string;
+  agentCode: string;
   terminalId?: string;
-  type:        string;
-  amount:      number;
-  fee:         number;
-  commission:  number;
-  customer:    string;
-  status:      string;
-  channel:     string;
+  type: string;
+  amount: number;
+  fee: number;
+  commission: number;
+  customer: string;
+  status: string;
+  channel: string;
 }
 
-export async function publishTxCreated(event: TxCreatedEvent): Promise<boolean> {
-  return kafkaPublish(TOPICS.TX_CREATED, event.txRef, event as unknown as Record<string, unknown>);
+export async function publishTxCreated(
+  event: TxCreatedEvent
+): Promise<boolean> {
+  return kafkaPublish(
+    TOPICS.TX_CREATED,
+    event.txRef,
+    event as unknown as Record<string, unknown>
+  );
 }
 
 export interface TxSettledEvent {
   settlementDate: string;
-  agentCode:      string;
-  txCount:        number;
-  totalVolume:    number;
+  agentCode: string;
+  txCount: number;
+  totalVolume: number;
   totalCommission: number;
-  failedCount:    number;
+  failedCount: number;
 }
 
-export async function publishTxSettled(event: TxSettledEvent): Promise<boolean> {
-  return kafkaPublish(TOPICS.TX_SETTLED, `${event.settlementDate}-${event.agentCode}`, event as unknown as Record<string, unknown>);
+export async function publishTxSettled(
+  event: TxSettledEvent
+): Promise<boolean> {
+  return kafkaPublish(
+    TOPICS.TX_SETTLED,
+    `${event.settlementDate}-${event.agentCode}`,
+    event as unknown as Record<string, unknown>
+  );
 }
 
 export interface FraudAlertEvent {
-  alertId:    number;
-  agentCode:  string;
-  txRef?:     string;
-  severity:   string;
-  type:       string;
-  amount:     number;
-  customer:   string;
-  reason:     string;
+  alertId: number;
+  agentCode: string;
+  txRef?: string;
+  severity: string;
+  type: string;
+  amount: number;
+  customer: string;
+  reason: string;
 }
 
-export async function publishFraudAlert(event: FraudAlertEvent): Promise<boolean> {
-  return kafkaPublish(TOPICS.FRAUD_ALERT, String(event.alertId), event as unknown as Record<string, unknown>);
+export async function publishFraudAlert(
+  event: FraudAlertEvent
+): Promise<boolean> {
+  return kafkaPublish(
+    TOPICS.FRAUD_ALERT,
+    String(event.alertId),
+    event as unknown as Record<string, unknown>
+  );
 }
 
 export interface SimFailoverEvent {
   terminalId: string;
-  agentCode:  string;
-  fromSlot:   number;
-  toSlot:     number;
-  reason:     string;
-  latencyMs:  number;
-  lossX10:    number;
-  txRef?:     string;
+  agentCode: string;
+  fromSlot: number;
+  toSlot: number;
+  reason: string;
+  latencyMs: number;
+  lossX10: number;
+  txRef?: string;
 }
 
-export async function publishSimFailover(event: SimFailoverEvent): Promise<boolean> {
-  return kafkaPublish(TOPICS.SIM_FAILOVER, event.terminalId, event as unknown as Record<string, unknown>);
+export async function publishSimFailover(
+  event: SimFailoverEvent
+): Promise<boolean> {
+  return kafkaPublish(
+    TOPICS.SIM_FAILOVER,
+    event.terminalId,
+    event as unknown as Record<string, unknown>
+  );
 }

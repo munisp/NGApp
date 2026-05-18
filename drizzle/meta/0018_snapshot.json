@@ -142,9 +142,7 @@
         "agent_push_subscriptions_endpoint_unique": {
           "name": "agent_push_subscriptions_endpoint_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "endpoint"
-          ]
+          "columns": ["endpoint"]
         }
       },
       "policies": {},
@@ -432,9 +430,7 @@
         "agents_agentCode_unique": {
           "name": "agents_agentCode_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "agentCode"
-          ]
+          "columns": ["agentCode"]
         }
       },
       "policies": {},
@@ -596,12 +592,8 @@
           "name": "api_key_usage_apiKeyId_api_keys_id_fk",
           "tableFrom": "api_key_usage",
           "tableTo": "api_keys",
-          "columnsFrom": [
-            "apiKeyId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["apiKeyId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -758,12 +750,8 @@
           "name": "api_keys_userId_users_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -773,9 +761,7 @@
         "api_keys_keyHash_unique": {
           "name": "api_keys_keyHash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keyHash"
-          ]
+          "columns": ["keyHash"]
         }
       },
       "policies": {},
@@ -1100,9 +1086,7 @@
         "chat_sessions_sessionRef_unique": {
           "name": "chat_sessions_sessionRef_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sessionRef"
-          ]
+          "columns": ["sessionRef"]
         }
       },
       "policies": {},
@@ -1521,12 +1505,8 @@
           "name": "credit_applications_agentId_agents_id_fk",
           "tableFrom": "credit_applications",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1609,12 +1589,8 @@
           "name": "credit_score_history_agentId_agents_id_fk",
           "tableFrom": "credit_score_history",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1849,12 +1825,8 @@
           "name": "customers_preferredAgentId_agents_id_fk",
           "tableFrom": "customers",
           "tableTo": "agents",
-          "columnsFrom": [
-            "preferredAgentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preferredAgentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1864,23 +1836,17 @@
         "customers_externalId_unique": {
           "name": "customers_externalId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "externalId"
-          ]
+          "columns": ["externalId"]
         },
         "customers_phone_unique": {
           "name": "customers_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         },
         "customers_keycloakSub_unique": {
           "name": "customers_keycloakSub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloakSub"
-          ]
+          "columns": ["keycloakSub"]
         }
       },
       "policies": {},
@@ -2464,9 +2430,7 @@
         "devices_serialNumber_unique": {
           "name": "devices_serialNumber_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "serialNumber"
-          ]
+          "columns": ["serialNumber"]
         }
       },
       "policies": {},
@@ -2744,9 +2708,7 @@
         "disputes_ref_unique": {
           "name": "disputes_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         }
       },
       "policies": {},
@@ -3233,12 +3195,8 @@
           "name": "fido2_challenges_userId_users_id_fk",
           "tableFrom": "fido2_challenges",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3246,12 +3204,8 @@
           "name": "fido2_challenges_agentId_agents_id_fk",
           "tableFrom": "fido2_challenges",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3261,9 +3215,7 @@
         "fido2_challenges_challenge_unique": {
           "name": "fido2_challenges_challenge_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "challenge"
-          ]
+          "columns": ["challenge"]
         }
       },
       "policies": {},
@@ -3398,12 +3350,8 @@
           "name": "fido2_credentials_userId_users_id_fk",
           "tableFrom": "fido2_credentials",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3411,12 +3359,8 @@
           "name": "fido2_credentials_agentId_agents_id_fk",
           "tableFrom": "fido2_credentials",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3426,9 +3370,7 @@
         "fido2_credentials_credentialId_unique": {
           "name": "fido2_credentials_credentialId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "credentialId"
-          ]
+          "columns": ["credentialId"]
         }
       },
       "policies": {},
@@ -4105,9 +4047,7 @@
         "inventory_items_sku_unique": {
           "name": "inventory_items_sku_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sku"
-          ]
+          "columns": ["sku"]
         }
       },
       "policies": {},
@@ -4393,9 +4333,7 @@
         "kyc_sessions_sessionRef_unique": {
           "name": "kyc_sessions_sessionRef_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sessionRef"
-          ]
+          "columns": ["sessionRef"]
         }
       },
       "policies": {},
@@ -4584,12 +4522,8 @@
           "name": "merchant_settlements_merchantId_merchants_id_fk",
           "tableFrom": "merchant_settlements",
           "tableTo": "merchants",
-          "columnsFrom": [
-            "merchantId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["merchantId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4825,12 +4759,8 @@
           "name": "merchants_preferredAgentId_agents_id_fk",
           "tableFrom": "merchants",
           "tableTo": "agents",
-          "columnsFrom": [
-            "preferredAgentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preferredAgentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4840,16 +4770,12 @@
         "merchants_merchantCode_unique": {
           "name": "merchants_merchantCode_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "merchantCode"
-          ]
+          "columns": ["merchantCode"]
         },
         "merchants_keycloakSub_unique": {
           "name": "merchants_keycloakSub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloakSub"
-          ]
+          "columns": ["keycloakSub"]
         }
       },
       "policies": {},
@@ -5089,12 +5015,8 @@
           "name": "multi_sim_profiles_terminalId_pos_terminals_id_fk",
           "tableFrom": "multi_sim_profiles",
           "tableTo": "pos_terminals",
-          "columnsFrom": [
-            "terminalId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["terminalId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -5244,9 +5166,7 @@
         "ota_releases_version_unique": {
           "name": "ota_releases_version_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "version"
-          ]
+          "columns": ["version"]
         }
       },
       "policies": {},
@@ -5357,12 +5277,8 @@
           "name": "ota_update_log_deviceId_devices_id_fk",
           "tableFrom": "ota_update_log",
           "tableTo": "devices",
-          "columnsFrom": [
-            "deviceId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["deviceId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -5370,12 +5286,8 @@
           "name": "ota_update_log_releaseId_ota_releases_id_fk",
           "tableFrom": "ota_update_log",
           "tableTo": "ota_releases",
-          "columnsFrom": [
-            "releaseId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["releaseId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -5530,9 +5442,7 @@
         "platform_settings_key_unique": {
           "name": "platform_settings_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -5736,9 +5646,7 @@
         "pos_terminals_serialNumber_unique": {
           "name": "pos_terminals_serialNumber_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "serialNumber"
-          ]
+          "columns": ["serialNumber"]
         }
       },
       "policies": {},
@@ -5877,12 +5785,8 @@
           "name": "qr_codes_agentId_agents_id_fk",
           "tableFrom": "qr_codes",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -5892,9 +5796,7 @@
         "qr_codes_code_unique": {
           "name": "qr_codes_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -6017,12 +5919,8 @@
           "name": "reversal_requests_agentId_agents_id_fk",
           "tableFrom": "reversal_requests",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -6030,12 +5928,8 @@
           "name": "reversal_requests_reviewedBy_users_id_fk",
           "tableFrom": "reversal_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewedBy"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -6129,12 +6023,8 @@
           "name": "service_records_terminalId_pos_terminals_id_fk",
           "tableFrom": "service_records",
           "tableTo": "pos_terminals",
-          "columnsFrom": [
-            "terminalId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["terminalId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -6280,12 +6170,8 @@
           "name": "shareable_links_agentId_agents_id_fk",
           "tableFrom": "shareable_links",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -6295,9 +6181,7 @@
         "shareable_links_slug_unique": {
           "name": "shareable_links_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -6482,12 +6366,8 @@
           "name": "storefront_ads_agentId_agents_id_fk",
           "tableFrom": "storefront_ads",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -6733,9 +6613,7 @@
         "tenants_slug_unique": {
           "name": "tenants_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -7123,16 +7001,12 @@
         "transactions_ref_unique": {
           "name": "transactions_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         },
         "transactions_idempotencyKey_unique": {
           "name": "transactions_idempotencyKey_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "idempotencyKey"
-          ]
+          "columns": ["idempotencyKey"]
         }
       },
       "policies": {},
@@ -7275,9 +7149,7 @@
         "users_keycloakSub_unique": {
           "name": "users_keycloakSub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloakSub"
-          ]
+          "columns": ["keycloakSub"]
         }
       },
       "policies": {},
@@ -7387,12 +7259,8 @@
           "name": "vat_records_agentId_agents_id_fk",
           "tableFrom": "vat_records",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -7484,9 +7352,7 @@
         "velocity_limits_tier_unique": {
           "name": "velocity_limits_tier_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tier"
-          ]
+          "columns": ["tier"]
         }
       },
       "policies": {},
@@ -7551,9 +7417,7 @@
         "webhook_secrets_integrationName_unique": {
           "name": "webhook_secrets_integrationName_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "integrationName"
-          ]
+          "columns": ["integrationName"]
         }
       },
       "policies": {},
@@ -7577,49 +7441,27 @@
     "public.agent_tier": {
       "name": "agent_tier",
       "schema": "public",
-      "values": [
-        "Bronze",
-        "Silver",
-        "Gold",
-        "Platinum"
-      ]
+      "values": ["Bronze", "Silver", "Gold", "Platinum"]
     },
     "public.api_key_status": {
       "name": "api_key_status",
       "schema": "public",
-      "values": [
-        "active",
-        "revoked",
-        "expired"
-      ]
+      "values": ["active", "revoked", "expired"]
     },
     "public.audit_status": {
       "name": "audit_status",
       "schema": "public",
-      "values": [
-        "success",
-        "failure",
-        "warning"
-      ]
+      "values": ["success", "failure", "warning"]
     },
     "public.chat_status": {
       "name": "chat_status",
       "schema": "public",
-      "values": [
-        "open",
-        "assigned",
-        "resolved",
-        "escalated"
-      ]
+      "values": ["open", "assigned", "resolved", "escalated"]
     },
     "public.commission_rule_type": {
       "name": "commission_rule_type",
       "schema": "public",
-      "values": [
-        "percentage",
-        "flat",
-        "tiered"
-      ]
+      "values": ["percentage", "flat", "tiered"]
     },
     "public.credit_application_status": {
       "name": "credit_application_status",
@@ -7636,47 +7478,22 @@
     "public.credit_rating": {
       "name": "credit_rating",
       "schema": "public",
-      "values": [
-        "AAA",
-        "AA",
-        "A",
-        "BBB",
-        "BB",
-        "B",
-        "CCC",
-        "D",
-        "N/A"
-      ]
+      "values": ["AAA", "AA", "A", "BBB", "BB", "B", "CCC", "D", "N/A"]
     },
     "public.customer_status": {
       "name": "customer_status",
       "schema": "public",
-      "values": [
-        "pending_kyc",
-        "active",
-        "suspended",
-        "blacklisted"
-      ]
+      "values": ["pending_kyc", "active", "suspended", "blacklisted"]
     },
     "public.email_status": {
       "name": "email_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "sent",
-        "failed",
-        "bounced"
-      ]
+      "values": ["queued", "sent", "failed", "bounced"]
     },
     "public.erp_sync_status": {
       "name": "erp_sync_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "synced",
-        "failed",
-        "skipped"
-      ]
+      "values": ["pending", "synced", "failed", "skipped"]
     },
     "public.erp_type": {
       "name": "erp_type",
@@ -7694,10 +7511,7 @@
     "public.fido2_status": {
       "name": "fido2_status",
       "schema": "public",
-      "values": [
-        "active",
-        "revoked"
-      ]
+      "values": ["active", "revoked"]
     },
     "public.fraud_rule_category": {
       "name": "fraud_rule_category",
@@ -7715,45 +7529,22 @@
     "public.fraud_severity": {
       "name": "fraud_severity",
       "schema": "public",
-      "values": [
-        "critical",
-        "high",
-        "medium",
-        "low"
-      ]
+      "values": ["critical", "high", "medium", "low"]
     },
     "public.fraud_status": {
       "name": "fraud_status",
       "schema": "public",
-      "values": [
-        "open",
-        "investigating",
-        "escalated",
-        "dismissed",
-        "resolved"
-      ]
+      "values": ["open", "investigating", "escalated", "dismissed", "resolved"]
     },
     "public.inventory_status": {
       "name": "inventory_status",
       "schema": "public",
-      "values": [
-        "in_stock",
-        "low_stock",
-        "out_of_stock",
-        "discontinued"
-      ]
+      "values": ["in_stock", "low_stock", "out_of_stock", "discontinued"]
     },
     "public.link_status": {
       "name": "link_status",
       "schema": "public",
-      "values": [
-        "active",
-        "expired",
-        "paused",
-        "deleted",
-        "used",
-        "revoked"
-      ]
+      "values": ["active", "expired", "paused", "deleted", "used", "revoked"]
     },
     "public.link_type": {
       "name": "link_type",
@@ -7770,13 +7561,7 @@
     "public.loyalty_type": {
       "name": "loyalty_type",
       "schema": "public",
-      "values": [
-        "earned",
-        "redeemed",
-        "bonus",
-        "penalty",
-        "challenge"
-      ]
+      "values": ["earned", "redeemed", "bonus", "penalty", "challenge"]
     },
     "public.merchant_category": {
       "name": "merchant_category",
@@ -7795,31 +7580,17 @@
     "public.merchant_status": {
       "name": "merchant_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "active",
-        "suspended",
-        "closed"
-      ]
+      "values": ["pending", "active", "suspended", "closed"]
     },
     "public.mqtt_qos": {
       "name": "mqtt_qos",
       "schema": "public",
-      "values": [
-        "0",
-        "1",
-        "2"
-      ]
+      "values": ["0", "1", "2"]
     },
     "public.qr_code_status": {
       "name": "qr_code_status",
       "schema": "public",
-      "values": [
-        "active",
-        "used",
-        "expired",
-        "revoked"
-      ]
+      "values": ["active", "used", "expired", "revoked"]
     },
     "public.qr_code_type": {
       "name": "qr_code_type",
@@ -7849,20 +7620,12 @@
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "user",
-        "admin",
-        "supervisor"
-      ]
+      "values": ["user", "admin", "supervisor"]
     },
     "public.sender_type": {
       "name": "sender_type",
       "schema": "public",
-      "values": [
-        "agent",
-        "support",
-        "system"
-      ]
+      "values": ["agent", "support", "system"]
     },
     "public.sim_status": {
       "name": "sim_status",
@@ -7879,33 +7642,17 @@
     "public.tenant_status": {
       "name": "tenant_status",
       "schema": "public",
-      "values": [
-        "trial",
-        "active",
-        "suspended",
-        "churned"
-      ]
+      "values": ["trial", "active", "suspended", "churned"]
     },
     "public.topup_status": {
       "name": "topup_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "approved",
-        "rejected"
-      ]
+      "values": ["pending", "approved", "rejected"]
     },
     "public.tx_channel": {
       "name": "tx_channel",
       "schema": "public",
-      "values": [
-        "Cash",
-        "Card",
-        "USSD",
-        "QR",
-        "NFC",
-        "App"
-      ]
+      "values": ["Cash", "Card", "USSD", "QR", "NFC", "App"]
     },
     "public.tx_status": {
       "name": "tx_status",
@@ -7938,11 +7685,7 @@
     "public.vat_rate_type": {
       "name": "vat_rate_type",
       "schema": "public",
-      "values": [
-        "standard",
-        "zero",
-        "exempt"
-      ]
+      "values": ["standard", "zero", "exempt"]
     }
   },
   "schemas": {},

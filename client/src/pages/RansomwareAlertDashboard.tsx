@@ -8,17 +8,50 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ShieldAlert, AlertTriangle, Shield, Eye, CheckCircle2,
-  XCircle, Clock, Skull, FileWarning, Database, Globe,
-  Lock, RefreshCw, Loader2, Bell, BellRing, Search
+  ShieldAlert,
+  AlertTriangle,
+  Shield,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Skull,
+  FileWarning,
+  Database,
+  Globe,
+  Lock,
+  RefreshCw,
+  Loader2,
+  Bell,
+  BellRing,
+  Search,
 } from "lucide-react";
 
 function timeAgo(ts: number): string {
@@ -29,39 +62,94 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86400000)}d ago`;
 }
 
-const severityConfig: Record<string, { color: string; bgColor: string; icon: React.ReactNode; pulse: boolean }> = {
-  critical: { color: "text-red-600", bgColor: "bg-red-500/10 border-red-500/30", icon: <Skull className="h-4 w-4" />, pulse: true },
-  high: { color: "text-orange-600", bgColor: "bg-orange-500/10 border-orange-500/30", icon: <AlertTriangle className="h-4 w-4" />, pulse: true },
-  medium: { color: "text-yellow-600", bgColor: "bg-yellow-500/10 border-yellow-500/30", icon: <ShieldAlert className="h-4 w-4" />, pulse: false },
-  low: { color: "text-blue-600", bgColor: "bg-blue-500/10 border-blue-500/30", icon: <Shield className="h-4 w-4" />, pulse: false },
+const severityConfig: Record<
+  string,
+  { color: string; bgColor: string; icon: React.ReactNode; pulse: boolean }
+> = {
+  critical: {
+    color: "text-red-600",
+    bgColor: "bg-red-500/10 border-red-500/30",
+    icon: <Skull className="h-4 w-4" />,
+    pulse: true,
+  },
+  high: {
+    color: "text-orange-600",
+    bgColor: "bg-orange-500/10 border-orange-500/30",
+    icon: <AlertTriangle className="h-4 w-4" />,
+    pulse: true,
+  },
+  medium: {
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-500/10 border-yellow-500/30",
+    icon: <ShieldAlert className="h-4 w-4" />,
+    pulse: false,
+  },
+  low: {
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10 border-blue-500/30",
+    icon: <Shield className="h-4 w-4" />,
+    pulse: false,
+  },
 };
 
-const categoryConfig: Record<string, { icon: React.ReactNode; label: string }> = {
-  ransomware: { icon: <Skull className="h-4 w-4" />, label: "Ransomware" },
-  bulk_operation: { icon: <Database className="h-4 w-4" />, label: "Bulk Operation" },
-  file_integrity: { icon: <FileWarning className="h-4 w-4" />, label: "File Integrity" },
-  exfiltration: { icon: <Globe className="h-4 w-4" />, label: "Exfiltration" },
-  brute_force: { icon: <Lock className="h-4 w-4" />, label: "Brute Force" },
-  canary_trigger: { icon: <Search className="h-4 w-4" />, label: "Canary Trigger" },
-};
+const categoryConfig: Record<string, { icon: React.ReactNode; label: string }> =
+  {
+    ransomware: { icon: <Skull className="h-4 w-4" />, label: "Ransomware" },
+    bulk_operation: {
+      icon: <Database className="h-4 w-4" />,
+      label: "Bulk Operation",
+    },
+    file_integrity: {
+      icon: <FileWarning className="h-4 w-4" />,
+      label: "File Integrity",
+    },
+    exfiltration: {
+      icon: <Globe className="h-4 w-4" />,
+      label: "Exfiltration",
+    },
+    brute_force: { icon: <Lock className="h-4 w-4" />, label: "Brute Force" },
+    canary_trigger: {
+      icon: <Search className="h-4 w-4" />,
+      label: "Canary Trigger",
+    },
+  };
 
 const statusConfig: Record<string, { color: string; label: string }> = {
-  active: { color: "bg-red-500/10 text-red-600 border-red-500/20", label: "Active" },
-  acknowledged: { color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20", label: "Acknowledged" },
-  investigating: { color: "bg-blue-500/10 text-blue-600 border-blue-500/20", label: "Investigating" },
-  resolved: { color: "bg-green-500/10 text-green-600 border-green-500/20", label: "Resolved" },
-  false_positive: { color: "bg-gray-500/10 text-gray-600 border-gray-500/20", label: "False Positive" },
+  active: {
+    color: "bg-red-500/10 text-red-600 border-red-500/20",
+    label: "Active",
+  },
+  acknowledged: {
+    color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    label: "Acknowledged",
+  },
+  investigating: {
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    label: "Investigating",
+  },
+  resolved: {
+    color: "bg-green-500/10 text-green-600 border-green-500/20",
+    label: "Resolved",
+  },
+  false_positive: {
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    label: "False Positive",
+  },
 };
 
 export default function RansomwareAlertDashboard() {
-  
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
-  const [actionDialog, setActionDialog] = useState<{ type: "acknowledge" | "investigate" | "resolve"; alertId: string } | null>(null);
+  const [actionDialog, setActionDialog] = useState<{
+    type: "acknowledge" | "investigate" | "resolve";
+    alertId: string;
+  } | null>(null);
   const [actionNote, setActionNote] = useState("");
-  const [resolution, setResolution] = useState<"resolved" | "false_positive">("resolved");
+  const [resolution, setResolution] = useState<"resolved" | "false_positive">(
+    "resolved"
+  );
 
   const stats = trpc.ransomwareAlerts.getStats.useQuery();
   const alerts = trpc.ransomwareAlerts.getAlerts.useQuery({
@@ -82,7 +170,9 @@ export default function RansomwareAlertDashboard() {
 
   const investigateMut = trpc.ransomwareAlerts.investigate.useMutation({
     onSuccess: () => {
-      toast.success("Investigation started: The alert is now under investigation.");
+      toast.success(
+        "Investigation started: The alert is now under investigation."
+      );
       alerts.refetch();
       stats.refetch();
       setActionDialog(null);
@@ -131,7 +221,11 @@ export default function RansomwareAlertDashboard() {
     } else if (type === "investigate") {
       investigateMut.mutate({ alertId, note: actionNote || undefined });
     } else if (type === "resolve") {
-      resolveMut.mutate({ alertId, resolution, note: actionNote || "Resolved" });
+      resolveMut.mutate({
+        alertId,
+        resolution,
+        note: actionNote || "Resolved",
+      });
     }
   }, [actionDialog, actionNote, resolution]);
 
@@ -145,7 +239,8 @@ export default function RansomwareAlertDashboard() {
             Security Alert Center
           </h1>
           <p className="text-muted-foreground mt-1">
-            Real-time monitoring of ransomware, bulk operations, and security threats
+            Real-time monitoring of ransomware, bulk operations, and security
+            threats
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -156,11 +251,19 @@ export default function RansomwareAlertDashboard() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
               </span>
               <span className="text-sm font-semibold text-red-600">
-                {stats.data?.activeCount} Active Alert{(stats.data?.activeCount ?? 0) !== 1 ? "s" : ""}
+                {stats.data?.activeCount} Active Alert
+                {(stats.data?.activeCount ?? 0) !== 1 ? "s" : ""}
               </span>
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={() => { stats.refetch(); alerts.refetch(); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              stats.refetch();
+              alerts.refetch();
+            }}
+          >
             <RefreshCw className="h-4 w-4 mr-1" /> Refresh
           </Button>
         </div>
@@ -172,13 +275,20 @@ export default function RansomwareAlertDashboard() {
           const sc = severityConfig[sev];
           const count = stats.data?.bySeverity[sev] ?? 0;
           return (
-            <Card key={sev} className={`${sc.bgColor} border cursor-pointer transition-all hover:scale-[1.02]`}
-              onClick={() => setSeverityFilter(sev)}>
+            <Card
+              key={sev}
+              className={`${sc.bgColor} border cursor-pointer transition-all hover:scale-[1.02]`}
+              onClick={() => setSeverityFilter(sev)}
+            >
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={sc.color}>{sc.icon}</span>
-                    <span className={`text-sm font-medium capitalize ${sc.color}`}>{sev}</span>
+                    <span
+                      className={`text-sm font-medium capitalize ${sc.color}`}
+                    >
+                      {sev}
+                    </span>
                   </div>
                   {sc.pulse && count > 0 && (
                     <span className="relative flex h-2 w-2">
@@ -187,7 +297,9 @@ export default function RansomwareAlertDashboard() {
                     </span>
                   )}
                 </div>
-                <div className={`text-3xl font-bold mt-2 ${sc.color}`}>{count}</div>
+                <div className={`text-3xl font-bold mt-2 ${sc.color}`}>
+                  {count}
+                </div>
               </CardContent>
             </Card>
           );
@@ -210,7 +322,9 @@ export default function RansomwareAlertDashboard() {
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
                   className={`flex items-center gap-2 p-3 rounded-lg border transition-all hover:bg-muted/50 ${
-                    categoryFilter === cat ? "bg-primary/10 border-primary/30" : ""
+                    categoryFilter === cat
+                      ? "bg-primary/10 border-primary/30"
+                      : ""
                   }`}
                 >
                   <span className="text-muted-foreground">{cfg.icon}</span>
@@ -228,7 +342,9 @@ export default function RansomwareAlertDashboard() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="ransomware">Ransomware</SelectItem>
@@ -240,7 +356,9 @@ export default function RansomwareAlertDashboard() {
           </SelectContent>
         </Select>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Severity" /></SelectTrigger>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Severity" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Severity</SelectItem>
             <SelectItem value="critical">Critical</SelectItem>
@@ -250,7 +368,9 @@ export default function RansomwareAlertDashboard() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -260,8 +380,18 @@ export default function RansomwareAlertDashboard() {
             <SelectItem value="false_positive">False Positive</SelectItem>
           </SelectContent>
         </Select>
-        {(categoryFilter !== "all" || severityFilter !== "all" || statusFilter !== "all") && (
-          <Button variant="ghost" size="sm" onClick={() => { setCategoryFilter("all"); setSeverityFilter("all"); setStatusFilter("all"); }}>
+        {(categoryFilter !== "all" ||
+          severityFilter !== "all" ||
+          statusFilter !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setCategoryFilter("all");
+              setSeverityFilter("all");
+              setStatusFilter("all");
+            }}
+          >
             Clear filters
           </Button>
         )}
@@ -271,45 +401,109 @@ export default function RansomwareAlertDashboard() {
       <div className="space-y-3">
         {alerts.data?.items.map((alert: any) => {
           const sev = severityConfig[alert.severity] ?? severityConfig.low;
-          const cat = categoryConfig[alert.category] ?? { icon: <Shield className="h-4 w-4" />, label: alert.category };
+          const cat = categoryConfig[alert.category] ?? {
+            icon: <Shield className="h-4 w-4" />,
+            label: alert.category,
+          };
           const st = statusConfig[alert.status] ?? statusConfig.active;
 
           return (
-            <Card key={alert.id} className={`${sev.bgColor} border transition-all hover:shadow-md cursor-pointer`}
-              onClick={() => setSelectedAlert(alert)}>
+            <Card
+              key={alert.id}
+              className={`${sev.bgColor} border transition-all hover:shadow-md cursor-pointer`}
+              onClick={() => setSelectedAlert(alert)}
+            >
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={sev.color}>{sev.icon}</span>
-                      <Badge variant="outline" className={`${sev.color} capitalize text-xs`}>{alert.severity}</Badge>
-                      <Badge variant="outline" className="text-xs gap-1">{cat.icon} {cat.label}</Badge>
-                      <Badge variant="outline" className={`${st.color} text-xs`}>{st.label}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={`${sev.color} capitalize text-xs`}
+                      >
+                        {alert.severity}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        {cat.icon} {cat.label}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`${st.color} text-xs`}
+                      >
+                        {st.label}
+                      </Badge>
                     </div>
-                    <h3 className="font-semibold text-sm mt-1">{alert.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>
+                    <h3 className="font-semibold text-sm mt-1">
+                      {alert.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {alert.description}
+                    </p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(alert.triggeredAt)}</span>
-                      {alert.sourceIp && <span className="flex items-center gap-1"><Globe className="h-3 w-3" /> {alert.sourceIp}</span>}
-                      {alert.userName && <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {alert.userName}</span>}
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />{" "}
+                        {timeAgo(alert.triggeredAt)}
+                      </span>
+                      {alert.sourceIp && (
+                        <span className="flex items-center gap-1">
+                          <Globe className="h-3 w-3" /> {alert.sourceIp}
+                        </span>
+                      )}
+                      {alert.userName && (
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" /> {alert.userName}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     {alert.status === "active" && (
                       <>
-                        <Button size="sm" variant="outline" className="text-xs h-7"
-                          onClick={(e) => { e.stopPropagation(); setActionDialog({ type: "acknowledge", alertId: alert.id }); }}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setActionDialog({
+                              type: "acknowledge",
+                              alertId: alert.id,
+                            });
+                          }}
+                        >
                           Acknowledge
                         </Button>
-                        <Button size="sm" variant="outline" className="text-xs h-7"
-                          onClick={(e) => { e.stopPropagation(); setActionDialog({ type: "investigate", alertId: alert.id }); }}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setActionDialog({
+                              type: "investigate",
+                              alertId: alert.id,
+                            });
+                          }}
+                        >
                           Investigate
                         </Button>
                       </>
                     )}
-                    {(alert.status === "acknowledged" || alert.status === "investigating") && (
-                      <Button size="sm" variant="outline" className="text-xs h-7"
-                        onClick={(e) => { e.stopPropagation(); setActionDialog({ type: "resolve", alertId: alert.id }); }}>
+                    {(alert.status === "acknowledged" ||
+                      alert.status === "investigating") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setActionDialog({
+                            type: "resolve",
+                            alertId: alert.id,
+                          });
+                        }}
+                      >
                         Resolve
                       </Button>
                     )}
@@ -325,14 +519,19 @@ export default function RansomwareAlertDashboard() {
             <CardContent className="py-12 text-center">
               <Shield className="h-12 w-12 mx-auto text-green-500 mb-3" />
               <p className="text-lg font-semibold">No alerts found</p>
-              <p className="text-sm text-muted-foreground mt-1">All systems are operating normally</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                All systems are operating normally
+              </p>
             </CardContent>
           </Card>
         )}
       </div>
 
       {/* Alert Detail Dialog */}
-      <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
+      <Dialog
+        open={!!selectedAlert}
+        onOpenChange={() => setSelectedAlert(null)}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           {selectedAlert && (
             <>
@@ -341,17 +540,25 @@ export default function RansomwareAlertDashboard() {
                   {severityConfig[selectedAlert.severity]?.icon}
                   {selectedAlert.title}
                 </DialogTitle>
-                <DialogDescription>{selectedAlert.description}</DialogDescription>
+                <DialogDescription>
+                  {selectedAlert.description}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Category</p>
-                    <p className="font-medium capitalize">{selectedAlert.category.replace(/_/g, " ")}</p>
+                    <p className="font-medium capitalize">
+                      {selectedAlert.category.replace(/_/g, " ")}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Severity</p>
-                    <p className={`font-medium capitalize ${severityConfig[selectedAlert.severity]?.color}`}>{selectedAlert.severity}</p>
+                    <p
+                      className={`font-medium capitalize ${severityConfig[selectedAlert.severity]?.color}`}
+                    >
+                      {selectedAlert.severity}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Source</p>
@@ -359,42 +566,60 @@ export default function RansomwareAlertDashboard() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Source IP</p>
-                    <p className="font-medium font-mono">{selectedAlert.sourceIp ?? "N/A"}</p>
+                    <p className="font-medium font-mono">
+                      {selectedAlert.sourceIp ?? "N/A"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">User</p>
-                    <p className="font-medium">{selectedAlert.userName ?? "N/A"}</p>
+                    <p className="font-medium">
+                      {selectedAlert.userName ?? "N/A"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Triggered</p>
-                    <p className="font-medium">{new Date(selectedAlert.triggeredAt).toLocaleString()}</p>
+                    <p className="font-medium">
+                      {new Date(selectedAlert.triggeredAt).toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
-                {selectedAlert.metadata && Object.keys(selectedAlert.metadata).length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold mb-2">Technical Details</p>
-                    <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
-                      {Object.entries(selectedAlert.metadata).map(([k, v]) => (
-                        <div key={k} className="flex gap-2">
-                          <span className="text-muted-foreground">{k}:</span>
-                          <span>{String(v)}</span>
-                        </div>
-                      ))}
+                {selectedAlert.metadata &&
+                  Object.keys(selectedAlert.metadata).length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold mb-2">
+                        Technical Details
+                      </p>
+                      <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                        {Object.entries(selectedAlert.metadata).map(
+                          ([k, v]) => (
+                            <div key={k} className="flex gap-2">
+                              <span className="text-muted-foreground">
+                                {k}:
+                              </span>
+                              <span>{String(v)}</span>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {selectedAlert.actionsTaken?.length > 0 && (
                   <div>
                     <p className="text-sm font-semibold mb-2">Actions Taken</p>
                     <ul className="space-y-1">
-                      {selectedAlert.actionsTaken.map((action: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                          {action}
-                        </li>
-                      ))}
+                      {selectedAlert.actionsTaken.map(
+                        (action: string, i: number) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                            {action}
+                          </li>
+                        )
+                      )}
                     </ul>
                   </div>
                 )}
@@ -405,7 +630,13 @@ export default function RansomwareAlertDashboard() {
       </Dialog>
 
       {/* Action Dialog */}
-      <Dialog open={!!actionDialog} onOpenChange={() => { setActionDialog(null); setActionNote(""); }}>
+      <Dialog
+        open={!!actionDialog}
+        onOpenChange={() => {
+          setActionDialog(null);
+          setActionNote("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -414,17 +645,27 @@ export default function RansomwareAlertDashboard() {
               {actionDialog?.type === "resolve" && "Resolve Alert"}
             </DialogTitle>
             <DialogDescription>
-              {actionDialog?.type === "acknowledge" && "Confirm you have seen this alert and are aware of the threat."}
-              {actionDialog?.type === "investigate" && "Mark this alert as under active investigation."}
-              {actionDialog?.type === "resolve" && "Close this alert with a resolution."}
+              {actionDialog?.type === "acknowledge" &&
+                "Confirm you have seen this alert and are aware of the threat."}
+              {actionDialog?.type === "investigate" &&
+                "Mark this alert as under active investigation."}
+              {actionDialog?.type === "resolve" &&
+                "Close this alert with a resolution."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {actionDialog?.type === "resolve" && (
-              <Select value={resolution} onValueChange={(v: any) => setResolution(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={resolution}
+                onValueChange={(v: any) => setResolution(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="resolved">Resolved (Threat mitigated)</SelectItem>
+                  <SelectItem value="resolved">
+                    Resolved (Threat mitigated)
+                  </SelectItem>
                   <SelectItem value="false_positive">False Positive</SelectItem>
                 </SelectContent>
               </Select>
@@ -432,14 +673,31 @@ export default function RansomwareAlertDashboard() {
             <Textarea
               placeholder="Add a note (optional)..."
               value={actionNote}
-              onChange={(e) => setActionNote(e.target.value)}
+              onChange={e => setActionNote(e.target.value)}
               rows={3}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setActionDialog(null); setActionNote(""); }}>Cancel</Button>
-            <Button onClick={handleAction} disabled={acknowledgeMut.isPending || investigateMut.isPending || resolveMut.isPending}>
-              {(acknowledgeMut.isPending || investigateMut.isPending || resolveMut.isPending) && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActionDialog(null);
+                setActionNote("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAction}
+              disabled={
+                acknowledgeMut.isPending ||
+                investigateMut.isPending ||
+                resolveMut.isPending
+              }
+            >
+              {(acknowledgeMut.isPending ||
+                investigateMut.isPending ||
+                resolveMut.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
               Confirm

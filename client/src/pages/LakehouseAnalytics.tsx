@@ -18,18 +18,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, Legend,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  Legend,
 } from "recharts";
 import {
-  Database, Download, RefreshCw, MapPin, Layers, Search,
-  TrendingUp, AlertTriangle, Activity, Play, FileText,
-  ChevronRight, Clock, CheckCircle, XCircle,
+  Database,
+  Download,
+  RefreshCw,
+  MapPin,
+  Layers,
+  Search,
+  TrendingUp,
+  AlertTriangle,
+  Activity,
+  Play,
+  FileText,
+  ChevronRight,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -40,40 +76,59 @@ function fmtPct(v: number) {
   return `${(v * 100).toFixed(1)}%`;
 }
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-NG", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 // ── Snapshot Browser ──────────────────────────────────────────────────────────
-type BucketKey = "transactions" | "settlements" | "fraud_events" | "agent_metrics";
+type BucketKey =
+  | "transactions"
+  | "settlements"
+  | "fraud_events"
+  | "agent_metrics";
 
 function SnapshotBrowser() {
   const [bucket, setBucket] = useState<BucketKey>("transactions");
-  const [datePrefix, setDatePrefix] = useState(new Date().toISOString().slice(0, 7));
+  const [datePrefix, setDatePrefix] = useState(
+    new Date().toISOString().slice(0, 7)
+  );
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const { data: snapshots, isLoading, refetch } = trpc.lakehouse.listSnapshots.useQuery(
+  const {
+    data: snapshots,
+    isLoading,
+    refetch,
+  } = trpc.lakehouse.listSnapshots.useQuery(
     { bucket, datePrefix },
     { retry: false }
   );
 
-  const { data: downloadUrl, isLoading: urlLoading } = trpc.lakehouse.getDownloadUrl.useQuery(
-    { bucket, key: selectedKey ?? "", expiresInSeconds: 3600 },
-    { enabled: !!selectedKey, retry: false }
-  );
+  const { data: downloadUrl, isLoading: urlLoading } =
+    trpc.lakehouse.getDownloadUrl.useQuery(
+      { bucket, key: selectedKey ?? "", expiresInSeconds: 3600 },
+      { enabled: !!selectedKey, retry: false }
+    );
 
   const triggerTx = trpc.lakehouse.triggerTransactionSnapshot.useMutation({
-    onSuccess: (d) => {
-      toast.success("Snapshot uploaded", { description: `${d.recordCount} records → ${d.key ?? "MinIO"}` });
+    onSuccess: d => {
+      toast.success("Snapshot uploaded", {
+        description: `${d.recordCount} records → ${d.key ?? "MinIO"}`,
+      });
       refetch();
     },
-    onError: (e) => toast.error("Snapshot failed", { description: e.message }),
+    onError: e => toast.error("Snapshot failed", { description: e.message }),
   });
 
   const triggerFraud = trpc.lakehouse.triggerFraudSnapshot.useMutation({
-    onSuccess: (d) => {
-      toast.success("Fraud snapshot uploaded", { description: `${d.recordCount} records` });
+    onSuccess: d => {
+      toast.success("Fraud snapshot uploaded", {
+        description: `${d.recordCount} records`,
+      });
       refetch();
     },
-    onError: (e) => toast.error("Snapshot failed", { description: e.message }),
+    onError: e => toast.error("Snapshot failed", { description: e.message }),
   });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -82,8 +137,10 @@ function SnapshotBrowser() {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Bucket</label>
-          <Select value={bucket} onValueChange={(v) => setBucket(v as BucketKey)}>
+          <label className="text-xs font-medium text-muted-foreground">
+            Bucket
+          </label>
+          <Select value={bucket} onValueChange={v => setBucket(v as BucketKey)}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -96,15 +153,22 @@ function SnapshotBrowser() {
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Date Prefix (YYYY-MM)</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Date Prefix (YYYY-MM)
+          </label>
           <Input
             className="w-36"
             value={datePrefix}
-            onChange={(e) => setDatePrefix(e.target.value)}
+            onChange={e => setDatePrefix(e.target.value)}
             placeholder="2026-04"
           />
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
           <RefreshCw className="w-4 h-4 mr-1" /> Refresh
         </Button>
         <div className="ml-auto flex gap-2">
@@ -130,11 +194,17 @@ function SnapshotBrowser() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading snapshots…</div>
+        <div className="text-center py-8 text-muted-foreground">
+          Loading snapshots…
+        </div>
       ) : !snapshots?.keys.length ? (
         <div className="text-center py-8 text-muted-foreground">
-          No snapshots found for <strong>{bucket}</strong> / <strong>{datePrefix}</strong>
-          <p className="text-xs mt-1">MinIO may not be running in dev mode — use the trigger buttons above to create snapshots.</p>
+          No snapshots found for <strong>{bucket}</strong> /{" "}
+          <strong>{datePrefix}</strong>
+          <p className="text-xs mt-1">
+            MinIO may not be running in dev mode — use the trigger buttons above
+            to create snapshots.
+          </p>
         </div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -149,19 +219,35 @@ function SnapshotBrowser() {
               {snapshots.keys.map((key: any) => (
                 <TableRow
                   key={key}
-                  className={selectedKey === key ? "bg-accent/40" : "cursor-pointer hover:bg-accent/20"}
+                  className={
+                    selectedKey === key
+                      ? "bg-accent/40"
+                      : "cursor-pointer hover:bg-accent/20"
+                  }
                   onClick={() => setSelectedKey(key)}
                 >
                   <TableCell className="font-mono text-xs">{key}</TableCell>
                   <TableCell>
                     {selectedKey === key && downloadUrl?.url ? (
-                      <a href={downloadUrl.url} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" disabled={urlLoading}>
+                      <a
+                        href={downloadUrl.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={urlLoading}
+                        >
                           <Download className="w-3 h-3 mr-1" /> Download
                         </Button>
                       </a>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => setSelectedKey(key)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedKey(key)}
+                      >
                         <ChevronRight className="w-4 h-4" />
                       </Button>
                     )}
@@ -182,15 +268,20 @@ function SpatialHeatmap() {
   const [cellDeg, setCellDeg] = useState(0.1);
   const [txType, setTxType] = useState<string>("");
 
-  const { data: heatmap, isLoading, refetch } = trpc.lakehouse.transactionHeatmap.useQuery(
+  const {
+    data: heatmap,
+    isLoading,
+    refetch,
+  } = trpc.lakehouse.transactionHeatmap.useQuery(
     { hours, cellDeg, txType: txType || undefined },
     { retry: false }
   );
 
-  const { data: agentDensity, isLoading: densityLoading } = trpc.lakehouse.agentDensityGrid.useQuery(
-    { swLat: 4.0, swLon: 2.7, neLat: 13.9, neLon: 14.7, cellDeg },
-    { retry: false }
-  );
+  const { data: agentDensity, isLoading: densityLoading } =
+    trpc.lakehouse.agentDensityGrid.useQuery(
+      { swLat: 4.0, swLon: 2.7, neLat: 13.9, neLon: 14.7, cellDeg },
+      { retry: false }
+    );
 
   // Normalize for scatter chart
   const heatmapData = useMemo(() => {
@@ -219,8 +310,13 @@ function SpatialHeatmap() {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Time Window</label>
-          <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
+          <label className="text-xs font-medium text-muted-foreground">
+            Time Window
+          </label>
+          <Select
+            value={String(hours)}
+            onValueChange={v => setHours(Number(v))}
+          >
             <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
@@ -233,8 +329,13 @@ function SpatialHeatmap() {
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Grid Cell (°)</label>
-          <Select value={String(cellDeg)} onValueChange={(v) => setCellDeg(Number(v))}>
+          <label className="text-xs font-medium text-muted-foreground">
+            Grid Cell (°)
+          </label>
+          <Select
+            value={String(cellDeg)}
+            onValueChange={v => setCellDeg(Number(v))}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -246,8 +347,13 @@ function SpatialHeatmap() {
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Tx Type</label>
-          <Select value={txType || "all"} onValueChange={(v) => setTxType(v === "all" ? "" : v)}>
+          <label className="text-xs font-medium text-muted-foreground">
+            Tx Type
+          </label>
+          <Select
+            value={txType || "all"}
+            onValueChange={v => setTxType(v === "all" ? "" : v)}
+          >
             <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
@@ -273,23 +379,41 @@ function SpatialHeatmap() {
               <Activity className="w-4 h-4 text-blue-500" />
               Transaction Density Heatmap
               {(heatmap as any)?.source === "postgresql-fallback" && (
-                <Badge variant="outline" className="text-xs ml-auto">PostgreSQL fallback</Badge>
+                <Badge variant="outline" className="text-xs ml-auto">
+                  PostgreSQL fallback
+                </Badge>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">Loading…</div>
+              <div className="h-64 flex items-center justify-center text-muted-foreground">
+                Loading…
+              </div>
             ) : heatmapData.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
                 No transaction data with location for this period
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                <ScatterChart
+                  margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="x" name="Longitude" type="number" domain={["auto", "auto"]} tick={{ fontSize: 10 }} />
-                  <YAxis dataKey="y" name="Latitude" type="number" domain={["auto", "auto"]} tick={{ fontSize: 10 }} />
+                  <XAxis
+                    dataKey="x"
+                    name="Longitude"
+                    type="number"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis
+                    dataKey="y"
+                    name="Latitude"
+                    type="number"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 10 }}
+                  />
                   <ZAxis dataKey="z" range={[20, 400]} />
                   <Tooltip
                     cursor={{ strokeDasharray: "3 3" }}
@@ -298,14 +422,25 @@ function SpatialHeatmap() {
                       const d = payload[0]?.payload;
                       return (
                         <div className="bg-background border rounded p-2 text-xs shadow">
-                          <p>Lat: {d?.y?.toFixed(2)}, Lon: {d?.x?.toFixed(2)}</p>
-                          <p>Transactions: <strong>{d?.count}</strong></p>
-                          <p>Volume: <strong>{fmtNGN(d?.volume ?? 0)}</strong></p>
+                          <p>
+                            Lat: {d?.y?.toFixed(2)}, Lon: {d?.x?.toFixed(2)}
+                          </p>
+                          <p>
+                            Transactions: <strong>{d?.count}</strong>
+                          </p>
+                          <p>
+                            Volume: <strong>{fmtNGN(d?.volume ?? 0)}</strong>
+                          </p>
                         </div>
                       );
                     }}
                   />
-                  <Scatter name="Transactions" data={heatmapData} fill="#3b82f6" fillOpacity={0.6} />
+                  <Scatter
+                    name="Transactions"
+                    data={heatmapData}
+                    fill="#3b82f6"
+                    fillOpacity={0.6}
+                  />
                 </ScatterChart>
               </ResponsiveContainer>
             )}
@@ -318,24 +453,44 @@ function SpatialHeatmap() {
               <MapPin className="w-4 h-4 text-green-500" />
               Agent Density Grid (Nigeria)
               {(agentDensity as any)?.source === "postgresql-fallback" && (
-                <Badge variant="outline" className="text-xs ml-auto">PostgreSQL fallback</Badge>
+                <Badge variant="outline" className="text-xs ml-auto">
+                  PostgreSQL fallback
+                </Badge>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {densityLoading ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">Loading…</div>
+              <div className="h-64 flex items-center justify-center text-muted-foreground">
+                Loading…
+              </div>
             ) : densityData.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
                 No agent location data available
-                <p className="text-xs mt-1">Agents need GPS coordinates in device_locations table</p>
+                <p className="text-xs mt-1">
+                  Agents need GPS coordinates in device_locations table
+                </p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                <ScatterChart
+                  margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="x" name="Longitude" type="number" domain={["auto", "auto"]} tick={{ fontSize: 10 }} />
-                  <YAxis dataKey="y" name="Latitude" type="number" domain={["auto", "auto"]} tick={{ fontSize: 10 }} />
+                  <XAxis
+                    dataKey="x"
+                    name="Longitude"
+                    type="number"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis
+                    dataKey="y"
+                    name="Latitude"
+                    type="number"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 10 }}
+                  />
                   <ZAxis dataKey="z" range={[20, 300]} />
                   <Tooltip
                     content={({ payload }) => {
@@ -343,13 +498,22 @@ function SpatialHeatmap() {
                       const d = payload[0]?.payload;
                       return (
                         <div className="bg-background border rounded p-2 text-xs shadow">
-                          <p>Lat: {d?.y?.toFixed(2)}, Lon: {d?.x?.toFixed(2)}</p>
-                          <p>Active Agents: <strong>{d?.count}</strong></p>
+                          <p>
+                            Lat: {d?.y?.toFixed(2)}, Lon: {d?.x?.toFixed(2)}
+                          </p>
+                          <p>
+                            Active Agents: <strong>{d?.count}</strong>
+                          </p>
                         </div>
                       );
                     }}
                   />
-                  <Scatter name="Agents" data={densityData} fill="#22c55e" fillOpacity={0.7} />
+                  <Scatter
+                    name="Agents"
+                    data={densityData}
+                    fill="#22c55e"
+                    fillOpacity={0.7}
+                  />
                 </ScatterChart>
               </ResponsiveContainer>
             )}
@@ -358,8 +522,10 @@ function SpatialHeatmap() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Spatial queries use Apache Sedona PostGIS when the Python lakehouse-service is available,
-        falling back to haversine/PostgreSQL aggregation. Grid cells represent ~{Math.round(cellDeg * 111)}km × {Math.round(cellDeg * 111)}km areas.
+        Spatial queries use Apache Sedona PostGIS when the Python
+        lakehouse-service is available, falling back to haversine/PostgreSQL
+        aggregation. Grid cells represent ~{Math.round(cellDeg * 111)}km ×{" "}
+        {Math.round(cellDeg * 111)}km areas.
       </p>
     </div>
   );
@@ -369,15 +535,14 @@ function SpatialHeatmap() {
 function GoldLayerMetrics() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
-  const { data: dailySummary, isLoading: summaryLoading } = trpc.lakehouse.goldDailyAgentSummary.useQuery(
-    { date, limit: 20 },
-    { retry: false }
-  );
+  const { data: dailySummary, isLoading: summaryLoading } =
+    trpc.lakehouse.goldDailyAgentSummary.useQuery(
+      { date, limit: 20 },
+      { retry: false }
+    );
 
-  const { data: hourlyMetrics, isLoading: hourlyLoading } = trpc.lakehouse.goldHourlyMetrics.useQuery(
-    { date },
-    { retry: false }
-  );
+  const { data: hourlyMetrics, isLoading: hourlyLoading } =
+    trpc.lakehouse.goldHourlyMetrics.useQuery({ date }, { retry: false });
 
   return (
     <div className="space-y-6">
@@ -386,7 +551,7 @@ function GoldLayerMetrics() {
         <Input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={e => setDate(e.target.value)}
           className="w-40"
         />
         {(dailySummary?.source || hourlyMetrics?.source) && (
@@ -406,28 +571,71 @@ function GoldLayerMetrics() {
         </CardHeader>
         <CardContent>
           {hourlyLoading ? (
-            <div className="h-48 flex items-center justify-center text-muted-foreground">Loading…</div>
+            <div className="h-48 flex items-center justify-center text-muted-foreground">
+              Loading…
+            </div>
           ) : !hourlyMetrics?.hours.length ? (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No data for {date}</div>
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+              No data for {date}
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={hourlyMetrics.hours} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <AreaChart
+                data={hourlyMetrics.hours}
+                margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="hour" tickFormatter={(h) => `${h}:00`} tick={{ fontSize: 10 }} />
+                <XAxis
+                  dataKey="hour"
+                  tickFormatter={h => `${h}:00`}
+                  tick={{ fontSize: 10 }}
+                />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 10 }} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickFormatter={v => `${(v * 100).toFixed(0)}%`}
+                  tick={{ fontSize: 10 }}
+                />
                 <Tooltip
                   formatter={(value, name) => {
-                    if (name === "txVolume") return [fmtNGN(Number(value)), "Volume"];
-                    if (name === "errorRate") return [fmtPct(Number(value)), "Error Rate"];
-                    if (name === "fraudRate") return [fmtPct(Number(value)), "Fraud Rate"];
+                    if (name === "txVolume")
+                      return [fmtNGN(Number(value)), "Volume"];
+                    if (name === "errorRate")
+                      return [fmtPct(Number(value)), "Error Rate"];
+                    if (name === "fraudRate")
+                      return [fmtPct(Number(value)), "Fraud Rate"];
                     return [value, name];
                   }}
                 />
                 <Legend />
-                <Area yAxisId="left" type="monotone" dataKey="txVolume" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.2} name="txVolume" />
-                <Area yAxisId="right" type="monotone" dataKey="errorRate" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} name="errorRate" />
-                <Area yAxisId="right" type="monotone" dataKey="fraudRate" stroke="#f97316" fill="#f97316" fillOpacity={0.1} name="fraudRate" />
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="txVolume"
+                  stroke="#8b5cf6"
+                  fill="#8b5cf6"
+                  fillOpacity={0.2}
+                  name="txVolume"
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="errorRate"
+                  stroke="#ef4444"
+                  fill="#ef4444"
+                  fillOpacity={0.1}
+                  name="errorRate"
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="fraudRate"
+                  stroke="#f97316"
+                  fill="#f97316"
+                  fillOpacity={0.1}
+                  name="fraudRate"
+                />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -444,9 +652,13 @@ function GoldLayerMetrics() {
         </CardHeader>
         <CardContent className="p-0">
           {summaryLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading…</div>
+            <div className="py-8 text-center text-muted-foreground">
+              Loading…
+            </div>
           ) : !dailySummary?.rows.length ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">No agent activity on {date}</div>
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              No agent activity on {date}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -464,21 +676,41 @@ function GoldLayerMetrics() {
                 <TableBody>
                   {dailySummary.rows.map((row: any) => (
                     <TableRow key={row.agentId}>
-                      <TableCell className="font-mono text-xs">{row.agentCode}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs capitalize">{row.agentTier}</Badge>
+                      <TableCell className="font-mono text-xs">
+                        {row.agentCode}
                       </TableCell>
-                      <TableCell className="text-right">{row.txCount.toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-xs">{fmtNGN(row.txVolume)}</TableCell>
-                      <TableCell className="text-right text-xs">{fmtNGN(row.txCommission)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {row.agentTier}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <span className={row.successRate >= 0.95 ? "text-green-600" : row.successRate >= 0.8 ? "text-amber-600" : "text-red-600"}>
+                        {row.txCount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {fmtNGN(row.txVolume)}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {fmtNGN(row.txCommission)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={
+                            row.successRate >= 0.95
+                              ? "text-green-600"
+                              : row.successRate >= 0.8
+                                ? "text-amber-600"
+                                : "text-red-600"
+                          }
+                        >
                           {fmtPct(row.successRate)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
                         {row.fraudCount > 0 ? (
-                          <span className="text-red-600 font-medium">{row.fraudCount}</span>
+                          <span className="text-red-600 font-medium">
+                            {row.fraudCount}
+                          </span>
                         ) : (
                           <span className="text-green-600">0</span>
                         )}
@@ -515,7 +747,7 @@ function DataFusionConsole() {
   const [sqlQuery, setSqlQuery] = useState(EXAMPLE_QUERIES[0].sql);
   const [limit, setLimit] = useState(100);
   const runQuery = trpc.lakehouse.lakehouseQuery.useMutation({
-    onError: (e) => toast.error("Query failed", { description: e.message }),
+    onError: e => toast.error("Query failed", { description: e.message }),
   });
 
   return (
@@ -537,7 +769,7 @@ function DataFusionConsole() {
       <div className="space-y-2">
         <Textarea
           value={sqlQuery}
-          onChange={(e) => setSqlQuery(e.target.value)}
+          onChange={e => setSqlQuery(e.target.value)}
           rows={5}
           className="font-mono text-xs"
           placeholder="SELECT * FROM 54link.silver.transactions LIMIT 100"
@@ -548,7 +780,7 @@ function DataFusionConsole() {
             <Input
               type="number"
               value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
+              onChange={e => setLimit(Number(e.target.value))}
               className="w-24 h-8 text-xs"
               min={1}
               max={10000}
@@ -576,7 +808,9 @@ function DataFusionConsole() {
             <TableHeader>
               <TableRow>
                 {runQuery.data.columns.map((col: any) => (
-                  <TableHead key={col} className="text-xs">{col}</TableHead>
+                  <TableHead key={col} className="text-xs">
+                    {col}
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -585,7 +819,11 @@ function DataFusionConsole() {
                 <TableRow key={i}>
                   {(row as unknown[]).map((cell, j) => (
                     <TableCell key={j} className="text-xs font-mono">
-                      {cell === null ? <span className="text-muted-foreground">NULL</span> : String(cell)}
+                      {cell === null ? (
+                        <span className="text-muted-foreground">NULL</span>
+                      ) : (
+                        String(cell)
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -600,8 +838,9 @@ function DataFusionConsole() {
           <Database className="w-8 h-8 mx-auto mb-2 opacity-40" />
           <p>Run a query to see results</p>
           <p className="text-xs mt-1">
-            Queries are forwarded to the Python lakehouse-service (DataFusion / Iceberg REST).
-            When the service is unavailable, an error is returned.
+            Queries are forwarded to the Python lakehouse-service (DataFusion /
+            Iceberg REST). When the service is unavailable, an error is
+            returned.
           </p>
         </div>
       )}
@@ -611,7 +850,9 @@ function DataFusionConsole() {
 
 // ── Snapshot Stats ────────────────────────────────────────────────────────────
 function SnapshotStats() {
-  const { data: stats } = trpc.lakehouse.snapshotStats.useQuery(undefined, { retry: false });
+  const { data: stats } = trpc.lakehouse.snapshotStats.useQuery(undefined, {
+    retry: false,
+  });
 
   if (!stats) return null;
 
@@ -619,20 +860,30 @@ function SnapshotStats() {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <Card className="p-4">
         <div className="text-xs text-muted-foreground">Total Transactions</div>
-        <div className="text-2xl font-bold mt-1">{stats.transactions.total.toLocaleString()}</div>
-        <div className="text-xs text-muted-foreground">+{stats.transactions.today} today</div>
+        <div className="text-2xl font-bold mt-1">
+          {stats.transactions.total.toLocaleString()}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          +{stats.transactions.today} today
+        </div>
       </Card>
       <Card className="p-4">
         <div className="text-xs text-muted-foreground">Fraud Alerts</div>
-        <div className="text-2xl font-bold mt-1 text-red-600">{stats.fraudAlerts.total.toLocaleString()}</div>
+        <div className="text-2xl font-bold mt-1 text-red-600">
+          {stats.fraudAlerts.total.toLocaleString()}
+        </div>
         <div className="text-xs text-muted-foreground">in database</div>
       </Card>
       <Card className="p-4 col-span-2">
-        <div className="text-xs text-muted-foreground mb-2">Medallion Architecture</div>
+        <div className="text-xs text-muted-foreground mb-2">
+          Medallion Architecture
+        </div>
         <div className="space-y-1">
           {Object.entries(stats.layers).map(([layer, desc]) => (
             <div key={layer} className="flex items-start gap-2 text-xs">
-              <Badge variant="outline" className="capitalize shrink-0">{layer}</Badge>
+              <Badge variant="outline" className="capitalize shrink-0">
+                {layer}
+              </Badge>
               <span className="text-muted-foreground">{desc}</span>
             </div>
           ))}
@@ -658,8 +909,8 @@ export default function LakehouseAnalytics() {
               Data Lakehouse Analytics
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Bronze → Silver → Gold medallion pipeline · Apache Iceberg on MinIO ·
-              Sedona spatial queries · DataFusion ad-hoc SQL
+              Bronze → Silver → Gold medallion pipeline · Apache Iceberg on
+              MinIO · Sedona spatial queries · DataFusion ad-hoc SQL
             </p>
           </div>
           <div className="flex items-center gap-2">

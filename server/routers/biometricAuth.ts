@@ -1,4 +1,3 @@
-
 // Sprint 90: Production biometric auth router with real microservice integration
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -8,13 +7,21 @@ import { eq, desc, and, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // ── Microservice URLs ───────────────────────────────────────────────────────
-const BIOMETRIC_SERVICE_URL = process.env.BIOMETRIC_SERVICE_URL || "http://localhost:8046";
-const LIVENESS_SERVICE_URL = process.env.LIVENESS_SERVICE_URL || "http://localhost:8104";
-const FACE_MATCHING_SERVICE_URL = process.env.FACE_MATCHING_SERVICE_URL || "http://localhost:8105";
-const DEEPFAKE_SERVICE_URL = process.env.DEEPFAKE_SERVICE_URL || "http://localhost:8106";
+const BIOMETRIC_SERVICE_URL =
+  process.env.BIOMETRIC_SERVICE_URL || "http://localhost:8046";
+const LIVENESS_SERVICE_URL =
+  process.env.LIVENESS_SERVICE_URL || "http://localhost:8104";
+const FACE_MATCHING_SERVICE_URL =
+  process.env.FACE_MATCHING_SERVICE_URL || "http://localhost:8105";
+const DEEPFAKE_SERVICE_URL =
+  process.env.DEEPFAKE_SERVICE_URL || "http://localhost:8106";
 
 // ── Helper: call microservice ───────────────────────────────────────────────
-async function callService(url: string, body: Record<string, unknown>, timeoutMs = 30000) {
+async function callService(
+  url: string,
+  body: Record<string, unknown>,
+  timeoutMs = 30000
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -27,7 +34,9 @@ async function callService(url: string, body: Record<string, unknown>, timeoutMs
     if (!resp.ok) throw new Error(`Service returned ${resp.status}`);
     return await resp.json();
   } catch (err: any) {
-    console.warn(`[biometricAuth] Service call failed: ${url} — ${err.message}`);
+    console.warn(
+      `[biometricAuth] Service call failed: ${url} — ${err.message}`
+    );
     return null;
   } finally {
     clearTimeout(timer);
@@ -40,9 +49,12 @@ export const biometricAuthRouter = router({
     .input(z.object({ imageBase64: z.string().min(100) }))
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${LIVENESS_SERVICE_URL}/liveness/passive`, {
-          image_base64: input.imageBase64,
-        });
+        const result = await callService(
+          `${LIVENESS_SERVICE_URL}/liveness/passive`,
+          {
+            image_base64: input.imageBase64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -60,22 +72,31 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Active Liveness Check ───────────────────────────────────────────────
   activeLiveness: protectedProcedure
-    .input(z.object({
-      framesBase64: z.array(z.string()).min(3).max(30),
-      challengeType: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        framesBase64: z.array(z.string()).min(3).max(30),
+        challengeType: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${LIVENESS_SERVICE_URL}/liveness/active`, {
-          frames_base64: input.framesBase64,
-          challenge_type: input.challengeType,
-        });
+        const result = await callService(
+          `${LIVENESS_SERVICE_URL}/liveness/active`,
+          {
+            frames_base64: input.framesBase64,
+            challenge_type: input.challengeType,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -93,22 +114,31 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Face Matching (1:1 Verification) ────────────────────────────────────
   matchFaces: protectedProcedure
-    .input(z.object({
-      image1Base64: z.string().min(100),
-      image2Base64: z.string().min(100),
-    }))
+    .input(
+      z.object({
+        image1Base64: z.string().min(100),
+        image2Base64: z.string().min(100),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${FACE_MATCHING_SERVICE_URL}/face/match`, {
-          image1_base64: input.image1Base64,
-          image2_base64: input.image2Base64,
-        });
+        const result = await callService(
+          `${FACE_MATCHING_SERVICE_URL}/face/match`,
+          {
+            image1_base64: input.image1Base64,
+            image2_base64: input.image2Base64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -127,7 +157,11 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -136,9 +170,12 @@ export const biometricAuthRouter = router({
     .input(z.object({ imageBase64: z.string().min(100) }))
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${FACE_MATCHING_SERVICE_URL}/face/detect`, {
-          image_base64: input.imageBase64,
-        });
+        const result = await callService(
+          `${FACE_MATCHING_SERVICE_URL}/face/detect`,
+          {
+            image_base64: input.imageBase64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -159,7 +196,11 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -168,9 +209,12 @@ export const biometricAuthRouter = router({
     .input(z.object({ imageBase64: z.string().min(100) }))
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${DEEPFAKE_SERVICE_URL}/deepfake/detect`, {
-          image_base64: input.imageBase64,
-        });
+        const result = await callService(
+          `${DEEPFAKE_SERVICE_URL}/deepfake/detect`,
+          {
+            image_base64: input.imageBase64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -188,26 +232,35 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Full Biometric Verification ─────────────────────────────────────────
   fullVerification: protectedProcedure
-    .input(z.object({
-      selfieBase64: z.string().min(100),
-      documentBase64: z.string().min(100),
-      sessionRef: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        selfieBase64: z.string().min(100),
+        documentBase64: z.string().min(100),
+        sessionRef: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
         const userId = ctx.user.id.toString();
 
-        const result = await callService(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/verify`, {
-          selfie_base64: input.selfieBase64,
-          document_base64: input.documentBase64,
-          user_id: userId,
-        });
+        const result = await callService(
+          `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/verify`,
+          {
+            selfie_base64: input.selfieBase64,
+            document_base64: input.documentBase64,
+            user_id: userId,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -221,7 +274,8 @@ export const biometricAuthRouter = router({
           const dbInst = await getDb();
           if (!dbInst) throw new Error("DB unavailable");
           try {
-            await dbInst.update(kycSessions)
+            await dbInst
+              .update(kycSessions)
               .set({
                 livenessScore: String(result.liveness?.confidence ?? 0),
                 livenessPassed: result.liveness?.result === "real",
@@ -232,7 +286,10 @@ export const biometricAuthRouter = router({
               })
               .where(eq(kycSessions.sessionRef, input.sessionRef));
           } catch (err) {
-            console.warn("[biometricAuth] Failed to persist to kycSessions:", err);
+            console.warn(
+              "[biometricAuth] Failed to persist to kycSessions:",
+              err
+            );
           }
         }
 
@@ -250,7 +307,11 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -259,9 +320,12 @@ export const biometricAuthRouter = router({
     .input(z.object({ imageBase64: z.string().min(100) }))
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/quality`, {
-          image_base64: input.imageBase64,
-        });
+        const result = await callService(
+          `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/quality`,
+          {
+            image_base64: input.imageBase64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -278,7 +342,11 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -287,9 +355,12 @@ export const biometricAuthRouter = router({
     .input(z.object({ imageBase64: z.string().min(100) }))
     .mutation(async ({ input }) => {
       try {
-        const result = await callService(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/anti-spoof`, {
-          image_base64: input.imageBase64,
-        });
+        const result = await callService(
+          `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/anti-spoof`,
+          {
+            image_base64: input.imageBase64,
+          }
+        );
 
         if (!result) {
           throw new TRPCError({
@@ -306,7 +377,11 @@ export const biometricAuthRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -315,12 +390,15 @@ export const biometricAuthRouter = router({
     try {
       const dbInst = await getDb();
       if (!dbInst) throw new Error("DB unavailable");
-      const sessions = await dbInst.select()
+      const sessions = await dbInst
+        .select()
         .from(kycSessions)
-        .where(and(
-          eq(kycSessions.agentId, ctx.user.id),
-          sql`${kycSessions.livenessScore} IS NOT NULL`,
-        ))
+        .where(
+          and(
+            eq(kycSessions.agentId, ctx.user.id),
+            sql`${kycSessions.livenessScore} IS NOT NULL`
+          )
+        )
         .orderBy(desc(kycSessions.createdAt))
         .limit(50);
 
@@ -339,7 +417,11 @@ export const biometricAuthRouter = router({
       };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -349,26 +431,35 @@ export const biometricAuthRouter = router({
       const dbInst = await getDb();
       if (!dbInst) throw new Error("DB unavailable");
 
-      const [totalResult] = await dbInst.select({ count: count() })
+      const [totalResult] = await dbInst
+        .select({ count: count() })
         .from(kycSessions)
-        .where(and(
-          eq(kycSessions.agentId, ctx.user.id),
-          sql`${kycSessions.livenessScore} IS NOT NULL`,
-        ));
+        .where(
+          and(
+            eq(kycSessions.agentId, ctx.user.id),
+            sql`${kycSessions.livenessScore} IS NOT NULL`
+          )
+        );
 
-      const [passedResult] = await dbInst.select({ count: count() })
+      const [passedResult] = await dbInst
+        .select({ count: count() })
         .from(kycSessions)
-        .where(and(
-          eq(kycSessions.agentId, ctx.user.id),
-          eq(kycSessions.livenessPassed, true),
-        ));
+        .where(
+          and(
+            eq(kycSessions.agentId, ctx.user.id),
+            eq(kycSessions.livenessPassed, true)
+          )
+        );
 
-      const [failedResult] = await dbInst.select({ count: count() })
+      const [failedResult] = await dbInst
+        .select({ count: count() })
         .from(kycSessions)
-        .where(and(
-          eq(kycSessions.agentId, ctx.user.id),
-          eq(kycSessions.livenessPassed, false),
-        ));
+        .where(
+          and(
+            eq(kycSessions.agentId, ctx.user.id),
+            eq(kycSessions.livenessPassed, false)
+          )
+        );
 
       return {
         enrolled: totalResult?.count ?? 0,
@@ -378,7 +469,11 @@ export const biometricAuthRouter = router({
       };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -392,10 +487,17 @@ export const biometricAuthRouter = router({
     ];
 
     const results = await Promise.allSettled(
-      services.map(async (s) => {
+      services.map(async s => {
         try {
-          const resp = await fetch(s.url, { signal: AbortSignal.timeout(5000) });
-          if (!resp.ok) return { name: s.name, status: "unhealthy", error: `HTTP ${resp.status}` };
+          const resp = await fetch(s.url, {
+            signal: AbortSignal.timeout(5000),
+          });
+          if (!resp.ok)
+            return {
+              name: s.name,
+              status: "unhealthy",
+              error: `HTTP ${resp.status}`,
+            };
           const data = await resp.json();
           return { name: s.name, status: "healthy", data };
         } catch (err: any) {
@@ -405,7 +507,11 @@ export const biometricAuthRouter = router({
     );
 
     return {
-      services: results.map((r: any) => r.status === "fulfilled" ? r.value : { name: "unknown", status: "error" }),
+      services: results.map((r: any) =>
+        r.status === "fulfilled"
+          ? r.value
+          : { name: "unknown", status: "error" }
+      ),
     };
   }),
 });

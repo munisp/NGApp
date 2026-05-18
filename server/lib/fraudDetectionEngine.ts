@@ -1,13 +1,20 @@
 // @ts-nocheck — Sprint 68: bulk TS error suppression
 /**
  * Real-Time Fraud Detection Engine
- * 
+ *
  * Runs fraud detection rules on every transaction and emits alerts via SSE.
  * Rules: velocity limits, geofence violations, blacklist checks, anomaly detection.
  */
 
 import { getDb } from "../db";
-import { transactions, fraudAlerts, velocityLimits, geofenceZones, agentGeofenceZones, fraudRules } from "../../drizzle/schema";
+import {
+  transactions,
+  fraudAlerts,
+  velocityLimits,
+  geofenceZones,
+  agentGeofenceZones,
+  fraudRules,
+} from "../../drizzle/schema";
 import { sql, and, eq, gte, desc } from "drizzle-orm";
 import type { InsertFraudAlert } from "../../drizzle/schema";
 import { EventEmitter } from "events";
@@ -40,9 +47,15 @@ export interface FraudDetectionResult {
 /**
  * Run all fraud detection rules on a transaction
  */
-export async function detectFraud(tx: TransactionContext): Promise<FraudDetectionResult> {
+export async function detectFraud(
+  tx: TransactionContext
+): Promise<FraudDetectionResult> {
   const rulesFired: string[] = [];
-  let maxSeverity: "critical" | "high" | "medium" | "low" = "low" as "critical" | "high" | "medium" | "low";
+  let maxSeverity: "critical" | "high" | "medium" | "low" = "low" as
+    | "critical"
+    | "high"
+    | "medium"
+    | "low";
   let fraudScore = 0;
   let reason = "";
 
@@ -77,7 +90,8 @@ export async function detectFraud(tx: TransactionContext): Promise<FraudDetectio
   const anomaly = await checkAnomaly(tx);
   if (anomaly) {
     rulesFired.push("anomaly");
-    if (maxSeverity !== "critical" && maxSeverity !== "high") maxSeverity = "medium";
+    if (maxSeverity !== "critical" && maxSeverity !== "high")
+      maxSeverity = "medium";
     fraudScore += 25;
     reason += `Anomalous transaction pattern: ${anomaly}. `;
   }
@@ -125,7 +139,7 @@ export async function createAndEmitFraudAlert(
   };
 
   const [inserted] = await db.insert(fraudAlerts).values(alert).returning();
-  
+
   // Emit to SSE subscribers
   fraudAlertBus.emit("alert", {
     ...inserted,
@@ -138,7 +152,9 @@ export async function createAndEmitFraudAlert(
 
 // ── Rule Implementations ──────────────────────────────────────────────────────
 
-async function checkVelocityLimit(tx: TransactionContext): Promise<string | null> {
+async function checkVelocityLimit(
+  tx: TransactionContext
+): Promise<string | null> {
   const db = (await getDb())!;
   if (!db) return null;
 
@@ -208,7 +224,9 @@ async function checkBlacklist(tx: TransactionContext): Promise<string | null> {
   const blacklistRules = await db
     .select()
     .from(fraudRules)
-    .where(and(eq(fraudRules.category, "blacklist"), eq(fraudRules.enabled, true)))
+    .where(
+      and(eq(fraudRules.category, "blacklist"), eq(fraudRules.enabled, true))
+    )
     .limit(50);
 
   if (!blacklistRules.length) return null;
@@ -217,12 +235,14 @@ async function checkBlacklist(tx: TransactionContext): Promise<string | null> {
   // blocked phone numbers, agent IDs, or amount patterns to match against.
   for (const rule of blacklistRules) {
     if (!rule.description) continue;
-    const entries = rule.description.split(",").map((e) => e.trim().toLowerCase());
+    const entries = rule.description
+      .split(",")
+      .map(e => e.trim().toLowerCase());
 
     // Check if customer name matches a blacklisted entry
     if (tx.customerName) {
       const nameLower = tx.customerName.toLowerCase();
-      if (entries.some((e) => nameLower.includes(e) && e.length > 3)) {
+      if (entries.some(e => nameLower.includes(e) && e.length > 3)) {
         // Increment hit count
         await db
           .update(fraudRules)
@@ -233,7 +253,11 @@ async function checkBlacklist(tx: TransactionContext): Promise<string | null> {
     }
 
     // Check if transaction amount matches a blacklisted exact amount
-    if (entries.some((e) => !isNaN(Number(e)) && Math.abs(Number(e) - tx.amount) < 0.01)) {
+    if (
+      entries.some(
+        e => !isNaN(Number(e)) && Math.abs(Number(e) - tx.amount) < 0.01
+      )
+    ) {
       await db
         .update(fraudRules)
         .set({ hitCount: (rule.hitCount ?? 0) + 1, lastHitAt: new Date() })
@@ -250,7 +274,9 @@ async function checkAnomaly(tx: TransactionContext): Promise<string | null> {
   if (!db) return null;
 
   // Get agent's average transaction amount in last 30 days
-  const thirtyDaysAgo = new Date(tx.timestamp.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(
+    tx.timestamp.getTime() - 30 * 24 * 60 * 60 * 1000
+  );
   const stats = await db
     .select({
       avg: sql<number>`AVG(CAST(${transactions.amount} AS DECIMAL))`,
@@ -276,7 +302,12 @@ async function checkAnomaly(tx: TransactionContext): Promise<string | null> {
 }
 
 // ── Haversine Distance (meters) ───────────────────────────────────────────────
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const R = 6371e3; // Earth radius in meters
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;

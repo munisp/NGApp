@@ -102,7 +102,9 @@ describe("Sprint 46: Router Imports", () => {
 describe("Sprint 46: Procedure Structure", () => {
   it("paymentNotificationSystem should have 7 procedures", async () => {
     const mod = await import("./routers/paymentNotificationSystem");
-    const procedures = Object.keys(mod.paymentNotificationSystemRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.paymentNotificationSystemRouter._def.procedures
+    );
     expect(procedures).toContain("getNotifications");
     expect(procedures).toContain("getStats");
     expect(procedures).toContain("markRead");
@@ -115,7 +117,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("databaseVisualization should have 7 procedures", async () => {
     const mod = await import("./routers/databaseVisualization");
-    const procedures = Object.keys(mod.databaseVisualizationRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.databaseVisualizationRouter._def.procedures
+    );
     expect(procedures).toContain("listTables");
     expect(procedures).toContain("getTableSchema");
     expect(procedures).toContain("getTableData");
@@ -128,7 +132,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("middlewareServiceManager should have 5 procedures", async () => {
     const mod = await import("./routers/middlewareServiceManager");
-    const procedures = Object.keys(mod.middlewareServiceManagerRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.middlewareServiceManagerRouter._def.procedures
+    );
     expect(procedures).toContain("list");
     expect(procedures).toContain("getById");
     expect(procedures).toContain("updateUrl");
@@ -139,7 +145,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("paymentReconciliation should have 7 procedures", async () => {
     const mod = await import("./routers/paymentReconciliation");
-    const procedures = Object.keys(mod.paymentReconciliationRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.paymentReconciliationRouter._def.procedures
+    );
     expect(procedures).toContain("runReconciliation");
     expect(procedures).toContain("getReconciliationReport");
     expect(procedures).toContain("getDiscrepancies");
@@ -152,7 +160,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("financialReportingSuite should have 7 procedures", async () => {
     const mod = await import("./routers/financialReportingSuite");
-    const procedures = Object.keys(mod.financialReportingSuiteRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.financialReportingSuiteRouter._def.procedures
+    );
     expect(procedures).toContain("getPnl");
     expect(procedures).toContain("getBalanceSheet");
     expect(procedures).toContain("getCashFlow");
@@ -165,7 +175,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("multiCurrencyExchange should have 6 procedures", async () => {
     const mod = await import("./routers/multiCurrencyExchange");
-    const procedures = Object.keys(mod.multiCurrencyExchangeRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.multiCurrencyExchangeRouter._def.procedures
+    );
     expect(procedures).toContain("getRates");
     expect(procedures).toContain("convert");
     expect(procedures).toContain("getHistory");
@@ -177,7 +189,9 @@ describe("Sprint 46: Procedure Structure", () => {
 
   it("agentTrainingPortal should have 7 procedures", async () => {
     const mod = await import("./routers/agentTrainingPortal");
-    const procedures = Object.keys(mod.agentTrainingPortalRouter._def.procedures);
+    const procedures = Object.keys(
+      mod.agentTrainingPortalRouter._def.procedures
+    );
     expect(procedures).toContain("listCourses");
     expect(procedures).toContain("getCourse");
     expect(procedures).toContain("submitQuiz");
@@ -252,7 +266,13 @@ describe("Sprint 46: Data Integrity", () => {
     const stats = await caller.getStats();
     expect(stats.complianceScore).toBe(94.5);
     expect(stats.totalReports).toBe(456);
-    expect(stats.cbnReports + stats.ndprReports + stats.pciDssReports + stats.amlReports + stats.cftReports).toBe(stats.totalReports);
+    expect(
+      stats.cbnReports +
+        stats.ndprReports +
+        stats.pciDssReports +
+        stats.amlReports +
+        stats.cftReports
+    ).toBe(stats.totalReports);
   });
 
   it("customer feedback NPS should be within valid range", async () => {
@@ -272,7 +292,9 @@ describe("Sprint 46: Data Integrity", () => {
     const caller = router.createCaller({} as any);
     const stats = await caller.getStats();
     expect(stats.slaCompliance).toBeGreaterThan(90);
-    expect(stats.totalDisputes).toBe(stats.open + stats.inProgress + stats.resolved + stats.escalated);
+    expect(stats.totalDisputes).toBe(
+      stats.open + stats.inProgress + stats.resolved + stats.escalated
+    );
   });
 
   it("platform health monitor should report >98% health", async () => {
@@ -289,7 +311,9 @@ describe("Sprint 46: Data Integrity", () => {
     const router = mod.bulkPaymentProcessorRouter;
     const caller = router.createCaller({} as any);
     const stats = await caller.getStats();
-    expect(stats.totalBatches).toBe(stats.processed + stats.failed + stats.pending);
+    expect(stats.totalBatches).toBe(
+      stats.processed + stats.failed + stats.pending
+    );
   });
 
   it("agent hierarchy should have valid agent distribution", async () => {
@@ -297,7 +321,9 @@ describe("Sprint 46: Data Integrity", () => {
     const router = mod.agentHierarchyTerritoryRouter;
     const caller = router.createCaller({} as any);
     const stats = await caller.getStats();
-    expect(stats.totalAgents).toBe(stats.superAgents + stats.masterAgents + stats.subAgents);
+    expect(stats.totalAgents).toBe(
+      stats.superAgents + stats.masterAgents + stats.subAgents
+    );
     expect(stats.territories).toBe(156);
     expect(stats.regions).toBe(6);
   });
@@ -357,7 +383,9 @@ describe("Sprint 46: appRouter Registration", () => {
     ];
     for (const name of sprint46Routers) {
       const found = procedures.some(p => p.startsWith(`${name}.`));
-      expect(found, `Router ${name} should be registered in appRouter`).toBe(true);
+      expect(found, `Router ${name} should be registered in appRouter`).toBe(
+        true
+      );
     }
   }, 120000);
 });

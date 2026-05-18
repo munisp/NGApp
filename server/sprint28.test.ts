@@ -285,7 +285,9 @@ describe("Airtime Vending", () => {
   });
 
   it("should list data bundles", async () => {
-    const result = await caller.airtimeVending.dataBundles({ networkId: "mtn" });
+    const result = await caller.airtimeVending.dataBundles({
+      networkId: "mtn",
+    });
     expect(result).toHaveProperty("bundles");
   });
 

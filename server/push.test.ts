@@ -125,7 +125,8 @@ describe("VAPID Push Notification Service", () => {
 
   describe("VAPID key format", () => {
     it("VAPID public key is a valid base64url string", () => {
-      const key = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
+      const key =
+        "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
       // Base64url characters: A-Z, a-z, 0-9, -, _
       expect(key).toMatch(/^[A-Za-z0-9\-_]+$/);
       // Uncompressed EC key is 65 bytes = 87 base64url chars (no padding)

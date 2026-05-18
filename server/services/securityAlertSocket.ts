@@ -8,7 +8,13 @@ import type { Server as SocketIOServer, Socket } from "socket.io";
 // ── Types ──
 export interface SecurityAlertPayload {
   alertId: string;
-  category: "ransomware" | "ddos" | "bulk_operation" | "data_exfiltration" | "brute_force" | "unauthorized_access";
+  category:
+    | "ransomware"
+    | "ddos"
+    | "bulk_operation"
+    | "data_exfiltration"
+    | "brute_force"
+    | "unauthorized_access";
   severity: "critical" | "high" | "medium" | "low" | "info";
   title: string;
   description: string;
@@ -38,7 +44,10 @@ export interface AlertStats {
 }
 
 // ── In-memory alert store ──
-const activeAlerts: Map<string, SecurityAlertPayload & { status: string; acknowledgedBy?: string }> = new Map();
+const activeAlerts: Map<
+  string,
+  SecurityAlertPayload & { status: string; acknowledgedBy?: string }
+> = new Map();
 const alertHistory: Array<SecurityAlertPayload & { status: string }> = [];
 const MAX_HISTORY = 1000;
 
@@ -92,14 +101,17 @@ export function initSecurityAlertSocket(io: SocketIOServer): void {
     });
 
     // Handle request for alert history
-    socket.on("alert:getHistory", (params: { limit?: number; offset?: number }) => {
-      const limit = params?.limit || 50;
-      const offset = params?.offset || 0;
-      socket.emit("alert:history", {
-        alerts: alertHistory.slice(offset, offset + limit),
-        total: alertHistory.length,
-      });
-    });
+    socket.on(
+      "alert:getHistory",
+      (params: { limit?: number; offset?: number }) => {
+        const limit = params?.limit || 50;
+        const offset = params?.offset || 0;
+        socket.emit("alert:history", {
+          alerts: alertHistory.slice(offset, offset + limit),
+          total: alertHistory.length,
+        });
+      }
+    );
 
     // Handle request for stats refresh
     socket.on("alert:getStats", () => {
@@ -185,8 +197,11 @@ function computeStats(): AlertStats {
     highCount: alerts.filter(a => a.severity === "high").length,
     mediumCount: alerts.filter(a => a.severity === "medium").length,
     lowCount: alerts.filter(a => a.severity === "low").length,
-    lastAlertTime: alerts.length > 0 ? Math.max(...alerts.map(a => a.timestamp)) : null,
-    acknowledgedCount: alerts.filter(a => a.status === "acknowledged" || a.status === "investigating").length,
+    lastAlertTime:
+      alerts.length > 0 ? Math.max(...alerts.map(a => a.timestamp)) : null,
+    acknowledgedCount: alerts.filter(
+      a => a.status === "acknowledged" || a.status === "investigating"
+    ).length,
     unresolvedCount: alerts.filter(a => a.status === "active").length,
   };
 }

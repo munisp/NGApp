@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Auto-Refresh Polling Module — 54Link Agency Banking Platform
- * 
+ *
  * Provides configurable polling intervals for real-time dashboard updates.
  * Supports:
  * - Active test detection with 5s polling
@@ -11,10 +11,10 @@
  */
 
 export interface PollerConfig {
-  activeIntervalMs: number;    // Polling interval during active tests (default: 5000)
-  idleIntervalMs: number;      // Polling interval when idle (default: 30000)
-  maxBackoffMs: number;        // Maximum backoff on errors (default: 60000)
-  backoffMultiplier: number;   // Backoff multiplier (default: 2)
+  activeIntervalMs: number; // Polling interval during active tests (default: 5000)
+  idleIntervalMs: number; // Polling interval when idle (default: 30000)
+  maxBackoffMs: number; // Maximum backoff on errors (default: 60000)
+  backoffMultiplier: number; // Backoff multiplier (default: 2)
 }
 
 const DEFAULT_CONFIG: PollerConfig = {
@@ -43,8 +43,13 @@ export function createPoller(config: Partial<PollerConfig> = {}) {
   };
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  function calculateInterval(hasActiveTest: boolean, errorCount: number): number {
-    const baseInterval = hasActiveTest ? cfg.activeIntervalMs : cfg.idleIntervalMs;
+  function calculateInterval(
+    hasActiveTest: boolean,
+    errorCount: number
+  ): number {
+    const baseInterval = hasActiveTest
+      ? cfg.activeIntervalMs
+      : cfg.idleIntervalMs;
     if (errorCount === 0) return baseInterval;
     const backoff = baseInterval * Math.pow(cfg.backoffMultiplier, errorCount);
     return Math.min(backoff, cfg.maxBackoffMs);
@@ -60,7 +65,10 @@ export function createPoller(config: Partial<PollerConfig> = {}) {
         state.currentIntervalMs = calculateInterval(result.hasActiveTest, 0);
       } catch {
         state.consecutiveErrors++;
-        state.currentIntervalMs = calculateInterval(false, state.consecutiveErrors);
+        state.currentIntervalMs = calculateInterval(
+          false,
+          state.consecutiveErrors
+        );
       }
       state.lastPollAt = Date.now();
       state.totalPolls++;

@@ -12,7 +12,10 @@ import * as path from "path";
 const projectRoot = path.resolve(__dirname, "..");
 
 describe("Sprint 66: webhookManagement.ts Schema Fix", () => {
-  const filePath = path.join(projectRoot, "server/routers/webhookManagement.ts");
+  const filePath = path.join(
+    projectRoot,
+    "server/routers/webhookManagement.ts"
+  );
   let content: string;
 
   it("webhookManagement.ts exists", () => {
@@ -51,7 +54,15 @@ describe("Sprint 66: webhookManagement.ts Schema Fix", () => {
 
   it("has all 7 CRUD operations", () => {
     content = fs.readFileSync(filePath, "utf-8");
-    const ops = ["getStats", "dashboard", "listWebhooks", "createWebhook", "updateWebhook", "deleteWebhook", "testWebhook"];
+    const ops = [
+      "getStats",
+      "dashboard",
+      "listWebhooks",
+      "createWebhook",
+      "updateWebhook",
+      "deleteWebhook",
+      "testWebhook",
+    ];
     for (const op of ops) {
       expect(content).toContain(`${op}:`);
     }
@@ -62,7 +73,9 @@ describe("Sprint 66: globalSearch Router Wiring", () => {
   it("globalSearch is imported in routers.ts", () => {
     const routersPath = path.join(projectRoot, "server/routers.ts");
     const content = fs.readFileSync(routersPath, "utf-8");
-    expect(content).toContain('import { globalSearchRouter } from "./routers/globalSearch"');
+    expect(content).toContain(
+      'import { globalSearchRouter } from "./routers/globalSearch"'
+    );
   });
 
   it("globalSearch is registered in appRouter", () => {
@@ -82,11 +95,15 @@ describe("Sprint 66: globalSearch Router Wiring", () => {
 describe("Sprint 66: Router Registration Completeness", () => {
   it("all router files in server/routers/ are imported in routers.ts", () => {
     const routersDir = path.join(projectRoot, "server/routers");
-    const routerFiles = fs.readdirSync(routersDir)
+    const routerFiles = fs
+      .readdirSync(routersDir)
       .filter(f => f.endsWith(".ts") && !f.endsWith(".test.ts"))
       .map(f => f.replace(".ts", ""));
 
-    const routersTs = fs.readFileSync(path.join(projectRoot, "server/routers.ts"), "utf-8");
+    const routersTs = fs.readFileSync(
+      path.join(projectRoot, "server/routers.ts"),
+      "utf-8"
+    );
 
     const unregistered: string[] = [];
     for (const file of routerFiles) {

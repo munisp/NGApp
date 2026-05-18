@@ -16,8 +16,10 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
   describe("Network Quality Detection", () => {
     it("detects 2G from Save-Data and ECT headers", () => {
       const mockReq = {
-        headers: { "save-data": "on", "ect": "2g", "downlink": "0.1", "rtt": "2000" },
-        get: function (h: string) { return this.headers[h.toLowerCase()]; },
+        headers: { "save-data": "on", ect: "2g", downlink: "0.1", rtt: "2000" },
+        get: function (h: string) {
+          return this.headers[h.toLowerCase()];
+        },
       } as any;
       const quality = detectConnectionQuality(mockReq);
       expect(["2g", "3g", "offline", "wifi", "4g"]).toContain(quality);
@@ -25,8 +27,10 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
 
     it("detects 3G from ECT header", () => {
       const mockReq = {
-        headers: { "ect": "3g", "downlink": "1.5", "rtt": "400" },
-        get: function (h: string) { return this.headers[h.toLowerCase()]; },
+        headers: { ect: "3g", downlink: "1.5", rtt: "400" },
+        get: function (h: string) {
+          return this.headers[h.toLowerCase()];
+        },
       } as any;
       const quality = detectConnectionQuality(mockReq);
       expect(["2g", "3g", "4g", "wifi"]).toContain(quality);
@@ -34,8 +38,10 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
 
     it("detects 4G/wifi from high downlink", () => {
       const mockReq = {
-        headers: { "ect": "4g", "downlink": "10", "rtt": "50" },
-        get: function (h: string) { return this.headers[h.toLowerCase()]; },
+        headers: { ect: "4g", downlink: "10", rtt: "50" },
+        get: function (h: string) {
+          return this.headers[h.toLowerCase()];
+        },
       } as any;
       const quality = detectConnectionQuality(mockReq);
       expect(["4g", "wifi"]).toContain(quality);
@@ -44,7 +50,9 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
     it("defaults to wifi or 4g when no headers present", () => {
       const mockReq = {
         headers: {},
-        get: function (h: string) { return this.headers[h.toLowerCase()]; },
+        get: function (h: string) {
+          return this.headers[h.toLowerCase()];
+        },
       } as any;
       const quality = detectConnectionQuality(mockReq);
       expect(["wifi", "4g"]).toContain(quality);
@@ -183,7 +191,7 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
       expect(results.length).toBe(500);
 
       // Each result should be trimmed
-      results.forEach((r) => {
+      results.forEach(r => {
         expect(r.items.length).toBeLessThanOrEqual(budget.maxListItems);
       });
 
@@ -199,7 +207,11 @@ describe("Adaptive Bandwidth Load Test — Simulated 2G Conditions", () => {
 
       // Write 500 cache entries
       for (let i = 0; i < 500; i++) {
-        setCachedResponse(`load-test-${i}`, { id: i, data: "X".repeat(100) }, 60000);
+        setCachedResponse(
+          `load-test-${i}`,
+          { id: i, data: "X".repeat(100) },
+          60000
+        );
       }
 
       // Read them all back

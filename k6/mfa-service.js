@@ -58,8 +58,8 @@ export default function () {
     enrollDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "enroll: status 200": (r) => r.status === 200,
-      "enroll: has secret": (r) => {
+      "enroll: status 200": r => r.status === 200,
+      "enroll: has secret": r => {
         try {
           const b = JSON.parse(r.body);
           return b.secret && b.secret.length > 0;
@@ -67,7 +67,7 @@ export default function () {
           return false;
         }
       },
-      "enroll: has backup_codes": (r) => {
+      "enroll: has backup_codes": r => {
         try {
           const b = JSON.parse(r.body);
           return Array.isArray(b.backup_codes) && b.backup_codes.length === 8;
@@ -75,7 +75,7 @@ export default function () {
           return false;
         }
       },
-      "enroll: fast": (r) => r.timings.duration < 300,
+      "enroll: fast": r => r.timings.duration < 300,
     });
     enrollErrors.add(!ok);
   });

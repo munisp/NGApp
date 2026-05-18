@@ -24,7 +24,7 @@ import fs from "fs";
 import path from "path";
 import { ENV } from "../_core/env";
 
-const CERT_DIR    = ENV.mtlsCertDir;
+const CERT_DIR = ENV.mtlsCertDir;
 const MTLS_ENABLED = ENV.mtlsEnabled;
 
 let _agent: https.Agent | null | undefined = undefined; // undefined = not yet initialised
@@ -40,13 +40,17 @@ export function getMtlsAgent(): https.Agent | null {
   }
 
   const certPath = path.join(CERT_DIR, "tls.crt");
-  const keyPath  = path.join(CERT_DIR, "tls.key");
-  const caPath   = path.join(CERT_DIR, "ca.crt");
+  const keyPath = path.join(CERT_DIR, "tls.key");
+  const caPath = path.join(CERT_DIR, "ca.crt");
 
-  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath) || !fs.existsSync(caPath)) {
+  if (
+    !fs.existsSync(certPath) ||
+    !fs.existsSync(keyPath) ||
+    !fs.existsSync(caPath)
+  ) {
     console.warn(
       `[mTLS] Certificate files not found in ${CERT_DIR} — falling back to plain HTTPS. ` +
-      "Set MTLS_CERT_DIR or MTLS_ENABLED=false to suppress this warning."
+        "Set MTLS_CERT_DIR or MTLS_ENABLED=false to suppress this warning."
     );
     _agent = null;
     return null;
@@ -55,8 +59,8 @@ export function getMtlsAgent(): https.Agent | null {
   try {
     _agent = new https.Agent({
       cert: fs.readFileSync(certPath),
-      key:  fs.readFileSync(keyPath),
-      ca:   fs.readFileSync(caPath),
+      key: fs.readFileSync(keyPath),
+      ca: fs.readFileSync(caPath),
       rejectUnauthorized: true,
       minVersion: "TLSv1.2",
     });
@@ -75,7 +79,9 @@ export function getMtlsAgent(): https.Agent | null {
  */
 export function resetMtlsAgent(): void {
   _agent = undefined;
-  console.info("[mTLS] Agent cache cleared — certs will be reloaded on next request");
+  console.info(
+    "[mTLS] Agent cache cleared — certs will be reloaded on next request"
+  );
 }
 
 /**
@@ -85,7 +91,9 @@ export function resetMtlsAgent(): void {
  * Example:
  *   const res = await fetch(url, mtlsFetchOptions({ method: "POST", body: "..." }));
  */
-export function mtlsFetchOptions(base: RequestInit = {}): RequestInit & { agent?: https.Agent } {
+export function mtlsFetchOptions(
+  base: RequestInit = {}
+): RequestInit & { agent?: https.Agent } {
   const agent = getMtlsAgent();
   if (!agent) return base;
   // Node 18+ fetch (undici) accepts `dispatcher`; legacy node-fetch accepts `agent`.

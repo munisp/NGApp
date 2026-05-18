@@ -9,7 +9,13 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, RefreshCw, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -26,10 +32,28 @@ const ACTION_GROUPS = [
 
 const ACTION_GROUP_FILTERS: Record<string, string[]> = {
   auth: ["login", "logout", "pin_reset", "session_expired"],
-  transaction: ["transaction_created", "transaction_reversed", "transaction_failed"],
-  kyc: ["kyc_initiated", "kyc_approved", "kyc_rejected", "kyc_document_uploaded"],
-  float: ["float_topup_requested", "float_topup_approved", "float_topup_rejected"],
-  admin: ["agent_created", "agent_suspended", "agent_activated", "role_changed"],
+  transaction: [
+    "transaction_created",
+    "transaction_reversed",
+    "transaction_failed",
+  ],
+  kyc: [
+    "kyc_initiated",
+    "kyc_approved",
+    "kyc_rejected",
+    "kyc_document_uploaded",
+  ],
+  float: [
+    "float_topup_requested",
+    "float_topup_approved",
+    "float_topup_rejected",
+  ],
+  admin: [
+    "agent_created",
+    "agent_suspended",
+    "agent_activated",
+    "role_changed",
+  ],
   compliance: ["sar_filed", "ctr_filed", "audit_export", "compliance_report"],
 };
 
@@ -40,9 +64,14 @@ export default function AuditLogViewer() {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
 
-  const actions = actionGroup !== "all" ? (ACTION_GROUP_FILTERS[actionGroup] ?? []) : [];
+  const actions =
+    actionGroup !== "all" ? (ACTION_GROUP_FILTERS[actionGroup] ?? []) : [];
 
-  const { data: allLogs, isLoading, refetch } = trpc.auditLog.listAll.useQuery({
+  const {
+    data: allLogs,
+    isLoading,
+    refetch,
+  } = trpc.auditLog.listAll.useQuery({
     limit: 500,
     offset: 0,
   });
@@ -53,15 +82,19 @@ export default function AuditLogViewer() {
   );
 
   const displayLogs = useMemo(() => {
-    const base = actionGroup !== "all" ? (filteredByAction ?? []) : (allLogs ?? []);
+    const base =
+      actionGroup !== "all" ? (filteredByAction ?? []) : (allLogs ?? []);
     if (!search) return base;
     const q = search.toLowerCase();
-    return base.filter((l: any) =>
-      (l.action ?? "").toLowerCase().includes(q) ||
-      (l.entityType ?? "").toLowerCase().includes(q) ||
-      (l.entityId ?? "").toLowerCase().includes(q) ||
-      (l.agentCode ?? "").toLowerCase().includes(q) ||
-      JSON.stringify(l.metadata ?? {}).toLowerCase().includes(q)
+    return base.filter(
+      (l: any) =>
+        (l.action ?? "").toLowerCase().includes(q) ||
+        (l.entityType ?? "").toLowerCase().includes(q) ||
+        (l.entityId ?? "").toLowerCase().includes(q) ||
+        (l.agentCode ?? "").toLowerCase().includes(q) ||
+        JSON.stringify(l.metadata ?? {})
+          .toLowerCase()
+          .includes(q)
     );
   }, [allLogs, filteredByAction, actionGroup, search]);
 
@@ -69,8 +102,19 @@ export default function AuditLogViewer() {
   const totalPages = Math.ceil(displayLogs.length / PAGE_SIZE);
 
   const exportCsv = () => {
-    if (!displayLogs.length) { toast.error("No data to export"); return; }
-    const headers = ["Timestamp", "Action", "Entity Type", "Entity ID", "Agent Code", "IP Address", "Details"];
+    if (!displayLogs.length) {
+      toast.error("No data to export");
+      return;
+    }
+    const headers = [
+      "Timestamp",
+      "Action",
+      "Entity Type",
+      "Entity ID",
+      "Agent Code",
+      "IP Address",
+      "Details",
+    ];
     const rows = displayLogs.map((l: any) => [
       new Date(l.createdAt).toISOString(),
       l.action ?? "",
@@ -80,7 +124,11 @@ export default function AuditLogViewer() {
       l.ipAddress ?? "",
       JSON.stringify(l.metadata ?? {}),
     ]);
-    const csv = [headers, ...rows].map((r: any) => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows]
+      .map((r: any) =>
+        r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(",")
+      )
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -91,14 +139,39 @@ export default function AuditLogViewer() {
     toast.success(`Exported ${displayLogs.length} records`);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  if (!isAuthenticated) { window.location.href = getLoginUrl(); return null; }
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
+    );
+  if (!isAuthenticated) {
+    window.location.href = getLoginUrl();
+    return null;
+  }
 
   const actionColor = (action: string) => {
-    if (action.includes("login") || action.includes("logout")) return "bg-blue-100 text-blue-800";
-    if (action.includes("failed") || action.includes("rejected") || action.includes("suspended")) return "bg-red-100 text-red-800";
-    if (action.includes("approved") || action.includes("created") || action.includes("activated")) return "bg-green-100 text-green-800";
-    if (action.includes("kyc") || action.includes("compliance") || action.includes("sar") || action.includes("ctr")) return "bg-purple-100 text-purple-800";
+    if (action.includes("login") || action.includes("logout"))
+      return "bg-blue-100 text-blue-800";
+    if (
+      action.includes("failed") ||
+      action.includes("rejected") ||
+      action.includes("suspended")
+    )
+      return "bg-red-100 text-red-800";
+    if (
+      action.includes("approved") ||
+      action.includes("created") ||
+      action.includes("activated")
+    )
+      return "bg-green-100 text-green-800";
+    if (
+      action.includes("kyc") ||
+      action.includes("compliance") ||
+      action.includes("sar") ||
+      action.includes("ctr")
+    )
+      return "bg-purple-100 text-purple-800";
     return "bg-gray-100 text-gray-700";
   };
 
@@ -135,16 +208,27 @@ export default function AuditLogViewer() {
               className="pl-9"
               placeholder="Search action, entity, agent code..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
             />
           </div>
-          <Select value={actionGroup} onValueChange={(v) => { setActionGroup(v); setPage(0); }}>
+          <Select
+            value={actionGroup}
+            onValueChange={v => {
+              setActionGroup(v);
+              setPage(0);
+            }}
+          >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Action Group" />
             </SelectTrigger>
             <SelectContent>
               {ACTION_GROUPS.map((g: any) => (
-                <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                <SelectItem key={g.value} value={g.value}>
+                  {g.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -154,7 +238,8 @@ export default function AuditLogViewer() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Audit Records ({displayLogs.length} total · page {page + 1}/{Math.max(1, totalPages)})
+              Audit Records ({displayLogs.length} total · page {page + 1}/
+              {Math.max(1, totalPages)})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -172,42 +257,92 @@ export default function AuditLogViewer() {
                 </thead>
                 <tbody>
                   {isLoading && (
-                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading audit records...</td></tr>
-                  )}
-                  {!isLoading && paginated.map((log: any, i: number) => (
-                    <tr key={`${log.id}-${i}`} className="border-b hover:bg-muted/30">
-                      <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </td>
-                      <td className="py-2 px-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${actionColor(log.action ?? "")}`}>
-                          {log.action ?? "—"}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-xs">
-                        {log.entityType && <span className="font-medium">{log.entityType}</span>}
-                        {log.entityId && <span className="text-muted-foreground ml-1">#{log.entityId}</span>}
-                      </td>
-                      <td className="py-2 px-3 text-xs font-mono">{log.agentCode ?? "—"}</td>
-                      <td className="py-2 px-3 text-xs text-muted-foreground font-mono">{log.ipAddress ?? "—"}</td>
-                      <td className="py-2 px-3 text-xs text-muted-foreground max-w-xs truncate">
-                        {log.metadata ? JSON.stringify(log.metadata).slice(0, 80) : "—"}
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        Loading audit records...
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  {!isLoading &&
+                    paginated.map((log: any, i: number) => (
+                      <tr
+                        key={`${log.id}-${i}`}
+                        className="border-b hover:bg-muted/30"
+                      >
+                        <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${actionColor(log.action ?? "")}`}
+                          >
+                            {log.action ?? "—"}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-xs">
+                          {log.entityType && (
+                            <span className="font-medium">
+                              {log.entityType}
+                            </span>
+                          )}
+                          {log.entityId && (
+                            <span className="text-muted-foreground ml-1">
+                              #{log.entityId}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-xs font-mono">
+                          {log.agentCode ?? "—"}
+                        </td>
+                        <td className="py-2 px-3 text-xs text-muted-foreground font-mono">
+                          {log.ipAddress ?? "—"}
+                        </td>
+                        <td className="py-2 px-3 text-xs text-muted-foreground max-w-xs truncate">
+                          {log.metadata
+                            ? JSON.stringify(log.metadata).slice(0, 80)
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
                   {!isLoading && paginated.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">No audit records found</td></tr>
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No audit records found
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
             </div>
             {totalPages > 1 && (
               <div className="flex justify-between items-center pt-4">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Previous
+                </Button>
                 <span className="text-xs text-muted-foreground">
-                  Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, displayLogs.length)} of {displayLogs.length}
+                  Showing {page * PAGE_SIZE + 1}–
+                  {Math.min((page + 1) * PAGE_SIZE, displayLogs.length)} of{" "}
+                  {displayLogs.length}
                 </span>
-                <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page + 1 >= totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             )}
           </CardContent>

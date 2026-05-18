@@ -26,11 +26,21 @@ describe("Go Service Adapter Framework", () => {
   it("defines SERVICE_REGISTRY with all 15 Go services", () => {
     const content = fs.readFileSync(adapterPath, "utf-8");
     const services = [
-      "workflow-orchestrator", "tigerbeetle-integrated", "mdm-compliance-engine",
-      "pbac-engine", "connectivity-resilience", "billing-aggregator",
-      "rbac-service", "ussd-gateway", "ussd-tx-processor",
-      "hierarchy-engine", "settlement-gateway", "at-ussd-handler",
-      "opensearch-analytics", "revenue-reconciler", "fluvio-streaming",
+      "workflow-orchestrator",
+      "tigerbeetle-integrated",
+      "mdm-compliance-engine",
+      "pbac-engine",
+      "connectivity-resilience",
+      "billing-aggregator",
+      "rbac-service",
+      "ussd-gateway",
+      "ussd-tx-processor",
+      "hierarchy-engine",
+      "settlement-gateway",
+      "at-ussd-handler",
+      "opensearch-analytics",
+      "revenue-reconciler",
+      "fluvio-streaming",
     ];
     for (const svc of services) {
       expect(content).toContain(`"${svc}"`);
@@ -81,21 +91,70 @@ describe("Go Service Adapter Framework", () => {
 // ─── 2. All 15 Typed Go Service Adapters ──────────────────────
 describe("Typed Go Service Adapters", () => {
   const adapters = [
-    { file: "workflowAdapter.ts", exports: ["createWorkflow", "advanceWorkflow", "listWorkflows"] },
-    { file: "tigerbeetleAdapter.ts", exports: ["createAccount", "createTransfer", "getAccountBalance"] },
-    { file: "mdmAdapter.ts", exports: ["checkDevice", "listDevices", "enrollDevice"] },
-    { file: "pbacAdapter.ts", exports: ["authorize", "listPolicies", "createPolicy"] },
-    { file: "connectivityAdapter.ts", exports: ["enqueue", "batchEnqueue", "getQueueStats"] },
-    { file: "billingAdapter.ts", exports: ["getCurrentPeriod", "setBillingModel", "generateInvoice"] },
-    { file: "rbacAdapter.ts", exports: ["listRoles", "createRole", "checkPermission"] },
-    { file: "ussdGatewayAdapter.ts", exports: ["createSession", "handleCallback", "getStats"] },
-    { file: "ussdTxAdapter.ts", exports: ["processTransaction", "completeTransaction", "validateTransaction"] },
-    { file: "hierarchyAdapter.ts", exports: ["getOrgTree", "getAgentHierarchy", "moveNode"] },
-    { file: "settlementAdapter.ts", exports: ["initiateSettlement", "getSettlementStatus", "createBatch"] },
-    { file: "atUssdAdapter.ts", exports: ["handleCallback", "listSessions", "cleanupExpiredSessions"] },
-    { file: "opensearchAdapter.ts", exports: ["search", "aggregate", "indexDocument"] },
-    { file: "revenueReconcilerAdapter.ts", exports: ["reconcile", "getDiscrepancies", "generateReport"] },
-    { file: "fluvioAdapter.ts", exports: ["createTopic", "produce", "batchProduce", "consume"] },
+    {
+      file: "workflowAdapter.ts",
+      exports: ["createWorkflow", "advanceWorkflow", "listWorkflows"],
+    },
+    {
+      file: "tigerbeetleAdapter.ts",
+      exports: ["createAccount", "createTransfer", "getAccountBalance"],
+    },
+    {
+      file: "mdmAdapter.ts",
+      exports: ["checkDevice", "listDevices", "enrollDevice"],
+    },
+    {
+      file: "pbacAdapter.ts",
+      exports: ["authorize", "listPolicies", "createPolicy"],
+    },
+    {
+      file: "connectivityAdapter.ts",
+      exports: ["enqueue", "batchEnqueue", "getQueueStats"],
+    },
+    {
+      file: "billingAdapter.ts",
+      exports: ["getCurrentPeriod", "setBillingModel", "generateInvoice"],
+    },
+    {
+      file: "rbacAdapter.ts",
+      exports: ["listRoles", "createRole", "checkPermission"],
+    },
+    {
+      file: "ussdGatewayAdapter.ts",
+      exports: ["createSession", "handleCallback", "getStats"],
+    },
+    {
+      file: "ussdTxAdapter.ts",
+      exports: [
+        "processTransaction",
+        "completeTransaction",
+        "validateTransaction",
+      ],
+    },
+    {
+      file: "hierarchyAdapter.ts",
+      exports: ["getOrgTree", "getAgentHierarchy", "moveNode"],
+    },
+    {
+      file: "settlementAdapter.ts",
+      exports: ["initiateSettlement", "getSettlementStatus", "createBatch"],
+    },
+    {
+      file: "atUssdAdapter.ts",
+      exports: ["handleCallback", "listSessions", "cleanupExpiredSessions"],
+    },
+    {
+      file: "opensearchAdapter.ts",
+      exports: ["search", "aggregate", "indexDocument"],
+    },
+    {
+      file: "revenueReconcilerAdapter.ts",
+      exports: ["reconcile", "getDiscrepancies", "generateReport"],
+    },
+    {
+      file: "fluvioAdapter.ts",
+      exports: ["createTopic", "produce", "batchProduce", "consume"],
+    },
   ];
 
   for (const adapter of adapters) {
@@ -144,10 +203,20 @@ describe("goServiceBridge tRPC Router", () => {
   it("imports all 14 service adapters", () => {
     const content = fs.readFileSync(bridgePath, "utf-8");
     const imports = [
-      "workflowAdapter", "tigerbeetleAdapter", "mdmAdapter", "pbacAdapter",
-      "connectivityAdapter", "billingAdapter", "rbacAdapter", "ussdGatewayAdapter",
-      "ussdTxAdapter", "hierarchyAdapter", "settlementAdapter", "atUssdAdapter",
-      "opensearchAdapter", "revenueReconcilerAdapter",
+      "workflowAdapter",
+      "tigerbeetleAdapter",
+      "mdmAdapter",
+      "pbacAdapter",
+      "connectivityAdapter",
+      "billingAdapter",
+      "rbacAdapter",
+      "ussdGatewayAdapter",
+      "ussdTxAdapter",
+      "hierarchyAdapter",
+      "settlementAdapter",
+      "atUssdAdapter",
+      "opensearchAdapter",
+      "revenueReconcilerAdapter",
     ];
     for (const imp of imports) {
       expect(content).toContain(imp);
@@ -164,11 +233,24 @@ describe("goServiceBridge tRPC Router", () => {
   it("defines procedures for all service categories", () => {
     const content = fs.readFileSync(bridgePath, "utf-8");
     const procedures = [
-      "workflowCreate", "workflowList", "ledgerTransfer", "ledgerBalance",
-      "mdmCheckDevice", "pbacAuthorize", "queueEnqueue", "queueStats",
-      "billingCurrentPeriod", "rbacListRoles", "ussdCreateSession",
-      "ussdProcess", "orgTree", "settlementInitiate", "settlementBatch",
-      "atUssdCallback", "analyticsSearch", "revenueReconcile",
+      "workflowCreate",
+      "workflowList",
+      "ledgerTransfer",
+      "ledgerBalance",
+      "mdmCheckDevice",
+      "pbacAuthorize",
+      "queueEnqueue",
+      "queueStats",
+      "billingCurrentPeriod",
+      "rbacListRoles",
+      "ussdCreateSession",
+      "ussdProcess",
+      "orgTree",
+      "settlementInitiate",
+      "settlementBatch",
+      "atUssdCallback",
+      "analyticsSearch",
+      "revenueReconcile",
     ];
     for (const proc of procedures) {
       expect(content).toContain(`${proc}:`);
@@ -270,7 +352,9 @@ describe("Critical Financial Router Integration Tests", () => {
 
       it("contains domain-specific business logic", () => {
         const content = fs.readFileSync(filePath, "utf-8").toLowerCase();
-        const matches = router.domainLogic.filter((term) => content.includes(term.toLowerCase()));
+        const matches = router.domainLogic.filter(term =>
+          content.includes(term.toLowerCase())
+        );
         expect(matches.length).toBeGreaterThanOrEqual(2);
       });
 
@@ -301,12 +385,14 @@ describe("Adapter-to-Router Data Flow", () => {
     // Should NOT contain raw fetch calls
     expect(content).not.toContain("fetch(");
     // Should import from adapters
-    expect(content).toContain('../adapters/');
+    expect(content).toContain("../adapters/");
   });
 
   it("all adapters use GoServiceAdapter class methods", () => {
     const adapterDir = path.join(PROJECT, "server/adapters");
-    const files = fs.readdirSync(adapterDir).filter(f => f !== "goServiceAdapter.ts" && f.endsWith(".ts"));
+    const files = fs
+      .readdirSync(adapterDir)
+      .filter(f => f !== "goServiceAdapter.ts" && f.endsWith(".ts"));
     for (const file of files) {
       const content = fs.readFileSync(path.join(adapterDir, file), "utf-8");
       // Each adapter should call .get, .post, .put, or .delete on an adapter instance

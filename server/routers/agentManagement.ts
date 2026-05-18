@@ -9,18 +9,38 @@ import { agents, floatTopUpRequests } from "../../drizzle/schema";
 import { eq, desc, asc } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
-import { writeAuditLog, updateAgentFloat, getAgentById, withTransaction } from "../db";
+import {
+  writeAuditLog,
+  updateAgentFloat,
+  getAgentById,
+  withTransaction,
+} from "../db";
 
 async function requireAdmin(req: any) {
   const session = await getAgentFromCookie(req);
-  if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+  if (!session)
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Agent session required",
+    });
   // Re-fetch from DB to get latest role
   const db = (await getDb())!;
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-  const result = await db.select().from(agents).where(eq(agents.id, session.id)).limit(1);
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "DB unavailable",
+    });
+  const result = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.id, session.id))
+    .limit(1);
   const agent = result[0];
   if (!agent || agent.role !== "admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Admin privileges required" });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin privileges required",
+    });
   }
   return { session, agent };
 }
@@ -59,25 +79,41 @@ export const agentManagementRouter = router({
       }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   // ── Set agent role ────────────────────────────────────────────────────────
   setRole: protectedProcedure
-    .input(z.object({
-      agentId: z.number().int().positive(),
-      role: z.enum(["agent", "supervisor", "admin"]),
-    }))
+    .input(
+      z.object({
+        agentId: z.number().int().positive(),
+        role: z.enum(["agent", "supervisor", "admin"]),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const { session } = await requireAdmin(ctx.req);
         if (input.agentId === session.id) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot change your own role" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot change your own role",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db.update(agents).set({ role: input.role }).where(eq(agents.id, input.agentId));
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        await db
+          .update(agents)
+          .set({ role: input.role })
+          .where(eq(agents.id, input.agentId));
         await writeAuditLog({
           agentId: session.id,
           agentCode: session.agentCode,
@@ -90,25 +126,41 @@ export const agentManagementRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Toggle agent active status ────────────────────────────────────────────
   setActive: protectedProcedure
-    .input(z.object({
-      agentId: z.number().int().positive(),
-      isActive: z.boolean(),
-    }))
+    .input(
+      z.object({
+        agentId: z.number().int().positive(),
+        isActive: z.boolean(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const { session } = await requireAdmin(ctx.req);
         if (input.agentId === session.id) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot deactivate your own account" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot deactivate your own account",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db.update(agents).set({ isActive: input.isActive }).where(eq(agents.id, input.agentId));
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        await db
+          .update(agents)
+          .set({ isActive: input.isActive })
+          .where(eq(agents.id, input.agentId));
         await writeAuditLog({
           agentId: session.id,
           agentCode: session.agentCode,
@@ -120,13 +172,23 @@ export const agentManagementRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── List float top-up requests ────────────────────────────────────────────
   listTopUpRequests: protectedProcedure
-    .input(z.object({ status: z.enum(["pending", "approved", "rejected", "all"]).default("pending") }))
+    .input(
+      z.object({
+        status: z
+          .enum(["pending", "approved", "rejected", "all"])
+          .default("pending"),
+      })
+    )
     .query(async ({ input, ctx }) => {
       try {
         await requireAdmin(ctx.req);
@@ -150,7 +212,10 @@ export const agentManagementRouter = router({
           .from(floatTopUpRequests)
           .leftJoin(agents, eq(floatTopUpRequests.agentId, agents.id))
           .orderBy(desc(floatTopUpRequests.createdAt));
-        const filtered = input.status === "all" ? rows : rows.filter((r: any) => r.status === input.status);
+        const filtered =
+          input.status === "all"
+            ? rows
+            : rows.filter((r: any) => r.status === input.status);
         return filtered.map((r: any) => ({
           ...r,
           requestedAmount: Number(r.requestedAmount),
@@ -158,33 +223,73 @@ export const agentManagementRouter = router({
         }));
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Approve float top-up ──────────────────────────────────────────────────
   approveTopUp: protectedProcedure
-    .input(z.object({ requestId: z.number().int().positive(), notes: z.string().optional() }))
+    .input(
+      z.object({
+        requestId: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const { session } = await requireAdmin(ctx.req);
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        const result = await db.select().from(floatTopUpRequests).where(eq(floatTopUpRequests.id, input.requestId)).limit(1);
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        const result = await db
+          .select()
+          .from(floatTopUpRequests)
+          .where(eq(floatTopUpRequests.id, input.requestId))
+          .limit(1);
         const req = result[0];
-        if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+        if (!req)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Request not found",
+          });
         if (req.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Request already ${req.status}` });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Request already ${req.status}`,
+          });
         }
         // P0-A: Wrap float credit + status update in an atomic DB transaction
-        await withTransaction(async (tx) => {
+        await withTransaction(async tx => {
           // Credit agent float (updates agents.floatBalance)
-          await tx.update(require("../../drizzle/schema").agents)
-            .set({ floatBalance: require("drizzle-orm").sql`"floatBalance" + ${Number(req.requestedAmount)}`, updatedAt: new Date() })
-            .where(require("drizzle-orm").eq(require("../../drizzle/schema").agents.id, req.agentId));
+          await tx
+            .update(require("../../drizzle/schema").agents)
+            .set({
+              floatBalance: require("drizzle-orm")
+                .sql`"floatBalance" + ${Number(req.requestedAmount)}`,
+              updatedAt: new Date(),
+            })
+            .where(
+              require("drizzle-orm").eq(
+                require("../../drizzle/schema").agents.id,
+                req.agentId
+              )
+            );
           // Update request status
-          await tx.update(floatTopUpRequests)
-            .set({ status: "approved", approvedBy: session.agentCode, notes: input.notes ?? null, updatedAt: new Date() })
+          await tx
+            .update(floatTopUpRequests)
+            .set({
+              status: "approved",
+              approvedBy: session.agentCode,
+              notes: input.notes ?? null,
+              updatedAt: new Date(),
+            })
             .where(eq(floatTopUpRequests.id, input.requestId));
         });
         await writeAuditLog({
@@ -194,20 +299,27 @@ export const agentManagementRouter = router({
           resource: "float_topup",
           resourceId: String(input.requestId),
           status: "success",
-          metadata: { amount: Number(req.requestedAmount), targetAgentId: req.agentId },
+          metadata: {
+            amount: Number(req.requestedAmount),
+            targetAgentId: req.agentId,
+          },
         });
 
         // ── Fluvio float event (fire-and-forget) ──────────────────────────────
-        import("../lib/fluvioClient.js").then(({ publishFloatEvent }) =>
-          publishFloatEvent({
-            agentId: req.agentId,
-            previousBalance: 0, // actual previous balance not tracked here; use 0 as sentinel
-            newBalance: Number(req.requestedAmount),
-            delta: Number(req.requestedAmount),
-            reason: "float_topup_approved",
-            ref: `FLT-${input.requestId}`,
-          })
-        ).catch((e: unknown) => console.error("[Fluvio] Float event failed:", e));
+        import("../lib/fluvioClient.js")
+          .then(({ publishFloatEvent }) =>
+            publishFloatEvent({
+              agentId: req.agentId,
+              previousBalance: 0, // actual previous balance not tracked here; use 0 as sentinel
+              newBalance: Number(req.requestedAmount),
+              delta: Number(req.requestedAmount),
+              reason: "float_topup_approved",
+              ref: `FLT-${input.requestId}`,
+            })
+          )
+          .catch((e: unknown) =>
+            console.error("[Fluvio] Float event failed:", e)
+          );
 
         // ── VAPID push notification to agent (fire-and-forget) ──────────────────
         (async () => {
@@ -215,13 +327,19 @@ export const agentManagementRouter = router({
             const { notifyFloatApproval } = await import("../push.js");
             const db2 = await getDb();
             if (!db2) return;
-            const agentRows = await db2.select().from(agents).where(eq(agents.id, req.agentId)).limit(1);
+            const agentRows = await db2
+              .select()
+              .from(agents)
+              .where(eq(agents.id, req.agentId))
+              .limit(1);
             const targetAgent = agentRows[0];
             if (targetAgent) {
               await notifyFloatApproval({
                 agentCode: targetAgent.agentCode,
                 amount: Number(req.requestedAmount),
-                newBalance: Number(targetAgent.floatBalance) + Number(req.requestedAmount),
+                newBalance:
+                  Number(targetAgent.floatBalance) +
+                  Number(req.requestedAmount),
               });
             }
           } catch (e) {
@@ -232,26 +350,56 @@ export const agentManagementRouter = router({
         return { success: true, amountCredited: Number(req.requestedAmount) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Reject float top-up ───────────────────────────────────────────────────
   rejectTopUp: protectedProcedure
-    .input(z.object({ requestId: z.number().int().positive(), reason: z.string().min(5) }))
+    .input(
+      z.object({
+        requestId: z.number().int().positive(),
+        reason: z.string().min(5),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const { session } = await requireAdmin(ctx.req);
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        const result = await db.select().from(floatTopUpRequests).where(eq(floatTopUpRequests.id, input.requestId)).limit(1);
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        const result = await db
+          .select()
+          .from(floatTopUpRequests)
+          .where(eq(floatTopUpRequests.id, input.requestId))
+          .limit(1);
         const req = result[0];
-        if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+        if (!req)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Request not found",
+          });
         if (req.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Request already ${req.status}` });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Request already ${req.status}`,
+          });
         }
-        await db.update(floatTopUpRequests)
-          .set({ status: "rejected", approvedBy: session.agentCode, notes: input.reason, updatedAt: new Date() })
+        await db
+          .update(floatTopUpRequests)
+          .set({
+            status: "rejected",
+            approvedBy: session.agentCode,
+            notes: input.reason,
+            updatedAt: new Date(),
+          })
           .where(eq(floatTopUpRequests.id, input.requestId));
         await writeAuditLog({
           agentId: session.id,
@@ -265,22 +413,36 @@ export const agentManagementRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Agent submits a float top-up request (agent-side, no admin required) ──
   submitTopUpRequest: protectedProcedure
-    .input(z.object({
-      amount: z.number().positive().min(1000, "Minimum top-up is ₦1,000"),
-      notes: z.string().max(500).optional(),
-    }))
+    .input(
+      z.object({
+        amount: z.number().positive().min(1000, "Minimum top-up is ₦1,000"),
+        notes: z.string().max(500).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
         // Prevent duplicate pending requests
         const existing = await db
           .select()
@@ -289,7 +451,10 @@ export const agentManagementRouter = router({
           .limit(10);
         const hasPending = existing.some((r: any) => r.status === "pending");
         if (hasPending) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "You already have a pending top-up request" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You already have a pending top-up request",
+          });
         }
         await db.insert(floatTopUpRequests).values({
           agentId: session.id,
@@ -311,7 +476,11 @@ export const agentManagementRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

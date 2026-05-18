@@ -37,14 +37,13 @@ const kafka = new Kafka({
   clientId: "54link-dlq-consumer",
   brokers: ENV.kafkaBrokers.split(","),
   ssl: ENV.kafkaSsl === "true",
-  sasl:
-    ENV.kafkaSaslUsername
-      ? {
-          mechanism: "plain" as const,
-          username: ENV.kafkaSaslUsername,
-          password: ENV.kafkaSaslPassword,
-        }
-      : undefined,
+  sasl: ENV.kafkaSaslUsername
+    ? {
+        mechanism: "plain" as const,
+        username: ENV.kafkaSaslUsername,
+        password: ENV.kafkaSaslPassword,
+      }
+    : undefined,
   retry: { initialRetryTime: 1_000, retries: 5 },
 });
 
@@ -68,7 +67,7 @@ function parseMessage(message: KafkaMessage): DlqPayload | null {
 }
 
 async function retryMessage(payload: DlqPayload): Promise<void> {
-  await new Promise<void>((r) => setTimeout(r, RETRY_DELAY_MS));
+  await new Promise<void>(r => setTimeout(r, RETRY_DELAY_MS));
   const producer = kafka.producer();
   await producer.connect();
   try {
@@ -148,9 +147,7 @@ async function handleSettlementDlq(payload: DlqPayload): Promise<void> {
 }
 
 async function handleNotificationDlq(payload: DlqPayload): Promise<void> {
-  console.warn(
-    `[DLQ][notifications] Dropped — retries=${payload.retryCount}`
-  );
+  console.warn(`[DLQ][notifications] Dropped — retries=${payload.retryCount}`);
   await persistToDlqLog(payload, "dropped");
 }
 
@@ -224,10 +221,7 @@ export async function startDlqConsumer(): Promise<void> {
             },
           ]);
         } catch (err: unknown) {
-          console.error(
-            `[DLQ] Error processing message from ${topic}:`,
-            err
-          );
+          console.error(`[DLQ] Error processing message from ${topic}:`, err);
           // Do not commit — message will be reprocessed on next poll
         }
       },

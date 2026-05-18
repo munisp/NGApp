@@ -33,55 +33,55 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 :root {
   --radius: 0.5rem;
   /* Bloomberg Terminal Dark — near-black base */
-  --background:    oklch(0.09 0.01 240);
-  --foreground:    oklch(0.92 0.005 220);
-  --card:          oklch(0.13 0.012 240);
+  --background: oklch(0.09 0.01 240);
+  --foreground: oklch(0.92 0.005 220);
+  --card: oklch(0.13 0.012 240);
   --card-foreground: oklch(0.92 0.005 220);
-  --popover:       oklch(0.13 0.012 240);
+  --popover: oklch(0.13 0.012 240);
   --popover-foreground: oklch(0.92 0.005 220);
   /* Electric blue primary */
-  --primary:       oklch(0.60 0.22 260);
+  --primary: oklch(0.6 0.22 260);
   --primary-foreground: oklch(0.98 0 0);
-  --secondary:     oklch(0.17 0.015 240);
+  --secondary: oklch(0.17 0.015 240);
   --secondary-foreground: oklch(0.75 0.01 220);
-  --muted:         oklch(0.17 0.012 240);
+  --muted: oklch(0.17 0.012 240);
   --muted-foreground: oklch(0.55 0.015 230);
-  --accent:        oklch(0.17 0.015 240);
+  --accent: oklch(0.17 0.015 240);
   --accent-foreground: oklch(0.92 0.005 220);
-  --destructive:   oklch(0.60 0.22 25);
+  --destructive: oklch(0.6 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border:        oklch(0.22 0.015 240);
-  --input:         oklch(0.18 0.012 240);
-  --ring:          oklch(0.60 0.22 260);
+  --border: oklch(0.22 0.015 240);
+  --input: oklch(0.18 0.012 240);
+  --ring: oklch(0.6 0.22 260);
   /* Charts — blue spectrum */
-  --chart-1: oklch(0.60 0.22 260);
+  --chart-1: oklch(0.6 0.22 260);
   --chart-2: oklch(0.55 0.18 200);
-  --chart-3: oklch(0.65 0.20 160);
-  --chart-4: oklch(0.70 0.18 80);
-  --chart-5: oklch(0.60 0.22 30);
+  --chart-3: oklch(0.65 0.2 160);
+  --chart-4: oklch(0.7 0.18 80);
+  --chart-5: oklch(0.6 0.22 30);
   /* Sidebar */
-  --sidebar:          oklch(0.11 0.012 240);
+  --sidebar: oklch(0.11 0.012 240);
   --sidebar-foreground: oklch(0.92 0.005 220);
-  --sidebar-primary:  oklch(0.60 0.22 260);
+  --sidebar-primary: oklch(0.6 0.22 260);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent:   oklch(0.17 0.015 240);
+  --sidebar-accent: oklch(0.17 0.015 240);
   --sidebar-accent-foreground: oklch(0.92 0.005 220);
-  --sidebar-border:   oklch(0.22 0.015 240);
-  --sidebar-ring:     oklch(0.60 0.22 260);
+  --sidebar-border: oklch(0.22 0.015 240);
+  --sidebar-ring: oklch(0.6 0.22 260);
   /* Custom POS tokens */
-  --pos-green:    oklch(0.65 0.18 160);
-  --pos-gold:     oklch(0.78 0.18 80);
-  --pos-red:      oklch(0.60 0.22 25);
-  --pos-blue:     oklch(0.60 0.22 260);
-  --pos-slate:    oklch(0.22 0.015 240);
+  --pos-green: oklch(0.65 0.18 160);
+  --pos-gold: oklch(0.78 0.18 80);
+  --pos-red: oklch(0.6 0.22 25);
+  --pos-blue: oklch(0.6 0.22 260);
+  --pos-slate: oklch(0.22 0.015 240);
 }
 
 @layer base {
@@ -93,10 +93,17 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
   }
-  .font-mono, code, pre {
+  .font-mono,
+  code,
+  pre {
     font-family: var(--font-mono);
   }
   button:not(:disabled),
@@ -119,10 +126,17 @@
     min-width: 0;
   }
   @media (min-width: 640px) {
-    .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
   }
   @media (min-width: 1024px) {
-    .container { padding-left: 2rem; padding-right: 2rem; max-width: 1280px; }
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
   }
 
   /* POS Tile */
@@ -142,7 +156,7 @@
     user-select: none;
   }
   .pos-tile::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
@@ -151,34 +165,58 @@
   }
   .pos-tile:hover {
     transform: translateY(-2px);
-    border-color: oklch(0.60 0.22 260 / 0.5);
-    box-shadow: 0 8px 24px oklch(0.60 0.22 260 / 0.15);
+    border-color: oklch(0.6 0.22 260 / 0.5);
+    box-shadow: 0 8px 24px oklch(0.6 0.22 260 / 0.15);
   }
   .pos-tile:hover::before {
     opacity: 1;
-    background: radial-gradient(circle at 30% 30%, oklch(0.60 0.22 260 / 0.08), transparent 70%);
+    background: radial-gradient(
+      circle at 30% 30%,
+      oklch(0.6 0.22 260 / 0.08),
+      transparent 70%
+    );
   }
   .pos-tile:active {
     transform: scale(0.96) translateY(0);
   }
   .pos-tile.hot {
-    border-color: oklch(0.60 0.22 260 / 0.4);
-    box-shadow: 0 0 12px oklch(0.60 0.22 260 / 0.12);
+    border-color: oklch(0.6 0.22 260 / 0.4);
+    box-shadow: 0 0 12px oklch(0.6 0.22 260 / 0.12);
   }
   .pos-tile.hot::after {
-    content: '';
+    content: "";
     position: absolute;
-    top: 0; left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 2px;
-    background: linear-gradient(90deg, oklch(0.60 0.22 260), oklch(0.55 0.18 200));
+    background: linear-gradient(
+      90deg,
+      oklch(0.6 0.22 260),
+      oklch(0.55 0.18 200)
+    );
     border-radius: 12px 12px 0 0;
   }
 
   /* Tile sizes */
-  .tile-sm  { width: 80px;  height: 80px; }
-  .tile-md  { width: 120px; height: 120px; }
-  .tile-lg  { width: 160px; height: 160px; }
-  .tile-wide { width: 100%; height: 80px; flex-direction: row; align-items: center; }
+  .tile-sm {
+    width: 80px;
+    height: 80px;
+  }
+  .tile-md {
+    width: 120px;
+    height: 120px;
+  }
+  .tile-lg {
+    width: 160px;
+    height: 160px;
+  }
+  .tile-wide {
+    width: 100%;
+    height: 80px;
+    flex-direction: row;
+    align-items: center;
+  }
 
   /* Status bar */
   .pos-status-bar {
@@ -194,13 +232,18 @@
     white-space: nowrap;
   }
   @keyframes ticker-scroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 
   /* Pulse dot */
   .pulse-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--pos-green);
     box-shadow: 0 0 0 0 oklch(0.65 0.18 160 / 0.6);
@@ -208,19 +251,31 @@
   }
   .pulse-dot.offline {
     background: var(--pos-red);
-    box-shadow: 0 0 0 0 oklch(0.60 0.22 25 / 0.6);
+    box-shadow: 0 0 0 0 oklch(0.6 0.22 25 / 0.6);
     animation: none;
   }
   @keyframes pulse-ring {
-    0%   { box-shadow: 0 0 0 0 oklch(0.65 0.18 160 / 0.6); }
-    70%  { box-shadow: 0 0 0 8px oklch(0.65 0.18 160 / 0); }
-    100% { box-shadow: 0 0 0 0 oklch(0.65 0.18 160 / 0); }
+    0% {
+      box-shadow: 0 0 0 0 oklch(0.65 0.18 160 / 0.6);
+    }
+    70% {
+      box-shadow: 0 0 0 8px oklch(0.65 0.18 160 / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 oklch(0.65 0.18 160 / 0);
+    }
   }
 
   /* Tile entrance animation */
   @keyframes tile-enter {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   .tile-enter {
     animation: tile-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -228,9 +283,16 @@
 
   /* Edit mode wobble */
   @keyframes wobble {
-    0%, 100% { transform: rotate(0deg); }
-    25%       { transform: rotate(-1.5deg); }
-    75%       { transform: rotate(1.5deg); }
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-1.5deg);
+    }
+    75% {
+      transform: rotate(1.5deg);
+    }
   }
   .tile-edit-mode {
     animation: wobble 0.5s ease-in-out infinite;
@@ -238,8 +300,14 @@
 
   /* Screen slide transition */
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   .screen-enter {
     animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -247,8 +315,16 @@
 
   /* Number counter animation */
   @keyframes count-up {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  .count-enter { animation: count-up 0.4s ease both; }
+  .count-enter {
+    animation: count-up 0.4s ease both;
+  }
 }

@@ -18,29 +18,29 @@ import { Counter, Rate, Trend } from "k6/metrics";
 
 // ── Custom metrics ────────────────────────────────────────────────────────────
 const txSuccessRate = new Rate("tx_success_rate");
-const txDuration    = new Trend("tx_duration_ms", true);
-const txErrors      = new Counter("tx_errors");
+const txDuration = new Trend("tx_duration_ms", true);
+const txErrors = new Counter("tx_errors");
 
 // ── Test configuration ────────────────────────────────────────────────────────
 export const options = {
   stages: [
-    { duration: "30s", target: 10  }, // Ramp up to 10 VUs
-    { duration: "1m",  target: 50  }, // Hold at 50 VUs
+    { duration: "30s", target: 10 }, // Ramp up to 10 VUs
+    { duration: "1m", target: 50 }, // Hold at 50 VUs
     { duration: "30s", target: 100 }, // Spike to 100 VUs
-    { duration: "1m",  target: 50  }, // Back to 50 VUs
-    { duration: "30s", target: 0   }, // Ramp down
+    { duration: "1m", target: 50 }, // Back to 50 VUs
+    { duration: "30s", target: 0 }, // Ramp down
   ],
   thresholds: {
     // 95th percentile response time under 500ms
-    "tx_duration_ms": ["p(95)<500"],
+    tx_duration_ms: ["p(95)<500"],
     // At least 99% of transactions succeed
-    "tx_success_rate": ["rate>0.99"],
+    tx_success_rate: ["rate>0.99"],
     // HTTP error rate below 1%
-    "http_req_failed": ["rate<0.01"],
+    http_req_failed: ["rate<0.01"],
   },
 };
 
-const BASE_URL    = __ENV.BASE_URL    || "http://localhost:3000";
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const AGENT_TOKEN = __ENV.AGENT_TOKEN || "";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -53,11 +53,11 @@ function randomPhone() {
 }
 
 function trpcMutation(procedure, input) {
-  const url     = `${BASE_URL}/api/trpc/${procedure}`;
+  const url = `${BASE_URL}/api/trpc/${procedure}`;
   const payload = JSON.stringify({ json: input });
   const headers = {
     "Content-Type": "application/json",
-    "Accept":       "application/json",
+    Accept: "application/json",
   };
   if (AGENT_TOKEN) {
     headers["Cookie"] = `agent_session=${AGENT_TOKEN}`;
@@ -67,26 +67,28 @@ function trpcMutation(procedure, input) {
 
 // ── Main test function ────────────────────────────────────────────────────────
 export default function () {
-  const txType = ["cash_in", "cash_out", "transfer"][Math.floor(Math.random() * 3)];
+  const txType = ["cash_in", "cash_out", "transfer"][
+    Math.floor(Math.random() * 3)
+  ];
   const amount = randomAmount(100, 50000);
 
   const input = {
-    type:     txType,
+    type: txType,
     amount,
     customer: randomPhone(),
-    channel:  "pos",
-    note:     `k6 load test — ${txType}`,
+    channel: "pos",
+    note: `k6 load test — ${txType}`,
   };
 
   const start = Date.now();
-  const res   = trpcMutation("transactions.create", input);
+  const res = trpcMutation("transactions.create", input);
   const elapsed = Date.now() - start;
 
   txDuration.add(elapsed);
 
   const ok = check(res, {
-    "status is 200":          r => r.status === 200,
-    "no tRPC error":          r => {
+    "status is 200": r => r.status === 200,
+    "no tRPC error": r => {
       try {
         const body = JSON.parse(r.body);
         return !body.error && body.result?.data?.json?.ref;
@@ -94,7 +96,7 @@ export default function () {
         return false;
       }
     },
-    "response time < 500ms":  () => elapsed < 500,
+    "response time < 500ms": () => elapsed < 500,
   });
 
   txSuccessRate.add(ok);
@@ -112,12 +114,14 @@ export function setup() {
   );
 
   if (res.status !== 200) {
-    console.warn(`Setup login failed (status ${res.status}) — tests will run without auth`);
+    console.warn(
+      `Setup login failed (status ${res.status}) — tests will run without auth`
+    );
     return { token: "" };
   }
 
   const cookie = res.headers["Set-Cookie"] || "";
-  const match  = cookie.match(/agent_session=([^;]+)/);
+  const match = cookie.match(/agent_session=([^;]+)/);
   return { token: match ? match[1] : "" };
 }
 
@@ -131,12 +135,23 @@ export function handleSummary(data) {
 // Inline text summary helper (avoids external import requirement)
 function textSummary(data, opts = {}) {
   const indent = opts.indent || "";
-  const lines  = [`\n${indent}=== Transaction Throughput Summary ===`];
-  const m      = data.metrics;
-  if (m.tx_duration_ms)  lines.push(`${indent}  p50 latency:    ${m.tx_duration_ms.values.med?.toFixed(0)}ms`);
-  if (m.tx_duration_ms)  lines.push(`${indent}  p95 latency:    ${m.tx_duration_ms.values["p(95)"]?.toFixed(0)}ms`);
-  if (m.tx_success_rate) lines.push(`${indent}  success rate:   ${(m.tx_success_rate.values.rate * 100).toFixed(2)}%`);
-  if (m.tx_errors)       lines.push(`${indent}  total errors:   ${m.tx_errors.values.count}`);
-  if (m.iterations)      lines.push(`${indent}  total requests: ${m.iterations.values.count}`);
+  const lines = [`\n${indent}=== Transaction Throughput Summary ===`];
+  const m = data.metrics;
+  if (m.tx_duration_ms)
+    lines.push(
+      `${indent}  p50 latency:    ${m.tx_duration_ms.values.med?.toFixed(0)}ms`
+    );
+  if (m.tx_duration_ms)
+    lines.push(
+      `${indent}  p95 latency:    ${m.tx_duration_ms.values["p(95)"]?.toFixed(0)}ms`
+    );
+  if (m.tx_success_rate)
+    lines.push(
+      `${indent}  success rate:   ${(m.tx_success_rate.values.rate * 100).toFixed(2)}%`
+    );
+  if (m.tx_errors)
+    lines.push(`${indent}  total errors:   ${m.tx_errors.values.count}`);
+  if (m.iterations)
+    lines.push(`${indent}  total requests: ${m.iterations.values.count}`);
   return lines.join("\n");
 }

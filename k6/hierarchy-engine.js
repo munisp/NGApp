@@ -42,11 +42,13 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:8082";
 
-const AGENT_IDS = Array.from({ length: 200 }, (_, i) =>
-  `agent-${String(i + 1).padStart(6, "0")}`
+const AGENT_IDS = Array.from(
+  { length: 200 },
+  (_, i) => `agent-${String(i + 1).padStart(6, "0")}`
 );
-const BRANCH_IDS = Array.from({ length: 20 }, (_, i) =>
-  `branch-${String(i + 1).padStart(4, "0")}`
+const BRANCH_IDS = Array.from(
+  { length: 20 },
+  (_, i) => `branch-${String(i + 1).padStart(4, "0")}`
 );
 
 function randomItem(arr) {
@@ -62,8 +64,8 @@ export default function () {
     lookupDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "agent lookup: 200 or 404": (r) => r.status === 200 || r.status === 404,
-      "agent lookup: fast": (r) => r.timings.duration < 300,
+      "agent lookup: 200 or 404": r => r.status === 200 || r.status === 404,
+      "agent lookup: fast": r => r.timings.duration < 300,
     });
     lookupErrors.add(!ok);
   });
@@ -77,8 +79,8 @@ export default function () {
     );
     totalRequests.add(1);
     check(res, {
-      "branch agents: 200 or 404": (r) => r.status === 200 || r.status === 404,
-      "branch agents: fast": (r) => r.timings.duration < 400,
+      "branch agents: 200 or 404": r => r.status === 200 || r.status === 404,
+      "branch agents: fast": r => r.timings.duration < 400,
     });
   });
 
@@ -88,8 +90,8 @@ export default function () {
     const res = http.get(`${BASE_URL}/api/v1/hierarchy/institutions`);
     totalRequests.add(1);
     check(res, {
-      "institutions: 200": (r) => r.status === 200,
-      "institutions: has body": (r) => r.body && r.body.length > 2,
+      "institutions: 200": r => r.status === 200,
+      "institutions: has body": r => r.body && r.body.length > 2,
     });
   });
 

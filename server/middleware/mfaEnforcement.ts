@@ -36,14 +36,18 @@ export const requireMfa = async ({
   next: (opts?: any) => Promise<any>;
 }) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
   }
 
   // Check DB flag: admin must have explicitly enabled MFA for this user
   if (!ctx.user.mfaEnabled) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "MFA is required for this operation. Please enable MFA in your account settings.",
+      message:
+        "MFA is required for this operation. Please enable MFA in your account settings.",
     });
   }
 
@@ -60,18 +64,24 @@ export const requireMfa = async ({
     if (sessionToken) {
       const session = await verifySessionJwt(sessionToken);
       const amr: string[] = (session as any)?.amr ?? [];
-      const mfaUsed = amr.some((m) => ["otp", "mfa", "totp", "webauthn"].includes(m));
+      const mfaUsed = amr.some(m =>
+        ["otp", "mfa", "totp", "webauthn"].includes(m)
+      );
       if (!mfaUsed) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "This operation requires MFA authentication. Please re-login with MFA.",
+          message:
+            "This operation requires MFA authentication. Please re-login with MFA.",
         });
       }
     }
   } catch (err) {
     if (err instanceof TRPCError) throw err;
     // If we can't verify the session AMR, fall back to the DB flag only
-    console.warn("[MFA] Could not verify AMR claim, relying on DB mfaEnabled flag:", err);
+    console.warn(
+      "[MFA] Could not verify AMR claim, relying on DB mfaEnabled flag:",
+      err
+    );
   }
 
   return next({ ctx });
@@ -80,7 +90,11 @@ export const requireMfa = async ({
 /**
  * Express middleware variant for REST routes that require MFA.
  */
-export async function requireMfaExpress(req: Request, res: Response, next: NextFunction) {
+export async function requireMfaExpress(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const cookieHeader = req.headers?.cookie ?? "";
     const cookies = new Map(
@@ -97,12 +111,15 @@ export async function requireMfaExpress(req: Request, res: Response, next: NextF
 
     const session = await verifySessionJwt(sessionToken);
     const amr: string[] = (session as any)?.amr ?? [];
-    const mfaUsed = amr.some((m) => ["otp", "mfa", "totp", "webauthn"].includes(m));
+    const mfaUsed = amr.some(m =>
+      ["otp", "mfa", "totp", "webauthn"].includes(m)
+    );
 
     if (!mfaUsed) {
       res.status(403).json({
         error: "MFA required",
-        message: "This operation requires MFA authentication. Please re-login with MFA.",
+        message:
+          "This operation requires MFA authentication. Please re-login with MFA.",
       });
       return;
     }

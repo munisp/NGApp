@@ -51,7 +51,7 @@ const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 // tRPC batch request helper
 function trpcQuery(procedure, input = {}) {
   const url = `${BASE_URL}/api/trpc/${procedure}?batch=1&input=${encodeURIComponent(
-    JSON.stringify({ "0": { json: input } })
+    JSON.stringify({ 0: { json: input } })
   )}`;
   return http.get(url, {
     headers: { "Content-Type": "application/json" },
@@ -61,7 +61,7 @@ function trpcQuery(procedure, input = {}) {
 function trpcMutation(procedure, input = {}) {
   return http.post(
     `${BASE_URL}/api/trpc/${procedure}?batch=1`,
-    JSON.stringify({ "0": { json: input } }),
+    JSON.stringify({ 0: { json: input } }),
     { headers: { "Content-Type": "application/json" } }
   );
 }
@@ -75,8 +75,8 @@ export default function () {
       totalRequests.add(1);
       apiDuration.add(Date.now() - start);
       const ok = check(res, {
-        "tx list: 200": (r) => r.status === 200,
-        "tx list: fast": (r) => r.timings.duration < 800,
+        "tx list: 200": r => r.status === 200,
+        "tx list: fast": r => r.timings.duration < 800,
       });
       apiErrors.add(!ok);
     });
@@ -88,12 +88,15 @@ export default function () {
   if (Math.random() < 0.25) {
     group("trpc: agent management", () => {
       const start = Date.now();
-      const res = trpcQuery("agentManagement.listAgents", { page: 1, limit: 10 });
+      const res = trpcQuery("agentManagement.listAgents", {
+        page: 1,
+        limit: 10,
+      });
       totalRequests.add(1);
       apiDuration.add(Date.now() - start);
       const ok = check(res, {
-        "agents: 200": (r) => r.status === 200,
-        "agents: fast": (r) => r.timings.duration < 600,
+        "agents: 200": r => r.status === 200,
+        "agents: fast": r => r.timings.duration < 600,
       });
       apiErrors.add(!ok);
     });
@@ -109,8 +112,8 @@ export default function () {
       totalRequests.add(1);
       apiDuration.add(Date.now() - start);
       const ok = check(res, {
-        "float: 200 or 401": (r) => r.status === 200 || r.status === 401,
-        "float: fast": (r) => r.timings.duration < 400,
+        "float: 200 or 401": r => r.status === 200 || r.status === 401,
+        "float: fast": r => r.timings.duration < 400,
       });
       apiErrors.add(!ok);
     });
@@ -126,8 +129,8 @@ export default function () {
       totalRequests.add(1);
       apiDuration.add(Date.now() - start);
       const ok = check(res, {
-        "fraud: 200 or 401": (r) => r.status === 200 || r.status === 401,
-        "fraud: fast": (r) => r.timings.duration < 500,
+        "fraud: 200 or 401": r => r.status === 200 || r.status === 401,
+        "fraud: fast": r => r.timings.duration < 500,
       });
       apiErrors.add(!ok);
     });
@@ -141,8 +144,8 @@ export default function () {
       const res = http.get(`${BASE_URL}/api/health`);
       totalRequests.add(1);
       check(res, {
-        "health: 200": (r) => r.status === 200,
-        "health: very fast": (r) => r.timings.duration < 100,
+        "health: 200": r => r.status === 200,
+        "health: very fast": r => r.timings.duration < 100,
       });
     });
   }

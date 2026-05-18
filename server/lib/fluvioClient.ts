@@ -54,19 +54,19 @@ export interface FluvioClientStatus {
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const FLUVIO_ENDPOINT   = ENV.fluvioEndpoint;
-const FLUVIO_API_KEY    = ENV.fluvioApiKey;
-const PLATFORM_BASE_URL = ENV.platformBaseUrl;           // APISix proxy fallback
-const PLATFORM_API_KEY  = ENV.platformApiKey;
+const FLUVIO_ENDPOINT = ENV.fluvioEndpoint;
+const FLUVIO_API_KEY = ENV.fluvioApiKey;
+const PLATFORM_BASE_URL = ENV.platformBaseUrl; // APISix proxy fallback
+const PLATFORM_API_KEY = ENV.platformApiKey;
 
 /** Well-known topics this POS Shell produces to or consumes from */
 export const FLUVIO_TOPICS = {
-  TRANSACTIONS:    "pos.transactions.created",
-  FRAUD_ALERTS:    "fraud-alerts",
-  FLOAT_EVENTS:    "float-events",
+  TRANSACTIONS: "pos.transactions.created",
+  FRAUD_ALERTS: "fraud-alerts",
+  FLOAT_EVENTS: "float-events",
   AGENT_TELEMETRY: "agent-telemetry",
-  KYC_EVENTS:      "kyc-events",
-  SETTLEMENT:      "settlement-events",
+  KYC_EVENTS: "kyc-events",
+  SETTLEMENT: "settlement-events",
 } as const;
 
 // ── In-memory buffer for when Fluvio is unreachable ──────────────────────────
@@ -98,12 +98,17 @@ async function publishViaDirect(event: FluvioEvent): Promise<boolean> {
       url,
       {
         key: event.key ?? null,
-        value: JSON.stringify({ ...event.payload, _ts: event.timestamp ?? new Date().toISOString() }),
+        value: JSON.stringify({
+          ...event.payload,
+          _ts: event.timestamp ?? new Date().toISOString(),
+        }),
       },
       {
         headers: {
           "Content-Type": "application/json",
-          ...(FLUVIO_API_KEY ? { Authorization: `Bearer ${FLUVIO_API_KEY}` } : {}),
+          ...(FLUVIO_API_KEY
+            ? { Authorization: `Bearer ${FLUVIO_API_KEY}` }
+            : {}),
         },
         timeout: 3000,
       }
@@ -171,7 +176,8 @@ async function flushBuffer(): Promise<void> {
   let flushed = 0;
   let failed = 0;
   for (const buffered of toFlush) {
-    const ok = await publishViaDirect(buffered) || await publishViaProxy(buffered);
+    const ok =
+      (await publishViaDirect(buffered)) || (await publishViaProxy(buffered));
     if (ok) {
       flushed++;
     } else {
@@ -183,7 +189,9 @@ async function flushBuffer(): Promise<void> {
     }
   }
   if (flushed > 0) {
-    console.log(`[Fluvio] Flushed ${flushed} buffered events (${failed} re-buffered)`);
+    console.log(
+      `[Fluvio] Flushed ${flushed} buffered events (${failed} re-buffered)`
+    );
   }
 }
 
@@ -191,9 +199,13 @@ async function flushBuffer(): Promise<void> {
 function startFlushTimer(): void {
   if (_flushTimer) return;
   _flushTimer = setInterval(() => {
-    flushBuffer().catch((e) => console.error("[Fluvio] Flush error:", e));
+    flushBuffer().catch(e => console.error("[Fluvio] Flush error:", e));
   }, 30_000);
-  if (_flushTimer && typeof _flushTimer === "object" && "unref" in _flushTimer) {
+  if (
+    _flushTimer &&
+    typeof _flushTimer === "object" &&
+    "unref" in _flushTimer
+  ) {
     (_flushTimer as NodeJS.Timeout).unref(); // Don't keep process alive
   }
 }
@@ -210,7 +222,8 @@ export async function fluvioProduce(event: FluvioEvent): Promise<void> {
   if (eventBuffer.length > 0 && (FLUVIO_ENDPOINT || PLATFORM_BASE_URL)) {
     setImmediate(() => flushBuffer().catch(() => {}));
   }
-  const sent = await publishViaDirect(event) || await publishViaProxy(event);
+  const sent =
+    (await publishViaDirect(event)) || (await publishViaProxy(event));
   // Build enriched event for SSE fan-out (always, regardless of upstream status)
   const enriched = {
     ...event,
@@ -219,14 +232,22 @@ export async function fluvioProduce(event: FluvioEvent): Promise<void> {
   };
   notifySseListeners(enriched);
   // Record analytics metrics (non-blocking, fire-and-forget)
-  import("./analyticsMetrics").then(({ recordMetric }) => {
-    recordMetric("mqtt.messages.total", 1, { topic: event.topic }).catch(() => {});
-    if (sent) {
-      recordMetric("mqtt.messages.sent", 1, { topic: event.topic }).catch(() => {});
-    } else {
-      recordMetric("mqtt.messages.buffered", 1, { topic: event.topic }).catch(() => {});
-    }
-  }).catch(() => {});
+  import("./analyticsMetrics")
+    .then(({ recordMetric }) => {
+      recordMetric("mqtt.messages.total", 1, { topic: event.topic }).catch(
+        () => {}
+      );
+      if (sent) {
+        recordMetric("mqtt.messages.sent", 1, { topic: event.topic }).catch(
+          () => {}
+        );
+      } else {
+        recordMetric("mqtt.messages.buffered", 1, { topic: event.topic }).catch(
+          () => {}
+        );
+      }
+    })
+    .catch(() => {});
   if (!sent) {
     bufferEvent(event);
     console.warn(
@@ -348,11 +369,15 @@ export async function getFluvioStats(): Promise<FluvioStreamStats[]> {
   if (FLUVIO_ENDPOINT) {
     try {
       const { data } = await axios.get(`${FLUVIO_ENDPOINT}/topics`, {
-        headers: FLUVIO_API_KEY ? { Authorization: `Bearer ${FLUVIO_API_KEY}` } : {},
+        headers: FLUVIO_API_KEY
+          ? { Authorization: `Bearer ${FLUVIO_API_KEY}` }
+          : {},
         timeout: 3000,
       });
-      const topics: string[] = Array.isArray(data?.topics) ? data.topics : Object.values(FLUVIO_TOPICS);
-      return topics.map((topic) => ({
+      const topics: string[] = Array.isArray(data?.topics)
+        ? data.topics
+        : Object.values(FLUVIO_TOPICS);
+      return topics.map(topic => ({
         topic,
         messagesPerSecond: data?.stats?.[topic]?.mps ?? 0,
         totalMessages: data?.stats?.[topic]?.total ?? 0,
@@ -380,11 +405,11 @@ export async function getFluvioStats(): Promise<FluvioStreamStats[]> {
   }
 
   // Synthetic stats from buffer state
-  return Object.values(FLUVIO_TOPICS).map((topic) => ({
+  return Object.values(FLUVIO_TOPICS).map(topic => ({
     topic,
     messagesPerSecond: 0,
     totalMessages: 0,
-    consumerLag: eventBuffer.filter((e) => e.topic === topic).length,
+    consumerLag: eventBuffer.filter(e => e.topic === topic).length,
     partitions: 1,
   }));
 }
@@ -406,14 +431,19 @@ export function getFluvioStatus(): FluvioClientStatus {
 // When fluvioProduce() is called, we also fan-out to any active SSE listeners
 // so the admin dashboard receives events in real time even in buffer/fallback mode.
 
-type SseListener = (event: FluvioEvent & { id: string; timestamp: string }) => void;
+type SseListener = (
+  event: FluvioEvent & { id: string; timestamp: string }
+) => void;
 const _sseListeners = new Map<string, Set<SseListener>>();
 
 /**
  * Subscribe to events on a specific topic (or "all" for all topics).
  * Returns an unsubscribe function.
  */
-export function subscribeToTopic(topic: string, listener: SseListener): () => void {
+export function subscribeToTopic(
+  topic: string,
+  listener: SseListener
+): () => void {
   const key = topic;
   if (!_sseListeners.has(key)) _sseListeners.set(key, new Set());
   _sseListeners.get(key)!.add(listener);
@@ -424,9 +454,11 @@ export function subscribeToTopic(topic: string, listener: SseListener): () => vo
 }
 
 /** Fan-out a produced event to all SSE listeners for that topic and "all". */
-function notifySseListeners(event: FluvioEvent & { id: string; timestamp: string }): void {
+function notifySseListeners(
+  event: FluvioEvent & { id: string; timestamp: string }
+): void {
   const topicListeners = _sseListeners.get(event.topic);
-  const allListeners   = _sseListeners.get("all");
+  const allListeners = _sseListeners.get("all");
   topicListeners?.forEach(l => l(event));
   allListeners?.forEach(l => l(event));
 }
@@ -440,7 +472,9 @@ export async function shutdownFluvio(): Promise<void> {
     _flushTimer = null;
   }
   if (eventBuffer.length > 0) {
-    console.log(`[Fluvio] Shutdown flush: ${eventBuffer.length} buffered events`);
+    console.log(
+      `[Fluvio] Shutdown flush: ${eventBuffer.length} buffered events`
+    );
     await flushBuffer();
   }
 }

@@ -140,10 +140,10 @@ curl https://your-domain.com/api/health
 
 ## Contacts
 
-| Role | Contact |
-|------|---------|
-| Platform Lead | platform@54link.ng |
-| DevOps | devops@54link.ng |
+| Role           | Contact              |
+| -------------- | -------------------- |
+| Platform Lead  | platform@54link.ng   |
+| DevOps         | devops@54link.ng     |
 | CBN Compliance | compliance@54link.ng |
-| Security | security@54link.ng |
-| On-call | pagerduty@54link.ng |
+| Security       | security@54link.ng   |
+| On-call        | pagerduty@54link.ng  |

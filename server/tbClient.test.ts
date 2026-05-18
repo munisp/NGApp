@@ -71,7 +71,9 @@ describe("tbIsHealthy", () => {
 
   it("returns false on abort (timeout simulation)", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      Object.assign(new Error("The operation was aborted"), { name: "AbortError" })
+      Object.assign(new Error("The operation was aborted"), {
+        name: "AbortError",
+      })
     );
     expect(await tbIsHealthy()).toBe(false);
   });

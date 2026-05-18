@@ -1,5 +1,5 @@
 // @ts-nocheck — Sprint 69: production build compatibility
-import { Skeleton } from './ui/skeleton';
+import { Skeleton } from "./ui/skeleton";
 
 export function DashboardLayoutSkeleton() {
   return (

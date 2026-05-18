@@ -12,13 +12,17 @@ export interface AgentSession {
   role: string;
 }
 
-export async function getAgentFromCookie(req: Request): Promise<AgentSession | null> {
+export async function getAgentFromCookie(
+  req: Request
+): Promise<AgentSession | null> {
   const cookieHeader = req.headers.cookie ?? "";
   const match = cookieHeader.match(/agent_session=([^;]+)/);
   if (!match) return null;
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "pos54link-secret");
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET ?? "pos54link-secret"
+    );
     const { payload } = await jwtVerify(match[1], secret);
     return {
       id: Number(payload.sub),

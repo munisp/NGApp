@@ -19,26 +19,42 @@
 import { ENV } from "./env.js";
 
 // ── Service URLs ────────────────────────────────────────────────────────────
-const BIOMETRIC_SERVICE_URL   = (ENV as any).BIOMETRIC_SERVICE_URL   ?? "http://localhost:8046";
-const LIVENESS_SERVICE_URL    = (ENV as any).LIVENESS_SERVICE_URL    ?? "http://localhost:8104";
-const FACE_MATCHING_SERVICE_URL = (ENV as any).FACE_MATCHING_SERVICE_URL ?? "http://localhost:8105";
-const DEEPFAKE_SERVICE_URL    = (ENV as any).DEEPFAKE_SERVICE_URL    ?? "http://localhost:8106";
-const KYC_SERVICE_URL         = (ENV as any).KYC_SERVICE_URL         ?? "https://videokyc.54link.io";
-const PADDLEOCR_URL           = (ENV as any).PADDLEOCR_SERVICE_URL   ?? "https://ocr.54link.io";
-const COMPLIANCE_KYC_URL      = (ENV as any).COMPLIANCE_KYC_URL      ?? "https://kyc.54link.io";
-const DEEPFACE_SERVICE_URL    = (ENV as any).DEEPFACE_SERVICE_URL    ?? "http://localhost:8133";
+const BIOMETRIC_SERVICE_URL =
+  (ENV as any).BIOMETRIC_SERVICE_URL ?? "http://localhost:8046";
+const LIVENESS_SERVICE_URL =
+  (ENV as any).LIVENESS_SERVICE_URL ?? "http://localhost:8104";
+const FACE_MATCHING_SERVICE_URL =
+  (ENV as any).FACE_MATCHING_SERVICE_URL ?? "http://localhost:8105";
+const DEEPFAKE_SERVICE_URL =
+  (ENV as any).DEEPFAKE_SERVICE_URL ?? "http://localhost:8106";
+const KYC_SERVICE_URL =
+  (ENV as any).KYC_SERVICE_URL ?? "https://videokyc.54link.io";
+const PADDLEOCR_URL =
+  (ENV as any).PADDLEOCR_SERVICE_URL ?? "https://ocr.54link.io";
+const COMPLIANCE_KYC_URL =
+  (ENV as any).COMPLIANCE_KYC_URL ?? "https://kyc.54link.io";
+const DEEPFACE_SERVICE_URL =
+  (ENV as any).DEEPFACE_SERVICE_URL ?? "http://localhost:8133";
 
 const TIMEOUT_MS = 30_000;
 
 /** Generic fetch wrapper with timeout */
-async function kycFetch(url: string, init: RequestInit = {}, timeoutMs = TIMEOUT_MS): Promise<{ ok: boolean; status: number; data: unknown }> {
+async function kycFetch(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = TIMEOUT_MS
+): Promise<{ ok: boolean; status: number; data: unknown }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, { ...init, signal: controller.signal });
     clearTimeout(timer);
     let data: unknown;
-    try { data = await res.json(); } catch { data = null; }
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
     return { ok: res.ok, status: res.status, data };
   } catch (err: unknown) {
     clearTimeout(timer);
@@ -75,8 +91,17 @@ export interface BiometricVerificationResult {
     source: string;
   };
   quality: {
-    selfie: { overallQuality: number; scores: Record<string, number>; issues: string[]; icaoCompliant: boolean };
-    document: { overallQuality: number; scores: Record<string, number>; issues: string[] };
+    selfie: {
+      overallQuality: number;
+      scores: Record<string, number>;
+      issues: string[];
+      icaoCompliant: boolean;
+    };
+    document: {
+      overallQuality: number;
+      scores: Record<string, number>;
+      issues: string[];
+    };
   };
   landmarks: { has68Point: boolean; count: number };
   issues: string[];
@@ -87,17 +112,21 @@ export interface BiometricVerificationResult {
 export async function verifyBiometric(
   selfieBase64: string,
   documentBase64: string,
-  userId: string,
+  userId: string
 ): Promise<BiometricVerificationResult | null> {
-  const res = await kycFetch(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/verify`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      selfie_base64: selfieBase64,
-      document_base64: documentBase64,
-      user_id: userId,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/verify`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        selfie_base64: selfieBase64,
+        document_base64: documentBase64,
+        user_id: userId,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -161,7 +190,9 @@ export interface PassiveLivenessResult {
 }
 
 /** Passive liveness check on a single image */
-export async function checkPassiveLiveness(imageBase64: string): Promise<PassiveLivenessResult | null> {
+export async function checkPassiveLiveness(
+  imageBase64: string
+): Promise<PassiveLivenessResult | null> {
   const res = await kycFetch(`${LIVENESS_SERVICE_URL}/liveness/passive`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -192,7 +223,7 @@ export interface ActiveLivenessResult {
 /** Active liveness check on multiple frames */
 export async function checkActiveLiveness(
   framesBase64: string[],
-  challengeType?: string,
+  challengeType?: string
 ): Promise<ActiveLivenessResult | null> {
   const res = await kycFetch(`${LIVENESS_SERVICE_URL}/liveness/active`, {
     method: "POST",
@@ -228,7 +259,7 @@ export interface FaceMatchResult {
 /** 1:1 face matching between two images */
 export async function matchFaces(
   image1Base64: string,
-  image2Base64: string,
+  image2Base64: string
 ): Promise<FaceMatchResult | null> {
   const res = await kycFetch(`${FACE_MATCHING_SERVICE_URL}/face/match`, {
     method: "POST",
@@ -262,7 +293,9 @@ export interface DetectedFace {
 }
 
 /** Detect faces in an image */
-export async function detectFaces(imageBase64: string): Promise<DetectedFace[] | null> {
+export async function detectFaces(
+  imageBase64: string
+): Promise<DetectedFace[] | null> {
   const res = await kycFetch(`${FACE_MATCHING_SERVICE_URL}/face/detect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -272,7 +305,7 @@ export async function detectFaces(imageBase64: string): Promise<DetectedFace[] |
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
   const faces = (d.faces ?? []) as Record<string, unknown>[];
-  return faces.map((f) => ({
+  return faces.map(f => ({
     bbox: (f.bbox ?? []) as number[],
     confidence: Number(f.confidence ?? 0),
     landmarks5pt: (f.landmarks_5pt ?? null) as number[][] | null,
@@ -292,7 +325,9 @@ export interface DeepfakeResult {
 }
 
 /** Detect deepfakes in an image */
-export async function detectDeepfake(imageBase64: string): Promise<DeepfakeResult | null> {
+export async function detectDeepfake(
+  imageBase64: string
+): Promise<DeepfakeResult | null> {
   const res = await kycFetch(`${DEEPFAKE_SERVICE_URL}/deepfake/detect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -320,12 +355,17 @@ export interface FaceQualityResult {
 }
 
 /** Assess face image quality (ICAO compliance) */
-export async function assessFaceQuality(imageBase64: string): Promise<FaceQualityResult | null> {
-  const res = await kycFetch(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/quality`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_base64: imageBase64 }),
-  });
+export async function assessFaceQuality(
+  imageBase64: string
+): Promise<FaceQualityResult | null> {
+  const res = await kycFetch(
+    `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/quality`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_base64: imageBase64 }),
+    }
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -347,12 +387,17 @@ export interface AntiSpoofResult {
 }
 
 /** Run anti-spoofing pipeline on an image */
-export async function checkAntiSpoof(imageBase64: string): Promise<AntiSpoofResult | null> {
-  const res = await kycFetch(`${BIOMETRIC_SERVICE_URL}/api/v1/biometric/anti-spoof`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_base64: imageBase64 }),
-  });
+export async function checkAntiSpoof(
+  imageBase64: string
+): Promise<AntiSpoofResult | null> {
+  const res = await kycFetch(
+    `${BIOMETRIC_SERVICE_URL}/api/v1/biometric/anti-spoof`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_base64: imageBase64 }),
+    }
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -376,7 +421,9 @@ export interface ServiceHealthStatus {
 }
 
 /** Check health of all biometric microservices */
-export async function checkBiometricServicesHealth(): Promise<ServiceHealthStatus[]> {
+export async function checkBiometricServicesHealth(): Promise<
+  ServiceHealthStatus[]
+> {
   const services = [
     { name: "biometric_orchestrator", url: `${BIOMETRIC_SERVICE_URL}/health` },
     { name: "liveness_detection", url: `${LIVENESS_SERVICE_URL}/health` },
@@ -389,10 +436,15 @@ export async function checkBiometricServicesHealth(): Promise<ServiceHealthStatu
   ];
 
   const results = await Promise.allSettled(
-    services.map(async (s) => {
+    services.map(async s => {
       const res = await kycFetch(s.url, {}, 5000);
       if (!res.ok) {
-        return { name: s.name, url: s.url, status: "unavailable" as const, error: `HTTP ${res.status}` };
+        return {
+          name: s.name,
+          url: s.url,
+          status: "unavailable" as const,
+          error: `HTTP ${res.status}`,
+        };
       }
       const d = res.data as Record<string, unknown>;
       return {
@@ -405,8 +457,15 @@ export async function checkBiometricServicesHealth(): Promise<ServiceHealthStatu
     })
   );
 
-  return results.map((r) =>
-    r.status === "fulfilled" ? r.value : { name: "unknown", url: "", status: "unavailable" as const, error: "Promise rejected" }
+  return results.map(r =>
+    r.status === "fulfilled"
+      ? r.value
+      : {
+          name: "unknown",
+          url: "",
+          status: "unavailable" as const,
+          error: "Promise rejected",
+        }
   );
 }
 
@@ -435,20 +494,24 @@ export async function deepfaceVerify(
   modelName = "ArcFace",
   detectorBackend = "retinaface",
   distanceMetric = "cosine",
-  antiSpoofing = false,
+  antiSpoofing = false
 ): Promise<DeepFaceVerifyResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/verify`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image1_base64: image1Base64,
-      image2_base64: image2Base64,
-      model_name: modelName,
-      detector_backend: detectorBackend,
-      distance_metric: distanceMetric,
-      anti_spoofing: antiSpoofing,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/verify`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image1_base64: image1Base64,
+        image2_base64: image2Base64,
+        model_name: modelName,
+        detector_backend: detectorBackend,
+        distance_metric: distanceMetric,
+        anti_spoofing: antiSpoofing,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -490,19 +553,23 @@ export async function deepfaceEnsembleVerify(
   image2Base64: string,
   models: string[] = ["ArcFace", "Facenet512", "VGG-Face"],
   threshold = 0.6,
-  antiSpoofing = false,
+  antiSpoofing = false
 ): Promise<DeepFaceEnsembleResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/verify/ensemble`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image1_base64: image1Base64,
-      image2_base64: image2Base64,
-      models,
-      threshold,
-      anti_spoofing: antiSpoofing,
-    }),
-  }, 120_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/verify/ensemble`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image1_base64: image1Base64,
+        image2_base64: image2Base64,
+        models,
+        threshold,
+        anti_spoofing: antiSpoofing,
+      }),
+    },
+    120_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -513,7 +580,7 @@ export async function deepfaceEnsembleVerify(
     consensusThreshold: Number(d.consensus_threshold ?? threshold),
     modelsAgreed: Number(d.models_agreed ?? 0),
     modelsTotal: Number(d.models_total ?? 0),
-    resultsPerModel: perModel.map((r) => ({
+    resultsPerModel: perModel.map(r => ({
       model: String(r.model ?? ""),
       verified: Boolean(r.verified),
       distance: r.distance != null ? Number(r.distance) : undefined,
@@ -551,36 +618,44 @@ export async function deepfaceAnalyze(
   imageBase64: string,
   actions: string[] = ["age", "gender", "emotion", "race"],
   detectorBackend = "retinaface",
-  antiSpoofing = false,
+  antiSpoofing = false
 ): Promise<DeepFaceAnalysisResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/analyze`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image_base64: imageBase64,
-      actions,
-      detector_backend: detectorBackend,
-      anti_spoofing: antiSpoofing,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/analyze`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        actions,
+        detector_backend: detectorBackend,
+        anti_spoofing: antiSpoofing,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
   const faces = (d.faces ?? []) as Record<string, unknown>[];
   return {
-    faces: faces.map((f) => ({
+    faces: faces.map(f => ({
       region: (f.region ?? {}) as Record<string, number>,
       faceConfidence: Number(f.face_confidence ?? 0),
       age: f.age != null ? Number(f.age) : undefined,
       dominantGender: f.dominant_gender ? String(f.dominant_gender) : undefined,
       gender: f.gender ? (f.gender as Record<string, number>) : undefined,
-      dominantEmotion: f.dominant_emotion ? String(f.dominant_emotion) : undefined,
+      dominantEmotion: f.dominant_emotion
+        ? String(f.dominant_emotion)
+        : undefined,
       emotion: f.emotion ? (f.emotion as Record<string, number>) : undefined,
       dominantRace: f.dominant_race ? String(f.dominant_race) : undefined,
       race: f.race ? (f.race as Record<string, number>) : undefined,
     })),
     facesCount: Number(d.faces_count ?? 0),
-    actionsPerformed: Array.isArray(d.actions_performed) ? (d.actions_performed as string[]) : [],
+    actionsPerformed: Array.isArray(d.actions_performed)
+      ? (d.actions_performed as string[])
+      : [],
     processingTimeMs: Number(d.processing_time_ms ?? 0),
   };
 }
@@ -600,17 +675,21 @@ export interface DeepFaceEmbeddingResult {
 export async function deepfaceExtractEmbedding(
   imageBase64: string,
   modelName = "ArcFace",
-  detectorBackend = "retinaface",
+  detectorBackend = "retinaface"
 ): Promise<DeepFaceEmbeddingResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/represent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image_base64: imageBase64,
-      model_name: modelName,
-      detector_backend: detectorBackend,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/represent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        model_name: modelName,
+        detector_backend: detectorBackend,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -641,7 +720,7 @@ export interface DeepFaceAntiSpoofResult {
 /** Run DeepFace anti-spoofing detection */
 export async function deepfaceAntiSpoof(
   imageBase64: string,
-  detectorBackend = "retinaface",
+  detectorBackend = "retinaface"
 ): Promise<DeepFaceAntiSpoofResult | null> {
   const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/anti-spoof`, {
     method: "POST",
@@ -657,7 +736,7 @@ export async function deepfaceAntiSpoof(
   const faces = (d.faces ?? []) as Record<string, unknown>[];
   return {
     isReal: Boolean(d.is_real),
-    faces: faces.map((f) => ({
+    faces: faces.map(f => ({
       facialArea: (f.facial_area ?? {}) as Record<string, number>,
       isReal: Boolean(f.is_real),
       antispoofScore: Number(f.antispoof_score ?? 0),
@@ -688,7 +767,7 @@ export interface DeepFaceDetectionResult {
 export async function deepfaceDetectFaces(
   imageBase64: string,
   detectorBackend = "retinaface",
-  antiSpoofing = false,
+  antiSpoofing = false
 ): Promise<DeepFaceDetectionResult | null> {
   const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/detect`, {
     method: "POST",
@@ -704,11 +783,12 @@ export async function deepfaceDetectFaces(
   const d = res.data as Record<string, unknown>;
   const faces = (d.faces ?? []) as Record<string, unknown>[];
   return {
-    faces: faces.map((f) => ({
+    faces: faces.map(f => ({
       facialArea: (f.facial_area ?? {}) as Record<string, number>,
       confidence: Number(f.confidence ?? 0),
       isReal: f.is_real != null ? Boolean(f.is_real) : undefined,
-      antispoofScore: f.antispoof_score != null ? Number(f.antispoof_score) : undefined,
+      antispoofScore:
+        f.antispoof_score != null ? Number(f.antispoof_score) : undefined,
     })),
     facesCount: Number(d.faces_count ?? 0),
     detectorBackend: String(d.detector_backend ?? detectorBackend),
@@ -731,18 +811,22 @@ export async function deepfaceEnroll(
   imageBase64: string,
   identity: string,
   modelName = "ArcFace",
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ): Promise<DeepFaceEnrollResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/gallery/enroll`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image_base64: imageBase64,
-      identity,
-      model_name: modelName,
-      metadata,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/gallery/enroll`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        identity,
+        model_name: modelName,
+        metadata,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
@@ -774,24 +858,28 @@ export async function deepfaceSearch(
   imageBase64: string,
   modelName = "ArcFace",
   topK = 5,
-  threshold?: number,
+  threshold?: number
 ): Promise<DeepFaceSearchResult | null> {
-  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/gallery/search`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image_base64: imageBase64,
-      model_name: modelName,
-      top_k: topK,
-      threshold,
-    }),
-  }, 60_000);
+  const res = await kycFetch(
+    `${DEEPFACE_SERVICE_URL}/gallery/search`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        model_name: modelName,
+        top_k: topK,
+        threshold,
+      }),
+    },
+    60_000
+  );
 
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
   const matches = (d.matches ?? []) as Record<string, unknown>[];
   return {
-    matches: matches.map((m) => ({
+    matches: matches.map(m => ({
       identity: String(m.identity ?? ""),
       distance: Number(m.distance ?? 0),
       metadata: (m.metadata ?? {}) as Record<string, unknown>,
@@ -827,7 +915,9 @@ export interface LivenessVerifyResult {
 }
 
 /** Ask the legacy liveness service to generate a new challenge */
-export async function createLivenessChallenge(method = "active_blink"): Promise<LivenessChallengeResult | null> {
+export async function createLivenessChallenge(
+  method = "active_blink"
+): Promise<LivenessChallengeResult | null> {
   const res = await kycFetch(`${KYC_SERVICE_URL}/create_challenge`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -846,13 +936,16 @@ export async function createLivenessChallenge(method = "active_blink"): Promise<
 /** Submit a base64-encoded frame to verify a legacy liveness challenge */
 export async function verifyLivenessChallenge(
   challengeId: string,
-  frameBase64: string,
+  frameBase64: string
 ): Promise<LivenessVerifyResult | null> {
-  const res = await kycFetch(`${KYC_SERVICE_URL}/respond_challenge/${challengeId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image: frameBase64 }),
-  });
+  const res = await kycFetch(
+    `${KYC_SERVICE_URL}/respond_challenge/${challengeId}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: frameBase64 }),
+    }
+  );
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
   return {
@@ -881,7 +974,12 @@ export interface OcrResult {
 /** Submit a base64-encoded document image for OCR extraction */
 export async function processDocument(
   imageBase64: string,
-  documentType: "NIN" | "BVN_CARD" | "PASSPORT" | "DRIVERS_LICENCE" | "VOTER_CARD",
+  documentType:
+    | "NIN"
+    | "BVN_CARD"
+    | "PASSPORT"
+    | "DRIVERS_LICENCE"
+    | "VOTER_CARD"
 ): Promise<OcrResult | null> {
   const res = await kycFetch(`${PADDLEOCR_URL}/process-document`, {
     method: "POST",
@@ -893,14 +991,20 @@ export async function processDocument(
   });
   if (!res.ok) return null;
   const d = res.data as Record<string, unknown>;
-  const fields = (d.fields ?? d.extracted_fields ?? {}) as Record<string, string>;
+  const fields = (d.fields ?? d.extracted_fields ?? {}) as Record<
+    string,
+    string
+  >;
   return {
     documentType,
-    extractedName:     fields.name ?? fields.full_name ?? undefined,
-    extractedDob:      fields.dob ?? fields.date_of_birth ?? undefined,
-    extractedIdNumber: fields.id_number ?? fields.bvn ?? fields.nin ?? undefined,
-    confidence:        Number(d.confidence ?? d.overall_confidence ?? 0),
-    fraudIndicators:   Array.isArray(d.fraud_indicators) ? (d.fraud_indicators as string[]) : [],
+    extractedName: fields.name ?? fields.full_name ?? undefined,
+    extractedDob: fields.dob ?? fields.date_of_birth ?? undefined,
+    extractedIdNumber:
+      fields.id_number ?? fields.bvn ?? fields.nin ?? undefined,
+    confidence: Number(d.confidence ?? d.overall_confidence ?? 0),
+    fraudIndicators: Array.isArray(d.fraud_indicators)
+      ? (d.fraud_indicators as string[])
+      : [],
     raw: res.data,
   };
 }

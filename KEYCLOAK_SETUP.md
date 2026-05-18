@@ -48,14 +48,15 @@ After import, update the client redirect URIs to match your actual domain:
 
 Add the following secrets to the application (via the Secrets panel or `.env`):
 
-| Variable | Value | Example |
-|----------|-------|---------|
-| `KEYCLOAK_URL` | Base URL of your Keycloak instance | `https://auth.54link.com` |
-| `KEYCLOAK_REALM` | Realm name | `54link` |
-| `KEYCLOAK_CLIENT_ID` | Client ID | `pos-shell` |
-| `KEYCLOAK_CLIENT_SECRET` | Client secret from Step 3 | `abc123...` |
+| Variable                 | Value                              | Example                   |
+| ------------------------ | ---------------------------------- | ------------------------- |
+| `KEYCLOAK_URL`           | Base URL of your Keycloak instance | `https://auth.54link.com` |
+| `KEYCLOAK_REALM`         | Realm name                         | `54link`                  |
+| `KEYCLOAK_CLIENT_ID`     | Client ID                          | `pos-shell`               |
+| `KEYCLOAK_CLIENT_SECRET` | Client secret from Step 3          | `abc123...`               |
 
 The server will perform OIDC discovery at:
+
 ```
 {KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/.well-known/openid-configuration
 ```
@@ -82,6 +83,7 @@ curl https://pos.54link.com/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -119,11 +121,11 @@ Browser → GET /api/auth/logout
 
 ## Roles
 
-| Role | Access |
-|------|--------|
-| `admin` | Full Admin Panel access, agent management, settlement, MDM, compliance reports |
-| `supervisor` | Supervisor dashboard, agent oversight, dispute resolution |
-| `user` | Basic authenticated access (no admin panel) |
+| Role         | Access                                                                         |
+| ------------ | ------------------------------------------------------------------------------ |
+| `admin`      | Full Admin Panel access, agent management, settlement, MDM, compliance reports |
+| `supervisor` | Supervisor dashboard, agent oversight, dispute resolution                      |
+| `user`       | Basic authenticated access (no admin panel)                                    |
 
 Roles are mapped from Keycloak realm roles into the `users.role` column on each login. The mapping is: `admin` → `admin`, `supervisor` → `supervisor`, anything else → `user`.
 
@@ -131,10 +133,10 @@ Roles are mapped from Keycloak realm roles into the `users.role` column on each 
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `OIDC discovery failed` | Wrong `KEYCLOAK_URL` or realm | Verify `{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/.well-known/openid-configuration` is reachable |
-| `JWT verification failed` | Clock skew > 5s | Sync server time with NTP |
-| `Invalid redirect_uri` | URI not registered in client | Add exact URI to Valid redirect URIs in Keycloak |
-| `Cookie not set` | HTTP (not HTTPS) in production | Ensure `Secure` flag is compatible with your proxy config |
-| Login loop | `kc_session` cookie blocked | Check browser SameSite/Secure settings; ensure HTTPS |
+| Symptom                   | Cause                          | Fix                                                                                           |
+| ------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `OIDC discovery failed`   | Wrong `KEYCLOAK_URL` or realm  | Verify `{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/.well-known/openid-configuration` is reachable |
+| `JWT verification failed` | Clock skew > 5s                | Sync server time with NTP                                                                     |
+| `Invalid redirect_uri`    | URI not registered in client   | Add exact URI to Valid redirect URIs in Keycloak                                              |
+| `Cookie not set`          | HTTP (not HTTPS) in production | Ensure `Secure` flag is compatible with your proxy config                                     |
+| Login loop                | `kc_session` cookie blocked    | Check browser SameSite/Secure settings; ensure HTTPS                                          |

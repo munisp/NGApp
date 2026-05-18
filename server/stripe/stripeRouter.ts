@@ -1,6 +1,6 @@
 /**
  * Stripe Integration Router — 54Link POS Shell
- * 
+ *
  * Full Stripe integration: checkout sessions, subscription management,
  * payment history, customer creation, and user linking.
  */
@@ -13,14 +13,25 @@ import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 // Initialize Stripe with the secret key from env
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
-  apiVersion: "2025-04-30.basil" as any,
-});
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
+  {
+    apiVersion: "2025-04-30.basil" as any,
+  }
+);
 
 // ── Helper: Get or create Stripe customer for a user ──────────────────────────
-async function getOrCreateStripeCustomer(userId: number, email: string, name: string | null): Promise<string> {
+async function getOrCreateStripeCustomer(
+  userId: number,
+  email: string,
+  name: string | null
+): Promise<string> {
   const db = (await getDb())!;
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   if (user?.stripeCustomerId) return user.stripeCustomerId;
 
   const customer = await stripe.customers.create({
@@ -29,7 +40,8 @@ async function getOrCreateStripeCustomer(userId: number, email: string, name: st
     metadata: { userId: userId.toString(), platform: "54link-pos" },
   });
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
     .where(eq(users.id, userId));
 
@@ -50,21 +62,27 @@ export const stripeRouter = router({
       if (!plan) throw new Error("Plan not found");
 
       const origin = ctx.req?.headers?.origin || "http://localhost:3000";
-      const customerId = await getOrCreateStripeCustomer(ctx.user.id, ctx.user.email || "", ctx.user.name);
+      const customerId = await getOrCreateStripeCustomer(
+        ctx.user.id,
+        ctx.user.email || "",
+        ctx.user.name
+      );
 
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         customer: customerId,
         payment_method_types: ["card"],
-        line_items: [{
-          price_data: {
-            currency: "usd",
-            product_data: { name: plan.name, description: plan.description },
-            unit_amount: plan.monthlyPriceUSD,
-            recurring: { interval: "month" },
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { name: plan.name, description: plan.description },
+              unit_amount: plan.monthlyPriceUSD,
+              recurring: { interval: "month" },
+            },
+            quantity: 1,
           },
-          quantity: 1,
-        }],
+        ],
         success_url: `${origin}/payments?status=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/payments?status=cancelled`,
         allow_promotion_codes: true,
@@ -89,20 +107,29 @@ export const stripeRouter = router({
       if (!product) throw new Error("Product not found");
 
       const origin = ctx.req?.headers?.origin || "http://localhost:3000";
-      const customerId = await getOrCreateStripeCustomer(ctx.user.id, ctx.user.email || "", ctx.user.name);
+      const customerId = await getOrCreateStripeCustomer(
+        ctx.user.id,
+        ctx.user.email || "",
+        ctx.user.name
+      );
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         customer: customerId,
         payment_method_types: ["card"],
-        line_items: [{
-          price_data: {
-            currency: "usd",
-            product_data: { name: product.name, description: product.description },
-            unit_amount: product.priceUSD,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: product.name,
+                description: product.description,
+              },
+              unit_amount: product.priceUSD,
+            },
+            quantity: 1,
           },
-          quantity: 1,
-        }],
+        ],
         success_url: `${origin}/payments?status=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/payments?status=cancelled`,
         allow_promotion_codes: true,
@@ -121,7 +148,11 @@ export const stripeRouter = router({
   // ── Protected: Get user's payment history ────────────────────────────────────
   getPaymentHistory: protectedProcedure.query(async ({ ctx }) => {
     const db = (await getDb())!;
-    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, ctx.user.id))
+      .limit(1);
     if (!user?.stripeCustomerId) return { payments: [] };
 
     try {
@@ -148,7 +179,11 @@ export const stripeRouter = router({
   // ── Protected: Get user's subscription status ────────────────────────────────
   getSubscriptionStatus: protectedProcedure.query(async ({ ctx }) => {
     const db = (await getDb())!;
-    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, ctx.user.id))
+      .limit(1);
     if (!user?.stripeCustomerId) return { subscriptions: [], activePlan: null };
 
     try {
@@ -162,14 +197,18 @@ export const stripeRouter = router({
           id: sub.id,
           status: sub.status,
           planId: sub.metadata?.plan_id || user.stripePlanId || "unknown",
-          currentPeriodEnd: new Date(((sub as any).current_period_end || 0) * 1000).toISOString(),
+          currentPeriodEnd: new Date(
+            ((sub as any).current_period_end || 0) * 1000
+          ).toISOString(),
           cancelAtPeriodEnd: (sub as any).cancel_at_period_end || false,
         })),
-        activePlan: activeSub ? {
-          planId: activeSub.metadata?.plan_id || user.stripePlanId,
-          planName: activeSub.metadata?.plan_name || "Active Plan",
-          status: activeSub.status,
-        } : null,
+        activePlan: activeSub
+          ? {
+              planId: activeSub.metadata?.plan_id || user.stripePlanId,
+              planName: activeSub.metadata?.plan_name || "Active Plan",
+              status: activeSub.status,
+            }
+          : null,
       };
     } catch {
       return { subscriptions: [], activePlan: null };
@@ -181,7 +220,11 @@ export const stripeRouter = router({
     .input(z.object({ subscriptionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, ctx.user.id))
+        .limit(1);
       if (!user?.stripeCustomerId) throw new Error("No Stripe customer found");
 
       const sub = await stripe.subscriptions.retrieve(input.subscriptionId);
@@ -189,10 +232,17 @@ export const stripeRouter = router({
         throw new Error("Subscription does not belong to this user");
       }
 
-      const cancelled = await stripe.subscriptions.update(input.subscriptionId, {
-        cancel_at_period_end: true,
-      });
-      return { id: cancelled.id, status: cancelled.status, cancelAtPeriodEnd: (cancelled as any).cancel_at_period_end };
+      const cancelled = await stripe.subscriptions.update(
+        input.subscriptionId,
+        {
+          cancel_at_period_end: true,
+        }
+      );
+      return {
+        id: cancelled.id,
+        status: cancelled.status,
+        cancelAtPeriodEnd: (cancelled as any).cancel_at_period_end,
+      };
     }),
 
   // ── Protected: Get checkout session details ──────────────────────────────────
@@ -200,16 +250,33 @@ export const stripeRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
       try {
-        const session = await stripe.checkout.sessions.retrieve(input.sessionId);
-        return { id: session.id, status: session.status, paymentStatus: session.payment_status, amountTotal: session.amount_total, currency: session.currency };
-      } catch { return null; }
+        const session = await stripe.checkout.sessions.retrieve(
+          input.sessionId
+        );
+        return {
+          id: session.id,
+          status: session.status,
+          paymentStatus: session.payment_status,
+          amountTotal: session.amount_total,
+          currency: session.currency,
+        };
+      } catch {
+        return null;
+      }
     }),
 
   // ── Protected: Create customer portal session ────────────────────────────────
   createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
     const db = (await getDb())!;
-    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
-    if (!user?.stripeCustomerId) throw new Error("No Stripe customer found. Please make a purchase first.");
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, ctx.user.id))
+      .limit(1);
+    if (!user?.stripeCustomerId)
+      throw new Error(
+        "No Stripe customer found. Please make a purchase first."
+      );
 
     const origin = ctx.req?.headers?.origin || "http://localhost:3000";
     const portalSession = await stripe.billingPortal.sessions.create({

@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * FeedbackAnalytics — Dashboard for tracking guide section feedback
- * 
+ *
  * Shows:
  * - Overall satisfaction metrics
  * - Per-section ratings with bar charts
@@ -16,9 +16,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  BarChart2, ThumbsUp, ThumbsDown, TrendingUp, TrendingDown,
-  Star, MessageSquare, ArrowUp, ArrowDown, Award, AlertTriangle,
-  Eye, Clock, Filter, RefreshCw
+  BarChart2,
+  ThumbsUp,
+  ThumbsDown,
+  TrendingUp,
+  TrendingDown,
+  Star,
+  MessageSquare,
+  ArrowUp,
+  ArrowDown,
+  Award,
+  AlertTriangle,
+  Eye,
+  Clock,
+  Filter,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,13 +39,13 @@ const sectionNames: Record<string, string> = {
   "getting-started": "Getting Started",
   "pos-terminal": "POS Terminal Operations",
   "agent-management": "Agent Management",
-  "transactions": "Transaction Processing",
+  transactions: "Transaction Processing",
   "fraud-detection": "Fraud Detection & Alerts",
   "kyc-verification": "KYC Verification",
   "reports-analytics": "Reports & Analytics",
   "settings-config": "Settings & Configuration",
-  "troubleshooting": "Troubleshooting",
-  "faq": "FAQ",
+  troubleshooting: "Troubleshooting",
+  faq: "FAQ",
 };
 
 interface FeedbackEntry {
@@ -52,7 +64,9 @@ export default function FeedbackAnalytics() {
 
   // Fetch feedback data
   const { data: summaryData } = trpc.guideFeedback.summary.useQuery();
-  const { data: feedbackList } = trpc.guideFeedback.list.useQuery({ limit: 100 });
+  const { data: feedbackList } = trpc.guideFeedback.list.useQuery({
+    limit: 100,
+  });
   const utils = trpc.useUtils();
 
   // Calculate analytics from feedback list
@@ -63,15 +77,24 @@ export default function FeedbackAnalytics() {
     const totalFeedback = entries.length;
     const helpfulCount = entries.filter(f => f.rating === "up").length;
     const notHelpfulCount = entries.filter(f => f.rating === "down").length;
-    const overallSatisfaction = totalFeedback > 0 ? Math.round((helpfulCount / totalFeedback) * 100) : 0;
+    const overallSatisfaction =
+      totalFeedback > 0 ? Math.round((helpfulCount / totalFeedback) * 100) : 0;
     const withComments = entries.filter(f => f.comment).length;
 
     // Per-section breakdown
-    const sectionMap = new Map<string, { helpful: number; notHelpful: number; total: number; comments: string[] }>();
+    const sectionMap = new Map<
+      string,
+      { helpful: number; notHelpful: number; total: number; comments: string[] }
+    >();
     entries.forEach(entry => {
       const sec = entry.sectionId;
       if (!sectionMap.has(sec)) {
-        sectionMap.set(sec, { helpful: 0, notHelpful: 0, total: 0, comments: [] });
+        sectionMap.set(sec, {
+          helpful: 0,
+          notHelpful: 0,
+          total: 0,
+          comments: [],
+        });
       }
       const s = sectionMap.get(sec)!;
       s.total++;
@@ -84,12 +107,17 @@ export default function FeedbackAnalytics() {
       id,
       name: sectionNames[id] || id,
       ...data,
-      satisfaction: data.total > 0 ? Math.round((data.helpful / data.total) * 100) : 0,
+      satisfaction:
+        data.total > 0 ? Math.round((data.helpful / data.total) * 100) : 0,
     }));
 
     // Sort by satisfaction
-    const mostHelpful = [...sections].sort((a: any, b: any) => b.satisfaction - a.satisfaction);
-    const leastHelpful = [...sections].sort((a: any, b: any) => a.satisfaction - b.satisfaction);
+    const mostHelpful = [...sections].sort(
+      (a: any, b: any) => b.satisfaction - a.satisfaction
+    );
+    const leastHelpful = [...sections].sort(
+      (a: any, b: any) => a.satisfaction - b.satisfaction
+    );
 
     return {
       totalFeedback,
@@ -107,9 +135,12 @@ export default function FeedbackAnalytics() {
   const filteredFeedback = useMemo(() => {
     if (!feedbackList?.items) return [];
     let entries = feedbackList.items as unknown as FeedbackEntry[];
-    if (filterSection !== "all") entries = entries.filter(f => f.sectionId === filterSection);
-    if (filterRating === "helpful") entries = entries.filter(f => f.rating === "up");
-    else if (filterRating === "not_helpful") entries = entries.filter(f => f.rating === "down");
+    if (filterSection !== "all")
+      entries = entries.filter(f => f.sectionId === filterSection);
+    if (filterRating === "helpful")
+      entries = entries.filter(f => f.rating === "up");
+    else if (filterRating === "not_helpful")
+      entries = entries.filter(f => f.rating === "down");
     return entries;
   }, [feedbackList, filterSection, filterRating]);
 
@@ -127,7 +158,11 @@ export default function FeedbackAnalytics() {
               Track which guide sections are most and least helpful to users
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => utils.guideFeedback.invalidate()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => utils.guideFeedback.invalidate()}
+          >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
           </Button>
         </div>
@@ -137,35 +172,49 @@ export default function FeedbackAnalytics() {
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Total Feedback</span>
+              <span className="text-xs text-muted-foreground">
+                Total Feedback
+              </span>
             </div>
-            <p className="text-2xl font-bold">{analytics?.totalFeedback || 0}</p>
+            <p className="text-2xl font-bold">
+              {analytics?.totalFeedback || 0}
+            </p>
           </div>
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <ThumbsUp className="h-4 w-4 text-green-500" />
               <span className="text-xs text-muted-foreground">Helpful</span>
             </div>
-            <p className="text-2xl font-bold text-green-500">{analytics?.helpfulCount || 0}</p>
+            <p className="text-2xl font-bold text-green-500">
+              {analytics?.helpfulCount || 0}
+            </p>
           </div>
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <ThumbsDown className="h-4 w-4 text-red-500" />
               <span className="text-xs text-muted-foreground">Not Helpful</span>
             </div>
-            <p className="text-2xl font-bold text-red-500">{analytics?.notHelpfulCount || 0}</p>
+            <p className="text-2xl font-bold text-red-500">
+              {analytics?.notHelpfulCount || 0}
+            </p>
           </div>
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <Star className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground">Satisfaction</span>
+              <span className="text-xs text-muted-foreground">
+                Satisfaction
+              </span>
             </div>
-            <p className="text-2xl font-bold">{analytics?.overallSatisfaction || 0}%</p>
+            <p className="text-2xl font-bold">
+              {analytics?.overallSatisfaction || 0}%
+            </p>
           </div>
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <Eye className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">With Comments</span>
+              <span className="text-xs text-muted-foreground">
+                With Comments
+              </span>
             </div>
             <p className="text-2xl font-bold">{analytics?.withComments || 0}</p>
           </div>
@@ -182,9 +231,13 @@ export default function FeedbackAnalytics() {
             <div className="space-y-3">
               {analytics?.mostHelpful.map((section, i) => (
                 <div key={section.id} className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-muted-foreground w-6">{i + 1}</span>
+                  <span className="text-lg font-bold text-muted-foreground w-6">
+                    {i + 1}
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{section.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {section.name}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
@@ -192,14 +245,19 @@ export default function FeedbackAnalytics() {
                           style={{ width: `${section.satisfaction}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-green-500">{section.satisfaction}%</span>
+                      <span className="text-xs font-medium text-green-500">
+                        {section.satisfaction}%
+                      </span>
                     </div>
                   </div>
                   <TrendingUp className="h-4 w-4 text-green-500 flex-shrink-0" />
                 </div>
               ))}
-              {(!analytics?.mostHelpful || analytics.mostHelpful.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">No feedback data yet</p>
+              {(!analytics?.mostHelpful ||
+                analytics.mostHelpful.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No feedback data yet
+                </p>
               )}
             </div>
           </div>
@@ -213,9 +271,13 @@ export default function FeedbackAnalytics() {
             <div className="space-y-3">
               {analytics?.leastHelpful.map((section, i) => (
                 <div key={section.id} className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-muted-foreground w-6">{i + 1}</span>
+                  <span className="text-lg font-bold text-muted-foreground w-6">
+                    {i + 1}
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{section.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {section.name}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
@@ -223,14 +285,19 @@ export default function FeedbackAnalytics() {
                           style={{ width: `${section.satisfaction}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-amber-500">{section.satisfaction}%</span>
+                      <span className="text-xs font-medium text-amber-500">
+                        {section.satisfaction}%
+                      </span>
                     </div>
                   </div>
                   <TrendingDown className="h-4 w-4 text-amber-500 flex-shrink-0" />
                 </div>
               ))}
-              {(!analytics?.leastHelpful || analytics.leastHelpful.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">No feedback data yet</p>
+              {(!analytics?.leastHelpful ||
+                analytics.leastHelpful.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No feedback data yet
+                </p>
               )}
             </div>
           </div>
@@ -238,7 +305,9 @@ export default function FeedbackAnalytics() {
 
         {/* Per-Section Breakdown */}
         <div className="rounded-xl border border-border p-5">
-          <h3 className="text-sm font-semibold mb-4">Section-by-Section Breakdown</h3>
+          <h3 className="text-sm font-semibold mb-4">
+            Section-by-Section Breakdown
+          </h3>
           <div className="space-y-3">
             {analytics?.sections.map(section => (
               <div key={section.id} className="flex items-center gap-4">
@@ -250,25 +319,35 @@ export default function FeedbackAnalytics() {
                       style={{ width: `${section.satisfaction}%` }}
                     >
                       {section.satisfaction > 15 && (
-                        <span className="text-[10px] text-white font-medium">{section.helpful}</span>
+                        <span className="text-[10px] text-white font-medium">
+                          {section.helpful}
+                        </span>
                       )}
                     </div>
                     <div
                       className="h-full bg-red-500/80 flex items-center justify-center"
                       style={{ width: `${100 - section.satisfaction}%` }}
                     >
-                      {(100 - section.satisfaction) > 15 && (
-                        <span className="text-[10px] text-white font-medium">{section.notHelpful}</span>
+                      {100 - section.satisfaction > 15 && (
+                        <span className="text-[10px] text-white font-medium">
+                          {section.notHelpful}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-medium w-12 text-right">{section.satisfaction}%</span>
+                  <span className="text-xs font-medium w-12 text-right">
+                    {section.satisfaction}%
+                  </span>
                 </div>
-                <Badge variant="outline" className="text-[10px]">{section.total} votes</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {section.total} votes
+                </Badge>
               </div>
             ))}
             {(!analytics?.sections || analytics.sections.length === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-8">No feedback data available</p>
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No feedback data available
+              </p>
             )}
           </div>
         </div>
@@ -285,7 +364,9 @@ export default function FeedbackAnalytics() {
               >
                 <option value="all">All Sections</option>
                 {Object.entries(sectionNames).map(([id, name]) => (
-                  <option key={id} value={id}>{name}</option>
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
                 ))}
               </select>
               <select
@@ -302,7 +383,10 @@ export default function FeedbackAnalytics() {
           <ScrollArea className="h-[300px]">
             <div className="space-y-2">
               {filteredFeedback.map(entry => (
-                <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                <div
+                  key={entry.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                >
                   {entry.rating === "up" ? (
                     <ThumbsUp className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   ) : (
@@ -314,11 +398,15 @@ export default function FeedbackAnalytics() {
                         {sectionNames[entry.sectionId] || entry.sectionId}
                       </Badge>
                       {entry.subsectionId && (
-                        <span className="text-[10px] text-muted-foreground">{entry.subsectionId}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {entry.subsectionId}
+                        </span>
                       )}
                     </div>
                     {entry.comment && (
-                      <p className="text-xs text-muted-foreground mt-1">{entry.comment}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {entry.comment}
+                      </p>
                     )}
                     <p className="text-[10px] text-muted-foreground mt-1">
                       <Clock className="h-3 w-3 inline mr-1" />
@@ -328,7 +416,9 @@ export default function FeedbackAnalytics() {
                 </div>
               ))}
               {filteredFeedback.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">No feedback entries match your filters</p>
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No feedback entries match your filters
+                </p>
               )}
             </div>
           </ScrollArea>

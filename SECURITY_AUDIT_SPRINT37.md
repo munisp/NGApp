@@ -1,12 +1,15 @@
 # Security Audit Report — Sprint 37
+
 **Date:** April 21, 2026 | **Auditor:** Automated Security Scanner | **Score: 97/100**
 
 ## Executive Summary
+
 Sprint 37 adds 20 production-hardening features including E2E testing, multi-tenant isolation, compliance checking, rate limiting, and operational runbooks. All routers use protectedProcedure with Zod input validation.
 
 ## Findings
 
 ### PASSED (18/20 categories)
+
 1. **Authentication** — All 20 routers use protectedProcedure (session-based auth required)
 2. **Input Validation** — All mutations use Zod schemas with strict type checking
 3. **SQL Injection** — No raw SQL; all queries via Drizzle ORM parameterized queries
@@ -27,10 +30,12 @@ Sprint 37 adds 20 production-hardening features including E2E testing, multi-ten
 18. **Metrics & Monitoring** — platformMetricsExporter enables observability
 
 ### ADVISORY (2 items — low risk)
+
 1. **Database Connection** — ECONNREFUSED errors on ERP sync (expected: no DB in sandbox)
 2. **TypeScript Compilation** — TSC memory abort (Node heap limit; not a security issue)
 
 ## Vulnerability Score: 97/100
+
 - Critical: 0 | High: 0 | Medium: 0 | Low: 2 (advisory only)
 - All 65 Sprint 37 tests pass
 - No exposed secrets, no injection vectors, no auth bypasses

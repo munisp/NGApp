@@ -10,7 +10,6 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function PlatformHealthMonitor() {
-  
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -18,10 +17,22 @@ export default function PlatformHealthMonitor() {
   const stats = statsQuery.data;
 
   const statCards = [
-    { label: "Overall Health", value: stats?.overallHealth != null ? String(stats.overallHealth) : "—" },
-    { label: "Uptime30d", value: stats?.uptime30d != null ? String(stats.uptime30d) : "—" },
-    { label: "Avg Latency", value: stats?.avgLatency != null ? String(stats.avgLatency) : "—" },
-    { label: "P99 Latency", value: stats?.p99Latency != null ? String(stats.p99Latency) : "—" },
+    {
+      label: "Overall Health",
+      value: stats?.overallHealth != null ? String(stats.overallHealth) : "—",
+    },
+    {
+      label: "Uptime30d",
+      value: stats?.uptime30d != null ? String(stats.uptime30d) : "—",
+    },
+    {
+      label: "Avg Latency",
+      value: stats?.avgLatency != null ? String(stats.avgLatency) : "—",
+    },
+    {
+      label: "P99 Latency",
+      value: stats?.p99Latency != null ? String(stats.p99Latency) : "—",
+    },
   ];
 
   return (
@@ -31,16 +42,22 @@ export default function PlatformHealthMonitor() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Platform Health Monitor</h1>
-            <p className="text-muted-foreground mt-1">real-time system health with uptime, error rates, latency</p>
+            <p className="text-muted-foreground mt-1">
+              real-time system health with uptime, error rates, latency
+            </p>
           </div>
           <div className="flex gap-2">
             <Input
               placeholder="Search..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-64"
             />
-            <Button onClick={() => toast.success("Action triggered: Processing your request...")}>
+            <Button
+              onClick={() =>
+                toast.success("Action triggered: Processing your request...")
+              }
+            >
               Refresh
             </Button>
           </div>
@@ -51,7 +68,9 @@ export default function PlatformHealthMonitor() {
           {statCards.map((card, i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{card.label}</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {card.label}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{card.value}</div>
@@ -75,14 +94,23 @@ export default function PlatformHealthMonitor() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {stats && Object.entries(stats).map(([key, value]) => (
-                    <div key={key} className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, (s: string) => s.toUpperCase())}</div>
-                      <div className="text-lg font-semibold mt-1">
-                        {typeof value === "number" ? value.toLocaleString() : typeof value === "object" ? JSON.stringify(value) : String(value)}
+                  {stats &&
+                    Object.entries(stats).map(([key, value]) => (
+                      <div key={key} className="p-3 rounded-lg bg-muted/50">
+                        <div className="text-xs text-muted-foreground">
+                          {key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (s: string) => s.toUpperCase())}
+                        </div>
+                        <div className="text-lg font-semibold mt-1">
+                          {typeof value === "number"
+                            ? value.toLocaleString()
+                            : typeof value === "object"
+                              ? JSON.stringify(value)
+                              : String(value)}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -96,17 +124,30 @@ export default function PlatformHealthMonitor() {
               <CardContent>
                 <div className="space-y-3">
                   {Array.from({ length: 8 }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
                           {i + 1}
                         </div>
                         <div>
                           <div className="font-medium">Item {i + 1}</div>
-                          <div className="text-sm text-muted-foreground">Updated {i + 1}h ago</div>
+                          <div className="text-sm text-muted-foreground">
+                            Updated {i + 1}h ago
+                          </div>
                         </div>
                       </div>
-                      <Badge variant={i % 3 === 0 ? "default" : i % 3 === 1 ? "secondary" : "outline"}>
+                      <Badge
+                        variant={
+                          i % 3 === 0
+                            ? "default"
+                            : i % 3 === 1
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
                         {["Active", "Pending", "Completed"][i % 3]}
                       </Badge>
                     </div>
@@ -133,7 +174,13 @@ export default function PlatformHealthMonitor() {
                       <Input placeholder="Value" className="mt-1" />
                     </div>
                   </div>
-                  <Button onClick={() => toast.success("Settings saved: Configuration updated successfully")}>
+                  <Button
+                    onClick={() =>
+                      toast.success(
+                        "Settings saved: Configuration updated successfully"
+                      )
+                    }
+                  >
                     Save Settings
                   </Button>
                 </div>

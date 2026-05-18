@@ -58,10 +58,14 @@ function buildProgressEvent(tracker: BatchProgressTracker): BatchProgressEvent {
 
   return {
     batchId: tracker.batchId,
-    type: tracker.processed >= tracker.total ? "batch.completed" : "batch.progress",
+    type:
+      tracker.processed >= tracker.total ? "batch.completed" : "batch.progress",
     processed: tracker.processed,
     total: tracker.total,
-    percentage: tracker.total > 0 ? Math.round((tracker.processed / tracker.total) * 1000) / 10 : 0,
+    percentage:
+      tracker.total > 0
+        ? Math.round((tracker.processed / tracker.total) * 1000) / 10
+        : 0,
     rate: Math.round(rate),
     estimatedSecondsRemaining: Math.round(estimatedSecondsRemaining),
     errors: tracker.errors,
@@ -78,9 +82,10 @@ function buildProgressEvent(tracker: BatchProgressTracker): BatchProgressEvent {
 export async function startBatchProgress(
   batchId: string,
   total: number,
-  onProgress?: (event: BatchProgressEvent) => void,
+  onProgress?: (event: BatchProgressEvent) => void
 ): Promise<BatchProgressTracker> {
-  const reportInterval = await getConfigNumber("progress_report_interval") || 100;
+  const reportInterval =
+    (await getConfigNumber("progress_report_interval")) || 100;
 
   const tracker: BatchProgressTracker = {
     batchId,
@@ -101,7 +106,9 @@ export async function startBatchProgress(
   };
   tracker.onProgress(startEvent);
 
-  logger.info(`[BatchProgress] Started tracking batch ${batchId} (total=${total}, reportEvery=${reportInterval})`);
+  logger.info(
+    `[BatchProgress] Started tracking batch ${batchId} (total=${total}, reportEvery=${reportInterval})`
+  );
   return tracker;
 }
 
@@ -112,7 +119,7 @@ export async function startBatchProgress(
 export function reportProgress(
   batchId: string,
   processedDelta: number = 1,
-  errorDelta: number = 0,
+  errorDelta: number = 0
 ): BatchProgressEvent | null {
   const tracker = activeTrackers.get(batchId);
   if (!tracker) return null;
@@ -121,7 +128,10 @@ export function reportProgress(
   tracker.errors += errorDelta;
 
   // Only emit event at report intervals
-  if (tracker.processed % tracker.reportInterval === 0 || tracker.processed >= tracker.total) {
+  if (
+    tracker.processed % tracker.reportInterval === 0 ||
+    tracker.processed >= tracker.total
+  ) {
     const event = buildProgressEvent(tracker);
     tracker.lastReportAt = Date.now();
     tracker.onProgress(event);
@@ -134,7 +144,10 @@ export function reportProgress(
 /**
  * Complete a batch operation and emit final event.
  */
-export function completeBatchProgress(batchId: string, metadata?: Record<string, unknown>): BatchProgressEvent | null {
+export function completeBatchProgress(
+  batchId: string,
+  metadata?: Record<string, unknown>
+): BatchProgressEvent | null {
   const tracker = activeTrackers.get(batchId);
   if (!tracker) return null;
 
@@ -147,14 +160,19 @@ export function completeBatchProgress(batchId: string, metadata?: Record<string,
   tracker.onProgress(event);
   activeTrackers.delete(batchId);
 
-  logger.info(`[BatchProgress] Batch ${batchId} completed: ${tracker.processed}/${tracker.total} (${tracker.errors} errors, ${((Date.now() - tracker.startedAt) / 1000).toFixed(1)}s)`);
+  logger.info(
+    `[BatchProgress] Batch ${batchId} completed: ${tracker.processed}/${tracker.total} (${tracker.errors} errors, ${((Date.now() - tracker.startedAt) / 1000).toFixed(1)}s)`
+  );
   return event;
 }
 
 /**
  * Mark a batch as failed and emit failure event.
  */
-export function failBatchProgress(batchId: string, error: string): BatchProgressEvent | null {
+export function failBatchProgress(
+  batchId: string,
+  error: string
+): BatchProgressEvent | null {
   const tracker = activeTrackers.get(batchId);
   if (!tracker) return null;
 
@@ -167,7 +185,9 @@ export function failBatchProgress(batchId: string, error: string): BatchProgress
   tracker.onProgress(event);
   activeTrackers.delete(batchId);
 
-  logger.error(`[BatchProgress] Batch ${batchId} failed at ${tracker.processed}/${tracker.total}: ${error}`);
+  logger.error(
+    `[BatchProgress] Batch ${batchId} failed at ${tracker.processed}/${tracker.total}: ${error}`
+  );
   return event;
 }
 
@@ -190,20 +210,34 @@ export function getAllBatchProgress(): BatchProgressEvent[] {
 // ── Default Progress Handler ─────────────────────────────────────────────────
 
 function defaultProgressHandler(event: BatchProgressEvent): void {
-  const { batchId, type, processed, total, percentage, rate, estimatedSecondsRemaining } = event;
+  const {
+    batchId,
+    type,
+    processed,
+    total,
+    percentage,
+    rate,
+    estimatedSecondsRemaining,
+  } = event;
 
   switch (type) {
     case "batch.started":
       logger.info(`[BatchProgress] ${batchId}: Started (total=${total})`);
       break;
     case "batch.progress":
-      logger.info(`[BatchProgress] ${batchId}: ${processed}/${total} (${percentage}%) — ${rate} items/sec, ETA ${estimatedSecondsRemaining}s`);
+      logger.info(
+        `[BatchProgress] ${batchId}: ${processed}/${total} (${percentage}%) — ${rate} items/sec, ETA ${estimatedSecondsRemaining}s`
+      );
       break;
     case "batch.completed":
-      logger.info(`[BatchProgress] ${batchId}: Completed ${processed}/${total} in ${((event.updatedAt - event.startedAt) / 1000).toFixed(1)}s`);
+      logger.info(
+        `[BatchProgress] ${batchId}: Completed ${processed}/${total} in ${((event.updatedAt - event.startedAt) / 1000).toFixed(1)}s`
+      );
       break;
     case "batch.failed":
-      logger.error(`[BatchProgress] ${batchId}: Failed at ${processed}/${total} — ${event.metadata?.error}`);
+      logger.error(
+        `[BatchProgress] ${batchId}: Failed at ${processed}/${total} — ${event.metadata?.error}`
+      );
       break;
   }
 }
@@ -212,7 +246,9 @@ function defaultProgressHandler(event: BatchProgressEvent): void {
  * Create a Socket.IO progress handler for real-time dashboard updates.
  * Emits events to the /settlement namespace so connected dashboards receive live progress.
  */
-export function createSocketIOProgressHandler(): (event: BatchProgressEvent) => void {
+export function createSocketIOProgressHandler(): (
+  event: BatchProgressEvent
+) => void {
   return (event: BatchProgressEvent) => {
     // Always log
     defaultProgressHandler(event);
@@ -224,9 +260,13 @@ export function createSocketIOProgressHandler(): (event: BatchProgressEvent) => 
       if (io) {
         const settlementNs = io.of("/settlement");
         // Emit to the specific batch room and broadcast to all connected dashboards
-        settlementNs.to(`batch:${event.batchId}`).emit("settlement:progress", event);
+        settlementNs
+          .to(`batch:${event.batchId}`)
+          .emit("settlement:progress", event);
         settlementNs.emit("settlement:progress:all", event);
-        logger.debug(`[BatchProgress/Socket] Emitted to /settlement for batch ${event.batchId}`);
+        logger.debug(
+          `[BatchProgress/Socket] Emitted to /settlement for batch ${event.batchId}`
+        );
       }
     } catch (e) {
       logger.debug(`[BatchProgress/Socket] Socket.IO not available: ${e}`);
@@ -238,9 +278,13 @@ export function createSocketIOProgressHandler(): (event: BatchProgressEvent) => 
  * Create a Redis pub/sub progress handler for real-time dashboard updates.
  * In production, this publishes to a Redis channel that the frontend subscribes to.
  */
-export function createRedisPubSubHandler(channelPrefix: string = "batch:progress"): (event: BatchProgressEvent) => void {
+export function createRedisPubSubHandler(
+  channelPrefix: string = "batch:progress"
+): (event: BatchProgressEvent) => void {
   return (event: BatchProgressEvent) => {
     defaultProgressHandler(event);
-    logger.debug(`[BatchProgress/Redis] Would publish to ${channelPrefix}:${event.batchId}`);
+    logger.debug(
+      `[BatchProgress/Redis] Would publish to ${channelPrefix}:${event.batchId}`
+    );
   };
 }

@@ -46,27 +46,33 @@ import {
 
 async function requireAgent(req: Request | any) {
   const agent = await getAgentFromCookie(req);
-  if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+  if (!agent)
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Agent session required",
+    });
   return agent;
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 export const kycRouter = router({
-
   // ─── Retry Cooldown ──────────────────────────────────────────────────────────
 
   /** Check if the current user is locked out from liveness checks */
-  checkCooldown: protectedProcedure
-    .query(async ({ ctx }) => {
-      try {
-        const agent = await requireAgent(ctx.req);
-        return isLockedOut(`agent-${agent.id}`);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-      }
-    }),
+  checkCooldown: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const agent = await requireAgent(ctx.req);
+      return isLockedOut(`agent-${agent.id}`);
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  }),
 
   /** Admin: clear cooldown for a specific user */
   adminClearCooldown: adminProcedure
@@ -77,24 +83,29 @@ export const kycRouter = router({
         return { cleared, userId: input.userId };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Admin: get all active cooldowns */
-  adminGetCooldowns: adminProcedure
-    .query(async () => {
-      return { cooldowns: getCooldownStatus() };
-    }),
+  adminGetCooldowns: adminProcedure.query(async () => {
+    return { cooldowns: getCooldownStatus() };
+  }),
 
   // ─── Server-side Passive Liveness ────────────────────────────────────────────
 
   /** Submit a single frame for server-side passive liveness analysis (no motion needed) */
   passiveLiveness: protectedProcedure
-    .input(z.object({
-      frameBase64: z.string().min(100),
-      sessionId: z.number().int().positive().optional(),
-    }))
+    .input(
+      z.object({
+        frameBase64: z.string().min(100),
+        sessionId: z.number().int().positive().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await requireAgent(ctx.req);
@@ -139,7 +150,11 @@ export const kycRouter = router({
         return result;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -147,14 +162,16 @@ export const kycRouter = router({
 
   /** Register device fingerprint and get adaptive thresholds */
   registerDevice: protectedProcedure
-    .input(z.object({
-      userAgent: z.string(),
-      cameraWidth: z.number().int().positive(),
-      cameraHeight: z.number().int().positive(),
-      screenWidth: z.number().int().positive(),
-      screenHeight: z.number().int().positive(),
-      pixelRatio: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        userAgent: z.string(),
+        cameraWidth: z.number().int().positive(),
+        cameraHeight: z.number().int().positive(),
+        screenWidth: z.number().int().positive(),
+        screenHeight: z.number().int().positive(),
+        pixelRatio: z.number().positive(),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const fingerprint = createDeviceFingerprint(input);
@@ -164,31 +181,39 @@ export const kycRouter = router({
         return {
           fingerprint,
           thresholds,
-          history: history ? {
-            successRate: history.successRate,
-            totalAttempts: history.attempts.length,
-            avgScore: history.avgScore,
-          } : null,
+          history: history
+            ? {
+                successRate: history.successRate,
+                totalAttempts: history.attempts.length,
+                avgScore: history.avgScore,
+              }
+            : null,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Record a liveness attempt result for device analytics */
   recordDeviceAttempt: protectedProcedure
-    .input(z.object({
-      userAgent: z.string(),
-      cameraWidth: z.number().int().positive(),
-      cameraHeight: z.number().int().positive(),
-      screenWidth: z.number().int().positive(),
-      screenHeight: z.number().int().positive(),
-      pixelRatio: z.number().positive(),
-      passed: z.boolean(),
-      method: z.string(),
-      score: z.number().min(0).max(1),
-    }))
+    .input(
+      z.object({
+        userAgent: z.string(),
+        cameraWidth: z.number().int().positive(),
+        cameraHeight: z.number().int().positive(),
+        screenWidth: z.number().int().positive(),
+        screenHeight: z.number().int().positive(),
+        pixelRatio: z.number().positive(),
+        passed: z.boolean(),
+        method: z.string(),
+        score: z.number().min(0).max(1),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const fingerprint = createDeviceFingerprint({
@@ -199,44 +224,71 @@ export const kycRouter = router({
           screenHeight: input.screenHeight,
           pixelRatio: input.pixelRatio,
         });
-        recordDeviceLivenessAttempt(fingerprint, input.passed, input.method, input.score);
+        recordDeviceLivenessAttempt(
+          fingerprint,
+          input.passed,
+          input.method,
+          input.score
+        );
         return { recorded: true, fingerprintHash: fingerprint.fingerprintHash };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Admin: get all device histories for analytics dashboard */
-  adminDeviceHistories: adminProcedure
-    .query(async () => {
-      return { devices: getAllDeviceHistories() };
-    }),
+  adminDeviceHistories: adminProcedure.query(async () => {
+    return { devices: getAllDeviceHistories() };
+  }),
 
   /** Admin: get problematic devices that consistently fail */
   adminProblematicDevices: adminProcedure
-    .input(z.object({
-      minAttempts: z.number().int().min(1).default(5),
-      maxSuccessRate: z.number().min(0).max(1).default(0.5),
-    }))
+    .input(
+      z.object({
+        minAttempts: z.number().int().min(1).default(5),
+        maxSuccessRate: z.number().min(0).max(1).default(0.5),
+      })
+    )
     .query(async ({ input }) => {
       try {
-        return { devices: getProblematicDevices(input.minAttempts, input.maxSuccessRate) };
+        return {
+          devices: getProblematicDevices(
+            input.minAttempts,
+            input.maxSuccessRate
+          ),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
-
 
   /**
    * Create a new KYC session and return a liveness challenge.
    * The POS Shell camera will display the challenge instruction to the agent.
    */
   startLiveness: protectedProcedure
-    .input(z.object({
-      method: z.enum(["active_blink", "active_smile", "active_head_movement", "passive"]).default("active_blink"),
-    }))
+    .input(
+      z.object({
+        method: z
+          .enum([
+            "active_blink",
+            "active_smile",
+            "active_head_movement",
+            "passive",
+          ])
+          .default("active_blink"),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await requireAgent(ctx.req);
@@ -252,7 +304,11 @@ export const kycRouter = router({
         }
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Create a liveness challenge via the video-kyc service
         const challenge = await createLivenessChallenge(input.method);
@@ -273,7 +329,8 @@ export const kycRouter = router({
           return {
             sessionId: session.id,
             challengeId: null,
-            instruction: "Liveness service unavailable — please retake your selfie",
+            instruction:
+              "Liveness service unavailable — please retake your selfie",
             method: input.method,
             serviceAvailable: false,
           };
@@ -288,7 +345,11 @@ export const kycRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -297,16 +358,22 @@ export const kycRouter = router({
    * Updates the KYC session with the liveness result.
    */
   submitLivenessFrame: protectedProcedure
-    .input(z.object({
-      sessionId: z.number().int().positive(),
-      challengeId: z.string(),
-      frameBase64: z.string().min(100),   // base64-encoded JPEG/PNG frame
-    }))
+    .input(
+      z.object({
+        sessionId: z.number().int().positive(),
+        challengeId: z.string(),
+        frameBase64: z.string().min(100), // base64-encoded JPEG/PNG frame
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await requireAgent(ctx.req);
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Fetch the session and verify ownership
         const [session] = await db
@@ -316,7 +383,10 @@ export const kycRouter = router({
           .limit(1);
 
         if (!session || session.agentId !== agent.id) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "KYC session not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "KYC session not found",
+          });
         }
 
         // Check cooldown
@@ -330,10 +400,15 @@ export const kycRouter = router({
         }
 
         // Call liveness service
-        const result = await verifyLivenessChallenge(input.challengeId, input.frameBase64);
+        const result = await verifyLivenessChallenge(
+          input.challengeId,
+          input.frameBase64
+        );
 
         const newStatus = result
-          ? (result.passed ? "liveness_passed" : "liveness_failed")
+          ? result.passed
+            ? "liveness_passed"
+            : "liveness_failed"
           : "liveness_failed";
 
         // Record success/failure for cooldown tracking
@@ -363,7 +438,11 @@ export const kycRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -372,16 +451,28 @@ export const kycRouter = router({
    * Stores extracted fields in the KYC session and (optionally) in the compliance-kyc service.
    */
   verifyDocument: protectedProcedure
-    .input(z.object({
-      sessionId: z.number().int().positive(),
-      imageBase64: z.string().min(100),
-      docType: z.enum(["NIN", "BVN_CARD", "PASSPORT", "DRIVERS_LICENCE", "VOTER_CARD"]),
-    }))
+    .input(
+      z.object({
+        sessionId: z.number().int().positive(),
+        imageBase64: z.string().min(100),
+        docType: z.enum([
+          "NIN",
+          "BVN_CARD",
+          "PASSPORT",
+          "DRIVERS_LICENCE",
+          "VOTER_CARD",
+        ]),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await requireAgent(ctx.req);
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Fetch and verify session ownership
         const [session] = await db
@@ -391,7 +482,10 @@ export const kycRouter = router({
           .limit(1);
 
         if (!session || session.agentId !== agent.id) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "KYC session not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "KYC session not found",
+          });
         }
 
         // Run OCR
@@ -409,14 +503,17 @@ export const kycRouter = router({
             fullName: ocr.extractedName,
             idType: input.docType,
             idNumber: ocr.extractedIdNumber,
-            livenessScore: session.livenessScore ? Number(session.livenessScore) : undefined,
+            livenessScore: session.livenessScore
+              ? Number(session.livenessScore)
+              : undefined,
             documentConfidence: ocr.confidence,
           });
           complianceId = record?.id ?? null;
         }
 
         // Determine final session status
-        const finalStatus = docPassed && session.livenessPassed ? "completed" : newStatus;
+        const finalStatus =
+          docPassed && session.livenessPassed ? "completed" : newStatus;
 
         await db
           .update(kycSessions)
@@ -435,12 +532,16 @@ export const kycRouter = router({
           .where(eq(kycSessions.id, input.sessionId));
 
         // ── Fluvio KYC event (fire-and-forget) ─────────────────────────────────
-        import("../lib/fluvioClient.js").then(({ publishKycEvent }) =>
-          publishKycEvent({
-            sessionId: input.sessionId,
-            status: finalStatus,
-          })
-        ).catch((e: unknown) => console.error("[Fluvio] KYC event failed:", e));
+        import("../lib/fluvioClient.js")
+          .then(({ publishKycEvent }) =>
+            publishKycEvent({
+              sessionId: input.sessionId,
+              status: finalStatus,
+            })
+          )
+          .catch((e: unknown) =>
+            console.error("[Fluvio] KYC event failed:", e)
+          );
 
         return {
           sessionId: input.sessionId,
@@ -455,7 +556,11 @@ export const kycRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -463,60 +568,83 @@ export const kycRouter = router({
    * Get the current KYC session status for the logged-in agent.
    * Returns the most recent session.
    */
-  getStatus: protectedProcedure
-    .query(async ({ ctx }) => {
-      try {
-        const agent = await requireAgent(ctx.req);
-        const db = (await getDb())!;
-        if (!db) return { hasSession: false, status: null, session: null };
+  getStatus: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const agent = await requireAgent(ctx.req);
+      const db = (await getDb())!;
+      if (!db) return { hasSession: false, status: null, session: null };
 
-        const [session] = await db
-          .select()
-          .from(kycSessions)
-          .where(eq(kycSessions.agentId, agent.id))
-          .orderBy(desc(kycSessions.createdAt))
-          .limit(1);
+      const [session] = await db
+        .select()
+        .from(kycSessions)
+        .where(eq(kycSessions.agentId, agent.id))
+        .orderBy(desc(kycSessions.createdAt))
+        .limit(1);
 
-        if (!session) return { hasSession: false, status: null, session: null };
+      if (!session) return { hasSession: false, status: null, session: null };
 
-        return {
-          hasSession: true,
+      return {
+        hasSession: true,
+        status: session.status,
+        session: {
+          id: session.id,
           status: session.status,
-          session: {
-            id: session.id,
-            status: session.status,
-            livenessPassed: session.livenessPassed,
-            livenessScore: session.livenessScore ? Number(session.livenessScore) : null,
-            docType: session.docType,
-            docExtractedName: session.docExtractedName,
-            docExtractedDob: session.docExtractedDob,
-            docExtractedIdNumber: session.docExtractedIdNumber,
-            docConfidence: session.docConfidence ? Number(session.docConfidence) : null,
-            fraudIndicators: session.docFraudIndicators ?? [],
-            complianceRecordId: session.complianceRecordId,
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
-          },
-        };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-      }
-    }),
+          livenessPassed: session.livenessPassed,
+          livenessScore: session.livenessScore
+            ? Number(session.livenessScore)
+            : null,
+          docType: session.docType,
+          docExtractedName: session.docExtractedName,
+          docExtractedDob: session.docExtractedDob,
+          docExtractedIdNumber: session.docExtractedIdNumber,
+          docConfidence: session.docConfidence
+            ? Number(session.docConfidence)
+            : null,
+          fraudIndicators: session.docFraudIndicators ?? [],
+          complianceRecordId: session.complianceRecordId,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+        },
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  }),
 
   /**
    * Admin: list all KYC sessions with pagination.
    */
   listSessions: adminProcedure
-    .input(z.object({
-      page: z.number().int().min(1).default(1),
-      pageSize: z.number().int().min(1).max(100).default(20),
-      status: z.enum(["pending", "liveness_passed", "liveness_failed", "document_passed", "document_failed", "completed", "rejected"]).optional(),
-    }))
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+        status: z
+          .enum([
+            "pending",
+            "liveness_passed",
+            "liveness_failed",
+            "document_passed",
+            "document_failed",
+            "completed",
+            "rejected",
+          ])
+          .optional(),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
         const offset = (input.page - 1) * input.pageSize;
 
         const rows = await db
@@ -527,7 +655,7 @@ export const kycRouter = router({
           .offset(offset);
 
         return {
-          sessions: rows.map((s: typeof rows[number]) => ({
+          sessions: rows.map((s: (typeof rows)[number]) => ({
             id: s.id,
             agentId: s.agentId,
             status: s.status,
@@ -546,7 +674,11 @@ export const kycRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -555,21 +687,43 @@ export const kycRouter = router({
    * Frontend uploads the document directly to S3, then calls verifyDocument with the S3 key.
    */
   requestDocumentUpload: protectedProcedure
-    .input(z.object({
-      mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]),
-      docType: z.enum(["NIN", "BVN_CARD", "PASSPORT", "DRIVERS_LICENCE", "VOTER_CARD"]),
-    }))
+    .input(
+      z.object({
+        mimeType: z.enum([
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf",
+        ]),
+        docType: z.enum([
+          "NIN",
+          "BVN_CARD",
+          "PASSPORT",
+          "DRIVERS_LICENCE",
+          "VOTER_CARD",
+        ]),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await requireAgent(ctx.req);
-        const ext = input.mimeType === "application/pdf" ? "pdf"
-          : input.mimeType === "image/png" ? "png"
-          : input.mimeType === "image/webp" ? "webp" : "jpg";
+        const ext =
+          input.mimeType === "application/pdf"
+            ? "pdf"
+            : input.mimeType === "image/png"
+              ? "png"
+              : input.mimeType === "image/webp"
+                ? "webp"
+                : "jpg";
         const fileKey = `kyc-docs/${agent.id}/${input.docType.toLowerCase()}-${Date.now()}.${ext}`;
         try {
           const { storagePut } = await import("../storage.js");
           // Upload a zero-byte placeholder to reserve the key and get the CDN URL
-          const { url } = await storagePut(fileKey, Buffer.alloc(0), input.mimeType);
+          const { url } = await storagePut(
+            fileKey,
+            Buffer.alloc(0),
+            input.mimeType
+          );
           return {
             uploadUrl: url,
             fileKey,
@@ -579,12 +733,17 @@ export const kycRouter = router({
         } catch {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to generate upload URL. Please use base64 upload instead.",
+            message:
+              "Failed to generate upload URL. Please use base64 upload instead.",
           });
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -592,22 +751,36 @@ export const kycRouter = router({
 
   /** Correlate a liveness attempt with geo-IP data */
   geoIpCorrelate: protectedProcedure
-    .input(z.object({
-      deviceFingerprint: z.string(),
-      clientIp: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        deviceFingerprint: z.string(),
+        clientIp: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
-        const ip = input.clientIp || ctx.req?.headers?.['x-forwarded-for']?.toString()?.split(',')[0]?.trim() || ctx.req?.socket?.remoteAddress || '127.0.0.1';
+        const ip =
+          input.clientIp ||
+          ctx.req?.headers?.["x-forwarded-for"]
+            ?.toString()
+            ?.split(",")[0]
+            ?.trim() ||
+          ctx.req?.socket?.remoteAddress ||
+          "127.0.0.1";
         const geo = await resolveGeoIp(ip);
-        const correlation = correlateGeoIp(ctx.user.id.toString(), input.deviceFingerprint, geo);
+        const correlation = correlateGeoIp(
+          ctx.user.id.toString(),
+          input.deviceFingerprint,
+          geo
+        );
 
         // If high risk, notify admin
         if (correlation.riskScore >= 50) {
           const { notifyOwner } = await import("../_core/notification.js");
           notifyOwner({
             title: `\u26a0\ufe0f High-Risk Geo-IP: ${ctx.user.name || ctx.user.id}`,
-            content: `User ${ctx.user.id} triggered geo-IP risk score ${correlation.riskScore}/100. ` +
+            content:
+              `User ${ctx.user.id} triggered geo-IP risk score ${correlation.riskScore}/100. ` +
               `Flags: ${correlation.flags.join(", ")}. ` +
               `IP: ${ip}, Country: ${geo.country}, ISP: ${geo.isp}. ` +
               `Review in Admin > Liveness Device Analytics.`,
@@ -617,20 +790,28 @@ export const kycRouter = router({
         return {
           riskScore: correlation.riskScore,
           flags: correlation.flags,
-          geo: { country: geo.country, city: geo.city, isVpn: geo.isVpn, isTor: geo.isTor },
+          geo: {
+            country: geo.country,
+            city: geo.city,
+            isVpn: geo.isVpn,
+            isTor: geo.isTor,
+          },
           blocked: correlation.riskScore >= 80,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Admin: Get all geo-IP correlations */
-  adminGeoCorrelations: adminProcedure
-    .query(() => {
-      return { correlations: getAllGeoCorrelations() };
-    }),
+  adminGeoCorrelations: adminProcedure.query(() => {
+    return { correlations: getAllGeoCorrelations() };
+  }),
 
   /** Admin: Get high-risk correlations */
   adminHighRiskGeo: adminProcedure
@@ -644,6 +825,9 @@ export const kycRouter = router({
     .input(z.object({ userId: z.string() }))
     .mutation(({ input }) => {
       const cleared = clearGeoIpData(input.userId);
-      return { cleared, message: `Cleared ${cleared} geo-IP record(s) for user ${input.userId}` };
+      return {
+        cleared,
+        message: `Cleared ${cleared} geo-IP record(s) for user ${input.userId}`,
+      };
     }),
 });

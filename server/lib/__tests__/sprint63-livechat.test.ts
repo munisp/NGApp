@@ -50,7 +50,9 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
       expect(schema.chatSessions).toBeDefined();
       // Verify key columns exist
       // chatSessions is a pgTable - check its column config
-      const columns = Object.keys((schema.chatSessions as any)?._ ?? schema.chatSessions);
+      const columns = Object.keys(
+        (schema.chatSessions as any)?._ ?? schema.chatSessions
+      );
       expect(columns).toContain("id");
       expect(columns).toContain("agentId");
       expect(columns).toContain("status");
@@ -76,7 +78,8 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should export a default component", async () => {
       // Verify the page module exists and exports default
       const fs = await import("fs");
-      const path = "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx";
+      const path =
+        "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx";
       const exists = fs.existsSync(path);
       expect(exists).toBe(true);
 
@@ -112,10 +115,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
         "utf-8"
       );
       expect(content).toContain("statusFilter");
-      expect(content).toContain("\"open\"");
-      expect(content).toContain("\"assigned\"");
-      expect(content).toContain("\"escalated\"");
-      expect(content).toContain("\"resolved\"");
+      expect(content).toContain('"open"');
+      expect(content).toContain('"assigned"');
+      expect(content).toContain('"escalated"');
+      expect(content).toContain('"resolved"');
     });
 
     it("should have assign and escalate dialogs", async () => {
@@ -191,7 +194,7 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
         "utf-8"
       );
       // adminReply should emit via Socket.IO
-      expect(content).toContain("io.of(\"/chat\")");
+      expect(content).toContain('io.of("/chat")');
       expect(content).toContain("chat:message");
       expect(content).toContain("getIO");
     });

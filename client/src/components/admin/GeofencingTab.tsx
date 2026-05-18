@@ -49,23 +49,57 @@ import {
 
 // ─── Zone types (matches platform geofencing service — 8 types) ──────────────
 const ZONE_TYPES = [
-  { value: "AGENT_OPERATING_AREA",   label: "Agent Operating Area",   description: "Primary area where agent is authorised to transact" },
-  { value: "MERCHANT_DELIVERY_ZONE", label: "Merchant Delivery Zone", description: "Zone for merchant delivery agents" },
-  { value: "RESTRICTED_ZONE",        label: "Restricted Zone",        description: "Area where agent is NOT allowed to transact" },
-  { value: "HIGH_RISK_AREA",         label: "High Risk Area",         description: "Elevated fraud monitoring and stricter velocity limits" },
-  { value: "PREMIUM_ZONE",           label: "Premium Zone",           description: "High-value area with elevated commission rates" },
-  { value: "MARKET_ZONE",            label: "Market Zone",            description: "High-density market area with relaxed velocity limits" },
-  { value: "CAMPUS_ZONE",            label: "Campus Zone",            description: "University or campus area" },
-  { value: "INDUSTRIAL_ZONE",        label: "Industrial Zone",        description: "Industrial estate or factory area" },
+  {
+    value: "AGENT_OPERATING_AREA",
+    label: "Agent Operating Area",
+    description: "Primary area where agent is authorised to transact",
+  },
+  {
+    value: "MERCHANT_DELIVERY_ZONE",
+    label: "Merchant Delivery Zone",
+    description: "Zone for merchant delivery agents",
+  },
+  {
+    value: "RESTRICTED_ZONE",
+    label: "Restricted Zone",
+    description: "Area where agent is NOT allowed to transact",
+  },
+  {
+    value: "HIGH_RISK_AREA",
+    label: "High Risk Area",
+    description: "Elevated fraud monitoring and stricter velocity limits",
+  },
+  {
+    value: "PREMIUM_ZONE",
+    label: "Premium Zone",
+    description: "High-value area with elevated commission rates",
+  },
+  {
+    value: "MARKET_ZONE",
+    label: "Market Zone",
+    description: "High-density market area with relaxed velocity limits",
+  },
+  {
+    value: "CAMPUS_ZONE",
+    label: "Campus Zone",
+    description: "University or campus area",
+  },
+  {
+    value: "INDUSTRIAL_ZONE",
+    label: "Industrial Zone",
+    description: "Industrial estate or factory area",
+  },
 ] as const;
 
-type ZoneTypeValue = typeof ZONE_TYPES[number]["value"];
+type ZoneTypeValue = (typeof ZONE_TYPES)[number]["value"];
 
 // ─── Zone List ────────────────────────────────────────────────────────────────
 function ZoneList() {
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
-  const [geometryMode, setGeometryMode] = useState<"circle" | "polygon">("circle");
+  const [geometryMode, setGeometryMode] = useState<"circle" | "polygon">(
+    "circle"
+  );
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -80,22 +114,33 @@ function ZoneList() {
     alertOnExit: true,
   });
 
-  const { data: zones, isLoading, refetch } = trpc.geofencing.listZones.useQuery();
+  const {
+    data: zones,
+    isLoading,
+    refetch,
+  } = trpc.geofencing.listZones.useQuery();
 
   const createZone = trpc.geofencing.createZone.useMutation({
     onSuccess: () => {
       toast.success(`Zone "${form.name}" created and is now active.`);
       setShowCreate(false);
       setForm({
-        name: "", description: "", zoneType: "AGENT_OPERATING_AREA",
-        latitude: "", longitude: "", radiusMetres: "500",
-        polygonCoordinates: "", state: "", lga: "",
-        alertOnEntry: false, alertOnExit: true,
+        name: "",
+        description: "",
+        zoneType: "AGENT_OPERATING_AREA",
+        latitude: "",
+        longitude: "",
+        radiusMetres: "500",
+        polygonCoordinates: "",
+        state: "",
+        lga: "",
+        alertOnEntry: false,
+        alertOnExit: true,
       });
       setGeometryMode("circle");
       utils.geofencing.listZones.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
   const deleteZone = trpc.geofencing.deleteZone.useMutation({
@@ -103,7 +148,7 @@ function ZoneList() {
       toast.success("Zone deleted.");
       utils.geofencing.listZones.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
   const toggleZone = trpc.geofencing.updateZone.useMutation({
@@ -118,7 +163,9 @@ function ZoneList() {
         if (!Array.isArray(parsed)) throw new Error("Must be an array");
         polygonCoords = parsed;
       } catch {
-        toast.error("Invalid polygon coordinates. Must be a valid JSON array of [lng, lat] pairs.");
+        toast.error(
+          "Invalid polygon coordinates. Must be a valid JSON array of [lng, lat] pairs."
+        );
         return;
       }
     }
@@ -126,13 +173,15 @@ function ZoneList() {
       name: form.name,
       description: form.description || undefined,
       zoneType: form.zoneType,
-      ...(geometryMode === "circle" ? {
-        latitude: parseFloat(form.latitude),
-        longitude: parseFloat(form.longitude),
-        radiusMetres: parseInt(form.radiusMetres, 10),
-      } : {
-        polygonCoordinates: polygonCoords,
-      }),
+      ...(geometryMode === "circle"
+        ? {
+            latitude: parseFloat(form.latitude),
+            longitude: parseFloat(form.longitude),
+            radiusMetres: parseInt(form.radiusMetres, 10),
+          }
+        : {
+            polygonCoordinates: polygonCoords,
+          }),
       state: form.state || undefined,
       lga: form.lga || undefined,
       alertOnEntry: form.alertOnEntry,
@@ -140,11 +189,12 @@ function ZoneList() {
     });
   };
 
-  const isCreateDisabled = createZone.isPending || !form.name || (
-    geometryMode === "circle"
-      ? (!form.latitude || !form.longitude)
-      : !form.polygonCoordinates
-  );
+  const isCreateDisabled =
+    createZone.isPending ||
+    !form.name ||
+    (geometryMode === "circle"
+      ? !form.latitude || !form.longitude
+      : !form.polygonCoordinates);
 
   const zoneTypeMeta = (value: string) =>
     ZONE_TYPES.find(z => z.value === value);
@@ -152,7 +202,9 @@ function ZoneList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Geofence Zones</h3>
+        <h3 className="text-sm font-semibold text-foreground">
+          Geofence Zones
+        </h3>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
@@ -168,7 +220,9 @@ function ZoneList() {
       ) : !zones?.length ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No geofence zones configured.</p>
+          <p className="text-sm text-muted-foreground">
+            No geofence zones configured.
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
             Create a zone to restrict where agents can process transactions.
           </p>
@@ -187,15 +241,22 @@ function ZoneList() {
               </tr>
             </thead>
             <tbody>
-              {zones.map((zone) => {
+              {zones.map(zone => {
                 const isPolygon = !!(zone as any).polygonCoordinates;
-                const meta = zoneTypeMeta((zone as any).zoneType ?? "AGENT_OPERATING_AREA");
+                const meta = zoneTypeMeta(
+                  (zone as any).zoneType ?? "AGENT_OPERATING_AREA"
+                );
                 return (
-                  <tr key={zone.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={zone.id}
+                    className="border-t hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-3 py-2 font-medium">
                       <div>{zone.name}</div>
                       {zone.description && (
-                        <div className="text-xs text-muted-foreground">{zone.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {zone.description}
+                        </div>
                       )}
                     </td>
                     <td className="px-3 py-2">
@@ -205,10 +266,13 @@ function ZoneList() {
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">
                       {isPolygon ? (
-                        <span className="flex items-center gap-1"><Hexagon className="h-3 w-3" /> Polygon</span>
+                        <span className="flex items-center gap-1">
+                          <Hexagon className="h-3 w-3" /> Polygon
+                        </span>
                       ) : (
                         <span className="flex items-center gap-1">
-                          <Circle className="h-3 w-3" /> Circle · {(zone.radiusMetres ?? 0) >= 1000
+                          <Circle className="h-3 w-3" /> Circle ·{" "}
+                          {(zone.radiusMetres ?? 0) >= 1000
                             ? `${((zone.radiusMetres ?? 0) / 1000).toFixed(1)} km`
                             : `${zone.radiusMetres ?? 0} m`}
                         </span>
@@ -219,7 +283,9 @@ function ZoneList() {
                         {zone.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{zone.createdBy ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {zone.createdBy ?? "—"}
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex gap-1">
                         <Button
@@ -227,7 +293,10 @@ function ZoneList() {
                           size="sm"
                           className="h-7 px-2 text-xs"
                           onClick={() =>
-                            toggleZone.mutate({ id: zone.id, isActive: !zone.isActive })
+                            toggleZone.mutate({
+                              id: zone.id,
+                              isActive: !zone.isActive,
+                            })
                           }
                         >
                           {zone.isActive ? "Disable" : "Enable"}
@@ -237,7 +306,11 @@ function ZoneList() {
                           size="sm"
                           className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                           onClick={() => {
-                            if (confirm(`Delete zone "${zone.name}"? This cannot be undone.`)) {
+                            if (
+                              confirm(
+                                `Delete zone "${zone.name}"? This cannot be undone.`
+                              )
+                            ) {
                               deleteZone.mutate({ id: zone.id });
                             }
                           }}
@@ -266,7 +339,7 @@ function ZoneList() {
               <Label>Zone Name *</Label>
               <Input
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. Lagos Island Branch"
               />
             </div>
@@ -275,7 +348,9 @@ function ZoneList() {
               <Label>Description</Label>
               <Input
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={e =>
+                  setForm(f => ({ ...f, description: e.target.value }))
+                }
                 placeholder="Optional description"
               />
             </div>
@@ -284,17 +359,21 @@ function ZoneList() {
               <Label>Zone Type *</Label>
               <Select
                 value={form.zoneType}
-                onValueChange={(v) => setForm((f) => ({ ...f, zoneType: v as ZoneTypeValue }))}
+                onValueChange={v =>
+                  setForm(f => ({ ...f, zoneType: v as ZoneTypeValue }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select zone type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ZONE_TYPES.map((zt) => (
+                  {ZONE_TYPES.map(zt => (
                     <SelectItem key={zt.value} value={zt.value}>
                       <div>
                         <div className="font-medium">{zt.label}</div>
-                        <div className="text-xs text-muted-foreground">{zt.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {zt.description}
+                        </div>
                       </div>
                     </SelectItem>
                   ))}
@@ -333,7 +412,9 @@ function ZoneList() {
                     <Label>Latitude *</Label>
                     <Input
                       value={form.latitude}
-                      onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
+                      onChange={e =>
+                        setForm(f => ({ ...f, latitude: e.target.value }))
+                      }
                       placeholder="6.4550"
                       type="number"
                       step="0.00001"
@@ -343,7 +424,9 @@ function ZoneList() {
                     <Label>Longitude *</Label>
                     <Input
                       value={form.longitude}
-                      onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
+                      onChange={e =>
+                        setForm(f => ({ ...f, longitude: e.target.value }))
+                      }
                       placeholder="3.3841"
                       type="number"
                       step="0.00001"
@@ -354,7 +437,9 @@ function ZoneList() {
                   <Label>Radius (metres) *</Label>
                   <Input
                     value={form.radiusMetres}
-                    onChange={(e) => setForm((f) => ({ ...f, radiusMetres: e.target.value }))}
+                    onChange={e =>
+                      setForm(f => ({ ...f, radiusMetres: e.target.value }))
+                    }
                     type="number"
                     min="50"
                     max="100000"
@@ -371,13 +456,16 @@ function ZoneList() {
                 <Label>Polygon Coordinates (GeoJSON) *</Label>
                 <Textarea
                   value={form.polygonCoordinates}
-                  onChange={(e) => setForm((f) => ({ ...f, polygonCoordinates: e.target.value }))}
+                  onChange={e =>
+                    setForm(f => ({ ...f, polygonCoordinates: e.target.value }))
+                  }
                   rows={5}
                   placeholder={`[[3.3841, 6.4550], [3.3900, 6.4550], [3.3900, 6.4600], [3.3841, 6.4600], [3.3841, 6.4550]]`}
                   className="font-mono text-xs"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Enter a JSON array of [longitude, latitude] coordinate pairs. First and last point must be the same to close the polygon.
+                  Enter a JSON array of [longitude, latitude] coordinate pairs.
+                  First and last point must be the same to close the polygon.
                 </p>
               </div>
             )}
@@ -387,7 +475,9 @@ function ZoneList() {
                 <Label>State</Label>
                 <Input
                   value={form.state}
-                  onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                  onChange={e =>
+                    setForm(f => ({ ...f, state: e.target.value }))
+                  }
                   placeholder="e.g. Lagos"
                 />
               </div>
@@ -395,7 +485,7 @@ function ZoneList() {
                 <Label>LGA</Label>
                 <Input
                   value={form.lga}
-                  onChange={(e) => setForm((f) => ({ ...f, lga: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, lga: e.target.value }))}
                   placeholder="e.g. Lagos Island"
                 />
               </div>
@@ -406,7 +496,9 @@ function ZoneList() {
                 <input
                   type="checkbox"
                   checked={form.alertOnEntry}
-                  onChange={(e) => setForm((f) => ({ ...f, alertOnEntry: e.target.checked }))}
+                  onChange={e =>
+                    setForm(f => ({ ...f, alertOnEntry: e.target.checked }))
+                  }
                   className="rounded"
                 />
                 Alert on Entry
@@ -415,7 +507,9 @@ function ZoneList() {
                 <input
                   type="checkbox"
                   checked={form.alertOnExit}
-                  onChange={(e) => setForm((f) => ({ ...f, alertOnExit: e.target.checked }))}
+                  onChange={e =>
+                    setForm(f => ({ ...f, alertOnExit: e.target.checked }))
+                  }
                   className="rounded"
                 />
                 Alert on Exit
@@ -438,20 +532,25 @@ function ZoneList() {
 
 // ─── Compliance Reports ───────────────────────────────────────────────────────
 function ComplianceReports() {
-  const { data: reports, isLoading, refetch } = trpc.geofencing.listComplianceReports.useQuery(
-    { limit: 12 }
-  );
+  const {
+    data: reports,
+    isLoading,
+    refetch,
+  } = trpc.geofencing.listComplianceReports.useQuery({ limit: 12 });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Compliance Reports</h3>
+        <h3 className="text-sm font-semibold text-foreground">
+          Compliance Reports
+        </h3>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Weekly security compliance reports are generated every Monday at 08:00 UTC and stored here.
+        Weekly security compliance reports are generated every Monday at 08:00
+        UTC and stored here.
       </p>
 
       {isLoading ? (
@@ -459,16 +558,22 @@ function ComplianceReports() {
       ) : !reports?.length ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No compliance reports yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No compliance reports yet.
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
             The first report will be generated next Monday at 08:00 UTC.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {reports.map((report) => {
-            const start = new Date(report.periodStart ?? Date.now()).toLocaleDateString("en-NG", { dateStyle: "medium" });
-            const end = new Date(report.periodEnd ?? Date.now()).toLocaleDateString("en-NG", { dateStyle: "medium" });
+          {reports.map(report => {
+            const start = new Date(
+              report.periodStart ?? Date.now()
+            ).toLocaleDateString("en-NG", { dateStyle: "medium" });
+            const end = new Date(
+              report.periodEnd ?? Date.now()
+            ).toLocaleDateString("en-NG", { dateStyle: "medium" });
             return (
               <Card key={report.id} className="border">
                 <CardContent className="p-4">
@@ -478,8 +583,8 @@ function ComplianceReports() {
                         {start} — {end}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {report.totalAlerts} total alerts · {report.highAlerts} high ·{" "}
-                        {report.escalatedAlerts} escalated
+                        {report.totalAlerts} total alerts · {report.highAlerts}{" "}
+                        high · {report.escalatedAlerts} escalated
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -521,11 +626,13 @@ function LocationHistory() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">Terminal Location History</h3>
+      <h3 className="text-sm font-semibold text-foreground">
+        Terminal Location History
+      </h3>
       <div className="flex gap-2">
         <Input
           value={deviceId}
-          onChange={(e) => setDeviceId(e.target.value)}
+          onChange={e => setDeviceId(e.target.value)}
           placeholder="Device ID (number)"
           type="number"
           className="max-w-xs"
@@ -539,9 +646,13 @@ function LocationHistory() {
         </Button>
       </div>
 
-      {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {isLoading && (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      )}
       {data && data.length === 0 && (
-        <div className="text-sm text-muted-foreground">No location history found for this agent.</div>
+        <div className="text-sm text-muted-foreground">
+          No location history found for this agent.
+        </div>
       )}
       {data && data.length > 0 && (
         <div className="rounded-md border overflow-hidden">
@@ -557,14 +668,25 @@ function LocationHistory() {
             <tbody>
               {data.map((loc: any) => (
                 <tr key={loc.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2 font-mono">{new Date(loc.recordedAt).toLocaleString("en-NG")}</td>
-                  <td className="px-3 py-2 font-mono">{parseFloat(loc.latitude).toFixed(5)}, {parseFloat(loc.longitude).toFixed(5)}</td>
-                  <td className="px-3 py-2">{loc.accuracy ? `±${loc.accuracy}m` : "—"}</td>
+                  <td className="px-3 py-2 font-mono">
+                    {new Date(loc.recordedAt).toLocaleString("en-NG")}
+                  </td>
+                  <td className="px-3 py-2 font-mono">
+                    {parseFloat(loc.latitude).toFixed(5)},{" "}
+                    {parseFloat(loc.longitude).toFixed(5)}
+                  </td>
+                  <td className="px-3 py-2">
+                    {loc.accuracy ? `±${loc.accuracy}m` : "—"}
+                  </td>
                   <td className="px-3 py-2">
                     {loc.withinZone ? (
-                      <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="h-3 w-3" /> In Zone</span>
+                      <span className="flex items-center gap-1 text-emerald-600">
+                        <CheckCircle className="h-3 w-3" /> In Zone
+                      </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-red-500"><XCircle className="h-3 w-3" /> Out of Zone</span>
+                      <span className="flex items-center gap-1 text-red-500">
+                        <XCircle className="h-3 w-3" /> Out of Zone
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -586,10 +708,25 @@ function GeofencingStats() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {[
-        { label: "Active Zones", value: stats.activeZones, icon: <Shield className="h-4 w-4" />, color: "text-emerald-400" },
-        { label: "Agent Assignments", value: stats.agentAssignments, icon: <CheckCircle className="h-4 w-4" />, color: "text-amber-400" },
-        { label: "Violations (24h)", value: stats.violations24h, icon: <AlertTriangle className="h-4 w-4" />, color: "text-red-400" },
-      ].map((s) => (
+        {
+          label: "Active Zones",
+          value: stats.activeZones,
+          icon: <Shield className="h-4 w-4" />,
+          color: "text-emerald-400",
+        },
+        {
+          label: "Agent Assignments",
+          value: stats.agentAssignments,
+          icon: <CheckCircle className="h-4 w-4" />,
+          color: "text-amber-400",
+        },
+        {
+          label: "Violations (24h)",
+          value: stats.violations24h,
+          icon: <AlertTriangle className="h-4 w-4" />,
+          color: "text-red-400",
+        },
+      ].map(s => (
         <Card key={s.label} className="border">
           <CardContent className="pt-4 pb-3">
             <div className={`flex items-center gap-2 mb-1 ${s.color}`}>
@@ -606,7 +743,9 @@ function GeofencingStats() {
 
 // ─── Main GeofencingTab ───────────────────────────────────────────────────────
 export function GeofencingTab() {
-  const [activeSection, setActiveSection] = useState<"zones" | "reports" | "history">("zones");
+  const [activeSection, setActiveSection] = useState<
+    "zones" | "reports" | "history"
+  >("zones");
 
   return (
     <div className="space-y-6">
@@ -614,7 +753,7 @@ export function GeofencingTab() {
 
       {/* Section tabs */}
       <div className="flex gap-2 border-b pb-2">
-        {(["zones", "reports", "history"] as const).map((s) => (
+        {(["zones", "reports", "history"] as const).map(s => (
           <button
             key={s}
             onClick={() => setActiveSection(s)}
@@ -624,7 +763,11 @@ export function GeofencingTab() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
-            {s === "zones" ? "Zones" : s === "reports" ? "Compliance Reports" : "Location History"}
+            {s === "zones"
+              ? "Zones"
+              : s === "reports"
+                ? "Compliance Reports"
+                : "Location History"}
           </button>
         ))}
       </div>

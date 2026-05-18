@@ -76,7 +76,11 @@ function getSeverityBadge(severity: string) {
     case "critical":
       return <Badge variant="destructive">Critical</Badge>;
     case "warning":
-      return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Warning</Badge>;
+      return (
+        <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+          Warning
+        </Badge>
+      );
     default:
       return <Badge variant="secondary">Info</Badge>;
   }
@@ -101,7 +105,9 @@ function timeAgo(ts: number): string {
 
 export default function NetworkQualityHeatmap() {
   const [countryFilter, setCountryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"failRate" | "latency" | "queueDepth" | "agentCount">("failRate");
+  const [sortBy, setSortBy] = useState<
+    "failRate" | "latency" | "queueDepth" | "agentCount"
+  >("failRate");
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   const { data: regionMetrics, isLoading: metricsLoading } =
@@ -113,8 +119,9 @@ export default function NetworkQualityHeatmap() {
   const { data: summary, isLoading: summaryLoading } =
     trpc.networkQualityHeatmap.getSummary.useQuery();
 
-  const { data: events } =
-    trpc.networkQualityHeatmap.getEvents.useQuery({ limit: 20 });
+  const { data: events } = trpc.networkQualityHeatmap.getEvents.useQuery({
+    limit: 20,
+  });
 
   const { data: regionDetail } =
     trpc.networkQualityHeatmap.getRegionDetail.useQuery(
@@ -137,7 +144,8 @@ export default function NetworkQualityHeatmap() {
             Network Quality Heatmap
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Regional connectivity metrics across Africa — prioritize infrastructure investment
+            Regional connectivity metrics across Africa — prioritize
+            infrastructure investment
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -148,11 +156,16 @@ export default function NetworkQualityHeatmap() {
             <SelectContent>
               <SelectItem value="all">All Countries</SelectItem>
               {countries.map((c: any) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+          <Select
+            value={sortBy}
+            onValueChange={v => setSortBy(v as typeof sortBy)}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
@@ -182,7 +195,9 @@ export default function NetworkQualityHeatmap() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <Users className="h-3.5 w-3.5" /> Total Agents
               </div>
-              <div className="text-2xl font-bold">{summary.totalAgents.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                {summary.totalAgents.toLocaleString()}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -190,7 +205,9 @@ export default function NetworkQualityHeatmap() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <Activity className="h-3.5 w-3.5" /> Avg Latency
               </div>
-              <div className={`text-2xl font-bold ${getLatencyColor(summary.avgLatencyMs)}`}>
+              <div
+                className={`text-2xl font-bold ${getLatencyColor(summary.avgLatencyMs)}`}
+              >
                 {summary.avgLatencyMs}ms
               </div>
             </CardContent>
@@ -200,7 +217,9 @@ export default function NetworkQualityHeatmap() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <AlertTriangle className="h-3.5 w-3.5" /> Avg Fail Rate
               </div>
-              <div className={`text-2xl font-bold ${getHealthColor(summary.avgFailRate)}`}>
+              <div
+                className={`text-2xl font-bold ${getHealthColor(summary.avgFailRate)}`}
+              >
                 {(summary.avgFailRate * 100).toFixed(1)}%
               </div>
             </CardContent>
@@ -210,7 +229,9 @@ export default function NetworkQualityHeatmap() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> Healthy
               </div>
-              <div className="text-2xl font-bold text-emerald-500">{summary.healthyCount}</div>
+              <div className="text-2xl font-bold text-emerald-500">
+                {summary.healthyCount}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -218,7 +239,9 @@ export default function NetworkQualityHeatmap() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> Critical
               </div>
-              <div className="text-2xl font-bold text-red-500">{summary.criticalCount}</div>
+              <div className="text-2xl font-bold text-red-500">
+                {summary.criticalCount}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -248,11 +271,15 @@ export default function NetworkQualityHeatmap() {
                 <Card
                   key={region.regionId}
                   className={`cursor-pointer transition-all hover:shadow-md border ${getHealthBg(region.failRate)} ${
-                    selectedRegion === region.regionId ? "ring-2 ring-primary" : ""
+                    selectedRegion === region.regionId
+                      ? "ring-2 ring-primary"
+                      : ""
                   }`}
                   onClick={() =>
                     setSelectedRegion(
-                      selectedRegion === region.regionId ? null : region.regionId
+                      selectedRegion === region.regionId
+                        ? null
+                        : region.regionId
                     )
                   }
                 >
@@ -269,26 +296,40 @@ export default function NetworkQualityHeatmap() {
                         {getHealthLabel(region.failRate)}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{region.country}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {region.country}
+                    </p>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 space-y-3">
                     {/* Key Metrics Row */}
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
-                        <div className={`text-lg font-bold ${getLatencyColor(region.avgLatencyMs)}`}>
+                        <div
+                          className={`text-lg font-bold ${getLatencyColor(region.avgLatencyMs)}`}
+                        >
                           {region.avgLatencyMs}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">ms latency</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          ms latency
+                        </div>
                       </div>
                       <div>
-                        <div className={`text-lg font-bold ${getHealthColor(region.failRate)}`}>
+                        <div
+                          className={`text-lg font-bold ${getHealthColor(region.failRate)}`}
+                        >
                           {(region.failRate * 100).toFixed(1)}%
                         </div>
-                        <div className="text-[10px] text-muted-foreground">fail rate</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          fail rate
+                        </div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold">{region.queueDepth}</div>
-                        <div className="text-[10px] text-muted-foreground">queued</div>
+                        <div className="text-lg font-bold">
+                          {region.queueDepth}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          queued
+                        </div>
                       </div>
                     </div>
 
@@ -302,10 +343,10 @@ export default function NetworkQualityHeatmap() {
                               nb.type === "4g" || nb.type === "wifi"
                                 ? "bg-emerald-500"
                                 : nb.type === "3g"
-                                ? "bg-yellow-500"
-                                : nb.type === "2g"
-                                ? "bg-orange-500"
-                                : "bg-red-500"
+                                  ? "bg-yellow-500"
+                                  : nb.type === "2g"
+                                    ? "bg-orange-500"
+                                    : "bg-red-500"
                             }`}
                             style={{ width: `${nb.percentage}%` }}
                             title={`${nb.type}: ${nb.percentage}%`}
@@ -327,10 +368,12 @@ export default function NetworkQualityHeatmap() {
                         <Users className="h-3 w-3" /> {region.agentCount} agents
                       </span>
                       <span className="flex items-center gap-1">
-                        <Signal className="h-3 w-3" /> {region.dominantNetwork.toUpperCase()}
+                        <Signal className="h-3 w-3" />{" "}
+                        {region.dominantNetwork.toUpperCase()}
                       </span>
                       <span className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" /> {(region.syncSuccessRate * 100).toFixed(0)}% sync
+                        <TrendingUp className="h-3 w-3" />{" "}
+                        {(region.syncSuccessRate * 100).toFixed(0)}% sync
                       </span>
                     </div>
                   </CardContent>
@@ -408,23 +451,43 @@ export default function NetworkQualityHeatmap() {
                       <TableHead>Region</TableHead>
                       <TableHead>Country</TableHead>
                       <TableHead>
-                        <Button variant="ghost" size="sm" className="h-auto p-0 font-medium" onClick={() => setSortBy("agentCount")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 font-medium"
+                          onClick={() => setSortBy("agentCount")}
+                        >
                           Agents <ArrowUpDown className="h-3 w-3 ml-1" />
                         </Button>
                       </TableHead>
                       <TableHead>
-                        <Button variant="ghost" size="sm" className="h-auto p-0 font-medium" onClick={() => setSortBy("latency")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 font-medium"
+                          onClick={() => setSortBy("latency")}
+                        >
                           Latency <ArrowUpDown className="h-3 w-3 ml-1" />
                         </Button>
                       </TableHead>
                       <TableHead>Bandwidth</TableHead>
                       <TableHead>
-                        <Button variant="ghost" size="sm" className="h-auto p-0 font-medium" onClick={() => setSortBy("failRate")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 font-medium"
+                          onClick={() => setSortBy("failRate")}
+                        >
                           Fail Rate <ArrowUpDown className="h-3 w-3 ml-1" />
                         </Button>
                       </TableHead>
                       <TableHead>
-                        <Button variant="ghost" size="sm" className="h-auto p-0 font-medium" onClick={() => setSortBy("queueDepth")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 font-medium"
+                          onClick={() => setSortBy("queueDepth")}
+                        >
                           Queue <ArrowUpDown className="h-3 w-3 ml-1" />
                         </Button>
                       </TableHead>
@@ -440,8 +503,12 @@ export default function NetworkQualityHeatmap() {
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setSelectedRegion(r.regionId)}
                       >
-                        <TableCell className="font-medium">{r.regionName}</TableCell>
-                        <TableCell className="text-muted-foreground">{r.country}</TableCell>
+                        <TableCell className="font-medium">
+                          {r.regionName}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {r.country}
+                        </TableCell>
                         <TableCell>{r.agentCount}</TableCell>
                         <TableCell>
                           <span className={getLatencyColor(r.avgLatencyMs)}>
@@ -455,14 +522,19 @@ export default function NetworkQualityHeatmap() {
                           </span>
                         </TableCell>
                         <TableCell>{r.queueDepth}</TableCell>
-                        <TableCell>{(r.syncSuccessRate * 100).toFixed(0)}%</TableCell>
+                        <TableCell>
+                          {(r.syncSuccessRate * 100).toFixed(0)}%
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px]">
                             {r.dominantNetwork.toUpperCase()}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getHealthBg(r.failRate)}>
+                          <Badge
+                            variant="outline"
+                            className={getHealthBg(r.failRate)}
+                          >
                             {getHealthLabel(r.failRate)}
                           </Badge>
                         </TableCell>
@@ -574,7 +646,9 @@ export default function NetworkQualityHeatmap() {
                       .sort((a: any, b: any) => b.avgFailRate - a.avgFailRate)
                       .map((c: any) => (
                         <TableRow key={c.country}>
-                          <TableCell className="font-medium">{c.country}</TableCell>
+                          <TableCell className="font-medium">
+                            {c.country}
+                          </TableCell>
                           <TableCell>{c.regionCount}</TableCell>
                           <TableCell>{c.agents.toLocaleString()}</TableCell>
                           <TableCell>
@@ -593,16 +667,16 @@ export default function NetworkQualityHeatmap() {
                               className={
                                 c.avgFailRate > 0.15
                                   ? "bg-red-500/10 text-red-500 border-red-500/20"
-                                  : c.avgFailRate > 0.10
-                                  ? "bg-orange-500/10 text-orange-500 border-orange-500/20"
-                                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                  : c.avgFailRate > 0.1
+                                    ? "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               }
                             >
                               {c.avgFailRate > 0.15
                                 ? "HIGH"
-                                : c.avgFailRate > 0.10
-                                ? "MEDIUM"
-                                : "LOW"}
+                                : c.avgFailRate > 0.1
+                                  ? "MEDIUM"
+                                  : "LOW"}
                             </Badge>
                           </TableCell>
                         </TableRow>

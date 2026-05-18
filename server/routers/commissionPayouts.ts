@@ -20,7 +20,16 @@ export const commissionPayoutsRouter = router({
       z.object({
         page: z.number().default(1),
         limit: z.number().default(20),
-        status: z.enum(["pending", "approved", "processing", "completed", "failed", "rejected"]).optional(),
+        status: z
+          .enum([
+            "pending",
+            "approved",
+            "processing",
+            "completed",
+            "failed",
+            "rejected",
+          ])
+          .optional(),
         agentCode: z.string().optional(),
         from: z.string().optional(), // ISO date
         to: z.string().optional(),
@@ -32,10 +41,16 @@ export const commissionPayoutsRouter = router({
         if (!db) return { items: [], total: 0 };
         const offset = (input.page - 1) * input.limit;
         const conditions = [];
-        if (input.status) conditions.push(eq(commissionPayouts.status, input.status));
-        if (input.agentCode) conditions.push(eq(commissionPayouts.agentCode, input.agentCode));
-        if (input.from) conditions.push(gte(commissionPayouts.createdAt, new Date(input.from)));
-        if (input.to) conditions.push(lte(commissionPayouts.createdAt, new Date(input.to)));
+        if (input.status)
+          conditions.push(eq(commissionPayouts.status, input.status));
+        if (input.agentCode)
+          conditions.push(eq(commissionPayouts.agentCode, input.agentCode));
+        if (input.from)
+          conditions.push(
+            gte(commissionPayouts.createdAt, new Date(input.from))
+          );
+        if (input.to)
+          conditions.push(lte(commissionPayouts.createdAt, new Date(input.to)));
 
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const [items, [{ c: total }]] = await Promise.all([
@@ -51,7 +66,11 @@ export const commissionPayoutsRouter = router({
         return { items, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -92,7 +111,11 @@ export const commissionPayoutsRouter = router({
           .from(agents)
           .where(eq(agents.agentCode, input.agentCode))
           .limit(1);
-        if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        if (!agent)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
 
         const balance = parseFloat(agent.commissionBalance as string);
         if (balance < input.amount) {
@@ -102,7 +125,10 @@ export const commissionPayoutsRouter = router({
           });
         }
         if (input.amount < 500) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Minimum payout is ₦500" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Minimum payout is ₦500",
+          });
         }
 
         const [payout] = await db
@@ -131,7 +157,11 @@ export const commissionPayoutsRouter = router({
         return payout;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -150,12 +180,19 @@ export const commissionPayoutsRouter = router({
           .limit(1);
         if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
         if (payout.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Payout is not in pending state" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Payout is not in pending state",
+          });
         }
 
         const [updated] = await db
           .update(commissionPayouts)
-          .set({ status: "approved", approvedBy: ctx.user.id, updatedAt: new Date() })
+          .set({
+            status: "approved",
+            approvedBy: ctx.user.id,
+            updatedAt: new Date(),
+          })
           .where(eq(commissionPayouts.id, input.id))
           .returning();
 
@@ -168,7 +205,11 @@ export const commissionPayoutsRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -194,7 +235,11 @@ export const commissionPayoutsRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -213,7 +258,10 @@ export const commissionPayoutsRouter = router({
           .limit(1);
         if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
         if (payout.status !== "approved") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Payout must be approved first" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Payout must be approved first",
+          });
         }
 
         // Deduct from agent commission balance
@@ -261,7 +309,11 @@ export const commissionPayoutsRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

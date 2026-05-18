@@ -64,7 +64,10 @@ vi.mock("./_core/platformClient", () => ({
 }));
 
 vi.mock("bcryptjs", () => ({
-  default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue("$2b$10$hash") },
+  default: {
+    compare: vi.fn().mockResolvedValue(true),
+    hash: vi.fn().mockResolvedValue("$2b$10$hash"),
+  },
   compare: vi.fn().mockResolvedValue(true),
   hash: vi.fn().mockResolvedValue("$2b$10$hash"),
 }));
@@ -77,7 +80,13 @@ vi.mock("jose", () => ({
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "ADM001", name: "Admin User", role: "admin", tier: "Gold" },
+    payload: {
+      sub: "1",
+      agentCode: "ADM001",
+      name: "Admin User",
+      role: "admin",
+      tier: "Gold",
+    },
   }),
   createRemoteJWKSet: vi.fn(),
 }));

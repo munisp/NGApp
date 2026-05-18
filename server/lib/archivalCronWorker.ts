@@ -26,7 +26,8 @@ function parseCron(expression: string): ParsedCron | null {
   const parts = expression.trim().split(/\s+/);
   if (parts.length < 5) return null;
 
-  const parse = (s: string): number | "*" => (s === "*" ? "*" : parseInt(s, 10));
+  const parse = (s: string): number | "*" =>
+    s === "*" ? "*" : parseInt(s, 10);
 
   return {
     minute: parse(parts[0]),
@@ -93,19 +94,27 @@ async function checkAndRunArchival(): Promise<void> {
     lastCheckMinute = currentMinute;
 
     // Time to run!
-    const retentionDays = (await getConfigNumber("archival_retention_days")) || 90;
-    const deleteAfterArchive = (await getConfig("archival_delete_after_archive")) === "true";
+    const retentionDays =
+      (await getConfigNumber("archival_retention_days")) || 90;
+    const deleteAfterArchive =
+      (await getConfig("archival_delete_after_archive")) === "true";
 
-    logger.info(`[Archival Cron] Scheduled archival triggered (cron=${cronExpr}, retention=${retentionDays}d, delete=${deleteAfterArchive})`);
+    logger.info(
+      `[Archival Cron] Scheduled archival triggered (cron=${cronExpr}, retention=${retentionDays}d, delete=${deleteAfterArchive})`
+    );
 
     isRunning = true;
     const startTime = performance.now();
 
     try {
-      const result = await runArchivalJob({ retentionDays, deleteAfterArchive });
+      const result = await runArchivalJob({
+        retentionDays,
+        deleteAfterArchive,
+      });
 
       const duration = Math.round(performance.now() - startTime);
-      const totalArchived = result.transactions.archivedCount + result.settlements.archivedCount;
+      const totalArchived =
+        result.transactions.archivedCount + result.settlements.archivedCount;
 
       // Update last run timestamp
       await setConfig("archival_last_run", new Date().toISOString());
@@ -134,7 +143,9 @@ async function checkAndRunArchival(): Promise<void> {
     } catch (err: any) {
       const duration = Math.round(performance.now() - startTime);
 
-      logger.error(`[Archival Cron] Scheduled job failed after ${duration}ms: ${err.message}`);
+      logger.error(
+        `[Archival Cron] Scheduled job failed after ${duration}ms: ${err.message}`
+      );
 
       // Notify owner of failure
       await notifyOwner({

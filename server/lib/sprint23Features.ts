@@ -40,7 +40,7 @@ let scheduledDeliveryConfig: ScheduledDeliveryConfig = {
 function getNextMonday(): string {
   const now = new Date();
   const day = now.getDay();
-  const diff = ((1 - day + 7) % 7) || 7;
+  const diff = (1 - day + 7) % 7 || 7;
   const next = new Date(now);
   next.setDate(now.getDate() + diff);
   next.setHours(8, 0, 0, 0);
@@ -52,7 +52,9 @@ export function getScheduledDeliveryConfig(): ScheduledDeliveryConfig {
 }
 
 export function updateScheduledDeliveryConfig(
-  updates: Partial<Pick<ScheduledDeliveryConfig, "enabled" | "cronExpression" | "timezone">>
+  updates: Partial<
+    Pick<ScheduledDeliveryConfig, "enabled" | "cronExpression" | "timezone">
+  >
 ): ScheduledDeliveryConfig {
   Object.assign(scheduledDeliveryConfig, updates);
   scheduledDeliveryConfig.nextDelivery = getNextMonday();
@@ -74,15 +76,24 @@ export function recordDelivery(
   });
   // Keep last 52 weeks of history
   if (scheduledDeliveryConfig.deliveryHistory.length > 52) {
-    scheduledDeliveryConfig.deliveryHistory = scheduledDeliveryConfig.deliveryHistory.slice(0, 52);
+    scheduledDeliveryConfig.deliveryHistory =
+      scheduledDeliveryConfig.deliveryHistory.slice(0, 52);
   }
 }
 
 // ─── 2. Report Comparison ───────────────────────────────────────────────
 
 export interface ReportComparisonResult {
-  reportA: { id: string; period: { start: string; end: string }; score: number };
-  reportB: { id: string; period: { start: string; end: string }; score: number };
+  reportA: {
+    id: string;
+    period: { start: string; end: string };
+    score: number;
+  };
+  reportB: {
+    id: string;
+    period: { start: string; end: string };
+    score: number;
+  };
   deltas: Record<
     string,
     {
@@ -99,8 +110,18 @@ export interface ReportComparisonResult {
 }
 
 export function compareReports(
-  reportA: { id: string; period: { start: string; end: string }; score: number; metrics: any },
-  reportB: { id: string; period: { start: string; end: string }; score: number; metrics: any }
+  reportA: {
+    id: string;
+    period: { start: string; end: string };
+    score: number;
+    metrics: any;
+  },
+  reportB: {
+    id: string;
+    period: { start: string; end: string };
+    score: number;
+    metrics: any;
+  }
 ): ReportComparisonResult {
   const deltas: ReportComparisonResult["deltas"] = {};
 
@@ -111,16 +132,76 @@ export function compareReports(
     pathB: number;
     higherIsBetter: boolean;
   }> = [
-    { key: "healthScore", label: "Health Score", pathA: reportA.score, pathB: reportB.score, higherIsBetter: true },
-    { key: "txCount", label: "Transaction Count", pathA: reportA.metrics?.transactions?.totalCount ?? 0, pathB: reportB.metrics?.transactions?.totalCount ?? 0, higherIsBetter: true },
-    { key: "txValue", label: "Transaction Value", pathA: reportA.metrics?.transactions?.totalValue ?? 0, pathB: reportB.metrics?.transactions?.totalValue ?? 0, higherIsBetter: true },
-    { key: "successRate", label: "Success Rate", pathA: reportA.metrics?.transactions?.successRate ?? 0, pathB: reportB.metrics?.transactions?.successRate ?? 0, higherIsBetter: true },
-    { key: "activeUsers", label: "Active Users", pathA: reportA.metrics?.userActivity?.totalActiveUsers ?? 0, pathB: reportB.metrics?.userActivity?.totalActiveUsers ?? 0, higherIsBetter: true },
-    { key: "newUsers", label: "New Users", pathA: reportA.metrics?.userActivity?.newUsers ?? 0, pathB: reportB.metrics?.userActivity?.newUsers ?? 0, higherIsBetter: true },
-    { key: "p50Latency", label: "API Latency (p50)", pathA: reportA.metrics?.apiPerformance?.p50Ms ?? 0, pathB: reportB.metrics?.apiPerformance?.p50Ms ?? 0, higherIsBetter: false },
-    { key: "p99Latency", label: "API Latency (p99)", pathA: reportA.metrics?.apiPerformance?.p99Ms ?? 0, pathB: reportB.metrics?.apiPerformance?.p99Ms ?? 0, higherIsBetter: false },
-    { key: "errorRate", label: "Error Rate", pathA: reportA.metrics?.errors?.errorRate ?? 0, pathB: reportB.metrics?.errors?.errorRate ?? 0, higherIsBetter: false },
-    { key: "uptime", label: "Uptime %", pathA: reportA.metrics?.system?.uptimePercent ?? 0, pathB: reportB.metrics?.system?.uptimePercent ?? 0, higherIsBetter: true },
+    {
+      key: "healthScore",
+      label: "Health Score",
+      pathA: reportA.score,
+      pathB: reportB.score,
+      higherIsBetter: true,
+    },
+    {
+      key: "txCount",
+      label: "Transaction Count",
+      pathA: reportA.metrics?.transactions?.totalCount ?? 0,
+      pathB: reportB.metrics?.transactions?.totalCount ?? 0,
+      higherIsBetter: true,
+    },
+    {
+      key: "txValue",
+      label: "Transaction Value",
+      pathA: reportA.metrics?.transactions?.totalValue ?? 0,
+      pathB: reportB.metrics?.transactions?.totalValue ?? 0,
+      higherIsBetter: true,
+    },
+    {
+      key: "successRate",
+      label: "Success Rate",
+      pathA: reportA.metrics?.transactions?.successRate ?? 0,
+      pathB: reportB.metrics?.transactions?.successRate ?? 0,
+      higherIsBetter: true,
+    },
+    {
+      key: "activeUsers",
+      label: "Active Users",
+      pathA: reportA.metrics?.userActivity?.totalActiveUsers ?? 0,
+      pathB: reportB.metrics?.userActivity?.totalActiveUsers ?? 0,
+      higherIsBetter: true,
+    },
+    {
+      key: "newUsers",
+      label: "New Users",
+      pathA: reportA.metrics?.userActivity?.newUsers ?? 0,
+      pathB: reportB.metrics?.userActivity?.newUsers ?? 0,
+      higherIsBetter: true,
+    },
+    {
+      key: "p50Latency",
+      label: "API Latency (p50)",
+      pathA: reportA.metrics?.apiPerformance?.p50Ms ?? 0,
+      pathB: reportB.metrics?.apiPerformance?.p50Ms ?? 0,
+      higherIsBetter: false,
+    },
+    {
+      key: "p99Latency",
+      label: "API Latency (p99)",
+      pathA: reportA.metrics?.apiPerformance?.p99Ms ?? 0,
+      pathB: reportB.metrics?.apiPerformance?.p99Ms ?? 0,
+      higherIsBetter: false,
+    },
+    {
+      key: "errorRate",
+      label: "Error Rate",
+      pathA: reportA.metrics?.errors?.errorRate ?? 0,
+      pathB: reportB.metrics?.errors?.errorRate ?? 0,
+      higherIsBetter: false,
+    },
+    {
+      key: "uptime",
+      label: "Uptime %",
+      pathA: reportA.metrics?.system?.uptimePercent ?? 0,
+      pathB: reportB.metrics?.system?.uptimePercent ?? 0,
+      higherIsBetter: true,
+    },
   ];
 
   let improvements = 0;
@@ -129,9 +210,14 @@ export function compareReports(
   for (const mp of metricPairs) {
     const delta = mp.pathB - mp.pathA;
     const pct = mp.pathA !== 0 ? (delta / mp.pathA) * 100 : 0;
-    const direction: "up" | "down" | "flat" = delta > 0.01 ? "up" : delta < -0.01 ? "down" : "flat";
+    const direction: "up" | "down" | "flat" =
+      delta > 0.01 ? "up" : delta < -0.01 ? "down" : "flat";
     const isImprovement =
-      direction === "flat" ? true : mp.higherIsBetter ? direction === "up" : direction === "down";
+      direction === "flat"
+        ? true
+        : mp.higherIsBetter
+          ? direction === "up"
+          : direction === "down";
     if (isImprovement && direction !== "flat") improvements++;
     if (!isImprovement) regressions++;
     deltas[mp.key] = {
@@ -173,13 +259,83 @@ export interface MetricThreshold {
 }
 
 const defaultThresholds: MetricThreshold[] = [
-  { id: "th-001", metricKey: "errors.errorRate", label: "Error Rate > 1%", operator: "gt", value: 1, severity: "critical", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-002", metricKey: "system.uptimePercent", label: "Uptime < 99.9%", operator: "lt", value: 99.9, severity: "critical", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-003", metricKey: "apiPerformance.p99Ms", label: "P99 Latency > 500ms", operator: "gt", value: 500, severity: "warning", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-004", metricKey: "security.failedLogins", label: "Failed Logins > 50", operator: "gt", value: 50, severity: "warning", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-005", metricKey: "transactions.successRate", label: "Success Rate < 95%", operator: "lt", value: 95, severity: "critical", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-006", metricKey: "system.cpuAvgPercent", label: "CPU > 80%", operator: "gt", value: 80, severity: "warning", enabled: true, lastTriggered: null, triggerCount: 0 },
-  { id: "th-007", metricKey: "system.memoryAvgPercent", label: "Memory > 85%", operator: "gt", value: 85, severity: "warning", enabled: true, lastTriggered: null, triggerCount: 0 },
+  {
+    id: "th-001",
+    metricKey: "errors.errorRate",
+    label: "Error Rate > 1%",
+    operator: "gt",
+    value: 1,
+    severity: "critical",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-002",
+    metricKey: "system.uptimePercent",
+    label: "Uptime < 99.9%",
+    operator: "lt",
+    value: 99.9,
+    severity: "critical",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-003",
+    metricKey: "apiPerformance.p99Ms",
+    label: "P99 Latency > 500ms",
+    operator: "gt",
+    value: 500,
+    severity: "warning",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-004",
+    metricKey: "security.failedLogins",
+    label: "Failed Logins > 50",
+    operator: "gt",
+    value: 50,
+    severity: "warning",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-005",
+    metricKey: "transactions.successRate",
+    label: "Success Rate < 95%",
+    operator: "lt",
+    value: 95,
+    severity: "critical",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-006",
+    metricKey: "system.cpuAvgPercent",
+    label: "CPU > 80%",
+    operator: "gt",
+    value: 80,
+    severity: "warning",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
+  {
+    id: "th-007",
+    metricKey: "system.memoryAvgPercent",
+    label: "Memory > 85%",
+    operator: "gt",
+    value: 85,
+    severity: "warning",
+    enabled: true,
+    lastTriggered: null,
+    triggerCount: 0,
+  },
 ];
 
 let metricThresholds: MetricThreshold[] = [...defaultThresholds];
@@ -189,7 +345,7 @@ export function listThresholds(): MetricThreshold[] {
 }
 
 export function getThreshold(id: string): MetricThreshold | undefined {
-  return metricThresholds.find((t) => t.id === id);
+  return metricThresholds.find(t => t.id === id);
 }
 
 export function createThreshold(
@@ -207,9 +363,14 @@ export function createThreshold(
 
 export function updateThreshold(
   id: string,
-  updates: Partial<Pick<MetricThreshold, "label" | "operator" | "value" | "severity" | "enabled">>
+  updates: Partial<
+    Pick<
+      MetricThreshold,
+      "label" | "operator" | "value" | "severity" | "enabled"
+    >
+  >
 ): MetricThreshold | null {
-  const idx = metricThresholds.findIndex((t) => t.id === id);
+  const idx = metricThresholds.findIndex(t => t.id === id);
   if (idx === -1) return null;
   Object.assign(metricThresholds[idx], updates);
   return metricThresholds[idx];
@@ -217,7 +378,7 @@ export function updateThreshold(
 
 export function deleteThreshold(id: string): boolean {
   const before = metricThresholds.length;
-  metricThresholds = metricThresholds.filter((t) => t.id !== id);
+  metricThresholds = metricThresholds.filter(t => t.id !== id);
   return metricThresholds.length < before;
 }
 
@@ -231,21 +392,37 @@ function getNestedValue(obj: any, path: string): number | undefined {
   return typeof current === "number" ? current : undefined;
 }
 
-export function evaluateThresholds(
-  metrics: any
-): Array<{ threshold: MetricThreshold; currentValue: number; triggered: boolean }> {
-  const results: Array<{ threshold: MetricThreshold; currentValue: number; triggered: boolean }> = [];
+export function evaluateThresholds(metrics: any): Array<{
+  threshold: MetricThreshold;
+  currentValue: number;
+  triggered: boolean;
+}> {
+  const results: Array<{
+    threshold: MetricThreshold;
+    currentValue: number;
+    triggered: boolean;
+  }> = [];
   for (const th of metricThresholds) {
     if (!th.enabled) continue;
     const val = getNestedValue(metrics, th.metricKey);
     if (val === undefined) continue;
     let triggered = false;
     switch (th.operator) {
-      case "gt": triggered = val > th.value; break;
-      case "lt": triggered = val < th.value; break;
-      case "gte": triggered = val >= th.value; break;
-      case "lte": triggered = val <= th.value; break;
-      case "eq": triggered = val === th.value; break;
+      case "gt":
+        triggered = val > th.value;
+        break;
+      case "lt":
+        triggered = val < th.value;
+        break;
+      case "gte":
+        triggered = val >= th.value;
+        break;
+      case "lte":
+        triggered = val <= th.value;
+        break;
+      case "eq":
+        triggered = val === th.value;
+        break;
     }
     if (triggered) {
       th.lastTriggered = new Date().toISOString();
@@ -267,18 +444,67 @@ export interface EndpointRateLimit {
 }
 
 const endpointLimits: Map<string, EndpointRateLimit> = new Map([
-  ["transactions.create", { endpoint: "transactions.create", maxRequests: 100, windowMs: 60000, currentCount: 0, lastReset: new Date().toISOString() }],
-  ["auth.login", { endpoint: "auth.login", maxRequests: 10, windowMs: 60000, currentCount: 0, lastReset: new Date().toISOString() }],
-  ["pinReset.requestOtp", { endpoint: "pinReset.requestOtp", maxRequests: 3, windowMs: 300000, currentCount: 0, lastReset: new Date().toISOString() }],
-  ["export.transactionsCsv", { endpoint: "export.transactionsCsv", maxRequests: 5, windowMs: 60000, currentCount: 0, lastReset: new Date().toISOString() }],
-  ["gdpr.requestErasure", { endpoint: "gdpr.requestErasure", maxRequests: 2, windowMs: 3600000, currentCount: 0, lastReset: new Date().toISOString() }],
+  [
+    "transactions.create",
+    {
+      endpoint: "transactions.create",
+      maxRequests: 100,
+      windowMs: 60000,
+      currentCount: 0,
+      lastReset: new Date().toISOString(),
+    },
+  ],
+  [
+    "auth.login",
+    {
+      endpoint: "auth.login",
+      maxRequests: 10,
+      windowMs: 60000,
+      currentCount: 0,
+      lastReset: new Date().toISOString(),
+    },
+  ],
+  [
+    "pinReset.requestOtp",
+    {
+      endpoint: "pinReset.requestOtp",
+      maxRequests: 3,
+      windowMs: 300000,
+      currentCount: 0,
+      lastReset: new Date().toISOString(),
+    },
+  ],
+  [
+    "export.transactionsCsv",
+    {
+      endpoint: "export.transactionsCsv",
+      maxRequests: 5,
+      windowMs: 60000,
+      currentCount: 0,
+      lastReset: new Date().toISOString(),
+    },
+  ],
+  [
+    "gdpr.requestErasure",
+    {
+      endpoint: "gdpr.requestErasure",
+      maxRequests: 2,
+      windowMs: 3600000,
+      currentCount: 0,
+      lastReset: new Date().toISOString(),
+    },
+  ],
 ]);
 
 export function getEndpointLimits(): EndpointRateLimit[] {
   return Array.from(endpointLimits.values());
 }
 
-export function setEndpointLimit(endpoint: string, maxRequests: number, windowMs: number): EndpointRateLimit {
+export function setEndpointLimit(
+  endpoint: string,
+  maxRequests: number,
+  windowMs: number
+): EndpointRateLimit {
   const limit: EndpointRateLimit = {
     endpoint,
     maxRequests,
@@ -290,7 +516,11 @@ export function setEndpointLimit(endpoint: string, maxRequests: number, windowMs
   return limit;
 }
 
-export function checkEndpointLimit(endpoint: string): { allowed: boolean; remaining: number; resetAt: string } {
+export function checkEndpointLimit(endpoint: string): {
+  allowed: boolean;
+  remaining: number;
+  resetAt: string;
+} {
   const limit = endpointLimits.get(endpoint);
   if (!limit) return { allowed: true, remaining: Infinity, resetAt: "" };
   const now = Date.now();
@@ -304,7 +534,9 @@ export function checkEndpointLimit(endpoint: string): { allowed: boolean; remain
   return {
     allowed,
     remaining: Math.max(0, limit.maxRequests - limit.currentCount),
-    resetAt: new Date(new Date(limit.lastReset).getTime() + limit.windowMs).toISOString(),
+    resetAt: new Date(
+      new Date(limit.lastReset).getTime() + limit.windowMs
+    ).toISOString(),
   };
 }
 
@@ -328,7 +560,11 @@ export interface WebhookDelivery {
 const webhookDeliveries: WebhookDelivery[] = [];
 const deadLetterQueue: WebhookDelivery[] = [];
 
-export function createWebhookDelivery(webhookId: string, url: string, payload: string): WebhookDelivery {
+export function createWebhookDelivery(
+  webhookId: string,
+  url: string,
+  payload: string
+): WebhookDelivery {
   const delivery: WebhookDelivery = {
     id: `wd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     webhookId,
@@ -347,8 +583,13 @@ export function createWebhookDelivery(webhookId: string, url: string, payload: s
   return delivery;
 }
 
-export function processWebhookRetry(deliveryId: string, success: boolean, responseCode: number, responseBody: string): WebhookDelivery | null {
-  const delivery = webhookDeliveries.find((d) => d.id === deliveryId);
+export function processWebhookRetry(
+  deliveryId: string,
+  success: boolean,
+  responseCode: number,
+  responseBody: string
+): WebhookDelivery | null {
+  const delivery = webhookDeliveries.find(d => d.id === deliveryId);
   if (!delivery) return null;
   delivery.attempts++;
   delivery.lastAttemptAt = new Date().toISOString();
@@ -366,13 +607,15 @@ export function processWebhookRetry(deliveryId: string, success: boolean, respon
     // Exponential backoff: 2^attempt * 1000ms (1s, 2s, 4s, 8s, 16s)
     const backoffMs = Math.pow(2, delivery.attempts) * 1000;
     const jitter = Math.random() * 1000;
-    delivery.nextRetryAt = new Date(Date.now() + backoffMs + jitter).toISOString();
+    delivery.nextRetryAt = new Date(
+      Date.now() + backoffMs + jitter
+    ).toISOString();
   }
   return delivery;
 }
 
 export function listWebhookDeliveries(status?: string): WebhookDelivery[] {
-  if (status) return webhookDeliveries.filter((d) => d.status === status);
+  if (status) return webhookDeliveries.filter(d => d.status === status);
   return [...webhookDeliveries];
 }
 
@@ -381,7 +624,7 @@ export function getDeadLetterQueue(): WebhookDelivery[] {
 }
 
 export function retryDeadLetter(deliveryId: string): WebhookDelivery | null {
-  const idx = deadLetterQueue.findIndex((d) => d.id === deliveryId);
+  const idx = deadLetterQueue.findIndex(d => d.id === deliveryId);
   if (idx === -1) return null;
   const delivery = deadLetterQueue.splice(idx, 1)[0];
   delivery.status = "pending";
@@ -424,14 +667,31 @@ export function calculateAgentPerformance(
     avgResponseMs: number;
   }
 ): AgentPerformanceScore {
-  const txScore = Math.min(100, (data.txCount / Math.max(1, data.txTarget)) * 100);
+  const txScore = Math.min(
+    100,
+    (data.txCount / Math.max(1, data.txTarget)) * 100
+  );
   const successScore = data.successRate;
   const csatScore = (data.customerRating / 5) * 100;
   const complianceScore = data.complianceScore;
   const uptimeScore = (data.uptimeHours / Math.max(1, data.totalHours)) * 100;
-  const responseScore = data.avgResponseMs <= 1000 ? 100 : data.avgResponseMs <= 3000 ? 75 : data.avgResponseMs <= 5000 ? 50 : 25;
+  const responseScore =
+    data.avgResponseMs <= 1000
+      ? 100
+      : data.avgResponseMs <= 3000
+        ? 75
+        : data.avgResponseMs <= 5000
+          ? 50
+          : 25;
 
-  const weights = { txVolume: 0.25, success: 0.20, csat: 0.15, compliance: 0.20, uptime: 0.10, response: 0.10 };
+  const weights = {
+    txVolume: 0.25,
+    success: 0.2,
+    csat: 0.15,
+    compliance: 0.2,
+    uptime: 0.1,
+    response: 0.1,
+  };
   const overall =
     txScore * weights.txVolume +
     successScore * weights.success +
@@ -440,19 +700,50 @@ export function calculateAgentPerformance(
     uptimeScore * weights.uptime +
     responseScore * weights.response;
 
-  const tier = overall >= 90 ? "platinum" : overall >= 75 ? "gold" : overall >= 60 ? "silver" : "bronze";
+  const tier =
+    overall >= 90
+      ? "platinum"
+      : overall >= 75
+        ? "gold"
+        : overall >= 60
+          ? "silver"
+          : "bronze";
 
   return {
     agentId,
     agentCode,
     overallScore: Math.round(overall * 100) / 100,
     breakdown: {
-      transactionVolume: { score: Math.round(txScore * 100) / 100, weight: weights.txVolume, raw: data.txCount },
-      successRate: { score: Math.round(successScore * 100) / 100, weight: weights.success, raw: data.successRate },
-      customerSatisfaction: { score: Math.round(csatScore * 100) / 100, weight: weights.csat, raw: data.customerRating },
-      complianceAdherence: { score: Math.round(complianceScore * 100) / 100, weight: weights.compliance, raw: data.complianceScore },
-      uptimeReliability: { score: Math.round(uptimeScore * 100) / 100, weight: weights.uptime, raw: data.uptimeHours },
-      responseTime: { score: Math.round(responseScore * 100) / 100, weight: weights.response, raw: data.avgResponseMs },
+      transactionVolume: {
+        score: Math.round(txScore * 100) / 100,
+        weight: weights.txVolume,
+        raw: data.txCount,
+      },
+      successRate: {
+        score: Math.round(successScore * 100) / 100,
+        weight: weights.success,
+        raw: data.successRate,
+      },
+      customerSatisfaction: {
+        score: Math.round(csatScore * 100) / 100,
+        weight: weights.csat,
+        raw: data.customerRating,
+      },
+      complianceAdherence: {
+        score: Math.round(complianceScore * 100) / 100,
+        weight: weights.compliance,
+        raw: data.complianceScore,
+      },
+      uptimeReliability: {
+        score: Math.round(uptimeScore * 100) / 100,
+        weight: weights.uptime,
+        raw: data.uptimeHours,
+      },
+      responseTime: {
+        score: Math.round(responseScore * 100) / 100,
+        weight: weights.response,
+        raw: data.avgResponseMs,
+      },
     },
     rank: 0, // Set by caller after sorting all agents
     tier,
@@ -471,17 +762,53 @@ export interface DisputeAutoRule {
     operator: "eq" | "gt" | "lt" | "contains";
     value: string | number;
   };
-  action: "auto_refund" | "auto_reject" | "escalate_to_supervisor" | "request_evidence";
+  action:
+    | "auto_refund"
+    | "auto_reject"
+    | "escalate_to_supervisor"
+    | "request_evidence";
   maxAmount: number; // Auto-resolve only if amount <= this
   enabled: boolean;
   resolutionCount: number;
 }
 
 const disputeAutoRules: DisputeAutoRule[] = [
-  { id: "dar-001", name: "Small amount auto-refund", condition: { field: "amount", operator: "lt", value: 5000 }, action: "auto_refund", maxAmount: 5000, enabled: true, resolutionCount: 0 },
-  { id: "dar-002", name: "Duplicate transaction auto-refund", condition: { field: "reason", operator: "contains", value: "duplicate" }, action: "auto_refund", maxAmount: 50000, enabled: true, resolutionCount: 0 },
-  { id: "dar-003", name: "High value escalation", condition: { field: "amount", operator: "gt", value: 100000 }, action: "escalate_to_supervisor", maxAmount: Infinity, enabled: true, resolutionCount: 0 },
-  { id: "dar-004", name: "Fraud-related evidence request", condition: { field: "reason", operator: "contains", value: "fraud" }, action: "request_evidence", maxAmount: Infinity, enabled: true, resolutionCount: 0 },
+  {
+    id: "dar-001",
+    name: "Small amount auto-refund",
+    condition: { field: "amount", operator: "lt", value: 5000 },
+    action: "auto_refund",
+    maxAmount: 5000,
+    enabled: true,
+    resolutionCount: 0,
+  },
+  {
+    id: "dar-002",
+    name: "Duplicate transaction auto-refund",
+    condition: { field: "reason", operator: "contains", value: "duplicate" },
+    action: "auto_refund",
+    maxAmount: 50000,
+    enabled: true,
+    resolutionCount: 0,
+  },
+  {
+    id: "dar-003",
+    name: "High value escalation",
+    condition: { field: "amount", operator: "gt", value: 100000 },
+    action: "escalate_to_supervisor",
+    maxAmount: Infinity,
+    enabled: true,
+    resolutionCount: 0,
+  },
+  {
+    id: "dar-004",
+    name: "Fraud-related evidence request",
+    condition: { field: "reason", operator: "contains", value: "fraud" },
+    action: "request_evidence",
+    maxAmount: Infinity,
+    enabled: true,
+    resolutionCount: 0,
+  },
 ];
 
 export function listDisputeAutoRules(): DisputeAutoRule[] {
@@ -491,7 +818,11 @@ export function listDisputeAutoRules(): DisputeAutoRule[] {
 export function createDisputeAutoRule(
   input: Omit<DisputeAutoRule, "id" | "resolutionCount">
 ): DisputeAutoRule {
-  const rule: DisputeAutoRule = { ...input, id: `dar-${Date.now().toString(36)}`, resolutionCount: 0 };
+  const rule: DisputeAutoRule = {
+    ...input,
+    id: `dar-${Date.now().toString(36)}`,
+    resolutionCount: 0,
+  };
   disputeAutoRules.push(rule);
   return rule;
 }
@@ -508,10 +839,26 @@ export function evaluateDispute(dispute: {
     const fieldValue = (dispute as any)[rule.condition.field];
     if (fieldValue === undefined) continue;
     switch (rule.condition.operator) {
-      case "eq": matches = fieldValue === rule.condition.value; break;
-      case "gt": matches = typeof fieldValue === "number" && fieldValue > (rule.condition.value as number); break;
-      case "lt": matches = typeof fieldValue === "number" && fieldValue < (rule.condition.value as number); break;
-      case "contains": matches = typeof fieldValue === "string" && fieldValue.toLowerCase().includes(String(rule.condition.value).toLowerCase()); break;
+      case "eq":
+        matches = fieldValue === rule.condition.value;
+        break;
+      case "gt":
+        matches =
+          typeof fieldValue === "number" &&
+          fieldValue > (rule.condition.value as number);
+        break;
+      case "lt":
+        matches =
+          typeof fieldValue === "number" &&
+          fieldValue < (rule.condition.value as number);
+        break;
+      case "contains":
+        matches =
+          typeof fieldValue === "string" &&
+          fieldValue
+            .toLowerCase()
+            .includes(String(rule.condition.value).toLowerCase());
+        break;
     }
     if (matches) {
       rule.resolutionCount++;
@@ -526,7 +873,13 @@ export function evaluateDispute(dispute: {
 export interface KycVerificationStep {
   id: string;
   agentId: string;
-  documentType: "national_id" | "passport" | "drivers_license" | "utility_bill" | "bank_statement" | "cac_certificate";
+  documentType:
+    | "national_id"
+    | "passport"
+    | "drivers_license"
+    | "utility_bill"
+    | "bank_statement"
+    | "cac_certificate";
   documentUrl: string;
   status: "pending" | "under_review" | "approved" | "rejected" | "expired";
   reviewedBy: string | null;
@@ -568,7 +921,7 @@ export function reviewKycDocument(
   decision: "approved" | "rejected",
   rejectionReason?: string
 ): KycVerificationStep | null {
-  const step = kycVerifications.find((v) => v.id === verificationId);
+  const step = kycVerifications.find(v => v.id === verificationId);
   if (!step) return null;
   step.status = decision;
   step.reviewedBy = reviewerId;
@@ -590,23 +943,29 @@ export function getAgentKycStatus(agentId: string): {
   overallStatus: "complete" | "incomplete" | "expired" | "rejected";
   completionPercent: number;
 } {
-  const docs = kycVerifications.filter((v) => v.agentId === agentId);
+  const docs = kycVerifications.filter(v => v.agentId === agentId);
   const requiredTypes: KycVerificationStep["documentType"][] = [
     "national_id",
     "utility_bill",
   ];
   const approvedTypes = new Set(
-    docs.filter((d) => d.status === "approved").map((d) => d.documentType)
+    docs.filter(d => d.status === "approved").map(d => d.documentType)
   );
   const hasExpired = docs.some(
-    (d) => d.status === "approved" && d.expiresAt && new Date(d.expiresAt) < new Date()
+    d =>
+      d.status === "approved" &&
+      d.expiresAt &&
+      new Date(d.expiresAt) < new Date()
   );
-  const hasRejected = docs.some((d) => d.status === "rejected");
+  const hasRejected = docs.some(d => d.status === "rejected");
   const completionPercent = Math.round(
-    (requiredTypes.filter((t) => approvedTypes.has(t)).length / requiredTypes.length) * 100
+    (requiredTypes.filter(t => approvedTypes.has(t)).length /
+      requiredTypes.length) *
+      100
   );
 
-  let overallStatus: "complete" | "incomplete" | "expired" | "rejected" = "incomplete";
+  let overallStatus: "complete" | "incomplete" | "expired" | "rejected" =
+    "incomplete";
   if (hasExpired) overallStatus = "expired";
   else if (hasRejected && completionPercent < 100) overallStatus = "rejected";
   else if (completionPercent === 100) overallStatus = "complete";
@@ -615,5 +974,7 @@ export function getAgentKycStatus(agentId: string): {
 }
 
 export function listPendingKycReviews(): KycVerificationStep[] {
-  return kycVerifications.filter((v) => v.status === "pending" || v.status === "under_review");
+  return kycVerifications.filter(
+    v => v.status === "pending" || v.status === "under_review"
+  );
 }

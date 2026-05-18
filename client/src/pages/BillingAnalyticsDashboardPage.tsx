@@ -4,7 +4,13 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Chart from "chart.js/auto";
 
@@ -35,7 +41,10 @@ export default function BillingAnalyticsDashboardPage() {
     { enabled: !!user }
   );
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-  const dashboardData = trpc.liveBillingDashboard.getMetrics.useQuery(undefined, { enabled: !!user });
+  const dashboardData = trpc.liveBillingDashboard.getMetrics.useQuery(
+    undefined,
+    { enabled: !!user }
+  );
 
   // Generate chart data based on period
   const getMonthLabels = (count: number) => {
@@ -43,7 +52,9 @@ export default function BillingAnalyticsDashboardPage() {
     const now = new Date();
     for (let i = count - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push(d.toLocaleDateString("en-US", { month: "short", year: "2-digit" }));
+      months.push(
+        d.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+      );
     }
     return months;
   };
@@ -82,7 +93,10 @@ export default function BillingAnalyticsDashboardPage() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Revenue by Tenant (₦ Millions)" } },
+          plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Revenue by Tenant (₦ Millions)" },
+          },
           scales: { y: { beginAtZero: true } },
         },
       });
@@ -91,7 +105,9 @@ export default function BillingAnalyticsDashboardPage() {
     // MRR Growth Chart
     if (mrrChartRef.current) {
       const mrrBase = 45;
-      const mrrData = labels.map((_, i) => Math.round(mrrBase + i * 3.5 + Math.random() * 5));
+      const mrrData = labels.map((_, i) =>
+        Math.round(mrrBase + i * 3.5 + Math.random() * 5)
+      );
       chartsRef.current.mrr = new Chart(mrrChartRef.current, {
         type: "line",
         data: {
@@ -117,7 +133,10 @@ export default function BillingAnalyticsDashboardPage() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Monthly Recurring Revenue Growth" } },
+          plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Monthly Recurring Revenue Growth" },
+          },
         },
       });
     }
@@ -151,7 +170,10 @@ export default function BillingAnalyticsDashboardPage() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Churn Rate Trends" } },
+          plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Churn Rate Trends" },
+          },
           scales: { y: { beginAtZero: true, max: 10 } },
         },
       });
@@ -181,7 +203,10 @@ export default function BillingAnalyticsDashboardPage() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Customer Lifetime Value by Cohort" } },
+          plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Customer Lifetime Value by Cohort" },
+          },
           scales: { y: { beginAtZero: true } },
         },
       });
@@ -192,18 +217,44 @@ export default function BillingAnalyticsDashboardPage() {
       chartsRef.current.cohort = new Chart(cohortChartRef.current, {
         type: "bar",
         data: {
-          labels: ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"],
+          labels: [
+            "Month 1",
+            "Month 2",
+            "Month 3",
+            "Month 4",
+            "Month 5",
+            "Month 6",
+          ],
           datasets: [
-            { label: "Q1 Cohort", data: [100, 88, 79, 72, 68, 65], backgroundColor: "rgba(59, 130, 246, 0.7)" },
-            { label: "Q2 Cohort", data: [100, 91, 83, 76, 71, 67], backgroundColor: "rgba(16, 185, 129, 0.7)" },
-            { label: "Q3 Cohort", data: [100, 93, 86, 80, 75, 72], backgroundColor: "rgba(139, 92, 246, 0.7)" },
-            { label: "Q4 Cohort", data: [100, 95, 89, 84, 79, 76], backgroundColor: "rgba(245, 158, 11, 0.7)" },
+            {
+              label: "Q1 Cohort",
+              data: [100, 88, 79, 72, 68, 65],
+              backgroundColor: "rgba(59, 130, 246, 0.7)",
+            },
+            {
+              label: "Q2 Cohort",
+              data: [100, 91, 83, 76, 71, 67],
+              backgroundColor: "rgba(16, 185, 129, 0.7)",
+            },
+            {
+              label: "Q3 Cohort",
+              data: [100, 93, 86, 80, 75, 72],
+              backgroundColor: "rgba(139, 92, 246, 0.7)",
+            },
+            {
+              label: "Q4 Cohort",
+              data: [100, 95, 89, 84, 79, 76],
+              backgroundColor: "rgba(245, 158, 11, 0.7)",
+            },
           ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Cohort Retention (% Retained)" } },
+          plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Cohort Retention (% Retained)" },
+          },
           scales: { y: { beginAtZero: true, max: 100 } },
         },
       });
@@ -213,8 +264,14 @@ export default function BillingAnalyticsDashboardPage() {
     if (forecastChartRef.current) {
       const forecastLabels = getMonthLabels(monthCount + 6);
       const actualData = labels.map(() => Math.round(Math.random() * 30 + 50));
-      const forecastValues = Array(6).fill(0).map((_, i) => Math.round(actualData[actualData.length - 1] + (i + 1) * 4 + Math.random() * 3));
-      
+      const forecastValues = Array(6)
+        .fill(0)
+        .map((_, i) =>
+          Math.round(
+            actualData[actualData.length - 1] + (i + 1) * 4 + Math.random() * 3
+          )
+        );
+
       chartsRef.current.forecast = new Chart(forecastChartRef.current, {
         type: "line",
         data: {
@@ -239,7 +296,10 @@ export default function BillingAnalyticsDashboardPage() {
             },
             {
               label: "Upper Bound",
-              data: [...Array(monthCount).fill(null), ...forecastValues.map((v: any) => v + 8)],
+              data: [
+                ...Array(monthCount).fill(null),
+                ...forecastValues.map((v: any) => v + 8),
+              ],
               borderColor: "rgba(16, 185, 129, 0.3)",
               borderDash: [2, 2],
               fill: false,
@@ -247,7 +307,10 @@ export default function BillingAnalyticsDashboardPage() {
             },
             {
               label: "Lower Bound",
-              data: [...Array(monthCount).fill(null), ...forecastValues.map((v: any) => v - 8)],
+              data: [
+                ...Array(monthCount).fill(null),
+                ...forecastValues.map((v: any) => v - 8),
+              ],
               borderColor: "rgba(16, 185, 129, 0.3)",
               borderDash: [2, 2],
               fill: "-1",
@@ -259,7 +322,13 @@ export default function BillingAnalyticsDashboardPage() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: true, text: "Revenue Forecast with Confidence Interval" } },
+          plugins: {
+            legend: { position: "top" },
+            title: {
+              display: true,
+              text: "Revenue Forecast with Confidence Interval",
+            },
+          },
         },
       });
     }
@@ -275,7 +344,9 @@ export default function BillingAnalyticsDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Billing Analytics</h1>
-          <p className="text-muted-foreground">Revenue metrics, cohort analysis, and forecasting</p>
+          <p className="text-muted-foreground">
+            Revenue metrics, cohort analysis, and forecasting
+          </p>
         </div>
         <div className="flex gap-3">
           <Select value={period} onValueChange={setPeriod}>
@@ -309,7 +380,9 @@ export default function BillingAnalyticsDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Monthly Recurring Revenue</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Monthly Recurring Revenue
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₦87.4M</div>
@@ -318,7 +391,9 @@ export default function BillingAnalyticsDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Annual Run Rate</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Annual Run Rate
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₦1.05B</div>
@@ -327,7 +402,9 @@ export default function BillingAnalyticsDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Revenue Churn</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Revenue Churn
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">2.1%</div>
@@ -336,7 +413,9 @@ export default function BillingAnalyticsDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Avg Customer LTV</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Avg Customer LTV
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₦520K</div>
@@ -419,8 +498,9 @@ export default function BillingAnalyticsDashboardPage() {
 
       {/* Data Source Attribution */}
       <div className="text-xs text-muted-foreground text-center pt-4">
-        Data sources: Platform Billing Ledger (PostgreSQL) • TigerBeetle Double-Entry Ledger • Stripe API • 
-        Cohort analysis via billing-analytics-pipeline (Python/Fluvio) • Forecast via ARIMA model
+        Data sources: Platform Billing Ledger (PostgreSQL) • TigerBeetle
+        Double-Entry Ledger • Stripe API • Cohort analysis via
+        billing-analytics-pipeline (Python/Fluvio) • Forecast via ARIMA model
       </div>
     </div>
   );

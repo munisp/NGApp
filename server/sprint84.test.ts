@@ -1,6 +1,6 @@
 /**
  * Sprint 84 Tests — Stripe Invoice Webhooks, Billing Analytics Dashboard, Monthly Invoice Cron
- * 
+ *
  * Validates:
  * 1. Stripe webhook handler for invoice events (paid, failed, overdue)
  * 2. Billing analytics dashboard Chart.js integration
@@ -24,11 +24,14 @@ describe("Sprint 84 — Stripe Invoice Webhook Handler", () => {
 
   it("cronPublishBillingEvent should publish to correct Kafka topic", async () => {
     const mod = await import("./scheduled/monthlyInvoiceCron");
-    const result = await mod.cronPublishBillingEvent("billing.invoice.generated", {
-      tenantId: 1,
-      invoiceId: "inv_test_123",
-      amount: 50000,
-    });
+    const result = await mod.cronPublishBillingEvent(
+      "billing.invoice.generated",
+      {
+        tenantId: 1,
+        invoiceId: "inv_test_123",
+        amount: 50000,
+      }
+    );
     expect(result).toHaveProperty("published", true);
     expect(result).toHaveProperty("topic", "billing.invoice.generated");
     expect(result).toHaveProperty("timestamp");
@@ -82,7 +85,9 @@ describe("Sprint 84 — Stripe Invoice Webhook Handler", () => {
     };
     expect(invoiceFailedEvent.type).toBe("invoice.payment_failed");
     expect(invoiceFailedEvent.data.object.attempt_count).toBe(1);
-    expect(invoiceFailedEvent.data.object.next_payment_attempt).toBeGreaterThan(0);
+    expect(invoiceFailedEvent.data.object.next_payment_attempt).toBeGreaterThan(
+      0
+    );
   });
 
   it("webhook handler should detect and respond to test events", () => {
@@ -98,7 +103,8 @@ describe("Sprint 84 — Stripe Invoice Webhook Handler", () => {
 describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("should have BillingAnalyticsDashboardPage component file", async () => {
     const fs = await import("fs");
-    const path = "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx";
+    const path =
+      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx";
     expect(fs.existsSync(path)).toBe(true);
   });
 

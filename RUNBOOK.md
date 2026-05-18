@@ -21,32 +21,32 @@
 
 ## 1. Service Inventory
 
-| Service | Technology | Port | Health Endpoint | Critical |
-|---|---|---|---|---|
-| POS Shell (main app) | Node.js + React | 3000 | `/api/health` | Yes |
-| OTA Service | Go | 8081 | `/health` | Yes |
-| MDM Compliance Engine | Go | 8091 | `/health` | Yes |
-| MDM Geofence Service | Go | 8092 | `/health` | Yes |
-| CBN Reporting Engine | Python | 8095 | `/health` | Yes |
-| KYC Service | Python | 8070 | `/health` | Yes |
-| Settlement Service | Go | 8073 | `/health` | Yes |
-| Fraud Engine | Python | 8085 | `/health` | Yes |
-| SIM Orchestrator | Go | 8090 | `/health` | Yes |
-| FIDO2 Service | Go | 8083 | `/health` | Yes |
-| Workflow Orchestrator | Go | 8075 | `/health` | Yes |
-| Lakehouse Service | Go | 8096 | `/health` | No |
-| PostgreSQL | Postgres 16 | 5432 | `pg_isready` | Yes |
-| Redis | Redis 7 | 6379 | `PING` | Yes |
-| Kafka | Kafka 3.7 | 9092 | `kafka-topics.sh --list` | Yes |
-| TigerBeetle (3-node) | TigerBeetle 0.15.3 | 3000-3002 | TCP connect | Yes |
-| Keycloak | Keycloak 24 | 8080 | `/health/ready` | Yes |
-| Vault | HashiCorp Vault 1.17 | 8200 | `/v1/sys/health` | Yes |
-| APISix | APISix 3.9 | 9080/9180 | `/apisix/admin/routes` | Yes |
-| MinIO | MinIO | 9000 | `/minio/health/live` | Yes |
-| Fluvio | Fluvio 0.11 | 9003 | `fluvio cluster status` | No |
-| Temporal | Temporal 1.24 | 7233 | gRPC health | No |
-| Prometheus | Prometheus 2.51 | 9090 | `/-/healthy` | No |
-| Grafana | Grafana 10 | 3001 | `/api/health` | No |
+| Service               | Technology           | Port      | Health Endpoint          | Critical |
+| --------------------- | -------------------- | --------- | ------------------------ | -------- |
+| POS Shell (main app)  | Node.js + React      | 3000      | `/api/health`            | Yes      |
+| OTA Service           | Go                   | 8081      | `/health`                | Yes      |
+| MDM Compliance Engine | Go                   | 8091      | `/health`                | Yes      |
+| MDM Geofence Service  | Go                   | 8092      | `/health`                | Yes      |
+| CBN Reporting Engine  | Python               | 8095      | `/health`                | Yes      |
+| KYC Service           | Python               | 8070      | `/health`                | Yes      |
+| Settlement Service    | Go                   | 8073      | `/health`                | Yes      |
+| Fraud Engine          | Python               | 8085      | `/health`                | Yes      |
+| SIM Orchestrator      | Go                   | 8090      | `/health`                | Yes      |
+| FIDO2 Service         | Go                   | 8083      | `/health`                | Yes      |
+| Workflow Orchestrator | Go                   | 8075      | `/health`                | Yes      |
+| Lakehouse Service     | Go                   | 8096      | `/health`                | No       |
+| PostgreSQL            | Postgres 16          | 5432      | `pg_isready`             | Yes      |
+| Redis                 | Redis 7              | 6379      | `PING`                   | Yes      |
+| Kafka                 | Kafka 3.7            | 9092      | `kafka-topics.sh --list` | Yes      |
+| TigerBeetle (3-node)  | TigerBeetle 0.15.3   | 3000-3002 | TCP connect              | Yes      |
+| Keycloak              | Keycloak 24          | 8080      | `/health/ready`          | Yes      |
+| Vault                 | HashiCorp Vault 1.17 | 8200      | `/v1/sys/health`         | Yes      |
+| APISix                | APISix 3.9           | 9080/9180 | `/apisix/admin/routes`   | Yes      |
+| MinIO                 | MinIO                | 9000      | `/minio/health/live`     | Yes      |
+| Fluvio                | Fluvio 0.11          | 9003      | `fluvio cluster status`  | No       |
+| Temporal              | Temporal 1.24        | 7233      | gRPC health              | No       |
+| Prometheus            | Prometheus 2.51      | 9090      | `/-/healthy`             | No       |
+| Grafana               | Grafana 10           | 3001      | `/api/health`            | No       |
 
 ---
 
@@ -188,6 +188,7 @@ docker compose -f docker-compose.production.yml logs --tail=50 pos-shell | grep 
 ```
 
 **Resolution:**
+
 - If Postgres is down: `docker compose -f docker-compose.production.yml restart postgres`
 - If TigerBeetle node is down: `docker compose -f docker-compose.production.yml restart tigerbeetle-0`
 - If Kafka lag is high: restart the affected consumer service
@@ -402,20 +403,20 @@ curl -X POST http://localhost:8095/api/v1/reports/generate \
 
 ### 8.2 CBN Compliance Tiers
 
-| Tier | KYC Level | Daily Limit | Single Transaction |
-|---|---|---|---|
-| Basic | Level 1 | ₦300,000 | ₦50,000 |
-| Standard | Level 2 | ₦1,000,000 | ₦200,000 |
-| Premium | Level 3 | ₦5,000,000 | ₦1,000,000 |
+| Tier     | KYC Level | Daily Limit | Single Transaction |
+| -------- | --------- | ----------- | ------------------ |
+| Basic    | Level 1   | ₦300,000    | ₦50,000            |
+| Standard | Level 2   | ₦1,000,000  | ₦200,000           |
+| Premium  | Level 3   | ₦5,000,000  | ₦1,000,000         |
 
 ### 8.3 Report Submission Deadlines
 
-| Report | Frequency | Deadline |
-|---|---|---|
-| Daily Activity | Daily | Next business day by 09:00 WAT |
-| Weekly Reconciliation | Weekly | Monday by 12:00 WAT |
-| Monthly Activity | Monthly | 5th of following month |
-| Quarterly Summary | Quarterly | 15th of month after quarter end |
+| Report                | Frequency | Deadline                        |
+| --------------------- | --------- | ------------------------------- |
+| Daily Activity        | Daily     | Next business day by 09:00 WAT  |
+| Weekly Reconciliation | Weekly    | Monday by 12:00 WAT             |
+| Monthly Activity      | Monthly   | 5th of following month          |
+| Quarterly Summary     | Quarterly | 15th of month after quarter end |
 
 ---
 
@@ -450,18 +451,18 @@ curl -X POST http://localhost:3000/api/trpc/mdm.pushCommand \
 
 ### 9.3 Supported MDM Commands
 
-| Command | Description | Requires Device Admin |
-|---|---|---|
-| `LOCK_SCREEN` | Lock device screen immediately | Yes |
-| `REBOOT` | Reboot device | Yes (Android 7+) |
-| `CLEAR_APP_DATA` | Clear app data for package | Yes (Android 9+) |
-| `SET_PASSCODE_POLICY` | Enforce passcode complexity | Yes |
-| `WIPE_DEVICE` | Factory reset (irreversible) | Yes |
-| `ENABLE_WIFI` / `DISABLE_WIFI` | Toggle WiFi | No |
-| `SCREENSHOT` | Capture screen | No |
-| `OTA_UPDATE` | Trigger firmware update | No |
-| `SET_KIOSK_MODE` | Enable/disable kiosk mode | Yes (Android 6+) |
-| `PING` | Check device responsiveness | No |
+| Command                        | Description                    | Requires Device Admin |
+| ------------------------------ | ------------------------------ | --------------------- |
+| `LOCK_SCREEN`                  | Lock device screen immediately | Yes                   |
+| `REBOOT`                       | Reboot device                  | Yes (Android 7+)      |
+| `CLEAR_APP_DATA`               | Clear app data for package     | Yes (Android 9+)      |
+| `SET_PASSCODE_POLICY`          | Enforce passcode complexity    | Yes                   |
+| `WIPE_DEVICE`                  | Factory reset (irreversible)   | Yes                   |
+| `ENABLE_WIFI` / `DISABLE_WIFI` | Toggle WiFi                    | No                    |
+| `SCREENSHOT`                   | Capture screen                 | No                    |
+| `OTA_UPDATE`                   | Trigger firmware update        | No                    |
+| `SET_KIOSK_MODE`               | Enable/disable kiosk mode      | Yes (Android 6+)      |
+| `PING`                         | Check device responsiveness    | No                    |
 
 ---
 
@@ -469,28 +470,28 @@ curl -X POST http://localhost:3000/api/trpc/mdm.pushCommand \
 
 ### 10.1 Key Dashboards
 
-| Dashboard | URL | Purpose |
-|---|---|---|
-| Main Overview | http://localhost:3001/d/54link-overview | Transaction volume, error rates, latency |
-| MDM Fleet | http://localhost:3001/d/mdm-fleet | Device health, compliance, heartbeats |
-| CBN Compliance | http://localhost:3001/d/cbn-compliance | Daily limits, KYC rates, report status |
-| Infrastructure | http://localhost:3001/d/54link-infra | CPU, memory, disk, network |
-| Kafka | http://localhost:3001/d/kafka | Consumer lag, throughput, partitions |
+| Dashboard      | URL                                     | Purpose                                  |
+| -------------- | --------------------------------------- | ---------------------------------------- |
+| Main Overview  | http://localhost:3001/d/54link-overview | Transaction volume, error rates, latency |
+| MDM Fleet      | http://localhost:3001/d/mdm-fleet       | Device health, compliance, heartbeats    |
+| CBN Compliance | http://localhost:3001/d/cbn-compliance  | Daily limits, KYC rates, report status   |
+| Infrastructure | http://localhost:3001/d/54link-infra    | CPU, memory, disk, network               |
+| Kafka          | http://localhost:3001/d/kafka           | Consumer lag, throughput, partitions     |
 
 ### 10.2 Critical Alert Thresholds
 
-| Alert | Threshold | Severity | Action |
-|---|---|---|---|
-| Transaction error rate | > 5% for 5min | Critical | Page on-call |
-| Transaction p99 latency | > 3s for 5min | Warning | Investigate |
-| MDM heartbeat queue depth | > 10,000 | Warning | Scale MDM engine |
-| CBN report submission failed | Any | Critical | Manual submission |
-| TigerBeetle node down | Any | Critical | Page on-call |
-| Vault sealed | Any | Critical | Page on-call |
-| Fraud high score rate | > 5% | Warning | Review thresholds |
-| Agent daily limit breach | Any | Critical | Block transaction |
-| OTA download failure rate | > 10% | Warning | Check MinIO |
-| MDM device offline > 30min | Any | Warning | Check device |
+| Alert                        | Threshold     | Severity | Action            |
+| ---------------------------- | ------------- | -------- | ----------------- |
+| Transaction error rate       | > 5% for 5min | Critical | Page on-call      |
+| Transaction p99 latency      | > 3s for 5min | Warning  | Investigate       |
+| MDM heartbeat queue depth    | > 10,000      | Warning  | Scale MDM engine  |
+| CBN report submission failed | Any           | Critical | Manual submission |
+| TigerBeetle node down        | Any           | Critical | Page on-call      |
+| Vault sealed                 | Any           | Critical | Page on-call      |
+| Fraud high score rate        | > 5%          | Warning  | Review thresholds |
+| Agent daily limit breach     | Any           | Critical | Block transaction |
+| OTA download failure rate    | > 10%         | Warning  | Check MinIO       |
+| MDM device offline > 30min   | Any           | Warning  | Check device      |
 
 ### 10.3 Useful Prometheus Queries
 
@@ -517,10 +518,10 @@ rate(ota_download_total[5m])
 
 ## Contact
 
-| Role | Contact |
-|---|---|
-| Platform Engineering | platform@54link.ng |
-| Database | dba@54link.ng |
-| Security | security@54link.ng |
-| CBN Compliance | compliance@54link.ng |
-| On-Call | +234-800-54LINK |
+| Role                 | Contact              |
+| -------------------- | -------------------- |
+| Platform Engineering | platform@54link.ng   |
+| Database             | dba@54link.ng        |
+| Security             | security@54link.ng   |
+| CBN Compliance       | compliance@54link.ng |
+| On-Call              | +234-800-54LINK      |

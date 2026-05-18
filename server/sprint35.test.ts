@@ -29,19 +29,31 @@ describe("Sprint 35: All 20 Routers", () => {
     { name: "nlAnalyticsQuery", router: nlAnalyticsQueryRouter },
     { name: "bankingWorkflowPatterns", router: bankingWorkflowPatternsRouter },
     { name: "agentOnboardingWizard", router: agentOnboardingWizardRouter },
-    { name: "transactionReconciliation", router: transactionReconciliationRouter },
+    {
+      name: "transactionReconciliation",
+      router: transactionReconciliationRouter,
+    },
     { name: "chargebackManagement", router: chargebackManagementRouter },
-    { name: "regulatoryReportingEngine", router: regulatoryReportingEngineRouter },
+    {
+      name: "regulatoryReportingEngine",
+      router: regulatoryReportingEngineRouter,
+    },
     { name: "agentTerritoryMgmt", router: agentTerritoryMgmtRouter },
     { name: "dynamicPricingEngine", router: dynamicPricingEngineRouter },
     { name: "customerLoyaltyProgram", router: customerLoyaltyProgramRouter },
     { name: "fraudCaseManagement", router: fraudCaseManagementRouter },
     { name: "posTerminalFleet", router: posTerminalFleetRouter },
-    { name: "financialReconciliationDash", router: financialReconciliationDashRouter },
+    {
+      name: "financialReconciliationDash",
+      router: financialReconciliationDashRouter,
+    },
     { name: "apiAnalyticsDash", router: apiAnalyticsDashRouter },
     { name: "agentCommunicationHub", router: agentCommunicationHubRouter },
     { name: "txDisputeArbitration", router: txDisputeArbitrationRouter },
-    { name: "complianceTrainingTracker", router: complianceTrainingTrackerRouter },
+    {
+      name: "complianceTrainingTracker",
+      router: complianceTrainingTrackerRouter,
+    },
     { name: "systemMigrationTools", router: systemMigrationToolsRouter },
     { name: "advancedAuditLogViewer", router: advancedAuditLogViewerRouter },
   ];
@@ -76,15 +88,32 @@ describe("Sprint 35: Security Audit", () => {
     const path = await import("path");
     const routerDir = path.join(__dirname, "routers");
     const sprint35Files = [
-      "transactionMapViz.ts", "reportBuilderTemplates.ts", "nlAnalyticsQuery.ts",
-      "bankingWorkflowPatterns.ts", "agentOnboardingWizard.ts", "transactionReconciliation.ts",
-      "chargebackManagement.ts", "regulatoryReportingEngine.ts", "agentTerritoryMgmt.ts",
-      "dynamicPricingEngine.ts", "customerLoyaltyProgram.ts", "fraudCaseManagement.ts",
-      "posTerminalFleet.ts", "financialReconciliationDash.ts", "apiAnalyticsDash.ts",
-      "agentCommunicationHub.ts", "txDisputeArbitration.ts", "complianceTrainingTracker.ts",
-      "systemMigrationTools.ts", "advancedAuditLogViewer.ts",
+      "transactionMapViz.ts",
+      "reportBuilderTemplates.ts",
+      "nlAnalyticsQuery.ts",
+      "bankingWorkflowPatterns.ts",
+      "agentOnboardingWizard.ts",
+      "transactionReconciliation.ts",
+      "chargebackManagement.ts",
+      "regulatoryReportingEngine.ts",
+      "agentTerritoryMgmt.ts",
+      "dynamicPricingEngine.ts",
+      "customerLoyaltyProgram.ts",
+      "fraudCaseManagement.ts",
+      "posTerminalFleet.ts",
+      "financialReconciliationDash.ts",
+      "apiAnalyticsDash.ts",
+      "agentCommunicationHub.ts",
+      "txDisputeArbitration.ts",
+      "complianceTrainingTracker.ts",
+      "systemMigrationTools.ts",
+      "advancedAuditLogViewer.ts",
     ];
-    const secretPatterns = [/password\s*=\s*["'][^"']+["']/i, /api[_-]?key\s*=\s*["'][^"']+["']/i, /secret\s*=\s*["'][A-Za-z0-9]{16,}["']/i];
+    const secretPatterns = [
+      /password\s*=\s*["'][^"']+["']/i,
+      /api[_-]?key\s*=\s*["'][^"']+["']/i,
+      /secret\s*=\s*["'][A-Za-z0-9]{16,}["']/i,
+    ];
     for (const file of sprint35Files) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
       for (const pattern of secretPatterns) {
@@ -98,17 +127,30 @@ describe("Sprint 35: Security Audit", () => {
     const path = await import("path");
     const routerDir = path.join(__dirname, "routers");
     const sprint35Files = [
-      "transactionMapViz.ts", "reportBuilderTemplates.ts", "nlAnalyticsQuery.ts",
-      "bankingWorkflowPatterns.ts", "agentOnboardingWizard.ts", "transactionReconciliation.ts",
-      "chargebackManagement.ts", "regulatoryReportingEngine.ts", "agentTerritoryMgmt.ts",
-      "dynamicPricingEngine.ts", "customerLoyaltyProgram.ts", "fraudCaseManagement.ts",
-      "posTerminalFleet.ts", "financialReconciliationDash.ts", "apiAnalyticsDash.ts",
-      "agentCommunicationHub.ts", "txDisputeArbitration.ts", "complianceTrainingTracker.ts",
-      "systemMigrationTools.ts", "advancedAuditLogViewer.ts",
+      "transactionMapViz.ts",
+      "reportBuilderTemplates.ts",
+      "nlAnalyticsQuery.ts",
+      "bankingWorkflowPatterns.ts",
+      "agentOnboardingWizard.ts",
+      "transactionReconciliation.ts",
+      "chargebackManagement.ts",
+      "regulatoryReportingEngine.ts",
+      "agentTerritoryMgmt.ts",
+      "dynamicPricingEngine.ts",
+      "customerLoyaltyProgram.ts",
+      "fraudCaseManagement.ts",
+      "posTerminalFleet.ts",
+      "financialReconciliationDash.ts",
+      "apiAnalyticsDash.ts",
+      "agentCommunicationHub.ts",
+      "txDisputeArbitration.ts",
+      "complianceTrainingTracker.ts",
+      "systemMigrationTools.ts",
+      "advancedAuditLogViewer.ts",
     ];
     for (const file of sprint35Files) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
-      expect(content).toContain("import { z } from \"zod\"");
+      expect(content).toContain('import { z } from "zod"');
     }
   });
 
@@ -117,13 +159,26 @@ describe("Sprint 35: Security Audit", () => {
     const path = await import("path");
     const routerDir = path.join(__dirname, "routers");
     const sprint35Files = [
-      "transactionMapViz.ts", "reportBuilderTemplates.ts", "nlAnalyticsQuery.ts",
-      "bankingWorkflowPatterns.ts", "agentOnboardingWizard.ts", "transactionReconciliation.ts",
-      "chargebackManagement.ts", "regulatoryReportingEngine.ts", "agentTerritoryMgmt.ts",
-      "dynamicPricingEngine.ts", "customerLoyaltyProgram.ts", "fraudCaseManagement.ts",
-      "posTerminalFleet.ts", "financialReconciliationDash.ts", "apiAnalyticsDash.ts",
-      "agentCommunicationHub.ts", "txDisputeArbitration.ts", "complianceTrainingTracker.ts",
-      "systemMigrationTools.ts", "advancedAuditLogViewer.ts",
+      "transactionMapViz.ts",
+      "reportBuilderTemplates.ts",
+      "nlAnalyticsQuery.ts",
+      "bankingWorkflowPatterns.ts",
+      "agentOnboardingWizard.ts",
+      "transactionReconciliation.ts",
+      "chargebackManagement.ts",
+      "regulatoryReportingEngine.ts",
+      "agentTerritoryMgmt.ts",
+      "dynamicPricingEngine.ts",
+      "customerLoyaltyProgram.ts",
+      "fraudCaseManagement.ts",
+      "posTerminalFleet.ts",
+      "financialReconciliationDash.ts",
+      "apiAnalyticsDash.ts",
+      "agentCommunicationHub.ts",
+      "txDisputeArbitration.ts",
+      "complianceTrainingTracker.ts",
+      "systemMigrationTools.ts",
+      "advancedAuditLogViewer.ts",
     ];
     for (const file of sprint35Files) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
@@ -137,13 +192,26 @@ describe("Sprint 35: Security Audit", () => {
     const path = await import("path");
     const routerDir = path.join(__dirname, "routers");
     const sprint35Files = [
-      "transactionMapViz.ts", "reportBuilderTemplates.ts", "nlAnalyticsQuery.ts",
-      "bankingWorkflowPatterns.ts", "agentOnboardingWizard.ts", "transactionReconciliation.ts",
-      "chargebackManagement.ts", "regulatoryReportingEngine.ts", "agentTerritoryMgmt.ts",
-      "dynamicPricingEngine.ts", "customerLoyaltyProgram.ts", "fraudCaseManagement.ts",
-      "posTerminalFleet.ts", "financialReconciliationDash.ts", "apiAnalyticsDash.ts",
-      "agentCommunicationHub.ts", "txDisputeArbitration.ts", "complianceTrainingTracker.ts",
-      "systemMigrationTools.ts", "advancedAuditLogViewer.ts",
+      "transactionMapViz.ts",
+      "reportBuilderTemplates.ts",
+      "nlAnalyticsQuery.ts",
+      "bankingWorkflowPatterns.ts",
+      "agentOnboardingWizard.ts",
+      "transactionReconciliation.ts",
+      "chargebackManagement.ts",
+      "regulatoryReportingEngine.ts",
+      "agentTerritoryMgmt.ts",
+      "dynamicPricingEngine.ts",
+      "customerLoyaltyProgram.ts",
+      "fraudCaseManagement.ts",
+      "posTerminalFleet.ts",
+      "financialReconciliationDash.ts",
+      "apiAnalyticsDash.ts",
+      "agentCommunicationHub.ts",
+      "txDisputeArbitration.ts",
+      "complianceTrainingTracker.ts",
+      "systemMigrationTools.ts",
+      "advancedAuditLogViewer.ts",
     ];
     for (const file of sprint35Files) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");

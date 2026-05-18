@@ -36,14 +36,20 @@ describe("S60-1: Load Test Comparison View", () => {
 
   it("comparison includes throughput deltas (higher is better)", () => {
     expect(routerSrc).toContain("throughput: {");
-    expect(routerSrc).toContain("actualRps: deltaHigherBetter(rA.actualRps, rB.actualRps)");
-    expect(routerSrc).toContain("totalRequests: deltaHigherBetter(rA.totalRequests, rB.totalRequests)");
+    expect(routerSrc).toContain(
+      "actualRps: deltaHigherBetter(rA.actualRps, rB.actualRps)"
+    );
+    expect(routerSrc).toContain(
+      "totalRequests: deltaHigherBetter(rA.totalRequests, rB.totalRequests)"
+    );
   });
 
   it("comparison includes reliability deltas", () => {
     expect(routerSrc).toContain("reliability: {");
     expect(routerSrc).toContain("errorRate: delta(rA.errorRate, rB.errorRate)");
-    expect(routerSrc).toContain("failedRequests: delta(rA.failedRequests, rB.failedRequests)");
+    expect(routerSrc).toContain(
+      "failedRequests: delta(rA.failedRequests, rB.failedRequests)"
+    );
   });
 
   it("comparison includes zipf distribution overlay", () => {
@@ -61,12 +67,17 @@ describe("S60-1: Load Test Comparison View", () => {
   });
 
   it("delta function calculates pctChange correctly", () => {
-    expect(routerSrc).toContain("pctChange: a !== 0 ? Math.round(((b - a) / a) * 10000) / 100 : 0");
+    expect(routerSrc).toContain(
+      "pctChange: a !== 0 ? Math.round(((b - a) / a) * 10000) / 100 : 0"
+    );
   });
 
   it("LoadTestComparison page exists with selectors and charts", () => {
     const pageSrc = fs.readFileSync(
-      path.resolve(__dirname, "../../../client/src/pages/LoadTestComparison.tsx"),
+      path.resolve(
+        __dirname,
+        "../../../client/src/pages/LoadTestComparison.tsx"
+      ),
       "utf-8"
     );
     expect(pageSrc).toContain("LoadTestComparison");
@@ -89,7 +100,10 @@ describe("S60-1: Load Test Comparison View", () => {
 
   it("Comparison page shows improvement verdict", () => {
     const pageSrc = fs.readFileSync(
-      path.resolve(__dirname, "../../../client/src/pages/LoadTestComparison.tsx"),
+      path.resolve(
+        __dirname,
+        "../../../client/src/pages/LoadTestComparison.tsx"
+      ),
       "utf-8"
     );
     expect(pageSrc).toContain("Run B is an improvement");
@@ -129,11 +143,15 @@ describe("S60-2: P99 Threshold Notifications", () => {
   });
 
   it("checks P95 approaching P99 threshold (80% warning)", () => {
-    expect(routerSrc).toContain("run.results.p95LatencyMs > p99Threshold * 0.8");
+    expect(routerSrc).toContain(
+      "run.results.p95LatencyMs > p99Threshold * 0.8"
+    );
   });
 
   it("sends CRITICAL notification for multiple violations", () => {
-    expect(routerSrc).toContain('violations.length >= 2 ? "CRITICAL" : "WARNING"');
+    expect(routerSrc).toContain(
+      'violations.length >= 2 ? "CRITICAL" : "WARNING"'
+    );
   });
 
   it("calls notifyOwner with threshold breach details", () => {
@@ -143,7 +161,9 @@ describe("S60-2: P99 Threshold Notifications", () => {
   });
 
   it("is called after runLoadTest completion", () => {
-    expect(routerSrc).toContain("// S60-2: Check P99 threshold and notify owner if breached");
+    expect(routerSrc).toContain(
+      "// S60-2: Check P99 threshold and notify owner if breached"
+    );
     const matches = routerSrc.match(/await checkP99ThresholdAndNotify\(run\)/g);
     expect(matches).not.toBeNull();
     expect(matches!.length).toBeGreaterThanOrEqual(2); // runLoadTest + recordRun
@@ -154,11 +174,15 @@ describe("S60-2: P99 Threshold Notifications", () => {
   });
 
   it("imports notifyOwner from notification module", () => {
-    expect(routerSrc).toContain('import { notifyOwner } from "../_core/notification"');
+    expect(routerSrc).toContain(
+      'import { notifyOwner } from "../_core/notification"'
+    );
   });
 
   it("imports getConfig from runtimeConfig", () => {
-    expect(routerSrc).toContain('import { getConfig, getConfigNumber, setConfig } from "../lib/runtimeConfig"');
+    expect(routerSrc).toContain(
+      'import { getConfig, getConfigNumber, setConfig } from "../lib/runtimeConfig"'
+    );
   });
 });
 
@@ -215,7 +239,9 @@ describe("S60-3: Archival Cron Worker", () => {
 
   it("prevents double-trigger within the same minute", () => {
     expect(workerSrc).toContain("lastCheckMinute");
-    expect(workerSrc).toContain("if (currentMinute === lastCheckMinute) return");
+    expect(workerSrc).toContain(
+      "if (currentMinute === lastCheckMinute) return"
+    );
   });
 
   it("prevents concurrent runs", () => {

@@ -17,9 +17,11 @@ POS Terminal
 ```
 
 When the sidecar is unreachable, the Node.js server logs:
+
 ```
 [TB] Sidecar unavailable — transaction <ref> persisted to PostgreSQL only
 ```
+
 and sets `tb_synced = false` on the transaction row. Sync occurs automatically when the sidecar comes back online.
 
 ---
@@ -44,6 +46,7 @@ sudo bash scripts/install-sidecar.sh
 ```
 
 This script will:
+
 1. Create a `54link` system user (no login shell)
 2. Install the TigerBeetle v0.16.78 Zig binary to `/usr/local/bin/tigerbeetle`
 3. Install the sidecar binary to `/usr/local/bin/54link-tb-sidecar`
@@ -53,6 +56,7 @@ This script will:
 7. Start the service immediately
 
 After installation:
+
 ```bash
 # Check health
 curl http://localhost:8030/health
@@ -68,22 +72,22 @@ systemctl restart 54link-tb-sidecar
 
 ## Configuration (`/etc/54link/sidecar.env`)
 
-| Variable | Default | Description |
-|---|---|---|
-| `POSTGRES_URL` | *(required for sync)* | PostgreSQL connection string for metadata sync |
-| `TB_REPLICA_ADDR` | `3000` | TigerBeetle Zig cluster replica address |
-| `SIDECAR_PORT` | `8030` | HTTP port the sidecar listens on |
-| `DATA_DIR` | `/var/lib/54link/tb-data` | Directory for SQLite + TigerBeetle data files |
+| Variable          | Default                   | Description                                    |
+| ----------------- | ------------------------- | ---------------------------------------------- |
+| `POSTGRES_URL`    | _(required for sync)_     | PostgreSQL connection string for metadata sync |
+| `TB_REPLICA_ADDR` | `3000`                    | TigerBeetle Zig cluster replica address        |
+| `SIDECAR_PORT`    | `8030`                    | HTTP port the sidecar listens on               |
+| `DATA_DIR`        | `/var/lib/54link/tb-data` | Directory for SQLite + TigerBeetle data files  |
 
 ---
 
 ## HTTP API
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/transfer` | Create a double-entry transfer (persists to SQLite immediately) |
-| `GET` | `/health` | Returns `{"status":"ok","synced":N,"pending":N}` |
-| `GET` | `/balance/:id` | Returns current balance for account ID |
+| Method | Path           | Description                                                     |
+| ------ | -------------- | --------------------------------------------------------------- |
+| `POST` | `/transfer`    | Create a double-entry transfer (persists to SQLite immediately) |
+| `GET`  | `/health`      | Returns `{"status":"ok","synced":N,"pending":N}`                |
+| `GET`  | `/balance/:id` | Returns current balance for account ID                          |
 
 ### POST /transfer — Request Body
 
@@ -117,6 +121,7 @@ When `TERMII_API_KEY` is not set, all SMS messages are logged to the server cons
 ## Systemd Unit (`scripts/54link-tb-sidecar.service`)
 
 Key settings:
+
 - `Restart=always` — auto-restarts on crash
 - `RestartSec=5s` — 5-second delay between restarts
 - `StartLimitBurst=5` — max 5 restarts in 60 seconds before giving up
@@ -130,9 +135,9 @@ Key settings:
 
 The sidecar writes to SQLite **synchronously** before returning HTTP 200. Even if the TigerBeetle Zig cluster and PostgreSQL are both unreachable, every transaction is durably persisted locally. The sync engine retries in the background with exponential backoff.
 
-| Scenario | Behaviour |
-|---|---|
-| Sidecar running, PG online | Writes to SQLite + syncs to PG immediately |
-| Sidecar running, PG offline | Writes to SQLite; syncs when PG comes back |
-| Sidecar unreachable | Node.js falls back to PG-only; `tb_synced=false` |
-| Both offline | Node.js queues to IndexedDB; syncs when online |
+| Scenario                    | Behaviour                                        |
+| --------------------------- | ------------------------------------------------ |
+| Sidecar running, PG online  | Writes to SQLite + syncs to PG immediately       |
+| Sidecar running, PG offline | Writes to SQLite; syncs when PG comes back       |
+| Sidecar unreachable         | Node.js falls back to PG-only; `tb_synced=false` |
+| Both offline                | Node.js queues to IndexedDB; syncs when online   |

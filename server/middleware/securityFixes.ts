@@ -15,7 +15,7 @@ import type { Request, Response, NextFunction } from "express";
 
 // ── 1. Open Redirect Prevention ──
 const ALLOWED_REDIRECT_PATTERNS = [
-  /^\/[a-zA-Z0-9\-_/]*$/,  // Internal paths only
+  /^\/[a-zA-Z0-9\-_/]*$/, // Internal paths only
 ];
 
 export function sanitizeRedirectUrl(url: string): string {
@@ -34,7 +34,10 @@ export function sanitizeRedirectUrl(url: string): string {
 // ── 2. CORS Origin Validation ──
 const TRUSTED_ORIGINS = new Set<string>();
 
-export function validateCorsOrigin(origin: string | undefined, allowedOrigins: string[]): string | null {
+export function validateCorsOrigin(
+  origin: string | undefined,
+  allowedOrigins: string[]
+): string | null {
   if (!origin) return null;
   // Never reflect wildcard — always validate against whitelist
   if (allowedOrigins.includes(origin)) return origin;
@@ -51,7 +54,11 @@ export function validateCorsOrigin(origin: string | undefined, allowedOrigins: s
 }
 
 // ── 3. Security Headers Middleware ──
-export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function securityHeadersMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   // Prevent clickjacking
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
@@ -62,12 +69,21 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   // Referrer policy
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   // Permissions policy
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self), payment=(self)"
+  );
   // Strict Transport Security (1 year, include subdomains)
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  res.setHeader(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains; preload"
+  );
   // Cache control for API responses
   if (req.path.startsWith("/api/")) {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
   }
@@ -75,10 +91,21 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
 }
 
 // ── 4. Auth Endpoint Rate Limiter ──
-const authAttempts = new Map<string, { count: number; firstAttempt: number; blocked: boolean }>();
-const AUTH_RATE_LIMIT = { maxAttempts: 5, windowMs: 300000, blockDurationMs: 900000 }; // 5 attempts per 5 min, 15 min block
+const authAttempts = new Map<
+  string,
+  { count: number; firstAttempt: number; blocked: boolean }
+>();
+const AUTH_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 300000,
+  blockDurationMs: 900000,
+}; // 5 attempts per 5 min, 15 min block
 
-export function authRateLimiter(req: Request, res: Response, next: NextFunction): void {
+export function authRateLimiter(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const ip = req.ip || req.socket.remoteAddress || "unknown";
   const key = `auth:${ip}`;
   const now = Date.now();
@@ -86,10 +113,18 @@ export function authRateLimiter(req: Request, res: Response, next: NextFunction)
   const record = authAttempts.get(key);
   if (record) {
     // Check if blocked
-    if (record.blocked && now - record.firstAttempt < AUTH_RATE_LIMIT.blockDurationMs) {
-      const retryAfter = Math.ceil((AUTH_RATE_LIMIT.blockDurationMs - (now - record.firstAttempt)) / 1000);
+    if (
+      record.blocked &&
+      now - record.firstAttempt < AUTH_RATE_LIMIT.blockDurationMs
+    ) {
+      const retryAfter = Math.ceil(
+        (AUTH_RATE_LIMIT.blockDurationMs - (now - record.firstAttempt)) / 1000
+      );
       res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({ error: "Too many authentication attempts. Please try again later.", retryAfterSeconds: retryAfter });
+      res.status(429).json({
+        error: "Too many authentication attempts. Please try again later.",
+        retryAfterSeconds: retryAfter,
+      });
       return;
     }
     // Reset if window expired
@@ -99,7 +134,10 @@ export function authRateLimiter(req: Request, res: Response, next: NextFunction)
       record.count++;
       if (record.count > AUTH_RATE_LIMIT.maxAttempts) {
         record.blocked = true;
-        res.status(429).json({ error: "Too many authentication attempts. Account temporarily locked." });
+        res.status(429).json({
+          error:
+            "Too many authentication attempts. Account temporarily locked.",
+        });
         return;
       }
     }
@@ -110,7 +148,8 @@ export function authRateLimiter(req: Request, res: Response, next: NextFunction)
   // Cleanup old entries every 100 requests
   if (authAttempts.size > 10000) {
     for (const [k, v] of authAttempts) {
-      if (now - v.firstAttempt > AUTH_RATE_LIMIT.blockDurationMs) authAttempts.delete(k);
+      if (now - v.firstAttempt > AUTH_RATE_LIMIT.blockDurationMs)
+        authAttempts.delete(k);
     }
   }
 
@@ -145,7 +184,11 @@ export function sanitizeInput(input: string): string {
   return sanitized;
 }
 
-export function inputSanitizationMiddleware(req: Request, _res: Response, next: NextFunction): void {
+export function inputSanitizationMiddleware(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
   // Sanitize query parameters
   if (req.query) {
     for (const [key, value] of Object.entries(req.query)) {
@@ -168,7 +211,11 @@ export function generateCsrfToken(sessionId: string): string {
   return token;
 }
 
-export function csrfProtectionMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function csrfProtectionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   // Skip for GET, HEAD, OPTIONS (safe methods)
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   // Skip for API endpoints that use Bearer token auth
@@ -184,14 +231,20 @@ export function csrfProtectionMiddleware(req: Request, res: Response, next: Next
 
   if (!stored || stored.token !== csrfHeader || Date.now() > stored.expires) {
     // Don't block — log and continue (gradual rollout)
-    console.warn(`[CSRF] Token mismatch for ${req.method} ${req.path} from ${req.ip}`);
+    console.warn(
+      `[CSRF] Token mismatch for ${req.method} ${req.path} from ${req.ip}`
+    );
   }
 
   next();
 }
 
 // ── 7. Session Fixation Prevention ──
-export function sessionFixationPrevention(req: Request, res: Response, next: NextFunction): void {
+export function sessionFixationPrevention(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   // After successful authentication, regenerate session ID
   if (req.path.includes("/callback") || req.path.includes("/login")) {
     // Set a new session identifier cookie

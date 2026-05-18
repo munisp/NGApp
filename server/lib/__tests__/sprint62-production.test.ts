@@ -41,7 +41,9 @@ describe("F3: Report Email Delivery", () => {
   });
 
   it("should generate comparison report HTML", async () => {
-    const { generateComparisonReportHtml } = await import("../reportEmailDelivery");
+    const { generateComparisonReportHtml } = await import(
+      "../reportEmailDelivery"
+    );
     const html = generateComparisonReportHtml({
       runAName: "Run A",
       runBName: "Run B",
@@ -66,15 +68,23 @@ describe("F4: Enhanced Rate Limiter", () => {
   });
 
   it("should allow requests within limit", async () => {
-    const { checkRateLimit, clearStore } = await import("../enhancedRateLimiter");
+    const { checkRateLimit, clearStore } = await import(
+      "../enhancedRateLimiter"
+    );
     clearStore();
-    const result = checkRateLimit("test-ip-f4-1", { windowMs: 60000, maxRequests: 10, key: "test" });
+    const result = checkRateLimit("test-ip-f4-1", {
+      windowMs: 60000,
+      maxRequests: 10,
+      key: "test",
+    });
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBeLessThanOrEqual(10);
   });
 
   it("should block requests over limit", async () => {
-    const { checkRateLimit, clearStore } = await import("../enhancedRateLimiter");
+    const { checkRateLimit, clearStore } = await import(
+      "../enhancedRateLimiter"
+    );
     clearStore();
     const rule = { windowMs: 60000, maxRequests: 3, key: "test" };
     checkRateLimit("test-ip-f4-2", rule);
@@ -157,7 +167,9 @@ describe("F7-F10: Transaction Lifecycle & Business Rules", () => {
   });
 
   it("should enforce agent onboarding state machine", async () => {
-    const { canAgentTransition, getAgentNextStates } = await import("../transactionLifecycle");
+    const { canAgentTransition, getAgentNextStates } = await import(
+      "../transactionLifecycle"
+    );
     expect(canAgentTransition("applied", "kyc_pending")).toBe(true);
     expect(canAgentTransition("active", "applied")).toBe(false);
     const next = getAgentNextStates("applied");
@@ -166,7 +178,9 @@ describe("F7-F10: Transaction Lifecycle & Business Rules", () => {
   });
 
   it("should enforce dispute state machine", async () => {
-    const { canDisputeTransition, getDisputeNextStates } = await import("../transactionLifecycle");
+    const { canDisputeTransition, getDisputeNextStates } = await import(
+      "../transactionLifecycle"
+    );
     expect(canDisputeTransition("filed", "investigating")).toBe(true);
     expect(canDisputeTransition("closed", "filed")).toBe(false);
     const next = getDisputeNextStates("filed");
@@ -184,13 +198,18 @@ describe("F7-F10: Transaction Lifecycle & Business Rules", () => {
 describe("F11: Docker Configuration", () => {
   it("docker-compose.production-final.yml should exist", async () => {
     const fs = await import("fs");
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml"
+    );
     expect(exists).toBe(true);
   });
 
   it("should define all required services", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml",
+      "utf-8"
+    );
     expect(content).toContain("web:");
     expect(content).toContain("postgres:");
     expect(content).toContain("redis:");
@@ -203,7 +222,10 @@ describe("F11: Docker Configuration", () => {
 
   it("should have health checks on critical services", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml",
+      "utf-8"
+    );
     const healthCheckCount = (content.match(/healthcheck:/g) || []).length;
     expect(healthCheckCount).toBeGreaterThanOrEqual(3);
   });
@@ -213,13 +235,18 @@ describe("F11: Docker Configuration", () => {
 describe("F12: Production Seed Script", () => {
   it("seed script should exist", async () => {
     const fs = await import("fs");
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs"
+    );
     expect(exists).toBe(true);
   });
 
   it("should seed agents, transactions, disputes, KYC", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs",
+      "utf-8"
+    );
     expect(content).toContain("agent");
     expect(content).toContain("transaction");
     expect(content).toContain("dispute");
@@ -262,26 +289,30 @@ describe("F14: Circuit Breaker", () => {
   it("should open after threshold failures", async () => {
     const { createCircuitBreaker } = await import("../healthCheck");
     const cb = createCircuitBreaker("test-fail-f14", { failureThreshold: 3 });
-    
+
     for (let i = 0; i < 3; i++) {
       try {
-        await cb.execute(async () => { throw new Error("fail"); });
+        await cb.execute(async () => {
+          throw new Error("fail");
+        });
       } catch {}
     }
-    
+
     expect(cb.getState().state).toBe("open");
   });
 
   it("should reject requests when open", async () => {
     const { createCircuitBreaker } = await import("../healthCheck");
     const cb = createCircuitBreaker("test-reject-f14", { failureThreshold: 2 });
-    
+
     for (let i = 0; i < 2; i++) {
       try {
-        await cb.execute(async () => { throw new Error("fail"); });
+        await cb.execute(async () => {
+          throw new Error("fail");
+        });
       } catch {}
     }
-    
+
     await expect(cb.execute(async () => "ok")).rejects.toThrow("OPEN");
   });
 
@@ -354,29 +385,45 @@ describe("F18: Webhook Retry with Exponential Backoff", () => {
     const delay0 = calculateBackoffDelay(0, false);
     const delay1 = calculateBackoffDelay(1, false);
     const delay2 = calculateBackoffDelay(2, false);
-    
+
     expect(delay0).toBe(1000);
     expect(delay1).toBe(2000);
     expect(delay2).toBe(4000);
   });
 
   it("should move to dead letter after max retries", async () => {
-    const { createDeliveryRecord, recordAttempt, getDeadLetterQueue, clearDeadLetterQueue } = await import("../webhookRetry");
+    const {
+      createDeliveryRecord,
+      recordAttempt,
+      getDeadLetterQueue,
+      clearDeadLetterQueue,
+    } = await import("../webhookRetry");
     clearDeadLetterQueue();
-    
-    const record = createDeliveryRecord("https://example.com/webhook", "test.event", { data: "test" }, 2);
+
+    const record = createDeliveryRecord(
+      "https://example.com/webhook",
+      "test.event",
+      { data: "test" },
+      2
+    );
     recordAttempt(record, 500, 100, "Server error");
     recordAttempt(record, 500, 100, "Server error");
-    
+
     expect(record.status).toBe("dead_letter");
     expect(getDeadLetterQueue().length).toBeGreaterThanOrEqual(1);
   });
 
   it("should mark as delivered on success", async () => {
-    const { createDeliveryRecord, recordAttempt } = await import("../webhookRetry");
-    const record = createDeliveryRecord("https://example.com/webhook", "test.event", {});
+    const { createDeliveryRecord, recordAttempt } = await import(
+      "../webhookRetry"
+    );
+    const record = createDeliveryRecord(
+      "https://example.com/webhook",
+      "test.event",
+      {}
+    );
     recordAttempt(record, 200, 50);
-    
+
     expect(record.status).toBe("delivered");
     expect(record.attempts.length).toBe(1);
     expect(record.attempts[0].success).toBe(true);
@@ -387,13 +434,18 @@ describe("F18: Webhook Retry with Exponential Backoff", () => {
 describe("F19: Smoke Test Script", () => {
   it("smoke test script should exist", async () => {
     const fs = await import("fs");
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs"
+    );
     expect(exists).toBe(true);
   });
 
   it("should test critical paths", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs",
+      "utf-8"
+    );
     expect(content).toContain("health");
     expect(content).toContain("tRPC");
   });
@@ -422,7 +474,9 @@ describe("F20: Security Audit & Hardening", () => {
   });
 
   it("should validate CSRF tokens", async () => {
-    const { generateCsrfToken, validateCsrfToken } = await import("../securityAuditFixes");
+    const { generateCsrfToken, validateCsrfToken } = await import(
+      "../securityAuditFixes"
+    );
     const token = generateCsrfToken("session-123");
     expect(validateCsrfToken(token, "session-123")).toBe(true);
     expect(validateCsrfToken(token, "wrong-session")).toBe(false);
@@ -431,7 +485,9 @@ describe("F20: Security Audit & Hardening", () => {
 
   it("should sanitize XSS vectors", async () => {
     const { sanitizeString } = await import("../securityAuditFixes");
-    expect(sanitizeString('<script>alert("xss")</script>')).not.toContain("<script>");
+    expect(sanitizeString('<script>alert("xss")</script>')).not.toContain(
+      "<script>"
+    );
     expect(sanitizeString("javascript:void(0)")).not.toContain("javascript:");
   });
 
@@ -449,7 +505,7 @@ describe("F20: Security Audit & Hardening", () => {
   it("should block open redirects", async () => {
     const { isRedirectSafe } = await import("../securityAuditFixes");
     const mockReq = { headers: { host: "localhost:3000" } } as any;
-    
+
     expect(isRedirectSafe("/dashboard", mockReq)).toBe(true);
     expect(isRedirectSafe("/agents?page=1", mockReq)).toBe(true);
     expect(isRedirectSafe("https://evil.com/phish", mockReq)).toBe(false);
@@ -470,17 +526,26 @@ describe("F20: Security Audit & Hardening", () => {
 describe("YAML Configuration Files", () => {
   it("prometheus.yml should exist", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")).toBe(true);
+    expect(
+      fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")
+    ).toBe(true);
   });
 
   it("grafana-datasources.yml should exist", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/grafana-datasources.yml")).toBe(true);
+    expect(
+      fs.existsSync(
+        "/home/ubuntu/pos-shell-demo/config/grafana-datasources.yml"
+      )
+    ).toBe(true);
   });
 
   it("nginx.conf should exist with security headers", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/config/nginx.conf", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/config/nginx.conf",
+      "utf-8"
+    );
     expect(content).toContain("X-Frame-Options");
     expect(content).toContain("X-Content-Type-Options");
     expect(content).toContain("Strict-Transport-Security");

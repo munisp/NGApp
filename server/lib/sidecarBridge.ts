@@ -33,7 +33,9 @@ async function sidecarPost<T = any>(
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
   } catch (err: any) {
-    console.warn(`[sidecarBridge] ${baseUrl}${path} unreachable: ${err.message}`);
+    console.warn(
+      `[sidecarBridge] ${baseUrl}${path} unreachable: ${err.message}`
+    );
     return fallback;
   }
 }
@@ -50,7 +52,9 @@ async function sidecarGet<T = any>(
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
   } catch (err: any) {
-    console.warn(`[sidecarBridge] ${baseUrl}${path} unreachable: ${err.message}`);
+    console.warn(
+      `[sidecarBridge] ${baseUrl}${path} unreachable: ${err.message}`
+    );
     return fallback;
   }
 }
@@ -60,7 +64,12 @@ async function sidecarGet<T = any>(
 export const rustBridge = {
   /** Publish event to Kafka topic */
   kafkaPublish: (topic: string, key: string, payload: unknown) =>
-    sidecarPost(RUST_URL, "/kafka/publish", { topic, key, payload }, { status: "fallback" }),
+    sidecarPost(
+      RUST_URL,
+      "/kafka/publish",
+      { topic, key, payload },
+      { status: "fallback" }
+    ),
 
   /** Cache get */
   cacheGet: (key: string) =>
@@ -68,23 +77,53 @@ export const rustBridge = {
 
   /** Cache set */
   cacheSet: (key: string, value: unknown, ttlSec?: number) =>
-    sidecarPost(RUST_URL, "/cache/set", { key, value, ttl_seconds: ttlSec ?? 300 }, { status: "fallback" }),
+    sidecarPost(
+      RUST_URL,
+      "/cache/set",
+      { key, value, ttl_seconds: ttlSec ?? 300 },
+      { status: "fallback" }
+    ),
 
   /** Rate limit check */
   rateLimit: (key: string, maxRequests: number, windowSec: number) =>
-    sidecarPost(RUST_URL, "/rate-limit/check", { key, max_requests: maxRequests, window_seconds: windowSec }, { allowed: true, remaining: maxRequests }),
+    sidecarPost(
+      RUST_URL,
+      "/rate-limit/check",
+      { key, max_requests: maxRequests, window_seconds: windowSec },
+      { allowed: true, remaining: maxRequests }
+    ),
 
   /** Input sanitization */
   sanitize: (input: string, context: string = "html") =>
-    sidecarPost(RUST_URL, "/sanitize", { input, context }, { safe: true, sanitized: input, threats: [] }),
+    sidecarPost(
+      RUST_URL,
+      "/sanitize",
+      { input, context },
+      { safe: true, sanitized: input, threats: [] }
+    ),
 
   /** Audit log */
-  auditLog: (userId: string, action: string, resource: string, details?: unknown) =>
-    sidecarPost(RUST_URL, "/audit/log", { user_id: userId, action, resource, details }, { status: "fallback" }),
+  auditLog: (
+    userId: string,
+    action: string,
+    resource: string,
+    details?: unknown
+  ) =>
+    sidecarPost(
+      RUST_URL,
+      "/audit/log",
+      { user_id: userId, action, resource, details },
+      { status: "fallback" }
+    ),
 
   /** Webhook signature verification */
   verifyWebhook: (payload: string, signature: string, secret: string) =>
-    sidecarPost(RUST_URL, "/webhook/verify", { payload, signature, secret }, { valid: false }),
+    sidecarPost(
+      RUST_URL,
+      "/webhook/verify",
+      { payload, signature, secret },
+      { valid: false }
+    ),
 
   /** Health check */
   health: () => sidecarGet(RUST_URL, "/health", { status: "unreachable" }),
@@ -97,16 +136,47 @@ export const rustBridge = {
 
 export const goLedger = {
   /** Create a double-entry transfer */
-  transfer: (debitAccountId: string, creditAccountId: string, amount: number, currency = "NGN", metadata?: unknown) =>
-    sidecarPost(GO_URL, "/transfer", { debit_account_id: debitAccountId, credit_account_id: creditAccountId, amount, currency, metadata }, { status: "fallback" }),
+  transfer: (
+    debitAccountId: string,
+    creditAccountId: string,
+    amount: number,
+    currency = "NGN",
+    metadata?: unknown
+  ) =>
+    sidecarPost(
+      GO_URL,
+      "/transfer",
+      {
+        debit_account_id: debitAccountId,
+        credit_account_id: creditAccountId,
+        amount,
+        currency,
+        metadata,
+      },
+      { status: "fallback" }
+    ),
 
   /** Batch transfers */
-  batchTransfer: (entries: Array<{ debit_account_id: string; credit_account_id: string; amount: number; currency?: string }>) =>
-    sidecarPost(GO_URL, "/transfer/batch", entries, { status: "fallback", count: 0 }),
+  batchTransfer: (
+    entries: Array<{
+      debit_account_id: string;
+      credit_account_id: string;
+      amount: number;
+      currency?: string;
+    }>
+  ) =>
+    sidecarPost(GO_URL, "/transfer/batch", entries, {
+      status: "fallback",
+      count: 0,
+    }),
 
   /** Get account balance */
   balance: (accountId: string) =>
-    sidecarGet(GO_URL, `/balance?account_id=${encodeURIComponent(accountId)}`, { account_id: accountId, balance: 0, exists: false }),
+    sidecarGet(GO_URL, `/balance?account_id=${encodeURIComponent(accountId)}`, {
+      account_id: accountId,
+      balance: 0,
+      exists: false,
+    }),
 
   /** Get all balances */
   allBalances: () =>
@@ -121,20 +191,41 @@ export const goLedger = {
     sidecarPost(GO_URL, "/reconcile", {}, { status: "fallback" }),
 
   /** Transaction lifecycle transition */
-  lifecycleTransition: (transactionId: string, newState: string, reason: string) =>
-    sidecarPost(GO_URL, "/lifecycle", { transaction_id: transactionId, new_state: newState, reason }, { status: "fallback" }),
+  lifecycleTransition: (
+    transactionId: string,
+    newState: string,
+    reason: string
+  ) =>
+    sidecarPost(
+      GO_URL,
+      "/lifecycle",
+      { transaction_id: transactionId, new_state: newState, reason },
+      { status: "fallback" }
+    ),
 
   /** Get transaction lifecycle */
   lifecycleGet: (transactionId: string) =>
-    sidecarGet(GO_URL, `/lifecycle?transaction_id=${encodeURIComponent(transactionId)}`, null),
+    sidecarGet(
+      GO_URL,
+      `/lifecycle?transaction_id=${encodeURIComponent(transactionId)}`,
+      null
+    ),
 
   /** Aggregated health check (all services) */
   healthAggregate: () =>
-    sidecarGet(GO_URL, "/health/aggregate", { overall: "unknown", services: [] }),
+    sidecarGet(GO_URL, "/health/aggregate", {
+      overall: "unknown",
+      services: [],
+    }),
 
   /** Signature verification */
   verifySignature: (payload: string, signature: string, secret: string) =>
-    sidecarPost(GO_URL, "/signature/verify", { payload, signature, secret }, { valid: false }),
+    sidecarPost(
+      GO_URL,
+      "/signature/verify",
+      { payload, signature, secret },
+      { valid: false }
+    ),
 
   /** Health */
   health: () => sidecarGet(GO_URL, "/health", { status: "unreachable" }),
@@ -147,40 +238,99 @@ export const goLedger = {
 
 export const pythonML = {
   /** Detect anomalies in a transaction */
-  detectAnomaly: (transaction: { id?: string; amount: number; agent_id: string; type?: string }) =>
-    sidecarPost(PYTHON_URL, "/anomaly/detect", transaction, { is_anomalous: false, anomaly_score: 0, risk_level: "low", anomalies: [] }),
+  detectAnomaly: (transaction: {
+    id?: string;
+    amount: number;
+    agent_id: string;
+    type?: string;
+  }) =>
+    sidecarPost(PYTHON_URL, "/anomaly/detect", transaction, {
+      is_anomalous: false,
+      anomaly_score: 0,
+      risk_level: "low",
+      anomalies: [],
+    }),
 
   /** Batch anomaly detection */
   batchAnomaly: (transactions: unknown[]) =>
-    sidecarPost(PYTHON_URL, "/anomaly/batch", { transactions }, { results: [], count: 0, anomalous_count: 0 }),
+    sidecarPost(
+      PYTHON_URL,
+      "/anomaly/batch",
+      { transactions },
+      { results: [], count: 0, anomalous_count: 0 }
+    ),
 
   /** Compliance check (AML, KYC, sanctions) */
-  complianceCheck: (entity: { name: string; type?: string; country?: string; amount?: number }) =>
-    sidecarPost(PYTHON_URL, "/compliance/check", entity, { compliant: true, risk_score: 0, flags: [] }),
+  complianceCheck: (entity: {
+    name: string;
+    type?: string;
+    country?: string;
+    amount?: number;
+  }) =>
+    sidecarPost(PYTHON_URL, "/compliance/check", entity, {
+      compliant: true,
+      risk_score: 0,
+      flags: [],
+    }),
 
   /** Batch compliance */
   batchCompliance: (entities: unknown[]) =>
-    sidecarPost(PYTHON_URL, "/compliance/batch", { entities }, { results: [], count: 0, non_compliant: 0 }),
+    sidecarPost(
+      PYTHON_URL,
+      "/compliance/batch",
+      { entities },
+      { results: [], count: 0, non_compliant: 0 }
+    ),
 
   /** Sentiment analysis */
   analyzeSentiment: (text: string) =>
-    sidecarPost(PYTHON_URL, "/sentiment/analyze", { text }, { sentiment: "neutral", confidence: 0.5 }),
+    sidecarPost(
+      PYTHON_URL,
+      "/sentiment/analyze",
+      { text },
+      { sentiment: "neutral", confidence: 0.5 }
+    ),
 
   /** Batch sentiment */
   batchSentiment: (texts: string[]) =>
-    sidecarPost(PYTHON_URL, "/sentiment/batch", { texts }, { results: [], count: 0 }),
+    sidecarPost(
+      PYTHON_URL,
+      "/sentiment/batch",
+      { texts },
+      { results: [], count: 0 }
+    ),
 
   /** Fraud risk scoring */
-  scoreFraud: (transaction: { id?: string; amount: number; agent_id: string; device_id?: string; ip_address?: string; recipient?: string }) =>
-    sidecarPost(PYTHON_URL, "/fraud/score", transaction, { fraud_score: 0, risk_level: "low", action: "allow", factors: [] }),
+  scoreFraud: (transaction: {
+    id?: string;
+    amount: number;
+    agent_id: string;
+    device_id?: string;
+    ip_address?: string;
+    recipient?: string;
+  }) =>
+    sidecarPost(PYTHON_URL, "/fraud/score", transaction, {
+      fraud_score: 0,
+      risk_level: "low",
+      action: "allow",
+      factors: [],
+    }),
 
   /** Batch fraud scoring */
   batchFraud: (transactions: unknown[]) =>
-    sidecarPost(PYTHON_URL, "/fraud/batch", { transactions }, { results: [], count: 0 }),
+    sidecarPost(
+      PYTHON_URL,
+      "/fraud/batch",
+      { transactions },
+      { results: [], count: 0 }
+    ),
 
   /** Get anomaly history */
   anomalyHistory: (limit = 50) =>
-    sidecarGet(PYTHON_URL, `/anomalies?limit=${limit}`, { anomalies: [], total: 0 }),
+    sidecarGet(PYTHON_URL, `/anomalies?limit=${limit}`, {
+      anomalies: [],
+      total: 0,
+    }),
 
   /** Health */
   health: () => sidecarGet(PYTHON_URL, "/health", { status: "unreachable" }),
@@ -204,29 +354,36 @@ export async function emitTransactionEvent(
     metadata?: unknown;
   }
 ) {
-  const [kafkaResult, ledgerResult, anomalyResult, fraudResult] = await Promise.allSettled([
-    // 1. Publish to Kafka (Rust)
-    rustBridge.kafkaPublish(`pos.transactions.${event}`, data.agentId, {
-      event,
-      ...data,
-      timestamp: Date.now(),
-    }),
-    // 2. Record in ledger (Go)
-    goLedger.transfer(data.debitAccount, data.creditAccount, data.amount, data.currency ?? "NGN", data.metadata),
-    // 3. Anomaly detection (Python)
-    pythonML.detectAnomaly({
-      id: data.transactionId,
-      amount: data.amount,
-      agent_id: data.agentId,
-      type: event,
-    }),
-    // 4. Fraud scoring (Python)
-    pythonML.scoreFraud({
-      id: data.transactionId,
-      amount: data.amount,
-      agent_id: data.agentId,
-    }),
-  ]);
+  const [kafkaResult, ledgerResult, anomalyResult, fraudResult] =
+    await Promise.allSettled([
+      // 1. Publish to Kafka (Rust)
+      rustBridge.kafkaPublish(`pos.transactions.${event}`, data.agentId, {
+        event,
+        ...data,
+        timestamp: Date.now(),
+      }),
+      // 2. Record in ledger (Go)
+      goLedger.transfer(
+        data.debitAccount,
+        data.creditAccount,
+        data.amount,
+        data.currency ?? "NGN",
+        data.metadata
+      ),
+      // 3. Anomaly detection (Python)
+      pythonML.detectAnomaly({
+        id: data.transactionId,
+        amount: data.amount,
+        agent_id: data.agentId,
+        type: event,
+      }),
+      // 4. Fraud scoring (Python)
+      pythonML.scoreFraud({
+        id: data.transactionId,
+        amount: data.amount,
+        agent_id: data.agentId,
+      }),
+    ]);
 
   return {
     kafka: kafkaResult.status === "fulfilled" ? kafkaResult.value : null,

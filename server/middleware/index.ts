@@ -9,20 +9,29 @@ import { Request, Response, NextFunction, Express } from "express";
 import crypto from "crypto";
 
 // ─── Request ID Middleware ───────────────────────────────────────
-export function requestIdMiddleware(req: Request, _res: Response, next: NextFunction) {
-  const id = req.headers["x-request-id"] as string || crypto.randomUUID();
+export function requestIdMiddleware(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  const id = (req.headers["x-request-id"] as string) || crypto.randomUUID();
   (req as any).requestId = id;
   _res.setHeader("X-Request-Id", id);
   next();
 }
 
 // ─── Request Logger ─────────────────────────────────────────────
-export function requestLoggerMiddleware(req: Request, res: Response, next: NextFunction) {
+export function requestLoggerMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const start = Date.now();
   const reqId = (req as any).requestId || "-";
   res.on("finish", () => {
     const duration = Date.now() - start;
-    const level = res.statusCode >= 500 ? "ERROR" : res.statusCode >= 400 ? "WARN" : "INFO";
+    const level =
+      res.statusCode >= 500 ? "ERROR" : res.statusCode >= 400 ? "WARN" : "INFO";
     console.log(
       `[${level}] ${new Date().toISOString()} ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms reqId=${reqId} ip=${req.ip}`
     );
@@ -31,7 +40,10 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
 }
 
 // ─── In-Memory Rate Limiter ─────────────────────────────────────
-interface RateLimitEntry { count: number; resetAt: number; }
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
 const rateLimitStore = new Map<string, RateLimitEntry>();
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
 const RATE_LIMIT_MAX = 120; // requests per window
@@ -44,9 +56,18 @@ setInterval(() => {
   }
 }, 300_000);
 
-export function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
+export function rateLimitMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Skip health checks
-  if (req.path === "/healthz" || req.path === "/readyz" || req.path === "/livez") return next();
+  if (
+    req.path === "/healthz" ||
+    req.path === "/readyz" ||
+    req.path === "/livez"
+  )
+    return next();
 
   const key = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
@@ -60,7 +81,10 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
   }
 
   res.setHeader("X-RateLimit-Limit", RATE_LIMIT_MAX);
-  res.setHeader("X-RateLimit-Remaining", Math.max(0, RATE_LIMIT_MAX - entry.count));
+  res.setHeader(
+    "X-RateLimit-Remaining",
+    Math.max(0, RATE_LIMIT_MAX - entry.count)
+  );
   res.setHeader("X-RateLimit-Reset", Math.ceil(entry.resetAt / 1000));
 
   if (entry.count > RATE_LIMIT_MAX) {
@@ -91,7 +115,11 @@ function sanitizeValue(val: any): any {
   return val;
 }
 
-export function xssSanitizeMiddleware(req: Request, _res: Response, next: NextFunction) {
+export function xssSanitizeMiddleware(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
   if (req.body && typeof req.body === "object") {
     req.body = sanitizeValue(req.body);
   }
@@ -105,13 +133,23 @@ const ALLOWED_ORIGINS = [
   /^https?:\/\/.*\.54link\.com$/,
 ];
 
-export function corsHardeningMiddleware(req: Request, res: Response, next: NextFunction) {
+export function corsHardeningMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const origin = req.headers.origin;
   if (origin && ALLOWED_ORIGINS.some(re => re.test(origin))) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Request-Id");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type,Authorization,X-Request-Id"
+  );
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Max-Age", "86400");
 
@@ -120,7 +158,10 @@ export function corsHardeningMiddleware(req: Request, res: Response, next: NextF
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self)"
+  );
 
   if (req.method === "OPTIONS") return res.status(204).end();
   next();
@@ -128,27 +169,41 @@ export function corsHardeningMiddleware(req: Request, res: Response, next: NextF
 
 // ─── Health Check Endpoints (F04) ───────────────────────────────
 let serverReady = false;
-export function setServerReady(ready: boolean) { serverReady = ready; }
+export function setServerReady(ready: boolean) {
+  serverReady = ready;
+}
 
 export function registerHealthEndpoints(app: Express) {
   // Liveness — is the process alive?
   app.get("/livez", (_req, res) => {
-    res.status(200).json({ status: "alive", timestamp: new Date().toISOString(), uptime: process.uptime() });
+    res.status(200).json({
+      status: "alive",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
   });
 
   // Readiness — is the server ready to accept traffic?
   app.get("/readyz", (_req, res) => {
     if (serverReady) {
-      res.status(200).json({ status: "ready", timestamp: new Date().toISOString() });
+      res
+        .status(200)
+        .json({ status: "ready", timestamp: new Date().toISOString() });
     } else {
-      res.status(503).json({ status: "not_ready", timestamp: new Date().toISOString() });
+      res
+        .status(503)
+        .json({ status: "not_ready", timestamp: new Date().toISOString() });
     }
   });
 
   // Health — comprehensive health check
   app.get("/healthz", async (_req, res) => {
     const checks: Record<string, any> = {
-      server: { status: "healthy", uptime: process.uptime(), memory: process.memoryUsage() },
+      server: {
+        status: "healthy",
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+      },
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || "1.0.0",
       node: process.version,
@@ -167,7 +222,9 @@ export function registerHealthEndpoints(app: Express) {
     const allHealthy = Object.values(checks).every(
       (c: any) => typeof c !== "object" || c.status !== "unhealthy"
     );
-    res.status(allHealthy ? 200 : 503).json({ status: allHealthy ? "healthy" : "degraded", checks });
+    res
+      .status(allHealthy ? 200 : 503)
+      .json({ status: allHealthy ? "healthy" : "degraded", checks });
   });
 }
 
@@ -210,7 +267,11 @@ export function registerGracefulShutdown(server: any) {
 }
 
 // ─── Audit Trail Logging (F11) ─────────────────────────────────
-export function auditTrailMiddleware(req: Request, res: Response, next: NextFunction) {
+export function auditTrailMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const originalJson = res.json.bind(res);
   res.json = function (body: any) {
     // Log mutations (POST, PUT, PATCH, DELETE)

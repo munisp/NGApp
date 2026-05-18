@@ -52,10 +52,7 @@
         "https://pos.54link.io/api/auth/callback",
         "http://localhost:3000/api/auth/callback"
       ],
-      "webOrigins": [
-        "https://pos.54link.io",
-        "http://localhost:3000"
-      ],
+      "webOrigins": ["https://pos.54link.io", "http://localhost:3000"],
       "postLogoutRedirectUris": [
         "https://pos.54link.io/",
         "http://localhost:3000/"

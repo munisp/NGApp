@@ -17,7 +17,7 @@ describe("S59-1: Archival Admin Notifications", () => {
       )
     );
     expect(source).toContain("import { notifyOwner }");
-    expect(source).toContain("from \"../_core/notification\"");
+    expect(source).toContain('from "../_core/notification"');
   });
 
   it("archivalAdmin calls notifyOwner on job completion", async () => {
@@ -75,7 +75,9 @@ describe("S59-2: Load Test Runs Database Persistence", () => {
         "utf-8"
       )
     );
-    const tableSection = source.substring(source.indexOf("loadTestRuns = pgTable"));
+    const tableSection = source.substring(
+      source.indexOf("loadTestRuns = pgTable")
+    );
     expect(tableSection).toContain("run_id");
     expect(tableSection).toContain("status");
     expect(tableSection).toContain("started_at");
@@ -96,7 +98,7 @@ describe("S59-2: Load Test Runs Database Persistence", () => {
       )
     );
     expect(source).toContain("import { loadTestRuns as loadTestRunsTable }");
-    expect(source).toContain("from \"../../drizzle/schema\"");
+    expect(source).toContain('from "../../drizzle/schema"');
   });
 
   it("loadTestMetrics has persistRun function", async () => {
@@ -209,7 +211,10 @@ describe("S59-3: Run Load Test Mutation", () => {
   it("LoadTestDashboard page has Run Load Test button", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync(
-        require("path").resolve(__dirname, "../../../client/src/pages/LoadTestDashboard.tsx"),
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/LoadTestDashboard.tsx"
+        ),
         "utf-8"
       )
     );
@@ -221,7 +226,10 @@ describe("S59-3: Run Load Test Mutation", () => {
   it("LoadTestDashboard polls for active test status", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync(
-        require("path").resolve(__dirname, "../../../client/src/pages/LoadTestDashboard.tsx"),
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/LoadTestDashboard.tsx"
+        ),
         "utf-8"
       )
     );
@@ -232,7 +240,10 @@ describe("S59-3: Run Load Test Mutation", () => {
   it("LoadTestDashboard has test configuration form", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync(
-        require("path").resolve(__dirname, "../../../client/src/pages/LoadTestDashboard.tsx"),
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/LoadTestDashboard.tsx"
+        ),
         "utf-8"
       )
     );
@@ -312,7 +323,10 @@ describe("Code Quality: No ?? || Precedence Issues", () => {
       if (line.includes("??") && line.includes("||")) {
         // If both exist on same line, they should be on separate statements
         // or properly parenthesized
-        const hasProperGrouping = line.includes("?? (") || line.includes("?? config") || !line.includes("??");
+        const hasProperGrouping =
+          line.includes("?? (") ||
+          line.includes("?? config") ||
+          !line.includes("??");
         // Just ensure no raw "?? ... ||" pattern
         expect(line).not.toMatch(/\?\?\s+[^(].*\|\|/);
       }

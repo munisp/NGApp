@@ -66,7 +66,13 @@ export interface FeatureFlags {
 }
 
 export type ConnectionState = "online" | "degraded" | "offline";
-export type NetworkTier = "2g_gprs" | "2g_edge" | "3g" | "4g_lte" | "5g_wifi" | "offline";
+export type NetworkTier =
+  | "2g_gprs"
+  | "2g_edge"
+  | "3g"
+  | "4g_lte"
+  | "5g_wifi"
+  | "offline";
 
 // ── Feature Matrix ───────────────────────────────────────────────────────────
 
@@ -251,7 +257,7 @@ const FEATURE_MATRIX: Record<NetworkTier, FeatureFlags> = {
     retryBackoffMs: 15000,
     maxConcurrentRequests: 1,
   },
-  "offline": {
+  offline: {
     useWebSocket: false,
     usePolling: false,
     pollingIntervalMs: 0,
@@ -356,7 +362,10 @@ export function getNonEssentialFeatures(): string[] {
   ];
 }
 
-export function shouldDegradeFeature(feature: string, tier: NetworkTier): boolean {
+export function shouldDegradeFeature(
+  feature: string,
+  tier: NetworkTier
+): boolean {
   const flags = getFeatureFlags(tier);
   const featureMap: Record<string, boolean> = {
     fraud_dashboard: flags.enableFraudDashboard,

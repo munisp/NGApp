@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — Ransomware Mitigation & Data Protection
- * 
+ *
  * Implements:
  * - File integrity monitoring (FIM)
  * - Anomalous bulk operation detection
@@ -72,10 +72,14 @@ export function buildIntegrityBaseline(projectRoot: string): number {
               });
               count++;
             }
-          } catch { /* skip unreadable */ }
+          } catch {
+            /* skip unreadable */
+          }
         }
       }
-    } catch { /* skip missing */ }
+    } catch {
+      /* skip missing */
+    }
   }
   console.log(`[FIM] Integrity baseline built: ${count} files tracked`);
   return count;
@@ -133,13 +137,16 @@ interface BulkOperationTracker {
 const bulkOpStore = new Map<number, BulkOperationTracker>();
 const BULK_OP_WINDOW = 60_000; // 1 minute
 const BULK_OP_THRESHOLDS: Record<string, number> = {
-  delete: 50,      // 50 deletes/min is suspicious
-  update: 200,     // 200 updates/min is suspicious
-  export: 10,      // 10 exports/min is suspicious
-  download: 100,   // 100 downloads/min is suspicious
+  delete: 50, // 50 deletes/min is suspicious
+  update: 200, // 200 updates/min is suspicious
+  export: 10, // 10 exports/min is suspicious
+  download: 100, // 100 downloads/min is suspicious
 };
 
-export function trackBulkOperation(userId: number, opType: string): { suspicious: boolean; count: number; threshold: number } {
+export function trackBulkOperation(
+  userId: number,
+  opType: string
+): { suspicious: boolean; count: number; threshold: number } {
   const now = Date.now();
   let tracker = bulkOpStore.get(userId);
 
@@ -161,7 +168,9 @@ export function trackBulkOperation(userId: number, opType: string): { suspicious
   const suspicious = op.count > threshold;
 
   if (suspicious) {
-    console.warn(`[Ransomware] Suspicious bulk ${opType} by user ${userId}: ${op.count} operations in ${BULK_OP_WINDOW}ms (threshold: ${threshold})`);
+    console.warn(
+      `[Ransomware] Suspicious bulk ${opType} by user ${userId}: ${op.count} operations in ${BULK_OP_WINDOW}ms (threshold: ${threshold})`
+    );
   }
 
   return { suspicious, count: op.count, threshold };
@@ -180,12 +189,21 @@ const EXFIL_WINDOW = 3600_000; // 1 hour
 const EXFIL_BYTE_LIMIT = 100 * 1024 * 1024; // 100MB per hour
 const EXFIL_ENDPOINT_LIMIT = 50; // 50 unique data endpoints per hour
 
-export function trackDataExport(userId: number, bytes: number, endpoint: string): { blocked: boolean; reason?: string } {
+export function trackDataExport(
+  userId: number,
+  bytes: number,
+  endpoint: string
+): { blocked: boolean; reason?: string } {
   const now = Date.now();
   let tracker = exfiltrationStore.get(userId);
 
   if (!tracker || now - tracker.windowStart > EXFIL_WINDOW) {
-    tracker = { userId, bytesExported: 0, windowStart: now, endpoints: new Set() };
+    tracker = {
+      userId,
+      bytesExported: 0,
+      windowStart: now,
+      endpoints: new Set(),
+    };
     exfiltrationStore.set(userId, tracker);
   }
 
@@ -193,13 +211,23 @@ export function trackDataExport(userId: number, bytes: number, endpoint: string)
   tracker.endpoints.add(endpoint);
 
   if (tracker.bytesExported > EXFIL_BYTE_LIMIT) {
-    console.warn(`[Exfiltration] User ${userId} exceeded data export limit: ${(tracker.bytesExported / 1024 / 1024).toFixed(1)}MB in 1 hour`);
-    return { blocked: true, reason: `Data export limit exceeded (${(EXFIL_BYTE_LIMIT / 1024 / 1024)}MB/hour)` };
+    console.warn(
+      `[Exfiltration] User ${userId} exceeded data export limit: ${(tracker.bytesExported / 1024 / 1024).toFixed(1)}MB in 1 hour`
+    );
+    return {
+      blocked: true,
+      reason: `Data export limit exceeded (${EXFIL_BYTE_LIMIT / 1024 / 1024}MB/hour)`,
+    };
   }
 
   if (tracker.endpoints.size > EXFIL_ENDPOINT_LIMIT) {
-    console.warn(`[Exfiltration] User ${userId} accessing too many data endpoints: ${tracker.endpoints.size} in 1 hour`);
-    return { blocked: true, reason: `Too many data endpoints accessed (${EXFIL_ENDPOINT_LIMIT}/hour)` };
+    console.warn(
+      `[Exfiltration] User ${userId} accessing too many data endpoints: ${tracker.endpoints.size} in 1 hour`
+    );
+    return {
+      blocked: true,
+      reason: `Too many data endpoints accessed (${EXFIL_ENDPOINT_LIMIT}/hour)`,
+    };
   }
 
   return { blocked: false };
@@ -220,17 +248,23 @@ export function deployCanaryFiles(directory: string): string[] {
       const content = JSON.stringify({
         _canary: true,
         _deployed: Date.now(),
-        _description: "This file is a security canary. Any access triggers an alert.",
+        _description:
+          "This file is a security canary. Any access triggers an alert.",
         data: crypto.randomBytes(256).toString("hex"),
       });
       fs.writeFileSync(filePath, content, { mode: 0o444 }); // Read-only
       deployed.push(filePath);
-    } catch { /* skip if can't write */ }
+    } catch {
+      /* skip if can't write */
+    }
   }
   return deployed;
 }
 
-export function checkCanaryFiles(directory: string): { intact: boolean; violations: string[] } {
+export function checkCanaryFiles(directory: string): {
+  intact: boolean;
+  violations: string[];
+} {
   const violations: string[] = [];
   for (const canary of CANARY_FILES) {
     const filePath = path.join(directory, canary);
@@ -264,7 +298,9 @@ export interface AuditEntry {
 const auditChain: AuditEntry[] = [];
 let lastHash = "GENESIS";
 
-export function appendAuditEntry(entry: Omit<AuditEntry, "id" | "hash" | "previousHash">): AuditEntry {
+export function appendAuditEntry(
+  entry: Omit<AuditEntry, "id" | "hash" | "previousHash">
+): AuditEntry {
   const id = `audit_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   const previousHash = lastHash;
   const content = JSON.stringify({ ...entry, id, previousHash });

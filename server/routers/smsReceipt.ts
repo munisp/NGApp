@@ -13,7 +13,10 @@ import { ENV } from "../_core/env";
 
 const TERMII_URL = "https://api.ng.termii.com/api/sms/send";
 
-async function sendTermiiSMS(to: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendTermiiSMS(
+  to: string,
+  message: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const apiKey = ENV.termiiApiKey;
 
   if (!apiKey) {
@@ -38,10 +41,16 @@ async function sendTermiiSMS(to: string, message: string): Promise<{ success: bo
 
     if (!response.ok) {
       const text = await response.text();
-      return { success: false, error: `Termii error ${response.status}: ${text}` };
+      return {
+        success: false,
+        error: `Termii error ${response.status}: ${text}`,
+      };
     }
 
-    const data = (await response.json()) as { message_id?: string; message?: string };
+    const data = (await response.json()) as {
+      message_id?: string;
+      message?: string;
+    };
     return { success: true, messageId: data.message_id };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
@@ -67,7 +76,9 @@ function buildReceiptSMS(data: {
   if (data.fee > 0) lines.push(`Fee: NGN ${data.fee.toFixed(2)}`);
   if (data.customerName) lines.push(`Customer: ${data.customerName}`);
   lines.push(`Agent: ${data.agentName} (${data.agentCode})`);
-  lines.push(`Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`);
+  lines.push(
+    `Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`
+  );
   lines.push(`Powered by 54Link Agency Banking`);
   return lines.join("\n");
 }
@@ -75,17 +86,27 @@ function buildReceiptSMS(data: {
 export const smsReceiptRouter = router({
   // ── Send receipt SMS for a transaction ───────────────────────────────────
   send: protectedProcedure
-    .input(z.object({
-      transactionRef: z.string(),
-      recipientPhone: z.string().min(10).max(15),
-    }))
+    .input(
+      z.object({
+        transactionRef: z.string(),
+        recipientPhone: z.string().min(10).max(15),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Fetch the transaction
         const result = await db
@@ -95,7 +116,10 @@ export const smsReceiptRouter = router({
           .limit(1);
         const tx = result[0];
         if (!tx || tx.agentId !== session.id) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
         }
 
         // Build and send SMS
@@ -113,7 +137,10 @@ export const smsReceiptRouter = router({
 
         // Mark smsSent in DB
         if (smsResult.success) {
-          await db.update(transactions).set({ smsSent: true }).where(eq(transactions.id, tx.id));
+          await db
+            .update(transactions)
+            .set({ smsSent: true })
+            .where(eq(transactions.id, tx.id));
         }
 
         await writeAuditLog({
@@ -140,26 +167,36 @@ export const smsReceiptRouter = router({
         return { success: true, messageId: smsResult.messageId };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Auto-send receipt on transaction create (called internally) ───────────
   autoSend: protectedProcedure
-    .input(z.object({
-      transactionRef: z.string(),
-      phone: z.string().min(10).max(15),
-      agentCode: z.string(),
-      agentName: z.string(),
-      type: z.string(),
-      amount: z.number(),
-      fee: z.number().default(0),
-      customerName: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        transactionRef: z.string(),
+        phone: z.string().min(10).max(15),
+        agentCode: z.string(),
+        agentName: z.string(),
+        type: z.string(),
+        amount: z.number(),
+        fee: z.number().default(0),
+        customerName: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const message = buildReceiptSMS({
           ref: input.transactionRef,
@@ -176,48 +213,70 @@ export const smsReceiptRouter = router({
         // Update smsSent flag
         const db = (await getDb())!;
         if (db && smsResult.success) {
-          await db.update(transactions).set({ smsSent: true }).where(eq(transactions.ref, input.transactionRef));
+          await db
+            .update(transactions)
+            .set({ smsSent: true })
+            .where(eq(transactions.ref, input.transactionRef));
         }
 
         return { success: smsResult.success, messageId: smsResult.messageId };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Send USSD code via SMS (for offline transaction receipts) ──────────────────────
   sendUssd: protectedProcedure
-    .input(z.object({
-      recipientPhone: z.string().min(10).max(15),
-      ussdCode:       z.string().min(1).max(50),
-      transactionRef: z.string().optional(),
-      amount:         z.number().optional(),
-      agentCode:      z.string().optional(),
-    }))
+    .input(
+      z.object({
+        recipientPhone: z.string().min(10).max(15),
+        ussdCode: z.string().min(1).max(50),
+        transactionRef: z.string().optional(),
+        amount: z.number().optional(),
+        agentCode: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
-        const lines = [
-          `54Link USSD Receipt`,
-          `Dial: ${input.ussdCode}`,
-        ];
+        const lines = [`54Link USSD Receipt`, `Dial: ${input.ussdCode}`];
         if (input.transactionRef) lines.push(`Ref: ${input.transactionRef}`);
         if (input.amount != null) {
-          lines.push(`Amount: NGN ${input.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
+          lines.push(
+            `Amount: NGN ${input.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+          );
         }
         if (input.agentCode) lines.push(`Agent: ${input.agentCode}`);
-        lines.push(`Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`);
+        lines.push(
+          `Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`
+        );
         lines.push(`Powered by 54Link Agency Banking`);
 
         const message = lines.join("\n");
         const smsResult = await sendTermiiSMS(input.recipientPhone, message);
-        return { success: smsResult.success, messageId: smsResult.messageId, error: smsResult.error };
+        return {
+          success: smsResult.success,
+          messageId: smsResult.messageId,
+          error: smsResult.error,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

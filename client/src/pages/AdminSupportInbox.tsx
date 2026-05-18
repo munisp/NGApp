@@ -2,7 +2,7 @@
 /**
  * Admin Support Inbox — 54Link POS Shell
  * Bloomberg Terminal dark theme with electric blue accents.
- * 
+ *
  * Features:
  * - Real-time conversation list with status filters (open/assigned/escalated/resolved)
  * - Live message thread view with admin reply capability
@@ -23,9 +23,21 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
-  MessageCircle, Send, Users, AlertTriangle, CheckCircle,
-  Clock, Star, Search, RefreshCw, UserPlus, ArrowUpRight,
-  ChevronRight, Loader2, Inbox, Filter,
+  MessageCircle,
+  Send,
+  Users,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Star,
+  Search,
+  RefreshCw,
+  UserPlus,
+  ArrowUpRight,
+  ChevronRight,
+  Loader2,
+  Inbox,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,32 +68,81 @@ interface ChatMessage {
 
 // ─── Canned Admin Responses ─────────────────────────────────────────────────
 const ADMIN_CANNED = [
-  { label: "Greeting", text: "Hello! Thank you for contacting 54Link support. I'm reviewing your issue now." },
-  { label: "Investigating", text: "I'm looking into this for you. Please give me a moment to check the details." },
-  { label: "Escalating", text: "I'm escalating this to our senior support team for faster resolution. You'll hear back shortly." },
-  { label: "Float Top-up", text: "Your float top-up request has been processed. Please check your balance in 2-5 minutes." },
-  { label: "Transaction Fix", text: "I've identified the issue with your transaction. A reversal has been initiated and should reflect within 24 hours." },
-  { label: "KYC Update", text: "Your KYC documents have been received and are under review. Expected processing time is 24-48 hours." },
-  { label: "Resolved", text: "Your issue has been resolved. Is there anything else I can help you with?" },
+  {
+    label: "Greeting",
+    text: "Hello! Thank you for contacting 54Link support. I'm reviewing your issue now.",
+  },
+  {
+    label: "Investigating",
+    text: "I'm looking into this for you. Please give me a moment to check the details.",
+  },
+  {
+    label: "Escalating",
+    text: "I'm escalating this to our senior support team for faster resolution. You'll hear back shortly.",
+  },
+  {
+    label: "Float Top-up",
+    text: "Your float top-up request has been processed. Please check your balance in 2-5 minutes.",
+  },
+  {
+    label: "Transaction Fix",
+    text: "I've identified the issue with your transaction. A reversal has been initiated and should reflect within 24 hours.",
+  },
+  {
+    label: "KYC Update",
+    text: "Your KYC documents have been received and are under review. Expected processing time is 24-48 hours.",
+  },
+  {
+    label: "Resolved",
+    text: "Your issue has been resolved. Is there anything else I can help you with?",
+  },
 ];
 
 const SUPPORT_AGENTS = [
-  "Amaka Okonkwo", "Chidi Nwosu", "Fatima Bello", "Emeka Eze",
-  "Ngozi Adeyemi", "Ibrahim Musa", "Blessing Okoro",
+  "Amaka Okonkwo",
+  "Chidi Nwosu",
+  "Fatima Bello",
+  "Emeka Eze",
+  "Ngozi Adeyemi",
+  "Ibrahim Musa",
+  "Blessing Okoro",
 ];
 
-const STATUS_CONFIG: Record<string, { color: string; icon: typeof Clock; label: string }> = {
-  open: { color: "text-blue-400 bg-blue-400/10 border-blue-400/20", icon: Clock, label: "Open" },
-  assigned: { color: "text-amber-400 bg-amber-400/10 border-amber-400/20", icon: UserPlus, label: "Assigned" },
-  escalated: { color: "text-red-400 bg-red-400/10 border-red-400/20", icon: AlertTriangle, label: "Escalated" },
-  resolved: { color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20", icon: CheckCircle, label: "Resolved" },
+const STATUS_CONFIG: Record<
+  string,
+  { color: string; icon: typeof Clock; label: string }
+> = {
+  open: {
+    color: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+    icon: Clock,
+    label: "Open",
+  },
+  assigned: {
+    color: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+    icon: UserPlus,
+    label: "Assigned",
+  },
+  escalated: {
+    color: "text-red-400 bg-red-400/10 border-red-400/20",
+    icon: AlertTriangle,
+    label: "Escalated",
+  },
+  resolved: {
+    color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    icon: CheckCircle,
+    label: "Resolved",
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function AdminSupportInbox() {
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "assigned" | "escalated" | "resolved">("all");
-  const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "open" | "assigned" | "escalated" | "resolved"
+  >("all");
+  const [selectedSession, setSelectedSession] = useState<ChatSession | null>(
+    null
+  );
   const [replyText, setReplyText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [assignAgent, setAssignAgent] = useState("");
@@ -96,7 +157,11 @@ export default function AdminSupportInbox() {
   });
   const sessionsQuery = trpc.chat.adminListSessions.useQuery(
     // @ts-ignore — Sprint 85: pre-existing type mismatch
-    { status: statusFilter === "all" ? "all" : statusFilter, limit: 100, offset: 0 },
+    {
+      status: statusFilter === "all" ? "all" : statusFilter,
+      limit: 100,
+      offset: 0,
+    },
     { refetchInterval: 10000 }
   );
 
@@ -162,7 +227,10 @@ export default function AdminSupportInbox() {
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleReply = useCallback(() => {
     if (!replyText.trim() || !selectedSession) return;
-    replyMutation.mutate({ sessionId: selectedSession.id, content: replyText.trim() });
+    replyMutation.mutate({
+      sessionId: selectedSession.id,
+      content: replyText.trim(),
+    });
   }, [replyText, selectedSession, replyMutation]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -174,16 +242,18 @@ export default function AdminSupportInbox() {
 
   // ── Filter sessions ─────────────────────────────────────────────────────
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-  const filteredSessions = (sessionsQuery.data?.sessions ?? []).filter((s: ChatSession) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      s.sessionRef?.toLowerCase().includes(q) ||
-      s.subject?.toLowerCase().includes(q) ||
-      s.category?.toLowerCase().includes(q) ||
-      s.supportAgentName?.toLowerCase().includes(q)
-    );
-  });
+  const filteredSessions = (sessionsQuery.data?.sessions ?? []).filter(
+    (s: ChatSession) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        s.sessionRef?.toLowerCase().includes(q) ||
+        s.subject?.toLowerCase().includes(q) ||
+        s.category?.toLowerCase().includes(q) ||
+        s.supportAgentName?.toLowerCase().includes(q)
+      );
+    }
+  );
 
   const stats = statsQuery.data;
 
@@ -199,13 +269,18 @@ export default function AdminSupportInbox() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold">Support Inbox</h1>
-                <p className="text-sm text-muted-foreground">Manage live chat conversations</p>
+                <p className="text-sm text-muted-foreground">
+                  Manage live chat conversations
+                </p>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { sessionsQuery.refetch(); statsQuery.refetch(); }}
+              onClick={() => {
+                sessionsQuery.refetch();
+                statsQuery.refetch();
+              }}
               className="gap-2"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -216,13 +291,41 @@ export default function AdminSupportInbox() {
           {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { label: "Open", value: stats?.openSessions ?? 0, icon: Clock, color: "text-blue-400" },
-              { label: "Assigned", value: stats?.assignedSessions ?? 0, icon: UserPlus, color: "text-amber-400" },
-              { label: "Escalated", value: stats?.escalatedSessions ?? 0, icon: AlertTriangle, color: "text-red-400" },
-              { label: "Resolved", value: stats?.closedSessions ?? 0, icon: CheckCircle, color: "text-emerald-400" },
-              { label: "Avg Rating", value: stats?.avgRating ? `${stats.avgRating}/5` : "N/A", icon: Star, color: "text-amber-400" },
+              {
+                label: "Open",
+                value: stats?.openSessions ?? 0,
+                icon: Clock,
+                color: "text-blue-400",
+              },
+              {
+                label: "Assigned",
+                value: stats?.assignedSessions ?? 0,
+                icon: UserPlus,
+                color: "text-amber-400",
+              },
+              {
+                label: "Escalated",
+                value: stats?.escalatedSessions ?? 0,
+                icon: AlertTriangle,
+                color: "text-red-400",
+              },
+              {
+                label: "Resolved",
+                value: stats?.closedSessions ?? 0,
+                icon: CheckCircle,
+                color: "text-emerald-400",
+              },
+              {
+                label: "Avg Rating",
+                value: stats?.avgRating ? `${stats.avgRating}/5` : "N/A",
+                icon: Star,
+                color: "text-amber-400",
+              },
             ].map((stat: any) => (
-              <div key={stat.label} className="bg-card border border-border rounded-lg p-3 flex items-center gap-3">
+              <div
+                key={stat.label}
+                className="bg-card border border-border rounded-lg p-3 flex items-center gap-3"
+              >
                 <stat.icon className={cn("h-4 w-4", stat.color)} />
                 <div>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -249,7 +352,9 @@ export default function AdminSupportInbox() {
                 />
               </div>
               <div className="flex gap-1 flex-wrap">
-                {(["all", "open", "assigned", "escalated", "resolved"] as const).map((status: any) => (
+                {(
+                  ["all", "open", "assigned", "escalated", "resolved"] as const
+                ).map((status: any) => (
                   <button
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -281,7 +386,8 @@ export default function AdminSupportInbox() {
                 <div className="divide-y divide-border">
                   {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                   {filteredSessions.map((session: ChatSession) => {
-                    const statusCfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.open;
+                    const statusCfg =
+                      STATUS_CONFIG[session.status] ?? STATUS_CONFIG.open;
                     const StatusIcon = statusCfg.icon;
                     const isSelected = selectedSession?.id === session.id;
                     return (
@@ -297,22 +403,35 @@ export default function AdminSupportInbox() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-medium truncate">
-                                {session.subject || session.category || "Support Request"}
+                                {session.subject ||
+                                  session.category ||
+                                  "Support Request"}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 border", statusCfg.color)}>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-[10px] px-1.5 py-0 border",
+                                  statusCfg.color
+                                )}
+                              >
                                 <StatusIcon className="h-2.5 w-2.5 mr-1" />
                                 {statusCfg.label}
                               </Badge>
                               {session.supportAgentName && (
-                                <span className="truncate">{session.supportAgentName}</span>
+                                <span className="truncate">
+                                  {session.supportAgentName}
+                                </span>
                               )}
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              {new Date(session.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                              {new Date(session.createdAt).toLocaleDateString(
+                                undefined,
+                                { month: "short", day: "numeric" }
+                              )}
                             </span>
                             {session.rating && (
                               <span className="text-[10px] text-amber-400">
@@ -343,10 +462,13 @@ export default function AdminSupportInbox() {
                 <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">
-                      {selectedSession.subject || selectedSession.category || "Support Request"}
+                      {selectedSession.subject ||
+                        selectedSession.category ||
+                        "Support Request"}
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      Ref: {selectedSession.sessionRef} · Agent: {selectedSession.supportAgentName ?? "Unassigned"}
+                      Ref: {selectedSession.sessionRef} · Agent:{" "}
+                      {selectedSession.supportAgentName ?? "Unassigned"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -374,7 +496,11 @@ export default function AdminSupportInbox() {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1 text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10"
-                          onClick={() => resolveMutation.mutate({ sessionId: selectedSession.id })}
+                          onClick={() =>
+                            resolveMutation.mutate({
+                              sessionId: selectedSession.id,
+                            })
+                          }
                           disabled={resolveMutation.isPending}
                         >
                           <CheckCircle className="h-3 w-3" />
@@ -397,14 +523,23 @@ export default function AdminSupportInbox() {
                           key={msg.id}
                           className={cn(
                             "flex",
-                            isSystem ? "justify-center" : isSupport ? "justify-end" : "justify-start"
+                            isSystem
+                              ? "justify-center"
+                              : isSupport
+                                ? "justify-end"
+                                : "justify-start"
                           )}
                         >
                           {isSystem ? (
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 max-w-[85%]">
-                              <p className="text-xs text-amber-400">{msg.content}</p>
+                              <p className="text-xs text-amber-400">
+                                {msg.content}
+                              </p>
                               <p className="text-[10px] text-muted-foreground mt-1">
-                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                {new Date(msg.createdAt).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
                               </p>
                             </div>
                           ) : (
@@ -416,12 +551,32 @@ export default function AdminSupportInbox() {
                                   : "bg-muted text-foreground rounded-bl-md"
                               )}
                             >
-                              <p className={cn("text-[10px] font-semibold mb-0.5", isSupport ? "text-primary-foreground/70" : "text-primary")}>
-                                {msg.senderName ?? (isSupport ? "Support" : "Agent")}
+                              <p
+                                className={cn(
+                                  "text-[10px] font-semibold mb-0.5",
+                                  isSupport
+                                    ? "text-primary-foreground/70"
+                                    : "text-primary"
+                                )}
+                              >
+                                {msg.senderName ??
+                                  (isSupport ? "Support" : "Agent")}
                               </p>
-                              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
-                              <p className={cn("text-[10px] mt-1 text-right", isSupport ? "text-primary-foreground/50" : "text-muted-foreground")}>
-                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                {msg.content}
+                              </p>
+                              <p
+                                className={cn(
+                                  "text-[10px] mt-1 text-right",
+                                  isSupport
+                                    ? "text-primary-foreground/50"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {new Date(msg.createdAt).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
                               </p>
                             </div>
                           )}
@@ -482,9 +637,17 @@ export default function AdminSupportInbox() {
 
         {/* ── Assign Dialog ───────────────────────────────────────────────── */}
         {showAssignDialog && selectedSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAssignDialog(false)}>
-            <div className="bg-card border border-border rounded-xl p-6 w-[400px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-sm font-semibold mb-4">Assign Support Agent</h3>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setShowAssignDialog(false)}
+          >
+            <div
+              className="bg-card border border-border rounded-xl p-6 w-[400px] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-sm font-semibold mb-4">
+                Assign Support Agent
+              </h3>
               <div className="space-y-2 mb-4">
                 {SUPPORT_AGENTS.map((agent: any) => (
                   <button
@@ -503,13 +666,26 @@ export default function AdminSupportInbox() {
                 ))}
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => setShowAssignDialog(false)}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAssignDialog(false)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   size="sm"
                   disabled={!assignAgent || assignMutation.isPending}
-                  onClick={() => assignMutation.mutate({ sessionId: selectedSession.id, supportAgentName: assignAgent })}
+                  onClick={() =>
+                    assignMutation.mutate({
+                      sessionId: selectedSession.id,
+                      supportAgentName: assignAgent,
+                    })
+                  }
                 >
-                  {assignMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                  {assignMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  ) : null}
                   Assign
                 </Button>
               </div>
@@ -519,8 +695,14 @@ export default function AdminSupportInbox() {
 
         {/* ── Escalate Dialog ─────────────────────────────────────────────── */}
         {showEscalateDialog && selectedSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowEscalateDialog(false)}>
-            <div className="bg-card border border-border rounded-xl p-6 w-[400px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setShowEscalateDialog(false)}
+          >
+            <div
+              className="bg-card border border-border rounded-xl p-6 w-[400px] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400" />
                 Escalate Conversation
@@ -532,14 +714,29 @@ export default function AdminSupportInbox() {
                 className="min-h-[80px] text-sm mb-4"
               />
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => setShowEscalateDialog(false)}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEscalateDialog(false)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   size="sm"
                   variant="destructive"
-                  disabled={escalateReason.length < 3 || escalateMutation.isPending}
-                  onClick={() => escalateMutation.mutate({ sessionId: selectedSession.id, reason: escalateReason })}
+                  disabled={
+                    escalateReason.length < 3 || escalateMutation.isPending
+                  }
+                  onClick={() =>
+                    escalateMutation.mutate({
+                      sessionId: selectedSession.id,
+                      reason: escalateReason,
+                    })
+                  }
                 >
-                  {escalateMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                  {escalateMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  ) : null}
                   Escalate
                 </Button>
               </div>

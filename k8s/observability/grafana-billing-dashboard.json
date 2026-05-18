@@ -38,11 +38,16 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "currencyNGN", "thresholds": { "steps": [
-          { "color": "red", "value": 0 },
-          { "color": "yellow", "value": 100000 },
-          { "color": "green", "value": 500000 }
-        ]}}
+        "defaults": {
+          "unit": "currencyNGN",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 100000 },
+              { "color": "green", "value": 500000 }
+            ]
+          }
+        }
       }
     },
     {
@@ -78,11 +83,13 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "thresholds": { "steps": [
-            { "color": "green", "value": 0 },
-            { "color": "yellow", "value": 1 },
-            { "color": "red", "value": 5 }
-          ]}
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
         }
       }
     },
@@ -125,11 +132,13 @@
         "defaults": {
           "unit": "short",
           "custom": { "lineWidth": 2, "fillOpacity": 20 },
-          "thresholds": { "steps": [
-            { "color": "green", "value": 0 },
-            { "color": "yellow", "value": 1000 },
-            { "color": "red", "value": 10000 }
-          ]}
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 10000 }
+            ]
+          }
         }
       }
     },
@@ -162,10 +171,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "thresholds": { "steps": [
-            { "color": "green", "value": 0 },
-            { "color": "red", "value": 1 }
-          ]}
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          }
         }
       }
     },
@@ -204,11 +215,13 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "thresholds": { "steps": [
-            { "color": "green", "value": 0 },
-            { "color": "yellow", "value": 10 },
-            { "color": "red", "value": 50 }
-          ]}
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          }
         }
       }
     }

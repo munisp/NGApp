@@ -1,12 +1,12 @@
 /**
  * Sprint 91 — Offline-First Connectivity Resilience
- * 
+ *
  * Designed for rural Africa deployment where:
  * - Network connectivity is intermittent (2G/3G/EDGE)
  * - Bandwidth is limited (< 50kbps common)
  * - Power outages cause abrupt disconnections
  * - Latency can exceed 5000ms
- * 
+ *
  * Implements:
  * - Transaction queue with IndexedDB persistence
  * - Automatic retry with exponential backoff
@@ -31,10 +31,18 @@ export interface NetworkStatus {
 
 export function detectNetworkQuality(): NetworkStatus {
   const nav = navigator as any;
-  const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
+  const connection =
+    nav.connection || nav.mozConnection || nav.webkitConnection;
 
   if (!navigator.onLine) {
-    return { quality: "offline", downlink: 0, rtt: Infinity, effectiveType: "offline", isOnline: false, lastChecked: Date.now() };
+    return {
+      quality: "offline",
+      downlink: 0,
+      rtt: Infinity,
+      effectiveType: "offline",
+      isOnline: false,
+      lastChecked: Date.now(),
+    };
   }
 
   if (connection) {
@@ -48,10 +56,24 @@ export function detectNetworkQuality(): NetworkStatus {
     else if (effectiveType === "4g" && downlink < 5) quality = "4g";
     else quality = "wifi";
 
-    return { quality, downlink, rtt, effectiveType, isOnline: true, lastChecked: Date.now() };
+    return {
+      quality,
+      downlink,
+      rtt,
+      effectiveType,
+      isOnline: true,
+      lastChecked: Date.now(),
+    };
   }
 
-  return { quality: "wifi", downlink: 10, rtt: 50, effectiveType: "4g", isOnline: true, lastChecked: Date.now() };
+  return {
+    quality: "wifi",
+    downlink: 10,
+    rtt: 50,
+    effectiveType: "4g",
+    isOnline: true,
+    lastChecked: Date.now(),
+  };
 }
 
 // ─── IndexedDB Transaction Queue ─────────────────────────────────────────────
@@ -77,7 +99,7 @@ const SYNC_LOG_STORE = "sync_log";
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = event => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
@@ -86,7 +108,10 @@ function openDB(): Promise<IDBDatabase> {
         store.createIndex("createdAt", "createdAt", { unique: false });
       }
       if (!db.objectStoreNames.contains(SYNC_LOG_STORE)) {
-        const logStore = db.createObjectStore(SYNC_LOG_STORE, { keyPath: "id", autoIncrement: true });
+        const logStore = db.createObjectStore(SYNC_LOG_STORE, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
         logStore.createIndex("timestamp", "timestamp", { unique: false });
       }
     };
@@ -95,7 +120,9 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function enqueueTransaction(tx: Omit<QueuedTransaction, "id" | "createdAt" | "retryCount" | "status">): Promise<string> {
+export async function enqueueTransaction(
+  tx: Omit<QueuedTransaction, "id" | "createdAt" | "retryCount" | "status">
+): Promise<string> {
   const db = await openDB();
   const id = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const transaction: QueuedTransaction = {
@@ -137,7 +164,11 @@ export async function getPendingTransactions(): Promise<QueuedTransaction[]> {
   });
 }
 
-export async function updateTransactionStatus(id: string, status: QueuedTransaction["status"], errorMessage?: string): Promise<void> {
+export async function updateTransactionStatus(
+  id: string,
+  status: QueuedTransaction["status"],
+  errorMessage?: string
+): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const txn = db.transaction(STORE_NAME, "readwrite");
@@ -157,7 +188,12 @@ export async function updateTransactionStatus(id: string, status: QueuedTransact
   });
 }
 
-export async function getQueueStats(): Promise<{ pending: number; syncing: number; synced: number; failed: number }> {
+export async function getQueueStats(): Promise<{
+  pending: number;
+  syncing: number;
+  synced: number;
+  failed: number;
+}> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const txn = db.transaction(STORE_NAME, "readonly");
@@ -177,14 +213,20 @@ export async function getQueueStats(): Promise<{ pending: number; syncing: numbe
 }
 
 // ─── Exponential Backoff Retry ───────────────────────────────────────────────
-export function calculateBackoff(retryCount: number, baseMs: number = 1000, maxMs: number = 60000): number {
+export function calculateBackoff(
+  retryCount: number,
+  baseMs: number = 1000,
+  maxMs: number = 60000
+): number {
   const jitter = Math.random() * 1000;
   const delay = Math.min(baseMs * Math.pow(2, retryCount) + jitter, maxMs);
   return delay;
 }
 
 // ─── Sync Engine ─────────────────────────────────────────────────────────────
-type SyncHandler = (tx: QueuedTransaction) => Promise<{ success: boolean; error?: string }>;
+type SyncHandler = (
+  tx: QueuedTransaction
+) => Promise<{ success: boolean; error?: string }>;
 
 let syncInProgress = false;
 let syncHandlers: Map<string, SyncHandler> = new Map();
@@ -193,12 +235,17 @@ export function registerSyncHandler(type: string, handler: SyncHandler) {
   syncHandlers.set(type, handler);
 }
 
-export async function syncPendingTransactions(): Promise<{ synced: number; failed: number; remaining: number }> {
+export async function syncPendingTransactions(): Promise<{
+  synced: number;
+  failed: number;
+  remaining: number;
+}> {
   if (syncInProgress) return { synced: 0, failed: 0, remaining: 0 };
   if (!navigator.onLine) return { synced: 0, failed: 0, remaining: 0 };
 
   syncInProgress = true;
-  let synced = 0, failed = 0;
+  let synced = 0,
+    failed = 0;
 
   try {
     const pending = await getPendingTransactions();
@@ -208,7 +255,11 @@ export async function syncPendingTransactions(): Promise<{ synced: number; faile
 
       const handler = syncHandlers.get(tx.type);
       if (!handler) {
-        await updateTransactionStatus(tx.id, "failed", `No handler for type: ${tx.type}`);
+        await updateTransactionStatus(
+          tx.id,
+          "failed",
+          `No handler for type: ${tx.type}`
+        );
         failed++;
         continue;
       }
@@ -307,15 +358,45 @@ export interface RequestStrategy {
 export function getAdaptiveStrategy(quality: NetworkQuality): RequestStrategy {
   switch (quality) {
     case "offline":
-      return { timeout: 0, retries: 0, compress: true, batchSize: 1, priority: "critical" };
+      return {
+        timeout: 0,
+        retries: 0,
+        compress: true,
+        batchSize: 1,
+        priority: "critical",
+      };
     case "2g":
-      return { timeout: 30000, retries: 5, compress: true, batchSize: 1, priority: "high" };
+      return {
+        timeout: 30000,
+        retries: 5,
+        compress: true,
+        batchSize: 1,
+        priority: "high",
+      };
     case "3g":
-      return { timeout: 15000, retries: 3, compress: true, batchSize: 5, priority: "normal" };
+      return {
+        timeout: 15000,
+        retries: 3,
+        compress: true,
+        batchSize: 5,
+        priority: "normal",
+      };
     case "4g":
-      return { timeout: 10000, retries: 2, compress: false, batchSize: 10, priority: "normal" };
+      return {
+        timeout: 10000,
+        retries: 2,
+        compress: false,
+        batchSize: 10,
+        priority: "normal",
+      };
     case "wifi":
-      return { timeout: 5000, retries: 1, compress: false, batchSize: 50, priority: "low" };
+      return {
+        timeout: 5000,
+        retries: 1,
+        compress: false,
+        batchSize: 50,
+        priority: "low",
+      };
   }
 }
 
@@ -328,13 +409,18 @@ export interface ConflictInfo {
   field: string;
 }
 
-export function resolveConflict(conflict: ConflictInfo, strategy: "client_wins" | "server_wins" | "latest_wins"): any {
+export function resolveConflict(
+  conflict: ConflictInfo,
+  strategy: "client_wins" | "server_wins" | "latest_wins"
+): any {
   switch (strategy) {
     case "client_wins":
       return conflict.localData;
     case "server_wins":
       return conflict.serverData;
     case "latest_wins":
-      return conflict.localVersion > conflict.serverVersion ? conflict.localData : conflict.serverData;
+      return conflict.localVersion > conflict.serverVersion
+        ? conflict.localData
+        : conflict.serverData;
   }
 }

@@ -13,7 +13,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "../db";
-import { floatTopUpRequests, agents, supervisorAgents } from "../../drizzle/schema";
+import {
+  floatTopUpRequests,
+  agents,
+  supervisorAgents,
+} from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -26,23 +30,32 @@ import { tbCreateTransfer } from "../tbClient";
 import { fluvioProduce } from "../fluvio";
 import { permifyCheck } from "../_core/permify";
 
-
 const SUPERVISOR_APPROVAL_THRESHOLD = 50_000;
 
 export const floatTopUpRouter = router({
   // ── Submit a top-up request ───────────────────────────────────────────────
   submit: protectedProcedure
-    .input(z.object({
-      amount: z.number().positive().max(10_000_000),
-      notes: z.string().max(256).optional(),
-    }))
+    .input(
+      z.object({
+        amount: z.number().positive().max(10_000_000),
+        notes: z.string().max(256).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Check for existing pending request
         const existing = await db
@@ -54,7 +67,8 @@ export const floatTopUpRouter = router({
         if (existing[0] && existing[0].status === "pending") {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "You already have a pending top-up request. Please wait for approval.",
+            message:
+              "You already have a pending top-up request. Please wait for approval.",
           });
         }
 
@@ -107,7 +121,11 @@ export const floatTopUpRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -115,7 +133,11 @@ export const floatTopUpRouter = router({
   myRequests: protectedProcedure.query(async ({ ctx }) => {
     try {
       const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      if (!session)
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Agent session required",
+        });
       const db = (await getDb())!;
       if (!db) return [];
       const rows = await db
@@ -130,7 +152,11 @@ export const floatTopUpRouter = router({
       }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -138,9 +164,16 @@ export const floatTopUpRouter = router({
   supervisorPendingTopUps: protectedProcedure.query(async ({ ctx }) => {
     try {
       const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      if (!session)
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Agent session required",
+        });
       if (session.role !== "supervisor" && session.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Supervisor or admin privileges required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Supervisor or admin privileges required",
+        });
       }
 
       const db = (await getDb())!;
@@ -164,7 +197,8 @@ export const floatTopUpRouter = router({
           agentId: floatTopUpRequests.agentId,
           requestedAmount: floatTopUpRequests.requestedAmount,
           status: floatTopUpRequests.status,
-          supervisorApprovalRequired: floatTopUpRequests.supervisorApprovalRequired,
+          supervisorApprovalRequired:
+            floatTopUpRequests.supervisorApprovalRequired,
           supervisorApprovedBy: floatTopUpRequests.supervisorApprovedBy,
           supervisorApprovedAt: floatTopUpRequests.supervisorApprovedAt,
           notes: floatTopUpRequests.notes,
@@ -185,9 +219,12 @@ export const floatTopUpRouter = router({
         .orderBy(desc(floatTopUpRequests.createdAt));
 
       // Filter by assigned agents for supervisors
-      const filtered = session.role === "supervisor"
-        ? rows.filter((r: any) => r.agentId !== null && agentIds.includes(r.agentId))
-        : rows;
+      const filtered =
+        session.role === "supervisor"
+          ? rows.filter(
+              (r: any) => r.agentId !== null && agentIds.includes(r.agentId)
+            )
+          : rows;
 
       return filtered.map((r: any) => ({
         ...r,
@@ -196,23 +233,43 @@ export const floatTopUpRouter = router({
       }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   // ── Supervisor: approve a large top-up ───────────────────────────────────
   supervisorApproveTopUp: protectedProcedure
-    .input(z.object({ requestId: z.number().int().positive(), notes: z.string().optional() }))
+    .input(
+      z.object({
+        requestId: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         if (session.role !== "supervisor" && session.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Supervisor or admin privileges required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Supervisor or admin privileges required",
+          });
         }
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         const rows = await db
           .select()
@@ -220,9 +277,16 @@ export const floatTopUpRouter = router({
           .where(eq(floatTopUpRequests.id, input.requestId))
           .limit(1);
         const req = rows[0];
-        if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+        if (!req)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Request not found",
+          });
         if (req.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Request already ${req.status}` });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Request already ${req.status}`,
+          });
         }
 
         // Verify supervisor is assigned to this agent (skip for admin)
@@ -250,7 +314,9 @@ export const floatTopUpRouter = router({
           .set({
             supervisorApprovedBy: session.agentCode,
             supervisorApprovedAt: new Date(),
-            notes: input.notes ? `${req.notes ?? ""}\nSupervisor note: ${input.notes}`.trim() : req.notes,
+            notes: input.notes
+              ? `${req.notes ?? ""}\nSupervisor note: ${input.notes}`.trim()
+              : req.notes,
             updatedAt: new Date(),
           })
           .where(eq(floatTopUpRequests.id, input.requestId));
@@ -269,10 +335,18 @@ export const floatTopUpRouter = router({
           },
         });
 
-        return { success: true, message: "Supervisor approval recorded. Admin can now credit the float." };
+        return {
+          success: true,
+          message:
+            "Supervisor approval recorded. Admin can now credit the float.",
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

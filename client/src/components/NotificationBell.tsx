@@ -14,8 +14,15 @@ interface Props {
   redColor: string;
 }
 
-export function NotificationBell({ unreadCount, onClick, cardStyle, borderStyle, redColor }: Props) {
-  const { permission, isSubscribed, isRegistering, requestPermission } = usePushNotifications();
+export function NotificationBell({
+  unreadCount,
+  onClick,
+  cardStyle,
+  borderStyle,
+  redColor,
+}: Props) {
+  const { permission, isSubscribed, isRegistering, requestPermission } =
+    usePushNotifications();
 
   const handleEnablePush = () => {
     if (permission === "unsupported") {
@@ -23,7 +30,9 @@ export function NotificationBell({ unreadCount, onClick, cardStyle, borderStyle,
       return;
     }
     if (permission === "denied") {
-      toast.error("Notifications are blocked. Enable them in your browser settings, then refresh.");
+      toast.error(
+        "Notifications are blocked. Enable them in your browser settings, then refresh."
+      );
       return;
     }
     if (!isSubscribed) {
@@ -36,7 +45,10 @@ export function NotificationBell({ unreadCount, onClick, cardStyle, borderStyle,
   return (
     <button
       onClick={onClick}
-      onContextMenu={(e) => { e.preventDefault(); handleEnablePush(); }}
+      onContextMenu={e => {
+        e.preventDefault();
+        handleEnablePush();
+      }}
       title={
         isSubscribed
           ? "Notifications enabled — right-click to manage"

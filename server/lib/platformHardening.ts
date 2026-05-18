@@ -75,8 +75,8 @@ export function getAuditLog(
   opts?: { limit?: number; offset?: number; action?: AuditAction }
 ): { entries: AuditEntry[]; total: number } {
   let filtered = auditLog;
-  if (sessionId) filtered = filtered.filter((e) => e.sessionId === sessionId);
-  if (opts?.action) filtered = filtered.filter((e) => e.action === opts.action);
+  if (sessionId) filtered = filtered.filter(e => e.sessionId === sessionId);
+  if (opts?.action) filtered = filtered.filter(e => e.action === opts.action);
   const total = filtered.length;
   const start = opts?.offset ?? 0;
   const limit = opts?.limit ?? 50;
@@ -95,7 +95,10 @@ export function getAuditStats(): {
   const actorCounts = new Map<string, number>();
   for (const entry of auditLog) {
     actionCounts[entry.action] = (actionCounts[entry.action] || 0) + 1;
-    actorCounts.set(entry.performedBy, (actorCounts.get(entry.performedBy) || 0) + 1);
+    actorCounts.set(
+      entry.performedBy,
+      (actorCounts.get(entry.performedBy) || 0) + 1
+    );
   }
   const topActors = Array.from(actorCounts.entries())
     .map(([actor, count]) => ({ actor, count }))
@@ -193,7 +196,10 @@ export function validateAttachment(
   sizeBytes: number
 ): { valid: boolean; error?: string } {
   if (sizeBytes > MAX_FILE_SIZE) {
-    return { valid: false, error: `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB` };
+    return {
+      valid: false,
+      error: `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`,
+    };
   }
   if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     return {
@@ -202,10 +208,22 @@ export function validateAttachment(
     };
   }
   // Check for dangerous file extensions
-  const dangerousExts = [".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs", ".js", ".mjs"];
+  const dangerousExts = [
+    ".exe",
+    ".bat",
+    ".cmd",
+    ".sh",
+    ".ps1",
+    ".vbs",
+    ".js",
+    ".mjs",
+  ];
   const ext = fileName.toLowerCase().slice(fileName.lastIndexOf("."));
   if (dangerousExts.includes(ext)) {
-    return { valid: false, error: `File extension '${ext}' is not allowed for security reasons` };
+    return {
+      valid: false,
+      error: `File extension '${ext}' is not allowed for security reasons`,
+    };
   }
   return { valid: true };
 }
@@ -262,52 +280,97 @@ export interface MessageTemplate {
 
 const messageTemplates: MessageTemplate[] = [
   {
-    id: "tpl-welcome", name: "Welcome Message",
-    content: "Welcome to 54Link Support, {{customer_name}}! I'm {{agent_name}}, and I'll be assisting you today. How can I help?",
-    variables: ["{{customer_name}}", "{{agent_name}}"], category: "greeting", language: "en", isActive: true,
+    id: "tpl-welcome",
+    name: "Welcome Message",
+    content:
+      "Welcome to 54Link Support, {{customer_name}}! I'm {{agent_name}}, and I'll be assisting you today. How can I help?",
+    variables: ["{{customer_name}}", "{{agent_name}}"],
+    category: "greeting",
+    language: "en",
+    isActive: true,
   },
   {
-    id: "tpl-hold", name: "Please Hold",
-    content: "Thank you for your patience, {{customer_name}}. I'm looking into this for you. It should take approximately {{wait_time}}.",
-    variables: ["{{customer_name}}", "{{wait_time}}"], category: "status", language: "en", isActive: true,
+    id: "tpl-hold",
+    name: "Please Hold",
+    content:
+      "Thank you for your patience, {{customer_name}}. I'm looking into this for you. It should take approximately {{wait_time}}.",
+    variables: ["{{customer_name}}", "{{wait_time}}"],
+    category: "status",
+    language: "en",
+    isActive: true,
   },
   {
-    id: "tpl-resolved", name: "Issue Resolved",
-    content: "Great news! Your issue regarding {{issue_topic}} has been resolved. {{resolution_details}} Is there anything else I can help with?",
-    variables: ["{{issue_topic}}", "{{resolution_details}}"], category: "resolution", language: "en", isActive: true,
+    id: "tpl-resolved",
+    name: "Issue Resolved",
+    content:
+      "Great news! Your issue regarding {{issue_topic}} has been resolved. {{resolution_details}} Is there anything else I can help with?",
+    variables: ["{{issue_topic}}", "{{resolution_details}}"],
+    category: "resolution",
+    language: "en",
+    isActive: true,
   },
   {
-    id: "tpl-escalate", name: "Escalation Notice",
-    content: "I'm escalating your case to our {{team_name}} team for specialized assistance. Your reference number is #{{ticket_id}}. You'll hear back within {{sla_time}}.",
-    variables: ["{{team_name}}", "{{ticket_id}}", "{{sla_time}}"], category: "escalation", language: "en", isActive: true,
+    id: "tpl-escalate",
+    name: "Escalation Notice",
+    content:
+      "I'm escalating your case to our {{team_name}} team for specialized assistance. Your reference number is #{{ticket_id}}. You'll hear back within {{sla_time}}.",
+    variables: ["{{team_name}}", "{{ticket_id}}", "{{sla_time}}"],
+    category: "escalation",
+    language: "en",
+    isActive: true,
   },
   {
-    id: "tpl-closing", name: "Closing Message",
-    content: "Thank you for contacting 54Link support, {{customer_name}}! If you have any more questions, feel free to reach out. Have a wonderful day!",
-    variables: ["{{customer_name}}"], category: "closing", language: "en", isActive: true,
+    id: "tpl-closing",
+    name: "Closing Message",
+    content:
+      "Thank you for contacting 54Link support, {{customer_name}}! If you have any more questions, feel free to reach out. Have a wonderful day!",
+    variables: ["{{customer_name}}"],
+    category: "closing",
+    language: "en",
+    isActive: true,
   },
   // French templates
   {
-    id: "tpl-welcome-fr", name: "Message de bienvenue",
-    content: "Bienvenue au support 54Link, {{customer_name}} ! Je suis {{agent_name}}, et je vais vous assister aujourd'hui. Comment puis-je vous aider ?",
-    variables: ["{{customer_name}}", "{{agent_name}}"], category: "greeting", language: "fr", isActive: true,
+    id: "tpl-welcome-fr",
+    name: "Message de bienvenue",
+    content:
+      "Bienvenue au support 54Link, {{customer_name}} ! Je suis {{agent_name}}, et je vais vous assister aujourd'hui. Comment puis-je vous aider ?",
+    variables: ["{{customer_name}}", "{{agent_name}}"],
+    category: "greeting",
+    language: "fr",
+    isActive: true,
   },
   {
-    id: "tpl-closing-fr", name: "Message de clôture",
-    content: "Merci d'avoir contacté le support 54Link, {{customer_name}} ! Si vous avez d'autres questions, n'hésitez pas à nous contacter. Bonne journée !",
-    variables: ["{{customer_name}}"], category: "closing", language: "fr", isActive: true,
+    id: "tpl-closing-fr",
+    name: "Message de clôture",
+    content:
+      "Merci d'avoir contacté le support 54Link, {{customer_name}} ! Si vous avez d'autres questions, n'hésitez pas à nous contacter. Bonne journée !",
+    variables: ["{{customer_name}}"],
+    category: "closing",
+    language: "fr",
+    isActive: true,
   },
   // Hausa templates
   {
-    id: "tpl-welcome-ha", name: "Sakon Maraba",
-    content: "Barka da zuwa goyon bayan 54Link, {{customer_name}}! Ni ne {{agent_name}}, kuma zan taimake ku yau. Ta yaya zan iya taimaka?",
-    variables: ["{{customer_name}}", "{{agent_name}}"], category: "greeting", language: "ha", isActive: true,
+    id: "tpl-welcome-ha",
+    name: "Sakon Maraba",
+    content:
+      "Barka da zuwa goyon bayan 54Link, {{customer_name}}! Ni ne {{agent_name}}, kuma zan taimake ku yau. Ta yaya zan iya taimaka?",
+    variables: ["{{customer_name}}", "{{agent_name}}"],
+    category: "greeting",
+    language: "ha",
+    isActive: true,
   },
   // Yoruba templates
   {
-    id: "tpl-welcome-yo", name: "Ifiranṣẹ Kaabo",
-    content: "Kaabo si atilẹyin 54Link, {{customer_name}}! Mo jẹ {{agent_name}}, ati pe emi yoo ṣe iranlọwọ fun yin loni. Bawo ni mo ṣe le ṣe iranlọwọ?",
-    variables: ["{{customer_name}}", "{{agent_name}}"], category: "greeting", language: "yo", isActive: true,
+    id: "tpl-welcome-yo",
+    name: "Ifiranṣẹ Kaabo",
+    content:
+      "Kaabo si atilẹyin 54Link, {{customer_name}}! Mo jẹ {{agent_name}}, ati pe emi yoo ṣe iranlọwọ fun yin loni. Bawo ni mo ṣe le ṣe iranlọwọ?",
+    variables: ["{{customer_name}}", "{{agent_name}}"],
+    category: "greeting",
+    language: "yo",
+    isActive: true,
   },
 ];
 
@@ -315,9 +378,11 @@ export function getMessageTemplates(opts?: {
   category?: string;
   language?: string;
 }): MessageTemplate[] {
-  let filtered = messageTemplates.filter((t) => t.isActive);
-  if (opts?.category) filtered = filtered.filter((t) => t.category === opts.category);
-  if (opts?.language) filtered = filtered.filter((t) => t.language === opts.language);
+  let filtered = messageTemplates.filter(t => t.isActive);
+  if (opts?.category)
+    filtered = filtered.filter(t => t.category === opts.category);
+  if (opts?.language)
+    filtered = filtered.filter(t => t.language === opts.language);
   return filtered;
 }
 
@@ -325,7 +390,7 @@ export function renderTemplate(
   templateId: string,
   variables: Record<string, string>
 ): string | null {
-  const tpl = messageTemplates.find((t) => t.id === templateId);
+  const tpl = messageTemplates.find(t => t.id === templateId);
   if (!tpl) return null;
   let content = tpl.content;
   for (const [key, value] of Object.entries(variables)) {
@@ -339,7 +404,15 @@ function escapeRegex(str: string): string {
 }
 
 // ─── F20: Multi-Language Support (i18n) ─────────────────────────────────────
-export type SupportedLanguage = "en" | "fr" | "ha" | "yo" | "ig" | "ar" | "pt" | "sw";
+export type SupportedLanguage =
+  | "en"
+  | "fr"
+  | "ha"
+  | "yo"
+  | "ig"
+  | "ar"
+  | "pt"
+  | "sw";
 
 export interface I18nStrings {
   // Chat widget
@@ -372,76 +445,196 @@ export interface I18nStrings {
 
 const translations: Record<SupportedLanguage, I18nStrings> = {
   en: {
-    chatTitle: "Live Support", chatPlaceholder: "Type your message...", chatSend: "Send",
-    chatClose: "Close", chatMinimize: "Minimize", chatNewConversation: "New Conversation",
-    chatTyping: "is typing...", chatOffline: "Support is offline", chatOnline: "We're online!",
-    surveyTitle: "Rate Your Experience", surveyQuestion: "How was your support experience?",
-    surveyComment: "Any additional comments?", surveySubmit: "Submit Feedback", surveyThankYou: "Thank you for your feedback!",
-    queueMessage: "You're in the queue", queuePosition: "Position", queueEstimatedWait: "Estimated wait",
-    loading: "Loading...", error: "Something went wrong", retry: "Try Again", cancel: "Cancel", confirm: "Confirm",
+    chatTitle: "Live Support",
+    chatPlaceholder: "Type your message...",
+    chatSend: "Send",
+    chatClose: "Close",
+    chatMinimize: "Minimize",
+    chatNewConversation: "New Conversation",
+    chatTyping: "is typing...",
+    chatOffline: "Support is offline",
+    chatOnline: "We're online!",
+    surveyTitle: "Rate Your Experience",
+    surveyQuestion: "How was your support experience?",
+    surveyComment: "Any additional comments?",
+    surveySubmit: "Submit Feedback",
+    surveyThankYou: "Thank you for your feedback!",
+    queueMessage: "You're in the queue",
+    queuePosition: "Position",
+    queueEstimatedWait: "Estimated wait",
+    loading: "Loading...",
+    error: "Something went wrong",
+    retry: "Try Again",
+    cancel: "Cancel",
+    confirm: "Confirm",
   },
   fr: {
-    chatTitle: "Support en direct", chatPlaceholder: "Tapez votre message...", chatSend: "Envoyer",
-    chatClose: "Fermer", chatMinimize: "Réduire", chatNewConversation: "Nouvelle conversation",
-    chatTyping: "est en train d'écrire...", chatOffline: "Le support est hors ligne", chatOnline: "Nous sommes en ligne !",
-    surveyTitle: "Évaluez votre expérience", surveyQuestion: "Comment était votre expérience de support ?",
-    surveyComment: "Des commentaires supplémentaires ?", surveySubmit: "Soumettre", surveyThankYou: "Merci pour votre retour !",
-    queueMessage: "Vous êtes dans la file d'attente", queuePosition: "Position", queueEstimatedWait: "Temps d'attente estimé",
-    loading: "Chargement...", error: "Quelque chose s'est mal passé", retry: "Réessayer", cancel: "Annuler", confirm: "Confirmer",
+    chatTitle: "Support en direct",
+    chatPlaceholder: "Tapez votre message...",
+    chatSend: "Envoyer",
+    chatClose: "Fermer",
+    chatMinimize: "Réduire",
+    chatNewConversation: "Nouvelle conversation",
+    chatTyping: "est en train d'écrire...",
+    chatOffline: "Le support est hors ligne",
+    chatOnline: "Nous sommes en ligne !",
+    surveyTitle: "Évaluez votre expérience",
+    surveyQuestion: "Comment était votre expérience de support ?",
+    surveyComment: "Des commentaires supplémentaires ?",
+    surveySubmit: "Soumettre",
+    surveyThankYou: "Merci pour votre retour !",
+    queueMessage: "Vous êtes dans la file d'attente",
+    queuePosition: "Position",
+    queueEstimatedWait: "Temps d'attente estimé",
+    loading: "Chargement...",
+    error: "Quelque chose s'est mal passé",
+    retry: "Réessayer",
+    cancel: "Annuler",
+    confirm: "Confirmer",
   },
   ha: {
-    chatTitle: "Tallafin Kai Tsaye", chatPlaceholder: "Rubuta sakonku...", chatSend: "Aika",
-    chatClose: "Rufe", chatMinimize: "Ragewa", chatNewConversation: "Sabuwar Tattaunawa",
-    chatTyping: "yana rubuta...", chatOffline: "Tallafi ba ya nan", chatOnline: "Muna nan!",
-    surveyTitle: "Kimanta Kwarewarku", surveyQuestion: "Yaya kwarewar tallafin ku?",
-    surveyComment: "Wani sharhi?", surveySubmit: "Aika Sharhi", surveyThankYou: "Na gode da shawarar ku!",
-    queueMessage: "Kuna cikin jerin", queuePosition: "Matsayi", queueEstimatedWait: "Lokacin jira",
-    loading: "Ana lodi...", error: "Wani abu ya faru", retry: "Sake gwadawa", cancel: "Soke", confirm: "Tabbatar",
+    chatTitle: "Tallafin Kai Tsaye",
+    chatPlaceholder: "Rubuta sakonku...",
+    chatSend: "Aika",
+    chatClose: "Rufe",
+    chatMinimize: "Ragewa",
+    chatNewConversation: "Sabuwar Tattaunawa",
+    chatTyping: "yana rubuta...",
+    chatOffline: "Tallafi ba ya nan",
+    chatOnline: "Muna nan!",
+    surveyTitle: "Kimanta Kwarewarku",
+    surveyQuestion: "Yaya kwarewar tallafin ku?",
+    surveyComment: "Wani sharhi?",
+    surveySubmit: "Aika Sharhi",
+    surveyThankYou: "Na gode da shawarar ku!",
+    queueMessage: "Kuna cikin jerin",
+    queuePosition: "Matsayi",
+    queueEstimatedWait: "Lokacin jira",
+    loading: "Ana lodi...",
+    error: "Wani abu ya faru",
+    retry: "Sake gwadawa",
+    cancel: "Soke",
+    confirm: "Tabbatar",
   },
   yo: {
-    chatTitle: "Atilẹyin Taara", chatPlaceholder: "Tẹ ifiranṣẹ rẹ...", chatSend: "Firanṣẹ",
-    chatClose: "Pa", chatMinimize: "Dinku", chatNewConversation: "Ifọrọwanilẹnuwo Tuntun",
-    chatTyping: "n tẹ...", chatOffline: "Atilẹyin ko si", chatOnline: "A wa nibi!",
-    surveyTitle: "Ṣe ayẹwo Iriri Rẹ", surveyQuestion: "Bawo ni iriri atilẹyin rẹ ṣe ri?",
-    surveyComment: "Ero afikun?", surveySubmit: "Fi silẹ", surveyThankYou: "O ṣeun fun esi rẹ!",
-    queueMessage: "O wa ninu ila", queuePosition: "Ipo", queueEstimatedWait: "Akoko iduro",
-    loading: "Ń gbé...", error: "Nkan kan ṣẹlẹ", retry: "Gbiyanju lẹẹkansi", cancel: "Fagile", confirm: "Jẹrisi",
+    chatTitle: "Atilẹyin Taara",
+    chatPlaceholder: "Tẹ ifiranṣẹ rẹ...",
+    chatSend: "Firanṣẹ",
+    chatClose: "Pa",
+    chatMinimize: "Dinku",
+    chatNewConversation: "Ifọrọwanilẹnuwo Tuntun",
+    chatTyping: "n tẹ...",
+    chatOffline: "Atilẹyin ko si",
+    chatOnline: "A wa nibi!",
+    surveyTitle: "Ṣe ayẹwo Iriri Rẹ",
+    surveyQuestion: "Bawo ni iriri atilẹyin rẹ ṣe ri?",
+    surveyComment: "Ero afikun?",
+    surveySubmit: "Fi silẹ",
+    surveyThankYou: "O ṣeun fun esi rẹ!",
+    queueMessage: "O wa ninu ila",
+    queuePosition: "Ipo",
+    queueEstimatedWait: "Akoko iduro",
+    loading: "Ń gbé...",
+    error: "Nkan kan ṣẹlẹ",
+    retry: "Gbiyanju lẹẹkansi",
+    cancel: "Fagile",
+    confirm: "Jẹrisi",
   },
   ig: {
-    chatTitle: "Nkwado Ozugbo", chatPlaceholder: "Dee ozi gị...", chatSend: "Zipu",
-    chatClose: "Mechie", chatMinimize: "Belata", chatNewConversation: "Mkparịta Ụka Ọhụrụ",
-    chatTyping: "na-ede...", chatOffline: "Nkwado anọghị", chatOnline: "Anyị nọ ebe a!",
-    surveyTitle: "Nyochaa Ahụmịhe Gị", surveyQuestion: "Kedu ka nkwado gị si dị?",
-    surveyComment: "Okwu ọzọ?", surveySubmit: "Nyefee", surveyThankYou: "Daalụ maka nzaghachi gị!",
-    queueMessage: "Ị nọ n'ahịrị", queuePosition: "Ọnọdụ", queueEstimatedWait: "Oge nchere",
-    loading: "Na-ebu...", error: "Ihe mere", retry: "Nwaa ọzọ", cancel: "Kagbuo", confirm: "Kwenye",
+    chatTitle: "Nkwado Ozugbo",
+    chatPlaceholder: "Dee ozi gị...",
+    chatSend: "Zipu",
+    chatClose: "Mechie",
+    chatMinimize: "Belata",
+    chatNewConversation: "Mkparịta Ụka Ọhụrụ",
+    chatTyping: "na-ede...",
+    chatOffline: "Nkwado anọghị",
+    chatOnline: "Anyị nọ ebe a!",
+    surveyTitle: "Nyochaa Ahụmịhe Gị",
+    surveyQuestion: "Kedu ka nkwado gị si dị?",
+    surveyComment: "Okwu ọzọ?",
+    surveySubmit: "Nyefee",
+    surveyThankYou: "Daalụ maka nzaghachi gị!",
+    queueMessage: "Ị nọ n'ahịrị",
+    queuePosition: "Ọnọdụ",
+    queueEstimatedWait: "Oge nchere",
+    loading: "Na-ebu...",
+    error: "Ihe mere",
+    retry: "Nwaa ọzọ",
+    cancel: "Kagbuo",
+    confirm: "Kwenye",
   },
   ar: {
-    chatTitle: "الدعم المباشر", chatPlaceholder: "اكتب رسالتك...", chatSend: "إرسال",
-    chatClose: "إغلاق", chatMinimize: "تصغير", chatNewConversation: "محادثة جديدة",
-    chatTyping: "يكتب...", chatOffline: "الدعم غير متصل", chatOnline: "نحن متصلون!",
-    surveyTitle: "قيّم تجربتك", surveyQuestion: "كيف كانت تجربة الدعم؟",
-    surveyComment: "تعليقات إضافية؟", surveySubmit: "إرسال التقييم", surveyThankYou: "شكراً لملاحظاتك!",
-    queueMessage: "أنت في قائمة الانتظار", queuePosition: "الموقع", queueEstimatedWait: "وقت الانتظار المقدر",
-    loading: "جاري التحميل...", error: "حدث خطأ", retry: "إعادة المحاولة", cancel: "إلغاء", confirm: "تأكيد",
+    chatTitle: "الدعم المباشر",
+    chatPlaceholder: "اكتب رسالتك...",
+    chatSend: "إرسال",
+    chatClose: "إغلاق",
+    chatMinimize: "تصغير",
+    chatNewConversation: "محادثة جديدة",
+    chatTyping: "يكتب...",
+    chatOffline: "الدعم غير متصل",
+    chatOnline: "نحن متصلون!",
+    surveyTitle: "قيّم تجربتك",
+    surveyQuestion: "كيف كانت تجربة الدعم؟",
+    surveyComment: "تعليقات إضافية؟",
+    surveySubmit: "إرسال التقييم",
+    surveyThankYou: "شكراً لملاحظاتك!",
+    queueMessage: "أنت في قائمة الانتظار",
+    queuePosition: "الموقع",
+    queueEstimatedWait: "وقت الانتظار المقدر",
+    loading: "جاري التحميل...",
+    error: "حدث خطأ",
+    retry: "إعادة المحاولة",
+    cancel: "إلغاء",
+    confirm: "تأكيد",
   },
   pt: {
-    chatTitle: "Suporte ao Vivo", chatPlaceholder: "Digite sua mensagem...", chatSend: "Enviar",
-    chatClose: "Fechar", chatMinimize: "Minimizar", chatNewConversation: "Nova Conversa",
-    chatTyping: "está digitando...", chatOffline: "Suporte offline", chatOnline: "Estamos online!",
-    surveyTitle: "Avalie sua Experiência", surveyQuestion: "Como foi sua experiência de suporte?",
-    surveyComment: "Comentários adicionais?", surveySubmit: "Enviar Feedback", surveyThankYou: "Obrigado pelo seu feedback!",
-    queueMessage: "Você está na fila", queuePosition: "Posição", queueEstimatedWait: "Tempo estimado de espera",
-    loading: "Carregando...", error: "Algo deu errado", retry: "Tentar novamente", cancel: "Cancelar", confirm: "Confirmar",
+    chatTitle: "Suporte ao Vivo",
+    chatPlaceholder: "Digite sua mensagem...",
+    chatSend: "Enviar",
+    chatClose: "Fechar",
+    chatMinimize: "Minimizar",
+    chatNewConversation: "Nova Conversa",
+    chatTyping: "está digitando...",
+    chatOffline: "Suporte offline",
+    chatOnline: "Estamos online!",
+    surveyTitle: "Avalie sua Experiência",
+    surveyQuestion: "Como foi sua experiência de suporte?",
+    surveyComment: "Comentários adicionais?",
+    surveySubmit: "Enviar Feedback",
+    surveyThankYou: "Obrigado pelo seu feedback!",
+    queueMessage: "Você está na fila",
+    queuePosition: "Posição",
+    queueEstimatedWait: "Tempo estimado de espera",
+    loading: "Carregando...",
+    error: "Algo deu errado",
+    retry: "Tentar novamente",
+    cancel: "Cancelar",
+    confirm: "Confirmar",
   },
   sw: {
-    chatTitle: "Msaada wa Moja kwa Moja", chatPlaceholder: "Andika ujumbe wako...", chatSend: "Tuma",
-    chatClose: "Funga", chatMinimize: "Punguza", chatNewConversation: "Mazungumzo Mapya",
-    chatTyping: "anaandika...", chatOffline: "Msaada hauko mtandaoni", chatOnline: "Tuko mtandaoni!",
-    surveyTitle: "Kadiria Uzoefu Wako", surveyQuestion: "Uzoefu wako wa msaada ulikuwaje?",
-    surveyComment: "Maoni ya ziada?", surveySubmit: "Tuma Maoni", surveyThankYou: "Asante kwa maoni yako!",
-    queueMessage: "Uko kwenye foleni", queuePosition: "Nafasi", queueEstimatedWait: "Muda wa kusubiri",
-    loading: "Inapakia...", error: "Kitu kilienda vibaya", retry: "Jaribu tena", cancel: "Ghairi", confirm: "Thibitisha",
+    chatTitle: "Msaada wa Moja kwa Moja",
+    chatPlaceholder: "Andika ujumbe wako...",
+    chatSend: "Tuma",
+    chatClose: "Funga",
+    chatMinimize: "Punguza",
+    chatNewConversation: "Mazungumzo Mapya",
+    chatTyping: "anaandika...",
+    chatOffline: "Msaada hauko mtandaoni",
+    chatOnline: "Tuko mtandaoni!",
+    surveyTitle: "Kadiria Uzoefu Wako",
+    surveyQuestion: "Uzoefu wako wa msaada ulikuwaje?",
+    surveyComment: "Maoni ya ziada?",
+    surveySubmit: "Tuma Maoni",
+    surveyThankYou: "Asante kwa maoni yako!",
+    queueMessage: "Uko kwenye foleni",
+    queuePosition: "Nafasi",
+    queueEstimatedWait: "Muda wa kusubiri",
+    loading: "Inapakia...",
+    error: "Kitu kilienda vibaya",
+    retry: "Jaribu tena",
+    cancel: "Ghairi",
+    confirm: "Thibitisha",
   },
 };
 
@@ -482,7 +675,7 @@ export function detectLanguage(text: string): SupportedLanguage {
 
   for (const [lang, keywords] of Object.entries(langIndicators)) {
     if (lang === "en") continue;
-    if (keywords.some((kw) => lower.includes(kw))) {
+    if (keywords.some(kw => lower.includes(kw))) {
       return lang as SupportedLanguage;
     }
   }

@@ -26,7 +26,8 @@ const PERMANENT_BLOCK_THRESHOLD = 10; // violations before permanent block
 setInterval(() => {
   const now = Date.now();
   for (const [ip, record] of ipStore) {
-    if (now - record.lastSeen > 3_600_000 && !record.blocked) { // 1hr inactive
+    if (now - record.lastSeen > 3_600_000 && !record.blocked) {
+      // 1hr inactive
       ipStore.delete(ip);
     }
   }
@@ -35,16 +36,24 @@ setInterval(() => {
 function getIPRecord(ip: string): IPRecord {
   if (!ipStore.has(ip)) {
     ipStore.set(ip, {
-      requests: 0, firstSeen: Date.now(), lastSeen: Date.now(),
-      violations: 0, blocked: false, blockedUntil: 0, score: 100,
+      requests: 0,
+      firstSeen: Date.now(),
+      lastSeen: Date.now(),
+      violations: 0,
+      blocked: false,
+      blockedUntil: 0,
+      score: 100,
     });
   }
   return ipStore.get(ip)!;
 }
 
 function getClientIP(req: Request): string {
-  return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-    || req.socket.remoteAddress || "unknown";
+  return (
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "unknown"
+  );
 }
 
 // ── Adaptive Rate Limiter ────────────────────────────────────────────
@@ -63,7 +72,11 @@ export function getRequestCount(): number {
   return requestCount;
 }
 
-export function adaptiveRateLimit(req: Request, res: Response, next: NextFunction) {
+export function adaptiveRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ip = getClientIP(req);
   const record = getIPRecord(ip);
   const now = Date.now();
@@ -71,7 +84,10 @@ export function adaptiveRateLimit(req: Request, res: Response, next: NextFunctio
 
   // Check if IP is blocked
   if (record.blocked) {
-    if (now < record.blockedUntil && record.violations < PERMANENT_BLOCK_THRESHOLD) {
+    if (
+      now < record.blockedUntil &&
+      record.violations < PERMANENT_BLOCK_THRESHOLD
+    ) {
       res.status(429).json({
         error: "Too many requests",
         retryAfter: Math.ceil((record.blockedUntil - now) / 1000),
@@ -88,7 +104,10 @@ export function adaptiveRateLimit(req: Request, res: Response, next: NextFunctio
 
   // Adaptive limit based on reputation score
   const baseLimit = 200; // requests per minute
-  const adjustedLimit = Math.max(10, Math.floor(baseLimit * (record.score / 100)));
+  const adjustedLimit = Math.max(
+    10,
+    Math.floor(baseLimit * (record.score / 100))
+  );
   const windowMs = 60_000;
 
   const key = `adaptive:${ip}`;
@@ -106,7 +125,8 @@ export function adaptiveRateLimit(req: Request, res: Response, next: NextFunctio
     record.score = Math.max(0, record.score - 10);
     if (record.violations >= 3) {
       record.blocked = true;
-      record.blockedUntil = now + BLOCK_DURATION * Math.min(record.violations, 10);
+      record.blockedUntil =
+        now + BLOCK_DURATION * Math.min(record.violations, 10);
     }
     res.status(429).json({
       error: "Rate limit exceeded",
@@ -122,7 +142,10 @@ export function adaptiveRateLimit(req: Request, res: Response, next: NextFunctio
   }
 
   res.setHeader("X-RateLimit-Limit", adjustedLimit);
-  res.setHeader("X-RateLimit-Remaining", Math.max(0, adjustedLimit - window.count));
+  res.setHeader(
+    "X-RateLimit-Remaining",
+    Math.max(0, adjustedLimit - window.count)
+  );
   next();
 }
 
@@ -144,8 +167,11 @@ const HALF_OPEN_MAX = 3;
 export function circuitBreaker(serviceName: string) {
   if (!circuits.has(serviceName)) {
     circuits.set(serviceName, {
-      state: "closed", failures: 0, successes: 0,
-      lastFailure: 0, openedAt: 0,
+      state: "closed",
+      failures: 0,
+      successes: 0,
+      lastFailure: 0,
+      openedAt: 0,
     });
   }
 
@@ -161,7 +187,9 @@ export function circuitBreaker(serviceName: string) {
         res.status(503).json({
           error: "Service temporarily unavailable",
           service: serviceName,
-          retryAfter: Math.ceil((circuit.openedAt + RECOVERY_TIMEOUT - now) / 1000),
+          retryAfter: Math.ceil(
+            (circuit.openedAt + RECOVERY_TIMEOUT - now) / 1000
+          ),
         });
         return;
       }
@@ -183,11 +211,14 @@ export function circuitBreaker(serviceName: string) {
         if (circuit.failures >= FAILURE_THRESHOLD) {
           circuit.state = "open";
           circuit.openedAt = Date.now();
-          console.warn(`[CircuitBreaker] ${serviceName} circuit OPENED after ${circuit.failures} failures`);
+          console.warn(
+            `[CircuitBreaker] ${serviceName} circuit OPENED after ${circuit.failures} failures`
+          );
         }
       } else {
         if (circuit.state === "half-open") circuit.successes++;
-        if (circuit.state === "closed") circuit.failures = Math.max(0, circuit.failures - 1);
+        if (circuit.state === "closed")
+          circuit.failures = Math.max(0, circuit.failures - 1);
       }
       return originalEnd.apply(res, args);
     };
@@ -218,7 +249,11 @@ export function slowlorisProtection(timeoutMs: number = 10_000) {
 const activeConnections = new Map<string, number>();
 const MAX_CONCURRENT_PER_IP = 50;
 
-export function connectionThrottle(req: Request, res: Response, next: NextFunction) {
+export function connectionThrottle(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ip = getClientIP(req);
   const current = activeConnections.get(ip) || 0;
 
@@ -246,11 +281,14 @@ export function connectionThrottle(req: Request, res: Response, next: NextFuncti
 }
 
 // ── Request Body Bomb Protection ─────────────────────────────────────
-export function bodyBombProtection(maxSizeBytes: number = 1_048_576) { // 1MB
+export function bodyBombProtection(maxSizeBytes: number = 1_048_576) {
+  // 1MB
   return (req: Request, res: Response, next: NextFunction) => {
     const contentLength = parseInt(req.headers["content-length"] || "0", 10);
     if (contentLength > maxSizeBytes) {
-      res.status(413).json({ error: "Request entity too large", maxSize: maxSizeBytes });
+      res
+        .status(413)
+        .json({ error: "Request entity too large", maxSize: maxSizeBytes });
       return;
     }
     next();
@@ -286,14 +324,18 @@ export function getIPReputation(ip: string): IPRecord | null {
 // ── Aggregate DDoS Middleware ────────────────────────────────────────
 export function applyDDoSProtection(app: any) {
   if (process.env.NODE_ENV === "development") {
-    console.log("[DDoS] Skipped in development mode (Vite needs 400+ concurrent module requests)");
+    console.log(
+      "[DDoS] Skipped in development mode (Vite needs 400+ concurrent module requests)"
+    );
     return;
   }
   app.use(bodyBombProtection(2 * 1024 * 1024)); // 2MB max
   app.use(connectionThrottle);
   app.use(adaptiveRateLimit);
   app.use(slowlorisProtection(15_000)); // 15s timeout
-  console.log("[DDoS] Protection layers applied: body bomb, connection throttle, adaptive rate limit, slowloris");
+  console.log(
+    "[DDoS] Protection layers applied: body bomb, connection throttle, adaptive rate limit, slowloris"
+  );
 }
 
 // ── Circuit Breaker Status ───────────────────────────────────────────

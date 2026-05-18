@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69
 /**
  * Internationalization (i18n) Framework — 54Link Agency Banking Platform
- * 
+ *
  * Supports 6 languages for Nigerian agent banking:
  * - English (en) — Default
  * - French (fr) — West African remittance corridors
@@ -746,7 +746,14 @@ const ig: TranslationMap = {
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n Engine
 // ═══════════════════════════════════════════════════════════════════════════════
-const translations: Record<Locale, TranslationMap> = { en, fr, pcm, ha, yo, ig };
+const translations: Record<Locale, TranslationMap> = {
+  en,
+  fr,
+  pcm,
+  ha,
+  yo,
+  ig,
+};
 
 let currentLocale: Locale = "en";
 
@@ -773,20 +780,24 @@ export function getLocale(): Locale {
 export function t(key: string, vars?: Record<string, string | number>): string {
   const locale = getLocale();
   let text = translations[locale]?.[key] || translations.en[key] || key;
-  
+
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), String(v));
     }
   }
-  
+
   return text;
 }
 
 /**
  * Get all available locales with their display names.
  */
-export function getAvailableLocales(): { code: Locale; name: string; nativeName: string }[] {
+export function getAvailableLocales(): {
+  code: Locale;
+  name: string;
+  nativeName: string;
+}[] {
   return [
     { code: "en", name: "English", nativeName: "English" },
     { code: "fr", name: "French", nativeName: "Français" },

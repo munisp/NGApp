@@ -207,7 +207,9 @@ describe("Sprint 34 — Production Features", () => {
       expect(automatedTestingFrameworkRouter).toBeDefined();
     });
     it("has dashboard, runSuite procedures", () => {
-      const procs = Object.keys(automatedTestingFrameworkRouter._def.procedures);
+      const procs = Object.keys(
+        automatedTestingFrameworkRouter._def.procedures
+      );
       expect(procs).toContain("dashboard");
       expect(procs).toContain("runSuite");
     });

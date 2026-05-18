@@ -21,16 +21,17 @@ export interface ConnectionState {
   quality: SignalQuality;
   latencyMs: number | null;
   effectiveType: string | null; // "4g" | "3g" | "2g" | "slow-2g" | null
-  downlink: number | null;      // Mbps, if available
+  downlink: number | null; // Mbps, if available
   isOnline: boolean;
 }
 
-const PROBE_URL = "/api/trpc/agent.me?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D";
+const PROBE_URL =
+  "/api/trpc/agent.me?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D";
 const PROBE_INTERVAL_MS = 5_000;
 
 function classify(latencyMs: number): SignalQuality {
-  if (latencyMs < 300)  return "Excellent";
-  if (latencyMs < 800)  return "Good";
+  if (latencyMs < 300) return "Excellent";
+  if (latencyMs < 800) return "Good";
   if (latencyMs < 2000) return "Poor";
   return "Offline";
 }
@@ -48,7 +49,12 @@ export function useConnectionQuality(): ConnectionState {
 
   const probe = useCallback(async () => {
     if (!navigator.onLine) {
-      setState(s => ({ ...s, quality: "Offline", latencyMs: null, isOnline: false }));
+      setState(s => ({
+        ...s,
+        quality: "Offline",
+        latencyMs: null,
+        isOnline: false,
+      }));
       return;
     }
 
@@ -63,24 +69,32 @@ export function useConnectionQuality(): ConnectionState {
       const quality = classify(latencyMs);
 
       // Read Network Information API if available
-      const conn = (navigator as any).connection ?? (navigator as any).mozConnection ?? (navigator as any).webkitConnection;
+      const conn =
+        (navigator as any).connection ??
+        (navigator as any).mozConnection ??
+        (navigator as any).webkitConnection;
       const effectiveType: string | null = conn?.effectiveType ?? null;
       const downlink: number | null = conn?.downlink ?? null;
 
       setState({ quality, latencyMs, effectiveType, downlink, isOnline: true });
     } catch {
-      setState(s => ({ ...s, quality: "Offline", latencyMs: null, isOnline: false }));
+      setState(s => ({
+        ...s,
+        quality: "Offline",
+        latencyMs: null,
+        isOnline: false,
+      }));
     }
   }, []);
 
   useEffect(() => {
     probe();
     timerRef.current = setInterval(probe, PROBE_INTERVAL_MS);
-    window.addEventListener("online",  probe);
+    window.addEventListener("online", probe);
     window.addEventListener("offline", probe);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      window.removeEventListener("online",  probe);
+      window.removeEventListener("online", probe);
       window.removeEventListener("offline", probe);
     };
   }, [probe]);

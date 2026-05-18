@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Scheduled Load Test Worker — 54Link Agency Banking Platform
- * 
+ *
  * Runs recurring load tests (nightly regression) based on cron schedule.
  * Integrates with:
  * - runtimeConfig for schedule and test parameters
@@ -13,7 +13,7 @@ import { notifyOwner } from "../_core/notification";
 
 export interface ScheduledTestConfig {
   enabled: boolean;
-  cronExpression: string;  // e.g., "0 2 * * *" (2 AM daily)
+  cronExpression: string; // e.g., "0 2 * * *" (2 AM daily)
   targetRps: number;
   duration: number;
   concurrency: number;
@@ -48,7 +48,9 @@ export async function getScheduledTestConfig(): Promise<ScheduledTestConfig> {
   }
 }
 
-export async function setScheduledTestConfig(config: Partial<ScheduledTestConfig>): Promise<void> {
+export async function setScheduledTestConfig(
+  config: Partial<ScheduledTestConfig>
+): Promise<void> {
   const current = await getScheduledTestConfig();
   const merged = { ...current, ...config };
   await setConfig("scheduled_loadtest_config", JSON.stringify(merged));
@@ -58,9 +60,9 @@ function shouldRunNow(cronExpr: string): boolean {
   const now = new Date();
   const parts = cronExpr.trim().split(/\s+/);
   if (parts.length < 5) return false;
-  
+
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-  
+
   function matches(field: string, value: number, max: number): boolean {
     if (field === "*") return true;
     if (field.includes("/")) {
@@ -76,7 +78,7 @@ function shouldRunNow(cronExpr: string): boolean {
     }
     return parseInt(field) === value;
   }
-  
+
   return (
     matches(minute, now.getMinutes(), 59) &&
     matches(hour, now.getHours(), 23) &&
@@ -87,20 +89,28 @@ function shouldRunNow(cronExpr: string): boolean {
 }
 
 export async function checkAndRunScheduledTest(
-  executeTestFn: (config: { targetRps: number; duration: number; concurrency: number; zipfExponent: number; merchantCount: number }) => Promise<any>
+  executeTestFn: (config: {
+    targetRps: number;
+    duration: number;
+    concurrency: number;
+    zipfExponent: number;
+    merchantCount: number;
+  }) => Promise<any>
 ): Promise<{ ran: boolean; result?: any }> {
   const config = await getScheduledTestConfig();
   if (!config.enabled) return { ran: false };
-  
+
   const now = Date.now();
   // Only check once per minute
   if (now - lastCheckTime < 55_000) return { ran: false };
   lastCheckTime = now;
-  
+
   if (!shouldRunNow(config.cronExpression)) return { ran: false };
-  
-  console.log(`[ScheduledLoadTest] Triggering scheduled test: ${config.targetRps} RPS for ${config.duration}s`);
-  
+
+  console.log(
+    `[ScheduledLoadTest] Triggering scheduled test: ${config.targetRps} RPS for ${config.duration}s`
+  );
+
   try {
     const result = await executeTestFn({
       targetRps: config.targetRps,
@@ -109,7 +119,7 @@ export async function checkAndRunScheduledTest(
       zipfExponent: config.zipfExponent,
       merchantCount: config.merchantCount,
     });
-    
+
     if (config.notifyOnComplete) {
       const p99 = result?.latency?.p99 ?? 0;
       const breached = p99 > config.p99ThresholdMs;
@@ -120,7 +130,7 @@ export async function checkAndRunScheduledTest(
         content: `RPS: ${result?.actualRps ?? "N/A"} | P99: ${p99}ms | Errors: ${result?.errorRate ?? "N/A"}% | Duration: ${config.duration}s`,
       });
     }
-    
+
     return { ran: true, result };
   } catch (err: any) {
     console.error(`[ScheduledLoadTest] Failed:`, err.message);

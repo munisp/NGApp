@@ -18,10 +18,14 @@ describe("Sprint 33 — Final Production Routers", () => {
       expect(openTelemetryRouter._def.procedures).toHaveProperty("dashboard");
     });
     it("has trace search procedure", () => {
-      expect(openTelemetryRouter._def.procedures).toHaveProperty("searchTraces");
+      expect(openTelemetryRouter._def.procedures).toHaveProperty(
+        "searchTraces"
+      );
     });
     it("has service map procedure", () => {
-      expect(openTelemetryRouter._def.procedures).toHaveProperty("serviceHealth");
+      expect(openTelemetryRouter._def.procedures).toHaveProperty(
+        "serviceHealth"
+      );
     });
   });
 
@@ -29,13 +33,19 @@ describe("Sprint 33 — Final Production Routers", () => {
   describe("advancedBiReporting", () => {
     it("exports router with dashboard procedure", () => {
       expect(advancedBiReportingRouter).toBeDefined();
-      expect(advancedBiReportingRouter._def.procedures).toHaveProperty("dashboard");
+      expect(advancedBiReportingRouter._def.procedures).toHaveProperty(
+        "dashboard"
+      );
     });
     it("has report builder procedure", () => {
-      expect(advancedBiReportingRouter._def.procedures).toHaveProperty("reportBuilder");
+      expect(advancedBiReportingRouter._def.procedures).toHaveProperty(
+        "reportBuilder"
+      );
     });
     it("has KPI tracking procedure", () => {
-      expect(advancedBiReportingRouter._def.procedures).toHaveProperty("executiveKpis");
+      expect(advancedBiReportingRouter._def.procedures).toHaveProperty(
+        "executiveKpis"
+      );
     });
   });
 
@@ -43,13 +53,19 @@ describe("Sprint 33 — Final Production Routers", () => {
   describe("workflowAutomation", () => {
     it("exports router with dashboard procedure", () => {
       expect(workflowAutomationRouter).toBeDefined();
-      expect(workflowAutomationRouter._def.procedures).toHaveProperty("dashboard");
+      expect(workflowAutomationRouter._def.procedures).toHaveProperty(
+        "dashboard"
+      );
     });
     it("has workflow execution procedure", () => {
-      expect(workflowAutomationRouter._def.procedures).toHaveProperty("createWorkflow");
+      expect(workflowAutomationRouter._def.procedures).toHaveProperty(
+        "createWorkflow"
+      );
     });
     it("has template management procedure", () => {
-      expect(workflowAutomationRouter._def.procedures).toHaveProperty("getWorkflow");
+      expect(workflowAutomationRouter._def.procedures).toHaveProperty(
+        "getWorkflow"
+      );
     });
   });
 
@@ -57,13 +73,19 @@ describe("Sprint 33 — Final Production Routers", () => {
   describe("notificationCenter", () => {
     it("exports router with dashboard procedure", () => {
       expect(notificationCenterRouter).toBeDefined();
-      expect(notificationCenterRouter._def.procedures).toHaveProperty("dashboard");
+      expect(notificationCenterRouter._def.procedures).toHaveProperty(
+        "dashboard"
+      );
     });
     it("has notification list procedure", () => {
-      expect(notificationCenterRouter._def.procedures).toHaveProperty("getNotifications");
+      expect(notificationCenterRouter._def.procedures).toHaveProperty(
+        "getNotifications"
+      );
     });
     it("has mark read procedure", () => {
-      expect(notificationCenterRouter._def.procedures).toHaveProperty("sendNotification");
+      expect(notificationCenterRouter._def.procedures).toHaveProperty(
+        "sendNotification"
+      );
     });
   });
 
@@ -88,7 +110,9 @@ describe("Sprint 33 — Final Production Routers", () => {
       expect(dataQualityRouter._def.procedures).toHaveProperty("dashboard");
     });
     it("has quality rules procedure", () => {
-      expect(dataQualityRouter._def.procedures).toHaveProperty("getValidationRules");
+      expect(dataQualityRouter._def.procedures).toHaveProperty(
+        "getValidationRules"
+      );
     });
     it("has run validation procedure", () => {
       expect(dataQualityRouter._def.procedures).toHaveProperty("runProfile");
@@ -99,13 +123,19 @@ describe("Sprint 33 — Final Production Routers", () => {
   describe("configManagement", () => {
     it("exports router with dashboard procedure", () => {
       expect(configManagementRouter).toBeDefined();
-      expect(configManagementRouter._def.procedures).toHaveProperty("dashboard");
+      expect(configManagementRouter._def.procedures).toHaveProperty(
+        "dashboard"
+      );
     });
     it("has get configs procedure", () => {
-      expect(configManagementRouter._def.procedures).toHaveProperty("getConfigs");
+      expect(configManagementRouter._def.procedures).toHaveProperty(
+        "getConfigs"
+      );
     });
     it("has update config procedure", () => {
-      expect(configManagementRouter._def.procedures).toHaveProperty("updateConfig");
+      expect(configManagementRouter._def.procedures).toHaveProperty(
+        "updateConfig"
+      );
     });
   });
 
@@ -116,7 +146,9 @@ describe("Sprint 33 — Final Production Routers", () => {
       expect(serviceMeshRouter._def.procedures).toHaveProperty("dashboard");
     });
     it("has circuit breaker toggle procedure", () => {
-      expect(serviceMeshRouter._def.procedures).toHaveProperty("toggleCircuitBreaker");
+      expect(serviceMeshRouter._def.procedures).toHaveProperty(
+        "toggleCircuitBreaker"
+      );
     });
     it("has service discovery procedure", () => {
       expect(serviceMeshRouter._def.procedures).toHaveProperty("healthCheck");
@@ -127,13 +159,19 @@ describe("Sprint 33 — Final Production Routers", () => {
   describe("complianceAutomation", () => {
     it("exports router with dashboard procedure", () => {
       expect(complianceAutomationRouter).toBeDefined();
-      expect(complianceAutomationRouter._def.procedures).toHaveProperty("dashboard");
+      expect(complianceAutomationRouter._def.procedures).toHaveProperty(
+        "dashboard"
+      );
     });
     it("has assessment procedure", () => {
-      expect(complianceAutomationRouter._def.procedures).toHaveProperty("runAssessment");
+      expect(complianceAutomationRouter._def.procedures).toHaveProperty(
+        "runAssessment"
+      );
     });
     it("has evidence collection procedure", () => {
-      expect(complianceAutomationRouter._def.procedures).toHaveProperty("generateReport");
+      expect(complianceAutomationRouter._def.procedures).toHaveProperty(
+        "generateReport"
+      );
     });
   });
 
@@ -147,7 +185,9 @@ describe("Sprint 33 — Final Production Routers", () => {
       expect(customer360Router._def.procedures).toHaveProperty("getProfile");
     });
     it("has sentiment analysis procedure", () => {
-      expect(customer360Router._def.procedures).toHaveProperty("analyzeSentiment");
+      expect(customer360Router._def.procedures).toHaveProperty(
+        "analyzeSentiment"
+      );
     });
   });
 });

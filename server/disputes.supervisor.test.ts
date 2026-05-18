@@ -26,16 +26,29 @@ function makeCtx(overrides: Partial<TrpcContext["user"]> = {}): TrpcContext {
       ...overrides,
     },
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
-    res: { clearCookie: vi.fn(), cookie: vi.fn() } as unknown as TrpcContext["res"],
+    res: {
+      clearCookie: vi.fn(),
+      cookie: vi.fn(),
+    } as unknown as TrpcContext["res"],
   };
 }
 
 function makeAdminCtx() {
-  return makeCtx({ id: 99, role: "admin", email: "admin@54link.ng", name: "Admin" });
+  return makeCtx({
+    id: 99,
+    role: "admin",
+    email: "admin@54link.ng",
+    name: "Admin",
+  });
 }
 
 function makeSupervisorCtx() {
-  return makeCtx({ id: 50, role: "supervisor", email: "sup@54link.ng", name: "Supervisor" });
+  return makeCtx({
+    id: 50,
+    role: "supervisor",
+    email: "sup@54link.ng",
+    name: "Supervisor",
+  });
 }
 
 // ── Disputes Router Tests ────────────────────────────────────────────────────
@@ -45,7 +58,10 @@ describe("disputes router", () => {
     const ctx: TrpcContext = {
       user: null,
       req: { protocol: "https", headers: {} } as TrpcContext["req"],
-      res: { clearCookie: vi.fn(), cookie: vi.fn() } as unknown as TrpcContext["res"],
+      res: {
+        clearCookie: vi.fn(),
+        cookie: vi.fn(),
+      } as unknown as TrpcContext["res"],
     };
     const caller = appRouter.createCaller(ctx);
     await expect(
@@ -77,7 +93,11 @@ describe("disputes router", () => {
     const caller = appRouter.createCaller(makeAdminCtx());
     // In test env, DB is available — expect either a valid result or a DB error, not FORBIDDEN
     try {
-      const result = await caller.disputes.listAll({ status: "all", page: 1, limit: 10 });
+      const result = await caller.disputes.listAll({
+        status: "all",
+        page: 1,
+        limit: 10,
+      });
       expect(result).toHaveProperty("disputes");
       expect(Array.isArray(result.disputes)).toBe(true);
     } catch (e: any) {
@@ -104,7 +124,9 @@ describe("disputes router", () => {
       await caller.disputes.getDispute({ ref: "DSP-NONEXISTENT-999" });
     } catch (e: any) {
       // Should be NOT_FOUND, not a server crash
-      expect(["NOT_FOUND", "INTERNAL_SERVER_ERROR"]).toContain(e.data?.code ?? "NOT_FOUND");
+      expect(["NOT_FOUND", "INTERNAL_SERVER_ERROR"]).toContain(
+        e.data?.code ?? "NOT_FOUND"
+      );
     }
   });
 });
@@ -114,7 +136,9 @@ describe("disputes router", () => {
 describe("supervisor router", () => {
   it("rejects myAgents when caller is not supervisor or admin", async () => {
     const caller = appRouter.createCaller(makeCtx({ role: "user" }));
-    await expect(caller.supervisor.myAgents({})).rejects.toThrow(/FORBIDDEN|Supervisor/i);
+    await expect(caller.supervisor.myAgents({})).rejects.toThrow(
+      /FORBIDDEN|Supervisor/i
+    );
   });
 
   it("allows supervisor to call myAgents (returns array)", async () => {
@@ -150,13 +174,17 @@ describe("supervisor router", () => {
       await caller.supervisor.assignAgent({ agentId: 1 });
     } catch (e: any) {
       // Should be BAD_REQUEST or NOT_FOUND, not a crash
-      expect(["BAD_REQUEST", "NOT_FOUND", "INTERNAL_SERVER_ERROR"]).toContain(e.data?.code ?? "BAD_REQUEST");
+      expect(["BAD_REQUEST", "NOT_FOUND", "INTERNAL_SERVER_ERROR"]).toContain(
+        e.data?.code ?? "BAD_REQUEST"
+      );
     }
   });
 
   it("rejects listSupervisors when caller is not admin", async () => {
     const caller = appRouter.createCaller(makeSupervisorCtx());
-    await expect(caller.supervisor.listSupervisors({})).rejects.toThrow(/FORBIDDEN|Admin/i);
+    await expect(caller.supervisor.listSupervisors({})).rejects.toThrow(
+      /FORBIDDEN|Admin/i
+    );
   });
 
   it("allows admin to call listSupervisors", async () => {

@@ -18,14 +18,17 @@ export default function PaymentCancel() {
         <div>
           <h1 className="text-2xl font-bold">Payment Cancelled</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Your payment was not completed. No charges have been made to your account.
+            Your payment was not completed. No charges have been made to your
+            account.
           </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5 text-left">
           <h3 className="text-sm font-semibold mb-2">What happened?</h3>
           <ul className="space-y-2 text-xs text-muted-foreground">
-            <li>• You cancelled the checkout process before completing payment</li>
+            <li>
+              • You cancelled the checkout process before completing payment
+            </li>
             <li>• No charges were applied to your payment method</li>
             <li>• You can try again at any time from the Payments page</li>
           </ul>

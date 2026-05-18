@@ -1,12 +1,12 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * ProactiveHelp — Detects user struggle patterns and proactively offers help
- * 
+ *
  * Now deeply integrated with LiveChatWidget:
  * - When struggle is detected, offers to open chat with pre-filled context
  * - Sends the current page context and detected issue to the AI assistant
  * - Dispatches custom events that LiveChatWidget listens for
- * 
+ *
  * Heuristics:
  * - Long idle time on a page (>45s without interaction)
  * - Rapid page navigation (>4 navigations in 10s = "thrashing")
@@ -16,19 +16,34 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, X, MessageCircle, BookOpen, Lightbulb, Zap, ArrowRight } from "lucide-react";
+import {
+  HelpCircle,
+  X,
+  MessageCircle,
+  BookOpen,
+  Lightbulb,
+  Zap,
+  ArrowRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Custom Event for Chat Integration ──────────────────────────────────────
 // LiveChatWidget listens for this event to auto-open with context
-export function dispatchProactiveChat(context: { page: string; issue: string; suggestions: string[] }) {
+export function dispatchProactiveChat(context: {
+  page: string;
+  issue: string;
+  suggestions: string[];
+}) {
   window.dispatchEvent(
     new CustomEvent("proactive-help-chat", { detail: context })
   );
 }
 
 // ─── Page-Specific Help Suggestions ─────────────────────────────────────────
-const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guideLink?: string; chatPrompt?: string }> = {
+const pageHelpSuggestions: Record<
+  string,
+  { title: string; tips: string[]; guideLink?: string; chatPrompt?: string }
+> = {
   "/": {
     title: "POS Terminal Help",
     tips: [
@@ -37,7 +52,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "If you forgot your PIN, click 'Forgot PIN?' below the login form",
     ],
     guideLink: "/user-guide",
-    chatPrompt: "I need help logging into the POS terminal. Can you walk me through the login process?",
+    chatPrompt:
+      "I need help logging into the POS terminal. Can you walk me through the login process?",
   },
   "/hub": {
     title: "Platform Hub",
@@ -47,7 +63,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Your recent activity and quick stats are shown on the dashboard",
     ],
     guideLink: "/user-guide",
-    chatPrompt: "I'm on the Platform Hub and need help navigating to the right section.",
+    chatPrompt:
+      "I'm on the Platform Hub and need help navigating to the right section.",
   },
   "/admin": {
     title: "Admin Panel Help",
@@ -57,7 +74,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Export transaction data as CSV from the Analytics tab",
     ],
     guideLink: "/user-guide",
-    chatPrompt: "I need help with the Admin Panel. Can you explain the available features?",
+    chatPrompt:
+      "I need help with the Admin Panel. Can you explain the available features?",
   },
   "/admin/fraud": {
     title: "Fraud Dashboard Help",
@@ -67,7 +85,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Use 'Escalate', 'Snooze', or 'Resolve' to manage each alert",
     ],
     guideLink: "/user-guide",
-    chatPrompt: "I need help managing fraud alerts. How do I review and resolve them?",
+    chatPrompt:
+      "I need help managing fraud alerts. How do I review and resolve them?",
   },
   "/kyc-verification": {
     title: "KYC Verification Help",
@@ -77,7 +96,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Use 'Fast-Track' option for priority 24-hour verification",
     ],
     guideLink: "/user-guide",
-    chatPrompt: "I need help with KYC verification. What documents do I need and how do I submit them?",
+    chatPrompt:
+      "I need help with KYC verification. What documents do I need and how do I submit them?",
   },
   "/commission-payouts": {
     title: "Commission Payouts Help",
@@ -86,7 +106,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Commissions are automatically calculated per transaction type",
       "Payouts are processed during daily settlement at 5:00 PM WAT",
     ],
-    chatPrompt: "I have questions about my commission payouts. Can you help me understand how they work?",
+    chatPrompt:
+      "I have questions about my commission payouts. Can you help me understand how they work?",
   },
   "/settlement-reconciliation": {
     title: "Settlement Help",
@@ -95,7 +116,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Discrepancies are flagged for manual review",
       "Click any settlement record to see the full breakdown",
     ],
-    chatPrompt: "I need help understanding the settlement reconciliation process.",
+    chatPrompt:
+      "I need help understanding the settlement reconciliation process.",
   },
   "/payments": {
     title: "Payments & Subscriptions",
@@ -104,7 +126,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Use test card 4242 4242 4242 4242 for testing payments",
       "View your payment history and active subscription status below",
     ],
-    chatPrompt: "I need help with payments and subscriptions. Which plan should I choose?",
+    chatPrompt:
+      "I need help with payments and subscriptions. Which plan should I choose?",
   },
   "/weekly-reports": {
     title: "Weekly Reports Help",
@@ -113,7 +136,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Use the comparison tool to compare any two reports side-by-side",
       "Download reports as PDF for offline review",
     ],
-    chatPrompt: "I need help understanding my weekly reports. Can you walk me through the metrics?",
+    chatPrompt:
+      "I need help understanding my weekly reports. Can you walk me through the metrics?",
   },
   "/notification-inbox": {
     title: "Notification Inbox Help",
@@ -122,7 +146,8 @@ const pageHelpSuggestions: Record<string, { title: string; tips: string[]; guide
       "Star important notifications for quick access later",
       "Critical alerts are highlighted in red — review them promptly",
     ],
-    chatPrompt: "I need help managing my notifications. How do I filter and prioritize them?",
+    chatPrompt:
+      "I need help managing my notifications. How do I filter and prioritize them?",
   },
 };
 
@@ -171,7 +196,10 @@ export function ProactiveHelp() {
       const now = Date.now();
       if (now - lastOfferRef.current > COOLDOWN_MS && !dismissed) {
         setTriggerReason("You've been on this page for a while");
-        setQuickActions(["Show me how to use this page", "I'm looking for something else"]);
+        setQuickActions([
+          "Show me how to use this page",
+          "I'm looking for something else",
+        ]);
         setShowPopup(true);
         lastOfferRef.current = now;
       }
@@ -181,7 +209,9 @@ export function ProactiveHelp() {
   // Track user activity events
   useEffect(() => {
     const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-    events.forEach(e => window.addEventListener(e, resetActivity, { passive: true }));
+    events.forEach(e =>
+      window.addEventListener(e, resetActivity, { passive: true })
+    );
     resetActivity();
     return () => {
       events.forEach(e => window.removeEventListener(e, resetActivity));
@@ -200,7 +230,11 @@ export function ProactiveHelp() {
     const recentNavs = navHistoryRef.current.filter(
       entry => now - entry.time < THRASH_WINDOW_MS
     );
-    if (recentNavs.length >= THRASH_COUNT && now - lastOfferRef.current > COOLDOWN_MS && !dismissed) {
+    if (
+      recentNavs.length >= THRASH_COUNT &&
+      now - lastOfferRef.current > COOLDOWN_MS &&
+      !dismissed
+    ) {
       setTriggerReason("You seem to be looking for something");
       setQuickActions(["Help me find what I need", "Show me the site map"]);
       setShowPopup(true);
@@ -211,9 +245,16 @@ export function ProactiveHelp() {
     const revisits = navHistoryRef.current.filter(
       entry => entry.path === location && now - entry.time < REVISIT_WINDOW_MS
     );
-    if (revisits.length >= REVISIT_COUNT && now - lastOfferRef.current > COOLDOWN_MS && !dismissed) {
+    if (
+      revisits.length >= REVISIT_COUNT &&
+      now - lastOfferRef.current > COOLDOWN_MS &&
+      !dismissed
+    ) {
       setTriggerReason("You've visited this page multiple times");
-      setQuickActions(["I'm having trouble with this page", "Walk me through the steps"]);
+      setQuickActions([
+        "I'm having trouble with this page",
+        "Walk me through the steps",
+      ]);
       setShowPopup(true);
       lastOfferRef.current = now;
     }
@@ -242,7 +283,9 @@ export function ProactiveHelp() {
 
     // Also try to click the chat widget button as fallback
     setTimeout(() => {
-      const chatBtn = document.querySelector('[data-chat-toggle="true"]') as HTMLButtonElement;
+      const chatBtn = document.querySelector(
+        '[data-chat-toggle="true"]'
+      ) as HTMLButtonElement;
       if (chatBtn) chatBtn.click();
     }, 100);
   };
@@ -290,7 +333,9 @@ export function ProactiveHelp() {
         {helpContent.tips.map((tip, i) => (
           <div key={i} className="flex items-start gap-2">
             <HelpCircle className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">{tip}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {tip}
+            </p>
           </div>
         ))}
       </div>
@@ -298,7 +343,9 @@ export function ProactiveHelp() {
       {/* Quick Actions — sent directly to chat */}
       {quickActions.length > 0 && (
         <div className="px-4 pb-2 space-y-1.5">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Quick Actions</p>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Quick Actions
+          </p>
           {quickActions.map((action, i) => (
             <button
               key={i}
@@ -317,11 +364,21 @@ export function ProactiveHelp() {
 
       {/* Primary Actions */}
       <div className="flex items-center gap-2 px-4 pb-4 pt-2">
-        <Button size="sm" variant="default" className="flex-1 text-xs h-8" onClick={() => handleOpenChatWithContext()}>
+        <Button
+          size="sm"
+          variant="default"
+          className="flex-1 text-xs h-8"
+          onClick={() => handleOpenChatWithContext()}
+        >
           <MessageCircle className="h-3 w-3 mr-1" />
           Chat with AI
         </Button>
-        <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={handleOpenGuide}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 text-xs h-8"
+          onClick={handleOpenGuide}
+        >
           <BookOpen className="h-3 w-3 mr-1" />
           User Guide
         </Button>

@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Webhook HMAC Signature Verification
- * 
+ *
  * Generates and verifies HMAC-SHA256 signatures for webhook payloads.
  * Prevents replay attacks with timestamp validation.
  */
@@ -42,7 +42,10 @@ export function verifyWebhookSignature(
   // Check timestamp freshness (prevent replay attacks)
   const now = Math.floor(Date.now() / 1000);
   if (Math.abs(now - timestamp) > TIMESTAMP_TOLERANCE_SECONDS) {
-    return { valid: false, error: "Timestamp outside tolerance window (possible replay attack)" };
+    return {
+      valid: false,
+      error: "Timestamp outside tolerance window (possible replay attack)",
+    };
   }
 
   // Compute expected signature
@@ -70,13 +73,19 @@ export function verifyWebhookSignature(
 export function webhookSignatureMiddleware(secret: string) {
   return (req: any, res: any, next: any) => {
     const signature = req.headers["x-webhook-signature"] as string;
-    const timestamp = parseInt(req.headers["x-webhook-timestamp"] as string, 10);
+    const timestamp = parseInt(
+      req.headers["x-webhook-timestamp"] as string,
+      10
+    );
 
     if (!signature || !timestamp) {
-      return res.status(401).json({ error: "Missing webhook signature headers" });
+      return res
+        .status(401)
+        .json({ error: "Missing webhook signature headers" });
     }
 
-    const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const body =
+      typeof req.body === "string" ? req.body : JSON.stringify(req.body);
     const result = verifyWebhookSignature(body, signature, timestamp, secret);
 
     if (!result.valid) {

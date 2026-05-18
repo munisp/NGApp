@@ -70,8 +70,8 @@ export default function () {
     balanceDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "balance: 200 or 404": (r) => r.status === 200 || r.status === 404,
-      "balance: fast": (r) => r.timings.duration < 200,
+      "balance: 200 or 404": r => r.status === 200 || r.status === 404,
+      "balance: fast": r => r.timings.duration < 200,
     });
     balanceErrors.add(!ok);
   });
@@ -100,10 +100,10 @@ export default function () {
     transferDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "transfer: 200, 201, 400, or 422": (r) =>
+      "transfer: 200, 201, 400, or 422": r =>
         [200, 201, 400, 422].includes(r.status),
-      "transfer: has body": (r) => r.body && r.body.length > 2,
-      "transfer: < 500ms": (r) => r.timings.duration < 500,
+      "transfer: has body": r => r.body && r.body.length > 2,
+      "transfer: < 500ms": r => r.timings.duration < 500,
     });
     transferErrors.add(!ok);
   });

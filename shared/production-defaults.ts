@@ -5,66 +5,97 @@
  */
 
 // ─── Nigerian Financial APIs ────────────────────────────────────
-export const NIBSS_API_URL = process.env.NIBSS_API_URL || "https://api.nibss-plc.com.ng/v2";
-export const NIBSS_API_KEY = process.env.NIBSS_API_KEY || "nibss_test_key_placeholder";
-export const NIBSS_INSTITUTION_CODE = process.env.NIBSS_INSTITUTION_CODE || "999999";
+export const NIBSS_API_URL =
+  process.env.NIBSS_API_URL || "https://api.nibss-plc.com.ng/v2";
+export const NIBSS_API_KEY =
+  process.env.NIBSS_API_KEY || "nibss_test_key_placeholder";
+export const NIBSS_INSTITUTION_CODE =
+  process.env.NIBSS_INSTITUTION_CODE || "999999";
 
-export const CBN_REPORTING_URL = process.env.CBN_REPORTING_URL || "https://reporting.cbn.gov.ng/api/v1";
-export const CBN_INSTITUTION_ID = process.env.CBN_INSTITUTION_ID || "FI-54LINK-001";
+export const CBN_REPORTING_URL =
+  process.env.CBN_REPORTING_URL || "https://reporting.cbn.gov.ng/api/v1";
+export const CBN_INSTITUTION_ID =
+  process.env.CBN_INSTITUTION_ID || "FI-54LINK-001";
 
-export const NFIU_API_URL = process.env.NFIU_API_URL || "https://api.nfiu.gov.ng/v1";
-export const NFIU_REPORTING_KEY = process.env.NFIU_REPORTING_KEY || "nfiu_test_key_placeholder";
+export const NFIU_API_URL =
+  process.env.NFIU_API_URL || "https://api.nfiu.gov.ng/v1";
+export const NFIU_REPORTING_KEY =
+  process.env.NFIU_REPORTING_KEY || "nfiu_test_key_placeholder";
 
 // ─── KYC/Identity Verification ──────────────────────────────────
-export const YOUVERIFY_API_URL = process.env.YOUVERIFY_API_URL || "https://api.youverify.co/v2";
-export const YOUVERIFY_API_KEY = process.env.YOUVERIFY_API_KEY || "yv_test_key_placeholder";
+export const YOUVERIFY_API_URL =
+  process.env.YOUVERIFY_API_URL || "https://api.youverify.co/v2";
+export const YOUVERIFY_API_KEY =
+  process.env.YOUVERIFY_API_KEY || "yv_test_key_placeholder";
 
-export const SMILE_ID_API_URL = process.env.SMILE_ID_API_URL || "https://api.smileidentity.com/v1";
-export const SMILE_ID_PARTNER_ID = process.env.SMILE_ID_PARTNER_ID || "smile_test_partner";
+export const SMILE_ID_API_URL =
+  process.env.SMILE_ID_API_URL || "https://api.smileidentity.com/v1";
+export const SMILE_ID_PARTNER_ID =
+  process.env.SMILE_ID_PARTNER_ID || "smile_test_partner";
 
-export const NIN_VERIFICATION_URL = process.env.NIN_VERIFICATION_URL || "https://api.nimc.gov.ng/v1/verify";
-export const BVN_VERIFICATION_URL = process.env.BVN_VERIFICATION_URL || "https://api.nibss-plc.com.ng/bvn/v2/verify";
+export const NIN_VERIFICATION_URL =
+  process.env.NIN_VERIFICATION_URL || "https://api.nimc.gov.ng/v1/verify";
+export const BVN_VERIFICATION_URL =
+  process.env.BVN_VERIFICATION_URL ||
+  "https://api.nibss-plc.com.ng/bvn/v2/verify";
 
 // ─── SMS/Notification Providers ─────────────────────────────────
-export const TERMII_API_URL = process.env.TERMII_API_URL || "https://api.ng.termii.com/api";
-export const TERMII_API_KEY = process.env.TERMII_API_KEY || "termii_test_key_placeholder";
+export const TERMII_API_URL =
+  process.env.TERMII_API_URL || "https://api.ng.termii.com/api";
+export const TERMII_API_KEY =
+  process.env.TERMII_API_KEY || "termii_test_key_placeholder";
 export const TERMII_SENDER_ID = process.env.TERMII_SENDER_ID || "54Link";
 
-export const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "pos-shell-demo";
-export const FIREBASE_SERVER_KEY = process.env.FIREBASE_SERVER_KEY || "firebase_test_key_placeholder";
+export const FIREBASE_PROJECT_ID =
+  process.env.FIREBASE_PROJECT_ID || "pos-shell-demo";
+export const FIREBASE_SERVER_KEY =
+  process.env.FIREBASE_SERVER_KEY || "firebase_test_key_placeholder";
 
-export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "sg_test_key_placeholder";
-export const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@54link.com";
+export const SENDGRID_API_KEY =
+  process.env.SENDGRID_API_KEY || "sg_test_key_placeholder";
+export const SENDGRID_FROM_EMAIL =
+  process.env.SENDGRID_FROM_EMAIL || "noreply@54link.com";
 
 // ─── Payment Processors ────────────────────────────────────────
-export const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_placeholder";
-export const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || "pk_test_placeholder";
+export const PAYSTACK_SECRET_KEY =
+  process.env.PAYSTACK_SECRET_KEY || "sk_test_placeholder";
+export const PAYSTACK_PUBLIC_KEY =
+  process.env.PAYSTACK_PUBLIC_KEY || "pk_test_placeholder";
 
-export const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY || "FLWSECK_TEST_placeholder";
-export const FLUTTERWAVE_PUBLIC_KEY = process.env.FLUTTERWAVE_PUBLIC_KEY || "FLWPUBK_TEST_placeholder";
+export const FLUTTERWAVE_SECRET_KEY =
+  process.env.FLUTTERWAVE_SECRET_KEY || "FLWSECK_TEST_placeholder";
+export const FLUTTERWAVE_PUBLIC_KEY =
+  process.env.FLUTTERWAVE_PUBLIC_KEY || "FLWPUBK_TEST_placeholder";
 
 // ─── TigerBeetle / Ledger ───────────────────────────────────────
 export const TIGERBEETLE_CLUSTER_ID = process.env.TIGERBEETLE_CLUSTER_ID || "0";
-export const TIGERBEETLE_ADDRESSES = process.env.TIGERBEETLE_ADDRESSES || "127.0.0.1:3000";
-export const TB_SIDECAR_URL = process.env.TB_SIDECAR_URL || "http://localhost:9090";
+export const TIGERBEETLE_ADDRESSES =
+  process.env.TIGERBEETLE_ADDRESSES || "127.0.0.1:3000";
+export const TB_SIDECAR_URL =
+  process.env.TB_SIDECAR_URL || "http://localhost:9090";
 
 // ─── Infrastructure ─────────────────────────────────────────────
 export const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-export const KAFKA_BROKERS = (process.env.KAFKA_BROKERS || "localhost:9092").split(",");
-export const ELASTICSEARCH_URL = process.env.ELASTICSEARCH_URL || "http://localhost:9200";
+export const KAFKA_BROKERS = (
+  process.env.KAFKA_BROKERS || "localhost:9092"
+).split(",");
+export const ELASTICSEARCH_URL =
+  process.env.ELASTICSEARCH_URL || "http://localhost:9200";
 export const S3_BUCKET = process.env.S3_BUCKET || "pos-shell-demo-storage";
 export const S3_REGION = process.env.S3_REGION || "us-east-1";
 
 // ─── Monitoring ─────────────────────────────────────────────────
 export const SENTRY_DSN = process.env.SENTRY_DSN || "";
 export const GRAFANA_URL = process.env.GRAFANA_URL || "http://localhost:3001";
-export const PROMETHEUS_URL = process.env.PROMETHEUS_URL || "http://localhost:9090";
+export const PROMETHEUS_URL =
+  process.env.PROMETHEUS_URL || "http://localhost:9090";
 
 // ─── Application ────────────────────────────────────────────────
 export const APP_NAME = "54Link POS Shell";
 export const APP_VERSION = "3.0.0";
 export const APP_ENVIRONMENT = process.env.NODE_ENV || "development";
-export const APP_BASE_URL = process.env.APP_BASE_URL || "https://pos.54link.com";
+export const APP_BASE_URL =
+  process.env.APP_BASE_URL || "https://pos.54link.com";
 export const SUPPORT_EMAIL = "support@54link.com";
 export const SUPPORT_PHONE = "+234-800-54LINK";
 

@@ -42,11 +42,26 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { getDb } from "./db";
 import {
-  agents, transactions, kycSessions, commissionRules,
-  posTerminals, terminalGroups, serviceRecords, softwareUpdates,
-  qrCodes, inventoryItems, fraudAlerts, disputes,
-  geofenceZones, storefrontAds, shareableLinks, vatRecords,
-  reversalRequests, multiSimProfiles, customers, tenants,
+  agents,
+  transactions,
+  kycSessions,
+  commissionRules,
+  posTerminals,
+  terminalGroups,
+  serviceRecords,
+  softwareUpdates,
+  qrCodes,
+  inventoryItems,
+  fraudAlerts,
+  disputes,
+  geofenceZones,
+  storefrontAds,
+  shareableLinks,
+  vatRecords,
+  reversalRequests,
+  multiSimProfiles,
+  customers,
+  tenants,
   auditLog,
 } from "../drizzle/schema";
 import { eq, desc, count, sql } from "drizzle-orm";
@@ -111,19 +126,24 @@ function err(res: Response, e: unknown, status = 500) {
 router.get("/dashboard/stats", async (req, res) => {
   try {
     const db = await getDb();
-    if (!db) return ok(res, { totalTransactions: 0, totalAgents: 0, totalVolume: 0 });
+    if (!db)
+      return ok(res, { totalTransactions: 0, totalAgents: 0, totalVolume: 0 });
     const [txCount] = await db.select({ count: count() }).from(transactions);
     const [agentCount] = await db.select({ count: count() }).from(agents);
-    const [volRow] = await db.select({
-      total: sql<number>`COALESCE(SUM(amount), 0)`,
-    }).from(transactions);
+    const [volRow] = await db
+      .select({
+        total: sql<number>`COALESCE(SUM(amount), 0)`,
+      })
+      .from(transactions);
     ok(res, {
       totalTransactions: txCount.count,
       totalAgents: agentCount.count,
       totalVolume: volRow.total,
       period: req.query.period ?? "today",
     });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/dashboard/transactions/recent", async (req, res) => {
@@ -131,9 +151,15 @@ router.get("/dashboard/transactions/recent", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const limit = parseInt(String(req.query.limit ?? "10"));
-    const rows = await db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(limit);
+    const rows = await db
+      .select()
+      .from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/dashboard/agents/top", async (req, res) => {
@@ -143,7 +169,9 @@ router.get("/dashboard/agents/top", async (req, res) => {
     const limit = parseInt(String(req.query.limit ?? "5"));
     const rows = await db.select().from(agents).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/dashboard/activity", async (req, res) => {
@@ -151,13 +179,23 @@ router.get("/dashboard/activity", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const limit = parseInt(String(req.query.limit ?? "5"));
-    const rows = await db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
+    const rows = await db
+      .select()
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt))
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/dashboard/system/health", async (_req, res) => {
-  ok(res, { status: "healthy", uptime: process.uptime(), timestamp: new Date().toISOString() });
+  ok(res, {
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -171,17 +209,24 @@ router.get("/agents", async (req, res) => {
     const { offset, limit } = paginate(req.query);
     const rows = await db.select().from(agents).offset(offset).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/agents/:id", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return res.status(404).json({ error: "Not found" });
-    const [row] = await db.select().from(agents).where(eq(agents.id, parseInt(req.params.id)));
+    const [row] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, parseInt(req.params.id)));
     if (!row) return res.status(404).json({ error: "Agent not found" });
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/agents", requireAdmin, async (req, res) => {
@@ -190,16 +235,24 @@ router.post("/agents", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(agents).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/agents/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(agents).set(req.body).where(eq(agents.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(agents)
+      .set(req.body)
+      .where(eq(agents.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.delete("/agents/:id", requireAdmin, async (req, res) => {
@@ -208,23 +261,33 @@ router.delete("/agents/:id", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     await db.delete(agents).where(eq(agents.id, parseInt(req.params.id)));
     ok(res, { deleted: true });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/agents/:id/hierarchy", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, { agent: null, children: [] });
-    const [agent] = await db.select().from(agents).where(eq(agents.id, parseInt(req.params.id)));
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, parseInt(req.params.id)));
     ok(res, { agent, children: [] });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/agents/:id/scorecard", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, {});
-    const [agent] = await db.select().from(agents).where(eq(agents.id, parseInt(req.params.id)));
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, parseInt(req.params.id)));
     ok(res, {
       agentId: req.params.id,
       period: req.query.period ?? "month",
@@ -233,16 +296,26 @@ router.get("/agents/:id/scorecard", async (req, res) => {
       loyaltyPoints: agent?.loyaltyPoints ?? 0,
       kycStatus: "pending",
     });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/agents/:id/wallet", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, {});
-    const [agent] = await db.select().from(agents).where(eq(agents.id, parseInt(req.params.id)));
-    ok(res, { floatBalance: agent?.floatBalance ?? 0, commissionBalance: agent?.commissionBalance ?? 0 });
-  } catch (e) { err(res, e); }
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, parseInt(req.params.id)));
+    ok(res, {
+      floatBalance: agent?.floatBalance ?? 0,
+      commissionBalance: agent?.commissionBalance ?? 0,
+    });
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/agents/:id/wallet/transactions", async (req, res) => {
@@ -250,12 +323,17 @@ router.get("/agents/:id/wallet/transactions", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(transactions)
+    const rows = await db
+      .select()
+      .from(transactions)
       .where(eq(transactions.agentId, parseInt(req.params.id)))
       .orderBy(desc(transactions.createdAt))
-      .offset(offset).limit(limit);
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -267,9 +345,16 @@ router.get("/transactions", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(transactions).orderBy(desc(transactions.createdAt)).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/transactions/stats", async (_req, res) => {
@@ -277,34 +362,48 @@ router.get("/transactions/stats", async (_req, res) => {
     const db = await getDb();
     if (!db) return ok(res, {});
     const [total] = await db.select({ count: count() }).from(transactions);
-    const [vol] = await db.select({ sum: sql<number>`COALESCE(SUM(amount),0)` }).from(transactions);
+    const [vol] = await db
+      .select({ sum: sql<number>`COALESCE(SUM(amount),0)` })
+      .from(transactions);
     ok(res, { totalCount: total.count, totalVolume: vol.sum });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/transactions/:id", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return res.status(404).json({ error: "Not found" });
-    const [row] = await db.select().from(transactions).where(eq(transactions.id, parseInt(req.params.id)));
+    const [row] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, parseInt(req.params.id)));
     if (!row) return res.status(404).json({ error: "Transaction not found" });
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/transactions/:id/reverse", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.insert(reversalRequests).values({
-      transactionId: String(req.params.id),
-      agentId: req.body.agentId ?? 1,
-      reason: req.body.reason ?? "Manual reversal",
-      amount: req.body.amount ?? "0",
-      status: "pending",
-    }).returning();
+    const [row] = await db
+      .insert(reversalRequests)
+      .values({
+        transactionId: String(req.params.id),
+        agentId: req.body.agentId ?? 1,
+        reason: req.body.reason ?? "Manual reversal",
+        amount: req.body.amount ?? "0",
+        status: "pending",
+      })
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -316,19 +415,31 @@ router.get("/kyc/applications", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(kycSessions).orderBy(desc(kycSessions.createdAt)).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(kycSessions)
+      .orderBy(desc(kycSessions.createdAt))
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/kyc/applications/:id", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return res.status(404).json({ error: "Not found" });
-    const [row] = await db.select().from(kycSessions).where(eq(kycSessions.id, parseInt(req.params.id)));
+    const [row] = await db
+      .select()
+      .from(kycSessions)
+      .where(eq(kycSessions.id, parseInt(req.params.id)));
     if (!row) return res.status(404).json({ error: "KYC session not found" });
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/kyc/applications/:id/review", requireAdmin, async (req, res) => {
@@ -336,12 +447,15 @@ router.post("/kyc/applications/:id/review", requireAdmin, async (req, res) => {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
     const { status, notes } = req.body;
-    const [row] = await db.update(kycSessions)
+    const [row] = await db
+      .update(kycSessions)
       .set({ status })
       .where(eq(kycSessions.id, parseInt(req.params.id)))
       .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/kyc/stats", async (_req, res) => {
@@ -350,7 +464,9 @@ router.get("/kyc/stats", async (_req, res) => {
     if (!db) return ok(res, {});
     const [total] = await db.select({ count: count() }).from(kycSessions);
     ok(res, { total: total.count });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -363,7 +479,9 @@ router.get("/commissions/rules", async (_req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(commissionRules);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/commissions/rules", requireAdmin, async (req, res) => {
@@ -372,25 +490,37 @@ router.post("/commissions/rules", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(commissionRules).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/commissions/rules/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(commissionRules).set(req.body).where(eq(commissionRules.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(commissionRules)
+      .set(req.body)
+      .where(eq(commissionRules.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.delete("/commissions/rules/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    await db.delete(commissionRules).where(eq(commissionRules.id, parseInt(req.params.id)));
+    await db
+      .delete(commissionRules)
+      .where(eq(commissionRules.id, parseInt(req.params.id)));
     ok(res, { deleted: true });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/commissions/settlements", async (req, res) => {
@@ -398,12 +528,17 @@ router.get("/commissions/settlements", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(transactions)
+    const rows = await db
+      .select()
+      .from(transactions)
       .where(eq(transactions.type, "Transfer"))
       .orderBy(desc(transactions.createdAt))
-      .offset(offset).limit(limit);
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/commissions/stats", async (_req, res) => {
@@ -412,7 +547,9 @@ router.get("/commissions/stats", async (_req, res) => {
     if (!db) return ok(res, {});
     const [total] = await db.select({ count: count() }).from(commissionRules);
     ok(res, { totalRules: total.count });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -424,19 +561,30 @@ router.get("/pos/terminals", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(posTerminals).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(posTerminals)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/terminals/:id", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return res.status(404).json({ error: "Not found" });
-    const [row] = await db.select().from(posTerminals).where(eq(posTerminals.id, parseInt(req.params.id)));
+    const [row] = await db
+      .select()
+      .from(posTerminals)
+      .where(eq(posTerminals.id, parseInt(req.params.id)));
     if (!row) return res.status(404).json({ error: "Terminal not found" });
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/terminals/register", requireAdmin, async (req, res) => {
@@ -445,33 +593,52 @@ router.post("/pos/terminals/register", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(posTerminals).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/pos/terminals/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(posTerminals).set(req.body).where(eq(posTerminals.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(posTerminals)
+      .set(req.body)
+      .where(eq(posTerminals.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.delete("/pos/terminals/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    await db.delete(posTerminals).where(eq(posTerminals.id, parseInt(req.params.id)));
+    await db
+      .delete(posTerminals)
+      .where(eq(posTerminals.id, parseInt(req.params.id)));
     ok(res, { deleted: true });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/terminals/:id/command", requireAdmin, async (req, res) => {
   try {
     const { command } = req.body;
     // Commands are forwarded to the MDM service via platformProxy
-    ok(res, { terminalId: req.params.id, command, status: "queued", timestamp: new Date().toISOString() });
-  } catch (e) { err(res, e); }
+    ok(res, {
+      terminalId: req.params.id,
+      command,
+      status: "queued",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/status", async (_req, res) => {
@@ -480,7 +647,9 @@ router.get("/pos/status", async (_req, res) => {
     if (!db) return ok(res, { total: 0, active: 0 });
     const [total] = await db.select({ count: count() }).from(posTerminals);
     ok(res, { total: total.count, status: "operational" });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/health", async (_req, res) => {
@@ -491,18 +660,28 @@ router.get("/pos/terminals/status/:status", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, []);
-    const rows = await db.select().from(posTerminals).where(eq(posTerminals.status, req.params.status as any));
+    const rows = await db
+      .select()
+      .from(posTerminals)
+      .where(eq(posTerminals.status, req.params.status as any));
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/terminals/maintenance", async (_req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, []);
-    const rows = await db.select().from(posTerminals).where(eq(posTerminals.status, "maintenance"));
+    const rows = await db
+      .select()
+      .from(posTerminals)
+      .where(eq(posTerminals.status, "maintenance"));
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/servicerecords", async (req, res) => {
@@ -510,9 +689,15 @@ router.get("/pos/servicerecords", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(serviceRecords).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(serviceRecords)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/servicerecords", requireAdmin, async (req, res) => {
@@ -521,7 +706,9 @@ router.post("/pos/servicerecords", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(serviceRecords).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/softwareupdates", async (_req, res) => {
@@ -530,7 +717,9 @@ router.get("/pos/softwareupdates", async (_req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(softwareUpdates);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/softwareupdates", requireAdmin, async (req, res) => {
@@ -539,30 +728,55 @@ router.post("/pos/softwareupdates", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(softwareUpdates).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
-router.put("/pos/terminals/:id/softwareupdate/:version", requireAdmin, async (req, res) => {
-  ok(res, { terminalId: req.params.id, version: req.params.version, status: "update_queued" });
-});
+router.put(
+  "/pos/terminals/:id/softwareupdate/:version",
+  requireAdmin,
+  async (req, res) => {
+    ok(res, {
+      terminalId: req.params.id,
+      version: req.params.version,
+      status: "update_queued",
+    });
+  }
+);
 
 router.get("/pos/terminals/:id/configuration", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, {});
-    const [row] = await db.select().from(posTerminals).where(eq(posTerminals.id, parseInt(req.params.id)));
+    const [row] = await db
+      .select()
+      .from(posTerminals)
+      .where(eq(posTerminals.id, parseInt(req.params.id)));
     ok(res, { config: row?.configJson ?? {} });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
-router.put("/pos/terminals/:id/configuration", requireAdmin, async (req, res) => {
-  try {
-    const db = await getDb();
-    if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(posTerminals).set({ configJson: req.body }).where(eq(posTerminals.id, parseInt(req.params.id))).returning();
-    ok(res, row);
-  } catch (e) { err(res, e); }
-});
+router.put(
+  "/pos/terminals/:id/configuration",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const db = await getDb();
+      if (!db) return err(res, "DB unavailable");
+      const [row] = await db
+        .update(posTerminals)
+        .set({ configJson: req.body })
+        .where(eq(posTerminals.id, parseInt(req.params.id)))
+        .returning();
+      ok(res, row);
+    } catch (e) {
+      err(res, e);
+    }
+  }
+);
 
 router.get("/pos/terminalgroups", async (_req, res) => {
   try {
@@ -570,7 +784,9 @@ router.get("/pos/terminalgroups", async (_req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(terminalGroups);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/terminalgroups", requireAdmin, async (req, res) => {
@@ -579,7 +795,9 @@ router.post("/pos/terminalgroups", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(terminalGroups).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/reports/terminalstatus", async (_req, res) => {
@@ -588,16 +806,24 @@ router.get("/pos/reports/terminalstatus", async (_req, res) => {
     if (!db) return ok(res, {});
     const [total] = await db.select({ count: count() }).from(posTerminals);
     ok(res, { total: total.count, generatedAt: new Date().toISOString() });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/reports/servicehistory", async (_req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, []);
-    const rows = await db.select().from(serviceRecords).orderBy(desc(serviceRecords.createdAt)).limit(50);
+    const rows = await db
+      .select()
+      .from(serviceRecords)
+      .orderBy(desc(serviceRecords.createdAt))
+      .limit(50);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/transactions", async (req, res) => {
@@ -605,9 +831,16 @@ router.get("/pos/transactions", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(transactions).orderBy(desc(transactions.createdAt)).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/transactions/payment", async (req, res) => {
@@ -619,7 +852,11 @@ router.post("/pos/transactions/:id/void", requireAdmin, async (req, res) => {
 });
 
 router.post("/pos/transactions/:id/refund", requireAdmin, async (req, res) => {
-  ok(res, { transactionId: req.params.id, status: "refund_queued", ...req.body });
+  ok(res, {
+    transactionId: req.params.id,
+    status: "refund_queued",
+    ...req.body,
+  });
 });
 
 router.get("/pos/analytics", async (req, res) => {
@@ -627,26 +864,43 @@ router.get("/pos/analytics", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, {});
     const [txCount] = await db.select({ count: count() }).from(transactions);
-    ok(res, { transactions: txCount.count, period: req.query.period ?? "today" });
-  } catch (e) { err(res, e); }
+    ok(res, {
+      transactions: txCount.count,
+      period: req.query.period ?? "today",
+    });
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/fraud-alerts", async (_req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, []);
-    const rows = await db.select().from(fraudAlerts).orderBy(desc(fraudAlerts.createdAt)).limit(50);
+    const rows = await db
+      .select()
+      .from(fraudAlerts)
+      .orderBy(desc(fraudAlerts.createdAt))
+      .limit(50);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/pos/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(fraudAlerts).set({ status: "resolved" }).where(eq(fraudAlerts.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(fraudAlerts)
+      .set({ status: "resolved" })
+      .where(eq(fraudAlerts.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/pos/geofence/violations", async (req, res) => {
@@ -655,11 +909,17 @@ router.get("/pos/geofence/violations", async (req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(geofenceZones).limit(20);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/pos/terminals/:id/geofence", requireAdmin, async (req, res) => {
-  ok(res, { terminalId: req.params.id, zoneId: req.body.zone_id, status: "assigned" });
+  ok(res, {
+    terminalId: req.params.id,
+    zoneId: req.body.zone_id,
+    status: "assigned",
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -673,26 +933,39 @@ router.get("/qr-codes", async (req, res) => {
     const { offset, limit } = paginate(req.query);
     const rows = await db.select().from(qrCodes).offset(offset).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/qr-codes/generate", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const payload = { ...req.body, agentId: (req as any).user?.agentId, createdAt: new Date() };
+    const payload = {
+      ...req.body,
+      agentId: (req as any).user?.agentId,
+      createdAt: new Date(),
+    };
     const [row] = await db.insert(qrCodes).values(payload).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/qr-codes/validate", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, { valid: false });
-    const [row] = await db.select().from(qrCodes).where(eq(qrCodes.code, req.body.code));
+    const [row] = await db
+      .select()
+      .from(qrCodes)
+      .where(eq(qrCodes.code, req.body.code));
     ok(res, { valid: !!row, qrCode: row ?? null });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/qr-codes/stats", async (_req, res) => {
@@ -701,7 +974,9 @@ router.get("/qr-codes/stats", async (_req, res) => {
     if (!db) return ok(res, {});
     const [total] = await db.select({ count: count() }).from(qrCodes);
     ok(res, { total: total.count });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -714,17 +989,29 @@ router.get("/analytics", async (req, res) => {
     if (!db) return ok(res, {});
     const [txCount] = await db.select({ count: count() }).from(transactions);
     const [agentCount] = await db.select({ count: count() }).from(agents);
-    ok(res, { transactions: txCount.count, agents: agentCount.count, period: req.query.period ?? "today" });
-  } catch (e) { err(res, e); }
+    ok(res, {
+      transactions: txCount.count,
+      agents: agentCount.count,
+      period: req.query.period ?? "today",
+    });
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/analytics/transactions", async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, []);
-    const rows = await db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(100);
+    const rows = await db
+      .select()
+      .from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .limit(100);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/analytics/agents", async (_req, res) => {
@@ -733,7 +1020,9 @@ router.get("/analytics/agents", async (_req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(agents).limit(50);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -745,9 +1034,15 @@ router.get("/inventory", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(inventoryItems).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(inventoryItems)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/inventory", requireAdmin, async (req, res) => {
@@ -756,16 +1051,24 @@ router.post("/inventory", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(inventoryItems).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/inventory/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(inventoryItems).set(req.body).where(eq(inventoryItems.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(inventoryItems)
+      .set(req.body)
+      .where(eq(inventoryItems.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -773,7 +1076,11 @@ router.put("/inventory/:id", requireAdmin, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get("/health", async (_req, res) => {
-  ok(res, { status: "healthy", uptime: process.uptime(), timestamp: new Date().toISOString() });
+  ok(res, {
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 router.get("/settings", async (_req, res) => {
@@ -821,7 +1128,7 @@ router.get("/fluvio/sse/:topic", async (req, res) => {
 
   try {
     const { subscribeToTopic } = await import("./lib/fluvioClient.js");
-    unsubscribe = subscribeToTopic(topic, (event) => {
+    unsubscribe = subscribeToTopic(topic, event => {
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
@@ -849,7 +1156,9 @@ router.get("/fluvio/sse/:topic", async (req, res) => {
 
 router.get("/fluvio/streams", async (_req, res) => {
   try {
-    const { getFluvioStatus, FLUVIO_TOPICS } = await import("./lib/fluvioClient.js");
+    const { getFluvioStatus, FLUVIO_TOPICS } = await import(
+      "./lib/fluvioClient.js"
+    );
     const status = getFluvioStatus();
     ok(res, {
       streams: Object.values(FLUVIO_TOPICS),
@@ -860,20 +1169,45 @@ router.get("/fluvio/streams", async (_req, res) => {
       bufferedEvents: status.bufferedEvents,
     });
   } catch {
-    ok(res, { streams: ["pos.transactions.created", "fraud-alerts", "float-events", "agent-telemetry", "kyc-events", "settlement-events"], source: "fluvio", mode: "fallback" });
+    ok(res, {
+      streams: [
+        "pos.transactions.created",
+        "fraud-alerts",
+        "float-events",
+        "agent-telemetry",
+        "kyc-events",
+        "settlement-events",
+      ],
+      source: "fluvio",
+      mode: "fallback",
+    });
   }
 });
 
 router.get("/fluvio/stats", async (_req, res) => {
   try {
-    const { getFluvioStats, getFluvioStatus } = await import("./lib/fluvioClient.js");
-    const [streams, status] = await Promise.all([getFluvioStats(), Promise.resolve(getFluvioStatus())]);
-    const mps = streams.reduce((s: number, t: any) => s + (t.messagesPerSecond ?? 0), 0);
-    const total = streams.reduce((s: number, t: any) => s + (t.totalMessages ?? 0), 0);
+    const { getFluvioStats, getFluvioStatus } = await import(
+      "./lib/fluvioClient.js"
+    );
+    const [streams, status] = await Promise.all([
+      getFluvioStats(),
+      Promise.resolve(getFluvioStatus()),
+    ]);
+    const mps = streams.reduce(
+      (s: number, t: any) => s + (t.messagesPerSecond ?? 0),
+      0
+    );
+    const total = streams.reduce(
+      (s: number, t: any) => s + (t.totalMessages ?? 0),
+      0
+    );
     // Map mode: direct/proxy → live, fallback → buffer, no endpoint → offline
     const uiMode: "live" | "buffer" | "offline" =
-      status.mode === "direct" || status.mode === "proxy" ? "live" :
-      status.mode === "fallback" ? "buffer" : "offline";
+      status.mode === "direct" || status.mode === "proxy"
+        ? "live"
+        : status.mode === "fallback"
+          ? "buffer"
+          : "offline";
     ok(res, {
       streams,
       activeStreams: streams.length,
@@ -886,7 +1220,9 @@ router.get("/fluvio/stats", async (_req, res) => {
       endpoint: status.endpoint,
       bufferedEvents: status.bufferedEvents,
     });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/fluvio/status", async (_req, res) => {
@@ -902,10 +1238,13 @@ router.post("/fluvio/produce", requireAdmin, async (req, res) => {
   try {
     const { fluvioProduce } = await import("./lib/fluvioClient.js");
     const { topic, key, payload } = req.body;
-    if (!topic || !payload) return res.status(400).json({ error: "topic and payload required" });
+    if (!topic || !payload)
+      return res.status(400).json({ error: "topic and payload required" });
     await fluvioProduce({ topic, key, payload });
     ok(res, { queued: true, topic });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // Test Fluvio cluster connectivity: GET /api/v1/fluvio/test-connection
@@ -917,7 +1256,8 @@ router.get("/fluvio/test-connection", requireAdmin, async (_req, res) => {
       return ok(res, {
         connected: false,
         mode: "unconfigured",
-        message: "FLUVIO_ENDPOINT is not set. Add it in Secrets to connect to a live cluster.",
+        message:
+          "FLUVIO_ENDPOINT is not set. Add it in Secrets to connect to a live cluster.",
         latencyMs: null,
         topics: [],
       });
@@ -959,7 +1299,9 @@ router.get("/vat/records", async (req, res) => {
     const { offset, limit } = paginate(req.query);
     const rows = await db.select().from(vatRecords).offset(offset).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/vat/records", requireAdmin, async (req, res) => {
@@ -968,7 +1310,9 @@ router.post("/vat/records", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(vatRecords).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -981,7 +1325,9 @@ router.get("/geofencing/zones", async (_req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(geofenceZones);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/geofencing/zones", requireAdmin, async (req, res) => {
@@ -990,7 +1336,9 @@ router.post("/geofencing/zones", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(geofenceZones).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1002,9 +1350,15 @@ router.get("/storefront-ads", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(storefrontAds).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(storefrontAds)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/storefront-ads", requireAdmin, async (req, res) => {
@@ -1013,7 +1367,9 @@ router.post("/storefront-ads", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(storefrontAds).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/shareable-links", async (req, res) => {
@@ -1021,9 +1377,15 @@ router.get("/shareable-links", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(shareableLinks).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(shareableLinks)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/shareable-links", async (req, res) => {
@@ -1032,7 +1394,9 @@ router.post("/shareable-links", async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(shareableLinks).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/store-map", async (_req, res) => {
@@ -1050,7 +1414,9 @@ router.get("/erp/sync-log", async (req, res) => {
     const { offset, limit } = paginate(req.query);
     const rows = await db.select().from(auditLog).offset(offset).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/erp/sync", requireAdmin, async (req, res) => {
@@ -1058,7 +1424,11 @@ router.post("/erp/sync", requireAdmin, async (req, res) => {
 });
 
 router.post("/communication/send", async (req, res) => {
-  ok(res, { status: "queued", channel: req.body.channel ?? "sms", timestamp: new Date().toISOString() });
+  ok(res, {
+    status: "queued",
+    channel: req.body.channel ?? "sms",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 router.get("/multi-sim/profiles", async (req, res) => {
@@ -1067,7 +1437,9 @@ router.get("/multi-sim/profiles", async (req, res) => {
     if (!db) return ok(res, []);
     const rows = await db.select().from(multiSimProfiles);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/multi-sim/failover", async (req, res) => {
@@ -1079,18 +1451,29 @@ router.get("/reversals", async (req, res) => {
     const db = await getDb();
     if (!db) return ok(res, []);
     const { offset, limit } = paginate(req.query);
-    const rows = await db.select().from(reversalRequests).offset(offset).limit(limit);
+    const rows = await db
+      .select()
+      .from(reversalRequests)
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/reversals", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.insert(reversalRequests).values(req.body).returning();
+    const [row] = await db
+      .insert(reversalRequests)
+      .values(req.body)
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/nfc/tags", async (_req, res) => {
@@ -1105,9 +1488,13 @@ router.get("/finance/summary", async (_req, res) => {
   try {
     const db = await getDb();
     if (!db) return ok(res, {});
-    const [vol] = await db.select({ sum: sql<number>`COALESCE(SUM(amount),0)` }).from(transactions);
+    const [vol] = await db
+      .select({ sum: sql<number>`COALESCE(SUM(amount),0)` })
+      .from(transactions);
     ok(res, { totalVolume: vol.sum, currency: "NGN" });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1120,10 +1507,16 @@ router.get("/customers/me", async (req, res) => {
     if (!db) return res.status(503).json({ error: "DB unavailable" });
     const keycloakSub = (req as any).user?.sub;
     if (!keycloakSub) return res.status(401).json({ error: "Unauthorized" });
-    const [row] = await db.select().from(customers).where(eq(customers.keycloakSub, String(keycloakSub)));
-    if (!row) return res.status(404).json({ error: "Customer profile not found" });
+    const [row] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.keycloakSub, String(keycloakSub)));
+    if (!row)
+      return res.status(404).json({ error: "Customer profile not found" });
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.get("/customers/transactions", async (req, res) => {
@@ -1132,14 +1525,24 @@ router.get("/customers/transactions", async (req, res) => {
     if (!db) return ok(res, []);
     const keycloakSub = (req as any).user?.sub;
     const { offset, limit } = paginate(req.query);
-    const [cust] = keycloakSub ? await db.select().from(customers).where(eq(customers.keycloakSub, String(keycloakSub))) : [null];
+    const [cust] = keycloakSub
+      ? await db
+          .select()
+          .from(customers)
+          .where(eq(customers.keycloakSub, String(keycloakSub)))
+      : [null];
     if (!cust) return ok(res, []);
-    const rows = await db.select().from(transactions)
+    const rows = await db
+      .select()
+      .from(transactions)
       .where(eq(transactions.agentId, cust.id))
       .orderBy(desc(transactions.createdAt))
-      .offset(offset).limit(limit);
+      .offset(offset)
+      .limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1153,7 +1556,9 @@ router.get("/tenants", requireAdmin, async (req, res) => {
     const { offset, limit } = paginate(req.query);
     const rows = await db.select().from(tenants).offset(offset).limit(limit);
     ok(res, rows);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.post("/tenants", requireAdmin, async (req, res) => {
@@ -1162,16 +1567,24 @@ router.post("/tenants", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     const [row] = await db.insert(tenants).values(req.body).returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.put("/tenants/:id", requireAdmin, async (req, res) => {
   try {
     const db = await getDb();
     if (!db) return err(res, "DB unavailable");
-    const [row] = await db.update(tenants).set(req.body).where(eq(tenants.id, parseInt(req.params.id))).returning();
+    const [row] = await db
+      .update(tenants)
+      .set(req.body)
+      .where(eq(tenants.id, parseInt(req.params.id)))
+      .returning();
     ok(res, row);
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 router.delete("/tenants/:id", requireAdmin, async (req, res) => {
@@ -1180,7 +1593,9 @@ router.delete("/tenants/:id", requireAdmin, async (req, res) => {
     if (!db) return err(res, "DB unavailable");
     await db.delete(tenants).where(eq(tenants.id, parseInt(req.params.id)));
     ok(res, { deleted: true });
-  } catch (e) { err(res, e); }
+  } catch (e) {
+    err(res, e);
+  }
 });
 
 export { router as restBridgeRouter };

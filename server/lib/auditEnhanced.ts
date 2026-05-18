@@ -19,28 +19,35 @@ interface AuditSnapshot {
 /**
  * Enhanced audit logging with before/after snapshots for change tracking.
  */
-export async function writeEnhancedAuditLog(entry: AuditSnapshot): Promise<void> {
+export async function writeEnhancedAuditLog(
+  entry: AuditSnapshot
+): Promise<void> {
   try {
     const db = await getDb();
     if (!db) return;
-    
+
     const changeDetails: Record<string, any> = {
       ...(entry.metadata ?? {}),
     };
-    
+
     // Calculate diff if before/after provided
     if (entry.before && entry.after) {
       const changes: Record<string, { from: any; to: any }> = {};
-      const allKeys = new Set([...Object.keys(entry.before), ...Object.keys(entry.after)]);
+      const allKeys = new Set([
+        ...Object.keys(entry.before),
+        ...Object.keys(entry.after),
+      ]);
       for (const key of allKeys) {
-        if (JSON.stringify(entry.before[key]) !== JSON.stringify(entry.after[key])) {
+        if (
+          JSON.stringify(entry.before[key]) !== JSON.stringify(entry.after[key])
+        ) {
           changes[key] = { from: entry.before[key], to: entry.after[key] };
         }
       }
       changeDetails.changes = changes;
       changeDetails.changedFields = Object.keys(changes);
     }
-    
+
     await db.insert(auditLog).values({
       agentId: entry.agentId,
       agentCode: entry.agentCode,

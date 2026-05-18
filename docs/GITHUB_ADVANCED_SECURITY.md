@@ -7,22 +7,24 @@ This guide explains how to enable and configure GitHub Advanced Security (GHAS) 
 
 ## What GitHub Advanced Security Provides
 
-| Feature | Description | Cost |
-|---|---|---|
-| **CodeQL SAST** | Static analysis for JS/TS, Go, Python — finds injection, XSS, path traversal, etc. | Free for public repos; paid for private |
-| **Secret Scanning** | Detects accidentally committed API keys, tokens, passwords | Free for public repos; paid for private |
-| **Dependabot Alerts** | CVE alerts for all dependency ecosystems (npm, Go, Python, Docker) | Free for all repos |
-| **Dependabot Security Updates** | Auto-opens PRs to fix vulnerable dependencies | Free for all repos |
-| **Dependabot Version Updates** | Auto-opens PRs for dependency upgrades (already configured via `.github/dependabot.yml`) | Free for all repos |
+| Feature                         | Description                                                                              | Cost                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------- |
+| **CodeQL SAST**                 | Static analysis for JS/TS, Go, Python — finds injection, XSS, path traversal, etc.       | Free for public repos; paid for private |
+| **Secret Scanning**             | Detects accidentally committed API keys, tokens, passwords                               | Free for public repos; paid for private |
+| **Dependabot Alerts**           | CVE alerts for all dependency ecosystems (npm, Go, Python, Docker)                       | Free for all repos                      |
+| **Dependabot Security Updates** | Auto-opens PRs to fix vulnerable dependencies                                            | Free for all repos                      |
+| **Dependabot Version Updates**  | Auto-opens PRs for dependency upgrades (already configured via `.github/dependabot.yml`) | Free for all repos                      |
 
 ---
 
 ## Step 1 — Enable GitHub Advanced Security
 
 ### For Public Repositories (Free)
+
 GitHub Advanced Security is automatically available. No action needed.
 
 ### For Private Repositories
+
 1. Go to **Repository → Settings → Security & analysis**
 2. Click **Enable** next to "GitHub Advanced Security"
 3. Confirm the licence cost (billed per active committer per month)
@@ -33,15 +35,15 @@ GitHub Advanced Security is automatically available. No action needed.
 
 Navigate to **Repository → Settings → Security & analysis** and enable:
 
-| Setting | Recommended Value |
-|---|---|
-| Dependency graph | Enabled |
-| Dependabot alerts | Enabled |
-| Dependabot security updates | Enabled |
-| Dependabot version updates | Enabled (configured via `.github/dependabot.yml`) |
-| Code scanning | Enabled (CodeQL workflow already in `.github/workflows/codeql.yml`) |
-| Secret scanning | Enabled |
-| Secret scanning push protection | Enabled (blocks pushes containing secrets) |
+| Setting                         | Recommended Value                                                   |
+| ------------------------------- | ------------------------------------------------------------------- |
+| Dependency graph                | Enabled                                                             |
+| Dependabot alerts               | Enabled                                                             |
+| Dependabot security updates     | Enabled                                                             |
+| Dependabot version updates      | Enabled (configured via `.github/dependabot.yml`)                   |
+| Code scanning                   | Enabled (CodeQL workflow already in `.github/workflows/codeql.yml`) |
+| Secret scanning                 | Enabled                                                             |
+| Secret scanning push protection | Enabled (blocks pushes containing secrets)                          |
 
 ---
 
@@ -87,10 +89,10 @@ After the first `codeql.yml` workflow run:
 
 The `codeql.yml` workflow uses `security-extended,security-and-quality` which includes:
 
-| Suite | Coverage |
-|---|---|
-| `security-extended` | OWASP Top 10, CWE Top 25, injection, XSS, SSRF, path traversal |
-| `security-and-quality` | Code quality issues that can become security vulnerabilities |
+| Suite                  | Coverage                                                       |
+| ---------------------- | -------------------------------------------------------------- |
+| `security-extended`    | OWASP Top 10, CWE Top 25, injection, XSS, SSRF, path traversal |
+| `security-and-quality` | Code quality issues that can become security vulnerabilities   |
 
 ---
 
@@ -141,11 +143,11 @@ Then re-run `scripts/setup-branch-protection.sh` to apply the updated rules.
 
 Based on the codebase size (~5,100 source files), expect approximately:
 
-| Language | Estimated Alerts | Expected Severity |
-|---|---|---|
-| JavaScript/TypeScript | 5–15 | Mostly Medium/Low |
-| Go | 0–5 | Mostly Low |
-| Python | 3–10 | Mostly Medium/Low |
+| Language              | Estimated Alerts | Expected Severity |
+| --------------------- | ---------------- | ----------------- |
+| JavaScript/TypeScript | 5–15             | Mostly Medium/Low |
+| Go                    | 0–5              | Mostly Low        |
+| Python                | 3–10             | Mostly Medium/Low |
 
 Most alerts will be code quality issues (unused variables, missing error handling) rather
 than exploitable vulnerabilities, given the security hardening already applied.

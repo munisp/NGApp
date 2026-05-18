@@ -11,20 +11,36 @@ const ROUTERS_DIR = path.join(__dirname, "routers");
 
 // 26 newly wired routers (Sprint 44)
 const SPRINT_44_ROUTERS = [
-  "floatTopUp", "loanDisbursement", "customerWalletSystem", "merchantPayments",
-  "mobileMoney", "remittance", "crossBorderRemittanceHub", "dynamicFeeCalculator",
-  "transactionReversalManager", "multiChannelPaymentOrch", "smartContractPayment",
-  "paymentGatewayRouter", "settlementBatchProcessor", "settlementNettingEngine",
-  "settlementReconciliation", "merchantSettlementDashboard", "taxCollection",
-  "pensionCollection", "savingsProducts", "partnerRevenueSharing",
-  "transactionFeeCalc", "dynamicPricingEngine", "fraudCaseManagement",
-  "paymentDisputeArbitration", "txDisputeArbitration", "transactionReconciliation",
+  "floatTopUp",
+  "loanDisbursement",
+  "customerWalletSystem",
+  "merchantPayments",
+  "mobileMoney",
+  "remittance",
+  "crossBorderRemittanceHub",
+  "dynamicFeeCalculator",
+  "transactionReversalManager",
+  "multiChannelPaymentOrch",
+  "smartContractPayment",
+  "paymentGatewayRouter",
+  "settlementBatchProcessor",
+  "settlementNettingEngine",
+  "settlementReconciliation",
+  "merchantSettlementDashboard",
+  "taxCollection",
+  "pensionCollection",
+  "savingsProducts",
+  "partnerRevenueSharing",
+  "transactionFeeCalc",
+  "dynamicPricingEngine",
+  "fraudCaseManagement",
+  "paymentDisputeArbitration",
+  "txDisputeArbitration",
+  "transactionReconciliation",
 ];
 
 // 3 deeply wired routers (Sprint 43)
-const SPRINT_43_ROUTERS = [
-  "commissionEngine", "settlement", "disputeRefund",
-];
+const SPRINT_43_ROUTERS = ["commissionEngine", "settlement", "disputeRefund"];
 
 const CORE_MIDDLEWARE = [
   { name: "Kafka (publishEvent)", pattern: /publishEvent/ },
@@ -94,7 +110,10 @@ describe("Sprint 44: Middleware Wiring Verification", () => {
       it(`${router} has middleware integration`, () => {
         const content = readRouter(router);
         // Sprint 43 routers use middleware layer files or direct Dapr/Temporal calls
-        const hasMiddleware = /middleware|dapr|temporal|kafka|redis|fluvio|permify|tbClient/.test(content);
+        const hasMiddleware =
+          /middleware|dapr|temporal|kafka|redis|fluvio|permify|tbClient/.test(
+            content
+          );
         expect(hasMiddleware).toBe(true);
       });
     }
@@ -108,7 +127,9 @@ describe("Sprint 44: Middleware Wiring Verification", () => {
         const matches = content.match(/publishEvent\(/g);
         if (matches) {
           // Ensure it's not the 2-arg pattern
-          expect(content).not.toMatch(/publishEvent\("[^"]+"\s*as\s*KafkaTopic,\s*\{/);
+          expect(content).not.toMatch(
+            /publishEvent\("[^"]+"\s*as\s*KafkaTopic,\s*\{/
+          );
         }
       }
     });
@@ -155,7 +176,7 @@ describe("Sprint 44: Middleware Wiring Verification", () => {
       const content = readRouter(r);
       return (content.match(/try\s*\{/g) || []).length >= 5;
     });
-    
+
     it("majority of Sprint 44 routers wrap middleware in try/catch", () => {
       // At least 20 of 26 routers should have try/catch
       expect(routersWithTryCatch.length).toBeGreaterThanOrEqual(13);
@@ -164,29 +185,60 @@ describe("Sprint 44: Middleware Wiring Verification", () => {
 
   describe("Sidecar files exist", () => {
     it("Go TigerBeetle sidecar binary exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "..", "tb-commission-sidecar", "cmd", "sidecar", "main.go"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(
+            __dirname,
+            "..",
+            "tb-commission-sidecar",
+            "cmd",
+            "sidecar",
+            "main.go"
+          )
+        )
+      ).toBe(true);
     });
 
     it("Rust Fluvio producer source exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "..", "fluvio-producer", "src", "main.rs"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(__dirname, "..", "fluvio-producer", "src", "main.rs")
+        )
+      ).toBe(true);
     });
 
     it("Python Lakehouse-Mojaloop sidecar exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "..", "lakehouse-mojaloop", "main.py"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(__dirname, "..", "lakehouse-mojaloop", "main.py")
+        )
+      ).toBe(true);
     });
   });
 
   describe("Middleware layer files exist", () => {
     it("commissionMiddleware.ts exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "middleware", "commissionMiddleware.ts"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(__dirname, "middleware", "commissionMiddleware.ts")
+        )
+      ).toBe(true);
     });
 
     it("settlementMiddleware.ts exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "middleware", "settlementMiddleware.ts"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(__dirname, "middleware", "settlementMiddleware.ts")
+        )
+      ).toBe(true);
     });
 
     it("disputeMiddleware.ts exists", () => {
-      expect(fs.existsSync(path.join(__dirname, "middleware", "disputeMiddleware.ts"))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(__dirname, "middleware", "disputeMiddleware.ts")
+        )
+      ).toBe(true);
     });
   });
 });

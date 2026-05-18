@@ -28,7 +28,10 @@ interface PermifyCheckRequest {
 }
 
 interface PermifyCheckResponse {
-  can: "CHECK_RESULT_ALLOWED" | "CHECK_RESULT_DENIED" | "CHECK_RESULT_UNSPECIFIED";
+  can:
+    | "CHECK_RESULT_ALLOWED"
+    | "CHECK_RESULT_DENIED"
+    | "CHECK_RESULT_UNSPECIFIED";
 }
 
 /**
@@ -55,15 +58,20 @@ export async function permifyCheck(params: {
   };
 
   try {
-    const res = await fetch(`${PERMIFY_URL}/v1/tenants/${PERMIFY_TENANT_ID}/permissions/check`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(2_000),
-    });
+    const res = await fetch(
+      `${PERMIFY_URL}/v1/tenants/${PERMIFY_TENANT_ID}/permissions/check`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(2_000),
+      }
+    );
 
     if (!res.ok) {
-      logger.warn(`[Permify] Check failed: ${res.status} — falling back to deny`);
+      logger.warn(
+        `[Permify] Check failed: ${res.status} — falling back to deny`
+      );
       return false;
     }
 
@@ -72,7 +80,10 @@ export async function permifyCheck(params: {
   } catch (err) {
     // Fail-open: when Permify is unavailable (e.g. dev without Docker), allow access.
     // In production, Permify is always running via docker-compose.production.yml.
-    logger.warn({ err }, "[Permify] Service unavailable — failing open (allow)");
+    logger.warn(
+      { err },
+      "[Permify] Service unavailable — failing open (allow)"
+    );
     return true;
   }
 }
@@ -105,7 +116,10 @@ export async function canAccessTransaction(
  * Check if an agent can approve float top-up requests.
  * Requires supervisor or admin role.
  */
-export async function canApproveTopUp(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canApproveTopUp(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   if (agentRole === "admin") return true;
 
   return permifyCheck({
@@ -121,7 +135,10 @@ export async function canApproveTopUp(agentCode: string, agentRole: string): Pro
  * Check if an agent can update fraud alert status.
  * Requires admin role.
  */
-export async function canUpdateFraudAlert(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canUpdateFraudAlert(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   if (agentRole === "admin") return true;
 
   return permifyCheck({
@@ -133,4 +150,9 @@ export async function canUpdateFraudAlert(agentCode: string, agentRole: string):
   });
 }
 
-export default { permifyCheck, canAccessTransaction, canApproveTopUp, canUpdateFraudAlert };
+export default {
+  permifyCheck,
+  canAccessTransaction,
+  canApproveTopUp,
+  canUpdateFraudAlert,
+};

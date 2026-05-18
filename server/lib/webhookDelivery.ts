@@ -71,7 +71,7 @@ export async function dispatchWebhookEvent(
     .where(eq(webhookEndpoints.isActive, true));
 
   const subscribedEndpoints = endpoints.filter(
-    (ep) =>
+    ep =>
       Array.isArray(ep.events) &&
       (ep.events.includes(eventType) || ep.events.includes("*"))
   );
@@ -100,8 +100,11 @@ export async function dispatchWebhookEvent(
       .returning();
 
     // Attempt delivery (non-blocking)
-    attemptDelivery(endpoint, delivery.id, body, endpoint.secret).catch(
-      (err) => console.error(`[Webhook] Delivery error for endpoint ${endpoint.id}:`, err)
+    attemptDelivery(endpoint, delivery.id, body, endpoint.secret).catch(err =>
+      console.error(
+        `[Webhook] Delivery error for endpoint ${endpoint.id}:`,
+        err
+      )
     );
   }
 }
@@ -151,9 +154,10 @@ async function attemptDelivery(
         responseBody: responseBody.substring(0, 1000),
         attemptCount: attempt,
         deliveredAt: success ? new Date() : undefined,
-        nextRetryAt: !success && attempt < 3
-          ? new Date(Date.now() + Math.pow(2, attempt) * 5000)
-          : undefined,
+        nextRetryAt:
+          !success && attempt < 3
+            ? new Date(Date.now() + Math.pow(2, attempt) * 5000)
+            : undefined,
       })
       .where(eq(webhookDeliveries.id, deliveryId));
 
@@ -182,9 +186,10 @@ async function attemptDelivery(
         status: attempt < 3 ? "retrying" : "failed",
         responseBody: errMsg.substring(0, 1000),
         attemptCount: attempt,
-        nextRetryAt: attempt < 3
-          ? new Date(Date.now() + Math.pow(2, attempt) * 5000)
-          : undefined,
+        nextRetryAt:
+          attempt < 3
+            ? new Date(Date.now() + Math.pow(2, attempt) * 5000)
+            : undefined,
       })
       .where(eq(webhookDeliveries.id, deliveryId));
 
@@ -213,7 +218,10 @@ export async function retryPendingDeliveries(): Promise<number> {
       endpoint: webhookEndpoints,
     })
     .from(webhookDeliveries)
-    .innerJoin(webhookEndpoints, eq(webhookDeliveries.endpointId, webhookEndpoints.id))
+    .innerJoin(
+      webhookEndpoints,
+      eq(webhookDeliveries.endpointId, webhookEndpoints.id)
+    )
     .where(
       and(
         eq(webhookDeliveries.status, "retrying"),
@@ -224,9 +232,13 @@ export async function retryPendingDeliveries(): Promise<number> {
 
   for (const { delivery, endpoint } of pending) {
     const body = JSON.stringify(delivery.payload);
-    attemptDelivery(endpoint, delivery.id, body, endpoint.secret, delivery.attemptCount + 1).catch(
-      (err) => console.error(`[Webhook] Retry error:`, err)
-    );
+    attemptDelivery(
+      endpoint,
+      delivery.id,
+      body,
+      endpoint.secret,
+      delivery.attemptCount + 1
+    ).catch(err => console.error(`[Webhook] Retry error:`, err));
   }
 
   return pending.length;

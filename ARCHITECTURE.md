@@ -68,28 +68,28 @@
 
 ## Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | React 19 + Vite + Tailwind 4 | Web PWA (POSShell, AdminPanel, all portals) |
-| API | tRPC 11 + Express 4 | Type-safe RPC with superjson |
-| Auth | Manus OAuth + JWT + FIDO2 | Session management + biometric |
-| Database | PostgreSQL + Drizzle ORM | Primary relational store |
-| Ledger | TigerBeetle | Double-entry financial ledger |
-| Cache | Redis | Session cache, pub/sub, rate limiting |
-| Streaming | Kafka + Fluvio | Event streaming, real-time updates |
-| Mobile (1) | Flutter + Dart | iOS/Android consumer app |
-| Mobile (2) | React Native | iOS/Android agent app |
-| Auth Gateway | Keycloak | Enterprise SSO |
-| Secrets | HashiCorp Vault | Secret management |
-| API Gateway | APISix | Rate limiting, routing, mTLS |
-| Storage | MinIO / S3 | File storage (KYC docs, firmware) |
-| Workflow | Temporal | Long-running workflows |
-| Permissions | Permify | Fine-grained RBAC |
-| Observability | OpenTelemetry + Grafana | Traces, metrics, logs |
-| Error Tracking | Sentry | Frontend/backend error monitoring |
-| SMS | Termii | OTP delivery, transaction alerts |
-| Push | Web Push (VAPID) | Browser push notifications |
-| IoT | MQTT | POS terminal messaging |
+| Layer          | Technology                   | Purpose                                     |
+| -------------- | ---------------------------- | ------------------------------------------- |
+| Frontend       | React 19 + Vite + Tailwind 4 | Web PWA (POSShell, AdminPanel, all portals) |
+| API            | tRPC 11 + Express 4          | Type-safe RPC with superjson                |
+| Auth           | Manus OAuth + JWT + FIDO2    | Session management + biometric              |
+| Database       | PostgreSQL + Drizzle ORM     | Primary relational store                    |
+| Ledger         | TigerBeetle                  | Double-entry financial ledger               |
+| Cache          | Redis                        | Session cache, pub/sub, rate limiting       |
+| Streaming      | Kafka + Fluvio               | Event streaming, real-time updates          |
+| Mobile (1)     | Flutter + Dart               | iOS/Android consumer app                    |
+| Mobile (2)     | React Native                 | iOS/Android agent app                       |
+| Auth Gateway   | Keycloak                     | Enterprise SSO                              |
+| Secrets        | HashiCorp Vault              | Secret management                           |
+| API Gateway    | APISix                       | Rate limiting, routing, mTLS                |
+| Storage        | MinIO / S3                   | File storage (KYC docs, firmware)           |
+| Workflow       | Temporal                     | Long-running workflows                      |
+| Permissions    | Permify                      | Fine-grained RBAC                           |
+| Observability  | OpenTelemetry + Grafana      | Traces, metrics, logs                       |
+| Error Tracking | Sentry                       | Frontend/backend error monitoring           |
+| SMS            | Termii                       | OTP delivery, transaction alerts            |
+| Push           | Web Push (VAPID)             | Browser push notifications                  |
+| IoT            | MQTT                         | POS terminal messaging                      |
 
 ---
 

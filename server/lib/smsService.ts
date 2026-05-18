@@ -74,7 +74,9 @@ interface SmsProviderConfig {
 const smsProviders: SmsProviderConfig[] = [
   {
     name: "twilio",
-    enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+    enabled: !!(
+      process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+    ),
     priority: 1,
     rateLimit: 60,
     sentThisMinute: 0,
@@ -162,7 +164,9 @@ export function normalizePhone(phone: string): string {
 
 // ── Provider Implementations ────────────────────────────────────────────────
 
-async function sendViaTwilio(msg: SmsMessage): Promise<{ messageId: string; cost?: number }> {
+async function sendViaTwilio(
+  msg: SmsMessage
+): Promise<{ messageId: string; cost?: number }> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID!;
   const authToken = process.env.TWILIO_AUTH_TOKEN!;
   const fromNumber = process.env.TWILIO_FROM_NUMBER ?? "+15005550006"; // test number
@@ -178,7 +182,9 @@ async function sendViaTwilio(msg: SmsMessage): Promise<{ messageId: string; cost
     {
       method: "POST",
       headers: {
-        Authorization: "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
+        Authorization:
+          "Basic " +
+          Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params.toString(),
@@ -197,7 +203,9 @@ async function sendViaTwilio(msg: SmsMessage): Promise<{ messageId: string; cost
   };
 }
 
-async function sendViaAfricasTalking(msg: SmsMessage): Promise<{ messageId: string; cost?: number }> {
+async function sendViaAfricasTalking(
+  msg: SmsMessage
+): Promise<{ messageId: string; cost?: number }> {
   const apiKey = process.env.AT_API_KEY!;
   const username = process.env.AT_USERNAME!;
   const senderId = process.env.AT_SENDER_ID ?? "54Link";
@@ -209,9 +217,10 @@ async function sendViaAfricasTalking(msg: SmsMessage): Promise<{ messageId: stri
     from: msg.from ?? senderId,
   });
 
-  const baseUrl = username === "sandbox"
-    ? "https://api.sandbox.africastalking.com"
-    : "https://api.africastalking.com";
+  const baseUrl =
+    username === "sandbox"
+      ? "https://api.sandbox.africastalking.com"
+      : "https://api.africastalking.com";
 
   const res = await fetch(`${baseUrl}/version1/messaging`, {
     method: "POST",
@@ -236,12 +245,16 @@ async function sendViaAfricasTalking(msg: SmsMessage): Promise<{ messageId: stri
 
   const recipient = data.SMSMessageData?.Recipients?.[0];
   if (!recipient || recipient.status !== "Success") {
-    throw new Error(`Africa's Talking: ${recipient?.status ?? "No recipient data"}`);
+    throw new Error(
+      `Africa's Talking: ${recipient?.status ?? "No recipient data"}`
+    );
   }
 
   return {
     messageId: recipient.messageId,
-    cost: recipient.cost ? parseFloat(recipient.cost.replace(/[^0-9.]/g, "")) : undefined,
+    cost: recipient.cost
+      ? parseFloat(recipient.cost.replace(/[^0-9.]/g, ""))
+      : undefined,
   };
 }
 
@@ -282,7 +295,10 @@ async function sendViaConsole(msg: SmsMessage): Promise<{ messageId: string }> {
 
 // ── Provider Dispatch ───────────────────────────────────────────────────────
 
-const SMS_PROVIDER_FNS: Record<SmsProvider, (msg: SmsMessage) => Promise<{ messageId: string; cost?: number }>> = {
+const SMS_PROVIDER_FNS: Record<
+  SmsProvider,
+  (msg: SmsMessage) => Promise<{ messageId: string; cost?: number }>
+> = {
   twilio: sendViaTwilio,
   africastalking: sendViaAfricasTalking,
   termii: sendViaTermii,
@@ -329,12 +345,14 @@ export async function sendSms(msg: SmsMessage): Promise<SmsResult> {
   }
 
   const sortedProviders = [...smsProviders]
-    .filter((p) => p.enabled)
+    .filter(p => p.enabled)
     .sort((a, b) => a.priority - b.priority);
 
   for (const provider of sortedProviders) {
     if (!checkProviderRateLimit(provider)) {
-      console.warn(`[SmsService] ${provider.name} rate limited, trying next provider`);
+      console.warn(
+        `[SmsService] ${provider.name} rate limited, trying next provider`
+      );
       continue;
     }
 
@@ -356,7 +374,9 @@ export async function sendSms(msg: SmsMessage): Promise<SmsResult> {
       };
       logDelivery(logEntry);
 
-      console.log(`[SmsService] Sent via ${provider.name}: ${result.messageId}`);
+      console.log(
+        `[SmsService] Sent via ${provider.name}: ${result.messageId}`
+      );
       return {
         success: true,
         provider: provider.name,
@@ -365,7 +385,9 @@ export async function sendSms(msg: SmsMessage): Promise<SmsResult> {
         timestamp: new Date(),
       };
     } catch (err) {
-      console.warn(`[SmsService] ${provider.name} failed: ${(err as Error).message}, trying next`);
+      console.warn(
+        `[SmsService] ${provider.name} failed: ${(err as Error).message}, trying next`
+      );
       continue;
     }
   }
@@ -406,7 +428,7 @@ export async function sendBatchSms(
     if (result.success) sent++;
     else failed++;
     // Small delay between sends
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 200));
   }
 
   return { sent, failed, results };
@@ -427,7 +449,7 @@ export async function sendSmsWithRetry(
 
     if (attempt < maxRetries) {
       const delay = Math.min(1000 * Math.pow(2, attempt), 30_000);
-      await new Promise((r) => setTimeout(r, delay));
+      await new Promise(r => setTimeout(r, delay));
     }
   }
 
@@ -443,7 +465,7 @@ export function getSmsProviderStatus(): Array<{
   sentThisMinute: number;
   rateLimit: number;
 }> {
-  return smsProviders.map((p) => ({
+  return smsProviders.map(p => ({
     name: p.name,
     enabled: p.enabled,
     priority: p.priority,
@@ -462,9 +484,9 @@ export function getSmsDeliveryLog(opts?: {
   limit?: number;
 }): SmsDeliveryLog[] {
   let logs = [...deliveryLog];
-  if (opts?.phone) logs = logs.filter((l) => l.to.includes(opts.phone!));
-  if (opts?.provider) logs = logs.filter((l) => l.provider === opts.provider);
-  if (opts?.status) logs = logs.filter((l) => l.status === opts.status);
+  if (opts?.phone) logs = logs.filter(l => l.to.includes(opts.phone!));
+  if (opts?.provider) logs = logs.filter(l => l.provider === opts.provider);
+  if (opts?.status) logs = logs.filter(l => l.status === opts.status);
   return logs.slice(0, opts?.limit ?? 100);
 }
 
@@ -538,7 +560,10 @@ export function buildTransactionConfirmSms(opts: {
   };
 }
 
-export function buildOtpSms(opts: { otp: string; expiresInMinutes: number }): SmsMessage {
+export function buildOtpSms(opts: {
+  otp: string;
+  expiresInMinutes: number;
+}): SmsMessage {
   return {
     to: "",
     body: `Your 54Link verification code is: ${opts.otp}. Valid for ${opts.expiresInMinutes} minutes. Do not share this code.`,

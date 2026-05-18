@@ -12,7 +12,13 @@
 // F6: Transaction Reversal Workflow with Approval Chain
 // ============================================================
 
-export type ReversalStatus = "pending" | "l1_approved" | "l2_approved" | "executed" | "rejected" | "expired";
+export type ReversalStatus =
+  | "pending"
+  | "l1_approved"
+  | "l2_approved"
+  | "executed"
+  | "rejected"
+  | "expired";
 
 export interface ReversalRequest {
   id: string;
@@ -37,13 +43,15 @@ export interface ReversalApproval {
 }
 
 const REVERSAL_THRESHOLDS = {
-  autoApprove: 500,       // Auto-approve reversals under ₦500
-  l1Only: 50000,          // L1 approval only for ₦500-₦50,000
-  l2Required: 500000,     // L1+L2 for ₦50,000-₦500,000
-  l3Required: Infinity,   // L1+L2+L3 for ₦500,000+
+  autoApprove: 500, // Auto-approve reversals under ₦500
+  l1Only: 50000, // L1 approval only for ₦500-₦50,000
+  l2Required: 500000, // L1+L2 for ₦50,000-₦500,000
+  l3Required: Infinity, // L1+L2+L3 for ₦500,000+
 };
 
-export function getRequiredApprovalLevel(amount: number): "auto" | "L1" | "L2" | "L3" {
+export function getRequiredApprovalLevel(
+  amount: number
+): "auto" | "L1" | "L2" | "L3" {
   if (amount <= REVERSAL_THRESHOLDS.autoApprove) return "auto";
   if (amount <= REVERSAL_THRESHOLDS.l1Only) return "L1";
   if (amount <= REVERSAL_THRESHOLDS.l2Required) return "L2";
@@ -59,7 +67,10 @@ export function canApproveReversal(
   }
 
   if (request.status === "expired") {
-    return { allowed: false, reason: "Reversal request has expired (24h window)" };
+    return {
+      allowed: false,
+      reason: "Reversal request has expired (24h window)",
+    };
   }
 
   const requiredLevel = getRequiredApprovalLevel(request.amount);
@@ -67,19 +78,31 @@ export function canApproveReversal(
     return { allowed: true, reason: "Auto-approved (under threshold)" };
   }
 
-  const existingLevels = request.approvals.map((a) => a.level);
+  const existingLevels = request.approvals.map(a => a.level);
 
   if (approverLevel === "L1" && !existingLevels.includes("L1")) {
     return { allowed: true, reason: "L1 approval needed" };
   }
-  if (approverLevel === "L2" && existingLevels.includes("L1") && !existingLevels.includes("L2")) {
+  if (
+    approverLevel === "L2" &&
+    existingLevels.includes("L1") &&
+    !existingLevels.includes("L2")
+  ) {
     return { allowed: true, reason: "L2 approval needed (L1 complete)" };
   }
-  if (approverLevel === "L3" && existingLevels.includes("L1") && existingLevels.includes("L2") && !existingLevels.includes("L3")) {
+  if (
+    approverLevel === "L3" &&
+    existingLevels.includes("L1") &&
+    existingLevels.includes("L2") &&
+    !existingLevels.includes("L3")
+  ) {
     return { allowed: true, reason: "L3 approval needed (L1+L2 complete)" };
   }
 
-  return { allowed: false, reason: `Cannot approve at ${approverLevel} level in current state` };
+  return {
+    allowed: false,
+    reason: `Cannot approve at ${approverLevel} level in current state`,
+  };
 }
 
 export function processReversalApproval(
@@ -88,15 +111,27 @@ export function processReversalApproval(
 ): ReversalRequest {
   const updated = { ...request, approvals: [...request.approvals, approval] };
   const requiredLevel = getRequiredApprovalLevel(request.amount);
-  const levels = updated.approvals.map((a) => a.level);
+  const levels = updated.approvals.map(a => a.level);
 
-  if (requiredLevel === "auto" || requiredLevel === "L1" && levels.includes("L1")) {
+  if (
+    requiredLevel === "auto" ||
+    (requiredLevel === "L1" && levels.includes("L1"))
+  ) {
     updated.status = "executed";
     updated.executedAt = new Date();
-  } else if (requiredLevel === "L2" && levels.includes("L1") && levels.includes("L2")) {
+  } else if (
+    requiredLevel === "L2" &&
+    levels.includes("L1") &&
+    levels.includes("L2")
+  ) {
     updated.status = "executed";
     updated.executedAt = new Date();
-  } else if (requiredLevel === "L3" && levels.includes("L1") && levels.includes("L2") && levels.includes("L3")) {
+  } else if (
+    requiredLevel === "L3" &&
+    levels.includes("L1") &&
+    levels.includes("L2") &&
+    levels.includes("L3")
+  ) {
     updated.status = "executed";
     updated.executedAt = new Date();
   } else if (levels.includes("L1") && !levels.includes("L2")) {
@@ -123,11 +158,11 @@ export interface ClawbackResult {
 }
 
 const CLAWBACK_RULES = {
-  withinSameDay: { rate: 1.0, penalty: 0 },       // Full clawback, no penalty
-  within3Days: { rate: 1.0, penalty: 0.05 },       // Full clawback + 5% penalty
-  within7Days: { rate: 0.75, penalty: 0.10 },      // 75% clawback + 10% penalty
-  within30Days: { rate: 0.50, penalty: 0.15 },     // 50% clawback + 15% penalty
-  beyond30Days: { rate: 0.25, penalty: 0.20 },     // 25% clawback + 20% penalty
+  withinSameDay: { rate: 1.0, penalty: 0 }, // Full clawback, no penalty
+  within3Days: { rate: 1.0, penalty: 0.05 }, // Full clawback + 5% penalty
+  within7Days: { rate: 0.75, penalty: 0.1 }, // 75% clawback + 10% penalty
+  within30Days: { rate: 0.5, penalty: 0.15 }, // 50% clawback + 15% penalty
+  beyond30Days: { rate: 0.25, penalty: 0.2 }, // 25% clawback + 20% penalty
 };
 
 export function calculateClawback(
@@ -137,7 +172,9 @@ export function calculateClawback(
   reversalDate: Date = new Date(),
   reason: string = "Transaction reversal"
 ): ClawbackResult {
-  const daysDiff = Math.floor((reversalDate.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor(
+    (reversalDate.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   let rule;
   if (daysDiff === 0) rule = CLAWBACK_RULES.withinSameDay;
@@ -164,7 +201,13 @@ export function calculateClawback(
 // F8: KYC Document Expiry Monitoring and Renewal Alerts
 // ============================================================
 
-export type KycDocType = "national_id" | "passport" | "drivers_license" | "utility_bill" | "bank_statement" | "cac_certificate";
+export type KycDocType =
+  | "national_id"
+  | "passport"
+  | "drivers_license"
+  | "utility_bill"
+  | "bank_statement"
+  | "cac_certificate";
 
 export interface KycDocument {
   id: string;
@@ -187,34 +230,42 @@ export interface KycExpiryAlert {
 }
 
 const KYC_EXPIRY_THRESHOLDS = {
-  critical: 7,    // 7 days or less
-  warning: 30,    // 30 days or less
-  info: 90,       // 90 days or less
+  critical: 7, // 7 days or less
+  warning: 30, // 30 days or less
+  info: 90, // 90 days or less
 };
 
 const KYC_VALIDITY_PERIODS: Record<KycDocType, number> = {
-  national_id: 3650,      // 10 years
-  passport: 1825,         // 5 years
-  drivers_license: 1095,  // 3 years
-  utility_bill: 90,       // 3 months
-  bank_statement: 90,     // 3 months
-  cac_certificate: 365,   // 1 year
+  national_id: 3650, // 10 years
+  passport: 1825, // 5 years
+  drivers_license: 1095, // 3 years
+  utility_bill: 90, // 3 months
+  bank_statement: 90, // 3 months
+  cac_certificate: 365, // 1 year
 };
 
-export function checkKycExpiry(doc: KycDocument, now: Date = new Date()): KycExpiryAlert | null {
-  const daysUntilExpiry = Math.floor((doc.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+export function checkKycExpiry(
+  doc: KycDocument,
+  now: Date = new Date()
+): KycExpiryAlert | null {
+  const daysUntilExpiry = Math.floor(
+    (doc.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (daysUntilExpiry > KYC_EXPIRY_THRESHOLDS.info) return null;
 
   let severity: "info" | "warning" | "critical";
   if (daysUntilExpiry <= 0) severity = "critical";
-  else if (daysUntilExpiry <= KYC_EXPIRY_THRESHOLDS.critical) severity = "critical";
-  else if (daysUntilExpiry <= KYC_EXPIRY_THRESHOLDS.warning) severity = "warning";
+  else if (daysUntilExpiry <= KYC_EXPIRY_THRESHOLDS.critical)
+    severity = "critical";
+  else if (daysUntilExpiry <= KYC_EXPIRY_THRESHOLDS.warning)
+    severity = "warning";
   else severity = "info";
 
-  const message = daysUntilExpiry <= 0
-    ? `${doc.docType} (${doc.documentNumber}) has EXPIRED ${Math.abs(daysUntilExpiry)} days ago`
-    : `${doc.docType} (${doc.documentNumber}) expires in ${daysUntilExpiry} days`;
+  const message =
+    daysUntilExpiry <= 0
+      ? `${doc.docType} (${doc.documentNumber}) has EXPIRED ${Math.abs(daysUntilExpiry)} days ago`
+      : `${doc.docType} (${doc.documentNumber}) expires in ${daysUntilExpiry} days`;
 
   return {
     documentId: doc.id,
@@ -231,10 +282,12 @@ export function getKycValidityPeriod(docType: KycDocType): number {
   return KYC_VALIDITY_PERIODS[docType];
 }
 
-export function batchCheckKycExpiry(documents: KycDocument[]): KycExpiryAlert[] {
+export function batchCheckKycExpiry(
+  documents: KycDocument[]
+): KycExpiryAlert[] {
   const now = new Date();
   return documents
-    .map((doc) => checkKycExpiry(doc, now))
+    .map(doc => checkKycExpiry(doc, now))
     .filter((alert): alert is KycExpiryAlert => alert !== null)
     .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 }
@@ -267,16 +320,33 @@ export interface MultiCurrencySettlement {
 
 // CBN-aligned FX rates (Central Bank of Nigeria reference rates)
 const BASE_FX_RATES: Record<string, Record<string, number>> = {
-  NGN: { USD: 0.000625, GBP: 0.000500, EUR: 0.000575, GHS: 0.0075, KES: 0.0813, XOF: 0.375 },
-  USD: { NGN: 1600.00, GBP: 0.80, EUR: 0.92, GHS: 12.00, KES: 130.00, XOF: 600.00 },
-  GBP: { NGN: 2000.00, USD: 1.25, EUR: 1.15, GHS: 15.00, KES: 162.50, XOF: 750.00 },
-  EUR: { NGN: 1739.13, USD: 1.087, GBP: 0.87, GHS: 13.04, KES: 141.30, XOF: 652.17 },
+  NGN: {
+    USD: 0.000625,
+    GBP: 0.0005,
+    EUR: 0.000575,
+    GHS: 0.0075,
+    KES: 0.0813,
+    XOF: 0.375,
+  },
+  USD: { NGN: 1600.0, GBP: 0.8, EUR: 0.92, GHS: 12.0, KES: 130.0, XOF: 600.0 },
+  GBP: { NGN: 2000.0, USD: 1.25, EUR: 1.15, GHS: 15.0, KES: 162.5, XOF: 750.0 },
+  EUR: {
+    NGN: 1739.13,
+    USD: 1.087,
+    GBP: 0.87,
+    GHS: 13.04,
+    KES: 141.3,
+    XOF: 652.17,
+  },
 };
 
 const FX_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const FX_SPREAD_BPS = 50; // 50 basis points (0.5%)
 
-export function lockFxRate(baseCurrency: string, quoteCurrency: string): FxRate | null {
+export function lockFxRate(
+  baseCurrency: string,
+  quoteCurrency: string
+): FxRate | null {
   if (baseCurrency === quoteCurrency) {
     return {
       baseCurrency,
@@ -354,23 +424,121 @@ export interface MccEntry {
 
 const MCC_DATABASE: MccEntry[] = [
   // Low risk
-  { code: "5411", description: "Grocery Stores, Supermarkets", category: "retail", riskLevel: "low", maxTransactionAmount: 5000000, requiresEnhancedDueDiligence: false },
-  { code: "5541", description: "Service Stations (Fuel)", category: "fuel", riskLevel: "low", maxTransactionAmount: 2000000, requiresEnhancedDueDiligence: false },
-  { code: "5812", description: "Eating Places, Restaurants", category: "food", riskLevel: "low", maxTransactionAmount: 1000000, requiresEnhancedDueDiligence: false },
-  { code: "5912", description: "Drug Stores, Pharmacies", category: "health", riskLevel: "low", maxTransactionAmount: 3000000, requiresEnhancedDueDiligence: false },
-  { code: "5999", description: "Miscellaneous Retail Stores", category: "retail", riskLevel: "low", maxTransactionAmount: 5000000, requiresEnhancedDueDiligence: false },
+  {
+    code: "5411",
+    description: "Grocery Stores, Supermarkets",
+    category: "retail",
+    riskLevel: "low",
+    maxTransactionAmount: 5000000,
+    requiresEnhancedDueDiligence: false,
+  },
+  {
+    code: "5541",
+    description: "Service Stations (Fuel)",
+    category: "fuel",
+    riskLevel: "low",
+    maxTransactionAmount: 2000000,
+    requiresEnhancedDueDiligence: false,
+  },
+  {
+    code: "5812",
+    description: "Eating Places, Restaurants",
+    category: "food",
+    riskLevel: "low",
+    maxTransactionAmount: 1000000,
+    requiresEnhancedDueDiligence: false,
+  },
+  {
+    code: "5912",
+    description: "Drug Stores, Pharmacies",
+    category: "health",
+    riskLevel: "low",
+    maxTransactionAmount: 3000000,
+    requiresEnhancedDueDiligence: false,
+  },
+  {
+    code: "5999",
+    description: "Miscellaneous Retail Stores",
+    category: "retail",
+    riskLevel: "low",
+    maxTransactionAmount: 5000000,
+    requiresEnhancedDueDiligence: false,
+  },
   // Medium risk
-  { code: "5944", description: "Jewelry, Watch, Clock Shops", category: "luxury", riskLevel: "medium", maxTransactionAmount: 10000000, requiresEnhancedDueDiligence: true },
-  { code: "5511", description: "Automobile Dealers (New & Used)", category: "automotive", riskLevel: "medium", maxTransactionAmount: 50000000, requiresEnhancedDueDiligence: true },
-  { code: "6012", description: "Financial Institutions", category: "finance", riskLevel: "medium", maxTransactionAmount: 100000000, requiresEnhancedDueDiligence: true },
-  { code: "4722", description: "Travel Agencies", category: "travel", riskLevel: "medium", maxTransactionAmount: 20000000, requiresEnhancedDueDiligence: false },
+  {
+    code: "5944",
+    description: "Jewelry, Watch, Clock Shops",
+    category: "luxury",
+    riskLevel: "medium",
+    maxTransactionAmount: 10000000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "5511",
+    description: "Automobile Dealers (New & Used)",
+    category: "automotive",
+    riskLevel: "medium",
+    maxTransactionAmount: 50000000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "6012",
+    description: "Financial Institutions",
+    category: "finance",
+    riskLevel: "medium",
+    maxTransactionAmount: 100000000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "4722",
+    description: "Travel Agencies",
+    category: "travel",
+    riskLevel: "medium",
+    maxTransactionAmount: 20000000,
+    requiresEnhancedDueDiligence: false,
+  },
   // High risk
-  { code: "5933", description: "Pawn Shops", category: "pawn", riskLevel: "high", maxTransactionAmount: 5000000, requiresEnhancedDueDiligence: true },
-  { code: "5993", description: "Cigar Stores and Stands", category: "tobacco", riskLevel: "high", maxTransactionAmount: 1000000, requiresEnhancedDueDiligence: true },
-  { code: "7995", description: "Betting/Casino Gambling", category: "gambling", riskLevel: "high", maxTransactionAmount: 500000, requiresEnhancedDueDiligence: true },
-  { code: "6051", description: "Non-FI Money Orders", category: "money_services", riskLevel: "high", maxTransactionAmount: 2000000, requiresEnhancedDueDiligence: true },
+  {
+    code: "5933",
+    description: "Pawn Shops",
+    category: "pawn",
+    riskLevel: "high",
+    maxTransactionAmount: 5000000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "5993",
+    description: "Cigar Stores and Stands",
+    category: "tobacco",
+    riskLevel: "high",
+    maxTransactionAmount: 1000000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "7995",
+    description: "Betting/Casino Gambling",
+    category: "gambling",
+    riskLevel: "high",
+    maxTransactionAmount: 500000,
+    requiresEnhancedDueDiligence: true,
+  },
+  {
+    code: "6051",
+    description: "Non-FI Money Orders",
+    category: "money_services",
+    riskLevel: "high",
+    maxTransactionAmount: 2000000,
+    requiresEnhancedDueDiligence: true,
+  },
   // Prohibited
-  { code: "5962", description: "Direct Marketing - Travel", category: "telemarketing", riskLevel: "prohibited", maxTransactionAmount: 0, requiresEnhancedDueDiligence: true },
+  {
+    code: "5962",
+    description: "Direct Marketing - Travel",
+    category: "telemarketing",
+    riskLevel: "prohibited",
+    maxTransactionAmount: 0,
+    requiresEnhancedDueDiligence: true,
+  },
 ];
 
 export interface MccValidationResult {
@@ -381,8 +549,11 @@ export interface MccValidationResult {
   recommendation: "approve" | "review" | "decline" | "block";
 }
 
-export function validateMcc(code: string, transactionAmount: number = 0): MccValidationResult {
-  const mcc = MCC_DATABASE.find((m) => m.code === code);
+export function validateMcc(
+  code: string,
+  transactionAmount: number = 0
+): MccValidationResult {
+  const mcc = MCC_DATABASE.find(m => m.code === code);
   const flags: string[] = [];
 
   if (!mcc) {
@@ -412,7 +583,9 @@ export function validateMcc(code: string, transactionAmount: number = 0): MccVal
 
   if (transactionAmount > mcc.maxTransactionAmount) {
     riskScore += 20;
-    flags.push(`Amount ₦${transactionAmount.toLocaleString()} exceeds MCC limit ₦${mcc.maxTransactionAmount.toLocaleString()}`);
+    flags.push(
+      `Amount ₦${transactionAmount.toLocaleString()} exceeds MCC limit ₦${mcc.maxTransactionAmount.toLocaleString()}`
+    );
   }
 
   if (mcc.requiresEnhancedDueDiligence) {
@@ -426,17 +599,25 @@ export function validateMcc(code: string, transactionAmount: number = 0): MccVal
   else if (riskScore <= 85) recommendation = "decline";
   else recommendation = "block";
 
-  return { valid: true, mcc, riskScore: Math.min(riskScore, 100), flags, recommendation };
+  return {
+    valid: true,
+    mcc,
+    riskScore: Math.min(riskScore, 100),
+    flags,
+    recommendation,
+  };
 }
 
 export function getMccByCode(code: string): MccEntry | undefined {
-  return MCC_DATABASE.find((m) => m.code === code);
+  return MCC_DATABASE.find(m => m.code === code);
 }
 
 export function getMccByCategory(category: string): MccEntry[] {
-  return MCC_DATABASE.filter((m) => m.category === category);
+  return MCC_DATABASE.filter(m => m.category === category);
 }
 
 export function getHighRiskMccs(): MccEntry[] {
-  return MCC_DATABASE.filter((m) => m.riskLevel === "high" || m.riskLevel === "prohibited");
+  return MCC_DATABASE.filter(
+    m => m.riskLevel === "high" || m.riskLevel === "prohibited"
+  );
 }

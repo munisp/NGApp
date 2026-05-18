@@ -1,14 +1,27 @@
 /**
  * Sprint 91 — Mock Replacement Registry
- * 
+ *
  * This module provides real implementations to replace all placeholder/mock
  * functions scattered across the codebase. Each replacement is a drop-in
  * substitute that routes to the actual microservice or middleware connector.
  */
-import { kafka, dapr, fluvio, temporal, redis, opensearch, mojaloop, tigerbeetle } from "./middlewareConnectors";
+import {
+  kafka,
+  dapr,
+  fluvio,
+  temporal,
+  redis,
+  opensearch,
+  mojaloop,
+  tigerbeetle,
+} from "./middlewareConnectors";
 import { publishEvent, type DomainEvent } from "./serviceOrchestrator";
 import { trackBulkOperation, appendAuditEntry } from "./ransomwareMitigation";
-import { authorize, type PBACContext, type Permission } from "./pbacEnforcement";
+import {
+  authorize,
+  type PBACContext,
+  type Permission,
+} from "./pbacEnforcement";
 import crypto from "crypto";
 
 // ─── Transaction Processing (replaces mock transaction handlers) ─────────────
@@ -24,14 +37,16 @@ export async function processTransaction(params: {
   const timestamp = Date.now();
 
   // Record in TigerBeetle for double-entry accounting
-  await tigerbeetle.createTransfers([{
-    id: BigInt(`0x${crypto.randomBytes(16).toString("hex")}`),
-    debit_account_id: BigInt(params.customerId ?? 0),
-    credit_account_id: BigInt(params.merchantId),
-    amount: BigInt(Math.round(params.amount * 100)), // cents
-    ledger: 1,
-    code: 1,
-  }]);
+  await tigerbeetle.createTransfers([
+    {
+      id: BigInt(`0x${crypto.randomBytes(16).toString("hex")}`),
+      debit_account_id: BigInt(params.customerId ?? 0),
+      credit_account_id: BigInt(params.merchantId),
+      amount: BigInt(Math.round(params.amount * 100)), // cents
+      ledger: 1,
+      code: 1,
+    },
+  ]);
 
   // Publish event
   await publishEvent({
@@ -43,7 +58,16 @@ export async function processTransaction(params: {
   });
 
   // Cache for quick lookup
-  await redis.set(`tx:${transactionId}`, JSON.stringify({ transactionId, ...params, status: "completed", timestamp }), 86400);
+  await redis.set(
+    `tx:${transactionId}`,
+    JSON.stringify({
+      transactionId,
+      ...params,
+      status: "completed",
+      timestamp,
+    }),
+    86400
+  );
 
   return { transactionId, status: "completed", timestamp };
 }
@@ -58,12 +82,16 @@ export async function sendNotification(params: {
   const messageId = `msg_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 
   // Route through Dapr service invocation
-  const result = await dapr.invokeService("notification-service", `send/${params.channel}`, {
-    userId: params.userId,
-    template: params.template,
-    data: params.data,
-    messageId,
-  });
+  const result = await dapr.invokeService(
+    "notification-service",
+    `send/${params.channel}`,
+    {
+      userId: params.userId,
+      template: params.template,
+      data: params.data,
+      messageId,
+    }
+  );
 
   // Publish event for tracking
   await publishEvent({
@@ -123,7 +151,9 @@ export async function calculateRevenueSplit(params: {
   totalAmount: number;
   currency: string;
   participants: Array<{ id: number; role: string; percentage: number }>;
-}): Promise<Array<{ participantId: number; amount: number; settled: boolean }>> {
+}): Promise<
+  Array<{ participantId: number; amount: number; settled: boolean }>
+> {
   const splits = params.participants.map(p => ({
     participantId: p.id,
     amount: Math.round(params.totalAmount * p.percentage * 100) / 100,
@@ -132,14 +162,16 @@ export async function calculateRevenueSplit(params: {
 
   // Record splits in TigerBeetle
   for (const split of splits) {
-    await tigerbeetle.createTransfers([{
-      id: BigInt(`0x${crypto.randomBytes(16).toString("hex")}`),
-      debit_account_id: BigInt(0), // Platform holding account
-      credit_account_id: BigInt(split.participantId),
-      amount: BigInt(Math.round(split.amount * 100)),
-      ledger: 2, // Revenue split ledger
-      code: 2,
-    }]);
+    await tigerbeetle.createTransfers([
+      {
+        id: BigInt(`0x${crypto.randomBytes(16).toString("hex")}`),
+        debit_account_id: BigInt(0), // Platform holding account
+        credit_account_id: BigInt(split.participantId),
+        amount: BigInt(Math.round(split.amount * 100)),
+        ledger: 2, // Revenue split ledger
+        code: 2,
+      },
+    ]);
     split.settled = true;
   }
 
@@ -165,7 +197,12 @@ export async function initiateKycWorkflow(params: {
   // Start Temporal workflow for long-running KYC process
   const workflowId = `kyc_${params.userId}_${Date.now()}`;
 
-  await temporal.startWorkflow(workflowId, "kycVerificationWorkflow", [params], "kyc-queue");
+  await temporal.startWorkflow(
+    workflowId,
+    "kycVerificationWorkflow",
+    [params],
+    "kyc-queue"
+  );
 
   // Publish event
   await publishEvent({
@@ -173,7 +210,11 @@ export async function initiateKycWorkflow(params: {
     type: "kyc.initiated",
     source: "kyc-service",
     timestamp: Date.now(),
-    payload: { userId: params.userId, workflowId, documentType: params.documentType },
+    payload: {
+      userId: params.userId,
+      workflowId,
+      documentType: params.documentType,
+    },
   });
 
   return { workflowId, status: "processing" };
@@ -249,10 +290,14 @@ export async function logAuditEvent(params: {
   });
 
   // Also index in OpenSearch for querying
-  await opensearch.index("audit-log", `audit_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`, {
-    ...params,
-    timestamp: Date.now(),
-  });
+  await opensearch.index(
+    "audit-log",
+    `audit_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+    {
+      ...params,
+      timestamp: Date.now(),
+    }
+  );
 
   // Publish for real-time monitoring
   await redis.publish("audit:events", JSON.stringify(params));
@@ -281,11 +326,23 @@ export async function checkPermission(params: {
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const value = await redis.get(key);
   if (!value) return null;
-  try { return JSON.parse(value) as T; } catch { return value as any; }
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return value as any;
+  }
 }
 
-export async function cacheSet(key: string, value: any, ttlSeconds: number = 3600): Promise<void> {
-  await redis.set(key, typeof value === "string" ? value : JSON.stringify(value), ttlSeconds);
+export async function cacheSet(
+  key: string,
+  value: any,
+  ttlSeconds: number = 3600
+): Promise<void> {
+  await redis.set(
+    key,
+    typeof value === "string" ? value : JSON.stringify(value),
+    ttlSeconds
+  );
 }
 
 export async function cacheInvalidate(key: string): Promise<void> {

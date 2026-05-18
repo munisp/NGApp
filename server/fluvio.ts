@@ -24,7 +24,10 @@ interface FluvioRecord {
 /**
  * Produce a record to a Fluvio topic via HTTP gateway.
  */
-export async function fluvioProduce(topic: string, record: FluvioRecord): Promise<void> {
+export async function fluvioProduce(
+  topic: string,
+  record: FluvioRecord
+): Promise<void> {
   try {
     const res = await fetch(`${FLUVIO_HTTP_URL}/produce/${topic}`, {
       method: "POST",
@@ -36,7 +39,10 @@ export async function fluvioProduce(topic: string, record: FluvioRecord): Promis
       logger.warn(`[Fluvio] Produce to ${topic} failed: ${res.status}`);
     }
   } catch (err) {
-    logger.warn({ err }, `[Fluvio] Produce to ${topic} unavailable — event dropped`);
+    logger.warn(
+      { err },
+      `[Fluvio] Produce to ${topic} unavailable — event dropped`
+    );
   }
 }
 

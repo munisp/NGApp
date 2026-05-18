@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69
 /**
  * useDataExport — Reusable hook for CSV and PDF data export
- * 
+ *
  * Usage:
  *   const { exportCSV, exportPDF, exporting } = useDataExport();
  *   exportCSV(data, columns, "transactions-export");
@@ -21,10 +21,10 @@ export function useDataExport() {
     (data: Record<string, unknown>[], columns: Column[], filename: string) => {
       setExporting(true);
       try {
-        const header = columns.map((c) => `"${c.label}"`).join(",");
-        const rows = data.map((row) =>
+        const header = columns.map(c => `"${c.label}"`).join(",");
+        const rows = data.map(row =>
           columns
-            .map((c) => {
+            .map(c => {
               const val = row[c.key];
               const formatted = c.format ? c.format(val) : String(val ?? "");
               return `"${formatted.replace(/"/g, '""')}"`;
@@ -32,7 +32,9 @@ export function useDataExport() {
             .join(",")
         );
         const csv = [header, ...rows].join("\n");
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["\uFEFF" + csv], {
+          type: "text/csv;charset=utf-8;",
+        });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;

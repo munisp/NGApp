@@ -17,7 +17,10 @@ export interface TypingEvent {
   timestamp: number;
 }
 
-const typingState = new Map<string, { timer: ReturnType<typeof setTimeout>; event: TypingEvent }>();
+const typingState = new Map<
+  string,
+  { timer: ReturnType<typeof setTimeout>; event: TypingEvent }
+>();
 
 export function handleTypingIndicator(event: TypingEvent): TypingEvent {
   const key = `${event.sessionId}:${event.userId}`;
@@ -73,15 +76,22 @@ export function generateTranscriptHTML(
   session: TranscriptSession,
   messages: TranscriptMessage[]
 ): string {
-  const msgRows = messages.map((m) => {
-    const time = new Date(m.createdAt).toLocaleString();
-    const senderClass = m.senderType === "agent" ? "color:#2563eb" : m.senderType === "admin" ? "color:#dc2626" : "color:#16a34a";
-    return `<tr>
+  const msgRows = messages
+    .map(m => {
+      const time = new Date(m.createdAt).toLocaleString();
+      const senderClass =
+        m.senderType === "agent"
+          ? "color:#2563eb"
+          : m.senderType === "admin"
+            ? "color:#dc2626"
+            : "color:#16a34a";
+      return `<tr>
       <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280">${time}</td>
       <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-weight:600;${senderClass}">${m.senderName} (${m.senderType})</td>
       <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${escapeHtml(m.content)}</td>
     </tr>`;
-  }).join("\n");
+    })
+    .join("\n");
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Chat Transcript #${session.id}</title>
@@ -115,7 +125,7 @@ export function generateTranscriptCSV(
   messages: TranscriptMessage[]
 ): string {
   const header = "Timestamp,Sender Type,Sender Name,Message";
-  const rows = messages.map((m) => {
+  const rows = messages.map(m => {
     const time = new Date(m.createdAt).toISOString();
     const content = `"${m.content.replace(/"/g, '""')}"`;
     return `${time},${m.senderType},${m.senderName},${content}`;
@@ -153,18 +163,20 @@ export function autoAssignSession(
   requiredLanguage?: string
 ): SupportAgent | null {
   let candidates = agents.filter(
-    (a) => a.isAvailable && a.currentLoad < a.maxConcurrent
+    a => a.isAvailable && a.currentLoad < a.maxConcurrent
   );
 
   if (requiredSkill) {
-    candidates = candidates.filter((a) =>
-      a.skills.some((s) => s.toLowerCase() === requiredSkill.toLowerCase())
+    candidates = candidates.filter(a =>
+      a.skills.some(s => s.toLowerCase() === requiredSkill.toLowerCase())
     );
   }
 
   if (requiredLanguage) {
     candidates = candidates.filter(
-      (a) => !a.language || a.language.toLowerCase() === requiredLanguage.toLowerCase()
+      a =>
+        !a.language ||
+        a.language.toLowerCase() === requiredLanguage.toLowerCase()
     );
   }
 
@@ -185,7 +197,7 @@ export function autoAssignSession(
     case "skill_based": {
       // Prefer agents with the most matching skills
       if (requiredSkill) {
-        const skilled = candidates.filter((a) =>
+        const skilled = candidates.filter(a =>
           a.skills.includes(requiredSkill)
         );
         if (skilled.length > 0) {
@@ -223,50 +235,65 @@ export interface ChatMetrics {
   topCategories: Array<{ category: string; count: number }>;
 }
 
-export function computeChatMetrics(sessions: Array<{
-  status: string;
-  category: string;
-  createdAt: Date | string;
-  closedAt: Date | string | null;
-  firstResponseAt: Date | string | null;
-  rating: number | null;
-  messageCount: number;
-}>): ChatMetrics {
+export function computeChatMetrics(
+  sessions: Array<{
+    status: string;
+    category: string;
+    createdAt: Date | string;
+    closedAt: Date | string | null;
+    firstResponseAt: Date | string | null;
+    rating: number | null;
+    messageCount: number;
+  }>
+): ChatMetrics {
   const total = sessions.length;
-  const open = sessions.filter((s) => s.status === "open" || s.status === "assigned").length;
-  const resolved = sessions.filter((s) => s.status === "resolved" || s.status === "closed").length;
-  const escalated = sessions.filter((s) => s.status === "escalated").length;
+  const open = sessions.filter(
+    s => s.status === "open" || s.status === "assigned"
+  ).length;
+  const resolved = sessions.filter(
+    s => s.status === "resolved" || s.status === "closed"
+  ).length;
+  const escalated = sessions.filter(s => s.status === "escalated").length;
 
   // Response times
   const responseTimes = sessions
-    .filter((s) => s.firstResponseAt && s.createdAt)
-    .map((s) => new Date(s.firstResponseAt!).getTime() - new Date(s.createdAt).getTime())
-    .filter((t) => t > 0);
-  const avgResponseTimeMs = responseTimes.length > 0
-    ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-    : 0;
+    .filter(s => s.firstResponseAt && s.createdAt)
+    .map(
+      s =>
+        new Date(s.firstResponseAt!).getTime() - new Date(s.createdAt).getTime()
+    )
+    .filter(t => t > 0);
+  const avgResponseTimeMs =
+    responseTimes.length > 0
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+      : 0;
 
   // Resolution times
   const resolutionTimes = sessions
-    .filter((s) => s.closedAt && s.createdAt)
-    .map((s) => new Date(s.closedAt!).getTime() - new Date(s.createdAt).getTime())
-    .filter((t) => t > 0);
-  const avgResolutionTimeMs = resolutionTimes.length > 0
-    ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
-    : 0;
+    .filter(s => s.closedAt && s.createdAt)
+    .map(s => new Date(s.closedAt!).getTime() - new Date(s.createdAt).getTime())
+    .filter(t => t > 0);
+  const avgResolutionTimeMs =
+    resolutionTimes.length > 0
+      ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
+      : 0;
 
   // CSAT
-  const ratings = sessions.filter((s) => s.rating !== null).map((s) => s.rating!);
-  const csatAverage = ratings.length > 0
-    ? ratings.reduce((a, b) => a + b, 0) / ratings.length
-    : 0;
+  const ratings = sessions.filter(s => s.rating !== null).map(s => s.rating!);
+  const csatAverage =
+    ratings.length > 0
+      ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+      : 0;
 
   // Message volume
-  const messageVolume = sessions.reduce((sum, s) => sum + (s.messageCount || 0), 0);
+  const messageVolume = sessions.reduce(
+    (sum, s) => sum + (s.messageCount || 0),
+    0
+  );
 
   // Peak hour
   const hourCounts = new Array(24).fill(0);
-  sessions.forEach((s) => {
+  sessions.forEach(s => {
     const hour = new Date(s.createdAt).getHours();
     hourCounts[hour]++;
   });
@@ -274,7 +301,7 @@ export function computeChatMetrics(sessions: Array<{
 
   // Top categories
   const catMap = new Map<string, number>();
-  sessions.forEach((s) => {
+  sessions.forEach(s => {
     catMap.set(s.category, (catMap.get(s.category) || 0) + 1);
   });
   const topCategories = Array.from(catMap.entries())
@@ -336,7 +363,7 @@ export function searchChatMessages(
 
   for (const msg of messages) {
     const contentLower = msg.content.toLowerCase();
-    const matchCount = terms.filter((t) => contentLower.includes(t)).length;
+    const matchCount = terms.filter(t => contentLower.includes(t)).length;
     if (matchCount === 0) continue;
 
     const relevance = matchCount / terms.length;
@@ -369,7 +396,10 @@ export function searchChatMessages(
       content: msg.content,
       senderName: msg.senderName,
       createdAt: msg.createdAt,
-      highlight: highlight.length > 200 ? highlight.substring(0, 200) + "..." : highlight,
+      highlight:
+        highlight.length > 200
+          ? highlight.substring(0, 200) + "..."
+          : highlight,
     });
   }
 

@@ -62,7 +62,7 @@ describe("Email Service", () => {
       const status = getProviderStatus();
       expect(status).toBeInstanceOf(Array);
       expect(status.length).toBeGreaterThanOrEqual(1);
-      const consoleProvider = status.find((p) => p.name === "console");
+      const consoleProvider = status.find(p => p.name === "console");
       expect(consoleProvider).toBeDefined();
       expect(consoleProvider!.enabled).toBe(true);
     });
@@ -89,7 +89,10 @@ describe("Email Service", () => {
 
     it("should build welcome email", async () => {
       const { buildWelcomeEmail } = await import("./lib/emailService");
-      const msg = buildWelcomeEmail({ agentName: "Adebayo", agentCode: "AG-001" });
+      const msg = buildWelcomeEmail({
+        agentName: "Adebayo",
+        agentCode: "AG-001",
+      });
       expect(msg.subject).toContain("Welcome");
       expect(msg.html).toContain("AG-001");
       expect(msg.category).toBe("welcome");
@@ -97,7 +100,11 @@ describe("Email Service", () => {
 
     it("should build password reset email with OTP", async () => {
       const { buildPasswordResetEmail } = await import("./lib/emailService");
-      const msg = buildPasswordResetEmail({ agentName: "Test", otp: "123456", expiresInMinutes: 10 });
+      const msg = buildPasswordResetEmail({
+        agentName: "Test",
+        otp: "123456",
+        expiresInMinutes: 10,
+      });
       expect(msg.subject).toContain("PIN Reset");
       expect(msg.html).toContain("123456");
       expect(msg.html).toContain("10 minutes");
@@ -150,13 +157,17 @@ describe("Rate Alerts Router", () => {
 
 describe("Email Notifications Router", () => {
   it("should import emailNotificationsRouter without errors", async () => {
-    const { emailNotificationsRouter } = await import("./routers/emailNotifications");
+    const { emailNotificationsRouter } = await import(
+      "./routers/emailNotifications"
+    );
     expect(emailNotificationsRouter).toBeDefined();
     expect(emailNotificationsRouter._def).toBeDefined();
   });
 
   it("should have all expected procedures", async () => {
-    const { emailNotificationsRouter } = await import("./routers/emailNotifications");
+    const { emailNotificationsRouter } = await import(
+      "./routers/emailNotifications"
+    );
     const procedures = Object.keys(emailNotificationsRouter._def.procedures);
     expect(procedures).toContain("getPreferences");
     expect(procedures).toContain("updatePreferences");
@@ -245,7 +256,9 @@ describe("Rate Alert Email Templates", () => {
 
 describe("Email + Rate Alert Integration", () => {
   it("should send rate alert email via email service", async () => {
-    const { sendEmail, buildRateAlertEmail } = await import("./lib/emailService");
+    const { sendEmail, buildRateAlertEmail } = await import(
+      "./lib/emailService"
+    );
     const emailMsg = buildRateAlertEmail({
       agentName: "Integration Test",
       baseCurrency: "USD",
@@ -262,7 +275,9 @@ describe("Email + Rate Alert Integration", () => {
   });
 
   it("should handle batch rate alert notifications", async () => {
-    const { sendBatchEmail, buildRateAlertEmail } = await import("./lib/emailService");
+    const { sendBatchEmail, buildRateAlertEmail } = await import(
+      "./lib/emailService"
+    );
     const emailMsg = buildRateAlertEmail({
       agentName: "Batch Test",
       baseCurrency: "USD",
@@ -272,10 +287,11 @@ describe("Email + Rate Alert Integration", () => {
       direction: "below",
       triggeredAt: new Date(),
     });
-    const result = await sendBatchEmail(
-      ["a@test.com", "b@test.com"],
-      { subject: emailMsg.subject, html: emailMsg.html, text: emailMsg.text }
-    );
+    const result = await sendBatchEmail(["a@test.com", "b@test.com"], {
+      subject: emailMsg.subject,
+      html: emailMsg.html,
+      text: emailMsg.text,
+    });
     expect(result.sent).toBe(2);
     expect(result.failed).toBe(0);
   });

@@ -47,7 +47,10 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   const max = Math.max(...data);
   const range = max - min || 1;
   const points = data
-    .map((v, i) => `${(i / (data.length - 1)) * 60},${30 - ((v - min) / range) * 28}`)
+    .map(
+      (v, i) =>
+        `${(i / (data.length - 1)) * 60},${30 - ((v - min) / range) * 28}`
+    )
     .join(" ");
 
   return (
@@ -87,13 +90,17 @@ export default function MultiCurrency() {
   const [calcFrom, setCalcFrom] = useState("NGN");
   const [calcTo, setCalcTo] = useState("USD");
   const [calcAmount, setCalcAmount] = useState("1000");
-  const [conversionHistory, setConversionHistory] = useState<ConversionRecord[]>([]);
+  const [conversionHistory, setConversionHistory] = useState<
+    ConversionRecord[]
+  >([]);
   const [historyCounter, setHistoryCounter] = useState(0);
 
   // Chart state
   const [chartFrom, setChartFrom] = useState("NGN");
   const [chartTo, setChartTo] = useState("USD");
-  const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "90d" | "1y">("30d");
+  const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "90d" | "1y">(
+    "30d"
+  );
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const ratesQuery = trpc.fxRates.getRates.useQuery(
@@ -103,7 +110,11 @@ export default function MultiCurrency() {
 
   const parsedCalcAmount = parseFloat(calcAmount) || 0;
   const convertQuery = trpc.fxRates.convert.useQuery(
-    { from: calcFrom, to: calcTo, amount: parsedCalcAmount > 0 ? parsedCalcAmount : 1 },
+    {
+      from: calcFrom,
+      to: calcTo,
+      amount: parsedCalcAmount > 0 ? parsedCalcAmount : 1,
+    },
     { enabled: parsedCalcAmount > 0 }
   );
 
@@ -123,9 +134,7 @@ export default function MultiCurrency() {
     if (!searchQuery) return ratesQuery.data.rates;
     const q = searchQuery.toLowerCase();
     return ratesQuery.data.rates.filter(
-      (r) =>
-        r.code.toLowerCase().includes(q) ||
-        r.name.toLowerCase().includes(q)
+      r => r.code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
     );
   }, [ratesQuery.data?.rates, searchQuery]);
 
@@ -141,7 +150,7 @@ export default function MultiCurrency() {
 
   const addToHistory = useCallback(() => {
     if (convertQuery.data && parsedCalcAmount > 0) {
-      setConversionHistory((prev) => [
+      setConversionHistory(prev => [
         {
           id: historyCounter,
           from: convertQuery.data!.from,
@@ -153,7 +162,7 @@ export default function MultiCurrency() {
         },
         ...prev.slice(0, 9),
       ]);
-      setHistoryCounter((c) => c + 1);
+      setHistoryCounter(c => c + 1);
     }
   }, [convertQuery.data, parsedCalcAmount, historyCounter]);
 
@@ -229,11 +238,13 @@ export default function MultiCurrency() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {["NGN", "USD", "EUR", "GBP", "KES", "GHS", "ZAR"].map((c: any) => (
-                  <SelectItem key={c} value={c}>
-                    Base: {c}
-                  </SelectItem>
-                ))}
+                {["NGN", "USD", "EUR", "GBP", "KES", "GHS", "ZAR"].map(
+                  (c: any) => (
+                    <SelectItem key={c} value={c}>
+                      Base: {c}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
             <Button
@@ -286,7 +297,8 @@ export default function MultiCurrency() {
                       className="text-xs"
                       onClick={() => handleQuickPair(pair.from, pair.to)}
                     >
-                      {pair.from} <ArrowRight className="h-3 w-3 mx-1" /> {pair.to}
+                      {pair.from} <ArrowRight className="h-3 w-3 mx-1" />{" "}
+                      {pair.to}
                     </Button>
                   ))}
                 </div>
@@ -313,7 +325,7 @@ export default function MultiCurrency() {
                 <Input
                   placeholder="Search currencies..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -354,7 +366,10 @@ export default function MultiCurrency() {
                         ))
                       ) : filteredRates.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                          <td
+                            colSpan={5}
+                            className="p-8 text-center text-muted-foreground"
+                          >
                             No currencies found
                           </td>
                         </tr>
@@ -368,7 +383,9 @@ export default function MultiCurrency() {
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">{rate.flag}</span>
                                 <div>
-                                  <div className="font-medium text-sm">{rate.code}</div>
+                                  <div className="font-medium text-sm">
+                                    {rate.code}
+                                  </div>
                                   <div className="text-xs text-muted-foreground">
                                     {rate.name}
                                   </div>
@@ -390,8 +407,8 @@ export default function MultiCurrency() {
                                   rate.change24h > 0
                                     ? "text-green-500"
                                     : rate.change24h < 0
-                                    ? "text-red-500"
-                                    : "text-muted-foreground"
+                                      ? "text-red-500"
+                                      : "text-muted-foreground"
                                 }`}
                               >
                                 {rate.change24h > 0 ? (
@@ -459,7 +476,7 @@ export default function MultiCurrency() {
                         <Input
                           type="number"
                           value={calcAmount}
-                          onChange={(e) => setCalcAmount(e.target.value)}
+                          onChange={e => setCalcAmount(e.target.value)}
                           className="text-2xl h-14 font-mono"
                           placeholder="0.00"
                           min="0"
@@ -500,10 +517,13 @@ export default function MultiCurrency() {
                             {convertQuery.isLoading ? (
                               <span className="animate-pulse">...</span>
                             ) : convertQuery.data ? (
-                              convertQuery.data.converted.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
+                              convertQuery.data.converted.toLocaleString(
+                                undefined,
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )
                             ) : (
                               "0.00"
                             )}
@@ -524,24 +544,30 @@ export default function MultiCurrency() {
                   {convertQuery.data && (
                     <div className="rounded-lg bg-muted/30 p-4 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Mid-market rate</span>
+                        <span className="text-muted-foreground">
+                          Mid-market rate
+                        </span>
                         <span className="font-mono">
-                          1 {calcFrom} = {formatRate(convertQuery.data.midMarketRate)}{" "}
-                          {calcTo}
+                          1 {calcFrom} ={" "}
+                          {formatRate(convertQuery.data.midMarketRate)} {calcTo}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Effective rate</span>
+                        <span className="text-muted-foreground">
+                          Effective rate
+                        </span>
                         <span className="font-mono">
-                          1 {calcFrom} = {formatRate(convertQuery.data.effectiveRate)}{" "}
-                          {calcTo}
+                          1 {calcFrom} ={" "}
+                          {formatRate(convertQuery.data.effectiveRate)} {calcTo}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Inverse rate</span>
+                        <span className="text-muted-foreground">
+                          Inverse rate
+                        </span>
                         <span className="font-mono">
-                          1 {calcTo} = {formatRate(convertQuery.data.inverseRate)}{" "}
-                          {calcFrom}
+                          1 {calcTo} ={" "}
+                          {formatRate(convertQuery.data.inverseRate)} {calcFrom}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm border-t pt-2 mt-2">
@@ -555,7 +581,9 @@ export default function MultiCurrency() {
                       <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         Source: {convertQuery.data.source} &middot;{" "}
-                        {new Date(convertQuery.data.timestamp).toLocaleTimeString()}
+                        {new Date(
+                          convertQuery.data.timestamp
+                        ).toLocaleTimeString()}
                       </div>
                     </div>
                   )}
@@ -703,7 +731,9 @@ export default function MultiCurrency() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <Card>
                   <CardContent className="pt-4 pb-3 px-4">
-                    <p className="text-xs text-muted-foreground">Period Change</p>
+                    <p className="text-xs text-muted-foreground">
+                      Period Change
+                    </p>
                     <p
                       className={`text-lg font-bold ${
                         historicalQuery.data.stats.change >= 0
@@ -771,43 +801,63 @@ export default function MultiCurrency() {
                   <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={historicalQuery.data.data}>
                       <defs>
-                        <linearGradient id="rateGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        <linearGradient
+                          id="rateGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.3}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0}
+                          />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.3} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#333"
+                        opacity={0.3}
+                      />
                       <XAxis
                         dataKey="date"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(v) => {
+                        tickFormatter={v => {
                           const d = new Date(v);
                           return chartPeriod === "7d"
-                            ? d.toLocaleDateString(undefined, { weekday: "short" })
-                            : chartPeriod === "1y"
                             ? d.toLocaleDateString(undefined, {
-                                month: "short",
-                                year: "2-digit",
+                                weekday: "short",
                               })
-                            : d.toLocaleDateString(undefined, {
-                                month: "short",
-                                day: "numeric",
-                              });
+                            : chartPeriod === "1y"
+                              ? d.toLocaleDateString(undefined, {
+                                  month: "short",
+                                  year: "2-digit",
+                                })
+                              : d.toLocaleDateString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                });
                         }}
                         interval={
                           chartPeriod === "7d"
                             ? 0
                             : chartPeriod === "30d"
-                            ? 4
-                            : chartPeriod === "90d"
-                            ? 13
-                            : 30
+                              ? 4
+                              : chartPeriod === "90d"
+                                ? 13
+                                : 30
                         }
                       />
                       <YAxis
                         tick={{ fontSize: 11 }}
                         domain={["auto", "auto"]}
-                        tickFormatter={(v) => formatRate(v)}
+                        tickFormatter={v => formatRate(v)}
                       />
                       <Tooltip
                         contentStyle={{
@@ -820,7 +870,7 @@ export default function MultiCurrency() {
                           formatRate(value),
                           `${chartFrom}/${chartTo}`,
                         ]}
-                        labelFormatter={(label) =>
+                        labelFormatter={label =>
                           new Date(label).toLocaleDateString(undefined, {
                             weekday: "long",
                             year: "numeric",

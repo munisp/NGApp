@@ -27,11 +27,30 @@ describe("kycClient — Biometric Service Integration", () => {
         verification_id: "bio_abc123",
         status: "verified",
         overall_confidence: 0.92,
-        face_match: { match: true, similarity: 0.95, confidence: 0.93, source: "arcface" },
-        liveness: { result: "real", confidence: 0.88, spoof_type: "none", source: "liveness_service" },
-        deepfake: { is_real: true, confidence: 0.91, source: "deepfake_service" },
+        face_match: {
+          match: true,
+          similarity: 0.95,
+          confidence: 0.93,
+          source: "arcface",
+        },
+        liveness: {
+          result: "real",
+          confidence: 0.88,
+          spoof_type: "none",
+          source: "liveness_service",
+        },
+        deepfake: {
+          is_real: true,
+          confidence: 0.91,
+          source: "deepfake_service",
+        },
         quality: {
-          selfie: { overall_quality: 0.85, scores: { resolution: 0.9 }, issues: [], icao_compliant: true },
+          selfie: {
+            overall_quality: 0.85,
+            scores: { resolution: 0.9 },
+            issues: [],
+            icao_compliant: true,
+          },
           document: { overall_quality: 0.78, scores: {}, issues: [] },
         },
         landmarks: { "68_point": true, count: 68 },
@@ -144,7 +163,13 @@ describe("kycClient — Biometric Service Integration", () => {
       status: 200,
       json: async () => ({
         faces: [
-          { bbox: [10, 20, 100, 120], confidence: 0.99, landmarks_5pt: [[30, 40]], gender: "female", age: 28 },
+          {
+            bbox: [10, 20, 100, 120],
+            confidence: 0.99,
+            landmarks_5pt: [[30, 40]],
+            gender: "female",
+            age: 28,
+          },
         ],
       }),
     });
@@ -209,7 +234,10 @@ describe("kycClient — Biometric Service Integration", () => {
         anti_spoof_score: 0.35,
         is_real: false,
         spoof_type: "screen_replay",
-        checks: { texture: { score: 0.3 }, moire: { score: 0.2, moire_detected: true } },
+        checks: {
+          texture: { score: 0.3 },
+          moire: { score: 0.2, moire_detected: true },
+        },
       }),
     });
 
@@ -228,13 +256,17 @@ describe("kycClient — Biometric Service Integration", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ status: "healthy", version: "3.0.0", capabilities: {} }),
+        json: async () => ({
+          status: "healthy",
+          version: "3.0.0",
+          capabilities: {},
+        }),
       });
     }
 
     const results = await checkBiometricServicesHealth();
     expect(results.length).toBe(7);
-    expect(results.every((r) => r.status === "healthy")).toBe(true);
+    expect(results.every(r => r.status === "healthy")).toBe(true);
   });
 });
 
@@ -262,7 +294,14 @@ describe("Anti-spoofing — Spoof Type Classification", () => {
   it("checkAntiSpoof can return each spoof type", async () => {
     const { checkAntiSpoof } = await import("./_core/kycClient");
 
-    const spoofTypes = ["printed_photo", "screen_replay", "paper_mask", "3d_mask", "deepfake", "high_quality_photo"];
+    const spoofTypes = [
+      "printed_photo",
+      "screen_replay",
+      "paper_mask",
+      "3d_mask",
+      "deepfake",
+      "high_quality_photo",
+    ];
 
     for (const spoofType of spoofTypes) {
       mockFetch.mockResolvedValueOnce({
@@ -311,9 +350,11 @@ describe("Biometric Capabilities Coverage", () => {
       face_detection: typeof kycClient.detectFaces === "function",
       "68_point_landmarks": typeof kycClient.verifyBiometric === "function", // landmarks in full verify
       face_feature_extraction: typeof kycClient.matchFaces === "function", // ArcFace embeddings
-      anti_spoofing_classification: typeof kycClient.checkAntiSpoof === "function",
+      anti_spoofing_classification:
+        typeof kycClient.checkAntiSpoof === "function",
       confidence_score: typeof kycClient.assessFaceQuality === "function",
-      database_persistence: typeof kycClient.storeComplianceRecord === "function",
+      database_persistence:
+        typeof kycClient.storeComplianceRecord === "function",
       event_publishing: true, // Fluvio producer sidecar
       api_service: typeof kycClient.checkBiometricServicesHealth === "function",
     };
@@ -334,7 +375,7 @@ describe("Biometric Capabilities Coverage", () => {
     ];
     expect(attackTypes.length).toBe(6);
     // All are string-typed and non-empty
-    attackTypes.forEach((t) => {
+    attackTypes.forEach(t => {
       expect(typeof t).toBe("string");
       expect(t.length).toBeGreaterThan(3);
     });

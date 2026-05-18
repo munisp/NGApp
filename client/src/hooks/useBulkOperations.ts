@@ -13,8 +13,15 @@ interface BulkOpsOptions<T> {
   onBulkExport?: (ids: (string | number)[]) => Promise<void>;
 }
 
-export function useBulkOperations<T>({ items, idKey, onBulkDelete, onBulkExport }: BulkOpsOptions<T>) {
-  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
+export function useBulkOperations<T>({
+  items,
+  idKey,
+  onBulkDelete,
+  onBulkExport,
+}: BulkOpsOptions<T>) {
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
+    new Set()
+  );
 
   const toggleItem = useCallback((id: string | number) => {
     setSelectedIds(prev => {
@@ -38,9 +45,18 @@ export function useBulkOperations<T>({ items, idKey, onBulkDelete, onBulkExport 
     else selectAll();
   }, [selectedIds.size, items.length, selectAll, deselectAll]);
 
-  const isSelected = useCallback((id: string | number) => selectedIds.has(id), [selectedIds]);
-  const allSelected = useMemo(() => items.length > 0 && selectedIds.size === items.length, [items.length, selectedIds.size]);
-  const someSelected = useMemo(() => selectedIds.size > 0 && selectedIds.size < items.length, [selectedIds.size, items.length]);
+  const isSelected = useCallback(
+    (id: string | number) => selectedIds.has(id),
+    [selectedIds]
+  );
+  const allSelected = useMemo(
+    () => items.length > 0 && selectedIds.size === items.length,
+    [items.length, selectedIds.size]
+  );
+  const someSelected = useMemo(
+    () => selectedIds.size > 0 && selectedIds.size < items.length,
+    [selectedIds.size, items.length]
+  );
 
   const bulkDelete = useCallback(async () => {
     if (onBulkDelete) await onBulkDelete(Array.from(selectedIds));
@@ -74,15 +90,18 @@ export function exportToCsv<T extends Record<string, any>>(
 ) {
   if (!data.length) return;
 
-  const cols = columns || Object.keys(data[0]).map(k => ({ key: k as keyof T, label: k }));
+  const cols =
+    columns || Object.keys(data[0]).map(k => ({ key: k as keyof T, label: k }));
   const header = cols.map(c => `"${String(c.label)}"`).join(",");
   const rows = data.map(row =>
-    cols.map(c => {
-      const val = row[c.key];
-      if (val === null || val === undefined) return '""';
-      const str = String(val).replace(/"/g, '""');
-      return `"${str}"`;
-    }).join(",")
+    cols
+      .map(c => {
+        const val = row[c.key];
+        if (val === null || val === undefined) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      })
+      .join(",")
   );
 
   const csv = [header, ...rows].join("\n");
@@ -103,7 +122,8 @@ export function exportToPdf<T extends Record<string, any>>(
 ) {
   if (!data.length) return;
 
-  const cols = columns || Object.keys(data[0]).map(k => ({ key: k as keyof T, label: k }));
+  const cols =
+    columns || Object.keys(data[0]).map(k => ({ key: k as keyof T, label: k }));
 
   const html = `
     <!DOCTYPE html>

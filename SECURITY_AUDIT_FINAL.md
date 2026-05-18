@@ -17,30 +17,30 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 
 ### Category Scores
 
-| Category | Score | Status | Details |
-|----------|-------|--------|---------|
-| Authentication & Authorization | 98/100 | PASS | OAuth 2.0 + JWT + role-based access |
-| Input Validation | 96/100 | PASS | Zod schemas + sanitization on all endpoints |
-| SQL Injection Prevention | 97/100 | PASS | Parameterized queries via Drizzle ORM |
-| XSS Prevention | 95/100 | PASS | CSP headers + output encoding |
-| CSRF Protection | 94/100 | PASS | Token-based CSRF + SameSite cookies |
-| Rate Limiting | 96/100 | PASS | Global + per-route + sliding window |
-| Security Headers | 98/100 | PASS | Helmet + custom headers |
-| Session Management | 95/100 | PASS | Secure cookies + JWT rotation |
-| Dependency Security | 88/100 | WARN | 3 transitive vulnerabilities (uuid via @temporalio) |
-| File Upload Security | 94/100 | PASS | Type validation + size limits |
-| Logging & Monitoring | 96/100 | PASS | Structured logging + audit trail |
-| Encryption | 95/100 | PASS | TLS + bcrypt + AES-256 |
+| Category                       | Score  | Status | Details                                             |
+| ------------------------------ | ------ | ------ | --------------------------------------------------- |
+| Authentication & Authorization | 98/100 | PASS   | OAuth 2.0 + JWT + role-based access                 |
+| Input Validation               | 96/100 | PASS   | Zod schemas + sanitization on all endpoints         |
+| SQL Injection Prevention       | 97/100 | PASS   | Parameterized queries via Drizzle ORM               |
+| XSS Prevention                 | 95/100 | PASS   | CSP headers + output encoding                       |
+| CSRF Protection                | 94/100 | PASS   | Token-based CSRF + SameSite cookies                 |
+| Rate Limiting                  | 96/100 | PASS   | Global + per-route + sliding window                 |
+| Security Headers               | 98/100 | PASS   | Helmet + custom headers                             |
+| Session Management             | 95/100 | PASS   | Secure cookies + JWT rotation                       |
+| Dependency Security            | 88/100 | WARN   | 3 transitive vulnerabilities (uuid via @temporalio) |
+| File Upload Security           | 94/100 | PASS   | Type validation + size limits                       |
+| Logging & Monitoring           | 96/100 | PASS   | Structured logging + audit trail                    |
+| Encryption                     | 95/100 | PASS   | TLS + bcrypt + AES-256                              |
 
 ### Findings Summary
 
-| Severity | Count | Status |
-|----------|-------|--------|
-| Critical | 0 | None found |
-| High | 0 | All resolved |
-| Medium | 3 | Mitigated (transitive deps) |
-| Low | 2 | Accepted risk |
-| Info | 5 | Documented |
+| Severity | Count | Status                      |
+| -------- | ----- | --------------------------- |
+| Critical | 0     | None found                  |
+| High     | 0     | All resolved                |
+| Medium   | 3     | Mitigated (transitive deps) |
+| Low      | 2     | Accepted risk               |
+| Info     | 5     | Documented                  |
 
 ---
 
@@ -49,6 +49,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 1. Authentication & Authorization (98/100)
 
 **Implemented Controls:**
+
 - Manus OAuth 2.0 with PKCE flow
 - JWT session tokens with HMAC-SHA256 signing
 - Role-based access control (admin/user/agent)
@@ -61,6 +62,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 2. Input Validation (96/100)
 
 **Implemented Controls:**
+
 - Zod schema validation on all tRPC inputs
 - 18 dedicated validation schemas in `inputValidation.ts`
 - HTML entity encoding for string outputs
@@ -72,6 +74,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 3. SQL Injection Prevention (97/100)
 
 **Implemented Controls:**
+
 - Drizzle ORM with parameterized queries throughout
 - `sql` template literal tag for raw queries (auto-parameterized)
 - No string concatenation in SQL queries
@@ -82,6 +85,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 4. XSS Prevention (95/100)
 
 **Implemented Controls:**
+
 - Content Security Policy (CSP) via Helmet with nonce-based script loading
 - `dangerouslySetInnerHTML` only used in shadcn/ui chart component (trusted library)
 - Output encoding for all user-generated content
@@ -92,6 +96,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 5. CSRF Protection (94/100)
 
 **Implemented Controls:**
+
 - CSRF token generation and validation in `inputSanitizer.ts`
 - CSRF middleware in `securityMiddleware.ts`
 - SameSite cookie attribute set to `lax`
@@ -102,6 +107,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 6. Rate Limiting (96/100)
 
 **Implemented Controls:**
+
 - Global rate limiter: 100 requests/15 minutes per IP
 - Auth rate limiter: 5 requests/15 minutes for login endpoints
 - Sliding window rate limiter in `enhancedRateLimiter.ts`
@@ -111,6 +117,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 7. Security Headers (98/100)
 
 **Implemented Controls:**
+
 - Helmet middleware with full configuration
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
@@ -123,13 +130,14 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 
 **Current Status:** 3 vulnerabilities found (2 moderate, 1 high)
 
-| Package | Severity | Issue | Status |
-|---------|----------|-------|--------|
-| uuid (via @temporalio) | High | GHSA-w5hq-g745-h8pq | Transitive dep, cannot directly fix |
-| undici (via @temporalio) | Moderate | Transitive | Awaiting upstream fix |
-| cookie (transitive) | Moderate | Transitive | Awaiting upstream fix |
+| Package                  | Severity | Issue               | Status                              |
+| ------------------------ | -------- | ------------------- | ----------------------------------- |
+| uuid (via @temporalio)   | High     | GHSA-w5hq-g745-h8pq | Transitive dep, cannot directly fix |
+| undici (via @temporalio) | Moderate | Transitive          | Awaiting upstream fix               |
+| cookie (transitive)      | Moderate | Transitive          | Awaiting upstream fix               |
 
 **Mitigation:** All 3 vulnerabilities are in transitive dependencies of `@temporalio`. Direct upgrade is not possible without upstream release. Risk is mitigated by:
+
 - Not exposing Temporal client directly to user input
 - Network isolation in production (Temporal runs in internal network)
 - Monitoring for upstream patches
@@ -137,6 +145,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 9. Open Redirect Prevention (95/100)
 
 **Implemented Controls:**
+
 - OAuth redirect URLs use `window.location.origin` (not hardcoded)
 - State parameter validation in OAuth callback
 - Redirect URLs validated against allowlist
@@ -145,6 +154,7 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 ### 10. Encryption (95/100)
 
 **Implemented Controls:**
+
 - TLS 1.2+ enforced via Nginx configuration
 - Passwords hashed with bcrypt (cost factor 10)
 - JWT signed with HMAC-SHA256
@@ -168,12 +178,12 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 
 ## Compliance Checklist
 
-| Standard | Status | Notes |
-|----------|--------|-------|
-| OWASP Top 10 (2021) | PASS | All 10 categories addressed |
-| PCI DSS (basic) | PASS | No card data stored, Stripe handles PCI |
-| GDPR (basic) | PASS | Data minimization, audit trail |
-| CBN Guidelines | PASS | Float monitoring, KYC validation |
+| Standard            | Status | Notes                                   |
+| ------------------- | ------ | --------------------------------------- |
+| OWASP Top 10 (2021) | PASS   | All 10 categories addressed             |
+| PCI DSS (basic)     | PASS   | No card data stored, Stripe handles PCI |
+| GDPR (basic)        | PASS   | Data minimization, audit trail          |
+| CBN Guidelines      | PASS   | Float monitoring, KYC validation        |
 
 ---
 
@@ -189,22 +199,22 @@ The 54Link POS Shell platform has undergone comprehensive security hardening acr
 
 ## Security Score Breakdown
 
-| Area | Weight | Score | Weighted |
-|------|--------|-------|----------|
-| Auth & AuthZ | 15% | 98 | 14.7 |
-| Input Validation | 12% | 96 | 11.5 |
-| SQL Injection | 12% | 97 | 11.6 |
-| XSS Prevention | 10% | 95 | 9.5 |
-| CSRF Protection | 8% | 94 | 7.5 |
-| Rate Limiting | 8% | 96 | 7.7 |
-| Security Headers | 8% | 98 | 7.8 |
-| Session Mgmt | 7% | 95 | 6.7 |
-| Dependencies | 5% | 88 | 4.4 |
-| File Upload | 5% | 94 | 4.7 |
-| Logging | 5% | 96 | 4.8 |
-| Encryption | 5% | 95 | 4.8 |
-| **Total** | **100%** | | **95.7** |
+| Area             | Weight   | Score | Weighted |
+| ---------------- | -------- | ----- | -------- |
+| Auth & AuthZ     | 15%      | 98    | 14.7     |
+| Input Validation | 12%      | 96    | 11.5     |
+| SQL Injection    | 12%      | 97    | 11.6     |
+| XSS Prevention   | 10%      | 95    | 9.5      |
+| CSRF Protection  | 8%       | 94    | 7.5      |
+| Rate Limiting    | 8%       | 96    | 7.7      |
+| Security Headers | 8%       | 98    | 7.8      |
+| Session Mgmt     | 7%       | 95    | 6.7      |
+| Dependencies     | 5%       | 88    | 4.4      |
+| File Upload      | 5%       | 94    | 4.7      |
+| Logging          | 5%       | 96    | 4.8      |
+| Encryption       | 5%       | 95    | 4.8      |
+| **Total**        | **100%** |       | **95.7** |
 
 **Final Score: 95/100 (A+)**
 
-*Platform is production-ready with no critical or high-severity vulnerabilities in application code.*
+_Platform is production-ready with no critical or high-severity vulnerabilities in application code._

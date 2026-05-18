@@ -4,12 +4,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { useSettlementProgressSocket, type BatchProgressEvent } from "@/hooks/useSocket";
-import { RefreshCw, Layers, CheckCircle, Clock, DollarSign, Activity, Zap, AlertTriangle } from "lucide-react";
+import {
+  useSettlementProgressSocket,
+  type BatchProgressEvent,
+} from "@/hooks/useSocket";
+import {
+  RefreshCw,
+  Layers,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Activity,
+  Zap,
+  AlertTriangle,
+} from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   completed: "bg-emerald-500/20 text-emerald-400",
@@ -65,11 +83,15 @@ function BatchProgressBar({ event }: { event: BatchProgressEvent }) {
             <Activity className="h-4 w-4 text-blue-400 animate-pulse" />
           )}
           <span className="font-mono text-sm font-medium">{event.batchId}</span>
-          <Badge className={`text-xs ${isFailed ? "bg-red-500/20 text-red-400" : isCompleted ? "bg-emerald-500/20 text-emerald-400" : "bg-blue-500/20 text-blue-400"}`}>
+          <Badge
+            className={`text-xs ${isFailed ? "bg-red-500/20 text-red-400" : isCompleted ? "bg-emerald-500/20 text-emerald-400" : "bg-blue-500/20 text-blue-400"}`}
+          >
             {statusLabel}
           </Badge>
         </div>
-        <span className={`text-sm font-bold ${statusColor}`}>{event.percentage}%</span>
+        <span className={`text-sm font-bold ${statusColor}`}>
+          {event.percentage}%
+        </span>
       </div>
 
       {/* Progress bar */}
@@ -82,7 +104,10 @@ function BatchProgressBar({ event }: { event: BatchProgressEvent }) {
 
       {/* Stats row */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{event.processed.toLocaleString()} / {event.total.toLocaleString()} items</span>
+        <span>
+          {event.processed.toLocaleString()} / {event.total.toLocaleString()}{" "}
+          items
+        </span>
         <div className="flex items-center gap-4">
           {event.rate > 0 && (
             <span className="flex items-center gap-1">
@@ -108,7 +133,9 @@ function BatchProgressBar({ event }: { event: BatchProgressEvent }) {
 
 export default function SettlementBatchProcessor() {
   const [statusFilter, setStatusFilter] = useState("all");
-  const [activeProgressEvents, setActiveProgressEvents] = useState<Map<string, BatchProgressEvent>>(new Map());
+  const [activeProgressEvents, setActiveProgressEvents] = useState<
+    Map<string, BatchProgressEvent>
+  >(new Map());
 
   const statsQuery = trpc.settlementBatchProcessor.getStats.useQuery();
   const batchesQuery = trpc.settlementBatchProcessor.listBatches.useQuery({
@@ -120,43 +147,53 @@ export default function SettlementBatchProcessor() {
   const batches = (batchesQuery.data as any)?.batches ?? [];
 
   // Socket.IO progress handler
-  const handleProgress = useCallback((event: BatchProgressEvent) => {
-    setActiveProgressEvents((prev) => {
-      const next = new Map(prev);
-      if (event.type === "batch.completed" || event.type === "batch.failed") {
-        // Keep completed/failed for 10 seconds then remove
-        next.set(event.batchId, event);
-        setTimeout(() => {
-          setActiveProgressEvents((p) => {
-            const updated = new Map(p);
-            updated.delete(event.batchId);
-            return updated;
-          });
-        }, 10000);
-      } else {
-        next.set(event.batchId, event);
-      }
-      return next;
-    });
+  const handleProgress = useCallback(
+    (event: BatchProgressEvent) => {
+      setActiveProgressEvents(prev => {
+        const next = new Map(prev);
+        if (event.type === "batch.completed" || event.type === "batch.failed") {
+          // Keep completed/failed for 10 seconds then remove
+          next.set(event.batchId, event);
+          setTimeout(() => {
+            setActiveProgressEvents(p => {
+              const updated = new Map(p);
+              updated.delete(event.batchId);
+              return updated;
+            });
+          }, 10000);
+        } else {
+          next.set(event.batchId, event);
+        }
+        return next;
+      });
 
-    // Toast notifications for key events
-    if (event.type === "batch.started") {
-      toast.info(`Settlement batch ${event.batchId} started (${event.total.toLocaleString()} items)`);
-    } else if (event.type === "batch.completed") {
-      toast.success(`Batch ${event.batchId} completed: ${event.processed.toLocaleString()} items processed`);
-      // Refresh data
-      statsQuery.refetch();
-      batchesQuery.refetch();
-    } else if (event.type === "batch.failed") {
-      toast.error(`Batch ${event.batchId} failed at ${event.percentage}%`);
-    }
-  }, [statsQuery, batchesQuery]);
+      // Toast notifications for key events
+      if (event.type === "batch.started") {
+        toast.info(
+          `Settlement batch ${event.batchId} started (${event.total.toLocaleString()} items)`
+        );
+      } else if (event.type === "batch.completed") {
+        toast.success(
+          `Batch ${event.batchId} completed: ${event.processed.toLocaleString()} items processed`
+        );
+        // Refresh data
+        statsQuery.refetch();
+        batchesQuery.refetch();
+      } else if (event.type === "batch.failed") {
+        toast.error(`Batch ${event.batchId} failed at ${event.percentage}%`);
+      }
+    },
+    [statsQuery, batchesQuery]
+  );
 
   useSettlementProgressSocket(handleProgress);
 
   const progressEvents = useMemo(
-    () => Array.from(activeProgressEvents.values()).sort((a: any, b: any) => b.updatedAt - a.updatedAt),
-    [activeProgressEvents],
+    () =>
+      Array.from(activeProgressEvents.values()).sort(
+        (a: any, b: any) => b.updatedAt - a.updatedAt
+      ),
+    [activeProgressEvents]
   );
 
   return (
@@ -169,7 +206,8 @@ export default function SettlementBatchProcessor() {
               <Layers className="h-6 w-6" /> Settlement Batch Processor
             </h1>
             <p className="text-muted-foreground">
-              Monitor and manage settlement batch processing with real-time progress
+              Monitor and manage settlement batch processing with real-time
+              progress
             </p>
           </div>
           <Button
@@ -194,7 +232,9 @@ export default function SettlementBatchProcessor() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalBatches ?? "—"}</div>
+              <div className="text-2xl font-bold">
+                {stats?.totalBatches ?? "—"}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {stats?.totalSettlements ?? 0} settlements
               </p>
@@ -207,7 +247,9 @@ export default function SettlementBatchProcessor() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">{stats?.settled ?? "—"}</div>
+              <div className="text-2xl font-bold text-green-500">
+                {stats?.settled ?? "—"}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Reconciliation: {stats?.reconciliationRate ?? 0}%
               </p>
@@ -220,8 +262,12 @@ export default function SettlementBatchProcessor() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-500">{stats?.processing ?? "—"}</div>
-              <p className="text-xs text-muted-foreground">{stats?.pending ?? 0} pending</p>
+              <div className="text-2xl font-bold text-blue-500">
+                {stats?.processing ?? "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats?.pending ?? 0} pending
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -249,7 +295,14 @@ export default function SettlementBatchProcessor() {
                 <Activity className="h-5 w-5 text-blue-400 animate-pulse" />
                 Live Batch Progress
                 <Badge className="bg-blue-500/20 text-blue-400 text-xs ml-2">
-                  {progressEvents.filter((e: any) => e.type === "batch.progress" || e.type === "batch.started").length} active
+                  {
+                    progressEvents.filter(
+                      (e: any) =>
+                        e.type === "batch.progress" ||
+                        e.type === "batch.started"
+                    ).length
+                  }{" "}
+                  active
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -267,7 +320,10 @@ export default function SettlementBatchProcessor() {
             <CardContent className="py-6">
               <div className="flex items-center justify-center gap-3 text-muted-foreground">
                 <Activity className="h-5 w-5" />
-                <span className="text-sm">No active batch processing. Progress bars will appear here when batches are running.</span>
+                <span className="text-sm">
+                  No active batch processing. Progress bars will appear here
+                  when batches are running.
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -296,7 +352,9 @@ export default function SettlementBatchProcessor() {
             {batchesQuery.isLoading ? (
               <p className="text-muted-foreground">Loading...</p>
             ) : batches.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No batches found</p>
+              <p className="text-muted-foreground text-center py-8">
+                No batches found
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -319,13 +377,20 @@ export default function SettlementBatchProcessor() {
                           {b.merchantName ?? `Merchant-${b.merchantId}`}
                         </td>
                         <td className="py-3 px-2 font-mono">
-                          ₦{Number(b.amount ?? b.totalAmount ?? 0).toLocaleString()}
+                          ₦
+                          {Number(
+                            b.amount ?? b.totalAmount ?? 0
+                          ).toLocaleString()}
                         </td>
                         <td className="py-3 px-2">
-                          <Badge className={STATUS_COLORS[b.status] ?? ""}>{b.status}</Badge>
+                          <Badge className={STATUS_COLORS[b.status] ?? ""}>
+                            {b.status}
+                          </Badge>
                         </td>
                         <td className="py-3 px-2 text-muted-foreground">
-                          {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "—"}
+                          {b.createdAt
+                            ? new Date(b.createdAt).toLocaleDateString()
+                            : "—"}
                         </td>
                       </tr>
                     ))}

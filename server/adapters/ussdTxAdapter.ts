@@ -14,18 +14,43 @@ export interface UssdTransaction {
   createdAt: string;
 }
 
-export async function processTransaction(sessionId: string, type: string, amount: number, phoneNumber: string): Promise<AdapterResponse<UssdTransaction>> {
-  return ussdTxProcessor.post<UssdTransaction>("/process", { sessionId, type, amount, phoneNumber });
+export async function processTransaction(
+  sessionId: string,
+  type: string,
+  amount: number,
+  phoneNumber: string
+): Promise<AdapterResponse<UssdTransaction>> {
+  return ussdTxProcessor.post<UssdTransaction>("/process", {
+    sessionId,
+    type,
+    amount,
+    phoneNumber,
+  });
 }
 
-export async function completeTransaction(txId: string): Promise<AdapterResponse<UssdTransaction>> {
+export async function completeTransaction(
+  txId: string
+): Promise<AdapterResponse<UssdTransaction>> {
   return ussdTxProcessor.post<UssdTransaction>("/complete", { txId });
 }
 
-export async function validateTransaction(type: string, amount: number, phoneNumber: string): Promise<AdapterResponse<{ valid: boolean; errors: string[] }>> {
-  return ussdTxProcessor.post<{ valid: boolean; errors: string[] }>("/validate", { type, amount, phoneNumber });
+export async function validateTransaction(
+  type: string,
+  amount: number,
+  phoneNumber: string
+): Promise<AdapterResponse<{ valid: boolean; errors: string[] }>> {
+  return ussdTxProcessor.post<{ valid: boolean; errors: string[] }>(
+    "/validate",
+    { type, amount, phoneNumber }
+  );
 }
 
-export async function getTransactionStats(): Promise<AdapterResponse<{ total: number; completed: number; failed: number }>> {
-  return ussdTxProcessor.get<{ total: number; completed: number; failed: number }>("/stats");
+export async function getTransactionStats(): Promise<
+  AdapterResponse<{ total: number; completed: number; failed: number }>
+> {
+  return ussdTxProcessor.get<{
+    total: number;
+    completed: number;
+    failed: number;
+  }>("/stats");
 }

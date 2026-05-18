@@ -34,13 +34,25 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || "http://localhost:8087";
 
 const ROLES = [
-  "super_admin", "bank_admin", "branch_manager",
-  "agent", "auditor", "compliance", "customer",
+  "super_admin",
+  "bank_admin",
+  "branch_manager",
+  "agent",
+  "auditor",
+  "compliance",
+  "customer",
 ];
 const PERMISSIONS = [
-  "transactions:create", "transactions:read", "agents:read", "agents:write",
-  "reports:read", "kyc:approve", "float:approve", "cbn:submit",
-  "profile:read:own", "profile:write:own",
+  "transactions:create",
+  "transactions:read",
+  "agents:read",
+  "agents:write",
+  "reports:read",
+  "kyc:approve",
+  "float:approve",
+  "cbn:submit",
+  "profile:read:own",
+  "profile:write:own",
 ];
 
 function randomItem(arr) {
@@ -61,8 +73,8 @@ export default function () {
   checkDuration.add(Date.now() - start);
 
   const ok = check(res, {
-    "rbac check: status 200": (r) => r.status === 200,
-    "rbac check: has allowed field": (r) => {
+    "rbac check: status 200": r => r.status === 200,
+    "rbac check: has allowed field": r => {
       try {
         const body = JSON.parse(r.body);
         return typeof body.allowed === "boolean";
@@ -70,7 +82,7 @@ export default function () {
         return false;
       }
     },
-    "rbac check: p95 < 50ms": (r) => r.timings.duration < 50,
+    "rbac check: p95 < 50ms": r => r.timings.duration < 50,
   });
   checkErrors.add(!ok);
 }

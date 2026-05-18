@@ -58,12 +58,12 @@ will appear in the Actions tab. On success:
 The CI job is configured with `--severity-threshold=high` and `--fail-on=upgradable`.
 This means:
 
-| Severity | Behaviour |
-|---|---|
+| Severity | Behaviour                                  |
+| -------- | ------------------------------------------ |
 | Critical | Fails the build if an upgrade is available |
-| High | Fails the build if an upgrade is available |
-| Medium | Reported in SARIF, does not fail the build |
-| Low | Reported in SARIF, does not fail the build |
+| High     | Fails the build if an upgrade is available |
+| Medium   | Reported in SARIF, does not fail the build |
+| Low      | Reported in SARIF, does not fail the build |
 
 To change thresholds, edit `.github/workflows/ci.yml` → `snyk-scan` job → `args`.
 
@@ -78,7 +78,7 @@ A `.snyk` policy file can be used to ignore specific vulnerabilities with justif
 # Ignore specific CVEs with justification and expiry date
 ignore:
   SNYK-JS-EXAMPLE-12345:
-    - '*':
+    - "*":
         reason: "Not exploitable in our usage — we do not call the vulnerable function"
         expires: "2026-12-31T00:00:00.000Z"
         created: "2026-04-10T00:00:00.000Z"
@@ -93,13 +93,13 @@ Create this file at the repository root when needed.
 
 The IaC scan checks the following files automatically:
 
-| File | Checks |
-|---|---|
-| `Dockerfile` | Non-root USER, no `latest` tags, no secrets in ENV |
-| `docker-compose*.yml` | Privileged mode, host networking, volume mounts |
-| `infra/tigerbeetle/` | Port exposure, resource limits |
-| `infra/apisix/` | Admin API exposure |
-| `monitoring/prometheus/` | Retention limits, authentication |
+| File                     | Checks                                             |
+| ------------------------ | -------------------------------------------------- |
+| `Dockerfile`             | Non-root USER, no `latest` tags, no secrets in ENV |
+| `docker-compose*.yml`    | Privileged mode, host networking, volume mounts    |
+| `infra/tigerbeetle/`     | Port exposure, resource limits                     |
+| `infra/apisix/`          | Admin API exposure                                 |
+| `monitoring/prometheus/` | Retention limits, authentication                   |
 
 ---
 

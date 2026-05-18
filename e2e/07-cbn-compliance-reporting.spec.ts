@@ -17,12 +17,18 @@ const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 async function loginAsAdmin(page: Page) {
   await page.goto(`${BASE_URL}/`);
   const adminEmail = process.env.TEST_ADMIN_EMAIL || "admin@54link.ng";
-  const adminPass  = process.env.TEST_ADMIN_PASS  || "TestAdmin123!";
+  const adminPass = process.env.TEST_ADMIN_PASS || "TestAdmin123!";
 
-  const isLoggedIn = await page.locator('[data-testid="user-menu"]').isVisible().catch(() => false);
+  const isLoggedIn = await page
+    .locator('[data-testid="user-menu"]')
+    .isVisible()
+    .catch(() => false);
   if (isLoggedIn) return;
 
-  await page.locator('[data-testid="login-btn"], a[href*="login"]').first().click();
+  await page
+    .locator('[data-testid="login-btn"], a[href*="login"]')
+    .first()
+    .click();
   await page.waitForURL(/login|oauth/);
   await page.fill('input[type="email"], input[name="email"]', adminEmail);
   await page.fill('input[type="password"], input[name="password"]', adminPass);
@@ -42,12 +48,18 @@ test.describe("CBN Compliance Reporting", () => {
 
     // CBN compliance page should load
     await expect(
-      page.locator('h1:has-text("CBN"), h1:has-text("Compliance"), [data-testid="cbn-dashboard"]')
+      page.locator(
+        'h1:has-text("CBN"), h1:has-text("Compliance"), [data-testid="cbn-dashboard"]'
+      )
     ).toBeVisible({ timeout: 10000 });
 
     // Should show report submission status
     await expect(
-      page.locator('[data-testid="report-status"], text=/Monthly|Quarterly|Annual/i').first()
+      page
+        .locator(
+          '[data-testid="report-status"], text=/Monthly|Quarterly|Annual/i'
+        )
+        .first()
     ).toBeVisible({ timeout: 5000 });
   });
 
@@ -60,7 +72,9 @@ test.describe("CBN Compliance Reporting", () => {
     ).toBeVisible({ timeout: 10000 });
 
     // Should show report type filter
-    const typeFilter = page.locator('[data-testid="report-type-filter"], select[name="reportType"]');
+    const typeFilter = page.locator(
+      '[data-testid="report-type-filter"], select[name="reportType"]'
+    );
     if (await typeFilter.isVisible()) {
       await typeFilter.selectOption("monthly_activity");
       await page.waitForLoadState("networkidle");
@@ -79,7 +93,9 @@ test.describe("CBN Compliance Reporting", () => {
       await generateBtn.click();
 
       // Report generation dialog should appear
-      const dialog = page.locator('[role="dialog"], [data-testid="generate-report-dialog"]');
+      const dialog = page.locator(
+        '[role="dialog"], [data-testid="generate-report-dialog"]'
+      );
       await expect(dialog).toBeVisible({ timeout: 3000 });
 
       // Select report type
@@ -89,16 +105,22 @@ test.describe("CBN Compliance Reporting", () => {
       }
 
       // Cancel — don't actually generate in E2E test
-      await page.locator('button:has-text("Cancel"), [data-testid="cancel-btn"]').click();
+      await page
+        .locator('button:has-text("Cancel"), [data-testid="cancel-btn"]')
+        .click();
     }
   });
 
-  test("Admin can view SAR (Suspicious Activity Reports) list", async ({ page }) => {
+  test("Admin can view SAR (Suspicious Activity Reports) list", async ({
+    page,
+  }) => {
     await page.goto(`${BASE_URL}/admin/compliance/sar`);
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.locator('h1:has-text("SAR"), h1:has-text("Suspicious"), [data-testid="sar-list"]')
+      page.locator(
+        'h1:has-text("SAR"), h1:has-text("Suspicious"), [data-testid="sar-list"]'
+      )
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -107,7 +129,9 @@ test.describe("CBN Compliance Reporting", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.locator('h1:has-text("Settlement"), [data-testid="settlement-dashboard"]')
+      page.locator(
+        'h1:has-text("Settlement"), [data-testid="settlement-dashboard"]'
+      )
     ).toBeVisible({ timeout: 10000 });
 
     // Should show settlement amounts
@@ -126,15 +150,22 @@ test.describe("CBN Compliance Reporting", () => {
 
     // Should show compliance breakdown
     await expect(
-      page.locator('[data-testid="kyc-compliant-count"], text=/compliant|expired/i').first()
+      page
+        .locator(
+          '[data-testid="kyc-compliant-count"], text=/compliant|expired/i'
+        )
+        .first()
     ).toBeVisible({ timeout: 5000 });
   });
 
   test("CBN reports API returns report list", async ({ page }) => {
-    const response = await page.request.post(`${BASE_URL}/api/trpc/compliance.listReports`, {
-      data: { json: { page: 1, limit: 10 } },
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await page.request.post(
+      `${BASE_URL}/api/trpc/compliance.listReports`,
+      {
+        data: { json: { page: 1, limit: 10 } },
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     expect([200, 401]).toContain(response.status());
     if (response.status() === 200) {
@@ -145,10 +176,13 @@ test.describe("CBN Compliance Reporting", () => {
 
   test("Settlement API returns reconciliation data", async ({ page }) => {
     const today = new Date().toISOString().split("T")[0];
-    const response = await page.request.post(`${BASE_URL}/api/trpc/settlement.getReconciliation`, {
-      data: { json: { date: today } },
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await page.request.post(
+      `${BASE_URL}/api/trpc/settlement.getReconciliation`,
+      {
+        data: { json: { date: today } },
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     expect([200, 401]).toContain(response.status());
     if (response.status() === 200) {
@@ -164,7 +198,9 @@ test.describe("CBN Report Content Validation", () => {
     await loginAsAdmin(page);
   });
 
-  test("Monthly activity report contains required CBN fields", async ({ page }) => {
+  test("Monthly activity report contains required CBN fields", async ({
+    page,
+  }) => {
     // Test the report generation API
     const now = new Date();
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -177,7 +213,7 @@ test.describe("CBN Report Content Validation", () => {
             reportType: "monthly_activity",
             year: prevMonth.getFullYear(),
             month: prevMonth.getMonth() + 1,
-            dryRun: true,  // Don't submit, just validate
+            dryRun: true, // Don't submit, just validate
           },
         },
         headers: { "Content-Type": "application/json" },

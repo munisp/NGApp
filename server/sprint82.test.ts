@@ -24,7 +24,10 @@ import {
 import { billingInvoiceRouter } from "./routers/billingInvoice";
 
 // Import tenant billing onboarding router
-import { tenantBillingOnboardingRouter, BILLING_TEMPLATES } from "./routers/tenantBillingOnboarding";
+import {
+  tenantBillingOnboardingRouter,
+  BILLING_TEMPLATES,
+} from "./routers/tenantBillingOnboarding";
 
 describe("Sprint 82: Temporal Billing Provisioning Activities", () => {
   it("should export validateTenantForBilling activity", () => {
@@ -60,7 +63,10 @@ describe("Sprint 82: Temporal Billing Provisioning Activities", () => {
   });
 
   it("configureReconciliation should return schedule and threshold", async () => {
-    const result = await configureReconciliation({ tenantId: 99, region: "WAT" });
+    const result = await configureReconciliation({
+      tenantId: 99,
+      region: "WAT",
+    });
     expect(result).toHaveProperty("schedule");
     expect(result).toHaveProperty("threshold");
     expect(result.schedule).toContain("daily");
@@ -71,27 +77,37 @@ describe("Sprint 82: Temporal Billing Provisioning Activities", () => {
 describe("Sprint 82: Stripe Invoice Integration", () => {
   it("billingInvoiceRouter should have createStripeInvoice procedure", () => {
     expect(billingInvoiceRouter).toBeDefined();
-    const procedures = Object.keys((billingInvoiceRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (billingInvoiceRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("createStripeInvoice");
   });
 
   it("billingInvoiceRouter should have collectPayment procedure", () => {
-    const procedures = Object.keys((billingInvoiceRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (billingInvoiceRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("collectPayment");
   });
 
   it("billingInvoiceRouter should have getStripeInvoiceStatus procedure", () => {
-    const procedures = Object.keys((billingInvoiceRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (billingInvoiceRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("getStripeInvoiceStatus");
   });
 
   it("billingInvoiceRouter should have createInvoiceCheckout procedure", () => {
-    const procedures = Object.keys((billingInvoiceRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (billingInvoiceRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("createInvoiceCheckout");
   });
 
   it("billingInvoiceRouter should retain original procedures", () => {
-    const procedures = Object.keys((billingInvoiceRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (billingInvoiceRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("generateInvoice");
     expect(procedures).toContain("listInvoices");
     expect(procedures).toContain("markPaid");
@@ -123,22 +139,30 @@ describe("Sprint 82: Tenant Billing Onboarding with Temporal", () => {
   });
 
   it("tenantBillingOnboardingRouter should have provisionBilling procedure", () => {
-    const procedures = Object.keys((tenantBillingOnboardingRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (tenantBillingOnboardingRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("provisionBilling");
   });
 
   it("tenantBillingOnboardingRouter should have getConfig procedure", () => {
-    const procedures = Object.keys((tenantBillingOnboardingRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (tenantBillingOnboardingRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("getConfig");
   });
 
   it("tenantBillingOnboardingRouter should have getProvisioningHistory procedure", () => {
-    const procedures = Object.keys((tenantBillingOnboardingRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (tenantBillingOnboardingRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("getProvisioningHistory");
   });
 
   it("tenantBillingOnboardingRouter should have updateConfig procedure", () => {
-    const procedures = Object.keys((tenantBillingOnboardingRouter as any)._def.procedures || {});
+    const procedures = Object.keys(
+      (tenantBillingOnboardingRouter as any)._def.procedures || {}
+    );
     expect(procedures).toContain("updateConfig");
   });
 });
@@ -146,19 +170,26 @@ describe("Sprint 82: Tenant Billing Onboarding with Temporal", () => {
 describe("Sprint 82: Billing Portal Integration", () => {
   it("TenantBillingPortalPage file should exist", async () => {
     const fs = await import("fs");
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/client/src/pages/TenantBillingPortalPage.tsx");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/TenantBillingPortalPage.tsx"
+    );
     expect(exists).toBe(true);
   });
 
   it("Go billing-provisioning-workflow service should exist", async () => {
     const fs = await import("fs");
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/services/go/billing-provisioning-workflow/main.go");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/services/go/billing-provisioning-workflow/main.go"
+    );
     expect(exists).toBe(true);
   });
 
   it("Temporal activities file should contain billing provisioning activities", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/server/temporal-activities.ts", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/server/temporal-activities.ts",
+      "utf-8"
+    );
     expect(content).toContain("validateTenantForBilling");
     expect(content).toContain("createBillingConfig");
     expect(content).toContain("createTigerBeetleAccounts");
@@ -170,7 +201,10 @@ describe("Sprint 82: Billing Portal Integration", () => {
 
   it("Temporal workflow file should contain BillingProvisioningWorkflow", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/server/temporal-workflows.ts", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/server/temporal-workflows.ts",
+      "utf-8"
+    );
     expect(content).toContain("BillingProvisioningWorkflow");
   });
 });

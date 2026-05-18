@@ -73,7 +73,9 @@ describe("Commission Middleware Integration", () => {
     const hierarchy = await mod.getCachedHierarchyChain(1);
     expect(hierarchy).toBeNull();
     // Set should not throw
-    await expect(mod.setCachedSplitRatios("cash_in", { agent: 60 })).resolves.not.toThrow();
+    await expect(
+      mod.setCachedSplitRatios("cash_in", { agent: 60 })
+    ).resolves.not.toThrow();
   });
 
   it("TigerBeetle commission credit returns null when sidecar unavailable", async () => {

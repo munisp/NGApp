@@ -12,22 +12,22 @@ import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
 const topupSuccessRate = new Rate("topup_success_rate");
-const topupDuration    = new Trend("topup_duration_ms", true);
+const topupDuration = new Trend("topup_duration_ms", true);
 
 export const options = {
   stages: [
     { duration: "20s", target: 20 },
-    { duration: "1m",  target: 40 },
-    { duration: "20s", target: 0  },
+    { duration: "1m", target: 40 },
+    { duration: "20s", target: 0 },
   ],
   thresholds: {
-    "topup_duration_ms":  ["p(95)<800"],
-    "topup_success_rate": ["rate>0.98"],
-    "http_req_failed":    ["rate<0.02"],
+    topup_duration_ms: ["p(95)<800"],
+    topup_success_rate: ["rate>0.98"],
+    http_req_failed: ["rate<0.02"],
   },
 };
 
-const BASE_URL    = __ENV.BASE_URL    || "http://localhost:3000";
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const AGENT_TOKEN = __ENV.AGENT_TOKEN || "";
 const ADMIN_TOKEN = __ENV.ADMIN_TOKEN || "";
 
@@ -45,16 +45,16 @@ function trpcQuery(procedure, input, token) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Cookie"] = `agent_session=${token}`;
   const qs = encodeURIComponent(JSON.stringify({ json: input }));
-  return http.get(
-    `${BASE_URL}/api/trpc/${procedure}?input=${qs}`,
-    { headers, timeout: "10s" }
-  );
+  return http.get(`${BASE_URL}/api/trpc/${procedure}?input=${qs}`, {
+    headers,
+    timeout: "10s",
+  });
 }
 
 export default function () {
   // Step 1: Agent submits a float top-up request
   const amount = Math.floor(Math.random() * 90000) + 10000; // 10k–100k
-  const start  = Date.now();
+  const start = Date.now();
 
   const createRes = trpcMutation(
     "floatTopUp.request",
@@ -63,9 +63,13 @@ export default function () {
   );
 
   const ok = check(createRes, {
-    "top-up request created":  r => r.status === 200,
-    "has request id":          r => {
-      try { return !!JSON.parse(r.body).result?.data?.json?.id; } catch { return false; }
+    "top-up request created": r => r.status === 200,
+    "has request id": r => {
+      try {
+        return !!JSON.parse(r.body).result?.data?.json?.id;
+      } catch {
+        return false;
+      }
     },
   });
 

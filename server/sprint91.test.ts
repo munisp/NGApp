@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — Comprehensive Tests
- * 
+ *
  * Tests for:
  * - PBAC enforcement
  * - Ransomware mitigation (FIM, bulk ops, exfiltration, canary, audit chain)
@@ -54,14 +54,22 @@ describe("PBAC Enforcement", () => {
 
   it("should cache authorization decisions", async () => {
     const { authorize } = await import("./middleware/pbacEnforcement");
-    const d1 = await authorize({ userId: 5, role: "admin", timestamp: Date.now() }, "read");
-    const d2 = await authorize({ userId: 5, role: "admin", timestamp: Date.now() }, "read");
+    const d1 = await authorize(
+      { userId: 5, role: "admin", timestamp: Date.now() },
+      "read"
+    );
+    const d2 = await authorize(
+      { userId: 5, role: "admin", timestamp: Date.now() },
+      "read"
+    );
     expect(d1.allowed).toBe(true);
     expect(d2.cached).toBe(true);
   });
 
   it("should enforce role hierarchy", async () => {
-    const { hasHigherRole, getRoleLevel } = await import("./middleware/pbacEnforcement");
+    const { hasHigherRole, getRoleLevel } = await import(
+      "./middleware/pbacEnforcement"
+    );
     expect(hasHigherRole("admin", "operator")).toBe(true);
     expect(hasHigherRole("viewer", "admin")).toBe(false);
     expect(getRoleLevel("super_admin")).toBe(100);
@@ -72,7 +80,9 @@ describe("PBAC Enforcement", () => {
 // ─── Ransomware Mitigation Tests ─────────────────────────────────────────────
 describe("Ransomware Mitigation", () => {
   it("should detect bulk delete operations", async () => {
-    const { trackBulkOperation } = await import("./middleware/ransomwareMitigation");
+    const { trackBulkOperation } = await import(
+      "./middleware/ransomwareMitigation"
+    );
     // Simulate 51 deletes (threshold is 50)
     let result;
     for (let i = 0; i < 51; i++) {
@@ -83,7 +93,9 @@ describe("Ransomware Mitigation", () => {
   });
 
   it("should block data exfiltration over limit", async () => {
-    const { trackDataExport } = await import("./middleware/ransomwareMitigation");
+    const { trackDataExport } = await import(
+      "./middleware/ransomwareMitigation"
+    );
     // Export 101MB (limit is 100MB)
     const result = trackDataExport(200, 101 * 1024 * 1024, "/api/export/users");
     expect(result.blocked).toBe(true);
@@ -91,17 +103,34 @@ describe("Ransomware Mitigation", () => {
   });
 
   it("should maintain immutable audit chain", async () => {
-    const { appendAuditEntry, verifyAuditChain, getAuditChainLength } = await import("./middleware/ransomwareMitigation");
+    const { appendAuditEntry, verifyAuditChain, getAuditChainLength } =
+      await import("./middleware/ransomwareMitigation");
     const initialLength = getAuditChainLength();
-    appendAuditEntry({ timestamp: Date.now(), userId: 1, action: "test1", resource: "test", details: "d1", ip: "127.0.0.1" });
-    appendAuditEntry({ timestamp: Date.now(), userId: 1, action: "test2", resource: "test", details: "d2", ip: "127.0.0.1" });
+    appendAuditEntry({
+      timestamp: Date.now(),
+      userId: 1,
+      action: "test1",
+      resource: "test",
+      details: "d1",
+      ip: "127.0.0.1",
+    });
+    appendAuditEntry({
+      timestamp: Date.now(),
+      userId: 1,
+      action: "test2",
+      resource: "test",
+      details: "d2",
+      ip: "127.0.0.1",
+    });
     expect(getAuditChainLength()).toBe(initialLength + 2);
     const { valid } = verifyAuditChain();
     expect(valid).toBe(true);
   });
 
   it("should compute file hashes correctly", async () => {
-    const { computeFileHash } = await import("./middleware/ransomwareMitigation");
+    const { computeFileHash } = await import(
+      "./middleware/ransomwareMitigation"
+    );
     const hash = computeFileHash("/home/ubuntu/pos-shell-demo/package.json");
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -110,7 +139,9 @@ describe("Ransomware Mitigation", () => {
 // ─── Connectivity Resilience Tests ───────────────────────────────────────────
 describe("Connectivity Resilience", () => {
   it("should provide adaptive WebSocket config for 2G", async () => {
-    const { getAdaptiveWSConfig } = await import("./middleware/connectivityResilience");
+    const { getAdaptiveWSConfig } = await import(
+      "./middleware/connectivityResilience"
+    );
     const config = getAdaptiveWSConfig("2g");
     expect(config.heartbeatInterval).toBe(60_000);
     expect(config.pollingInterval).toBe(30_000);
@@ -118,13 +149,17 @@ describe("Connectivity Resilience", () => {
   });
 
   it("should provide default config for good connections", async () => {
-    const { getAdaptiveWSConfig, DEFAULT_WS_CONFIG } = await import("./middleware/connectivityResilience");
+    const { getAdaptiveWSConfig, DEFAULT_WS_CONFIG } = await import(
+      "./middleware/connectivityResilience"
+    );
     const config = getAdaptiveWSConfig("4g");
     expect(config).toEqual(DEFAULT_WS_CONFIG);
   });
 
   it("should track load correctly", async () => {
-    const { getCurrentLoad } = await import("./middleware/connectivityResilience");
+    const { getCurrentLoad } = await import(
+      "./middleware/connectivityResilience"
+    );
     const load = getCurrentLoad();
     expect(load.current).toBeGreaterThanOrEqual(0);
     expect(load.max).toBe(1000);
@@ -151,7 +186,9 @@ describe("Middleware Connectors", () => {
   });
 
   it("should track circuit breaker states", async () => {
-    const { getCircuitStates } = await import("./middleware/middlewareConnectors");
+    const { getCircuitStates } = await import(
+      "./middleware/middlewareConnectors"
+    );
     const states = getCircuitStates();
     expect(typeof states).toBe("object");
   });
@@ -170,7 +207,9 @@ describe("Middleware Connectors", () => {
 // ─── Service Orchestrator Tests ──────────────────────────────────────────────
 describe("Service Orchestrator", () => {
   it("should register and list services", async () => {
-    const { getRegisteredServices } = await import("./middleware/serviceOrchestrator");
+    const { getRegisteredServices } = await import(
+      "./middleware/serviceOrchestrator"
+    );
     const services = getRegisteredServices();
     expect(services.length).toBeGreaterThan(0);
     expect(services.find(s => s.name === "liveness-detection")).toBeDefined();
@@ -185,12 +224,18 @@ describe("Service Orchestrator", () => {
       {
         name: "step1",
         execute: async () => "ok",
-        compensate: async () => { compensated.push("step1"); },
+        compensate: async () => {
+          compensated.push("step1");
+        },
       },
       {
         name: "step2",
-        execute: async () => { throw new Error("Step 2 failed"); },
-        compensate: async () => { compensated.push("step2"); },
+        execute: async () => {
+          throw new Error("Step 2 failed");
+        },
+        compensate: async () => {
+          compensated.push("step2");
+        },
       },
     ]);
 
@@ -201,10 +246,17 @@ describe("Service Orchestrator", () => {
   });
 
   it("should handle dead letter queue", async () => {
-    const { addToDeadLetterQueue, getDeadLetterQueue, getDeadLetterQueueSize } = await import("./middleware/serviceOrchestrator");
+    const { addToDeadLetterQueue, getDeadLetterQueue, getDeadLetterQueueSize } =
+      await import("./middleware/serviceOrchestrator");
     const initialSize = getDeadLetterQueueSize();
     addToDeadLetterQueue(
-      { id: "test_event_1", type: "test", source: "test", timestamp: Date.now(), payload: {} },
+      {
+        id: "test_event_1",
+        type: "test",
+        source: "test",
+        timestamp: Date.now(),
+        payload: {},
+      },
       "Test error"
     );
     expect(getDeadLetterQueueSize()).toBe(initialSize + 1);
@@ -213,10 +265,20 @@ describe("Service Orchestrator", () => {
   });
 
   it("should route events to subscribers", async () => {
-    const { subscribeToEvent, publishEvent } = await import("./middleware/serviceOrchestrator");
+    const { subscribeToEvent, publishEvent } = await import(
+      "./middleware/serviceOrchestrator"
+    );
     let received = false;
-    subscribeToEvent("test.event.s91", async () => { received = true; });
-    await publishEvent({ id: "test_1", type: "test.event.s91", source: "test", timestamp: Date.now(), payload: {} });
+    subscribeToEvent("test.event.s91", async () => {
+      received = true;
+    });
+    await publishEvent({
+      id: "test_1",
+      type: "test.event.s91",
+      source: "test",
+      timestamp: Date.now(),
+      payload: {},
+    });
     expect(received).toBe(true);
   });
 });
@@ -224,7 +286,9 @@ describe("Service Orchestrator", () => {
 // ─── Mock Replacements Tests ─────────────────────────────────────────────────
 describe("Mock Replacements", () => {
   it("should process transactions with event publishing", async () => {
-    const { processTransaction } = await import("./middleware/mockReplacements");
+    const { processTransaction } = await import(
+      "./middleware/mockReplacements"
+    );
     const result = await processTransaction({
       merchantId: 1,
       amount: 25.99,
@@ -237,7 +301,9 @@ describe("Mock Replacements", () => {
   });
 
   it("should calculate revenue splits", async () => {
-    const { calculateRevenueSplit } = await import("./middleware/mockReplacements");
+    const { calculateRevenueSplit } = await import(
+      "./middleware/mockReplacements"
+    );
     const splits = await calculateRevenueSplit({
       transactionId: "txn_test",
       totalAmount: 100,
@@ -255,7 +321,9 @@ describe("Mock Replacements", () => {
   });
 
   it("should provide caching layer", async () => {
-    const { cacheSet, cacheGet, cacheInvalidate } = await import("./middleware/mockReplacements");
+    const { cacheSet, cacheGet, cacheInvalidate } = await import(
+      "./middleware/mockReplacements"
+    );
     await cacheSet("test_cache", { foo: "bar" }, 60);
     const value = await cacheGet<{ foo: string }>("test_cache");
     expect(value).toEqual({ foo: "bar" });
@@ -266,9 +334,17 @@ describe("Mock Replacements", () => {
 
   it("should check permissions via PBAC", async () => {
     const { checkPermission } = await import("./middleware/mockReplacements");
-    const allowed = await checkPermission({ userId: 1, role: "admin", permission: "manage_users" });
+    const allowed = await checkPermission({
+      userId: 1,
+      role: "admin",
+      permission: "manage_users",
+    });
     expect(allowed).toBe(true);
-    const denied = await checkPermission({ userId: 2, role: "viewer", permission: "delete" });
+    const denied = await checkPermission({
+      userId: 2,
+      role: "viewer",
+      permission: "delete",
+    });
     expect(denied).toBe(false);
   });
 });

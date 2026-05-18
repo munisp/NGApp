@@ -1,10 +1,10 @@
 // @ts-nocheck — Sprint 69
 /**
  * Transaction Processing Pipeline
- * 
+ *
  * Integrates business rules, fraud scoring, compliance checks,
  * and lifecycle workflows into a unified transaction processing middleware.
- * 
+ *
  * Pipeline stages:
  * 1. Input validation & sanitization
  * 2. Rate limit check
@@ -88,11 +88,11 @@ const SINGLE_TXN_LIMITS: Record<string, number> = {
 };
 
 const COMMISSION_RATES: Record<string, number> = {
-  cash_in: 0.005,    // 0.5%
-  cash_out: 0.01,    // 1.0%
-  transfer: 0.0075,  // 0.75%
+  cash_in: 0.005, // 0.5%
+  cash_out: 0.01, // 1.0%
+  transfer: 0.0075, // 0.75%
   bill_payment: 0.003, // 0.3%
-  airtime: 0.025,    // 2.5%
+  airtime: 0.025, // 2.5%
 };
 
 const FEE_TIERS = [
@@ -114,7 +114,7 @@ const RAPID_TXN_WINDOW_MS = 300_000; // 5 minutes
 export async function processTransaction(
   request: TransactionRequest,
   agentId: number,
-  tenantId?: number,
+  tenantId?: number
 ): Promise<PipelineResult> {
   const startTime = Date.now();
 
@@ -123,7 +123,7 @@ export async function processTransaction(
     agentId,
     tenantId,
     kycTier: "standard", // Would be fetched from DB in production
-    dailyVolume: 0,      // Would be aggregated from DB
+    dailyVolume: 0, // Would be aggregated from DB
     monthlyVolume: 0,
     riskScore: 0,
     complianceFlags: [],
@@ -156,7 +156,8 @@ export async function processTransaction(
       commission,
       fee,
       riskScore: ctx.riskScore,
-      complianceFlags: ctx.complianceFlags.length > 0 ? ctx.complianceFlags : undefined,
+      complianceFlags:
+        ctx.complianceFlags.length > 0 ? ctx.complianceFlags : undefined,
       processingTimeMs: Date.now() - startTime,
     };
   } catch (error: any) {
@@ -179,8 +180,14 @@ function validateRequest(ctx: PipelineContext): void {
     throw new Error("VALIDATION_ERROR: Amount must be positive");
   }
 
-  if (request.type === "transfer" && !request.recipientPhone && !request.recipientAccountId) {
-    throw new Error("VALIDATION_ERROR: Transfer requires recipient phone or account");
+  if (
+    request.type === "transfer" &&
+    !request.recipientPhone &&
+    !request.recipientAccountId
+  ) {
+    throw new Error(
+      "VALIDATION_ERROR: Transfer requires recipient phone or account"
+    );
   }
 
   if (request.type === "cash_out" && !request.senderAccountId) {
@@ -196,7 +203,7 @@ function checkBusinessRules(ctx: PipelineContext): void {
   if (request.amount > singleLimit) {
     throw new Error(
       `LIMIT_EXCEEDED: Amount ₦${request.amount.toLocaleString()} exceeds ` +
-      `single transaction limit of ₦${singleLimit.toLocaleString()} for ${kycTier} tier`
+        `single transaction limit of ₦${singleLimit.toLocaleString()} for ${kycTier} tier`
     );
   }
 
@@ -205,7 +212,7 @@ function checkBusinessRules(ctx: PipelineContext): void {
   if (dailyVolume + request.amount > dailyLimit) {
     throw new Error(
       `DAILY_LIMIT_EXCEEDED: This transaction would exceed your daily limit ` +
-      `of ₦${dailyLimit.toLocaleString()} for ${kycTier} tier`
+        `of ₦${dailyLimit.toLocaleString()} for ${kycTier} tier`
     );
   }
 
@@ -215,7 +222,10 @@ function checkBusinessRules(ctx: PipelineContext): void {
   }
 
   // CBN: cash transactions above 500K require CTR filing
-  if ((request.type === "cash_in" || request.type === "cash_out") && request.amount >= 500_000) {
+  if (
+    (request.type === "cash_in" || request.type === "cash_out") &&
+    request.amount >= 500_000
+  ) {
     ctx.complianceFlags.push("CBN_CTR_FILING_REQUIRED");
   }
 }
@@ -229,13 +239,19 @@ function calculateRiskScore(ctx: PipelineContext): void {
   else if (ctx.request.amount > 100_000) score += 5;
 
   // Corridor risk
-  if (ctx.request.corridor && HIGH_RISK_CORRIDORS.includes(ctx.request.corridor)) {
+  if (
+    ctx.request.corridor &&
+    HIGH_RISK_CORRIDORS.includes(ctx.request.corridor)
+  ) {
     score += 40;
     ctx.complianceFlags.push("HIGH_RISK_CORRIDOR");
   }
 
   // Structuring detection (just below reporting threshold)
-  if (ctx.request.amount >= STRUCTURING_THRESHOLD * 0.9 && ctx.request.amount < STRUCTURING_THRESHOLD) {
+  if (
+    ctx.request.amount >= STRUCTURING_THRESHOLD * 0.9 &&
+    ctx.request.amount < STRUCTURING_THRESHOLD
+  ) {
     score += 30;
     ctx.complianceFlags.push("POSSIBLE_STRUCTURING");
   }
@@ -250,7 +266,9 @@ function calculateRiskScore(ctx: PipelineContext): void {
 
   // Auto-reject if risk score exceeds threshold
   if (ctx.riskScore >= 80) {
-    throw new Error("RISK_REJECTED: Transaction flagged for manual review due to high risk score");
+    throw new Error(
+      "RISK_REJECTED: Transaction flagged for manual review due to high risk score"
+    );
   }
 }
 
@@ -262,23 +280,28 @@ function screenCompliance(ctx: PipelineContext): void {
   // In production, this would check Politically Exposed Persons database
 
   // If any critical compliance flags, require manual approval
-  const criticalFlags = ctx.complianceFlags.filter(f =>
-    f.includes("HIGH_RISK") || f.includes("STRUCTURING")
+  const criticalFlags = ctx.complianceFlags.filter(
+    f => f.includes("HIGH_RISK") || f.includes("STRUCTURING")
   );
 
   if (criticalFlags.length > 0 && ctx.riskScore >= 60) {
     throw new Error(
       `COMPLIANCE_HOLD: Transaction requires compliance officer review. ` +
-      `Flags: ${criticalFlags.join(", ")}`
+        `Flags: ${criticalFlags.join(", ")}`
     );
   }
 }
 
-function calculateFeesAndCommission(ctx: PipelineContext): { fee: number; commission: number } {
+function calculateFeesAndCommission(ctx: PipelineContext): {
+  fee: number;
+  commission: number;
+} {
   const { request } = ctx;
 
   // Calculate flat fee based on amount tier
-  const feeTier = FEE_TIERS.find(t => request.amount >= t.min && request.amount <= t.max);
+  const feeTier = FEE_TIERS.find(
+    t => request.amount >= t.min && request.amount <= t.max
+  );
   const fee = feeTier?.fee || 200;
 
   // Calculate percentage-based commission
@@ -300,7 +323,7 @@ function generateReference(type: string): string {
 export async function processBatch(
   requests: TransactionRequest[],
   agentId: number,
-  tenantId?: number,
+  tenantId?: number
 ): Promise<PipelineResult[]> {
   const results: PipelineResult[] = [];
   for (const req of requests) {
@@ -331,8 +354,10 @@ export function summarizeResults(results: PipelineResult[]): {
     totalAmount: 0, // Would sum from transaction amounts
     totalFees: approved.reduce((sum, r) => sum + (r.fee || 0), 0),
     totalCommission: approved.reduce((sum, r) => sum + (r.commission || 0), 0),
-    avgProcessingTimeMs: results.length > 0
-      ? results.reduce((sum, r) => sum + r.processingTimeMs, 0) / results.length
-      : 0,
+    avgProcessingTimeMs:
+      results.length > 0
+        ? results.reduce((sum, r) => sum + r.processingTimeMs, 0) /
+          results.length
+        : 0,
   };
 }

@@ -1,6 +1,6 @@
 /**
  * Business Rules Validation — 54Link Agency Banking Platform
- * 
+ *
  * Validates core business logic, domain constraints, and workflow rules
  * that must hold true for a production-ready agency banking system.
  */
@@ -11,7 +11,11 @@ import * as path from "path";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 
 function readFile(relPath: string): string {
-  try { return fs.readFileSync(path.join(PROJECT_ROOT, relPath), "utf-8"); } catch { return ""; }
+  try {
+    return fs.readFileSync(path.join(PROJECT_ROOT, relPath), "utf-8");
+  } catch {
+    return "";
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -76,25 +80,33 @@ describe("KYC/KYB Business Rules", () => {
   });
 
   it("should have liveness detection service", () => {
-    const livenessService = readFile("services/python/liveness-detection/liveness_service.py");
+    const livenessService = readFile(
+      "services/python/liveness-detection/liveness_service.py"
+    );
     expect(livenessService.length).toBeGreaterThan(0);
     expect(livenessService).toMatch(/blink|head_turn|smile|texture/i);
   });
 
   it("should have face matching for ID verification", () => {
-    const faceService = readFile("services/python/face-matching/face_matching_service.py");
+    const faceService = readFile(
+      "services/python/face-matching/face_matching_service.py"
+    );
     expect(faceService.length).toBeGreaterThan(0);
     expect(faceService).toMatch(/similarity|threshold|match/i);
   });
 
   it("should have document fraud detection", () => {
-    const fraudService = readFile("services/python/document-fraud-detection/fraud_detection_service.py");
+    const fraudService = readFile(
+      "services/python/document-fraud-detection/fraud_detection_service.py"
+    );
     expect(fraudService.length).toBeGreaterThan(0);
     expect(fraudService).toMatch(/tamper|forgery|authentic/i);
   });
 
   it("should have OCR for document text extraction", () => {
-    const ocrService = readFile("services/python/paddle-ocr-service/paddle_ocr_service.py");
+    const ocrService = readFile(
+      "services/python/paddle-ocr-service/paddle_ocr_service.py"
+    );
     expect(ocrService.length).toBeGreaterThan(0);
     expect(ocrService).toMatch(/ocr|text|extract/i);
   });
@@ -128,7 +140,9 @@ describe("Fraud Detection Business Rules", () => {
 
   it("should have fraud alert status workflow", () => {
     const fraudDashboard = readFile("client/src/pages/FraudDashboard.tsx");
-    expect(fraudDashboard).toMatch(/pending|investigating|resolved|dismissed|escalated/i);
+    expect(fraudDashboard).toMatch(
+      /pending|investigating|resolved|dismissed|escalated/i
+    );
   });
 
   it("should have fraud scoring mechanism", () => {
@@ -142,7 +156,9 @@ describe("Fraud Detection Business Rules", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Settlement Business Rules", () => {
   it("should have settlement reconciliation page", () => {
-    const settlement = readFile("client/src/pages/SettlementReconciliation.tsx");
+    const settlement = readFile(
+      "client/src/pages/SettlementReconciliation.tsx"
+    );
     expect(settlement.length).toBeGreaterThan(0);
   });
 
@@ -164,7 +180,9 @@ describe("Notification Business Rules", () => {
   });
 
   it("should have notification preference matrix", () => {
-    const prefMatrix = readFile("client/src/pages/NotificationPreferenceMatrix.tsx");
+    const prefMatrix = readFile(
+      "client/src/pages/NotificationPreferenceMatrix.tsx"
+    );
     expect(prefMatrix.length).toBeGreaterThan(0);
   });
 
@@ -236,7 +254,21 @@ describe("Compliance Business Rules", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Infrastructure Readiness", () => {
   it("should have Kubernetes Helm charts for all middleware", () => {
-    const charts = ["kafka", "redis", "temporal", "keycloak", "opensearch", "apisix", "mojaloop", "permify", "dapr", "fluvio", "lakehouse", "tigerbeetle", "postgresql"];
+    const charts = [
+      "kafka",
+      "redis",
+      "temporal",
+      "keycloak",
+      "opensearch",
+      "apisix",
+      "mojaloop",
+      "permify",
+      "dapr",
+      "fluvio",
+      "lakehouse",
+      "tigerbeetle",
+      "postgresql",
+    ];
     for (const chart of charts) {
       const chartYaml = readFile(`k8s/charts/${chart}/Chart.yaml`);
       expect(chartYaml.length).toBeGreaterThan(0);

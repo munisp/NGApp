@@ -59,7 +59,8 @@ export function detectSqlInjection(input: string): boolean {
 }
 
 export function generateCsrfToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let token = "";
   for (let i = 0; i < 64; i++) {
     token += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -67,13 +68,16 @@ export function generateCsrfToken(): string {
   return token;
 }
 
-export function signTransaction(txData: Record<string, any>, secret: string): string {
+export function signTransaction(
+  txData: Record<string, any>,
+  secret: string
+): string {
   const payload = JSON.stringify(txData, Object.keys(txData).sort());
   let hash = 0;
   const combined = payload + secret;
   for (let i = 0; i < combined.length; i++) {
     const char = combined.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
   return Math.abs(hash).toString(16).padStart(8, "0");
@@ -86,7 +90,10 @@ export interface RateLimitBucket {
   blocked: boolean;
 }
 
-export function checkRateLimit(bucket: RateLimitBucket, config: SecurityConfig): { allowed: boolean; remaining: number } {
+export function checkRateLimit(
+  bucket: RateLimitBucket,
+  config: SecurityConfig
+): { allowed: boolean; remaining: number } {
   const now = Date.now();
   if (now - bucket.windowStart > config.rateLimitWindowMs) {
     bucket.count = 0;
@@ -96,24 +103,81 @@ export function checkRateLimit(bucket: RateLimitBucket, config: SecurityConfig):
   bucket.count++;
   const allowed = bucket.count <= config.rateLimitMaxRequests;
   if (!allowed) bucket.blocked = true;
-  return { allowed, remaining: Math.max(0, config.rateLimitMaxRequests - bucket.count) };
+  return {
+    allowed,
+    remaining: Math.max(0, config.rateLimitMaxRequests - bucket.count),
+  };
 }
 
-export function runPciDssChecks(): Array<{ check: string; passed: boolean; detail: string }> {
+export function runPciDssChecks(): Array<{
+  check: string;
+  passed: boolean;
+  detail: string;
+}> {
   return [
-    { check: "Encrypt cardholder data at rest", passed: true, detail: "AES-256-GCM encryption active" },
-    { check: "Encrypt data in transit", passed: true, detail: "TLS 1.3 enforced" },
-    { check: "Restrict access by business need", passed: true, detail: "PBAC with role-based policies" },
-    { check: "Track and monitor all access", passed: true, detail: "Audit chain with hash verification" },
-    { check: "Regularly test security systems", passed: true, detail: "Automated vulnerability scanning" },
-    { check: "Maintain information security policy", passed: true, detail: "Policy document v2.1 active" },
-    { check: "Protect stored cardholder data", passed: true, detail: "No PAN stored; tokenized via Stripe" },
-    { check: "Use and regularly update anti-virus", passed: true, detail: "Ransomware guard active" },
-    { check: "Develop and maintain secure systems", passed: true, detail: "Dependency scanning enabled" },
-    { check: "Restrict physical access to data", passed: true, detail: "Cloud-hosted; no physical access" },
-    { check: "Assign unique ID to each person", passed: true, detail: "Unique agent IDs with MFA" },
-    { check: "Implement strong access control", passed: true, detail: "PBAC + JWT + session management" },
+    {
+      check: "Encrypt cardholder data at rest",
+      passed: true,
+      detail: "AES-256-GCM encryption active",
+    },
+    {
+      check: "Encrypt data in transit",
+      passed: true,
+      detail: "TLS 1.3 enforced",
+    },
+    {
+      check: "Restrict access by business need",
+      passed: true,
+      detail: "PBAC with role-based policies",
+    },
+    {
+      check: "Track and monitor all access",
+      passed: true,
+      detail: "Audit chain with hash verification",
+    },
+    {
+      check: "Regularly test security systems",
+      passed: true,
+      detail: "Automated vulnerability scanning",
+    },
+    {
+      check: "Maintain information security policy",
+      passed: true,
+      detail: "Policy document v2.1 active",
+    },
+    {
+      check: "Protect stored cardholder data",
+      passed: true,
+      detail: "No PAN stored; tokenized via Stripe",
+    },
+    {
+      check: "Use and regularly update anti-virus",
+      passed: true,
+      detail: "Ransomware guard active",
+    },
+    {
+      check: "Develop and maintain secure systems",
+      passed: true,
+      detail: "Dependency scanning enabled",
+    },
+    {
+      check: "Restrict physical access to data",
+      passed: true,
+      detail: "Cloud-hosted; no physical access",
+    },
+    {
+      check: "Assign unique ID to each person",
+      passed: true,
+      detail: "Unique agent IDs with MFA",
+    },
+    {
+      check: "Implement strong access control",
+      passed: true,
+      detail: "PBAC + JWT + session management",
+    },
   ];
 }
 
-console.log("[securityHardeningMiddleware] Sprint 77 security middleware loaded");
+console.log(
+  "[securityHardeningMiddleware] Sprint 77 security middleware loaded"
+);

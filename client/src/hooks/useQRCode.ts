@@ -21,9 +21,9 @@ import { toast } from "sonner";
 
 // ── IndexedDB helpers ─────────────────────────────────────────────────────────
 
-const IDB_NAME    = "54link-qr-store";
+const IDB_NAME = "54link-qr-store";
 const IDB_VERSION = 1;
-const IDB_STORE   = "offline_qr_codes";
+const IDB_STORE = "offline_qr_codes";
 
 export interface OfflineQRRecord {
   id: string;
@@ -31,7 +31,7 @@ export interface OfflineQRRecord {
   amount: number;
   agentCode: string;
   label: string;
-  payload: string;          // 54LINK:{ref}:{amount}:{agentCode}
+  payload: string; // 54LINK:{ref}:{amount}:{agentCode}
   createdAt: string;
   synced: boolean;
 }
@@ -39,7 +39,7 @@ export interface OfflineQRRecord {
 function openIDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
-    req.onupgradeneeded = (e) => {
+    req.onupgradeneeded = e => {
       const db = (e.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(IDB_STORE)) {
         const store = db.createObjectStore(IDB_STORE, { keyPath: "id" });
@@ -48,7 +48,7 @@ function openIDB(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
@@ -57,8 +57,14 @@ async function idbPut(record: OfflineQRRecord): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readwrite");
     tx.objectStore(IDB_STORE).put(record);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror    = () => { db.close(); reject(tx.error); };
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
   });
 }
 
@@ -67,8 +73,14 @@ async function idbGetAll(): Promise<OfflineQRRecord[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readonly");
     const req = tx.objectStore(IDB_STORE).getAll();
-    req.onsuccess = () => { db.close(); resolve(req.result as OfflineQRRecord[]); };
-    req.onerror   = () => { db.close(); reject(req.error); };
+    req.onsuccess = () => {
+      db.close();
+      resolve(req.result as OfflineQRRecord[]);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
   });
 }
 
@@ -84,8 +96,14 @@ async function idbMarkSynced(id: string): Promise<void> {
         store.put({ ...record, synced: true });
       }
     };
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror    = () => { db.close(); reject(tx.error); };
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
   });
 }
 
@@ -94,8 +112,14 @@ async function idbDelete(id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readwrite");
     tx.objectStore(IDB_STORE).delete(id);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror    = () => { db.close(); reject(tx.error); };
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
   });
 }
 
@@ -149,7 +173,11 @@ export function parseQRPayload(raw: string): ParsedQRPayload {
   return { valid: true, raw, is54Link: false, externalType: "Unknown" };
 }
 
-export function build54LinkQRPayload(ref: string, amount: number, agentCode: string): string {
+export function build54LinkQRPayload(
+  ref: string,
+  amount: number,
+  agentCode: string
+): string {
   return `54LINK:${ref}:${amount}:${agentCode}`;
 }
 
@@ -175,7 +203,7 @@ export function useQRScanner(onScan: (result: QRScanResult) => void) {
       rafRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
@@ -195,7 +223,11 @@ export function useQRScanner(onScan: (result: QRScanResult) => void) {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
       streamRef.current = stream;
       setCameraAvailable(true);
@@ -211,15 +243,22 @@ export function useQRScanner(onScan: (result: QRScanResult) => void) {
         const tick = () => {
           const video = videoRef.current;
           const canvas = canvasRef.current;
-          if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+          if (
+            !video ||
+            !canvas ||
+            video.readyState !== video.HAVE_ENOUGH_DATA
+          ) {
             rafRef.current = requestAnimationFrame(tick);
             return;
           }
 
-          canvas.width  = video.videoWidth;
+          canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           const ctx = canvas.getContext("2d");
-          if (!ctx) { rafRef.current = requestAnimationFrame(tick); return; }
+          if (!ctx) {
+            rafRef.current = requestAnimationFrame(tick);
+            return;
+          }
 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -249,7 +288,15 @@ export function useQRScanner(onScan: (result: QRScanResult) => void) {
   // Cleanup on unmount
   useEffect(() => () => stopScanning(), [stopScanning]);
 
-  return { videoRef, canvasRef, scanning, error, cameraAvailable, startScanning, stopScanning };
+  return {
+    videoRef,
+    canvasRef,
+    scanning,
+    error,
+    cameraAvailable,
+    startScanning,
+    stopScanning,
+  };
 }
 
 // ── Offline QR code generator with IndexedDB persistence ─────────────────────
@@ -261,8 +308,10 @@ export function useOfflineQRGenerator(agentCode: string) {
   // Load from IndexedDB on mount
   useEffect(() => {
     idbGetAll()
-      .then((records) => setOfflineQRCodes(records.filter((r) => r.agentCode === agentCode)))
-      .catch((e) => console.error("[QR IDB] Load failed:", e));
+      .then(records =>
+        setOfflineQRCodes(records.filter(r => r.agentCode === agentCode))
+      )
+      .catch(e => console.error("[QR IDB] Load failed:", e));
   }, [agentCode]);
 
   const generateOfflineQR = useCallback(
@@ -282,7 +331,7 @@ export function useOfflineQRGenerator(agentCode: string) {
           synced: false,
         };
         await idbPut(record);
-        setOfflineQRCodes((prev) => [record, ...prev]);
+        setOfflineQRCodes(prev => [record, ...prev]);
         return record;
       } finally {
         setLoading(false);
@@ -295,23 +344,27 @@ export function useOfflineQRGenerator(agentCode: string) {
     async (
       serverCreate: (record: OfflineQRRecord) => Promise<void>
     ): Promise<{ synced: number; failed: number }> => {
-      const unsynced = offlineQRCodes.filter((r) => !r.synced);
+      const unsynced = offlineQRCodes.filter(r => !r.synced);
       let synced = 0;
       let failed = 0;
       for (const record of unsynced) {
         try {
           await serverCreate(record);
           await idbMarkSynced(record.id);
-          setOfflineQRCodes((prev) =>
-            prev.map((r) => (r.id === record.id ? { ...r, synced: true } : r))
+          setOfflineQRCodes(prev =>
+            prev.map(r => (r.id === record.id ? { ...r, synced: true } : r))
           );
           synced++;
         } catch {
           failed++;
         }
       }
-      if (synced > 0) toast.success(`${synced} offline QR code${synced > 1 ? "s" : ""} synced`);
-      if (failed > 0) toast.error(`${failed} QR code${failed > 1 ? "s" : ""} failed to sync`);
+      if (synced > 0)
+        toast.success(
+          `${synced} offline QR code${synced > 1 ? "s" : ""} synced`
+        );
+      if (failed > 0)
+        toast.error(`${failed} QR code${failed > 1 ? "s" : ""} failed to sync`);
       return { synced, failed };
     },
     [offlineQRCodes]
@@ -319,7 +372,7 @@ export function useOfflineQRGenerator(agentCode: string) {
 
   const deleteOfflineQR = useCallback(async (id: string) => {
     await idbDelete(id);
-    setOfflineQRCodes((prev) => prev.filter((r) => r.id !== id));
+    setOfflineQRCodes(prev => prev.filter(r => r.id !== id));
   }, []);
 
   return {
@@ -328,6 +381,6 @@ export function useOfflineQRGenerator(agentCode: string) {
     generateOfflineQR,
     syncToServer,
     deleteOfflineQR,
-    unsyncedCount: offlineQRCodes.filter((r) => !r.synced).length,
+    unsyncedCount: offlineQRCodes.filter(r => !r.synced).length,
   };
 }

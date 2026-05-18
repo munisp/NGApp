@@ -6,19 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Gauge, Plus, Trash2, AlertTriangle, CheckCircle, Activity } from "lucide-react";
+import {
+  Gauge,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Activity,
+} from "lucide-react";
 
 export default function ThresholdManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newMetricKey, setNewMetricKey] = useState("");
-  const [newOperator, setNewOperator] = useState<"gt" | "lt" | "gte" | "lte" | "eq">("gt");
+  const [newOperator, setNewOperator] = useState<
+    "gt" | "lt" | "gte" | "lte" | "eq"
+  >("gt");
   const [newValue, setNewValue] = useState("");
-  const [newSeverity, setNewSeverity] = useState<"critical" | "warning" | "info">("warning");
+  const [newSeverity, setNewSeverity] = useState<
+    "critical" | "warning" | "info"
+  >("warning");
 
   const thresholds = trpc.sprint23.thresholds.list.useQuery();
   const evaluation = trpc.sprint23.thresholds.evaluate.useQuery();
@@ -29,7 +52,9 @@ export default function ThresholdManager() {
       utils.sprint23.thresholds.list.invalidate();
       toast.success("Threshold created");
       setDialogOpen(false);
-      setNewLabel(""); setNewMetricKey(""); setNewValue("");
+      setNewLabel("");
+      setNewMetricKey("");
+      setNewValue("");
     },
   });
 
@@ -53,7 +78,13 @@ export default function ThresholdManager() {
     return "outline";
   };
 
-  const operatorLabel: Record<string, string> = { gt: ">", lt: "<", gte: ">=", lte: "<=", eq: "=" };
+  const operatorLabel: Record<string, string> = {
+    gt: ">",
+    lt: "<",
+    gte: ">=",
+    lte: "<=",
+    eq: "=",
+  };
 
   return (
     <DashboardLayout>
@@ -70,28 +101,57 @@ export default function ThresholdManager() {
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Threshold</Button>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Add Threshold
+              </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Create New Threshold</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Create New Threshold</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4 pt-2">
-                <Input placeholder="Label (e.g., CPU > 90%)" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
-                <Input placeholder="Metric Key (e.g., system.cpuAvgPercent)" value={newMetricKey} onChange={(e) => setNewMetricKey(e.target.value)} />
+                <Input
+                  placeholder="Label (e.g., CPU > 90%)"
+                  value={newLabel}
+                  onChange={e => setNewLabel(e.target.value)}
+                />
+                <Input
+                  placeholder="Metric Key (e.g., system.cpuAvgPercent)"
+                  value={newMetricKey}
+                  onChange={e => setNewMetricKey(e.target.value)}
+                />
                 <div className="grid grid-cols-2 gap-2">
-                  <Select value={newOperator} onValueChange={(v) => setNewOperator(v as any)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={newOperator}
+                    onValueChange={v => setNewOperator(v as any)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="gt">Greater than (&gt;)</SelectItem>
                       <SelectItem value="lt">Less than (&lt;)</SelectItem>
-                      <SelectItem value="gte">Greater or equal (&gt;=)</SelectItem>
+                      <SelectItem value="gte">
+                        Greater or equal (&gt;=)
+                      </SelectItem>
                       <SelectItem value="lte">Less or equal (&lt;=)</SelectItem>
                       <SelectItem value="eq">Equal (=)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input type="number" placeholder="Value" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+                  <Input
+                    type="number"
+                    placeholder="Value"
+                    value={newValue}
+                    onChange={e => setNewValue(e.target.value)}
+                  />
                 </div>
-                <Select value={newSeverity} onValueChange={(v) => setNewSeverity(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={newSeverity}
+                  onValueChange={v => setNewSeverity(v as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="critical">Critical</SelectItem>
                     <SelectItem value="warning">Warning</SelectItem>
@@ -100,7 +160,16 @@ export default function ThresholdManager() {
                 </Select>
                 <Button
                   className="w-full"
-                  onClick={() => createMutation.mutate({ metricKey: newMetricKey, label: newLabel, operator: newOperator, value: parseFloat(newValue), severity: newSeverity, enabled: true })}
+                  onClick={() =>
+                    createMutation.mutate({
+                      metricKey: newMetricKey,
+                      label: newLabel,
+                      operator: newOperator,
+                      value: parseFloat(newValue),
+                      severity: newSeverity,
+                      enabled: true,
+                    })
+                  }
                   disabled={!newLabel || !newMetricKey || !newValue}
                 >
                   Create Threshold
@@ -116,22 +185,30 @@ export default function ThresholdManager() {
             <Card className="border-green-500/30">
               <CardContent className="pt-6 text-center">
                 <CheckCircle className="w-8 h-8 mx-auto text-green-400 mb-2" />
-                <p className="text-2xl font-bold">{evaluation.data.filter((e: any) => !e.triggered).length}</p>
+                <p className="text-2xl font-bold">
+                  {evaluation.data.filter((e: any) => !e.triggered).length}
+                </p>
                 <p className="text-sm text-muted-foreground">Within Limits</p>
               </CardContent>
             </Card>
             <Card className="border-red-500/30">
               <CardContent className="pt-6 text-center">
                 <AlertTriangle className="w-8 h-8 mx-auto text-red-400 mb-2" />
-                <p className="text-2xl font-bold">{evaluation.data.filter((e: any) => e.triggered).length}</p>
+                <p className="text-2xl font-bold">
+                  {evaluation.data.filter((e: any) => e.triggered).length}
+                </p>
                 <p className="text-sm text-muted-foreground">Breached</p>
               </CardContent>
             </Card>
             <Card className="border-blue-500/30">
               <CardContent className="pt-6 text-center">
                 <Activity className="w-8 h-8 mx-auto text-blue-400 mb-2" />
-                <p className="text-2xl font-bold">{thresholds.data?.length ?? 0}</p>
-                <p className="text-sm text-muted-foreground">Total Thresholds</p>
+                <p className="text-2xl font-bold">
+                  {thresholds.data?.length ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total Thresholds
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -158,22 +235,39 @@ export default function ThresholdManager() {
                 </thead>
                 <tbody>
                   {thresholds.data?.map((th: any) => (
-                    <tr key={th.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <tr
+                      key={th.id}
+                      className="border-b border-border/50 hover:bg-muted/30"
+                    >
                       <td className="py-2 px-3 font-medium">{th.label}</td>
-                      <td className="py-2 px-3 font-mono text-xs text-muted-foreground">{th.metricKey}</td>
-                      <td className="text-center py-2 px-3">{operatorLabel[th.operator]} {th.value}</td>
-                      <td className="text-center py-2 px-3">
-                        <Badge variant={severityColor(th.severity) as any}>{th.severity}</Badge>
+                      <td className="py-2 px-3 font-mono text-xs text-muted-foreground">
+                        {th.metricKey}
                       </td>
-                      <td className="text-center py-2 px-3">{th.triggerCount}</td>
+                      <td className="text-center py-2 px-3">
+                        {operatorLabel[th.operator]} {th.value}
+                      </td>
+                      <td className="text-center py-2 px-3">
+                        <Badge variant={severityColor(th.severity) as any}>
+                          {th.severity}
+                        </Badge>
+                      </td>
+                      <td className="text-center py-2 px-3">
+                        {th.triggerCount}
+                      </td>
                       <td className="text-center py-2 px-3">
                         <Switch
                           checked={th.enabled}
-                          onCheckedChange={(enabled) => updateMutation.mutate({ id: th.id, enabled })}
+                          onCheckedChange={enabled =>
+                            updateMutation.mutate({ id: th.id, enabled })
+                          }
                         />
                       </td>
                       <td className="text-center py-2 px-3">
-                        <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate({ id: th.id })}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate({ id: th.id })}
+                        >
                           <Trash2 className="w-4 h-4 text-red-400" />
                         </Button>
                       </td>

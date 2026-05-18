@@ -15,7 +15,14 @@
 import cron from "node-cron";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { getDb } from "./db";
-import { agents, transactions, auditLog, erpSyncLog, systemConfig, connectivityLog } from "../drizzle/schema";
+import {
+  agents,
+  transactions,
+  auditLog,
+  erpSyncLog,
+  systemConfig,
+  connectivityLog,
+} from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 import { sendSms } from "./termii";
 import { settlementPlatform } from "./_core/platformClient.js";
@@ -56,7 +63,12 @@ async function runDailySettlement(): Promise<SettlementResult> {
   const db = await getDb();
   if (!db) {
     console.error("[settlement] DB unavailable — skipping settlement run");
-    return { agentCount: 0, smsSent: 0, errors: ["DB unavailable"], runAt: new Date() };
+    return {
+      agentCount: 0,
+      smsSent: 0,
+      errors: ["DB unavailable"],
+      runAt: new Date(),
+    };
   }
 
   // ── Phase 47: Lock all agents at start of settlement ──────────────────────
@@ -64,8 +76,16 @@ async function runDailySettlement(): Promise<SettlementResult> {
     await db.update(agents).set({ floatLocked: true });
     console.log("[settlement] Float locked for all agents");
   } catch (err) {
-    console.error("[settlement] Failed to lock floats — aborting settlement:", err);
-    return { agentCount: 0, smsSent: 0, errors: [`Float lock failed: ${String(err)}`], runAt: new Date() };
+    console.error(
+      "[settlement] Failed to lock floats — aborting settlement:",
+      err
+    );
+    return {
+      agentCount: 0,
+      smsSent: 0,
+      errors: [`Float lock failed: ${String(err)}`],
+      runAt: new Date(),
+    };
   }
 
   const today = new Date();
@@ -92,7 +112,10 @@ async function runDailySettlement(): Promise<SettlementResult> {
   for (const agent of activeAgents) {
     try {
       const txRows = await db
-        .select({ amount: transactions.amount, commission: transactions.commission })
+        .select({
+          amount: transactions.amount,
+          commission: transactions.commission,
+        })
         .from(transactions)
         .where(
           and(
@@ -105,7 +128,10 @@ async function runDailySettlement(): Promise<SettlementResult> {
 
       const txCount = txRows.length;
       const totalVolume = txRows.reduce((sum, r) => sum + Number(r.amount), 0);
-      const totalCommission = txRows.reduce((sum, r) => sum + Number(r.commission), 0);
+      const totalCommission = txRows.reduce(
+        (sum, r) => sum + Number(r.commission),
+        0
+      );
 
       const settlementData: AgentSettlement = {
         agentId: agent.id,
@@ -123,7 +149,9 @@ async function runDailySettlement(): Promise<SettlementResult> {
       if (smsResult.success) {
         smsSent++;
       } else {
-        console.error(`[settlement] SMS failed for agent ${agent.agentCode}: ${smsResult.error}`);
+        console.error(
+          `[settlement] SMS failed for agent ${agent.agentCode}: ${smsResult.error}`
+        );
       }
 
       await db.insert(auditLog).values({
@@ -144,7 +172,10 @@ async function runDailySettlement(): Promise<SettlementResult> {
 
       successCount++;
     } catch (err) {
-      console.error(`[settlement] Error processing agent ${agent.agentCode}:`, err);
+      console.error(
+        `[settlement] Error processing agent ${agent.agentCode}:`,
+        err
+      );
       errors.push(`${agent.agentCode}: ${String(err)}`);
     }
   }
@@ -155,7 +186,10 @@ async function runDailySettlement(): Promise<SettlementResult> {
     console.log("[settlement] Float unlocked for all agents");
   } catch (err) {
     // Critical: if unlock fails, agents cannot transact. Log prominently.
-    console.error("[settlement] CRITICAL: Failed to unlock floats after settlement:", err);
+    console.error(
+      "[settlement] CRITICAL: Failed to unlock floats after settlement:",
+      err
+    );
     errors.push(`Float unlock failed: ${String(err)}`);
   }
 
@@ -166,15 +200,22 @@ async function runDailySettlement(): Promise<SettlementResult> {
       const settlementDate = new Date().toISOString().slice(0, 10);
       await settlementPlatform.processSettlement(
         { settlement_date: settlementDate },
-        systemToken,
+        systemToken
       );
-      console.info(`[settlement] Platform settlement trigger sent for ${settlementDate}`);
+      console.info(
+        `[settlement] Platform settlement trigger sent for ${settlementDate}`
+      );
     } else {
-      console.warn("[settlement] PLATFORM_SERVICE_TOKEN not set — skipping platform settlement trigger");
+      console.warn(
+        "[settlement] PLATFORM_SERVICE_TOKEN not set — skipping platform settlement trigger"
+      );
     }
   } catch (platformErr) {
     // Non-fatal: local settlement already completed; platform sync is best-effort
-    console.warn("[settlement] Platform settlement trigger failed (fail-open):", (platformErr as Error).message);
+    console.warn(
+      "[settlement] Platform settlement trigger failed (fail-open):",
+      (platformErr as Error).message
+    );
     errors.push(`Platform trigger failed: ${(platformErr as Error).message}`);
   }
 
@@ -195,13 +236,16 @@ async function runAutoEscalation(): Promise<void> {
     const expired = await db
       .select()
       .from(fraudAlerts)
-      .where(and(
-        eq(fraudAlerts.status, "investigating"),
-        lte(fraudAlerts.snoozedUntil, now),
-      ));
+      .where(
+        and(
+          eq(fraudAlerts.status, "investigating"),
+          lte(fraudAlerts.snoozedUntil, now)
+        )
+      );
     if (expired.length === 0) return;
     for (const alert of expired) {
-      await db.update(fraudAlerts)
+      await db
+        .update(fraudAlerts)
         .set({ status: "escalated", escalatedAt: now })
         .where(eq(fraudAlerts.id, alert.id));
       try {
@@ -213,7 +257,9 @@ async function runAutoEscalation(): Promise<void> {
         console.error("[autoEscalation] notifyOwner failed:", e);
       }
     }
-    console.log(`[autoEscalation] Escalated ${expired.length} snoozed alert(s)`);
+    console.log(
+      `[autoEscalation] Escalated ${expired.length} snoozed alert(s)`
+    );
   } catch (err) {
     console.error("[autoEscalation] Error:", err);
   }
@@ -224,7 +270,9 @@ async function runWeeklyComplianceReport(): Promise<void> {
   try {
     const db = await getDb();
     if (!db) return;
-    const { fraudAlerts, complianceReports } = await import("../drizzle/schema");
+    const { fraudAlerts, complianceReports } = await import(
+      "../drizzle/schema"
+    );
     const { notifyOwner } = await import("./_core/notification");
     const { storagePut } = await import("./storage");
     const { generateCompliancePdfBuffer } = await import("./compliancePdf");
@@ -309,9 +357,16 @@ async function runWeeklyComplianceReport(): Promise<void> {
       generatedBy: "system",
     });
 
-    const weekStart = periodStart.toLocaleDateString("en-NG", { dateStyle: "short" });
-    const weekEnd = periodEnd.toLocaleDateString("en-NG", { dateStyle: "short" });
-    const topAgentsStr = topOffenders.slice(0, 5).map(o => `${o.agentKey}: ${o.count}`).join(", ");
+    const weekStart = periodStart.toLocaleDateString("en-NG", {
+      dateStyle: "short",
+    });
+    const weekEnd = periodEnd.toLocaleDateString("en-NG", {
+      dateStyle: "short",
+    });
+    const topAgentsStr = topOffenders
+      .slice(0, 5)
+      .map(o => `${o.agentKey}: ${o.count}`)
+      .join(", ");
 
     const content = [
       `Weekly Security Compliance Report`,
@@ -324,7 +379,9 @@ async function runWeeklyComplianceReport(): Promise<void> {
       `Open/Investigating: ${allAlerts.length - escalated - resolved}`,
       ``,
       `BY SEVERITY`,
-      ...Object.entries(bySeverity).map(([s, c]) => `  ${s.toUpperCase()}: ${c}`),
+      ...Object.entries(bySeverity).map(
+        ([s, c]) => `  ${s.toUpperCase()}: ${c}`
+      ),
       ``,
       `BY TYPE`,
       ...Object.entries(byType).map(([t, c]) => `  ${t}: ${c}`),
@@ -339,7 +396,9 @@ async function runWeeklyComplianceReport(): Promise<void> {
       title: `Weekly Security Report — ${allAlerts.length} alerts (${weekStart}–${weekEnd})`,
       content,
     });
-    console.log(`[complianceReport] Weekly report complete — ${allAlerts.length} alerts`);
+    console.log(
+      `[complianceReport] Weekly report complete — ${allAlerts.length} alerts`
+    );
   } catch (err) {
     console.error("[complianceReport] Error:", err);
   }
@@ -359,7 +418,9 @@ export function registerSettlementCron(): void {
       console.error("[settlement] Unhandled error in settlement cron:", err);
     }
   });
-  console.log("[settlement] Daily settlement cron registered (16:00 UTC / 17:00 WAT, Mon–Fri)");
+  console.log(
+    "[settlement] Daily settlement cron registered (16:00 UTC / 17:00 WAT, Mon–Fri)"
+  );
 
   // Auto-escalation — every 15 minutes
   cron.schedule("*/15 * * * *", async () => {
@@ -371,18 +432,24 @@ export function registerSettlementCron(): void {
   cron.schedule("0 8 * * 1", async () => {
     await runWeeklyComplianceReport();
   });
-  console.log("[settlement] Weekly compliance report cron registered (Mon 08:00 UTC)");
+  console.log(
+    "[settlement] Weekly compliance report cron registered (Mon 08:00 UTC)"
+  );
 
   // Dead-letter digest — every day at 08:00 UTC (09:00 WAT)
   cron.schedule("0 8 * * *", async () => {
     await runDeadLetterDigest();
   });
-  console.log("[settlement] Dead-letter digest cron registered (daily 08:00 UTC)");
+  console.log(
+    "[settlement] Dead-letter digest cron registered (daily 08:00 UTC)"
+  );
   // Weekly connectivity SLA report — Mondays at 08:30 UTC (09:30 WAT)
   cron.schedule("30 8 * * 1", async () => {
     await runWeeklyConnectivitySlaReport();
   });
-  console.log("[settlement] Weekly connectivity SLA report cron registered (Mon 08:30 UTC)");
+  console.log(
+    "[settlement] Weekly connectivity SLA report cron registered (Mon 08:30 UTC)"
+  );
 }
 
 /**
@@ -408,7 +475,9 @@ export async function runDeadLetterDigest(): Promise<void> {
       .limit(100);
 
     if (failedItems.length === 0) {
-      console.log("[deadLetterDigest] No dead-letter items — nothing to report");
+      console.log(
+        "[deadLetterDigest] No dead-letter items — nothing to report"
+      );
       return;
     }
 
@@ -431,11 +500,20 @@ export async function runDeadLetterDigest(): Promise<void> {
       const now = new Date();
       const retryResult = await db
         .update(erpSyncLog)
-        .set({ status: "pending" as any, retryCount: 0, nextRetryAt: now, errorMessage: null })
+        .set({
+          status: "pending" as any,
+          retryCount: 0,
+          nextRetryAt: now,
+          errorMessage: null,
+        })
         .where(eq(erpSyncLog.status, "failed" as any));
       const requeued = (retryResult as any).rowCount ?? failedItems.length;
-      console.log(`[deadLetterDigest] Auto-retried ${requeued} dead-letter item(s) (queue ≤ ${autoRetryThreshold})`);
-      const today = new Date().toLocaleDateString("en-NG", { dateStyle: "full" });
+      console.log(
+        `[deadLetterDigest] Auto-retried ${requeued} dead-letter item(s) (queue ≤ ${autoRetryThreshold})`
+      );
+      const today = new Date().toLocaleDateString("en-NG", {
+        dateStyle: "full",
+      });
       await notifyOwner({
         title: `[54Link POS] Auto-retried ${requeued} ERP dead-letter item(s)`,
         content: [
@@ -446,7 +524,9 @@ export async function runDeadLetterDigest(): Promise<void> {
           ``,
           `Items re-queued:`,
           ...failedItems.map((item, i) => {
-            const ts = item.createdAt?.toISOString().replace("T", " ").slice(0, 19) ?? "unknown";
+            const ts =
+              item.createdAt?.toISOString().replace("T", " ").slice(0, 19) ??
+              "unknown";
             return `  ${i + 1}. [${ts}] ${item.entityType ?? "unknown"} #${item.entityId ?? "?"} — ${item.errorMessage ?? "no error"}`;
           }),
           ``,
@@ -459,12 +539,15 @@ export async function runDeadLetterDigest(): Promise<void> {
 
     const today = new Date().toLocaleDateString("en-NG", { dateStyle: "full" });
     const itemLines = failedItems.slice(0, 20).map((item, i) => {
-      const createdAt = item.createdAt?.toISOString().replace("T", " ").slice(0, 19) ?? "unknown";
+      const createdAt =
+        item.createdAt?.toISOString().replace("T", " ").slice(0, 19) ??
+        "unknown";
       return `  ${i + 1}. [${createdAt}] ${item.entityType ?? "unknown"} #${item.entityId ?? "?"} — ${item.errorMessage ?? "no error message"}`;
     });
 
     const moreCount = failedItems.length > 20 ? failedItems.length - 20 : 0;
-    const moreNote = moreCount > 0 ? `\n  ... and ${moreCount} more items.` : "";
+    const moreNote =
+      moreCount > 0 ? `\n  ... and ${moreCount} more items.` : "";
 
     const content = [
       `Dead-Letter ERP Sync Digest — ${today}`,
@@ -484,7 +567,9 @@ export async function runDeadLetterDigest(): Promise<void> {
       content,
     });
 
-    console.log(`[deadLetterDigest] Notified owner of ${failedItems.length} dead-letter item(s)`);
+    console.log(
+      `[deadLetterDigest] Notified owner of ${failedItems.length} dead-letter item(s)`
+    );
   } catch (err) {
     console.error("[deadLetterDigest] Error:", err);
   }
@@ -503,7 +588,12 @@ export async function runWeeklyConnectivitySlaReport(): Promise<void> {
       console.warn("[connectivitySla] DB unavailable — skipping");
       return;
     }
-    const { gte: gteOp, sql: sqlExpr, count, avg } = await import("drizzle-orm");
+    const {
+      gte: gteOp,
+      sql: sqlExpr,
+      count,
+      avg,
+    } = await import("drizzle-orm");
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     // Aggregate per agent: total pings and avg latency
@@ -529,10 +619,14 @@ export async function runWeeklyConnectivitySlaReport(): Promise<void> {
       )
       .groupBy(connectivityLog.agentCode);
 
-    const onlineMap = new Map(onlineRows.map(r => [r.agentCode, Number(r.onlinePings)]));
+    const onlineMap = new Map(
+      onlineRows.map(r => [r.agentCode, Number(r.onlinePings)])
+    );
 
     if (rows.length === 0) {
-      console.info("[connectivitySla] No connectivity data in last 7 days — skipping report");
+      console.info(
+        "[connectivitySla] No connectivity data in last 7 days — skipping report"
+      );
       return;
     }
 
@@ -542,21 +636,31 @@ export async function runWeeklyConnectivitySlaReport(): Promise<void> {
         const total = Number(r.totalPings);
         const online = onlineMap.get(r.agentCode) ?? 0;
         const uptimePct = total > 0 ? (online / total) * 100 : 0;
-        const avgLat = r.avgLatencyMs != null ? Math.round(Number(r.avgLatencyMs)) : null;
+        const avgLat =
+          r.avgLatencyMs != null ? Math.round(Number(r.avgLatencyMs)) : null;
         return { agentCode: r.agentCode, uptimePct, avgLat, total, online };
       })
       .sort((a, b) => b.uptimePct - a.uptimePct); // best uptime first
 
-    const weekStart = sevenDaysAgo.toLocaleDateString("en-NG", { dateStyle: "medium" });
-    const weekEnd   = new Date().toLocaleDateString("en-NG", { dateStyle: "medium" });
+    const weekStart = sevenDaysAgo.toLocaleDateString("en-NG", {
+      dateStyle: "medium",
+    });
+    const weekEnd = new Date().toLocaleDateString("en-NG", {
+      dateStyle: "medium",
+    });
 
     const tableLines = ranked.map((r, i) => {
-      const rank   = String(i + 1).padStart(3);
-      const code   = r.agentCode.padEnd(12);
+      const rank = String(i + 1).padStart(3);
+      const code = r.agentCode.padEnd(12);
       const uptime = `${r.uptimePct.toFixed(1)}%`.padStart(7);
-      const lat    = r.avgLat != null ? `${r.avgLat}ms`.padStart(7) : "   N/A";
-      const pings  = `${r.online}/${r.total}`.padStart(10);
-      const flag   = r.uptimePct < 80 ? " ⚠ BELOW SLA" : r.uptimePct < 95 ? " ⚡ MARGINAL" : "";
+      const lat = r.avgLat != null ? `${r.avgLat}ms`.padStart(7) : "   N/A";
+      const pings = `${r.online}/${r.total}`.padStart(10);
+      const flag =
+        r.uptimePct < 80
+          ? " ⚠ BELOW SLA"
+          : r.uptimePct < 95
+            ? " ⚡ MARGINAL"
+            : "";
       return `${rank}. ${code} ${uptime}  ${lat}  ${pings}${flag}`;
     });
 
@@ -584,7 +688,9 @@ export async function runWeeklyConnectivitySlaReport(): Promise<void> {
       title: `[54Link POS] Weekly Connectivity SLA — ${ranked.length} agents, ${belowSla.length} below SLA`,
       content,
     });
-    console.log(`[connectivitySla] SLA report sent: ${ranked.length} agents, ${belowSla.length} below SLA`);
+    console.log(
+      `[connectivitySla] SLA report sent: ${ranked.length} agents, ${belowSla.length} below SLA`
+    );
   } catch (err) {
     console.error("[connectivitySla] Error:", err);
   }

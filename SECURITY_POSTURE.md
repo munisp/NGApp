@@ -16,15 +16,15 @@ remediated. The platform now implements defence-in-depth across seven layers: su
 secrets management, authentication and authorisation, transport security, runtime hardening,
 observability, and incident response.
 
-| Layer | Controls Implemented | Status |
-|---|---|---|
-| Supply chain | Gitleaks, Snyk, CodeQL, Dependabot, npm audit | Active |
+| Layer              | Controls Implemented                                   | Status |
+| ------------------ | ------------------------------------------------------ | ------ |
+| Supply chain       | Gitleaks, Snyk, CodeQL, Dependabot, npm audit          | Active |
 | Secrets management | CSPRNG, VAPID auto-gen, rotate-secrets, env validation | Active |
-| Authentication | JWT (jose), Manus OAuth, CRON_SECRET, INTERNAL_API_KEY | Active |
-| Authorisation | protectedProcedure, adminProcedure, role-based access | Active |
-| Transport security | TLS termination, HSTS, CSP nonce, CORS allowlist | Active |
-| Runtime hardening | Helmet, rate limiting, body limits, non-root Docker | Active |
-| Observability | Prometheus alerts, Grafana dashboards, OWASP ZAP DAST | Active |
+| Authentication     | JWT (jose), Manus OAuth, CRON_SECRET, INTERNAL_API_KEY | Active |
+| Authorisation      | protectedProcedure, adminProcedure, role-based access  | Active |
+| Transport security | TLS termination, HSTS, CSP nonce, CORS allowlist       | Active |
+| Runtime hardening  | Helmet, rate limiting, body limits, non-root Docker    | Active |
+| Observability      | Prometheus alerts, Grafana dashboards, OWASP ZAP DAST  | Active |
 
 ---
 
@@ -102,18 +102,18 @@ validates that VAPID keys are present at startup and logs a warning if they are 
 
 `scripts/rotate-secrets.sh` generates fresh values for 10 secrets using `openssl rand`:
 
-| Secret | Generation Method | Length |
-|---|---|---|
-| `JWT_SECRET` | `openssl rand -base64 48` | 48 bytes |
-| `INTERNAL_API_KEY` | `openssl rand -hex 32` | 32 bytes hex |
-| `CRON_SECRET` | `openssl rand -hex 32` | 32 bytes hex |
-| `MINIO_ROOT_PASSWORD` | `openssl rand -base64 24` | 24 bytes |
-| `REDIS_PASSWORD` | `openssl rand -hex 24` | 24 bytes hex |
-| `POSTGRES_PASSWORD` | `openssl rand -base64 32` | 32 bytes |
-| `TEMPORAL_AUTH_TOKEN` | `openssl rand -base64 32` | 32 bytes |
-| `KEYCLOAK_ADMIN_PASSWORD` | `openssl rand -base64 24` | 24 bytes |
-| `APISIX_ADMIN_KEY` | `openssl rand -hex 32` | 32 bytes hex |
-| `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` | ECDH P-256 |
+| Secret                                   | Generation Method                  | Length       |
+| ---------------------------------------- | ---------------------------------- | ------------ |
+| `JWT_SECRET`                             | `openssl rand -base64 48`          | 48 bytes     |
+| `INTERNAL_API_KEY`                       | `openssl rand -hex 32`             | 32 bytes hex |
+| `CRON_SECRET`                            | `openssl rand -hex 32`             | 32 bytes hex |
+| `MINIO_ROOT_PASSWORD`                    | `openssl rand -base64 24`          | 24 bytes     |
+| `REDIS_PASSWORD`                         | `openssl rand -hex 24`             | 24 bytes hex |
+| `POSTGRES_PASSWORD`                      | `openssl rand -base64 32`          | 32 bytes     |
+| `TEMPORAL_AUTH_TOKEN`                    | `openssl rand -base64 32`          | 32 bytes     |
+| `KEYCLOAK_ADMIN_PASSWORD`                | `openssl rand -base64 24`          | 24 bytes     |
+| `APISIX_ADMIN_KEY`                       | `openssl rand -hex 32`             | 32 bytes hex |
+| `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` | ECDH P-256   |
 
 The script supports `--dry-run` mode, creates a timestamped backup of the old env file,
 and prints a post-rotation checklist. Run via `make rotate-secrets`.
@@ -143,11 +143,11 @@ and makes the current user available as `ctx.user`. Invalid or expired JWTs resu
 
 All tRPC procedures are classified into three tiers:
 
-| Tier | Middleware | Usage |
-|---|---|---|
-| `publicProcedure` | None | Unauthenticated endpoints (health check, OAuth callback) |
-| `protectedProcedure` | JWT validation | All authenticated user operations |
-| `adminProcedure` | JWT + role check | Admin-only operations (user management, system config) |
+| Tier                 | Middleware       | Usage                                                    |
+| -------------------- | ---------------- | -------------------------------------------------------- |
+| `publicProcedure`    | None             | Unauthenticated endpoints (health check, OAuth callback) |
+| `protectedProcedure` | JWT validation   | All authenticated user operations                        |
+| `adminProcedure`     | JWT + role check | Admin-only operations (user management, system config)   |
 
 A quarterly audit of all `publicProcedure` usages is recommended to verify that no
 sensitive operations have been accidentally left unauthenticated.
@@ -211,26 +211,26 @@ not permitted in any configuration.
 
 Helmet sets the following headers on every response:
 
-| Header | Value |
-|---|---|
-| `X-Content-Type-Options` | `nosniff` |
-| `X-Frame-Options` | `DENY` |
-| `X-XSS-Protection` | `0` (disabled — CSP is the correct protection) |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
-| `Cross-Origin-Opener-Policy` | `same-origin` |
-| `Cross-Origin-Resource-Policy` | `same-origin` |
-| `X-Request-ID` | Per-request UUID (for log correlation) |
+| Header                         | Value                                          |
+| ------------------------------ | ---------------------------------------------- |
+| `X-Content-Type-Options`       | `nosniff`                                      |
+| `X-Frame-Options`              | `DENY`                                         |
+| `X-XSS-Protection`             | `0` (disabled — CSP is the correct protection) |
+| `Referrer-Policy`              | `strict-origin-when-cross-origin`              |
+| `Permissions-Policy`           | `camera=(), microphone=(), geolocation=()`     |
+| `Cross-Origin-Opener-Policy`   | `same-origin`                                  |
+| `Cross-Origin-Resource-Policy` | `same-origin`                                  |
+| `X-Request-ID`                 | Per-request UUID (for log correlation)         |
 
 ### 5.2 Rate Limiting
 
 The platform implements three tiers of rate limiting:
 
-| Tier | Limit | Scope |
-|---|---|---|
-| Global | 1000 req/15 min | All routes |
-| Auth endpoints | 10 req/15 min | `/api/oauth/*`, `/api/trpc/auth.*` |
-| Financial operations | 30 req/min | `/api/trpc/transactions.*`, `/api/trpc/settlement.*` |
+| Tier                 | Limit           | Scope                                                |
+| -------------------- | --------------- | ---------------------------------------------------- |
+| Global               | 1000 req/15 min | All routes                                           |
+| Auth endpoints       | 10 req/15 min   | `/api/oauth/*`, `/api/trpc/auth.*`                   |
+| Financial operations | 30 req/min      | `/api/trpc/transactions.*`, `/api/trpc/settlement.*` |
 
 ### 5.3 Request Body Limits
 
@@ -276,13 +276,13 @@ active maintenance.
 
 Prometheus alert rules cover the following security-relevant conditions:
 
-| Alert | Threshold | Severity |
-|---|---|---|
-| `HighAuthFailureRate` | >10 failures/min | Critical |
-| `SuspiciousTransactionVolume` | >5× baseline/min | Warning |
-| `MDMDeviceOffline` | >15 min offline | Warning |
-| `CBNReportMissed` | Report not submitted by deadline | Critical |
-| `RateLimitExceeded` | >100 blocked requests/min | Warning |
+| Alert                         | Threshold                        | Severity |
+| ----------------------------- | -------------------------------- | -------- |
+| `HighAuthFailureRate`         | >10 failures/min                 | Critical |
+| `SuspiciousTransactionVolume` | >5× baseline/min                 | Warning  |
+| `MDMDeviceOffline`            | >15 min offline                  | Warning  |
+| `CBNReportMissed`             | Report not submitted by deadline | Critical |
+| `RateLimitExceeded`           | >100 blocked requests/min        | Warning  |
 
 ### 7.2 PII Redaction in Logs
 
@@ -306,21 +306,21 @@ The `RUNBOOK.md` contains step-by-step incident response procedures for:
 
 Every commit to `main` or `develop` must pass 14 CI jobs before merging:
 
-| Job | Security Relevance |
-|---|---|
-| `secret-scan` (Gitleaks) | Blocks committed secrets |
-| `snyk-scan` | Blocks high/critical CVEs |
-| `typecheck` | Prevents type confusion vulnerabilities |
-| `lint` | Enforces security linting rules |
-| `test` (Vitest + npm audit) | Unit tests + dependency audit |
-| `build` | Verifies production build succeeds |
-| `docker` | Validates Dockerfile security |
-| `go-tests` | Go service unit tests |
-| `python-tests` | Python service unit tests |
-| `playwright` (×3 shards) | E2E security flow verification |
-| `prometheus-lint` | Alert rule validation |
-| `zap-dast` | Runtime HTTP security scan |
-| `codeql` (×3 languages) | SAST across all language stacks |
+| Job                         | Security Relevance                      |
+| --------------------------- | --------------------------------------- |
+| `secret-scan` (Gitleaks)    | Blocks committed secrets                |
+| `snyk-scan`                 | Blocks high/critical CVEs               |
+| `typecheck`                 | Prevents type confusion vulnerabilities |
+| `lint`                      | Enforces security linting rules         |
+| `test` (Vitest + npm audit) | Unit tests + dependency audit           |
+| `build`                     | Verifies production build succeeds      |
+| `docker`                    | Validates Dockerfile security           |
+| `go-tests`                  | Go service unit tests                   |
+| `python-tests`              | Python service unit tests               |
+| `playwright` (×3 shards)    | E2E security flow verification          |
+| `prometheus-lint`           | Alert rule validation                   |
+| `zap-dast`                  | Runtime HTTP security scan              |
+| `codeql` (×3 languages)     | SAST across all language stacks         |
 
 ---
 
@@ -330,12 +330,12 @@ Every commit to `main` or `develop` must pass 14 CI jobs before merging:
 
 The platform generates all required Central Bank of Nigeria reports on schedule:
 
-| Report | Schedule | Submission Method |
-|---|---|---|
-| Daily transaction summary | Daily 23:45 WAT | Automated via APScheduler |
-| Weekly reconciliation | Sunday 22:00 WAT | Automated via APScheduler |
-| Monthly agent performance | Last day of month 21:00 WAT | Automated via APScheduler |
-| Quarterly AML report | Last day of quarter 20:00 WAT | Automated via APScheduler |
+| Report                    | Schedule                      | Submission Method         |
+| ------------------------- | ----------------------------- | ------------------------- |
+| Daily transaction summary | Daily 23:45 WAT               | Automated via APScheduler |
+| Weekly reconciliation     | Sunday 22:00 WAT              | Automated via APScheduler |
+| Monthly agent performance | Last day of month 21:00 WAT   | Automated via APScheduler |
+| Quarterly AML report      | Last day of quarter 20:00 WAT | Automated via APScheduler |
 
 ### 9.2 PCI-DSS Alignment
 
@@ -347,12 +347,12 @@ PCI-DSS SAQ A scope rather than SAQ D, significantly reducing compliance burden.
 
 ## 10. Security Contacts
 
-| Role | Responsibility |
-|---|---|
-| `@54link/security-team` | Security reviews, incident response, secret rotation |
-| `@54link/fintech-team` | Financial logic reviews, CBN compliance |
-| `@54link/compliance-team` | Regulatory reporting, AML/KYC |
-| `@54link/platform-team` | Infrastructure, CI/CD, deployments |
+| Role                      | Responsibility                                       |
+| ------------------------- | ---------------------------------------------------- |
+| `@54link/security-team`   | Security reviews, incident response, secret rotation |
+| `@54link/fintech-team`    | Financial logic reviews, CBN compliance              |
+| `@54link/compliance-team` | Regulatory reporting, AML/KYC                        |
+| `@54link/platform-team`   | Infrastructure, CI/CD, deployments                   |
 
 Security vulnerabilities should be reported via the coordinated disclosure process
 described in `client/public/.well-known/security.txt`.
@@ -361,15 +361,15 @@ described in `client/public/.well-known/security.txt`.
 
 ## Appendix A — Security Score Breakdown
 
-| Category | Max | Score | Notes |
-|---|---|---|---|
-| Supply chain security | 15 | 15 | Gitleaks + Snyk + CodeQL + Dependabot + npm audit |
-| Secrets management | 15 | 15 | CSPRNG, VAPID auto-gen, rotation script, env validation |
-| Authentication | 15 | 15 | JWT (jose), OAuth, CRON_SECRET, INTERNAL_API_KEY |
-| Authorisation | 10 | 10 | protectedProcedure, adminProcedure, role-based access |
-| Transport security | 15 | 15 | TLS, HSTS, CSP nonce, CORS allowlist |
-| Runtime hardening | 10 | 10 | Helmet, rate limiting, body limits, non-root Docker |
-| Cryptographic practices | 10 | 10 | CSPRNG, WeChat Pay v3, bcrypt, HMAC-SHA256 |
-| Observability | 5 | 5 | Prometheus alerts, Grafana, ZAP DAST |
-| Incident response | 5 | 5 | RUNBOOK, rotate-secrets, session invalidation |
-| **Total** | **100** | **100** | **Grade A+** |
+| Category                | Max     | Score   | Notes                                                   |
+| ----------------------- | ------- | ------- | ------------------------------------------------------- |
+| Supply chain security   | 15      | 15      | Gitleaks + Snyk + CodeQL + Dependabot + npm audit       |
+| Secrets management      | 15      | 15      | CSPRNG, VAPID auto-gen, rotation script, env validation |
+| Authentication          | 15      | 15      | JWT (jose), OAuth, CRON_SECRET, INTERNAL_API_KEY        |
+| Authorisation           | 10      | 10      | protectedProcedure, adminProcedure, role-based access   |
+| Transport security      | 15      | 15      | TLS, HSTS, CSP nonce, CORS allowlist                    |
+| Runtime hardening       | 10      | 10      | Helmet, rate limiting, body limits, non-root Docker     |
+| Cryptographic practices | 10      | 10      | CSPRNG, WeChat Pay v3, bcrypt, HMAC-SHA256              |
+| Observability           | 5       | 5       | Prometheus alerts, Grafana, ZAP DAST                    |
+| Incident response       | 5       | 5       | RUNBOOK, rotate-secrets, session invalidation           |
+| **Total**               | **100** | **100** | **Grade A+**                                            |

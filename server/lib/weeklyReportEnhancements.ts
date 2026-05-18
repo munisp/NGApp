@@ -8,7 +8,10 @@
  */
 
 import { sendEmail, sendBatchEmail, type EmailMessage } from "./emailService";
-import type { WeeklyReport, WeeklyReportMetrics } from "./weeklyReportGenerator";
+import type {
+  WeeklyReport,
+  WeeklyReportMetrics,
+} from "./weeklyReportGenerator";
 import { getReportHistory } from "./weeklyReportGenerator";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -70,7 +73,11 @@ function calcDelta(
 ): TrendDelta {
   const delta = current - previous;
   const deltaPercent =
-    previous === 0 ? (current > 0 ? 100 : 0) : +((delta / previous) * 100).toFixed(1);
+    previous === 0
+      ? current > 0
+        ? 100
+        : 0
+      : +((delta / previous) * 100).toFixed(1);
   const direction: "up" | "down" | "flat" =
     Math.abs(deltaPercent) < 0.5 ? "flat" : delta > 0 ? "up" : "down";
   const isPositive =
@@ -86,9 +93,11 @@ function calcDelta(
 /**
  * Calculate week-over-week trends by comparing the current report with the previous one.
  */
-export function calculateTrends(report: WeeklyReport): WeeklyReportTrends | null {
+export function calculateTrends(
+  report: WeeklyReport
+): WeeklyReportTrends | null {
   const history = getReportHistory();
-  const currentIdx = history.findIndex((r) => r.id === report.id);
+  const currentIdx = history.findIndex(r => r.id === report.id);
 
   // Need a previous report to compare against
   const previousReport = currentIdx >= 0 ? history[currentIdx + 1] : history[1];
@@ -98,16 +107,52 @@ export function calculateTrends(report: WeeklyReport): WeeklyReportTrends | null
   const prev = previousReport.metrics;
 
   return {
-    transactionCount: calcDelta(curr.transactions.totalCount, prev.transactions.totalCount, true),
-    transactionValue: calcDelta(curr.transactions.totalValue, prev.transactions.totalValue, true),
-    successRate: calcDelta(curr.transactions.successRate, prev.transactions.successRate, true),
-    activeUsers: calcDelta(curr.userActivity.totalActiveUsers, prev.userActivity.totalActiveUsers, true),
-    newUsers: calcDelta(curr.userActivity.newUsers, prev.userActivity.newUsers, true),
-    apiLatencyP50: calcDelta(curr.apiPerformance.p50Ms, prev.apiPerformance.p50Ms, false),
-    apiLatencyP99: calcDelta(curr.apiPerformance.p99Ms, prev.apiPerformance.p99Ms, false),
+    transactionCount: calcDelta(
+      curr.transactions.totalCount,
+      prev.transactions.totalCount,
+      true
+    ),
+    transactionValue: calcDelta(
+      curr.transactions.totalValue,
+      prev.transactions.totalValue,
+      true
+    ),
+    successRate: calcDelta(
+      curr.transactions.successRate,
+      prev.transactions.successRate,
+      true
+    ),
+    activeUsers: calcDelta(
+      curr.userActivity.totalActiveUsers,
+      prev.userActivity.totalActiveUsers,
+      true
+    ),
+    newUsers: calcDelta(
+      curr.userActivity.newUsers,
+      prev.userActivity.newUsers,
+      true
+    ),
+    apiLatencyP50: calcDelta(
+      curr.apiPerformance.p50Ms,
+      prev.apiPerformance.p50Ms,
+      false
+    ),
+    apiLatencyP99: calcDelta(
+      curr.apiPerformance.p99Ms,
+      prev.apiPerformance.p99Ms,
+      false
+    ),
     errorRate: calcDelta(curr.errors.errorRate, prev.errors.errorRate, false),
-    criticalErrors: calcDelta(curr.errors.criticalErrors, prev.errors.criticalErrors, false),
-    uptimePercent: calcDelta(curr.system.uptimePercent, prev.system.uptimePercent, true),
+    criticalErrors: calcDelta(
+      curr.errors.criticalErrors,
+      prev.errors.criticalErrors,
+      false
+    ),
+    uptimePercent: calcDelta(
+      curr.system.uptimePercent,
+      prev.system.uptimePercent,
+      true
+    ),
     securityEvents: calcDelta(
       curr.security.suspiciousActivities + curr.security.accountLockouts,
       prev.security.suspiciousActivities + prev.security.accountLockouts,
@@ -179,7 +224,11 @@ export function buildWeeklyReportEmail(
   const scoreColor =
     report.score >= 90 ? "#059669" : report.score >= 70 ? "#d97706" : "#dc2626";
   const scoreLabel =
-    report.score >= 90 ? "Excellent" : report.score >= 70 ? "Good" : "Needs Attention";
+    report.score >= 90
+      ? "Excellent"
+      : report.score >= 70
+        ? "Good"
+        : "Needs Attention";
 
   // Score badge
   const scoreBadge = `<div style="text-align:center;margin:16px 0;">
@@ -194,30 +243,78 @@ export function buildWeeklyReportEmail(
 
   // Transactions
   table += buildSectionHeader("Transactions", "💰");
-  table += buildMetricRow("Total Count", m.transactions.totalCount.toLocaleString(), trends?.transactionCount);
-  table += buildMetricRow("Total Value", formatCurrency(m.transactions.totalValue), trends?.transactionValue);
-  table += buildMetricRow("Success Rate", `${m.transactions.successRate}%`, trends?.successRate);
+  table += buildMetricRow(
+    "Total Count",
+    m.transactions.totalCount.toLocaleString(),
+    trends?.transactionCount
+  );
+  table += buildMetricRow(
+    "Total Value",
+    formatCurrency(m.transactions.totalValue),
+    trends?.transactionValue
+  );
+  table += buildMetricRow(
+    "Success Rate",
+    `${m.transactions.successRate}%`,
+    trends?.successRate
+  );
   table += buildMetricRow("Avg/Day", String(m.transactions.avgPerDay));
-  table += buildMetricRow("Peak Day", `${m.transactions.peakDay} (${m.transactions.peakDayCount})`);
+  table += buildMetricRow(
+    "Peak Day",
+    `${m.transactions.peakDay} (${m.transactions.peakDayCount})`
+  );
 
   // User Activity
   table += buildSectionHeader("User Activity", "👥");
-  table += buildMetricRow("Active Users", String(m.userActivity.totalActiveUsers), trends?.activeUsers);
-  table += buildMetricRow("New Users", String(m.userActivity.newUsers), trends?.newUsers);
+  table += buildMetricRow(
+    "Active Users",
+    String(m.userActivity.totalActiveUsers),
+    trends?.activeUsers
+  );
+  table += buildMetricRow(
+    "New Users",
+    String(m.userActivity.newUsers),
+    trends?.newUsers
+  );
   table += buildMetricRow("Sessions", String(m.userActivity.totalSessions));
-  table += buildMetricRow("Returning Rate", `${m.userActivity.returningUserRate}%`);
+  table += buildMetricRow(
+    "Returning Rate",
+    `${m.userActivity.returningUserRate}%`
+  );
 
   // API Performance
   table += buildSectionHeader("API Performance", "⚡");
-  table += buildMetricRow("Total Requests", m.apiPerformance.totalRequests.toLocaleString());
-  table += buildMetricRow("p50 Latency", `${m.apiPerformance.p50Ms}ms`, trends?.apiLatencyP50);
-  table += buildMetricRow("p99 Latency", `${m.apiPerformance.p99Ms}ms`, trends?.apiLatencyP99);
-  table += buildMetricRow("Req/min", String(m.apiPerformance.requestsPerMinute));
+  table += buildMetricRow(
+    "Total Requests",
+    m.apiPerformance.totalRequests.toLocaleString()
+  );
+  table += buildMetricRow(
+    "p50 Latency",
+    `${m.apiPerformance.p50Ms}ms`,
+    trends?.apiLatencyP50
+  );
+  table += buildMetricRow(
+    "p99 Latency",
+    `${m.apiPerformance.p99Ms}ms`,
+    trends?.apiLatencyP99
+  );
+  table += buildMetricRow(
+    "Req/min",
+    String(m.apiPerformance.requestsPerMinute)
+  );
 
   // Errors
   table += buildSectionHeader("Errors", "🔴");
-  table += buildMetricRow("Error Rate", `${m.errors.errorRate}%`, trends?.errorRate);
-  table += buildMetricRow("Critical Errors", String(m.errors.criticalErrors), trends?.criticalErrors);
+  table += buildMetricRow(
+    "Error Rate",
+    `${m.errors.errorRate}%`,
+    trends?.errorRate
+  );
+  table += buildMetricRow(
+    "Critical Errors",
+    String(m.errors.criticalErrors),
+    trends?.criticalErrors
+  );
   table += buildMetricRow("Resolved", String(m.errors.resolvedErrors));
 
   // Security
@@ -225,11 +322,19 @@ export function buildWeeklyReportEmail(
   table += buildMetricRow("Blocked IPs", String(m.security.blockedIPs));
   table += buildMetricRow("Failed Logins", String(m.security.failedLogins));
   table += buildMetricRow("Rate Limit Hits", String(m.security.rateLimitHits));
-  table += buildMetricRow("Suspicious Activities", String(m.security.suspiciousActivities), trends?.securityEvents);
+  table += buildMetricRow(
+    "Suspicious Activities",
+    String(m.security.suspiciousActivities),
+    trends?.securityEvents
+  );
 
   // System
   table += buildSectionHeader("System", "🖥️");
-  table += buildMetricRow("Uptime", `${m.system.uptimePercent}%`, trends?.uptimePercent);
+  table += buildMetricRow(
+    "Uptime",
+    `${m.system.uptimePercent}%`,
+    trends?.uptimePercent
+  );
   table += buildMetricRow("DB Latency", `${m.system.dbLatencyAvgMs}ms`);
   table += buildMetricRow("Memory", `${m.system.memoryUsageMB}MB`);
   table += buildMetricRow("CPU", `${m.system.cpuUsagePercent}%`);
@@ -242,7 +347,7 @@ export function buildWeeklyReportEmail(
     alertsHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;">
       <p style="margin:0 0 8px;font-weight:700;color:#dc2626;">⚠️ Alerts (${report.alerts.length})</p>
       <ul style="margin:0;padding-left:20px;">
-        ${report.alerts.map((a) => `<li style="color:#7f1d1d;font-size:13px;margin:4px 0;">${a}</li>`).join("")}
+        ${report.alerts.map(a => `<li style="color:#7f1d1d;font-size:13px;margin:4px 0;">${a}</li>`).join("")}
       </ul>
     </div>`;
   }
@@ -253,7 +358,7 @@ export function buildWeeklyReportEmail(
     recsHtml = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0;">
       <p style="margin:0 0 8px;font-weight:700;color:#059669;">💡 Recommendations</p>
       <ul style="margin:0;padding-left:20px;">
-        ${report.recommendations.map((r) => `<li style="color:#14532d;font-size:13px;margin:4px 0;">${r}</li>`).join("")}
+        ${report.recommendations.map(r => `<li style="color:#14532d;font-size:13px;margin:4px 0;">${r}</li>`).join("")}
       </ul>
     </div>`;
   }
@@ -282,7 +387,7 @@ export function buildWeeklyReportEmail(
 </html>`;
 
   return {
-    to: emailConfig.recipients.map((r) => r.email),
+    to: emailConfig.recipients.map(r => r.email),
     subject: `Weekly Health Report — ${scoreLabel}: ${report.score}/100 (${m.period.start} → ${m.period.end})`,
     html,
     text: report.summary,
@@ -304,7 +409,7 @@ export async function sendWeeklyReportEmail(
   const trends = calculateTrends(report);
   const emailMsg = buildWeeklyReportEmail(report, trends);
 
-  const recipientEmails = emailConfig.recipients.map((r) => r.email);
+  const recipientEmails = emailConfig.recipients.map(r => r.email);
 
   if (recipientEmails.length === 1) {
     emailMsg.to = recipientEmails[0];
@@ -343,17 +448,26 @@ export function generateReportPdfHtml(
   const scoreColor =
     report.score >= 90 ? "#059669" : report.score >= 70 ? "#d97706" : "#dc2626";
   const scoreLabel =
-    report.score >= 90 ? "Excellent" : report.score >= 70 ? "Good" : "Needs Attention";
+    report.score >= 90
+      ? "Excellent"
+      : report.score >= 70
+        ? "Good"
+        : "Needs Attention";
 
   const trendCell = (td?: TrendDelta): string => {
-    if (!td || td.direction === "flat") return `<td style="padding:6px 8px;color:#6b7280;text-align:right;">—</td>`;
+    if (!td || td.direction === "flat")
+      return `<td style="padding:6px 8px;color:#6b7280;text-align:right;">—</td>`;
     const arrow = td.direction === "up" ? "▲" : "▼";
     const color = td.isPositive ? "#059669" : "#dc2626";
     const sign = td.delta > 0 ? "+" : "";
     return `<td style="padding:6px 8px;color:${color};font-weight:600;text-align:right;">${arrow} ${sign}${td.deltaPercent}%</td>`;
   };
 
-  const metricRow = (label: string, value: string, trend?: TrendDelta): string =>
+  const metricRow = (
+    label: string,
+    value: string,
+    trend?: TrendDelta
+  ): string =>
     `<tr style="border-bottom:1px solid #e5e7eb;">
       <td style="padding:6px 8px;color:#374151;font-size:12px;">${label}</td>
       <td style="padding:6px 8px;font-weight:600;text-align:right;font-size:12px;">${value}</td>
@@ -371,36 +485,79 @@ export function generateReportPdfHtml(
   </tr></thead><tbody>`;
 
   table += sectionTitle("Transactions");
-  table += metricRow("Total Count", m.transactions.totalCount.toLocaleString(), trends?.transactionCount);
-  table += metricRow("Total Value", formatCurrency(m.transactions.totalValue), trends?.transactionValue);
-  table += metricRow("Success Rate", `${m.transactions.successRate}%`, trends?.successRate);
+  table += metricRow(
+    "Total Count",
+    m.transactions.totalCount.toLocaleString(),
+    trends?.transactionCount
+  );
+  table += metricRow(
+    "Total Value",
+    formatCurrency(m.transactions.totalValue),
+    trends?.transactionValue
+  );
+  table += metricRow(
+    "Success Rate",
+    `${m.transactions.successRate}%`,
+    trends?.successRate
+  );
   table += metricRow("Avg/Day", String(m.transactions.avgPerDay));
 
   table += sectionTitle("User Activity");
-  table += metricRow("Active Users", String(m.userActivity.totalActiveUsers), trends?.activeUsers);
-  table += metricRow("New Users", String(m.userActivity.newUsers), trends?.newUsers);
+  table += metricRow(
+    "Active Users",
+    String(m.userActivity.totalActiveUsers),
+    trends?.activeUsers
+  );
+  table += metricRow(
+    "New Users",
+    String(m.userActivity.newUsers),
+    trends?.newUsers
+  );
   table += metricRow("Sessions", String(m.userActivity.totalSessions));
   table += metricRow("Returning Rate", `${m.userActivity.returningUserRate}%`);
 
   table += sectionTitle("API Performance");
-  table += metricRow("Total Requests", m.apiPerformance.totalRequests.toLocaleString());
-  table += metricRow("p50 Latency", `${m.apiPerformance.p50Ms}ms`, trends?.apiLatencyP50);
+  table += metricRow(
+    "Total Requests",
+    m.apiPerformance.totalRequests.toLocaleString()
+  );
+  table += metricRow(
+    "p50 Latency",
+    `${m.apiPerformance.p50Ms}ms`,
+    trends?.apiLatencyP50
+  );
   table += metricRow("p95 Latency", `${m.apiPerformance.p95Ms}ms`);
-  table += metricRow("p99 Latency", `${m.apiPerformance.p99Ms}ms`, trends?.apiLatencyP99);
+  table += metricRow(
+    "p99 Latency",
+    `${m.apiPerformance.p99Ms}ms`,
+    trends?.apiLatencyP99
+  );
 
   table += sectionTitle("Errors");
   table += metricRow("Error Rate", `${m.errors.errorRate}%`, trends?.errorRate);
-  table += metricRow("Critical Errors", String(m.errors.criticalErrors), trends?.criticalErrors);
+  table += metricRow(
+    "Critical Errors",
+    String(m.errors.criticalErrors),
+    trends?.criticalErrors
+  );
   table += metricRow("Resolved", String(m.errors.resolvedErrors));
 
   table += sectionTitle("Security");
   table += metricRow("Blocked IPs", String(m.security.blockedIPs));
   table += metricRow("Failed Logins", String(m.security.failedLogins));
   table += metricRow("Rate Limit Hits", String(m.security.rateLimitHits));
-  table += metricRow("Suspicious", String(m.security.suspiciousActivities), trends?.securityEvents);
+  table += metricRow(
+    "Suspicious",
+    String(m.security.suspiciousActivities),
+    trends?.securityEvents
+  );
 
   table += sectionTitle("System");
-  table += metricRow("Uptime", `${m.system.uptimePercent}%`, trends?.uptimePercent);
+  table += metricRow(
+    "Uptime",
+    `${m.system.uptimePercent}%`,
+    trends?.uptimePercent
+  );
   table += metricRow("DB Latency", `${m.system.dbLatencyAvgMs}ms`);
   table += metricRow("Memory", `${m.system.memoryUsageMB}MB`);
   table += metricRow("CPU", `${m.system.cpuUsagePercent}%`);
@@ -413,7 +570,7 @@ export function generateReportPdfHtml(
     alertsHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:12px;margin:12px 0;">
       <p style="margin:0 0 6px;font-weight:700;color:#dc2626;font-size:13px;">Alerts (${report.alerts.length})</p>
       <ul style="margin:0;padding-left:16px;font-size:11px;">
-        ${report.alerts.map((a) => `<li style="color:#7f1d1d;margin:3px 0;">${a}</li>`).join("")}
+        ${report.alerts.map(a => `<li style="color:#7f1d1d;margin:3px 0;">${a}</li>`).join("")}
       </ul>
     </div>`;
   }
@@ -424,7 +581,7 @@ export function generateReportPdfHtml(
     recsHtml = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;margin:12px 0;">
       <p style="margin:0 0 6px;font-weight:700;color:#059669;font-size:13px;">Recommendations</p>
       <ul style="margin:0;padding-left:16px;font-size:11px;">
-        ${report.recommendations.map((r) => `<li style="color:#14532d;margin:3px 0;">${r}</li>`).join("")}
+        ${report.recommendations.map(r => `<li style="color:#14532d;margin:3px 0;">${r}</li>`).join("")}
       </ul>
     </div>`;
   }
@@ -489,7 +646,7 @@ export function addRecipient(
   role: string
 ): EmailDistributionConfig {
   const exists = emailConfig.recipients.some(
-    (r) => r.email.toLowerCase() === email.toLowerCase()
+    r => r.email.toLowerCase() === email.toLowerCase()
   );
   if (!exists) {
     emailConfig.recipients.push({ email, name, role });
@@ -499,11 +656,15 @@ export function addRecipient(
 
 export function removeRecipient(email: string): EmailDistributionConfig {
   emailConfig.recipients = emailConfig.recipients.filter(
-    (r) => r.email.toLowerCase() !== email.toLowerCase()
+    r => r.email.toLowerCase() !== email.toLowerCase()
   );
   return getEmailConfig();
 }
 
-export function listRecipients(): Array<{ email: string; name: string; role: string }> {
+export function listRecipients(): Array<{
+  email: string;
+  name: string;
+  role: string;
+}> {
   return [...emailConfig.recipients];
 }

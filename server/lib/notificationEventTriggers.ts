@@ -1,11 +1,11 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Notification Event Triggers — 54Link Agent Banking Platform
- * 
+ *
  * Automatically publishes real-time notifications for critical system events.
  * Integrates with the existing publishNotification / notifyUser / broadcastNotification
  * functions from realtimeNotifications.ts.
- * 
+ *
  * Event Categories:
  * - Fraud Detection: New fraud alerts, high-risk transactions
  * - KYC Status: Document approved/rejected, expiry warnings
@@ -15,7 +15,11 @@
  * - Compliance: CBN report due, regulatory deadline approaching
  */
 
-import { publishNotification, notifyUser, broadcastNotification } from "./realtimeNotifications";
+import {
+  publishNotification,
+  notifyUser,
+  broadcastNotification,
+} from "./realtimeNotifications";
 import type { NotificationChannel } from "./realtimeNotifications";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -31,8 +35,13 @@ export async function triggerFraudAlert(params: {
   reason: string;
   type: string;
 }): Promise<void> {
-  const severity = params.fraudScore >= 80 ? "critical" : params.fraudScore >= 50 ? "warning" : "info";
-  
+  const severity =
+    params.fraudScore >= 80
+      ? "critical"
+      : params.fraudScore >= 50
+        ? "warning"
+        : "info";
+
   await broadcastNotification({
     channel: "fraud",
     title: `Fraud Alert: ${params.type}`,
@@ -76,12 +85,18 @@ export async function triggerKycStatusChange(params: {
   status: "approved" | "rejected" | "expired";
   reason?: string;
 }): Promise<void> {
-  const severity = params.status === "rejected" ? "warning" : params.status === "expired" ? "critical" : "info";
-  const title = params.status === "approved"
-    ? `KYC Approved: ${params.documentType}`
-    : params.status === "rejected"
-    ? `KYC Rejected: ${params.documentType}`
-    : `KYC Expired: ${params.documentType}`;
+  const severity =
+    params.status === "rejected"
+      ? "warning"
+      : params.status === "expired"
+        ? "critical"
+        : "info";
+  const title =
+    params.status === "approved"
+      ? `KYC Approved: ${params.documentType}`
+      : params.status === "rejected"
+        ? `KYC Rejected: ${params.documentType}`
+        : `KYC Expired: ${params.documentType}`;
 
   await notifyUser(params.agentId, {
     channel: "kyc",
@@ -114,7 +129,10 @@ export async function triggerKycExpiryWarning(params: {
     body: `${params.documentType} for ${params.agentName} expires in ${params.daysUntilExpiry} days. Please renew.`,
     severity: params.daysUntilExpiry <= 7 ? "critical" : "warning",
     actionUrl: "/kyc-verification",
-    metadata: { agentId: params.agentId, daysUntilExpiry: params.daysUntilExpiry },
+    metadata: {
+      agentId: params.agentId,
+      daysUntilExpiry: params.daysUntilExpiry,
+    },
   });
 }
 
@@ -129,15 +147,20 @@ export async function triggerSystemHealthAlert(params: {
   unit: string;
   service?: string;
 }): Promise<void> {
-  const severity = params.currentValue >= params.threshold * 1.2 ? "critical" : "warning";
-  
+  const severity =
+    params.currentValue >= params.threshold * 1.2 ? "critical" : "warning";
+
   await broadcastNotification({
     channel: "system",
     title: `System Alert: ${params.metric}`,
     body: `${params.service ? `[${params.service}] ` : ""}${params.metric} at ${params.currentValue}${params.unit} (threshold: ${params.threshold}${params.unit})`,
     severity,
     actionUrl: "/system-health-monitor",
-    metadata: { metric: params.metric, value: params.currentValue, threshold: params.threshold },
+    metadata: {
+      metric: params.metric,
+      value: params.currentValue,
+      threshold: params.threshold,
+    },
   });
 }
 
@@ -273,7 +296,12 @@ export async function triggerComplianceDeadline(params: {
     channel: "compliance",
     title: `Compliance Deadline: ${params.reportType}`,
     body: `${params.reportType} due ${params.dueDate} (${params.daysRemaining} days remaining)`,
-    severity: params.daysRemaining <= 3 ? "critical" : params.daysRemaining <= 7 ? "warning" : "info",
+    severity:
+      params.daysRemaining <= 3
+        ? "critical"
+        : params.daysRemaining <= 7
+          ? "warning"
+          : "info",
     actionUrl: "/cbn-reporting",
     metadata: { reportType: params.reportType, dueDate: params.dueDate },
   });

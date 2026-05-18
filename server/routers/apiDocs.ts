@@ -10,7 +10,8 @@ const API_SPEC = {
   info: {
     title: "54Link Agency Banking Platform API",
     version: "1.0.0",
-    description: "Comprehensive API for agency banking operations including KYC/KYB, transactions, settlements, and compliance.",
+    description:
+      "Comprehensive API for agency banking operations including KYC/KYB, transactions, settlements, and compliance.",
     contact: { name: "54Link Engineering", email: "engineering@54link.com" },
     license: { name: "Proprietary" },
   },
@@ -43,7 +44,10 @@ const API_SPEC = {
                 schema: {
                   type: "object",
                   properties: {
-                    overall: { type: "string", enum: ["healthy", "partially_healthy", "degraded"] },
+                    overall: {
+                      type: "string",
+                      enum: ["healthy", "partially_healthy", "degraded"],
+                    },
                     timestamp: { type: "string", format: "date-time" },
                     summary: {
                       type: "object",
@@ -76,9 +80,23 @@ const API_SPEC = {
                 required: ["businessName", "rcNumber", "tin"],
                 properties: {
                   businessName: { type: "string" },
-                  rcNumber: { type: "string", description: "CAC registration number" },
-                  tin: { type: "string", description: "Tax Identification Number" },
-                  businessType: { type: "string", enum: ["sole_proprietorship", "partnership", "limited_liability", "plc"] },
+                  rcNumber: {
+                    type: "string",
+                    description: "CAC registration number",
+                  },
+                  tin: {
+                    type: "string",
+                    description: "Tax Identification Number",
+                  },
+                  businessType: {
+                    type: "string",
+                    enum: [
+                      "sole_proprietorship",
+                      "partnership",
+                      "limited_liability",
+                      "plc",
+                    ],
+                  },
                 },
               },
             },
@@ -113,29 +131,110 @@ export const apiDocsRouter = router({
         base: "/api/trpc",
         description: "tRPC procedures — use tRPC client for type-safe access",
         categories: [
-          { name: "auth", procedures: ["login", "register", "refreshToken", "logout"] },
-          { name: "agents", procedures: ["list", "getById", "create", "update", "onboarding.*"] },
-          { name: "merchants", procedures: ["list", "getById", "create", "update"] },
-          { name: "transactions", procedures: ["list", "create", "getById", "reverse", "reconcile"] },
-          { name: "kyc", procedures: ["startSession", "submitDocument", "verifyBiometric", "getStatus"] },
-          { name: "kyb", procedures: ["initiate", "submitDocuments", "getRiskScore", "getStatus"] },
-          { name: "settlements", procedures: ["list", "create", "approve", "process"] },
-          { name: "compliance", procedures: ["screenEntity", "getReport", "fileSTR"] },
-          { name: "platformHealth", procedures: ["overview", "checkService", "serviceRegistry"] },
+          {
+            name: "auth",
+            procedures: ["login", "register", "refreshToken", "logout"],
+          },
+          {
+            name: "agents",
+            procedures: ["list", "getById", "create", "update", "onboarding.*"],
+          },
+          {
+            name: "merchants",
+            procedures: ["list", "getById", "create", "update"],
+          },
+          {
+            name: "transactions",
+            procedures: ["list", "create", "getById", "reverse", "reconcile"],
+          },
+          {
+            name: "kyc",
+            procedures: [
+              "startSession",
+              "submitDocument",
+              "verifyBiometric",
+              "getStatus",
+            ],
+          },
+          {
+            name: "kyb",
+            procedures: [
+              "initiate",
+              "submitDocuments",
+              "getRiskScore",
+              "getStatus",
+            ],
+          },
+          {
+            name: "settlements",
+            procedures: ["list", "create", "approve", "process"],
+          },
+          {
+            name: "compliance",
+            procedures: ["screenEntity", "getReport", "fileSTR"],
+          },
+          {
+            name: "platformHealth",
+            procedures: ["overview", "checkService", "serviceRegistry"],
+          },
         ],
       },
       microservices: [
-        { name: "KYB Engine", port: 8130, endpoints: ["/verify", "/status/:id", "/health"] },
-        { name: "KYB Risk Engine", port: 8131, endpoints: ["/screen", "/risk-score", "/health"] },
-        { name: "KYB Analytics", port: 8132, endpoints: ["/predict", "/report", "/health"] },
-        { name: "DeepFace", port: 8133, endpoints: ["/verify", "/analyze", "/detect", "/health"] },
-        { name: "Service Auth", port: 8140, endpoints: ["/token", "/verify", "/health"] },
-        { name: "Circuit Breaker", port: 8141, endpoints: ["/check", "/status", "/health"] },
-        { name: "Sanctions ETL", port: 8142, endpoints: ["/screen", "/update", "/health"] },
-        { name: "Webhook Delivery", port: 8143, endpoints: ["/send", "/status", "/health"] },
-        { name: "ML Model Registry", port: 8144, endpoints: ["/models", "/predict", "/health"] },
-        { name: "Data Archival", port: 8145, endpoints: ["/archive", "/restore", "/health"] },
-        { name: "Backup Manager", port: 8146, endpoints: ["/backup", "/restore", "/health"] },
+        {
+          name: "KYB Engine",
+          port: 8130,
+          endpoints: ["/verify", "/status/:id", "/health"],
+        },
+        {
+          name: "KYB Risk Engine",
+          port: 8131,
+          endpoints: ["/screen", "/risk-score", "/health"],
+        },
+        {
+          name: "KYB Analytics",
+          port: 8132,
+          endpoints: ["/predict", "/report", "/health"],
+        },
+        {
+          name: "DeepFace",
+          port: 8133,
+          endpoints: ["/verify", "/analyze", "/detect", "/health"],
+        },
+        {
+          name: "Service Auth",
+          port: 8140,
+          endpoints: ["/token", "/verify", "/health"],
+        },
+        {
+          name: "Circuit Breaker",
+          port: 8141,
+          endpoints: ["/check", "/status", "/health"],
+        },
+        {
+          name: "Sanctions ETL",
+          port: 8142,
+          endpoints: ["/screen", "/update", "/health"],
+        },
+        {
+          name: "Webhook Delivery",
+          port: 8143,
+          endpoints: ["/send", "/status", "/health"],
+        },
+        {
+          name: "ML Model Registry",
+          port: 8144,
+          endpoints: ["/models", "/predict", "/health"],
+        },
+        {
+          name: "Data Archival",
+          port: 8145,
+          endpoints: ["/archive", "/restore", "/health"],
+        },
+        {
+          name: "Backup Manager",
+          port: 8146,
+          endpoints: ["/backup", "/restore", "/health"],
+        },
       ],
     };
   }),

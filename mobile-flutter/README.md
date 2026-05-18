@@ -55,18 +55,18 @@ flutter test
 
 ## Key Screens
 
-| Screen | Route | Description |
-|--------|-------|-------------|
-| SplashScreen | `/splash` | Auth check + brand splash |
-| LoginScreen | `/login` | Agent code + PIN login |
-| DashboardScreen | `/dashboard` | Float balance + quick actions |
-| CashInScreen | `/cash-in` | Customer deposit flow |
-| CashOutScreen | `/cash-out` | Customer withdrawal flow |
+| Screen            | Route           | Description                    |
+| ----------------- | --------------- | ------------------------------ |
+| SplashScreen      | `/splash`       | Auth check + brand splash      |
+| LoginScreen       | `/login`        | Agent code + PIN login         |
+| DashboardScreen   | `/dashboard`    | Float balance + quick actions  |
+| CashInScreen      | `/cash-in`      | Customer deposit flow          |
+| CashOutScreen     | `/cash-out`     | Customer withdrawal flow       |
 | BillPaymentScreen | `/bill-payment` | Electricity, airtime, cable TV |
-| ReceiptScreen | `/receipt/:ref` | Print / SMS / WhatsApp receipt |
-| FloatScreen | `/float` | Float top-up request |
-| HistoryScreen | `/history` | Transaction history |
-| SettingsScreen | `/settings` | Terminal config + logout |
+| ReceiptScreen     | `/receipt/:ref` | Print / SMS / WhatsApp receipt |
+| FloatScreen       | `/float`        | Float top-up request           |
+| HistoryScreen     | `/history`      | Transaction history            |
+| SettingsScreen    | `/settings`     | Terminal config + logout       |
 
 ## PAX A920 Specifics
 

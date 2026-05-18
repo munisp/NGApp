@@ -49,7 +49,10 @@ async function run() {
   });
 
   // Resolve the workflows file path — works in both CJS and ESM contexts
-  const workflowsPath = path.resolve(__dirname ?? process.cwd(), "temporal-workflows");
+  const workflowsPath = path.resolve(
+    __dirname ?? process.cwd(),
+    "temporal-workflows"
+  );
 
   const worker = await Worker.create({
     connection,

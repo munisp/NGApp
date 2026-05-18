@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 86: Input Sanitization & SQL Injection Prevention
 /**
  * Input Sanitization Middleware (S86-25)
- * 
+ *
  * Defense-in-depth layer that sanitizes all incoming request data:
  * - SQL injection pattern detection and blocking
  * - XSS payload stripping
@@ -67,13 +67,13 @@ const COMMAND_INJECTION_PATTERNS = [
 
 export function sanitizeString(input: string): string {
   if (typeof input !== "string") return input;
-  
+
   // Remove null bytes
   let sanitized = input.replace(/\0/g, "");
-  
+
   // Normalize unicode
   sanitized = sanitized.normalize("NFC");
-  
+
   // Encode HTML entities for XSS prevention
   sanitized = sanitized
     .replace(/&/g, "&amp;")
@@ -81,11 +81,14 @@ export function sanitizeString(input: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;");
-  
+
   return sanitized;
 }
 
-export function detectSQLInjection(input: string): { detected: boolean; pattern: string } {
+export function detectSQLInjection(input: string): {
+  detected: boolean;
+  pattern: string;
+} {
   for (const pattern of SQL_INJECTION_PATTERNS) {
     if (pattern.test(input)) {
       return { detected: true, pattern: pattern.source };
@@ -94,7 +97,10 @@ export function detectSQLInjection(input: string): { detected: boolean; pattern:
   return { detected: false, pattern: "" };
 }
 
-export function detectXSS(input: string): { detected: boolean; pattern: string } {
+export function detectXSS(input: string): {
+  detected: boolean;
+  pattern: string;
+} {
   for (const pattern of XSS_PATTERNS) {
     if (pattern.test(input)) {
       return { detected: true, pattern: pattern.source };
@@ -124,14 +130,22 @@ export function deepScanObject(obj: any, path: string = ""): ScanResult {
   if (typeof obj === "string") {
     const sqli = detectSQLInjection(obj);
     if (sqli.detected) {
-      threats.push({ path, type: "sql_injection", value: obj.substring(0, 100) });
+      threats.push({
+        path,
+        type: "sql_injection",
+        value: obj.substring(0, 100),
+      });
     }
     const xss = detectXSS(obj);
     if (xss.detected) {
       threats.push({ path, type: "xss", value: obj.substring(0, 100) });
     }
     if (detectPathTraversal(obj)) {
-      threats.push({ path, type: "path_traversal", value: obj.substring(0, 100) });
+      threats.push({
+        path,
+        type: "path_traversal",
+        value: obj.substring(0, 100),
+      });
     }
   } else if (Array.isArray(obj)) {
     obj.forEach((item, idx) => {
@@ -154,7 +168,7 @@ export interface SanitizationConfig {
   enabled: boolean;
   blockOnDetection: boolean;
   logThreats: boolean;
-  allowedPaths: string[];  // Paths to skip (e.g., webhook endpoints)
+  allowedPaths: string[]; // Paths to skip (e.g., webhook endpoints)
   maxInputLength: number;
 }
 
@@ -166,7 +180,9 @@ const DEFAULT_CONFIG: SanitizationConfig = {
   maxInputLength: 50000,
 };
 
-export function inputSanitizationMiddleware(config: Partial<SanitizationConfig> = {}) {
+export function inputSanitizationMiddleware(
+  config: Partial<SanitizationConfig> = {}
+) {
   const cfg = { ...DEFAULT_CONFIG, ...config };
 
   return (req: Request, res: Response, next: NextFunction) => {
@@ -182,8 +198,10 @@ export function inputSanitizationMiddleware(config: Partial<SanitizationConfig> 
       const bodyResult = deepScanObject(req.body, "body");
       if (!bodyResult.safe) {
         if (cfg.logThreats) {
-          console.warn(`[InputSanitization] Threats detected in ${req.method} ${req.path}:`, 
-            bodyResult.threats.map(t => `${t.type} at ${t.path}`));
+          console.warn(
+            `[InputSanitization] Threats detected in ${req.method} ${req.path}:`,
+            bodyResult.threats.map(t => `${t.type} at ${t.path}`)
+          );
         }
         if (cfg.blockOnDetection) {
           return res.status(400).json({
@@ -228,22 +246,36 @@ export function securityHeadersMiddleware() {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "1; mode=block");
-    
+
     // Content Security Policy
-    res.setHeader("Content-Security-Policy", 
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com");
-    
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com"
+    );
+
     // Strict Transport Security
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+
     // Referrer Policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    
+
     // Permissions Policy
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
-    
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(self), payment=(self)"
+    );
+
     next();
   };
 }
 
-export default { inputSanitizationMiddleware, securityHeadersMiddleware, sanitizeString, detectSQLInjection, detectXSS };
+export default {
+  inputSanitizationMiddleware,
+  securityHeadersMiddleware,
+  sanitizeString,
+  detectSQLInjection,
+  detectXSS,
+};

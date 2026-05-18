@@ -24,12 +24,23 @@ import {
 } from "../db";
 import { protectedProcedure, router } from "../_core/trpc";
 import { agents } from "../../drizzle/schema";
-import { eq, ilike, and, isNull, desc, asc, sql, inArray, or, ne } from "drizzle-orm";
+import {
+  eq,
+  ilike,
+  and,
+  isNull,
+  desc,
+  asc,
+  sql,
+  inArray,
+  or,
+  ne,
+} from "drizzle-orm";
 
 // ── CBN Agency Banking Limits ──────────────────────────────────────────────────
-const CBN_DAILY_TX_LIMIT = 3000000;    // NGN 3M per day per agent
-const CBN_SINGLE_TX_LIMIT = 1000000;   // NGN 1M per single transaction
-const CBN_MIN_FLOAT = 5000;            // NGN 5K minimum float
+const CBN_DAILY_TX_LIMIT = 3000000; // NGN 3M per day per agent
+const CBN_SINGLE_TX_LIMIT = 1000000; // NGN 1M per single transaction
+const CBN_MIN_FLOAT = 5000; // NGN 5K minimum float
 
 export const agentRouter = router({
   // ── Login ─────────────────────────────────────────────────────────────────
@@ -86,7 +97,9 @@ export const agentRouter = router({
 
         // Store agent session in cookie (reuse JWT_SECRET)
         const { SignJWT } = await import("jose");
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "pos54link-secret");
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET ?? "pos54link-secret"
+        );
         const token = await new SignJWT({
           sub: String(agent.id),
           agentCode: agent.agentCode,
@@ -128,7 +141,11 @@ export const agentRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -147,7 +164,9 @@ export const agentRouter = router({
 
       try {
         const { jwtVerify } = await import("jose");
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "pos54link-secret");
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET ?? "pos54link-secret"
+        );
         const { payload } = await jwtVerify(match[1], secret);
         const agentId = Number(payload.sub);
         const agent = await getAgentById(agentId);
@@ -177,7 +196,11 @@ export const agentRouter = router({
       }
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -197,7 +220,10 @@ export const agentRouter = router({
       try {
         const existing = await getAgentByCode(input.agentCode.toUpperCase());
         if (existing) {
-          throw new TRPCError({ code: "CONFLICT", message: "Agent code already exists" });
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Agent code already exists",
+          });
         }
         const pinHash = await bcrypt.hash(input.pin, 10);
         const agent = await createAgent({
@@ -218,7 +244,11 @@ export const agentRouter = router({
         return { success: true, agentId: agent.id };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -227,10 +257,22 @@ export const agentRouter = router({
     .input(
       z.object({
         search: z.string().optional(),
-        status: z.enum(["all", "active", "suspended", "pending"]).default("all"),
-        tier: z.enum(["all", "Bronze", "Silver", "Gold", "Platinum"]).default("all"),
+        status: z
+          .enum(["all", "active", "suspended", "pending"])
+          .default("all"),
+        tier: z
+          .enum(["all", "Bronze", "Silver", "Gold", "Platinum"])
+          .default("all"),
         location: z.string().optional(),
-        sortBy: z.enum(["name", "createdAt", "floatBalance", "loyaltyPoints", "lastLoginAt"]).default("createdAt"),
+        sortBy: z
+          .enum([
+            "name",
+            "createdAt",
+            "floatBalance",
+            "loyaltyPoints",
+            "lastLoginAt",
+          ])
+          .default("createdAt"),
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
         page: z.number().int().min(1).default(1),
         limit: z.number().int().min(1).max(200).default(20),
@@ -239,63 +281,86 @@ export const agentRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return { agents: [], total: 0, page: input.page, limit: input.limit };
+        if (!db)
+          return { agents: [], total: 0, page: input.page, limit: input.limit };
 
         const offset = (input.page - 1) * input.limit;
 
         const conditions = [isNull(agents.deletedAt)];
         if (input.status !== "all") {
-          if (input.status === "active") conditions.push(eq(agents.isActive, true));
-          else if (input.status === "suspended") conditions.push(eq(agents.isActive, false));
+          if (input.status === "active")
+            conditions.push(eq(agents.isActive, true));
+          else if (input.status === "suspended")
+            conditions.push(eq(agents.isActive, false));
         }
-        if (input.tier !== "all") conditions.push(eq(agents.tier, input.tier as "Bronze" | "Silver" | "Gold" | "Platinum"));
-        if (input.location) conditions.push(ilike(agents.location, `%${input.location}%`));
+        if (input.tier !== "all")
+          conditions.push(
+            eq(
+              agents.tier,
+              input.tier as "Bronze" | "Silver" | "Gold" | "Platinum"
+            )
+          );
+        if (input.location)
+          conditions.push(ilike(agents.location, `%${input.location}%`));
         if (input.search) {
           conditions.push(
             or(
               ilike(agents.name, `%${input.search}%`),
               ilike(agents.agentCode, `%${input.search}%`),
               ilike(agents.phone, `%${input.search}%`),
-              ilike(agents.email, `%${input.search}%`),
+              ilike(agents.email, `%${input.search}%`)
             )!
           );
         }
 
         const whereClause = and(...conditions);
-        const orderCol = input.sortBy === "name" ? agents.name : input.sortBy === "floatBalance" ? agents.floatBalance : input.sortBy === "loyaltyPoints" ? agents.loyaltyPoints : input.sortBy === "lastLoginAt" ? agents.lastLoginAt : agents.createdAt;
+        const orderCol =
+          input.sortBy === "name"
+            ? agents.name
+            : input.sortBy === "floatBalance"
+              ? agents.floatBalance
+              : input.sortBy === "loyaltyPoints"
+                ? agents.loyaltyPoints
+                : input.sortBy === "lastLoginAt"
+                  ? agents.lastLoginAt
+                  : agents.createdAt;
         const orderFn = input.sortOrder === "asc" ? asc : desc;
 
         const [rows, [{ total }]] = await Promise.all([
-          db.select({
-            id: agents.id,
-            agentCode: agents.agentCode,
-            name: agents.name,
-            phone: agents.phone,
-            email: agents.email,
-            location: agents.location,
-            tier: agents.tier,
-            isActive: agents.isActive,
-            floatBalance: agents.floatBalance,
-            floatLimit: agents.floatLimit,
-            commissionBalance: agents.commissionBalance,
-            loyaltyPoints: agents.loyaltyPoints,
-            streak: agents.streak,
-            rank: agents.rank,
-            terminalModel: agents.terminalModel,
-            terminalSerial: agents.terminalSerial,
-            terminalEnabled: agents.terminalEnabled,
-            floatLocked: agents.floatLocked,
-            lastLoginAt: agents.lastLoginAt,
-            createdAt: agents.createdAt,
-            creditScore: agents.creditScore,
-            creditRating: agents.creditRating,
-          })
+          db
+            .select({
+              id: agents.id,
+              agentCode: agents.agentCode,
+              name: agents.name,
+              phone: agents.phone,
+              email: agents.email,
+              location: agents.location,
+              tier: agents.tier,
+              isActive: agents.isActive,
+              floatBalance: agents.floatBalance,
+              floatLimit: agents.floatLimit,
+              commissionBalance: agents.commissionBalance,
+              loyaltyPoints: agents.loyaltyPoints,
+              streak: agents.streak,
+              rank: agents.rank,
+              terminalModel: agents.terminalModel,
+              terminalSerial: agents.terminalSerial,
+              terminalEnabled: agents.terminalEnabled,
+              floatLocked: agents.floatLocked,
+              lastLoginAt: agents.lastLoginAt,
+              createdAt: agents.createdAt,
+              creditScore: agents.creditScore,
+              creditRating: agents.creditRating,
+            })
             .from(agents)
             .where(whereClause)
             .orderBy(orderFn(orderCol))
             .limit(input.limit)
             .offset(offset),
-          db.select({ total: sql<string>`COUNT(*)` }).from(agents).where(whereClause),
+          db
+            .select({ total: sql<string>`COUNT(*)` })
+            .from(agents)
+            .where(whereClause),
         ]);
 
         return {
@@ -307,7 +372,11 @@ export const agentRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -317,11 +386,19 @@ export const agentRouter = router({
     .query(async ({ input }) => {
       try {
         const agent = await getAgentById(input.id);
-        if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        if (!agent || agent.deletedAt)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
         return agent;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -341,7 +418,21 @@ export const agentRouter = router({
         role: z.enum(["agent", "supervisor", "admin"]).optional(),
         creditScore: z.number().int().min(0).max(1000).optional(),
         creditLimit: z.number().min(0).optional(),
-        creditRating: z.enum(["AAA", "AA", "A", "BBB", "BB", "B", "CCC", "CC", "C", "D", "N/A"]).optional(),
+        creditRating: z
+          .enum([
+            "AAA",
+            "AA",
+            "A",
+            "BBB",
+            "BB",
+            "B",
+            "CCC",
+            "CC",
+            "C",
+            "D",
+            "N/A",
+          ])
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -350,146 +441,314 @@ export const agentRouter = router({
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const { id, ...updates } = input;
         const agent = await getAgentById(id);
-        if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!agent || agent.deletedAt)
+          throw new TRPCError({ code: "NOT_FOUND" });
 
         const updateData: Record<string, unknown> = { updatedAt: new Date() };
         if (updates.name !== undefined) updateData.name = updates.name;
         if (updates.phone !== undefined) updateData.phone = updates.phone;
         if (updates.email !== undefined) updateData.email = updates.email;
-        if (updates.location !== undefined) updateData.location = updates.location;
+        if (updates.location !== undefined)
+          updateData.location = updates.location;
         if (updates.tier !== undefined) updateData.tier = updates.tier;
-        if (updates.floatLimit !== undefined) updateData.floatLimit = String(updates.floatLimit);
-        if (updates.terminalModel !== undefined) updateData.terminalModel = updates.terminalModel;
-        if (updates.terminalSerial !== undefined) updateData.terminalSerial = updates.terminalSerial;
+        if (updates.floatLimit !== undefined)
+          updateData.floatLimit = String(updates.floatLimit);
+        if (updates.terminalModel !== undefined)
+          updateData.terminalModel = updates.terminalModel;
+        if (updates.terminalSerial !== undefined)
+          updateData.terminalSerial = updates.terminalSerial;
         if (updates.role !== undefined) updateData.role = updates.role;
-        if (updates.creditScore !== undefined) updateData.creditScore = updates.creditScore;
-        if (updates.creditLimit !== undefined) updateData.creditLimit = String(updates.creditLimit);
-        if (updates.creditRating !== undefined) updateData.creditRating = updates.creditRating;
+        if (updates.creditScore !== undefined)
+          updateData.creditScore = updates.creditScore;
+        if (updates.creditLimit !== undefined)
+          updateData.creditLimit = String(updates.creditLimit);
+        if (updates.creditRating !== undefined)
+          updateData.creditRating = updates.creditRating;
 
-        await db.update(agents).set(updateData as Partial<typeof agents.$inferInsert>).where(eq(agents.id, id));
-        await writeAuditLog({ agentId: id, agentCode: agent.agentCode, action: "AGENT_UPDATED", resource: "agent", resourceId: String(id), status: "success", metadata: updates as Record<string, unknown> });
+        await db
+          .update(agents)
+          .set(updateData as Partial<typeof agents.$inferInsert>)
+          .where(eq(agents.id, id));
+        await writeAuditLog({
+          agentId: id,
+          agentCode: agent.agentCode,
+          action: "AGENT_UPDATED",
+          resource: "agent",
+          resourceId: String(id),
+          status: "success",
+          metadata: updates as Record<string, unknown>,
+        });
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Soft delete ───────────────────────────────────────────────────────────
   delete: protectedProcedure
-    .input(z.object({ id: z.number().int().positive(), reason: z.string().min(5) }))
+    .input(
+      z.object({ id: z.number().int().positive(), reason: z.string().min(5) })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const agent = await getAgentById(input.id);
-        if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
-        await db.update(agents).set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() }).where(eq(agents.id, input.id));
-        await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: "AGENT_DELETED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
+        if (!agent || agent.deletedAt)
+          throw new TRPCError({ code: "NOT_FOUND" });
+        await db
+          .update(agents)
+          .set({
+            deletedAt: new Date(),
+            isActive: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(agents.id, input.id));
+        await writeAuditLog({
+          agentId: input.id,
+          agentCode: agent.agentCode,
+          action: "AGENT_DELETED",
+          resource: "agent",
+          resourceId: String(input.id),
+          status: "success",
+          metadata: { reason: input.reason },
+        });
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Float lock/unlock ─────────────────────────────────────────────────────
   setFloatLock: protectedProcedure
-    .input(z.object({ id: z.number().int().positive(), locked: z.boolean(), reason: z.string().optional() }))
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        locked: z.boolean(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const agent = await getAgentById(input.id);
-        if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
-        await db.update(agents).set({ floatLocked: input.locked, updatedAt: new Date() }).where(eq(agents.id, input.id));
-        await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: input.locked ? "FLOAT_LOCKED" : "FLOAT_UNLOCKED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
+        if (!agent || agent.deletedAt)
+          throw new TRPCError({ code: "NOT_FOUND" });
+        await db
+          .update(agents)
+          .set({ floatLocked: input.locked, updatedAt: new Date() })
+          .where(eq(agents.id, input.id));
+        await writeAuditLog({
+          agentId: input.id,
+          agentCode: agent.agentCode,
+          action: input.locked ? "FLOAT_LOCKED" : "FLOAT_UNLOCKED",
+          resource: "agent",
+          resourceId: String(input.id),
+          status: "success",
+          metadata: { reason: input.reason },
+        });
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Terminal enable/disable ───────────────────────────────────────────────
   setTerminalEnabled: protectedProcedure
-    .input(z.object({ id: z.number().int().positive(), enabled: z.boolean(), reason: z.string().optional() }))
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        enabled: z.boolean(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const agent = await getAgentById(input.id);
-        if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
-        await db.update(agents).set({ terminalEnabled: input.enabled, terminalDisabledReason: input.enabled ? null : (input.reason ?? "Disabled by admin"), updatedAt: new Date() }).where(eq(agents.id, input.id));
-        await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: input.enabled ? "TERMINAL_ENABLED" : "TERMINAL_DISABLED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
+        if (!agent || agent.deletedAt)
+          throw new TRPCError({ code: "NOT_FOUND" });
+        await db
+          .update(agents)
+          .set({
+            terminalEnabled: input.enabled,
+            terminalDisabledReason: input.enabled
+              ? null
+              : (input.reason ?? "Disabled by admin"),
+            updatedAt: new Date(),
+          })
+          .where(eq(agents.id, input.id));
+        await writeAuditLog({
+          agentId: input.id,
+          agentCode: agent.agentCode,
+          action: input.enabled ? "TERMINAL_ENABLED" : "TERMINAL_DISABLED",
+          resource: "agent",
+          resourceId: String(input.id),
+          status: "success",
+          metadata: { reason: input.reason },
+        });
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Bulk activate ─────────────────────────────────────────────────────────
   bulkActivate: protectedProcedure
-    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) }))
+    .input(
+      z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await db.update(agents).set({ isActive: true, updatedAt: new Date() }).where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
-        await writeAuditLog({ action: "BULK_ACTIVATE", resource: "agent", resourceId: input.ids.join(","), status: "success", metadata: { count: input.ids.length } });
+        await db
+          .update(agents)
+          .set({ isActive: true, updatedAt: new Date() })
+          .where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
+        await writeAuditLog({
+          action: "BULK_ACTIVATE",
+          resource: "agent",
+          resourceId: input.ids.join(","),
+          status: "success",
+          metadata: { count: input.ids.length },
+        });
         return { success: true, count: input.ids.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Bulk suspend ──────────────────────────────────────────────────────────
   bulkSuspend: protectedProcedure
-    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100), reason: z.string().min(5) }))
+    .input(
+      z.object({
+        ids: z.array(z.number().int().positive()).min(1).max(100),
+        reason: z.string().min(5),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await db.update(agents).set({ isActive: false, updatedAt: new Date() }).where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
-        await writeAuditLog({ action: "BULK_SUSPEND", resource: "agent", resourceId: input.ids.join(","), status: "success", metadata: { count: input.ids.length, reason: input.reason } });
+        await db
+          .update(agents)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
+        await writeAuditLog({
+          action: "BULK_SUSPEND",
+          resource: "agent",
+          resourceId: input.ids.join(","),
+          status: "success",
+          metadata: { count: input.ids.length, reason: input.reason },
+        });
         return { success: true, count: input.ids.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Bulk delete ───────────────────────────────────────────────────────────
   bulkDelete: protectedProcedure
-    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100), reason: z.string().min(5) }))
+    .input(
+      z.object({
+        ids: z.array(z.number().int().positive()).min(1).max(100),
+        reason: z.string().min(5),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await db.update(agents).set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() }).where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
-        await writeAuditLog({ action: "BULK_DELETE", resource: "agent", resourceId: input.ids.join(","), status: "success", metadata: { count: input.ids.length, reason: input.reason } });
+        await db
+          .update(agents)
+          .set({
+            deletedAt: new Date(),
+            isActive: false,
+            updatedAt: new Date(),
+          })
+          .where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
+        await writeAuditLog({
+          action: "BULK_DELETE",
+          resource: "agent",
+          resourceId: input.ids.join(","),
+          status: "success",
+          metadata: { count: input.ids.length, reason: input.reason },
+        });
         return { success: true, count: input.ids.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Bulk tier upgrade ─────────────────────────────────────────────────────
   bulkSetTier: protectedProcedure
-    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100), tier: z.enum(["Bronze", "Silver", "Gold", "Platinum"]) }))
+    .input(
+      z.object({
+        ids: z.array(z.number().int().positive()).min(1).max(100),
+        tier: z.enum(["Bronze", "Silver", "Gold", "Platinum"]),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await db.update(agents).set({ tier: input.tier, updatedAt: new Date() }).where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
-        await writeAuditLog({ action: "BULK_SET_TIER", resource: "agent", resourceId: input.ids.join(","), status: "success", metadata: { count: input.ids.length, tier: input.tier } });
+        await db
+          .update(agents)
+          .set({ tier: input.tier, updatedAt: new Date() })
+          .where(and(inArray(agents.id, input.ids), isNull(agents.deletedAt)));
+        await writeAuditLog({
+          action: "BULK_SET_TIER",
+          resource: "agent",
+          resourceId: input.ids.join(","),
+          status: "success",
+          metadata: { count: input.ids.length, tier: input.tier },
+        });
         return { success: true, count: input.ids.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -499,8 +758,15 @@ export const agentRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return { dailyLimit: CBN_DAILY_TX_LIMIT, singleTxLimit: CBN_SINGLE_TX_LIMIT, usedToday: 0, remaining: CBN_DAILY_TX_LIMIT };
-        const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+        if (!db)
+          return {
+            dailyLimit: CBN_DAILY_TX_LIMIT,
+            singleTxLimit: CBN_SINGLE_TX_LIMIT,
+            usedToday: 0,
+            remaining: CBN_DAILY_TX_LIMIT,
+          };
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
         const statsResult = await db.execute(sql`
           SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0)::float AS used_today
           FROM transactions
@@ -508,7 +774,9 @@ export const agentRouter = router({
             AND "createdAt" >= ${today}
             AND status = 'completed'
         `);
-        const usedToday = parseFloat((statsResult.rows[0] as Record<string, string>).used_today ?? "0");
+        const usedToday = parseFloat(
+          (statsResult.rows[0] as Record<string, string>).used_today ?? "0"
+        );
         return {
           dailyLimit: CBN_DAILY_TX_LIMIT,
           singleTxLimit: CBN_SINGLE_TX_LIMIT,
@@ -519,7 +787,11 @@ export const agentRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 

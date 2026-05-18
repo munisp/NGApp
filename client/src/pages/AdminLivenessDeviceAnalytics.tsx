@@ -41,14 +41,27 @@ export default function AdminLivenessDeviceAnalytics() {
   const stats = useMemo(() => {
     const devices = deviceHistories.data?.devices || [];
     const totalDevices = devices.length;
-    const totalAttempts = devices.reduce((sum, d) => sum + (d.attempts?.length || 0), 0);
-    const avgSuccessRate = totalDevices > 0
-      ? devices.reduce((sum, d) => sum + (d.successRate || 0), 0) / totalDevices
-      : 0;
+    const totalAttempts = devices.reduce(
+      (sum, d) => sum + (d.attempts?.length || 0),
+      0
+    );
+    const avgSuccessRate =
+      totalDevices > 0
+        ? devices.reduce((sum, d) => sum + (d.successRate || 0), 0) /
+          totalDevices
+        : 0;
     const problematicCount = (problematicDevices.data?.devices || []).length;
-    const activeLockouts = (cooldowns.data?.cooldowns || []).filter(c => c.lockedUntil).length;
+    const activeLockouts = (cooldowns.data?.cooldowns || []).filter(
+      c => c.lockedUntil
+    ).length;
 
-    return { totalDevices, totalAttempts, avgSuccessRate, problematicCount, activeLockouts };
+    return {
+      totalDevices,
+      totalAttempts,
+      avgSuccessRate,
+      problematicCount,
+      activeLockouts,
+    };
   }, [deviceHistories.data, problematicDevices.data, cooldowns.data]);
 
   // Filter devices by search
@@ -56,10 +69,11 @@ export default function AdminLivenessDeviceAnalytics() {
     const devices = deviceHistories.data?.devices || [];
     if (!search) return devices;
     const q = search.toLowerCase();
-    return devices.filter((d: any) =>
-      (d.deviceModel || "").toLowerCase().includes(q) ||
-      (d.fingerprint || "").toLowerCase().includes(q) ||
-      (d.osVersion || "").toLowerCase().includes(q)
+    return devices.filter(
+      (d: any) =>
+        (d.deviceModel || "").toLowerCase().includes(q) ||
+        (d.fingerprint || "").toLowerCase().includes(q) ||
+        (d.osVersion || "").toLowerCase().includes(q)
     );
   }, [deviceHistories.data, search]);
 
@@ -71,14 +85,15 @@ export default function AdminLivenessDeviceAnalytics() {
           <div>
             <h1 className="text-2xl font-bold">Liveness Device Analytics</h1>
             <p className="text-muted-foreground">
-              Monitor device performance, identify problematic hardware, and manage lockouts
+              Monitor device performance, identify problematic hardware, and
+              manage lockouts
             </p>
           </div>
           <div className="flex gap-2">
             <Input
               placeholder="Search devices..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="w-64"
             />
             <Button
@@ -99,7 +114,9 @@ export default function AdminLivenessDeviceAnalytics() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Devices</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Devices
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalDevices}</div>
@@ -107,7 +124,9 @@ export default function AdminLivenessDeviceAnalytics() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Attempts</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Attempts
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalAttempts}</div>
@@ -115,26 +134,38 @@ export default function AdminLivenessDeviceAnalytics() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Success Rate</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Avg Success Rate
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(stats.avgSuccessRate * 100).toFixed(1)}%</div>
+              <div className="text-2xl font-bold">
+                {(stats.avgSuccessRate * 100).toFixed(1)}%
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Problematic Devices</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Problematic Devices
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">{stats.problematicCount}</div>
+              <div className="text-2xl font-bold text-red-500">
+                {stats.problematicCount}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Lockouts</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Active Lockouts
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-500">{stats.activeLockouts}</div>
+              <div className="text-2xl font-bold text-amber-500">
+                {stats.activeLockouts}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -145,7 +176,9 @@ export default function AdminLivenessDeviceAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Active Lockouts
-                <Badge variant="destructive">{(cooldowns.data?.cooldowns || []).length}</Badge>
+                <Badge variant="destructive">
+                  {(cooldowns.data?.cooldowns || []).length}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -160,27 +193,37 @@ export default function AdminLivenessDeviceAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(cooldowns.data?.cooldowns || []).map((c: any, i: number) => (
-                      <tr key={i} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-3 font-mono text-xs">{c.userId}</td>
-                        <td className="py-2 px-3">
-                          <Badge variant="destructive">{c.failures}</Badge>
-                        </td>
-                        <td className="py-2 px-3 text-xs">
-                          {c.lockedUntil ? new Date(c.lockedUntil).toLocaleString() : "—"}
-                        </td>
-                        <td className="py-2 px-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => clearCooldownMutation.mutate({ userId: c.userId })}
-                            disabled={clearCooldownMutation.isPending}
-                          >
-                            Clear Lockout
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {(cooldowns.data?.cooldowns || []).map(
+                      (c: any, i: number) => (
+                        <tr key={i} className="border-b hover:bg-muted/50">
+                          <td className="py-2 px-3 font-mono text-xs">
+                            {c.userId}
+                          </td>
+                          <td className="py-2 px-3">
+                            <Badge variant="destructive">{c.failures}</Badge>
+                          </td>
+                          <td className="py-2 px-3 text-xs">
+                            {c.lockedUntil
+                              ? new Date(c.lockedUntil).toLocaleString()
+                              : "—"}
+                          </td>
+                          <td className="py-2 px-3">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                clearCooldownMutation.mutate({
+                                  userId: c.userId,
+                                })
+                              }
+                              disabled={clearCooldownMutation.isPending}
+                            >
+                              Clear Lockout
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -194,14 +237,16 @@ export default function AdminLivenessDeviceAnalytics() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 Problematic Devices
-                <Badge variant="secondary">{(problematicDevices.data?.devices || []).length}</Badge>
+                <Badge variant="secondary">
+                  {(problematicDevices.data?.devices || []).length}
+                </Badge>
               </CardTitle>
               <div className="flex gap-2 items-center text-sm">
                 <label className="text-muted-foreground">Min attempts:</label>
                 <Input
                   type="number"
                   value={minAttempts}
-                  onChange={(e) => setMinAttempts(Number(e.target.value))}
+                  onChange={e => setMinAttempts(Number(e.target.value))}
                   className="w-16 h-8"
                 />
                 <label className="text-muted-foreground">Max success:</label>
@@ -209,7 +254,7 @@ export default function AdminLivenessDeviceAnalytics() {
                   type="number"
                   step="0.1"
                   value={maxSuccessRate}
-                  onChange={(e) => setMaxSuccessRate(Number(e.target.value))}
+                  onChange={e => setMaxSuccessRate(Number(e.target.value))}
                   className="w-16 h-8"
                 />
               </div>
@@ -234,24 +279,40 @@ export default function AdminLivenessDeviceAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(problematicDevices.data?.devices || []).map((d: any, i: number) => (
-                      <tr key={i} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-3 font-medium">{d.deviceModel || "Unknown"}</td>
-                        <td className="py-2 px-3 font-mono text-xs">{(d.fingerprint || "").slice(0, 12)}...</td>
-                        <td className="py-2 px-3">{d.totalAttempts}</td>
-                        <td className="py-2 px-3">
-                          <Badge variant={d.successRate < 0.3 ? "destructive" : "secondary"}>
-                            {(d.successRate * 100).toFixed(0)}%
-                          </Badge>
-                        </td>
-                        <td className="py-2 px-3">{(d.avgScore || 0).toFixed(2)}</td>
-                        <td className="py-2 px-3">
-                          <Badge variant="outline">
-                            {d.successRate < 0.2 ? "Force Passive" : "Relax Thresholds"}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
+                    {(problematicDevices.data?.devices || []).map(
+                      (d: any, i: number) => (
+                        <tr key={i} className="border-b hover:bg-muted/50">
+                          <td className="py-2 px-3 font-medium">
+                            {d.deviceModel || "Unknown"}
+                          </td>
+                          <td className="py-2 px-3 font-mono text-xs">
+                            {(d.fingerprint || "").slice(0, 12)}...
+                          </td>
+                          <td className="py-2 px-3">{d.totalAttempts}</td>
+                          <td className="py-2 px-3">
+                            <Badge
+                              variant={
+                                d.successRate < 0.3
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {(d.successRate * 100).toFixed(0)}%
+                            </Badge>
+                          </td>
+                          <td className="py-2 px-3">
+                            {(d.avgScore || 0).toFixed(2)}
+                          </td>
+                          <td className="py-2 px-3">
+                            <Badge variant="outline">
+                              {d.successRate < 0.2
+                                ? "Force Passive"
+                                : "Relax Thresholds"}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -289,10 +350,16 @@ export default function AdminLivenessDeviceAnalytics() {
                   <tbody>
                     {filteredDevices.slice(0, 50).map((d: any, i: number) => (
                       <tr key={i} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-3 font-medium">{d.deviceModel || "Unknown"}</td>
-                        <td className="py-2 px-3 text-xs">{d.osVersion || "—"}</td>
+                        <td className="py-2 px-3 font-medium">
+                          {d.deviceModel || "Unknown"}
+                        </td>
                         <td className="py-2 px-3 text-xs">
-                          {d.cameraWidth && d.cameraHeight ? `${d.cameraWidth}×${d.cameraHeight}` : "—"}
+                          {d.osVersion || "—"}
+                        </td>
+                        <td className="py-2 px-3 text-xs">
+                          {d.cameraWidth && d.cameraHeight
+                            ? `${d.cameraWidth}×${d.cameraHeight}`
+                            : "—"}
                         </td>
                         <td className="py-2 px-3">{d.attempts?.length || 0}</td>
                         <td className="py-2 px-3">
@@ -300,23 +367,40 @@ export default function AdminLivenessDeviceAnalytics() {
                             <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
-                                  (d.successRate || 0) > 0.7 ? "bg-green-500" :
-                                  (d.successRate || 0) > 0.4 ? "bg-amber-500" : "bg-red-500"
+                                  (d.successRate || 0) > 0.7
+                                    ? "bg-green-500"
+                                    : (d.successRate || 0) > 0.4
+                                      ? "bg-amber-500"
+                                      : "bg-red-500"
                                 }`}
-                                style={{ width: `${(d.successRate || 0) * 100}%` }}
+                                style={{
+                                  width: `${(d.successRate || 0) * 100}%`,
+                                }}
                               />
                             </div>
-                            <span className="text-xs">{((d.successRate || 0) * 100).toFixed(0)}%</span>
+                            <span className="text-xs">
+                              {((d.successRate || 0) * 100).toFixed(0)}%
+                            </span>
                           </div>
                         </td>
-                        <td className="py-2 px-3">{(d.avgScore || 0).toFixed(2)}</td>
                         <td className="py-2 px-3">
-                          <Badge variant={
-                            (d.successRate || 0) > 0.7 ? "default" :
-                            (d.successRate || 0) > 0.4 ? "secondary" : "destructive"
-                          }>
-                            {(d.successRate || 0) > 0.7 ? "Healthy" :
-                             (d.successRate || 0) > 0.4 ? "Marginal" : "Failing"}
+                          {(d.avgScore || 0).toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3">
+                          <Badge
+                            variant={
+                              (d.successRate || 0) > 0.7
+                                ? "default"
+                                : (d.successRate || 0) > 0.4
+                                  ? "secondary"
+                                  : "destructive"
+                            }
+                          >
+                            {(d.successRate || 0) > 0.7
+                              ? "Healthy"
+                              : (d.successRate || 0) > 0.4
+                                ? "Marginal"
+                                : "Failing"}
                           </Badge>
                         </td>
                       </tr>

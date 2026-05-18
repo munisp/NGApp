@@ -20,12 +20,16 @@ const caller = appRouter.createCaller(mockCtx);
 
 describe("KYC/KYB Integration", () => {
   it("kyc.listDocuments returns array", async () => {
-    const result = await caller.kyc.listDocuments({ agentId: "agent-1" }).catch(() => []);
+    const result = await caller.kyc
+      .listDocuments({ agentId: "agent-1" })
+      .catch(() => []);
     expect(Array.isArray(result)).toBe(true);
   });
 
   it("kyc.getVerificationStatus returns object", async () => {
-    const result = await caller.kyc.getVerificationStatus({ agentId: "agent-1" }).catch(() => ({ status: "pending" }));
+    const result = await caller.kyc
+      .getVerificationStatus({ agentId: "agent-1" })
+      .catch(() => ({ status: "pending" }));
     expect(result).toBeDefined();
   });
 

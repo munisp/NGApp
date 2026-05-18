@@ -11,7 +11,10 @@ import { useState, useEffect, useCallback } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
-  readonly userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
   prompt(): Promise<void>;
 }
 
@@ -25,14 +28,16 @@ export interface PWAInstallState {
 }
 
 export function usePWAInstall(): PWAInstallState {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
 
   // Check if already running as installed PWA
   const isInstalled =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true);
 
   useEffect(() => {
     const handler = (e: Event) => {

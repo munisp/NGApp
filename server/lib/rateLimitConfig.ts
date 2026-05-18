@@ -1,18 +1,18 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Rate Limit Configuration
- * 
+ *
  * Centralized rate limit rules for all API endpoints.
  * Configurable per-endpoint, per-role, and per-IP limits.
  */
 
 export interface RateLimitRule {
   endpoint: string;
-  windowMs: number;       // Time window in milliseconds
-  maxRequests: number;    // Max requests per window
+  windowMs: number; // Time window in milliseconds
+  maxRequests: number; // Max requests per window
   keyBy: "ip" | "user" | "api-key";
   burstAllowance?: number; // Extra burst capacity
-  skipRoles?: string[];   // Roles exempt from this rule
+  skipRoles?: string[]; // Roles exempt from this rule
   message?: string;
 }
 
@@ -36,7 +36,8 @@ export const rateLimitRules: RateLimitRule[] = [
     maxRequests: 30,
     keyBy: "user",
     burstAllowance: 5,
-    message: "Transaction rate limit exceeded. Please wait before processing more transactions.",
+    message:
+      "Transaction rate limit exceeded. Please wait before processing more transactions.",
   },
   {
     endpoint: "/api/trpc/transactions.reverse",
@@ -97,7 +98,8 @@ export const rateLimitRules: RateLimitRule[] = [
     windowMs: 300_000,
     maxRequests: 5,
     keyBy: "user",
-    message: "Report generation is resource-intensive. Please wait between requests.",
+    message:
+      "Report generation is resource-intensive. Please wait between requests.",
   },
   {
     endpoint: "/api/trpc/reports.export",
@@ -160,11 +162,11 @@ export const rateLimitRules: RateLimitRule[] = [
  */
 export function getRateLimitRule(endpoint: string): RateLimitRule | undefined {
   // Exact match first
-  const exact = rateLimitRules.find((r) => r.endpoint === endpoint);
+  const exact = rateLimitRules.find(r => r.endpoint === endpoint);
   if (exact) return exact;
 
   // Wildcard match
-  return rateLimitRules.find((r) => {
+  return rateLimitRules.find(r => {
     if (!r.endpoint.includes("*")) return false;
     const pattern = r.endpoint.replace("*", "");
     return endpoint.startsWith(pattern);

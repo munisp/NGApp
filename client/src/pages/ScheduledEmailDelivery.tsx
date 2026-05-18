@@ -7,25 +7,34 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Mail, Send, Clock, CheckCircle, AlertCircle, Calendar } from "lucide-react";
+import {
+  Mail,
+  Send,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+} from "lucide-react";
 
 export default function ScheduledEmailDelivery() {
   const config = trpc.sprint23.scheduledDelivery.getConfig.useQuery();
   const utils = trpc.useUtils();
 
-  const updateMutation = trpc.sprint23.scheduledDelivery.updateConfig.useMutation({
-    onSuccess: () => {
-      utils.sprint23.scheduledDelivery.getConfig.invalidate();
-      toast.success("Configuration updated");
-    },
-  });
+  const updateMutation =
+    trpc.sprint23.scheduledDelivery.updateConfig.useMutation({
+      onSuccess: () => {
+        utils.sprint23.scheduledDelivery.getConfig.invalidate();
+        toast.success("Configuration updated");
+      },
+    });
 
-  const triggerMutation = trpc.sprint23.scheduledDelivery.triggerNow.useMutation({
-    onSuccess: (data: any) => {
-      utils.sprint23.scheduledDelivery.getConfig.invalidate();
-      toast.success(`Report sent to ${data.recipientCount} recipients`);
-    },
-  });
+  const triggerMutation =
+    trpc.sprint23.scheduledDelivery.triggerNow.useMutation({
+      onSuccess: (data: any) => {
+        utils.sprint23.scheduledDelivery.getConfig.invalidate();
+        toast.success(`Report sent to ${data.recipientCount} recipients`);
+      },
+    });
 
   const statusColor = (s: string) => {
     if (s === "success") return "default";
@@ -46,7 +55,10 @@ export default function ScheduledEmailDelivery() {
               Automated weekly report email delivery configuration
             </p>
           </div>
-          <Button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}>
+          <Button
+            onClick={() => triggerMutation.mutate()}
+            disabled={triggerMutation.isPending}
+          >
             <Send className="w-4 h-4 mr-2" /> Send Now
           </Button>
         </div>
@@ -59,12 +71,18 @@ export default function ScheduledEmailDelivery() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Delivery Status</p>
-                      <p className="text-lg font-bold">{config.data.enabled ? "Active" : "Paused"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Delivery Status
+                      </p>
+                      <p className="text-lg font-bold">
+                        {config.data.enabled ? "Active" : "Paused"}
+                      </p>
                     </div>
                     <Switch
                       checked={config.data.enabled}
-                      onCheckedChange={(enabled) => updateMutation.mutate({ enabled })}
+                      onCheckedChange={enabled =>
+                        updateMutation.mutate({ enabled })
+                      }
                     />
                   </div>
                 </CardContent>
@@ -73,8 +91,12 @@ export default function ScheduledEmailDelivery() {
                 <CardContent className="pt-6 text-center">
                   <Clock className="w-6 h-6 mx-auto text-purple-400 mb-1" />
                   <p className="text-sm text-muted-foreground">Schedule</p>
-                  <p className="text-lg font-mono">{config.data.cronExpression}</p>
-                  <p className="text-xs text-muted-foreground">{config.data.timezone}</p>
+                  <p className="text-lg font-mono">
+                    {config.data.cronExpression}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {config.data.timezone}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -82,7 +104,9 @@ export default function ScheduledEmailDelivery() {
                   <Calendar className="w-6 h-6 mx-auto text-green-400 mb-1" />
                   <p className="text-sm text-muted-foreground">Next Delivery</p>
                   <p className="text-sm font-medium">
-                    {config.data.nextDelivery ? new Date(config.data.nextDelivery).toLocaleDateString() : "Not scheduled"}
+                    {config.data.nextDelivery
+                      ? new Date(config.data.nextDelivery).toLocaleDateString()
+                      : "Not scheduled"}
                   </p>
                 </CardContent>
               </Card>
@@ -113,13 +137,21 @@ export default function ScheduledEmailDelivery() {
                       <tbody>
                         {config.data.deliveryHistory.map((entry: any, idx) => (
                           <tr key={idx} className="border-b border-border/50">
-                            <td className="py-2 px-3">{new Date(entry.sentAt).toLocaleString()}</td>
-                            <td className="text-center py-2 px-3">{entry.recipientCount}</td>
+                            <td className="py-2 px-3">
+                              {new Date(entry.sentAt).toLocaleString()}
+                            </td>
                             <td className="text-center py-2 px-3">
-                              <Badge variant={statusColor(entry.status) as any}>{entry.status}</Badge>
+                              {entry.recipientCount}
+                            </td>
+                            <td className="text-center py-2 px-3">
+                              <Badge variant={statusColor(entry.status) as any}>
+                                {entry.status}
+                              </Badge>
                             </td>
                             <td className="py-2 px-3 text-xs text-muted-foreground">
-                              {entry.errors.length > 0 ? entry.errors.join(", ") : "None"}
+                              {entry.errors.length > 0
+                                ? entry.errors.join(", ")
+                                : "None"}
                             </td>
                           </tr>
                         ))}

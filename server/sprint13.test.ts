@@ -7,7 +7,10 @@ import path from "path";
 
 // ─── Announcement Banner ─────────────────────────────────────────────────────
 describe("Announcement Banner Component", () => {
-  const bannerPath = path.resolve(__dirname, "../client/src/components/AnnouncementBanner.tsx");
+  const bannerPath = path.resolve(
+    __dirname,
+    "../client/src/components/AnnouncementBanner.tsx"
+  );
 
   it("banner component file exists", () => {
     expect(fs.existsSync(bannerPath)).toBe(true);
@@ -36,14 +39,20 @@ describe("Announcement Banner Component", () => {
   });
 
   it("is mounted in App.tsx", () => {
-    const appContent = fs.readFileSync(path.resolve(__dirname, "../client/src/App.tsx"), "utf-8");
+    const appContent = fs.readFileSync(
+      path.resolve(__dirname, "../client/src/App.tsx"),
+      "utf-8"
+    );
     expect(appContent).toContain("AnnouncementBanner");
   });
 });
 
 // ─── Announcement Reactions Router ───────────────────────────────────────────
 describe("Announcement Reactions Router", () => {
-  const routerPath = path.resolve(__dirname, "routers/announcementReactions.ts");
+  const routerPath = path.resolve(
+    __dirname,
+    "routers/announcementReactions.ts"
+  );
 
   it("router file exists", () => {
     expect(fs.existsSync(routerPath)).toBe(true);
@@ -69,8 +78,13 @@ describe("Announcement Reactions Router", () => {
   });
 
   it("is wired into appRouter", () => {
-    const routersContent = fs.readFileSync(path.resolve(__dirname, "routers.ts"), "utf-8");
-    expect(routersContent).toContain("announcementReactions: announcementReactionsRouter");
+    const routersContent = fs.readFileSync(
+      path.resolve(__dirname, "routers.ts"),
+      "utf-8"
+    );
+    expect(routersContent).toContain(
+      "announcementReactions: announcementReactionsRouter"
+    );
   });
 });
 
@@ -104,7 +118,10 @@ describe("Shared Layouts Router", () => {
 });
 
 describe("Shared Layout Gallery Page", () => {
-  const pagePath = path.resolve(__dirname, "../client/src/pages/SharedLayoutGallery.tsx");
+  const pagePath = path.resolve(
+    __dirname,
+    "../client/src/pages/SharedLayoutGallery.tsx"
+  );
 
   it("page file exists", () => {
     expect(fs.existsSync(pagePath)).toBe(true);
@@ -122,14 +139,20 @@ describe("Shared Layout Gallery Page", () => {
   });
 
   it("route is registered in App.tsx", () => {
-    const appContent = fs.readFileSync(path.resolve(__dirname, "../client/src/App.tsx"), "utf-8");
+    const appContent = fs.readFileSync(
+      path.resolve(__dirname, "../client/src/App.tsx"),
+      "utf-8"
+    );
     expect(appContent).toContain("/shared-layouts");
   });
 });
 
 // ─── Report Template Designer ────────────────────────────────────────────────
 describe("Report Template Designer Router", () => {
-  const routerPath = path.resolve(__dirname, "routers/reportTemplateDesigner.ts");
+  const routerPath = path.resolve(
+    __dirname,
+    "routers/reportTemplateDesigner.ts"
+  );
 
   it("router file exists", () => {
     expect(fs.existsSync(routerPath)).toBe(true);
@@ -158,7 +181,10 @@ describe("Report Template Designer Router", () => {
 });
 
 describe("Report Template Designer Page", () => {
-  const pagePath = path.resolve(__dirname, "../client/src/pages/ReportTemplateDesigner.tsx");
+  const pagePath = path.resolve(
+    __dirname,
+    "../client/src/pages/ReportTemplateDesigner.tsx"
+  );
 
   it("page file exists", () => {
     expect(fs.existsSync(pagePath)).toBe(true);
@@ -170,7 +196,10 @@ describe("Report Template Designer Page", () => {
   });
 
   it("route is registered in App.tsx", () => {
-    const appContent = fs.readFileSync(path.resolve(__dirname, "../client/src/App.tsx"), "utf-8");
+    const appContent = fs.readFileSync(
+      path.resolve(__dirname, "../client/src/App.tsx"),
+      "utf-8"
+    );
     expect(appContent).toContain("/report-designer");
   });
 });
@@ -196,13 +225,24 @@ describe("Data Threshold Alerts Router", () => {
     expect(content).toContain("finance");
     expect(content).toContain("system");
     // Count metric entries
-    const metricMatches = content.match(/id: "tx_|id: "active_|id: "agent_|id: "fraud_|id: "settlement_|id: "commission_|id: "kyc_|id: "api_|id: "db_|id: "queue_|id: "revenue_/g);
+    const metricMatches = content.match(
+      /id: "tx_|id: "active_|id: "agent_|id: "fraud_|id: "settlement_|id: "commission_|id: "kyc_|id: "api_|id: "db_|id: "queue_|id: "revenue_/g
+    );
     expect(metricMatches?.length).toBeGreaterThanOrEqual(10);
   });
 
   it("supports 8 operator types", () => {
     const content = fs.readFileSync(routerPath, "utf-8");
-    const ops = ["gt", "gte", "lt", "lte", "eq", "neq", "pct_change_up", "pct_change_down"];
+    const ops = [
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "eq",
+      "neq",
+      "pct_change_up",
+      "pct_change_down",
+    ];
     for (const op of ops) {
       expect(content).toContain(`"${op}"`);
     }
@@ -230,7 +270,10 @@ describe("Data Threshold Alerts Router", () => {
 });
 
 describe("Data Threshold Alerts Page", () => {
-  const pagePath = path.resolve(__dirname, "../client/src/pages/DataThresholdAlerts.tsx");
+  const pagePath = path.resolve(
+    __dirname,
+    "../client/src/pages/DataThresholdAlerts.tsx"
+  );
 
   it("page file exists", () => {
     expect(fs.existsSync(pagePath)).toBe(true);
@@ -264,7 +307,10 @@ describe("Data Threshold Alerts Page", () => {
   });
 
   it("route is registered in App.tsx", () => {
-    const appContent = fs.readFileSync(path.resolve(__dirname, "../client/src/App.tsx"), "utf-8");
+    const appContent = fs.readFileSync(
+      path.resolve(__dirname, "../client/src/App.tsx"),
+      "utf-8"
+    );
     expect(appContent).toContain("/threshold-alerts");
   });
 });
@@ -287,15 +333,23 @@ describe("Chart Export Utility", () => {
 // ─── Integration: All Sprint 13 routers wired ───────────────────────────────
 describe("Sprint 13 Router Integration", () => {
   it("all 4 new routers are wired into appRouter", () => {
-    const content = fs.readFileSync(path.resolve(__dirname, "routers.ts"), "utf-8");
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "routers.ts"),
+      "utf-8"
+    );
     expect(content).toContain("sharedLayouts: sharedLayoutsRouter");
     expect(content).toContain("reportTemplate: reportTemplateDesignerRouter");
     expect(content).toContain("thresholdAlerts: dataThresholdAlertsRouter");
-    expect(content).toContain("announcementReactions: announcementReactionsRouter");
+    expect(content).toContain(
+      "announcementReactions: announcementReactionsRouter"
+    );
   });
 
   it("all 3 new pages are routed in App.tsx", () => {
-    const content = fs.readFileSync(path.resolve(__dirname, "../client/src/App.tsx"), "utf-8");
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "../client/src/App.tsx"),
+      "utf-8"
+    );
     expect(content).toContain("/threshold-alerts");
     expect(content).toContain("/shared-layouts");
     expect(content).toContain("/report-designer");

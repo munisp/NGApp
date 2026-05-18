@@ -81,11 +81,23 @@ interface CameraQuality {
 
 const CHALLENGE_POOL: Challenge[] = [
   { type: "blink", instruction: "Please blink your eyes", completed: false },
-  { type: "turn_left", instruction: "Turn your head slowly to the left", completed: false },
-  { type: "turn_right", instruction: "Turn your head slowly to the right", completed: false },
+  {
+    type: "turn_left",
+    instruction: "Turn your head slowly to the left",
+    completed: false,
+  },
+  {
+    type: "turn_right",
+    instruction: "Turn your head slowly to the right",
+    completed: false,
+  },
   { type: "nod", instruction: "Nod your head up and down", completed: false },
   { type: "smile", instruction: "Please smile", completed: false },
-  { type: "open_mouth", instruction: "Open your mouth slightly", completed: false },
+  {
+    type: "open_mouth",
+    instruction: "Open your mouth slightly",
+    completed: false,
+  },
 ];
 
 // ── Quality Assessment Helpers ──────────────────────────────────────────────
@@ -100,11 +112,15 @@ function assessFrameQuality(
   // 1. Brightness: average luminance
   let totalLuminance = 0;
   for (let i = 0; i < data.length; i += 4) {
-    totalLuminance += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    totalLuminance +=
+      0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
   }
   const avgBrightness = totalLuminance / totalPixels;
   // Ideal brightness is 100-180; penalize extremes
-  const brightnessScore = Math.max(0, 100 - Math.abs(avgBrightness - 140) * 1.2);
+  const brightnessScore = Math.max(
+    0,
+    100 - Math.abs(avgBrightness - 140) * 1.2
+  );
 
   // 2. Sharpness: Laplacian variance (approximation using neighbor differences)
   let laplacianSum = 0;
@@ -125,7 +141,10 @@ function assessFrameQuality(
   }
   const sharpnessVariance = laplacianSum / Math.max(laplacianCount, 1);
   // Higher variance = sharper. Typical range: 5-50
-  const sharpnessScore = Math.min(100, Math.max(0, (sharpnessVariance - 3) * 4));
+  const sharpnessScore = Math.min(
+    100,
+    Math.max(0, (sharpnessVariance - 3) * 4)
+  );
 
   // 3. Noise estimation: standard deviation of pixel differences in flat regions
   let noiseSamples: number[] = [];
@@ -143,7 +162,9 @@ function assessFrameQuality(
       noiseSamples.push(diff);
     }
   }
-  const noiseMedian = noiseSamples.sort((a, b) => a - b)[Math.floor(noiseSamples.length / 2)] || 0;
+  const noiseMedian =
+    noiseSamples.sort((a, b) => a - b)[Math.floor(noiseSamples.length / 2)] ||
+    0;
   // Lower noise = better. Typical: 1-15
   const noiseScore = Math.max(0, 100 - noiseMedian * 8);
 
@@ -154,7 +175,11 @@ function assessFrameQuality(
     const prevData = prevImageData.data;
     const sampleStep = 16; // Sample every 16th pixel for speed
     let sampleCount = 0;
-    for (let i = 0; i < Math.min(data.length, prevData.length); i += 4 * sampleStep) {
+    for (
+      let i = 0;
+      i < Math.min(data.length, prevData.length);
+      i += 4 * sampleStep
+    ) {
       diffSum += Math.abs(data[i] - prevData[i]);
       sampleCount++;
     }
@@ -166,9 +191,9 @@ function assessFrameQuality(
   // Overall score (weighted)
   const overallScore = Math.round(
     brightnessScore * 0.25 +
-    sharpnessScore * 0.30 +
-    noiseScore * 0.25 +
-    stabilityScore * 0.20
+      sharpnessScore * 0.3 +
+      noiseScore * 0.25 +
+      stabilityScore * 0.2
   );
 
   // Determine level
@@ -185,7 +210,8 @@ function assessFrameQuality(
     recommendation = "Try improving lighting or holding device steadier";
   } else {
     level = "poor";
-    recommendation = "Poor camera quality — move to better lighting and hold still";
+    recommendation =
+      "Poor camera quality — move to better lighting and hold still";
   }
 
   return {
@@ -218,16 +244,19 @@ function QualityIndicator({ quality }: { quality: CameraQuality | null }) {
     poor: "bg-red-500/20",
   };
 
-  const IconComponent = quality.level === "excellent"
-    ? SignalHigh
-    : quality.level === "good"
-    ? SignalMedium
-    : quality.level === "fair"
-    ? SignalLow
-    : Signal;
+  const IconComponent =
+    quality.level === "excellent"
+      ? SignalHigh
+      : quality.level === "good"
+        ? SignalMedium
+        : quality.level === "fair"
+          ? SignalLow
+          : Signal;
 
   return (
-    <div className={`absolute top-3 right-3 ${bgMap[quality.level]} backdrop-blur-sm rounded-lg px-3 py-2 pointer-events-none`}>
+    <div
+      className={`absolute top-3 right-3 ${bgMap[quality.level]} backdrop-blur-sm rounded-lg px-3 py-2 pointer-events-none`}
+    >
       <div className="flex items-center gap-2">
         <IconComponent className={`h-4 w-4 ${colorMap[quality.level]}`} />
         <div className="text-xs">
@@ -253,7 +282,11 @@ function QualityIndicator({ quality }: { quality: CameraQuality | null }) {
             <div className="w-3 h-8 bg-white/10 rounded-sm overflow-hidden relative">
               <div
                 className={`absolute bottom-0 w-full rounded-sm ${
-                  value >= 60 ? "bg-green-400/70" : value >= 40 ? "bg-yellow-400/70" : "bg-red-400/70"
+                  value >= 60
+                    ? "bg-green-400/70"
+                    : value >= 40
+                      ? "bg-yellow-400/70"
+                      : "bg-red-400/70"
                 }`}
                 style={{ height: `${value}%` }}
               />
@@ -284,7 +317,9 @@ export default function LivenessCameraCapture({
   const qualityCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const prevImageDataRef = useRef<ImageData | null>(null);
-  const qualityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qualityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -297,10 +332,14 @@ export default function LivenessCameraCapture({
   const [challengeTimer, setChallengeTimer] = useState(0);
   const [framesCollected, setFramesCollected] = useState<string[]>([]);
   const [livenessComplete, setLivenessComplete] = useState(false);
-  const [livenessResult, setLivenessResult] = useState<LivenessResult | null>(null);
+  const [livenessResult, setLivenessResult] = useState<LivenessResult | null>(
+    null
+  );
 
   // Camera quality state
-  const [cameraQuality, setCameraQuality] = useState<CameraQuality | null>(null);
+  const [cameraQuality, setCameraQuality] = useState<CameraQuality | null>(
+    null
+  );
 
   // Passive fallback state
   const [activeFailureCount, setActiveFailureCount] = useState(0);
@@ -310,7 +349,10 @@ export default function LivenessCameraCapture({
   // ── Face Motion Detection (MediaPipe) ───────────────────────────────────
 
   const currentChallengeType: MotionChallengeType | null =
-    capturing && !fallbackMode && challenges.length > 0 && currentChallengeIdx < challenges.length
+    capturing &&
+    !fallbackMode &&
+    challenges.length > 0 &&
+    currentChallengeIdx < challenges.length
       ? challenges[currentChallengeIdx].type
       : null;
 
@@ -359,8 +401,8 @@ export default function LivenessCameraCapture({
         err.name === "NotAllowedError"
           ? "Camera permission denied. Please allow camera access."
           : err.name === "NotFoundError"
-          ? "No camera found. Please connect a camera."
-          : `Camera error: ${err.message}`;
+            ? "No camera found. Please connect a camera."
+            : `Camera error: ${err.message}`;
       setCameraError(msg);
       onError?.(msg);
     }
@@ -368,7 +410,7 @@ export default function LivenessCameraCapture({
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
     if (qualityIntervalRef.current) {
@@ -464,7 +506,7 @@ export default function LivenessCameraCapture({
 
   const startActiveLiveness = useCallback(() => {
     const shuffled = [...CHALLENGE_POOL].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, challengeCount).map((c) => ({ ...c }));
+    const selected = shuffled.slice(0, challengeCount).map(c => ({ ...c }));
     setChallenges(selected);
     setCurrentChallengeIdx(0);
     setFramesCollected([]);
@@ -519,7 +561,7 @@ export default function LivenessCameraCapture({
     if (!capturing || challengeTimer <= 0 || fallbackMode) return;
 
     const interval = setInterval(() => {
-      setChallengeTimer((prev) => {
+      setChallengeTimer(prev => {
         if (prev <= 1) {
           handleChallengeResponse(false);
           return 0;
@@ -530,7 +572,7 @@ export default function LivenessCameraCapture({
       // Capture frames at 2fps for better motion detection on noisy cameras
       const frame = captureFrame();
       if (frame) {
-        setFramesCollected((prev) => [...prev, frame]);
+        setFramesCollected(prev => [...prev, frame]);
       }
     }, 500);
 
@@ -539,7 +581,7 @@ export default function LivenessCameraCapture({
 
   const handleChallengeResponse = useCallback(
     (passed: boolean) => {
-      setChallenges((prev) => {
+      setChallenges(prev => {
         const updated = [...prev];
         if (currentChallengeIdx < updated.length) {
           updated[currentChallengeIdx] = {
@@ -555,9 +597,14 @@ export default function LivenessCameraCapture({
         setCapturing(false);
         setLivenessComplete(true);
 
-        const passedCount = challenges.filter((c, i) =>
-          i < currentChallengeIdx ? c.completed : i === currentChallengeIdx ? passed : false
-        ).length + (passed ? 1 : 0);
+        const passedCount =
+          challenges.filter((c, i) =>
+            i < currentChallengeIdx
+              ? c.completed
+              : i === currentChallengeIdx
+                ? passed
+                : false
+          ).length + (passed ? 1 : 0);
 
         const result: LivenessResult = {
           is_live: passedCount >= Math.ceil(challengeCount * 0.7),
@@ -581,7 +628,14 @@ export default function LivenessCameraCapture({
         setChallengeTimer(12);
       }
     },
-    [currentChallengeIdx, challenges, challengeCount, framesCollected, onLivenessResult, activeFailureCount]
+    [
+      currentChallengeIdx,
+      challenges,
+      challengeCount,
+      framesCollected,
+      onLivenessResult,
+      activeFailureCount,
+    ]
   );
 
   // ── Retry ─────────────────────────────────────────────────────────────────
@@ -617,8 +671,8 @@ export default function LivenessCameraCapture({
           {fallbackMode
             ? "Passive Liveness Check"
             : mode === "passive"
-            ? "Face Capture"
-            : "Active Liveness Check"}
+              ? "Face Capture"
+              : "Active Liveness Check"}
           {activeFailureCount > 0 && !fallbackMode && (
             <Badge variant="outline" className="text-xs ml-auto">
               Attempts: {activeFailureCount}
@@ -642,7 +696,8 @@ export default function LivenessCameraCapture({
             <div className="text-sm">
               <p className="font-medium">Switched to passive liveness</p>
               <p className="text-xs opacity-80 mt-0.5">
-                Active challenges failed {fallbackThreshold}+ times. Using single-frame anti-spoof analysis instead — no motion required.
+                Active challenges failed {fallbackThreshold}+ times. Using
+                single-frame anti-spoof analysis instead — no motion required.
               </p>
             </div>
           </div>
@@ -679,11 +734,14 @@ export default function LivenessCameraCapture({
           )}
 
           {/* Camera quality warning for poor conditions */}
-          {cameraReady && cameraQuality && cameraQuality.level === "poor" && !capturing && (
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none animate-pulse">
-              ⚠️ Improve lighting before starting
-            </div>
-          )}
+          {cameraReady &&
+            cameraQuality &&
+            cameraQuality.level === "poor" &&
+            !capturing && (
+              <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none animate-pulse">
+                ⚠️ Improve lighting before starting
+              </div>
+            )}
 
           {/* Captured Image Preview */}
           {capturedImage && (
@@ -695,44 +753,49 @@ export default function LivenessCameraCapture({
           )}
 
           {/* Active Challenge Overlay */}
-          {capturing && !fallbackMode && challenges.length > 0 && currentChallengeIdx < challenges.length && (
-            <div className="absolute inset-0 flex flex-col items-center justify-between p-4 pointer-events-none">
-              <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-center max-w-[85%]">
-                <p className="text-sm font-medium">
-                  Challenge {currentChallengeIdx + 1} of {challenges.length}
-                </p>
-                <p className="text-lg font-bold mt-1">
-                  {challenges[currentChallengeIdx].instruction}
-                </p>
-                <p className="text-xs opacity-70 mt-1">
-                  {motionState.ready
-                    ? "Motion will be detected automatically"
-                    : "Loading face detection..."}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={challengeTimer > 3 ? "default" : "destructive"}>
-                  {Math.ceil(challengeTimer)}s
-                </Badge>
-                <div className="flex gap-1">
-                  {challenges.map((c, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full ${
-                        i < currentChallengeIdx
-                          ? c.completed
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                          : i === currentChallengeIdx
-                          ? "bg-yellow-400 animate-pulse"
-                          : "bg-white/40"
-                      }`}
-                    />
-                  ))}
+          {capturing &&
+            !fallbackMode &&
+            challenges.length > 0 &&
+            currentChallengeIdx < challenges.length && (
+              <div className="absolute inset-0 flex flex-col items-center justify-between p-4 pointer-events-none">
+                <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-center max-w-[85%]">
+                  <p className="text-sm font-medium">
+                    Challenge {currentChallengeIdx + 1} of {challenges.length}
+                  </p>
+                  <p className="text-lg font-bold mt-1">
+                    {challenges[currentChallengeIdx].instruction}
+                  </p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {motionState.ready
+                      ? "Motion will be detected automatically"
+                      : "Loading face detection..."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={challengeTimer > 3 ? "default" : "destructive"}
+                  >
+                    {Math.ceil(challengeTimer)}s
+                  </Badge>
+                  <div className="flex gap-1">
+                    {challenges.map((c, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${
+                          i < currentChallengeIdx
+                            ? c.completed
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                            : i === currentChallengeIdx
+                              ? "bg-yellow-400 animate-pulse"
+                              : "bg-white/40"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Passive Fallback Overlay */}
           {capturing && fallbackMode && (
@@ -740,7 +803,9 @@ export default function LivenessCameraCapture({
               <div className="bg-black/70 text-white px-4 py-3 rounded-lg text-center">
                 <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                 <p className="text-sm font-medium">Analyzing face...</p>
-                <p className="text-xs opacity-70 mt-1">Hold still — no motion needed</p>
+                <p className="text-xs opacity-70 mt-1">
+                  Hold still — no motion needed
+                </p>
               </div>
             </div>
           )}
@@ -767,19 +832,38 @@ export default function LivenessCameraCapture({
                     {motionState.faceDetected && currentChallengeType && (
                       <div className="flex gap-3 text-[10px] text-muted-foreground mt-1">
                         {currentChallengeType === "blink" && (
-                          <span>Eye openness: {(motionState.metrics.ear * 100).toFixed(0)}%</span>
+                          <span>
+                            Eye openness:{" "}
+                            {(motionState.metrics.ear * 100).toFixed(0)}%
+                          </span>
                         )}
-                        {(currentChallengeType === "turn_left" || currentChallengeType === "turn_right") && (
-                          <span>Head angle: {motionState.metrics.yaw.toFixed(1)}&deg;</span>
+                        {(currentChallengeType === "turn_left" ||
+                          currentChallengeType === "turn_right") && (
+                          <span>
+                            Head angle: {motionState.metrics.yaw.toFixed(1)}
+                            &deg;
+                          </span>
                         )}
                         {currentChallengeType === "nod" && (
-                          <span>Head pitch: {motionState.metrics.pitch.toFixed(1)}&deg;</span>
+                          <span>
+                            Head pitch: {motionState.metrics.pitch.toFixed(1)}
+                            &deg;
+                          </span>
                         )}
                         {currentChallengeType === "smile" && (
-                          <span>Smile: {(motionState.metrics.smileRatio / 4 * 100).toFixed(0)}%</span>
+                          <span>
+                            Smile:{" "}
+                            {(
+                              (motionState.metrics.smileRatio / 4) *
+                              100
+                            ).toFixed(0)}
+                            %
+                          </span>
                         )}
                         {currentChallengeType === "open_mouth" && (
-                          <span>Mouth: {(motionState.metrics.mar * 100).toFixed(0)}%</span>
+                          <span>
+                            Mouth: {(motionState.metrics.mar * 100).toFixed(0)}%
+                          </span>
                         )}
                       </div>
                     )}
@@ -826,20 +910,23 @@ export default function LivenessCameraCapture({
                 <XCircle className="h-5 w-5 text-red-500" />
               )}
               <span className="font-semibold">
-                {livenessResult.is_live ? "Liveness Verified" : "Liveness Failed"}
+                {livenessResult.is_live
+                  ? "Liveness Verified"
+                  : "Liveness Failed"}
               </span>
               {livenessResult.mode_used && (
                 <Badge variant="outline" className="text-xs ml-auto">
-                  {livenessResult.mode_used === "passive" ? "Passive" : "Active"}
+                  {livenessResult.mode_used === "passive"
+                    ? "Passive"
+                    : "Active"}
                 </Badge>
               )}
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
+              <p>Confidence: {(livenessResult.confidence * 100).toFixed(1)}%</p>
               <p>
-                Confidence: {(livenessResult.confidence * 100).toFixed(1)}%
-              </p>
-              <p>
-                Challenges: {livenessResult.challenges_passed}/{livenessResult.challenges_total} passed
+                Challenges: {livenessResult.challenges_passed}/
+                {livenessResult.challenges_total} passed
               </p>
               <p>Frames captured: {livenessResult.frames_captured}</p>
             </div>
@@ -853,7 +940,9 @@ export default function LivenessCameraCapture({
               Having trouble with motion challenges?
             </p>
             <p className="text-xs text-muted-foreground mb-3">
-              Your camera may have too much noise for motion detection. You can try a passive check instead — it uses face texture analysis without requiring head movements.
+              Your camera may have too much noise for motion detection. You can
+              try a passive check instead — it uses face texture analysis
+              without requiring head movements.
             </p>
             <Button
               size="sm"
@@ -876,23 +965,30 @@ export default function LivenessCameraCapture({
             </Button>
           )}
 
-          {cameraReady && mode === "passive" && !capturedImage && !fallbackMode && (
-            <Button onClick={handlePassiveCapture} className="flex-1">
-              <Camera className="h-4 w-4 mr-2" />
-              Capture Photo
-            </Button>
-          )}
+          {cameraReady &&
+            mode === "passive" &&
+            !capturedImage &&
+            !fallbackMode && (
+              <Button onClick={handlePassiveCapture} className="flex-1">
+                <Camera className="h-4 w-4 mr-2" />
+                Capture Photo
+              </Button>
+            )}
 
-          {cameraReady && mode === "active" && !capturing && !livenessComplete && !fallbackMode && (
-            <Button
-              onClick={startActiveLiveness}
-              className="flex-1"
-              disabled={cameraQuality?.level === "poor"}
-            >
-              <Loader2 className="h-4 w-4 mr-2" />
-              Start Liveness Check
-            </Button>
-          )}
+          {cameraReady &&
+            mode === "active" &&
+            !capturing &&
+            !livenessComplete &&
+            !fallbackMode && (
+              <Button
+                onClick={startActiveLiveness}
+                className="flex-1"
+                disabled={cameraQuality?.level === "poor"}
+              >
+                <Loader2 className="h-4 w-4 mr-2" />
+                Start Liveness Check
+              </Button>
+            )}
 
           {(capturedImage || livenessComplete) && (
             <Button variant="outline" onClick={handleRetry} className="flex-1">
@@ -909,11 +1005,16 @@ export default function LivenessCameraCapture({
         </div>
 
         {/* Quality warning when button is disabled */}
-        {cameraReady && cameraQuality?.level === "poor" && mode === "active" && !capturing && !livenessComplete && (
-          <p className="text-xs text-destructive text-center">
-            Camera quality too low to start. Please improve lighting or hold device steadier.
-          </p>
-        )}
+        {cameraReady &&
+          cameraQuality?.level === "poor" &&
+          mode === "active" &&
+          !capturing &&
+          !livenessComplete && (
+            <p className="text-xs text-destructive text-center">
+              Camera quality too low to start. Please improve lighting or hold
+              device steadier.
+            </p>
+          )}
       </CardContent>
     </Card>
   );

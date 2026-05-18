@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * Sprint 91 — Service Orchestrator
- * 
+ *
  * Wires all orphan microservices end-to-end by providing:
  * - Service registry with auto-discovery
  * - Event routing between services
@@ -9,7 +9,20 @@
  * - Dead letter queue handling
  * - Service mesh observability
  */
-import { kafka, dapr, fluvio, temporal, redis, opensearch, tigerbeetle, mojaloop, keycloak, permify, apisix, lakehouse } from "./middlewareConnectors";
+import {
+  kafka,
+  dapr,
+  fluvio,
+  temporal,
+  redis,
+  opensearch,
+  tigerbeetle,
+  mojaloop,
+  keycloak,
+  permify,
+  apisix,
+  lakehouse,
+} from "./middlewareConnectors";
 import { checkAllServices, type PlatformHealth } from "./integrationHealth";
 
 // ─── Service Registry ────────────────────────────────────────────────────────
@@ -27,14 +40,21 @@ export interface ServiceRegistration {
 
 const serviceRegistry = new Map<string, ServiceRegistration>();
 
-export function registerService(service: Omit<ServiceRegistration, "registeredAt" | "lastHeartbeat" | "status">): void {
+export function registerService(
+  service: Omit<
+    ServiceRegistration,
+    "registeredAt" | "lastHeartbeat" | "status"
+  >
+): void {
   serviceRegistry.set(service.name, {
     ...service,
     registeredAt: Date.now(),
     lastHeartbeat: Date.now(),
     status: "active",
   });
-  console.log(`[Orchestrator] Service registered: ${service.name} v${service.version} at ${service.host}:${service.port}`);
+  console.log(
+    `[Orchestrator] Service registered: ${service.name} v${service.version} at ${service.host}:${service.port}`
+  );
 }
 
 export function heartbeat(serviceName: string): boolean {
@@ -51,20 +71,118 @@ export function getRegisteredServices(): ServiceRegistration[] {
 
 // Register all known services
 function bootstrapRegistry() {
-  const services: Array<Omit<ServiceRegistration, "registeredAt" | "lastHeartbeat" | "status">> = [
-    { name: "liveness-detection", version: "2.0.0", host: "localhost", port: 8001, healthEndpoint: "/health", capabilities: ["passive_liveness", "active_liveness", "face_detection", "landmarks"] },
-    { name: "face-matching", version: "2.0.0", host: "localhost", port: 8002, healthEndpoint: "/health", capabilities: ["face_matching", "embedding_extraction", "face_search"] },
-    { name: "deepfake-detection", version: "1.0.0", host: "localhost", port: 8003, healthEndpoint: "/health", capabilities: ["deepfake_detection", "frequency_analysis"] },
-    { name: "biometric-orchestrator", version: "2.0.0", host: "localhost", port: 8004, healthEndpoint: "/health", capabilities: ["biometric_verification", "anti_spoofing", "enrollment"] },
-    { name: "kyc-service", version: "1.5.0", host: "localhost", port: 8010, healthEndpoint: "/health", capabilities: ["document_verification", "ocr", "kyc_workflow"] },
-    { name: "transaction-processor", version: "1.0.0", host: "localhost", port: 8020, healthEndpoint: "/health", capabilities: ["payment_processing", "refunds", "settlements"] },
-    { name: "notification-service", version: "1.0.0", host: "localhost", port: 8030, healthEndpoint: "/health", capabilities: ["email", "sms", "push", "webhook"] },
-    { name: "analytics-indexer", version: "1.0.0", host: "localhost", port: 8040, healthEndpoint: "/health", capabilities: ["opensearch_indexing", "aggregation"] },
-    { name: "fluvio-producer", version: "2.0.0", host: "localhost", port: 8050, healthEndpoint: "/health", capabilities: ["event_streaming", "topic_management"] },
-    { name: "fluvio-consumer", version: "1.0.0", host: "localhost", port: 8051, healthEndpoint: "/health", capabilities: ["event_consumption", "stream_processing"] },
-    { name: "opensearch-indexer", version: "1.0.0", host: "localhost", port: 8052, healthEndpoint: "/health", capabilities: ["document_indexing", "bulk_indexing"] },
-    { name: "revenue-split-engine", version: "1.0.0", host: "localhost", port: 8060, healthEndpoint: "/health", capabilities: ["revenue_split", "settlement_calculation"] },
-    { name: "inventory-service", version: "1.0.0", host: "localhost", port: 8070, healthEndpoint: "/health", capabilities: ["stock_management", "reorder_alerts"] },
+  const services: Array<
+    Omit<ServiceRegistration, "registeredAt" | "lastHeartbeat" | "status">
+  > = [
+    {
+      name: "liveness-detection",
+      version: "2.0.0",
+      host: "localhost",
+      port: 8001,
+      healthEndpoint: "/health",
+      capabilities: [
+        "passive_liveness",
+        "active_liveness",
+        "face_detection",
+        "landmarks",
+      ],
+    },
+    {
+      name: "face-matching",
+      version: "2.0.0",
+      host: "localhost",
+      port: 8002,
+      healthEndpoint: "/health",
+      capabilities: ["face_matching", "embedding_extraction", "face_search"],
+    },
+    {
+      name: "deepfake-detection",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8003,
+      healthEndpoint: "/health",
+      capabilities: ["deepfake_detection", "frequency_analysis"],
+    },
+    {
+      name: "biometric-orchestrator",
+      version: "2.0.0",
+      host: "localhost",
+      port: 8004,
+      healthEndpoint: "/health",
+      capabilities: ["biometric_verification", "anti_spoofing", "enrollment"],
+    },
+    {
+      name: "kyc-service",
+      version: "1.5.0",
+      host: "localhost",
+      port: 8010,
+      healthEndpoint: "/health",
+      capabilities: ["document_verification", "ocr", "kyc_workflow"],
+    },
+    {
+      name: "transaction-processor",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8020,
+      healthEndpoint: "/health",
+      capabilities: ["payment_processing", "refunds", "settlements"],
+    },
+    {
+      name: "notification-service",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8030,
+      healthEndpoint: "/health",
+      capabilities: ["email", "sms", "push", "webhook"],
+    },
+    {
+      name: "analytics-indexer",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8040,
+      healthEndpoint: "/health",
+      capabilities: ["opensearch_indexing", "aggregation"],
+    },
+    {
+      name: "fluvio-producer",
+      version: "2.0.0",
+      host: "localhost",
+      port: 8050,
+      healthEndpoint: "/health",
+      capabilities: ["event_streaming", "topic_management"],
+    },
+    {
+      name: "fluvio-consumer",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8051,
+      healthEndpoint: "/health",
+      capabilities: ["event_consumption", "stream_processing"],
+    },
+    {
+      name: "opensearch-indexer",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8052,
+      healthEndpoint: "/health",
+      capabilities: ["document_indexing", "bulk_indexing"],
+    },
+    {
+      name: "revenue-split-engine",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8060,
+      healthEndpoint: "/health",
+      capabilities: ["revenue_split", "settlement_calculation"],
+    },
+    {
+      name: "inventory-service",
+      version: "1.0.0",
+      host: "localhost",
+      port: 8070,
+      healthEndpoint: "/health",
+      capabilities: ["stock_management", "reorder_alerts"],
+    },
   ];
 
   for (const svc of services) {
@@ -87,13 +205,19 @@ export interface DomainEvent {
 type EventHandler = (event: DomainEvent) => Promise<void>;
 const eventHandlers = new Map<string, EventHandler[]>();
 
-export function subscribeToEvent(eventType: string, handler: EventHandler): void {
+export function subscribeToEvent(
+  eventType: string,
+  handler: EventHandler
+): void {
   if (!eventHandlers.has(eventType)) eventHandlers.set(eventType, []);
   eventHandlers.get(eventType)!.push(handler);
 }
 
-export async function publishEvent(event: DomainEvent): Promise<{ delivered: number; failed: number }> {
-  let delivered = 0, failed = 0;
+export async function publishEvent(
+  event: DomainEvent
+): Promise<{ delivered: number; failed: number }> {
+  let delivered = 0,
+    failed = 0;
 
   // Local handlers
   const handlers = eventHandlers.get(event.type) ?? [];
@@ -102,13 +226,18 @@ export async function publishEvent(event: DomainEvent): Promise<{ delivered: num
       await handler(event);
       delivered++;
     } catch (err) {
-      console.error(`[Orchestrator] Event handler failed for ${event.type}:`, err);
+      console.error(
+        `[Orchestrator] Event handler failed for ${event.type}:`,
+        err
+      );
       failed++;
     }
   }
 
   // Publish to Kafka
-  await kafka.produce(event.type, [{ key: event.id, value: JSON.stringify(event) }]);
+  await kafka.produce(event.type, [
+    { key: event.id, value: JSON.stringify(event) },
+  ]);
 
   // Publish to Fluvio
   await fluvio.produce(event.type, JSON.stringify(event));
@@ -122,8 +251,17 @@ export async function publishEvent(event: DomainEvent): Promise<{ delivered: num
   }
 
   // Check permissions via Permify for access-control events
-  if (event.type.startsWith("access.") || event.type.startsWith("permission.")) {
-    await permify.check({ entity: event.source, relation: "can_execute", subject: event.metadata?.userId ?? "system" }).catch(() => {});
+  if (
+    event.type.startsWith("access.") ||
+    event.type.startsWith("permission.")
+  ) {
+    await permify
+      .check({
+        entity: event.source,
+        relation: "can_execute",
+        subject: event.metadata?.userId ?? "system",
+      })
+      .catch(() => {});
   }
 
   // Route API gateway events through APISIX
@@ -132,8 +270,16 @@ export async function publishEvent(event: DomainEvent): Promise<{ delivered: num
   }
 
   // Push analytics events to Lakehouse for long-term storage
-  if (event.type.includes("transaction") || event.type.includes("settlement") || event.type.includes("commission")) {
-    await lakehouse.query(`INSERT INTO events VALUES ('${event.id}', '${event.type}', NOW())`).catch(() => {});
+  if (
+    event.type.includes("transaction") ||
+    event.type.includes("settlement") ||
+    event.type.includes("commission")
+  ) {
+    await lakehouse
+      .query(
+        `INSERT INTO events VALUES ('${event.id}', '${event.type}', NOW())`
+      )
+      .catch(() => {});
   }
 
   return { delivered, failed };
@@ -153,7 +299,10 @@ export interface SagaResult {
   error?: string;
 }
 
-export async function executeSaga(sagaName: string, steps: SagaStep[]): Promise<SagaResult> {
+export async function executeSaga(
+  sagaName: string,
+  steps: SagaStep[]
+): Promise<SagaResult> {
   const completedSteps: string[] = [];
 
   for (const step of steps) {
@@ -161,7 +310,9 @@ export async function executeSaga(sagaName: string, steps: SagaStep[]): Promise<
       await step.execute();
       completedSteps.push(step.name);
     } catch (err: any) {
-      console.error(`[Saga] Step "${step.name}" failed in saga "${sagaName}": ${err.message}`);
+      console.error(
+        `[Saga] Step "${step.name}" failed in saga "${sagaName}": ${err.message}`
+      );
 
       // Compensate in reverse order
       for (let i = completedSteps.length - 1; i >= 0; i--) {
@@ -171,12 +322,19 @@ export async function executeSaga(sagaName: string, steps: SagaStep[]): Promise<
             await compensateStep.compensate();
             console.log(`[Saga] Compensated step: ${compensateStep.name}`);
           } catch (compErr: any) {
-            console.error(`[Saga] Compensation failed for "${compensateStep.name}": ${compErr.message}`);
+            console.error(
+              `[Saga] Compensation failed for "${compensateStep.name}": ${compErr.message}`
+            );
           }
         }
       }
 
-      return { success: false, completedSteps, failedStep: step.name, error: err.message };
+      return {
+        success: false,
+        completedSteps,
+        failedStep: step.name,
+        error: err.message,
+      };
     }
   }
 
@@ -235,40 +393,51 @@ export async function getSystemOverview(): Promise<{
     services: getRegisteredServices(),
     health,
     dlqSize: getDeadLetterQueueSize(),
-    eventHandlerCount: Array.from(eventHandlers.values()).reduce((sum, handlers) => sum + handlers.length, 0),
+    eventHandlerCount: Array.from(eventHandlers.values()).reduce(
+      (sum, handlers) => sum + handlers.length,
+      0
+    ),
   };
 }
 
 // ─── Standard Event Wiring ───────────────────────────────────────────────────
 // Wire standard domain events to their handlers
-subscribeToEvent("transaction.completed", async (event) => {
+subscribeToEvent("transaction.completed", async event => {
   // Index in OpenSearch for analytics
   await opensearch.index("transactions", event.id, event.payload);
   // Cache latest transaction for quick lookup
-  await redis.set(`tx:${event.payload.transactionId}`, JSON.stringify(event.payload), 3600);
+  await redis.set(
+    `tx:${event.payload.transactionId}`,
+    JSON.stringify(event.payload),
+    3600
+  );
 });
 
-subscribeToEvent("kyc.verified", async (event) => {
+subscribeToEvent("kyc.verified", async event => {
   await opensearch.index("kyc-events", event.id, event.payload);
-  await kafka.produce("kyc-verified", [{ key: event.payload.userId, value: JSON.stringify(event.payload) }]);
+  await kafka.produce("kyc-verified", [
+    { key: event.payload.userId, value: JSON.stringify(event.payload) },
+  ]);
 });
 
-subscribeToEvent("biometric.enrolled", async (event) => {
+subscribeToEvent("biometric.enrolled", async event => {
   await opensearch.index("biometric-events", event.id, event.payload);
 });
 
-subscribeToEvent("biometric.spoof_detected", async (event) => {
+subscribeToEvent("biometric.spoof_detected", async event => {
   await opensearch.index("security-alerts", event.id, event.payload);
   // High-priority alert
-  console.warn(`[ALERT] Spoof attempt detected: ${JSON.stringify(event.payload)}`);
+  console.warn(
+    `[ALERT] Spoof attempt detected: ${JSON.stringify(event.payload)}`
+  );
 });
 
-subscribeToEvent("payment.succeeded", async (event) => {
+subscribeToEvent("payment.succeeded", async event => {
   await opensearch.index("payments", event.id, event.payload);
   // Record in TigerBeetle for double-entry accounting
   // await tigerbeetle.createTransfers([...]);
 });
 
-subscribeToEvent("inventory.low_stock", async (event) => {
+subscribeToEvent("inventory.low_stock", async event => {
   await redis.publish("alerts:inventory", JSON.stringify(event.payload));
 });

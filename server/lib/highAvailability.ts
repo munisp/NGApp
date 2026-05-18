@@ -10,10 +10,10 @@ import logger from "../_core/logger";
 type CircuitState = "closed" | "open" | "half_open";
 
 interface CircuitBreakerOptions {
-  failureThreshold: number;    // Failures before opening
-  resetTimeoutMs: number;      // Time before trying half-open
-  halfOpenMaxAttempts: number;  // Attempts in half-open before closing
-  monitorWindowMs: number;     // Window to count failures
+  failureThreshold: number; // Failures before opening
+  resetTimeoutMs: number; // Time before trying half-open
+  halfOpenMaxAttempts: number; // Attempts in half-open before closing
+  monitorWindowMs: number; // Window to count failures
 }
 
 class CircuitBreaker {
@@ -42,7 +42,9 @@ class CircuitBreaker {
         this.halfOpenAttempts = 0;
         logger.info(`[CircuitBreaker:${this.name}] Transitioning to half-open`);
       } else {
-        throw new Error(`Circuit breaker [${this.name}] is OPEN — request rejected`);
+        throw new Error(
+          `Circuit breaker [${this.name}] is OPEN — request rejected`
+        );
       }
     }
 
@@ -75,15 +77,29 @@ class CircuitBreaker {
 
     if (this.state === "half_open") {
       this.state = "open";
-      logger.warn(`[CircuitBreaker:${this.name}] Circuit re-OPENED from half-open`);
+      logger.warn(
+        `[CircuitBreaker:${this.name}] Circuit re-OPENED from half-open`
+      );
     } else if (this.failures >= this.options.failureThreshold) {
       this.state = "open";
-      logger.warn(`[CircuitBreaker:${this.name}] Circuit OPENED after ${this.failures} failures`);
+      logger.warn(
+        `[CircuitBreaker:${this.name}] Circuit OPENED after ${this.failures} failures`
+      );
     }
   }
 
-  getState(): { name: string; state: CircuitState; failures: number; successes: number } {
-    return { name: this.name, state: this.state, failures: this.failures, successes: this.successes };
+  getState(): {
+    name: string;
+    state: CircuitState;
+    failures: number;
+    successes: number;
+  } {
+    return {
+      name: this.name,
+      state: this.state,
+      failures: this.failures,
+      successes: this.successes,
+    };
   }
 
   reset(): void {
@@ -96,14 +112,38 @@ class CircuitBreaker {
 
 // Pre-configured circuit breakers for critical services
 export const circuitBreakers = {
-  database: new CircuitBreaker("database", { failureThreshold: 3, resetTimeoutMs: 15_000 }),
-  kafka: new CircuitBreaker("kafka", { failureThreshold: 5, resetTimeoutMs: 30_000 }),
-  redis: new CircuitBreaker("redis", { failureThreshold: 5, resetTimeoutMs: 20_000 }),
-  tigerBeetle: new CircuitBreaker("tigerBeetle", { failureThreshold: 5, resetTimeoutMs: 30_000 }),
-  temporal: new CircuitBreaker("temporal", { failureThreshold: 3, resetTimeoutMs: 60_000 }),
-  permify: new CircuitBreaker("permify", { failureThreshold: 5, resetTimeoutMs: 30_000 }),
-  fluvio: new CircuitBreaker("fluvio", { failureThreshold: 5, resetTimeoutMs: 30_000 }),
-  external: new CircuitBreaker("external", { failureThreshold: 10, resetTimeoutMs: 60_000 }),
+  database: new CircuitBreaker("database", {
+    failureThreshold: 3,
+    resetTimeoutMs: 15_000,
+  }),
+  kafka: new CircuitBreaker("kafka", {
+    failureThreshold: 5,
+    resetTimeoutMs: 30_000,
+  }),
+  redis: new CircuitBreaker("redis", {
+    failureThreshold: 5,
+    resetTimeoutMs: 20_000,
+  }),
+  tigerBeetle: new CircuitBreaker("tigerBeetle", {
+    failureThreshold: 5,
+    resetTimeoutMs: 30_000,
+  }),
+  temporal: new CircuitBreaker("temporal", {
+    failureThreshold: 3,
+    resetTimeoutMs: 60_000,
+  }),
+  permify: new CircuitBreaker("permify", {
+    failureThreshold: 5,
+    resetTimeoutMs: 30_000,
+  }),
+  fluvio: new CircuitBreaker("fluvio", {
+    failureThreshold: 5,
+    resetTimeoutMs: 30_000,
+  }),
+  external: new CircuitBreaker("external", {
+    failureThreshold: 10,
+    resetTimeoutMs: 60_000,
+  }),
 };
 
 // ── 2. Retry with Exponential Backoff ─────────────────────────────────────────
@@ -127,7 +167,7 @@ const DEFAULT_RETRY_OPTIONS: RetryOptions = {
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   label: string,
-  options?: Partial<RetryOptions>,
+  options?: Partial<RetryOptions>
 ): Promise<T> {
   const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: Error | null = null;
@@ -140,7 +180,9 @@ export async function retryWithBackoff<T>(
 
       // Check if error is retryable
       if (opts.retryableErrors && opts.retryableErrors.length > 0) {
-        const isRetryable = opts.retryableErrors.some(e => error.message?.includes(e));
+        const isRetryable = opts.retryableErrors.some(e =>
+          error.message?.includes(e)
+        );
         if (!isRetryable) throw error;
       }
 
@@ -149,7 +191,7 @@ export async function retryWithBackoff<T>(
       // Calculate delay with exponential backoff
       let delay = Math.min(
         opts.baseDelayMs * Math.pow(opts.backoffMultiplier, attempt),
-        opts.maxDelayMs,
+        opts.maxDelayMs
       );
 
       // Add jitter to prevent thundering herd
@@ -157,7 +199,9 @@ export async function retryWithBackoff<T>(
         delay = delay * (0.5 + Math.random() * 0.5);
       }
 
-      logger.warn(`[Retry:${label}] Attempt ${attempt + 1}/${opts.maxRetries} failed: ${error.message}. Retrying in ${Math.round(delay)}ms`);
+      logger.warn(
+        `[Retry:${label}] Attempt ${attempt + 1}/${opts.maxRetries} failed: ${error.message}. Retrying in ${Math.round(delay)}ms`
+      );
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -172,16 +216,23 @@ interface HealthStatus {
   uptime: number;
   timestamp: string;
   version: string;
-  checks: Record<string, {
-    status: "up" | "down" | "degraded";
-    latencyMs: number;
-    message?: string;
-  }>;
+  checks: Record<
+    string,
+    {
+      status: "up" | "down" | "degraded";
+      latencyMs: number;
+      message?: string;
+    }
+  >;
 }
 
 const startTime = Date.now();
 
-async function checkDatabase(): Promise<{ status: "up" | "down" | "degraded"; latencyMs: number; message?: string }> {
+async function checkDatabase(): Promise<{
+  status: "up" | "down" | "degraded";
+  latencyMs: number;
+  message?: string;
+}> {
   const start = Date.now();
   try {
     const { getPool } = await import("../db");
@@ -191,28 +242,52 @@ async function checkDatabase(): Promise<{ status: "up" | "down" | "degraded"; la
     const latency = Date.now() - start;
     return { status: latency > 1000 ? "degraded" : "up", latencyMs: latency };
   } catch (e: any) {
-    return { status: "down", latencyMs: Date.now() - start, message: e.message };
+    return {
+      status: "down",
+      latencyMs: Date.now() - start,
+      message: e.message,
+    };
   }
 }
 
-async function checkRedis(): Promise<{ status: "up" | "down" | "degraded"; latencyMs: number; message?: string }> {
+async function checkRedis(): Promise<{
+  status: "up" | "down" | "degraded";
+  latencyMs: number;
+  message?: string;
+}> {
   const start = Date.now();
   try {
     const { cacheGet } = await import("../redisClient");
     await cacheGet("health:ping");
     return { status: "up", latencyMs: Date.now() - start };
   } catch (e: any) {
-    return { status: "down", latencyMs: Date.now() - start, message: "Redis unavailable (fail-open)" };
+    return {
+      status: "down",
+      latencyMs: Date.now() - start,
+      message: "Redis unavailable (fail-open)",
+    };
   }
 }
 
-async function checkKafka(): Promise<{ status: "up" | "down" | "degraded"; latencyMs: number; message?: string }> {
+async function checkKafka(): Promise<{
+  status: "up" | "down" | "degraded";
+  latencyMs: number;
+  message?: string;
+}> {
   const start = Date.now();
   try {
     // Kafka is fail-open — check if client is initialized
-    return { status: "up", latencyMs: Date.now() - start, message: "Fail-open mode" };
+    return {
+      status: "up",
+      latencyMs: Date.now() - start,
+      message: "Fail-open mode",
+    };
   } catch (e: any) {
-    return { status: "down", latencyMs: Date.now() - start, message: e.message };
+    return {
+      status: "down",
+      latencyMs: Date.now() - start,
+      message: e.message,
+    };
   }
 }
 
@@ -228,7 +303,14 @@ export async function getHealthStatus(): Promise<HealthStatus> {
   const anyDown = Object.values(checks).some(c => c.status === "down");
 
   // Database is critical — if it's down, we're unhealthy
-  const overallStatus = db.status === "down" ? "unhealthy" : anyDown ? "degraded" : allUp ? "healthy" : "degraded";
+  const overallStatus =
+    db.status === "down"
+      ? "unhealthy"
+      : anyDown
+        ? "degraded"
+        : allUp
+          ? "healthy"
+          : "degraded";
 
   return {
     status: overallStatus,
@@ -245,7 +327,10 @@ export function getLivenessStatus(): { status: "ok"; uptime: number } {
 }
 
 // Readiness — can we accept traffic?
-export async function getReadinessStatus(): Promise<{ ready: boolean; reason?: string }> {
+export async function getReadinessStatus(): Promise<{
+  ready: boolean;
+  reason?: string;
+}> {
   try {
     const { getPool } = await import("../db");
     const pool = await getPool();
@@ -264,7 +349,10 @@ export function isServerShuttingDown(): boolean {
   return isShuttingDown;
 }
 
-export function setupGracefulShutdown(server: any, cleanup?: () => Promise<void>): void {
+export function setupGracefulShutdown(
+  server: any,
+  cleanup?: () => Promise<void>
+): void {
   const shutdown = async (signal: string) => {
     if (isShuttingDown) return;
     isShuttingDown = true;
@@ -308,7 +396,11 @@ export function setupGracefulShutdown(server: any, cleanup?: () => Promise<void>
 // ── 5. Connection Draining Middleware ──────────────────────────────────────────
 import type { Request, Response, NextFunction } from "express";
 
-export function connectionDrainingMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function connectionDrainingMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   if (isShuttingDown) {
     res.setHeader("Connection", "close");
     res.status(503).json({ error: "Server is shutting down", retryAfter: 5 });
@@ -325,7 +417,12 @@ export function createHealthRouter(): Router {
 
   healthRouter.get("/health", async (_req, res) => {
     const health = await getHealthStatus();
-    const statusCode = health.status === "healthy" ? 200 : health.status === "degraded" ? 200 : 503;
+    const statusCode =
+      health.status === "healthy"
+        ? 200
+        : health.status === "degraded"
+          ? 200
+          : 503;
     res.status(statusCode).json(health);
   });
 
@@ -339,7 +436,9 @@ export function createHealthRouter(): Router {
   });
 
   healthRouter.get("/health/circuits", (_req, res) => {
-    const states = Object.entries(circuitBreakers).map(([name, cb]) => cb.getState());
+    const states = Object.entries(circuitBreakers).map(([name, cb]) =>
+      cb.getState()
+    );
     res.json({ circuits: states });
   });
 
@@ -351,7 +450,9 @@ export function requestTimeoutMiddleware(timeoutMs = 30_000) {
   return (req: Request, res: Response, next: NextFunction) => {
     const timer = setTimeout(() => {
       if (!res.headersSent) {
-        logger.warn(`[Timeout] ${req.method} ${req.path} exceeded ${timeoutMs}ms`);
+        logger.warn(
+          `[Timeout] ${req.method} ${req.path} exceeded ${timeoutMs}ms`
+        );
         res.status(504).json({ error: "Request timeout", timeoutMs });
       }
     }, timeoutMs);

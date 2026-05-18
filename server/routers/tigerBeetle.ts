@@ -25,7 +25,9 @@ import { getDb } from "../db";
 import { agents, transactions } from "../../drizzle/schema";
 import { desc, eq, sql, count, sum } from "drizzle-orm";
 
-const ENV = { tbSidecarUrl: process.env.TB_SIDECAR_URL ?? "http://tigerbeetle-sidecar:8080" };
+const ENV = {
+  tbSidecarUrl: process.env.TB_SIDECAR_URL ?? "http://tigerbeetle-sidecar:8080",
+};
 const TB_TIMEOUT_MS = 3000;
 
 /** Generic sidecar fetch with timeout */
@@ -40,13 +42,19 @@ async function tbFetch(path: string, opts?: RequestInit): Promise<unknown> {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `TB sidecar error ${res.status}: ${body}` });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `TB sidecar error ${res.status}: ${body}`,
+      });
     }
     return res.json();
   } catch (err) {
     clearTimeout(timer);
     if ((err as Error).name === "AbortError") {
-      throw new TRPCError({ code: "TIMEOUT", message: "TigerBeetle sidecar timeout" });
+      throw new TRPCError({
+        code: "TIMEOUT",
+        message: "TigerBeetle sidecar timeout",
+      });
     }
     throw err;
   }
@@ -67,12 +75,14 @@ export const tigerBeetleRouter = router({
 
   /** List all ledger accounts with current balances */
   listAccounts: protectedProcedure
-    .input(z.object({
-      ledger: z.number().optional(),
-      agentCode: z.string().optional(),
-      limit: z.number().min(1).max(200).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        ledger: z.number().optional(),
+        agentCode: z.string().optional(),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const params = new URLSearchParams();
@@ -80,7 +90,7 @@ export const tigerBeetleRouter = router({
         if (input.agentCode) params.set("agentCode", input.agentCode);
         params.set("limit", String(input.limit));
         params.set("offset", String(input.offset));
-        const data = await tbFetch(`/accounts?${params}`) as {
+        const data = (await tbFetch(`/accounts?${params}`)) as {
           accounts: Array<{
             id: string;
             agentCode?: string;
@@ -111,8 +121,14 @@ export const tigerBeetleRouter = router({
         if (!balance) {
           // Fall back to PostgreSQL float balance
           const db = (await getDb())!;
-          if (!db) return { balanceNGN: 0, balanceKobo: 0, source: "unavailable" as const };
-          const [agent] = await db.select({ floatBalance: agents.floatBalance })
+          if (!db)
+            return {
+              balanceNGN: 0,
+              balanceKobo: 0,
+              source: "unavailable" as const,
+            };
+          const [agent] = await db
+            .select({ floatBalance: agents.floatBalance })
             .from(agents)
             .where(eq(agents.agentCode, input.agentCode))
             .limit(1);
@@ -125,24 +141,30 @@ export const tigerBeetleRouter = router({
         return { ...balance, source: "tigerbeetle" as const };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Get transfer history from sidecar */
   transfers: protectedProcedure
-    .input(z.object({
-      agentCode: z.string().optional(),
-      limit: z.number().min(1).max(200).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        agentCode: z.string().optional(),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const params = new URLSearchParams();
         if (input.agentCode) params.set("agentCode", input.agentCode);
         params.set("limit", String(input.limit));
         params.set("offset", String(input.offset));
-        const data = await tbFetch(`/transfers?${params}`) as {
+        const data = (await tbFetch(`/transfers?${params}`)) as {
           transfers: Array<{
             id: string;
             debitAccountId: string;
@@ -191,7 +213,11 @@ export const tigerBeetleRouter = router({
         });
         return { triggered: true, timestamp: new Date().toISOString() };
       } catch {
-        return { triggered: false, error: "Sidecar offline", timestamp: new Date().toISOString() };
+        return {
+          triggered: false,
+          error: "Sidecar offline",
+          timestamp: new Date().toISOString(),
+        };
       }
     }),
 
@@ -204,7 +230,11 @@ export const tigerBeetleRouter = router({
         return { created, agentCode: input.agentCode };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -219,10 +249,12 @@ export const tigerBeetleRouter = router({
     const db = (await getDb())!;
     let pgVolume = { totalTxns: 0, totalVolumeNGN: 0 };
     if (db) {
-      const [row] = await db.select({
-        totalTxns: count(),
-        totalVolumeNGN: sql<number>`COALESCE(SUM(CAST(${transactions.amount} AS NUMERIC)), 0)`,
-      }).from(transactions);
+      const [row] = await db
+        .select({
+          totalTxns: count(),
+          totalVolumeNGN: sql<number>`COALESCE(SUM(CAST(${transactions.amount} AS NUMERIC)), 0)`,
+        })
+        .from(transactions);
       pgVolume = {
         totalTxns: Number(row?.totalTxns ?? 0),
         totalVolumeNGN: Number(row?.totalVolumeNGN ?? 0),
@@ -231,7 +263,12 @@ export const tigerBeetleRouter = router({
 
     return {
       healthy,
-      syncStatus: syncStatus ?? { pending: 0, synced: 0, failed: 0, postgres: "disconnected" },
+      syncStatus: syncStatus ?? {
+        pending: 0,
+        synced: 0,
+        failed: 0,
+        postgres: "disconnected",
+      },
       postgres: pgVolume,
       ledgerVersion: "0.16.11",
       timestamp: new Date().toISOString(),
@@ -243,14 +280,19 @@ export const tigerBeetleRouter = router({
     .input(z.object({ limit: z.number().min(1).max(100).default(10) }))
     .mutation(async ({ input }) => {
       try {
-        const data = await tbFetch("/sync/retry-failed", {
+        const data = (await tbFetch("/sync/retry-failed", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ limit: input.limit }),
-        }) as { retried: number; succeeded: number; failed: number };
+        })) as { retried: number; succeeded: number; failed: number };
         return data;
       } catch {
-        return { retried: 0, succeeded: 0, failed: 0, error: "Sidecar offline" };
+        return {
+          retried: 0,
+          succeeded: 0,
+          failed: 0,
+          error: "Sidecar offline",
+        };
       }
     }),
 });

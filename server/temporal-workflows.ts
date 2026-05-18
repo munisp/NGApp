@@ -38,13 +38,11 @@ const {
 });
 
 // ── Signals & Queries ─────────────────────────────────────────────────────────
-export const pauseSettlementSignal = defineSignal<[{ reason: string }]>(
-  "pauseSettlement"
-);
+export const pauseSettlementSignal =
+  defineSignal<[{ reason: string }]>("pauseSettlement");
 export const resumeSettlementSignal = defineSignal("resumeSettlement");
-export const cancelSettlementSignal = defineSignal<[{ reason: string }]>(
-  "cancelSettlement"
-);
+export const cancelSettlementSignal =
+  defineSignal<[{ reason: string }]>("cancelSettlement");
 export const getSettlementStatusQuery = defineQuery<SettlementStatus>(
   "getSettlementStatus"
 );
@@ -122,7 +120,11 @@ export async function SettlementWorkflow(
     });
 
     if (cancelled) {
-      return { success: false, batchId: input.batchId, report: `Cancelled: ${cancelReason}` };
+      return {
+        success: false,
+        batchId: input.batchId,
+        report: `Cancelled: ${cancelReason}`,
+      };
     }
 
     // Phase 2: Group by agent
@@ -139,7 +141,9 @@ export async function SettlementWorkflow(
     const validationResult = await validateSettlementAmounts(settlements);
     if (!validationResult.valid) {
       status.errors.push(...validationResult.errors);
-      throw new Error(`Settlement validation failed: ${validationResult.errors.join(", ")}`);
+      throw new Error(
+        `Settlement validation failed: ${validationResult.errors.join(", ")}`
+      );
     }
 
     if (input.dryRun) {
@@ -169,7 +173,11 @@ export async function SettlementWorkflow(
     }
 
     if (cancelled) {
-      return { success: false, batchId: input.batchId, report: `Cancelled after ${status.agentsProcessed} agents` };
+      return {
+        success: false,
+        batchId: input.batchId,
+        report: `Cancelled after ${status.agentsProcessed} agents`,
+      };
     }
 
     // Phase 6: Mark transactions as settled
@@ -310,8 +318,12 @@ export interface BillingProvisioningResult {
   duration: string;
 }
 
-const cancelBillingProvisioningSignal = defineSignal("cancelBillingProvisioning");
-const billingProvisioningStepQuery = defineQuery<string>("billingProvisioningStep");
+const cancelBillingProvisioningSignal = defineSignal(
+  "cancelBillingProvisioning"
+);
+const billingProvisioningStepQuery = defineQuery<string>(
+  "billingProvisioningStep"
+);
 
 /**
  * BillingProvisioningWorkflow — provisions billing infrastructure for a new tenant.
@@ -324,54 +336,132 @@ export async function BillingProvisioningWorkflow(
   let cancelled = false;
   let currentStep = "initializing";
   const completedSteps: string[] = [];
-  const stepResults: Array<{ step: string; status: string; details?: any; error?: string }> = [];
+  const stepResults: Array<{
+    step: string;
+    status: string;
+    details?: any;
+    error?: string;
+  }> = [];
 
   setHandler(cancelBillingProvisioningSignal, () => {
     cancelled = true;
-    log.info("Billing provisioning cancellation requested", { tenantId: input.tenantId });
+    log.info("Billing provisioning cancellation requested", {
+      tenantId: input.tenantId,
+    });
   });
   setHandler(billingProvisioningStepQuery, () => currentStep);
 
   const steps = [
-    { name: "validate_tenant", fn: () => billingActivities.validateTenantForBilling({ tenantId: input.tenantId, tenantName: input.tenantName }) },
-    { name: "create_billing_config", fn: () => billingActivities.createBillingConfig({ tenantId: input.tenantId, billingModel: input.billingModel, customConfig: input.customConfig, provisionedBy: input.provisionedBy, currency: input.currency }) },
-    { name: "create_tigerbeetle_accounts", fn: () => billingActivities.createTigerBeetleAccounts({ tenantId: input.tenantId }) },
-    { name: "provision_kafka_topics", fn: () => billingActivities.provisionKafkaTopics({ tenantId: input.tenantId }) },
-    { name: "assign_billing_roles", fn: () => billingActivities.assignBillingRoles({ tenantId: input.tenantId, provisionedBy: input.provisionedBy }) },
-    { name: "configure_reconciliation", fn: () => billingActivities.configureReconciliation({ tenantId: input.tenantId, region: input.region }) },
-    { name: "activate_billing", fn: () => billingActivities.activateBilling({ tenantId: input.tenantId, provisionedBy: input.provisionedBy }) },
+    {
+      name: "validate_tenant",
+      fn: () =>
+        billingActivities.validateTenantForBilling({
+          tenantId: input.tenantId,
+          tenantName: input.tenantName,
+        }),
+    },
+    {
+      name: "create_billing_config",
+      fn: () =>
+        billingActivities.createBillingConfig({
+          tenantId: input.tenantId,
+          billingModel: input.billingModel,
+          customConfig: input.customConfig,
+          provisionedBy: input.provisionedBy,
+          currency: input.currency,
+        }),
+    },
+    {
+      name: "create_tigerbeetle_accounts",
+      fn: () =>
+        billingActivities.createTigerBeetleAccounts({
+          tenantId: input.tenantId,
+        }),
+    },
+    {
+      name: "provision_kafka_topics",
+      fn: () =>
+        billingActivities.provisionKafkaTopics({ tenantId: input.tenantId }),
+    },
+    {
+      name: "assign_billing_roles",
+      fn: () =>
+        billingActivities.assignBillingRoles({
+          tenantId: input.tenantId,
+          provisionedBy: input.provisionedBy,
+        }),
+    },
+    {
+      name: "configure_reconciliation",
+      fn: () =>
+        billingActivities.configureReconciliation({
+          tenantId: input.tenantId,
+          region: input.region,
+        }),
+    },
+    {
+      name: "activate_billing",
+      fn: () =>
+        billingActivities.activateBilling({
+          tenantId: input.tenantId,
+          provisionedBy: input.provisionedBy,
+        }),
+    },
   ];
 
   let configId = 0;
 
   for (const step of steps) {
     if (cancelled) {
-      log.warn("Billing provisioning cancelled", { step: step.name, tenantId: input.tenantId });
+      log.warn("Billing provisioning cancelled", {
+        step: step.name,
+        tenantId: input.tenantId,
+      });
       break;
     }
     currentStep = step.name;
-    log.info("Executing billing provisioning step", { step: step.name, tenantId: input.tenantId });
+    log.info("Executing billing provisioning step", {
+      step: step.name,
+      tenantId: input.tenantId,
+    });
 
     try {
       const result = await step.fn();
       completedSteps.push(step.name);
-      stepResults.push({ step: step.name, status: "completed", details: result });
+      stepResults.push({
+        step: step.name,
+        status: "completed",
+        details: result,
+      });
       if (step.name === "create_billing_config" && result?.configId) {
         configId = result.configId;
       }
     } catch (error) {
       const errMsg = (error as Error).message || "Unknown error";
       stepResults.push({ step: step.name, status: "failed", error: errMsg });
-      log.error("Billing step failed — initiating rollback", { step: step.name, error: errMsg, tenantId: input.tenantId });
+      log.error("Billing step failed — initiating rollback", {
+        step: step.name,
+        error: errMsg,
+        tenantId: input.tenantId,
+      });
 
       // Rollback in reverse order
       for (let i = completedSteps.length - 1; i >= 0; i--) {
         currentStep = `rollback_${completedSteps[i]}`;
-        log.info("Rolling back billing step", { step: completedSteps[i], tenantId: input.tenantId });
+        log.info("Rolling back billing step", {
+          step: completedSteps[i],
+          tenantId: input.tenantId,
+        });
         try {
-          await billingActivities.rollbackBillingStep({ tenantId: input.tenantId, step: completedSteps[i] });
+          await billingActivities.rollbackBillingStep({
+            tenantId: input.tenantId,
+            step: completedSteps[i],
+          });
         } catch (rbErr) {
-          log.error("Rollback failed (manual intervention required)", { step: completedSteps[i], error: (rbErr as Error).message });
+          log.error("Rollback failed (manual intervention required)", {
+            step: completedSteps[i],
+            error: (rbErr as Error).message,
+          });
         }
       }
 

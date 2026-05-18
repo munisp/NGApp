@@ -24,11 +24,11 @@ docker pull grafana/k6
 
 ## Test Scenarios
 
-| File | Path Under Test | Default VUs | Duration |
-|---|---|---|---|
-| `transaction-throughput.js` | `transactions.create` (cash-in/out/transfer) | 50 peak | ~3.5 min |
-| `float-topup.js` | `floatTopUp.request` + `floatTopUp.listRequests` | 40 peak | ~1.7 min |
-| `dispute-creation.js` | `disputes.raise` + `disputes.addMessage` | 30 peak | ~1.7 min |
+| File                        | Path Under Test                                  | Default VUs | Duration |
+| --------------------------- | ------------------------------------------------ | ----------- | -------- |
+| `transaction-throughput.js` | `transactions.create` (cash-in/out/transfer)     | 50 peak     | ~3.5 min |
+| `float-topup.js`            | `floatTopUp.request` + `floatTopUp.listRequests` | 40 peak     | ~1.7 min |
+| `dispute-creation.js`       | `disputes.raise` + `disputes.addMessage`         | 30 peak     | ~1.7 min |
 
 ## Running Tests
 
@@ -83,11 +83,11 @@ Alternatively, use the setup function built into `transaction-throughput.js` —
 
 Each scenario enforces the following SLOs:
 
-| Metric | Threshold |
-|---|---|
+| Metric            | Threshold                                                    |
+| ----------------- | ------------------------------------------------------------ |
 | p95 response time | < 500ms (transactions), < 800ms (float), < 1000ms (disputes) |
-| Success rate | > 99% (transactions), > 98% (float), > 97% (disputes) |
-| HTTP error rate | < 1–3% depending on scenario |
+| Success rate      | > 99% (transactions), > 98% (float), > 97% (disputes)        |
+| HTTP error rate   | < 1–3% depending on scenario                                 |
 
 ## Interpreting Results
 

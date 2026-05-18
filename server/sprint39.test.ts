@@ -2,9 +2,18 @@ import { describe, it, expect } from "vitest";
 
 // Sprint 39: Platform Maturity & Infrastructure Hardening Tests
 const sprint39Routers = [
-  { name: "publishReadinessChecker", file: "./routers/publishReadinessChecker" },
-  { name: "dbSchemaMigrationManager", file: "./routers/dbSchemaMigrationManager" },
-  { name: "graphqlSubscriptionGateway", file: "./routers/graphqlSubscriptionGateway" },
+  {
+    name: "publishReadinessChecker",
+    file: "./routers/publishReadinessChecker",
+  },
+  {
+    name: "dbSchemaMigrationManager",
+    file: "./routers/dbSchemaMigrationManager",
+  },
+  {
+    name: "graphqlSubscriptionGateway",
+    file: "./routers/graphqlSubscriptionGateway",
+  },
   { name: "offlinePosMode", file: "./routers/offlinePosMode" },
   { name: "biometricAuthGateway", file: "./routers/biometricAuthGateway" },
   { name: "aiCashFlowPredictor", file: "./routers/aiCashFlowPredictor" },
@@ -14,14 +23,23 @@ const sprint39Routers = [
   { name: "esgCarbonTracker", file: "./routers/esgCarbonTracker" },
   { name: "distributedTracingDash", file: "./routers/distributedTracingDash" },
   { name: "canaryReleaseManager", file: "./routers/canaryReleaseManager" },
-  { name: "chaosEngineeringConsole", file: "./routers/chaosEngineeringConsole" },
+  {
+    name: "chaosEngineeringConsole",
+    file: "./routers/chaosEngineeringConsole",
+  },
   { name: "connectionPoolMonitor", file: "./routers/connectionPoolMonitor" },
   { name: "cdnCacheManager", file: "./routers/cdnCacheManager" },
   { name: "cqrsEventStore", file: "./routers/cqrsEventStore" },
   { name: "digitalTwinSimulator", file: "./routers/digitalTwinSimulator" },
   { name: "cbdcIntegrationGateway", file: "./routers/cbdcIntegrationGateway" },
-  { name: "decentralizedIdentityManager", file: "./routers/decentralizedIdentityManager" },
-  { name: "platformMaturityScorecard", file: "./routers/platformMaturityScorecard" },
+  {
+    name: "decentralizedIdentityManager",
+    file: "./routers/decentralizedIdentityManager",
+  },
+  {
+    name: "platformMaturityScorecard",
+    file: "./routers/platformMaturityScorecard",
+  },
 ];
 
 describe("Sprint 39 — Platform Maturity & Infrastructure Hardening", () => {
@@ -59,7 +77,9 @@ describe("Sprint 39 — Platform Maturity & Infrastructure Hardening", () => {
       const fs = await import("fs");
       const path = await import("path");
       const routerDir = path.resolve(__dirname, "routers");
-      const files = fs.readdirSync(routerDir).filter((f: string) => f.endsWith(".ts"));
+      const files = fs
+        .readdirSync(routerDir)
+        .filter((f: string) => f.endsWith(".ts"));
       for (const file of files) {
         const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
         expect(content).not.toMatch(/sk_live_[a-zA-Z0-9]{20,}/);
@@ -72,7 +92,9 @@ describe("Sprint 39 — Platform Maturity & Infrastructure Hardening", () => {
       const fs = await import("fs");
       const path = await import("path");
       const routerDir = path.resolve(__dirname, "routers");
-      const files = fs.readdirSync(routerDir).filter((f: string) => f.endsWith(".ts"));
+      const files = fs
+        .readdirSync(routerDir)
+        .filter((f: string) => f.endsWith(".ts"));
       for (const file of files) {
         const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
         // Check for direct SQL string concatenation with user input (not template literals in data)
@@ -96,7 +118,10 @@ describe("Sprint 39 — Platform Maturity & Infrastructure Hardening", () => {
     it("should use protectedProcedure for all procedures", async () => {
       for (const { file } of sprint39Routers) {
         const content = await import("fs").then(fs =>
-          fs.readFileSync(require("path").resolve(__dirname, file.replace("./", "")) + ".ts", "utf-8")
+          fs.readFileSync(
+            require("path").resolve(__dirname, file.replace("./", "")) + ".ts",
+            "utf-8"
+          )
         );
         expect(content).toContain("protectedProcedure");
       }

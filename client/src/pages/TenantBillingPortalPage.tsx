@@ -12,16 +12,18 @@ export default function TenantBillingPortalPage() {
   const [planChangeReason, setPlanChangeReason] = useState<string>("");
 
   // Fetch billing config for the tenant
-  const { data: configData, isLoading: configLoading } = trpc.tenantBillingOnboarding.getConfig.useQuery(
-    { tenantId: selectedTenantId },
-    { enabled: !!selectedTenantId }
-  );
+  const { data: configData, isLoading: configLoading } =
+    trpc.tenantBillingOnboarding.getConfig.useQuery(
+      { tenantId: selectedTenantId },
+      { enabled: !!selectedTenantId }
+    );
 
   // Fetch provisioning history
-  const { data: historyData } = trpc.tenantBillingOnboarding.getProvisioningHistory.useQuery(
-    { tenantId: selectedTenantId },
-    { enabled: !!selectedTenantId }
-  );
+  const { data: historyData } =
+    trpc.tenantBillingOnboarding.getProvisioningHistory.useQuery(
+      { tenantId: selectedTenantId },
+      { enabled: !!selectedTenantId }
+    );
 
   // Fetch invoices
   const { data: invoiceData } = trpc.billingInvoice.listInvoices.useQuery(
@@ -69,9 +71,12 @@ export default function TenantBillingPortalPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Billing Portal</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Billing Portal
+            </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your billing configuration, view invoices, and request plan changes
+              Manage your billing configuration, view invoices, and request plan
+              changes
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -91,26 +96,40 @@ export default function TenantBillingPortalPage() {
         {/* Current Plan Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground">Current Plan</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Current Plan
+            </h3>
             <p className="text-2xl font-bold mt-2 capitalize">
               {config?.billingModel?.replace("_", " ") || "Not Configured"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Status: <span className={`font-medium ${config?.status === "active" ? "text-green-500" : "text-yellow-500"}`}>
+              Status:{" "}
+              <span
+                className={`font-medium ${config?.status === "active" ? "text-green-500" : "text-yellow-500"}`}
+              >
                 {config?.status || "Pending"}
               </span>
             </p>
           </div>
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground">Currency</h3>
-            <p className="text-2xl font-bold mt-2">{config?.currency || "NGN"}</p>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Currency
+            </h3>
+            <p className="text-2xl font-bold mt-2">
+              {config?.currency || "NGN"}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
-              TigerBeetle: {config?.tigerBeetleAccountId ? "Connected" : "Pending"}
+              TigerBeetle:{" "}
+              {config?.tigerBeetleAccountId ? "Connected" : "Pending"}
             </p>
           </div>
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground">Kafka Topics</h3>
-            <p className="text-2xl font-bold mt-2">{config?.kafkaTopicPrefix ? "Active" : "Pending"}</p>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Kafka Topics
+            </h3>
+            <p className="text-2xl font-bold mt-2">
+              {config?.kafkaTopicPrefix ? "Active" : "Pending"}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               {config?.kafkaTopicPrefix || "Not provisioned yet"}
             </p>
@@ -120,42 +139,60 @@ export default function TenantBillingPortalPage() {
         {/* Billing Configuration Details */}
         {config && (
           <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Billing Configuration</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Billing Configuration
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Model Details</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                  Model Details
+                </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Billing Model:</span>
-                    <span className="font-medium capitalize">{config.billingModel?.replace("_", " ")}</span>
+                    <span className="font-medium capitalize">
+                      {config.billingModel?.replace("_", " ")}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Auto Renew:</span>
-                    <span className="font-medium">{config.autoRenew ? "Yes" : "No"}</span>
+                    <span className="font-medium">
+                      {config.autoRenew ? "Yes" : "No"}
+                    </span>
                   </div>
                   {config.contractEndDate && (
                     <div className="flex justify-between">
                       <span>Contract End:</span>
-                      <span className="font-medium">{new Date(config.contractEndDate).toLocaleDateString()}</span>
+                      <span className="font-medium">
+                        {new Date(config.contractEndDate).toLocaleDateString()}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Revenue Share Config</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                  Revenue Share Config
+                </h4>
                 {config.revenueShareConfig ? (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Client Split:</span>
-                      <span className="font-medium">{(config.revenueShareConfig as any)?.startSplitPct}%</span>
+                      <span className="font-medium">
+                        {(config.revenueShareConfig as any)?.startSplitPct}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Scale Split:</span>
-                      <span className="font-medium">{(config.revenueShareConfig as any)?.scaleSplitPct}%</span>
+                      <span className="font-medium">
+                        {(config.revenueShareConfig as any)?.scaleSplitPct}%
+                      </span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">N/A for current plan</p>
+                  <p className="text-sm text-muted-foreground">
+                    N/A for current plan
+                  </p>
                 )}
               </div>
             </div>
@@ -180,32 +217,49 @@ export default function TenantBillingPortalPage() {
                 {invoiceData.invoices.map((inv: any) => (
                   <tr key={inv.id} className="border-b">
                     <td className="py-2">{inv.invoiceNumber}</td>
-                    <td className="py-2">{inv.periodStart} - {inv.periodEnd}</td>
-                    <td className="py-2">{inv.currency} {inv.total?.toLocaleString()}</td>
                     <td className="py-2">
-                      <span className={`px-2 py-0.5 rounded text-xs ${
-                        inv.status === "paid" ? "bg-green-100 text-green-700" :
-                        inv.status === "overdue" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>{inv.status}</span>
+                      {inv.periodStart} - {inv.periodEnd}
+                    </td>
+                    <td className="py-2">
+                      {inv.currency} {inv.total?.toLocaleString()}
+                    </td>
+                    <td className="py-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs ${
+                          inv.status === "paid"
+                            ? "bg-green-100 text-green-700"
+                            : inv.status === "overdue"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {inv.status}
+                      </span>
                     </td>
                     <td className="py-2">
                       {inv.status !== "paid" && (
                         <button
-                          onClick={() => createCheckout.mutate({
-                            tenantId: selectedTenantId,
-                            invoiceId: inv.id,
-                            amount: Math.round(inv.total * 100),
-                            customerEmail: user?.email || "",
-                            description: `Invoice ${inv.invoiceNumber}`,
-                          })}
+                          onClick={() =>
+                            createCheckout.mutate({
+                              tenantId: selectedTenantId,
+                              invoiceId: inv.id,
+                              amount: Math.round(inv.total * 100),
+                              customerEmail: user?.email || "",
+                              description: `Invoice ${inv.invoiceNumber}`,
+                            })
+                          }
                           className="text-blue-600 hover:underline text-xs"
                         >
                           Pay Now
                         </button>
                       )}
                       {inv.stripeInvoiceUrl && (
-                        <a href={inv.stripeInvoiceUrl} target="_blank" rel="noopener" className="text-blue-600 hover:underline text-xs ml-2">
+                        <a
+                          href={inv.stripeInvoiceUrl}
+                          target="_blank"
+                          rel="noopener"
+                          className="text-blue-600 hover:underline text-xs ml-2"
+                        >
                           View
                         </a>
                       )}
@@ -216,7 +270,10 @@ export default function TenantBillingPortalPage() {
             </table>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No invoices yet. Invoices are generated monthly based on your billing model.</p>
+              <p>
+                No invoices yet. Invoices are generated monthly based on your
+                billing model.
+              </p>
             </div>
           )}
         </div>
@@ -225,7 +282,8 @@ export default function TenantBillingPortalPage() {
         <div className="bg-card border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Request Plan Change</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Request a change to your billing model. Changes take effect at the start of the next billing cycle.
+            Request a change to your billing model. Changes take effect at the
+            start of the next billing cycle.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -269,24 +327,39 @@ export default function TenantBillingPortalPage() {
           {historyData?.history && historyData.history.length > 0 ? (
             <div className="space-y-2">
               {historyData.history.map((entry: any) => (
-                <div key={entry.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between py-2 border-b last:border-0"
+                >
                   <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${
-                      entry.status === "completed" ? "bg-green-500" :
-                      entry.status === "failed" ? "bg-red-500" :
-                      "bg-yellow-500"
-                    }`} />
-                    <span className="text-sm font-medium">{entry.step?.replace(/_/g, " ")}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        entry.status === "completed"
+                          ? "bg-green-500"
+                          : entry.status === "failed"
+                            ? "bg-red-500"
+                            : "bg-yellow-500"
+                      }`}
+                    />
+                    <span className="text-sm font-medium">
+                      {entry.step?.replace(/_/g, " ")}
+                    </span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>{entry.status}</span>
-                    <span>{entry.startedAt ? new Date(entry.startedAt).toLocaleString() : ""}</span>
+                    <span>
+                      {entry.startedAt
+                        ? new Date(entry.startedAt).toLocaleString()
+                        : ""}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No provisioning history available.</p>
+            <p className="text-sm text-muted-foreground">
+              No provisioning history available.
+            </p>
           )}
         </div>
       </div>

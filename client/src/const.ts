@@ -8,9 +8,11 @@ export { ONE_YEAR_MS } from "@shared/const";
  * started after a successful login.
  */
 export const getLoginUrl = (returnTo?: string): string => {
-  const path = returnTo ?? (typeof window !== "undefined"
-    ? window.location.pathname + window.location.search
-    : "/");
+  const path =
+    returnTo ??
+    (typeof window !== "undefined"
+      ? window.location.pathname + window.location.search
+      : "/");
   const params = new URLSearchParams();
   if (path && path !== "/") {
     params.set("returnTo", path);

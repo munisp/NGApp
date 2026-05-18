@@ -29,7 +29,11 @@ interface SpanContext {
   endTime?: number;
   status: "ok" | "error" | "unset";
   attributes: Record<string, string | number | boolean>;
-  events: Array<{ name: string; timestamp: number; attributes?: Record<string, unknown> }>;
+  events: Array<{
+    name: string;
+    timestamp: number;
+    attributes?: Record<string, unknown>;
+  }>;
 }
 
 interface EngineMetrics {
@@ -108,7 +112,7 @@ export function startSpan(
   engine: string,
   operationName: string,
   attributes?: Record<string, string | number | boolean>,
-  parentSpanId?: string,
+  parentSpanId?: string
 ): SpanContext {
   const span: SpanContext = {
     traceId: generateId(32),
@@ -119,8 +123,8 @@ export function startSpan(
     startTime: performance.now(),
     status: "unset",
     attributes: {
-      "engine": engine,
-      "operation": operationName,
+      engine: engine,
+      operation: operationName,
       ...attributes,
     },
     events: [],
@@ -136,7 +140,7 @@ export function startSpan(
 export function addSpanEvent(
   spanId: string,
   name: string,
-  attributes?: Record<string, unknown>,
+  attributes?: Record<string, unknown>
 ): void {
   const span = activeSpans.get(spanId);
   if (!span) return;
@@ -146,7 +150,11 @@ export function addSpanEvent(
 /**
  * End a span and record metrics.
  */
-export function endSpan(spanId: string, status: "ok" | "error" = "ok", errorMessage?: string): SpanContext | null {
+export function endSpan(
+  spanId: string,
+  status: "ok" | "error" = "ok",
+  errorMessage?: string
+): SpanContext | null {
   const span = activeSpans.get(spanId);
   if (!span) return null;
 
@@ -165,13 +173,15 @@ export function endSpan(spanId: string, status: "ok" | "error" = "ok", errorMess
   metrics.totalOperations++;
   metrics.totalLatencyMs += latencyMs;
   metrics.latencies.push(latencyMs);
-  metrics.operationCounts[operation] = (metrics.operationCounts[operation] || 0) + 1;
+  metrics.operationCounts[operation] =
+    (metrics.operationCounts[operation] || 0) + 1;
 
   if (status === "ok") {
     metrics.successCount++;
   } else {
     metrics.errorCount++;
-    metrics.errorsByOperation[operation] = (metrics.errorsByOperation[operation] || 0) + 1;
+    metrics.errorsByOperation[operation] =
+      (metrics.errorsByOperation[operation] || 0) + 1;
   }
 
   // Update percentiles every 100 operations
@@ -183,7 +193,9 @@ export function endSpan(spanId: string, status: "ok" | "error" = "ok", errorMess
 
   // Structured log with trace context (eBPF-compatible format)
   if (latencyMs > 1000) {
-    logger.warn(`[Trace] SLOW ${engine}.${operation}: ${latencyMs.toFixed(1)}ms [trace=${span.traceId} span=${span.spanId}]`);
+    logger.warn(
+      `[Trace] SLOW ${engine}.${operation}: ${latencyMs.toFixed(1)}ms [trace=${span.traceId} span=${span.spanId}]`
+    );
   }
 
   return span;
@@ -196,19 +208,19 @@ export function withSpan<T>(
   engine: string,
   operationName: string,
   fn: (span: SpanContext) => Promise<T>,
-  attributes?: Record<string, string | number | boolean>,
+  attributes?: Record<string, string | number | boolean>
 ): Promise<T> {
   const span = startSpan(engine, operationName, attributes);
 
   return fn(span).then(
-    (result) => {
+    result => {
       endSpan(span.spanId, "ok");
       return result;
     },
-    (error) => {
+    error => {
       endSpan(span.spanId, "error", error?.message ?? String(error));
       throw error;
-    },
+    }
   );
 }
 
@@ -242,7 +254,9 @@ export function exportPrometheusMetrics(): string {
     updatePercentiles(metrics);
     const prefix = `fiveforlink_${engine.replace(/[^a-zA-Z0-9_]/g, "_")}`;
 
-    lines.push(`# HELP ${prefix}_operations_total Total operations for ${engine}`);
+    lines.push(
+      `# HELP ${prefix}_operations_total Total operations for ${engine}`
+    );
     lines.push(`# TYPE ${prefix}_operations_total counter`);
     lines.push(`${prefix}_operations_total ${metrics.totalOperations}`);
 
@@ -284,22 +298,31 @@ export function resetMetrics(): void {
 export const settlementTracer = {
   startSpan: (op: string, attrs?: Record<string, string | number | boolean>) =>
     startSpan("settlement", op, attrs),
-  withSpan: <T>(op: string, fn: (span: SpanContext) => Promise<T>, attrs?: Record<string, string | number | boolean>) =>
-    withSpan("settlement", op, fn, attrs),
+  withSpan: <T>(
+    op: string,
+    fn: (span: SpanContext) => Promise<T>,
+    attrs?: Record<string, string | number | boolean>
+  ) => withSpan("settlement", op, fn, attrs),
 };
 
 /** Dispute Resolution Engine tracer */
 export const disputeTracer = {
   startSpan: (op: string, attrs?: Record<string, string | number | boolean>) =>
     startSpan("dispute", op, attrs),
-  withSpan: <T>(op: string, fn: (span: SpanContext) => Promise<T>, attrs?: Record<string, string | number | boolean>) =>
-    withSpan("dispute", op, fn, attrs),
+  withSpan: <T>(
+    op: string,
+    fn: (span: SpanContext) => Promise<T>,
+    attrs?: Record<string, string | number | boolean>
+  ) => withSpan("dispute", op, fn, attrs),
 };
 
 /** Commission Engine tracer */
 export const commissionTracer = {
   startSpan: (op: string, attrs?: Record<string, string | number | boolean>) =>
     startSpan("commission", op, attrs),
-  withSpan: <T>(op: string, fn: (span: SpanContext) => Promise<T>, attrs?: Record<string, string | number | boolean>) =>
-    withSpan("commission", op, fn, attrs),
+  withSpan: <T>(
+    op: string,
+    fn: (span: SpanContext) => Promise<T>,
+    attrs?: Record<string, string | number | boolean>
+  ) => withSpan("commission", op, fn, attrs),
 };

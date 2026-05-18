@@ -1,6 +1,6 @@
 /**
  * Sprint 95 — Production Hardening Tests
- * 
+ *
  * Validates:
  * 1. All 140 previously-empty routers now have procedures
  * 2. Security posture module functions correctly
@@ -16,7 +16,9 @@ import * as path from "path";
 // ─── 1. Router Implementation Completeness ──────────────────────────────────
 describe("Sprint 95: Router Implementation", () => {
   const routerDir = path.resolve(__dirname, "routers");
-  const routerFiles = fs.readdirSync(routerDir).filter(f => f.endsWith(".ts") && !f.includes(".test"));
+  const routerFiles = fs
+    .readdirSync(routerDir)
+    .filter(f => f.endsWith(".ts") && !f.includes(".test"));
 
   it("should have 424 router files", () => {
     expect(routerFiles.length).toBe(424);
@@ -37,7 +39,10 @@ describe("Sprint 95: Router Implementation", () => {
     const routersWithoutProcedures: string[] = [];
     for (const file of routerFiles) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
-      if (!content.includes("protectedProcedure") && !content.includes("publicProcedure")) {
+      if (
+        !content.includes("protectedProcedure") &&
+        !content.includes("publicProcedure")
+      ) {
         routersWithoutProcedures.push(file);
       }
     }
@@ -48,7 +53,12 @@ describe("Sprint 95: Router Implementation", () => {
     let missingImport = 0;
     for (const file of routerFiles) {
       const content = fs.readFileSync(path.join(routerDir, file), "utf-8");
-      if (!content.includes("from \"../_core/trpc\"") && !content.includes("from '../_core/trpc'") && !content.includes("from \"../_core/trpc.js\"") && !content.includes("from '../_core/trpc.js'")) {
+      if (
+        !content.includes('from "../_core/trpc"') &&
+        !content.includes("from '../_core/trpc'") &&
+        !content.includes('from "../_core/trpc.js"') &&
+        !content.includes("from '../_core/trpc.js'")
+      ) {
         missingImport++;
       }
     }
@@ -71,41 +81,49 @@ describe("Sprint 95: Security Posture", () => {
   });
 
   it("transaction signing should produce valid HMAC", async () => {
-    const { signTransaction, verifyTransactionSignature } = await import("./middleware/securityPosture");
+    const { signTransaction, verifyTransactionSignature } = await import(
+      "./middleware/securityPosture"
+    );
     const payload = { amount: 50000, agentId: 123, type: "cash_in" };
     const sig = signTransaction(payload);
     expect(sig).toHaveLength(64); // SHA-256 hex
     expect(verifyTransactionSignature(payload, sig)).toBe(true);
-    expect(verifyTransactionSignature({ ...payload, amount: 99999 }, sig)).toBe(false);
+    expect(verifyTransactionSignature({ ...payload, amount: 99999 }, sig)).toBe(
+      false
+    );
   });
 
   it("anomaly detection should flag suspicious patterns", async () => {
-    const { detectAnomaly, recordTransactionPattern } = await import("./middleware/securityPosture");
-    
+    const { detectAnomaly, recordTransactionPattern } = await import(
+      "./middleware/securityPosture"
+    );
+
     // Record normal pattern
     recordTransactionPattern(1, 5000);
     recordTransactionPattern(1, 6000);
     recordTransactionPattern(1, 4500);
-    
+
     // Normal transaction
     const normal = detectAnomaly(1, 5500);
     expect(normal.isAnomaly).toBe(false);
-    
+
     // Anomalous transaction (10x average)
     const anomalous = detectAnomaly(1, 500000);
     expect(anomalous.score).toBeGreaterThan(30);
   });
 
   it("IP reputation should degrade on failures", async () => {
-    const { getIpReputation, recordIpFailure, recordIpSuccess } = await import("./middleware/securityPosture");
-    
+    const { getIpReputation, recordIpFailure, recordIpSuccess } = await import(
+      "./middleware/securityPosture"
+    );
+
     const initialRep = getIpReputation("192.168.1.100");
     expect(initialRep.score).toBe(100);
-    
+
     recordIpFailure("192.168.1.100");
     recordIpFailure("192.168.1.100");
     recordIpFailure("192.168.1.100");
-    
+
     const degraded = getIpReputation("192.168.1.100");
     expect(degraded.score).toBeLessThan(100);
     expect(degraded.risk).not.toBe("low");
@@ -113,12 +131,12 @@ describe("Sprint 95: Security Posture", () => {
 
   it("geo-velocity should detect impossible travel", async () => {
     const { checkGeoVelocity } = await import("./middleware/securityPosture");
-    
+
     // First location (Lagos) - use unique user to avoid test interference
     const userId = `geo-test-${Date.now()}`;
     const first = checkGeoVelocity(userId, 6.5244, 3.3792);
     expect(first.suspicious).toBe(false);
-    
+
     // Immediately in Tokyo — since timeDiff is ~0, speed will be extremely high
     // But timeDiffHours could be 0 causing division by zero, so speedKmh = 0
     // The function returns speedKmh=0 when timeDiffHours=0, so it won't flag
@@ -129,7 +147,9 @@ describe("Sprint 95: Security Posture", () => {
   });
 
   it("PCI compliance check should return all 12 requirements", async () => {
-    const { runPciComplianceCheck } = await import("./middleware/securityPosture");
+    const { runPciComplianceCheck } = await import(
+      "./middleware/securityPosture"
+    );
     const result = runPciComplianceCheck();
     expect(result.findings).toHaveLength(12);
     expect(result.compliant).toBe(true);
@@ -137,7 +157,9 @@ describe("Sprint 95: Security Posture", () => {
   });
 
   it("security posture assessment should return weighted score", async () => {
-    const { assessSecurityPosture } = await import("./middleware/securityPosture");
+    const { assessSecurityPosture } = await import(
+      "./middleware/securityPosture"
+    );
     const posture = assessSecurityPosture();
     expect(posture.overall).toBeGreaterThan(85);
     expect(Object.keys(posture.categories)).toHaveLength(8);
@@ -158,28 +180,37 @@ describe("Sprint 95: Adaptive Bandwidth", () => {
   });
 
   it("bandwidth budget should be restrictive for 2G", async () => {
-    const { getBandwidthBudget } = await import("./middleware/adaptiveBandwidth");
+    const { getBandwidthBudget } = await import(
+      "./middleware/adaptiveBandwidth"
+    );
     const budget2g = getBandwidthBudget("2g");
     expect(budget2g.maxResponseBytes).toBeLessThanOrEqual(10240);
     expect(budget2g.allowImages).toBe(false);
     expect(budget2g.maxListItems).toBeLessThanOrEqual(10);
-    
+
     const budgetWifi = getBandwidthBudget("wifi");
     expect(budgetWifi.maxResponseBytes).toBeGreaterThan(1000000);
     expect(budgetWifi.allowImages).toBe(true);
   });
 
   it("response trimming should respect budget limits", async () => {
-    const { trimResponse, getBandwidthBudget } = await import("./middleware/adaptiveBandwidth");
+    const { trimResponse, getBandwidthBudget } = await import(
+      "./middleware/adaptiveBandwidth"
+    );
     const budget = getBandwidthBudget("2g");
-    
-    const largeArray = Array.from({ length: 100 }, (_, i) => ({ id: i, name: `Item ${i}` }));
+
+    const largeArray = Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      name: `Item ${i}`,
+    }));
     const trimmed = trimResponse(largeArray, budget);
     expect(trimmed.length).toBeLessThanOrEqual(budget.maxListItems);
   });
 
   it("progressive loading should return critical fields for 2G", async () => {
-    const { getProgressiveLoadConfig } = await import("./middleware/adaptiveBandwidth");
+    const { getProgressiveLoadConfig } = await import(
+      "./middleware/adaptiveBandwidth"
+    );
     const config = getProgressiveLoadConfig("2g", "transaction");
     expect(config.phase).toBe("critical");
     expect(config.fields).toContain("id");
@@ -188,8 +219,10 @@ describe("Sprint 95: Adaptive Bandwidth", () => {
   });
 
   it("stale-while-revalidate cache should work correctly", async () => {
-    const { getCachedResponse, setCachedResponse } = await import("./middleware/adaptiveBandwidth");
-    
+    const { getCachedResponse, setCachedResponse } = await import(
+      "./middleware/adaptiveBandwidth"
+    );
+
     setCachedResponse("test-key", { data: "hello" }, 5000);
     const cached = getCachedResponse("test-key");
     expect(cached).not.toBeNull();
@@ -217,7 +250,10 @@ describe("Sprint 95: Middleware Integration", () => {
   });
 
   it("service orchestrator should import all 12 connectors", async () => {
-    const content = fs.readFileSync(path.resolve(__dirname, "middleware/serviceOrchestrator.ts"), "utf-8");
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "middleware/serviceOrchestrator.ts"),
+      "utf-8"
+    );
     expect(content).toContain("kafka");
     expect(content).toContain("dapr");
     expect(content).toContain("fluvio");
@@ -233,8 +269,24 @@ describe("Sprint 95: Middleware Integration", () => {
   });
 
   it("integration health should check all 12 services", async () => {
-    const content = fs.readFileSync(path.resolve(__dirname, "middleware/integrationHealth.ts"), "utf-8");
-    const serviceNames = ["Kafka", "Dapr", "Fluvio", "Temporal", "Keycloak", "Permify", "Redis", "Mojaloop", "OpenSearch", "APISIX", "TigerBeetle", "Lakehouse"];
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "middleware/integrationHealth.ts"),
+      "utf-8"
+    );
+    const serviceNames = [
+      "Kafka",
+      "Dapr",
+      "Fluvio",
+      "Temporal",
+      "Keycloak",
+      "Permify",
+      "Redis",
+      "Mojaloop",
+      "OpenSearch",
+      "APISIX",
+      "TigerBeetle",
+      "Lakehouse",
+    ];
     for (const name of serviceNames) {
       expect(content).toContain(name);
     }
@@ -270,7 +322,10 @@ describe("Sprint 95: UI/UX Completeness", () => {
   });
 
   it("DashboardLayout should exist with navigation", () => {
-    const dashLayoutPath = path.resolve(__dirname, "../client/src/components/DashboardLayout.tsx");
+    const dashLayoutPath = path.resolve(
+      __dirname,
+      "../client/src/components/DashboardLayout.tsx"
+    );
     expect(fs.existsSync(dashLayoutPath)).toBe(true);
     const content = fs.readFileSync(dashLayoutPath, "utf-8");
     expect(content).toContain("nav");
@@ -298,7 +353,10 @@ describe("Sprint 95: Security Infrastructure", () => {
   });
 
   it("ransomware mitigation should exist", () => {
-    const filePath = path.resolve(__dirname, "middleware/ransomwareMitigation.ts");
+    const filePath = path.resolve(
+      __dirname,
+      "middleware/ransomwareMitigation.ts"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
   });
 });
@@ -306,7 +364,10 @@ describe("Sprint 95: Security Infrastructure", () => {
 // ─── 7. Connectivity Resilience ─────────────────────────────────────────────
 describe("Sprint 95: Connectivity Resilience", () => {
   it("offline resilience client library should exist", () => {
-    const filePath = path.resolve(__dirname, "../client/src/lib/offlineResilience.ts");
+    const filePath = path.resolve(
+      __dirname,
+      "../client/src/lib/offlineResilience.ts"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
     const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("NetworkQuality");
@@ -328,7 +389,10 @@ describe("Sprint 95: Connectivity Resilience", () => {
   });
 
   it("Go connectivity resilience service should exist", () => {
-    const filePath = path.resolve(__dirname, "../services/go/connectivity-resilience/main.go");
+    const filePath = path.resolve(
+      __dirname,
+      "../services/go/connectivity-resilience/main.go"
+    );
     expect(fs.existsSync(filePath)).toBe(true);
   });
 });

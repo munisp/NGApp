@@ -22,16 +22,22 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
   describe("Adaptive Noise Reduction in extract_landmarks", () => {
     it("applies bilateral filter for high noise (noise_diff > 200)", () => {
       expect(serviceCode).toContain("if noise_diff > 200:");
-      expect(serviceCode).toContain("cv2.bilateralFilter(image, d=5, sigmaColor=50, sigmaSpace=50)");
+      expect(serviceCode).toContain(
+        "cv2.bilateralFilter(image, d=5, sigmaColor=50, sigmaSpace=50)"
+      );
     });
 
     it("applies lighter bilateral filter for moderate noise (noise_diff > 80)", () => {
       expect(serviceCode).toContain("elif noise_diff > 80:");
-      expect(serviceCode).toContain("cv2.bilateralFilter(image, d=3, sigmaColor=30, sigmaSpace=30)");
+      expect(serviceCode).toContain(
+        "cv2.bilateralFilter(image, d=3, sigmaColor=30, sigmaSpace=30)"
+      );
     });
 
     it("uses Laplacian variance difference to estimate noise level", () => {
-      expect(serviceCode).toContain("cv2.Laplacian(gray_check, cv2.CV_64F).var()");
+      expect(serviceCode).toContain(
+        "cv2.Laplacian(gray_check, cv2.CV_64F).var()"
+      );
       expect(serviceCode).toContain("cv2.medianBlur(gray_check, 3)");
       expect(serviceCode).toContain("noise_diff = abs(");
     });
@@ -49,13 +55,17 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
 
   describe("EMA Temporal Smoothing in _check_challenge", () => {
     it("implements exponential moving average smoothing", () => {
-      expect(serviceCode).toContain("def _ema_smooth(history: list, alpha: float = 0.3) -> list:");
+      expect(serviceCode).toContain(
+        "def _ema_smooth(history: list, alpha: float = 0.3) -> list:"
+      );
       expect(serviceCode).toContain("alpha * v + (1 - alpha) * smoothed[-1]");
     });
 
     it("applies EMA to blink detection (EAR history)", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
-      expect(checkChallenge).toContain('_ema_smooth(state.ear_history, alpha=0.4)');
+      expect(checkChallenge).toContain(
+        "_ema_smooth(state.ear_history, alpha=0.4)"
+      );
     });
 
     it("applies EMA to head turn detection (yaw history)", () => {
@@ -70,14 +80,20 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
 
     it("applies EMA to smile/mouth detection (MAR history)", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
-      expect(checkChallenge).toContain("_ema_smooth(state.mar_history, alpha=0.4)");
+      expect(checkChallenge).toContain(
+        "_ema_smooth(state.mar_history, alpha=0.4)"
+      );
     });
   });
 
   describe("Noise Floor Estimation", () => {
     it("estimates noise from rolling standard deviation of frame-to-frame diffs", () => {
-      expect(serviceCode).toContain("def _estimate_noise_floor(history: list, window: int = 10) -> float:");
-      expect(serviceCode).toContain("diffs = [abs(recent[i] - recent[i-1]) for i in range(1, len(recent))]");
+      expect(serviceCode).toContain(
+        "def _estimate_noise_floor(history: list, window: int = 10) -> float:"
+      );
+      expect(serviceCode).toContain(
+        "diffs = [abs(recent[i] - recent[i-1]) for i in range(1, len(recent))]"
+      );
       expect(serviceCode).toContain("float(np.std(diffs))");
     });
 
@@ -97,18 +113,24 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
 
     it("uses higher scale (2.0) for blink detection (most noise-sensitive)", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
-      expect(checkChallenge).toContain("_adapt_threshold(threshold, noise, scale=2.0)");
+      expect(checkChallenge).toContain(
+        "_adapt_threshold(threshold, noise, scale=2.0)"
+      );
     });
 
     it("uses moderate scale (1.2) for head turn detection", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
-      expect(checkChallenge).toContain("_adapt_threshold(threshold, noise, scale=1.2)");
+      expect(checkChallenge).toContain(
+        "_adapt_threshold(threshold, noise, scale=1.2)"
+      );
     });
 
     it("uses scale 1.5 for nod and mouth detection", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
       const nodSection = checkChallenge.split('"nod"')[1];
-      expect(nodSection).toContain("_adapt_threshold(threshold, noise, scale=1.5)");
+      expect(nodSection).toContain(
+        "_adapt_threshold(threshold, noise, scale=1.5)"
+      );
     });
   });
 
@@ -122,7 +144,9 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
     it("requires at least 2 consecutive frames for head turn", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
       // The turn section spans both turn_left and turn_right with sustained_check
-      const turnSection = checkChallenge.split('("turn_left", "turn_right")')[1].split('("look_up"')[0];
+      const turnSection = checkChallenge
+        .split('("turn_left", "turn_right")')[1]
+        .split('("look_up"')[0];
       expect(turnSection).toContain("min_frames=2");
     });
 
@@ -148,7 +172,9 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
 
     it("reduces recovery margin when noise is high", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
-      expect(checkChallenge).toContain("recovery_margin = max(0.05, 0.08 - noise)");
+      expect(checkChallenge).toContain(
+        "recovery_margin = max(0.05, 0.08 - noise)"
+      );
     });
 
     it("requires at least 5 frames before attempting blink detection", () => {
@@ -179,13 +205,18 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
     it("requires both sufficient range AND direction change", () => {
       const checkChallenge = serviceCode.split("def _check_challenge")[1];
       const nodSection = checkChallenge.split('"nod"')[1];
-      expect(nodSection).toContain("pitch_range > nod_threshold and changes >= 1");
+      expect(nodSection).toContain(
+        "pitch_range > nod_threshold and changes >= 1"
+      );
     });
   });
 
   describe("Client-Side Improvements (LivenessCameraCapture)", () => {
     const clientCode = fs.readFileSync(
-      path.resolve(__dirname, "../client/src/components/LivenessCameraCapture.tsx"),
+      path.resolve(
+        __dirname,
+        "../client/src/components/LivenessCameraCapture.tsx"
+      ),
       "utf-8"
     );
 
@@ -207,7 +238,9 @@ describe("Liveness Detection — Noise Tolerance Improvements", () => {
     });
 
     it("shows camera quality tip to users", () => {
-      expect(clientCode).toContain("Tip: Use good lighting and hold device steady");
+      expect(clientCode).toContain(
+        "Tip: Use good lighting and hold device steady"
+      );
     });
   });
 });

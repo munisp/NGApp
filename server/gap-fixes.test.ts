@@ -58,7 +58,8 @@ describe("CustomerDisputePortal (Gap 1)", () => {
     }
   });
 
-  it("fileDispute creates a new dispute", async () => {  // eslint-disable-line
+  it("fileDispute creates a new dispute", async () => {
+    // eslint-disable-line
   }, 15000);
   it.skip("fileDispute creates a new dispute (skipped - middleware timeouts in test env)", async () => {
     const result = await caller.customerDisputePortal.fileDispute({
@@ -213,7 +214,9 @@ describe("CommissionEngine Mutations (Gap 3)", () => {
     });
     expect(created.success).toBe(true);
 
-    const result = await caller.commissionEngine.deleteTier({ id: created.tier!.id });
+    const result = await caller.commissionEngine.deleteTier({
+      id: created.tier!.id,
+    });
     expect(result.success).toBe(true);
   });
 
@@ -233,10 +236,14 @@ describe("CommissionEngine Mutations (Gap 3)", () => {
 
   it("approvePayout approves a pending payout with TigerBeetle ledger entry", async () => {
     // Find a pending payout
-    const payoutsResult = await caller.commissionEngine.payouts({ status: "pending" });
+    const payoutsResult = await caller.commissionEngine.payouts({
+      status: "pending",
+    });
     if (payoutsResult.payouts.length > 0) {
       const payout = payoutsResult.payouts[0];
-      const result = await caller.commissionEngine.approvePayout({ id: payout.id });
+      const result = await caller.commissionEngine.approvePayout({
+        id: payout.id,
+      });
       expect(result.success).toBe(true);
       expect(result.payout).toBeDefined();
       expect(result.payout!.status).toBe("approved");

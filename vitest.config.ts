@@ -32,11 +32,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: ["server/**/*.ts"],
-      exclude: [
-        "server/_core/**",
-        "server/**/*.test.ts",
-        "server/**/*.d.ts",
-      ],
+      exclude: ["server/_core/**", "server/**/*.test.ts", "server/**/*.d.ts"],
     },
   },
 });

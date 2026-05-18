@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — Unified Middleware Connectors
- * 
+ *
  * Production-grade client implementations for all 12 middleware services.
  * Each connector provides:
  * - Connection pooling
@@ -97,7 +97,10 @@ export class KafkaConnector {
     }
   }
 
-  async produce(topic: string, messages: Array<{ key?: string; value: string }>): Promise<boolean> {
+  async produce(
+    topic: string,
+    messages: Array<{ key?: string; value: string }>
+  ): Promise<boolean> {
     if (!canAttempt("kafka")) return false;
     try {
       // In production: await producer.send({ topic, messages });
@@ -109,7 +112,10 @@ export class KafkaConnector {
     }
   }
 
-  async consume(topic: string, handler: (message: any) => Promise<void>): Promise<void> {
+  async consume(
+    topic: string,
+    handler: (message: any) => Promise<void>
+  ): Promise<void> {
     // In production: consumer.subscribe + consumer.run
     console.log(`[Kafka] Consumer registered for topic: ${topic}`);
   }
@@ -127,12 +133,15 @@ export class DaprConnector {
   async invokeService(appId: string, method: string, data?: any): Promise<any> {
     if (!canAttempt("dapr")) throw new Error("Dapr circuit open");
     try {
-      const res = await fetch(`${this.baseUrl}/v1.0/invoke/${appId}/method/${method}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: data ? JSON.stringify(data) : undefined,
-        signal: AbortSignal.timeout(10000),
-      });
+      const res = await fetch(
+        `${this.baseUrl}/v1.0/invoke/${appId}/method/${method}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: data ? JSON.stringify(data) : undefined,
+          signal: AbortSignal.timeout(10000),
+        }
+      );
       recordSuccess("dapr");
       return res.json();
     } catch (err) {
@@ -141,7 +150,11 @@ export class DaprConnector {
     }
   }
 
-  async publishEvent(pubsubName: string, topic: string, data: any): Promise<boolean> {
+  async publishEvent(
+    pubsubName: string,
+    topic: string,
+    data: any
+  ): Promise<boolean> {
     if (!canAttempt("dapr")) return false;
     try {
       await fetch(`${this.baseUrl}/v1.0/publish/${pubsubName}/${topic}`, {
@@ -161,7 +174,10 @@ export class DaprConnector {
   async getState(storeName: string, key: string): Promise<any> {
     if (!canAttempt("dapr")) return null;
     try {
-      const res = await fetch(`${this.baseUrl}/v1.0/state/${storeName}/${key}`, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(
+        `${this.baseUrl}/v1.0/state/${storeName}/${key}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
       recordSuccess("dapr");
       return res.ok ? res.json() : null;
     } catch {
@@ -170,7 +186,11 @@ export class DaprConnector {
     }
   }
 
-  async saveState(storeName: string, key: string, value: any): Promise<boolean> {
+  async saveState(
+    storeName: string,
+    key: string,
+    value: any
+  ): Promise<boolean> {
     if (!canAttempt("dapr")) return false;
     try {
       await fetch(`${this.baseUrl}/v1.0/state/${storeName}`, {
@@ -208,7 +228,10 @@ export class FluvioConnector {
         body: JSON.stringify({ topic, record }),
         signal: AbortSignal.timeout(5000),
       });
-      if (res.ok) { recordSuccess("fluvio"); return true; }
+      if (res.ok) {
+        recordSuccess("fluvio");
+        return true;
+      }
       recordFailure("fluvio");
       return false;
     } catch {
@@ -226,7 +249,12 @@ export class TemporalConnector {
     this.address = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
   }
 
-  async startWorkflow(workflowId: string, workflowType: string, args: any[], taskQueue: string = "pos-shell"): Promise<string | null> {
+  async startWorkflow(
+    workflowId: string,
+    workflowType: string,
+    args: any[],
+    taskQueue: string = "pos-shell"
+  ): Promise<string | null> {
     if (!canAttempt("temporal")) return null;
     try {
       // In production: const { Client } = require('@temporalio/client');
@@ -240,7 +268,11 @@ export class TemporalConnector {
     }
   }
 
-  async signalWorkflow(workflowId: string, signal: string, data: any): Promise<boolean> {
+  async signalWorkflow(
+    workflowId: string,
+    signal: string,
+    data: any
+  ): Promise<boolean> {
     if (!canAttempt("temporal")) return false;
     try {
       recordSuccess("temporal");
@@ -272,7 +304,10 @@ export class KeycloakConnector {
   private tokenCache: { token: string; expiresAt: number } | null = null;
 
   constructor() {
-    this.baseUrl = process.env.KEYCLOAK_URL ?? process.env.OAUTH_SERVER_URL ?? "http://localhost:8080";
+    this.baseUrl =
+      process.env.KEYCLOAK_URL ??
+      process.env.OAUTH_SERVER_URL ??
+      "http://localhost:8080";
     this.realm = process.env.KEYCLOAK_REALM ?? "pos-shell";
     this.clientId = process.env.KEYCLOAK_CLIENT_ID ?? "pos-shell-app";
     this.clientSecret = process.env.KEYCLOAK_CLIENT_SECRET ?? "";
@@ -283,33 +318,47 @@ export class KeycloakConnector {
       return this.tokenCache.token;
     }
     try {
-      const res = await fetch(`${this.baseUrl}/realms/${this.realm}/protocol/openid-connect/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "client_credentials",
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
+      const res = await fetch(
+        `${this.baseUrl}/realms/${this.realm}/protocol/openid-connect/token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: this.clientId,
+            client_secret: this.clientSecret,
+          }),
+          signal: AbortSignal.timeout(5000),
+        }
+      );
       if (res.ok) {
-        const data = await res.json() as any;
-        this.tokenCache = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 30) * 1000 };
+        const data = (await res.json()) as any;
+        this.tokenCache = {
+          token: data.access_token,
+          expiresAt: Date.now() + (data.expires_in - 30) * 1000,
+        };
         return data.access_token;
       }
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
     return null;
   }
 
   async verifyToken(token: string): Promise<any | null> {
     if (!canAttempt("keycloak")) return null;
     try {
-      const res = await fetch(`${this.baseUrl}/realms/${this.realm}/protocol/openid-connect/userinfo`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (res.ok) { recordSuccess("keycloak"); return res.json(); }
+      const res = await fetch(
+        `${this.baseUrl}/realms/${this.realm}/protocol/openid-connect/userinfo`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+      if (res.ok) {
+        recordSuccess("keycloak");
+        return res.json();
+      }
       recordFailure("keycloak");
       return null;
     } catch {
@@ -322,11 +371,17 @@ export class KeycloakConnector {
     const token = await this.getAdminToken();
     if (!token) return null;
     try {
-      const res = await fetch(`${this.baseUrl}/admin/realms/${this.realm}/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (res.ok) { recordSuccess("keycloak"); return res.json(); }
+      const res = await fetch(
+        `${this.baseUrl}/admin/realms/${this.realm}/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+      if (res.ok) {
+        recordSuccess("keycloak");
+        return res.json();
+      }
       return null;
     } catch {
       recordFailure("keycloak");
@@ -345,22 +400,30 @@ export class PermifyConnector {
     this.baseUrl = `http://${host}:${port}`;
   }
 
-  async check(tenantId: string, entity: { type: string; id: string }, permission: string, subject: { type: string; id: string }): Promise<boolean> {
+  async check(
+    tenantId: string,
+    entity: { type: string; id: string },
+    permission: string,
+    subject: { type: string; id: string }
+  ): Promise<boolean> {
     if (!canAttempt("permify")) return false;
     try {
-      const res = await fetch(`${this.baseUrl}/v1/tenants/${tenantId}/permissions/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          metadata: { snap_token: "", schema_version: "", depth: 20 },
-          entity,
-          permission,
-          subject: { ...subject, relation: "" },
-        }),
-        signal: AbortSignal.timeout(3000),
-      });
+      const res = await fetch(
+        `${this.baseUrl}/v1/tenants/${tenantId}/permissions/check`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            metadata: { snap_token: "", schema_version: "", depth: 20 },
+            entity,
+            permission,
+            subject: { ...subject, relation: "" },
+          }),
+          signal: AbortSignal.timeout(3000),
+        }
+      );
       if (res.ok) {
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         recordSuccess("permify");
         return data.can === "CHECK_RESULT_ALLOWED";
       }
@@ -372,19 +435,32 @@ export class PermifyConnector {
     }
   }
 
-  async writeRelation(tenantId: string, entity: { type: string; id: string }, relation: string, subject: { type: string; id: string }): Promise<boolean> {
+  async writeRelation(
+    tenantId: string,
+    entity: { type: string; id: string },
+    relation: string,
+    subject: { type: string; id: string }
+  ): Promise<boolean> {
     if (!canAttempt("permify")) return false;
     try {
-      const res = await fetch(`${this.baseUrl}/v1/tenants/${tenantId}/relationships/write`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          metadata: { schema_version: "" },
-          tuples: [{ entity, relation, subject: { ...subject, relation: "" } }],
-        }),
-        signal: AbortSignal.timeout(3000),
-      });
-      if (res.ok) { recordSuccess("permify"); return true; }
+      const res = await fetch(
+        `${this.baseUrl}/v1/tenants/${tenantId}/relationships/write`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            metadata: { schema_version: "" },
+            tuples: [
+              { entity, relation, subject: { ...subject, relation: "" } },
+            ],
+          }),
+          signal: AbortSignal.timeout(3000),
+        }
+      );
+      if (res.ok) {
+        recordSuccess("permify");
+        return true;
+      }
       recordFailure("permify");
       return false;
     } catch {
@@ -414,7 +490,11 @@ export class RedisConnector {
     return null;
   }
 
-  async set(key: string, value: string, ttlSeconds: number = 3600): Promise<boolean> {
+  async set(
+    key: string,
+    value: string,
+    ttlSeconds: number = 3600
+  ): Promise<boolean> {
     this.cache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
     // In production: redis.set(key, value, 'EX', ttlSeconds)
     return true;
@@ -441,21 +521,30 @@ export class MojalloopConnector {
     this.dfspId = process.env.MOJALOOP_DFSP_ID ?? "pos-shell-dfsp";
   }
 
-  async initiateTransfer(transfer: { payerFsp: string; payeeFsp: string; amount: { amount: string; currency: string }; transferId: string }): Promise<any> {
+  async initiateTransfer(transfer: {
+    payerFsp: string;
+    payeeFsp: string;
+    amount: { amount: string; currency: string };
+    transferId: string;
+  }): Promise<any> {
     if (!canAttempt("mojaloop")) return null;
     try {
       const res = await fetch(`${this.hubUrl}/transfers`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/vnd.interoperability.transfers+json;version=1.1",
+          "Content-Type":
+            "application/vnd.interoperability.transfers+json;version=1.1",
           "FSPIOP-Source": this.dfspId,
           "FSPIOP-Destination": transfer.payeeFsp,
-          "Date": new Date().toUTCString(),
+          Date: new Date().toUTCString(),
         },
         body: JSON.stringify(transfer),
         signal: AbortSignal.timeout(30000),
       });
-      if (res.ok || res.status === 202) { recordSuccess("mojaloop"); return res.json(); }
+      if (res.ok || res.status === 202) {
+        recordSuccess("mojaloop");
+        return res.json();
+      }
       recordFailure("mojaloop");
       return null;
     } catch {
@@ -468,10 +557,16 @@ export class MojalloopConnector {
     if (!canAttempt("mojaloop")) return null;
     try {
       const res = await fetch(`${this.hubUrl}/parties/${type}/${id}`, {
-        headers: { "FSPIOP-Source": this.dfspId, "Accept": "application/vnd.interoperability.parties+json;version=1.1" },
+        headers: {
+          "FSPIOP-Source": this.dfspId,
+          Accept: "application/vnd.interoperability.parties+json;version=1.1",
+        },
         signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) { recordSuccess("mojaloop"); return res.json(); }
+      if (res.ok) {
+        recordSuccess("mojaloop");
+        return res.json();
+      }
       return null;
     } catch {
       recordFailure("mojaloop");
@@ -489,7 +584,8 @@ export class OpenSearchConnector {
     this.baseUrl = process.env.OPENSEARCH_URL ?? "http://localhost:9200";
     const user = process.env.OPENSEARCH_USER;
     const pass = process.env.OPENSEARCH_PASSWORD;
-    if (user && pass) this.auth = Buffer.from(`${user}:${pass}`).toString("base64");
+    if (user && pass)
+      this.auth = Buffer.from(`${user}:${pass}`).toString("base64");
   }
 
   private headers(): Record<string, string> {
@@ -507,7 +603,10 @@ export class OpenSearchConnector {
         body: JSON.stringify(document),
         signal: AbortSignal.timeout(5000),
       });
-      if (res.ok || res.status === 201) { recordSuccess("opensearch"); return true; }
+      if (res.ok || res.status === 201) {
+        recordSuccess("opensearch");
+        return true;
+      }
       recordFailure("opensearch");
       return false;
     } catch {
@@ -526,7 +625,7 @@ export class OpenSearchConnector {
         signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         recordSuccess("opensearch");
         return data.hits?.hits?.map((h: any) => h._source) ?? [];
       }
@@ -548,7 +647,7 @@ export class OpenSearchConnector {
         signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         recordSuccess("opensearch");
         return data.aggregations;
       }
@@ -567,19 +666,30 @@ export class APISIXConnector {
 
   constructor() {
     this.adminUrl = process.env.APISIX_ADMIN_URL ?? "http://localhost:9180";
-    this.apiKey = process.env.APISIX_ADMIN_KEY ?? "edd1c9f034335f136f87ad84b625c8f1";
+    this.apiKey =
+      process.env.APISIX_ADMIN_KEY ?? "edd1c9f034335f136f87ad84b625c8f1";
   }
 
-  async createRoute(route: { uri: string; upstream: { type: string; nodes: Record<string, number> }; plugins?: any }): Promise<boolean> {
+  async createRoute(route: {
+    uri: string;
+    upstream: { type: string; nodes: Record<string, number> };
+    plugins?: any;
+  }): Promise<boolean> {
     if (!canAttempt("apisix")) return false;
     try {
       const res = await fetch(`${this.adminUrl}/apisix/admin/routes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-KEY": this.apiKey },
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": this.apiKey,
+        },
         body: JSON.stringify(route),
         signal: AbortSignal.timeout(5000),
       });
-      if (res.ok || res.status === 201) { recordSuccess("apisix"); return true; }
+      if (res.ok || res.status === 201) {
+        recordSuccess("apisix");
+        return true;
+      }
       recordFailure("apisix");
       return false;
     } catch {
@@ -596,7 +706,7 @@ export class APISIXConnector {
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         recordSuccess("apisix");
         return data.list ?? data.node?.nodes ?? [];
       }
@@ -620,7 +730,9 @@ export class TigerBeetleConnector {
     this.clusterId = parseInt(process.env.TIGERBEETLE_CLUSTER_ID ?? "0");
   }
 
-  async createAccounts(accounts: Array<{ id: bigint; ledger: number; code: number }>): Promise<boolean> {
+  async createAccounts(
+    accounts: Array<{ id: bigint; ledger: number; code: number }>
+  ): Promise<boolean> {
     if (!canAttempt("tigerbeetle")) return false;
     try {
       // In production: const { createClient } = require('tigerbeetle-node');
@@ -634,7 +746,16 @@ export class TigerBeetleConnector {
     }
   }
 
-  async createTransfers(transfers: Array<{ id: bigint; debit_account_id: bigint; credit_account_id: bigint; amount: bigint; ledger: number; code: number }>): Promise<boolean> {
+  async createTransfers(
+    transfers: Array<{
+      id: bigint;
+      debit_account_id: bigint;
+      credit_account_id: bigint;
+      amount: bigint;
+      ledger: number;
+      code: number;
+    }>
+  ): Promise<boolean> {
     if (!canAttempt("tigerbeetle")) return false;
     try {
       // In production: await client.createTransfers(transfers);
@@ -665,7 +786,10 @@ export class LakehouseConnector {
   private schema: string;
 
   constructor() {
-    this.trinoUrl = process.env.TRINO_URL ?? process.env.LAKEHOUSE_URL ?? "http://localhost:8080";
+    this.trinoUrl =
+      process.env.TRINO_URL ??
+      process.env.LAKEHOUSE_URL ??
+      "http://localhost:8080";
     this.catalog = process.env.LAKEHOUSE_CATALOG ?? "iceberg";
     this.schema = process.env.LAKEHOUSE_SCHEMA ?? "pos_analytics";
   }
@@ -685,7 +809,7 @@ export class LakehouseConnector {
         signal: AbortSignal.timeout(30000),
       });
       if (res.ok) {
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         recordSuccess("lakehouse");
         return data.data ?? [];
       }

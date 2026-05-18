@@ -29,7 +29,7 @@ async function getCounterValue(
   labels: Record<string, string> = {}
 ): Promise<number> {
   const metrics = await counter.get();
-  const match = metrics.values.find((v) =>
+  const match = metrics.values.find(v =>
     Object.entries(labels).every(([k, val]) => v.labels[k] === val)
   );
   return match?.value ?? 0;
@@ -42,7 +42,8 @@ async function getHistogramSum(
 ): Promise<number> {
   const metrics = await histogram.get();
   const match = metrics.values.find(
-    (v) => v.metricName?.endsWith("_sum") &&
+    v =>
+      v.metricName?.endsWith("_sum") &&
       Object.entries(labels).every(([k, val]) => v.labels[k] === val)
   );
   return match?.value ?? 0;
@@ -80,22 +81,30 @@ describe("Prometheus registry", () => {
 describe("transactionsTotal counter", () => {
   it("increments by 1 for a given label set", async () => {
     const before = await getCounterValue(transactionsTotal, {
-      type: "Cash In", status: "success", channel: "Cash",
+      type: "Cash In",
+      status: "success",
+      channel: "Cash",
     });
     transactionsTotal.labels("Cash In", "success", "Cash").inc();
     const after = await getCounterValue(transactionsTotal, {
-      type: "Cash In", status: "success", channel: "Cash",
+      type: "Cash In",
+      status: "success",
+      channel: "Cash",
     });
     expect(after - before).toBe(1);
   });
 
   it("tracks different transaction types independently", async () => {
     const beforeCashOut = await getCounterValue(transactionsTotal, {
-      type: "Cash Out", status: "success", channel: "Cash",
+      type: "Cash Out",
+      status: "success",
+      channel: "Cash",
     });
     transactionsTotal.labels("Cash Out", "success", "Cash").inc();
     const afterCashOut = await getCounterValue(transactionsTotal, {
-      type: "Cash Out", status: "success", channel: "Cash",
+      type: "Cash Out",
+      status: "success",
+      channel: "Cash",
     });
     expect(afterCashOut - beforeCashOut).toBe(1);
   });
@@ -104,11 +113,13 @@ describe("transactionsTotal counter", () => {
 describe("transactionErrorsTotal counter", () => {
   it("increments on error with reason label", async () => {
     const before = await getCounterValue(transactionErrorsTotal, {
-      type: "Transfer", reason: "insufficient_float",
+      type: "Transfer",
+      reason: "insufficient_float",
     });
     transactionErrorsTotal.labels("Transfer", "insufficient_float").inc();
     const after = await getCounterValue(transactionErrorsTotal, {
-      type: "Transfer", reason: "insufficient_float",
+      type: "Transfer",
+      reason: "insufficient_float",
     });
     expect(after - before).toBe(1);
   });
@@ -116,27 +127,39 @@ describe("transactionErrorsTotal counter", () => {
 
 describe("floatLocksTotal counter", () => {
   it("increments with settlement trigger label", async () => {
-    const before = await getCounterValue(floatLocksTotal, { trigger: "settlement" });
+    const before = await getCounterValue(floatLocksTotal, {
+      trigger: "settlement",
+    });
     floatLocksTotal.labels("settlement").inc();
-    const after = await getCounterValue(floatLocksTotal, { trigger: "settlement" });
+    const after = await getCounterValue(floatLocksTotal, {
+      trigger: "settlement",
+    });
     expect(after - before).toBe(1);
   });
 });
 
 describe("disputesRaisedTotal counter", () => {
   it("increments with dispute type label", async () => {
-    const before = await getCounterValue(disputesRaisedTotal, { type: "transaction" });
+    const before = await getCounterValue(disputesRaisedTotal, {
+      type: "transaction",
+    });
     disputesRaisedTotal.labels("transaction").inc();
-    const after = await getCounterValue(disputesRaisedTotal, { type: "transaction" });
+    const after = await getCounterValue(disputesRaisedTotal, {
+      type: "transaction",
+    });
     expect(after - before).toBe(1);
   });
 });
 
 describe("floatTopupRequestsTotal counter", () => {
   it("increments with submitted status label", async () => {
-    const before = await getCounterValue(floatTopupRequestsTotal, { status: "submitted" });
+    const before = await getCounterValue(floatTopupRequestsTotal, {
+      status: "submitted",
+    });
     floatTopupRequestsTotal.labels("submitted").inc();
-    const after = await getCounterValue(floatTopupRequestsTotal, { status: "submitted" });
+    const after = await getCounterValue(floatTopupRequestsTotal, {
+      status: "submitted",
+    });
     expect(after - before).toBe(1);
   });
 });
@@ -144,11 +167,13 @@ describe("floatTopupRequestsTotal counter", () => {
 describe("platformCallsTotal counter", () => {
   it("tracks calls per service and status", async () => {
     const before = await getCounterValue(platformCallsTotal, {
-      service: "kyc", status: "success",
+      service: "kyc",
+      status: "success",
     });
     platformCallsTotal.labels("kyc", "success").inc();
     const after = await getCounterValue(platformCallsTotal, {
-      service: "kyc", status: "success",
+      service: "kyc",
+      status: "success",
     });
     expect(after - before).toBe(1);
   });
@@ -156,7 +181,9 @@ describe("platformCallsTotal counter", () => {
 
 describe("fraudAlertsTotal counter", () => {
   it("increments with severity label", async () => {
-    const before = await getCounterValue(fraudAlertsTotal, { severity: "high" });
+    const before = await getCounterValue(fraudAlertsTotal, {
+      severity: "high",
+    });
     fraudAlertsTotal.labels("high").inc();
     const after = await getCounterValue(fraudAlertsTotal, { severity: "high" });
     expect(after - before).toBe(1);
@@ -167,9 +194,13 @@ describe("fraudAlertsTotal counter", () => {
 
 describe("transactionDurationMs histogram", () => {
   it("records observations and increases sum", async () => {
-    const before = await getHistogramSum(transactionDurationMs, { type: "Cash In" });
+    const before = await getHistogramSum(transactionDurationMs, {
+      type: "Cash In",
+    });
     transactionDurationMs.labels("Cash In").observe(250);
-    const after = await getHistogramSum(transactionDurationMs, { type: "Cash In" });
+    const after = await getHistogramSum(transactionDurationMs, {
+      type: "Cash In",
+    });
     expect(after - before).toBeCloseTo(250, 1);
   });
 
@@ -181,9 +212,13 @@ describe("transactionDurationMs histogram", () => {
 
 describe("platformCallDurationMs histogram", () => {
   it("records per-service latency observations", async () => {
-    const before = await getHistogramSum(platformCallDurationMs, { service: "float" });
+    const before = await getHistogramSum(platformCallDurationMs, {
+      service: "float",
+    });
     platformCallDurationMs.labels("float").observe(120);
-    const after = await getHistogramSum(platformCallDurationMs, { service: "float" });
+    const after = await getHistogramSum(platformCallDurationMs, {
+      service: "float",
+    });
     expect(after - before).toBeCloseTo(120, 1);
   });
 });
@@ -191,13 +226,17 @@ describe("platformCallDurationMs histogram", () => {
 describe("httpRequestDurationMs histogram", () => {
   it("records HTTP request durations with method/route/status labels", async () => {
     const before = await getHistogramSum(httpRequestDurationMs, {
-      method: "POST", route: "/api/trpc/transactions.create", status_code: "200",
+      method: "POST",
+      route: "/api/trpc/transactions.create",
+      status_code: "200",
     });
     httpRequestDurationMs
       .labels("POST", "/api/trpc/transactions.create", "200")
       .observe(85);
     const after = await getHistogramSum(httpRequestDurationMs, {
-      method: "POST", route: "/api/trpc/transactions.create", status_code: "200",
+      method: "POST",
+      route: "/api/trpc/transactions.create",
+      status_code: "200",
     });
     expect(after - before).toBeCloseTo(85, 1);
   });

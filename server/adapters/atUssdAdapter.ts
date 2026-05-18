@@ -26,14 +26,23 @@ export interface AtUssdSessionInfo {
   lastActivity: string;
 }
 
-export async function handleCallback(callback: AtUssdCallback): Promise<AdapterResponse<AtUssdResponse>> {
+export async function handleCallback(
+  callback: AtUssdCallback
+): Promise<AdapterResponse<AtUssdResponse>> {
   return atUssdHandler.post<AtUssdResponse>("/ussd/callback", callback);
 }
 
-export async function listSessions(limit?: number): Promise<AdapterResponse<AtUssdSessionInfo[]>> {
-  return atUssdHandler.get<AtUssdSessionInfo[]>("/ussd/sessions", limit ? { limit: String(limit) } : undefined);
+export async function listSessions(
+  limit?: number
+): Promise<AdapterResponse<AtUssdSessionInfo[]>> {
+  return atUssdHandler.get<AtUssdSessionInfo[]>(
+    "/ussd/sessions",
+    limit ? { limit: String(limit) } : undefined
+  );
 }
 
-export async function cleanupExpiredSessions(): Promise<AdapterResponse<{ cleaned: number }>> {
+export async function cleanupExpiredSessions(): Promise<
+  AdapterResponse<{ cleaned: number }>
+> {
   return atUssdHandler.post<{ cleaned: number }>("/ussd/cleanup");
 }

@@ -12,22 +12,22 @@ import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
 const disputeSuccessRate = new Rate("dispute_success_rate");
-const disputeDuration    = new Trend("dispute_duration_ms", true);
+const disputeDuration = new Trend("dispute_duration_ms", true);
 
 export const options = {
   stages: [
     { duration: "20s", target: 15 },
-    { duration: "1m",  target: 30 },
-    { duration: "20s", target: 0  },
+    { duration: "1m", target: 30 },
+    { duration: "20s", target: 0 },
   ],
   thresholds: {
-    "dispute_duration_ms":  ["p(95)<1000"],
-    "dispute_success_rate": ["rate>0.97"],
-    "http_req_failed":      ["rate<0.03"],
+    dispute_duration_ms: ["p(95)<1000"],
+    dispute_success_rate: ["rate>0.97"],
+    http_req_failed: ["rate<0.03"],
   },
 };
 
-const BASE_URL    = __ENV.BASE_URL    || "http://localhost:3000";
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const AGENT_TOKEN = __ENV.AGENT_TOKEN || "";
 
 function trpcMutation(procedure, input, token) {
@@ -40,8 +40,13 @@ function trpcMutation(procedure, input, token) {
   );
 }
 
-const DISPUTE_TYPES = ["wrong_amount", "failed_transaction", "double_charge", "service_not_rendered"];
-const CHANNELS      = ["cash_in", "cash_out", "transfer", "airtime"];
+const DISPUTE_TYPES = [
+  "wrong_amount",
+  "failed_transaction",
+  "double_charge",
+  "service_not_rendered",
+];
+const CHANNELS = ["cash_in", "cash_out", "transfer", "airtime"];
 
 export default function () {
   const start = Date.now();
@@ -51,19 +56,23 @@ export default function () {
     "disputes.raise",
     {
       transactionRef: `TXN${Math.random().toString(36).slice(2, 12).toUpperCase()}`,
-      type:           DISPUTE_TYPES[Math.floor(Math.random() * DISPUTE_TYPES.length)],
-      amount:         Math.floor(Math.random() * 50000) + 500,
-      channel:        CHANNELS[Math.floor(Math.random() * CHANNELS.length)],
-      description:    "k6 load test dispute — automated",
-      customerPhone:  `0${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+      type: DISPUTE_TYPES[Math.floor(Math.random() * DISPUTE_TYPES.length)],
+      amount: Math.floor(Math.random() * 50000) + 500,
+      channel: CHANNELS[Math.floor(Math.random() * CHANNELS.length)],
+      description: "k6 load test dispute — automated",
+      customerPhone: `0${Math.floor(Math.random() * 9000000000) + 1000000000}`,
     },
     AGENT_TOKEN
   );
 
   const ok = check(raiseRes, {
     "dispute raised (200)": r => r.status === 200,
-    "has dispute id":       r => {
-      try { return !!JSON.parse(r.body).result?.data?.json?.id; } catch { return false; }
+    "has dispute id": r => {
+      try {
+        return !!JSON.parse(r.body).result?.data?.json?.id;
+      } catch {
+        return false;
+      }
     },
   });
 
@@ -74,7 +83,9 @@ export default function () {
     let disputeId;
     try {
       disputeId = JSON.parse(raiseRes.body).result?.data?.json?.id;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     if (disputeId) {
       sleep(0.1);

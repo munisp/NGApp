@@ -11,7 +11,10 @@ import crypto from "crypto";
 // ── Replay Attack Prevention (Nonce + Idempotency) ───────────────────
 const nonceStore = new Map<string, number>(); // nonce -> timestamp
 const NONCE_TTL = 300_000; // 5 min
-const idempotencyStore = new Map<string, { status: number; body: any; timestamp: number }>();
+const idempotencyStore = new Map<
+  string,
+  { status: number; body: any; timestamp: number }
+>();
 const IDEMPOTENCY_TTL = 3_600_000; // 1 hour
 
 // Cleanup stale nonces and idempotency keys
@@ -25,9 +28,17 @@ setInterval(() => {
   }
 }, 60_000);
 
-export function replayAttackPrevention(req: Request, res: Response, next: NextFunction) {
+export function replayAttackPrevention(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Only apply to mutation endpoints (POST, PUT, PATCH, DELETE)
-  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
+  if (
+    req.method === "GET" ||
+    req.method === "HEAD" ||
+    req.method === "OPTIONS"
+  ) {
     return next();
   }
 
@@ -35,7 +46,9 @@ export function replayAttackPrevention(req: Request, res: Response, next: NextFu
   const nonce = req.headers["x-request-nonce"] as string;
   if (nonce) {
     if (nonceStore.has(nonce)) {
-      res.status(409).json({ error: "Duplicate request detected (nonce reuse)" });
+      res
+        .status(409)
+        .json({ error: "Duplicate request detected (nonce reuse)" });
       return;
     }
     nonceStore.set(nonce, Date.now());
@@ -75,17 +88,28 @@ interface CardTestWindow {
 
 const cardTestWindows = new Map<string, CardTestWindow>();
 
-export function cardTestingDetection(req: Request, res: Response, next: NextFunction) {
+export function cardTestingDetection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   if (!req.url.includes("/trpc/") || req.method !== "POST") return next();
 
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-    || req.socket.remoteAddress || "unknown";
+  const ip =
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "unknown";
   const now = Date.now();
   const windowMs = 300_000; // 5 min window
 
   let window = cardTestWindows.get(ip);
   if (!window || now - window.windowStart > windowMs) {
-    window = { attempts: 0, smallAmounts: 0, uniqueCards: new Set(), windowStart: now };
+    window = {
+      attempts: 0,
+      smallAmounts: 0,
+      uniqueCards: new Set(),
+      windowStart: now,
+    };
     cardTestWindows.set(ip, window);
   }
 
@@ -105,8 +129,14 @@ export function cardTestingDetection(req: Request, res: Response, next: NextFunc
         // 1. Many small amounts from same IP
         // 2. Many unique cards from same IP
         // 3. High frequency of attempts
-        if (window.smallAmounts > 10 || window.uniqueCards.size > 5 || window.attempts > 20) {
-          console.warn(`[CardTest] Suspected card testing from ${ip}: ${window.attempts} attempts, ${window.smallAmounts} small, ${window.uniqueCards.size} unique cards`);
+        if (
+          window.smallAmounts > 10 ||
+          window.uniqueCards.size > 5 ||
+          window.attempts > 20
+        ) {
+          console.warn(
+            `[CardTest] Suspected card testing from ${ip}: ${window.attempts} attempts, ${window.smallAmounts} small, ${window.uniqueCards.size} unique cards`
+          );
           res.status(429).json({
             error: "Suspicious activity detected. Please try again later.",
             code: "CARD_TEST_DETECTED",
@@ -115,7 +145,9 @@ export function cardTestingDetection(req: Request, res: Response, next: NextFunc
         }
       }
     }
-  } catch (e) { /* ignore parse errors */ }
+  } catch (e) {
+    /* ignore parse errors */
+  }
 
   next();
 }
@@ -135,15 +167,25 @@ const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_DURATION = 900_000; // 15 min
 const PROGRESSIVE_LOCKOUT_MULTIPLIER = 2;
 
-export function accountTakeoverPrevention(req: Request, res: Response, next: NextFunction) {
+export function accountTakeoverPrevention(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Only apply to auth-related endpoints
-  if (!req.url.includes("login") && !req.url.includes("auth") && !req.url.includes("pin")) {
+  if (
+    !req.url.includes("login") &&
+    !req.url.includes("auth") &&
+    !req.url.includes("pin")
+  ) {
     return next();
   }
   if (req.method !== "POST") return next();
 
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-    || req.socket.remoteAddress || "unknown";
+  const ip =
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "unknown";
   const userAgent = req.headers["user-agent"] || "unknown";
   const now = Date.now();
 
@@ -151,12 +193,22 @@ export function accountTakeoverPrevention(req: Request, res: Response, next: Nex
   let identifier = "unknown";
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    identifier = body?.agentCode || body?.email || body?.["0"]?.json?.agentCode || ip;
-  } catch (e) { identifier = ip; }
+    identifier =
+      body?.agentCode || body?.email || body?.["0"]?.json?.agentCode || ip;
+  } catch (e) {
+    identifier = ip;
+  }
 
   let record = loginAttempts.get(identifier);
   if (!record) {
-    record = { attempts: 0, failures: 0, lastAttempt: now, lockedUntil: 0, ips: new Set(), userAgents: new Set() };
+    record = {
+      attempts: 0,
+      failures: 0,
+      lastAttempt: now,
+      lockedUntil: 0,
+      ips: new Set(),
+      userAgents: new Set(),
+    };
     loginAttempts.set(identifier, record);
   }
 
@@ -178,19 +230,31 @@ export function accountTakeoverPrevention(req: Request, res: Response, next: Nex
 
   // Detect suspicious patterns
   if (record.ips.size > 5) {
-    console.warn(`[ATO] Account ${identifier} accessed from ${record.ips.size} different IPs`);
+    console.warn(
+      `[ATO] Account ${identifier} accessed from ${record.ips.size} different IPs`
+    );
   }
 
   // Intercept response to track failures
   const originalJson = res.json.bind(res);
   res.json = function (body: any) {
-    if (res.statusCode === 401 || res.statusCode === 403 ||
-        (body && (body.error || body.code === "UNAUTHORIZED"))) {
+    if (
+      res.statusCode === 401 ||
+      res.statusCode === 403 ||
+      (body && (body.error || body.code === "UNAUTHORIZED"))
+    ) {
       record!.failures++;
       if (record!.failures >= MAX_FAILED_LOGINS) {
-        const lockoutMs = LOCKOUT_DURATION * Math.pow(PROGRESSIVE_LOCKOUT_MULTIPLIER, Math.floor(record!.failures / MAX_FAILED_LOGINS) - 1);
+        const lockoutMs =
+          LOCKOUT_DURATION *
+          Math.pow(
+            PROGRESSIVE_LOCKOUT_MULTIPLIER,
+            Math.floor(record!.failures / MAX_FAILED_LOGINS) - 1
+          );
         record!.lockedUntil = now + Math.min(lockoutMs, 3_600_000); // Max 1 hour
-        console.warn(`[ATO] Account ${identifier} locked for ${lockoutMs / 1000}s after ${record!.failures} failures`);
+        console.warn(
+          `[ATO] Account ${identifier} locked for ${lockoutMs / 1000}s after ${record!.failures} failures`
+        );
       }
     } else if (res.statusCode === 200) {
       // Successful login resets failure count
@@ -215,7 +279,11 @@ const SPLIT_WINDOW_MS = 3_600_000; // 1 hour
 const SPLIT_THRESHOLD_COUNT = 5; // 5+ transactions in window
 const SPLIT_THRESHOLD_TOTAL = 500_000; // ₦500k total
 
-export function splitTransactionDetection(agentId: string, amount: number, type: string): {
+export function splitTransactionDetection(
+  agentId: string,
+  amount: number,
+  type: string
+): {
   isSuspicious: boolean;
   reason: string;
   totalInWindow: number;
@@ -229,7 +297,9 @@ export function splitTransactionDetection(agentId: string, amount: number, type:
   }
 
   // Remove expired entries
-  window.transactions = window.transactions.filter(t => now - t.timestamp < SPLIT_WINDOW_MS);
+  window.transactions = window.transactions.filter(
+    t => now - t.timestamp < SPLIT_WINDOW_MS
+  );
   window.transactions.push({ amount, timestamp: now, type });
 
   const totalAmount = window.transactions.reduce((sum, t) => sum + t.amount, 0);
@@ -244,7 +314,12 @@ export function splitTransactionDetection(agentId: string, amount: number, type:
     };
   }
 
-  return { isSuspicious: false, reason: "", totalInWindow: totalAmount, countInWindow: count };
+  return {
+    isSuspicious: false,
+    reason: "",
+    totalInWindow: totalAmount,
+    countInWindow: count,
+  };
 }
 
 // ── Phantom Reversal Detection ───────────────────────────────────────
@@ -260,7 +335,10 @@ const REVERSAL_WINDOW_MS = 3_600_000; // 1 hour
 const REVERSAL_RATIO_THRESHOLD = 0.5; // 50% reversal rate is suspicious
 const MIN_TX_FOR_REVERSAL_CHECK = 3;
 
-export function phantomReversalDetection(agentId: string, isReversal: boolean): {
+export function phantomReversalDetection(
+  agentId: string,
+  isReversal: boolean
+): {
   isSuspicious: boolean;
   reason: string;
   reversalRate: number;
@@ -302,8 +380,17 @@ const transferHistory: TransferRecord[] = [];
 const COLLUSION_WINDOW_MS = 86_400_000; // 24 hours
 const MAX_TRANSFER_HISTORY = 10_000;
 
-export function recordTransfer(fromAgent: string, toAgent: string, amount: number) {
-  transferHistory.push({ from: fromAgent, to: toAgent, amount, timestamp: Date.now() });
+export function recordTransfer(
+  fromAgent: string,
+  toAgent: string,
+  amount: number
+) {
+  transferHistory.push({
+    from: fromAgent,
+    to: toAgent,
+    amount,
+    timestamp: Date.now(),
+  });
   if (transferHistory.length > MAX_TRANSFER_HISTORY) {
     transferHistory.splice(0, transferHistory.length - MAX_TRANSFER_HISTORY);
   }
@@ -314,7 +401,9 @@ export function detectCollusion(agentId: string): {
   patterns: string[];
 } {
   const now = Date.now();
-  const recent = transferHistory.filter(t => now - t.timestamp < COLLUSION_WINDOW_MS);
+  const recent = transferHistory.filter(
+    t => now - t.timestamp < COLLUSION_WINDOW_MS
+  );
   const patterns: string[] = [];
 
   // Check for circular transfers (A→B→A)
@@ -322,13 +411,16 @@ export function detectCollusion(agentId: string): {
   const incoming = recent.filter(t => t.to === agentId);
 
   for (const out of outgoing) {
-    const circular = incoming.find(inc =>
-      inc.from === out.to &&
-      Math.abs(inc.amount - out.amount) < out.amount * 0.1 && // Within 10%
-      Math.abs(inc.timestamp - out.timestamp) < 3_600_000 // Within 1 hour
+    const circular = incoming.find(
+      inc =>
+        inc.from === out.to &&
+        Math.abs(inc.amount - out.amount) < out.amount * 0.1 && // Within 10%
+        Math.abs(inc.timestamp - out.timestamp) < 3_600_000 // Within 1 hour
     );
     if (circular) {
-      patterns.push(`Circular transfer: ${agentId}→${out.to}→${agentId} (₦${out.amount}↔₦${circular.amount})`);
+      patterns.push(
+        `Circular transfer: ${agentId}→${out.to}→${agentId} (₦${out.amount}↔₦${circular.amount})`
+      );
     }
   }
 
@@ -356,31 +448,48 @@ interface StuffingWindow {
 
 const stuffingWindows = new Map<string, StuffingWindow>();
 
-export function credentialStuffingDetection(req: Request, res: Response, next: NextFunction) {
+export function credentialStuffingDetection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   if (!req.url.includes("login") && !req.url.includes("auth")) return next();
   if (req.method !== "POST") return next();
 
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
-    || req.socket.remoteAddress || "unknown";
+  const ip =
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "unknown";
   const now = Date.now();
 
   let window = stuffingWindows.get(ip);
-  if (!window || now - window.windowStart > 600_000) { // 10 min window
-    window = { uniqueAccounts: new Set(), totalAttempts: 0, failures: 0, windowStart: now };
+  if (!window || now - window.windowStart > 600_000) {
+    // 10 min window
+    window = {
+      uniqueAccounts: new Set(),
+      totalAttempts: 0,
+      failures: 0,
+      windowStart: now,
+    };
     stuffingWindows.set(ip, window);
   }
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const account = body?.agentCode || body?.email || body?.["0"]?.json?.agentCode;
+    const account =
+      body?.agentCode || body?.email || body?.["0"]?.json?.agentCode;
     if (account) window.uniqueAccounts.add(account);
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    /* ignore */
+  }
 
   window.totalAttempts++;
 
   // Credential stuffing: many unique accounts from same IP
   if (window.uniqueAccounts.size > 10 && window.totalAttempts > 15) {
-    console.warn(`[CredStuff] IP ${ip}: ${window.uniqueAccounts.size} unique accounts, ${window.totalAttempts} attempts`);
+    console.warn(
+      `[CredStuff] IP ${ip}: ${window.uniqueAccounts.size} unique accounts, ${window.totalAttempts} attempts`
+    );
     res.status(429).json({
       error: "Suspicious login pattern detected",
       code: "CREDENTIAL_STUFFING_DETECTED",
@@ -393,14 +502,21 @@ export function credentialStuffingDetection(req: Request, res: Response, next: N
 
 // ── Enumeration Attack Prevention ────────────────────────────────────
 // Prevents attackers from discovering valid usernames/agent codes
-export function enumerationPrevention(req: Request, res: Response, next: NextFunction) {
+export function enumerationPrevention(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   if (!req.url.includes("login") && !req.url.includes("auth")) return next();
 
   const originalJson = res.json.bind(res);
   res.json = function (body: any) {
     // Normalize error messages to prevent user enumeration
     if (res.statusCode === 401 || res.statusCode === 404) {
-      return originalJson({ error: "Invalid credentials", code: "AUTH_FAILED" });
+      return originalJson({
+        error: "Invalid credentials",
+        code: "AUTH_FAILED",
+      });
     }
     return originalJson(body);
   };
@@ -410,11 +526,22 @@ export function enumerationPrevention(req: Request, res: Response, next: NextFun
 
 // ── Data Exfiltration Prevention ─────────────────────────────────────
 const MAX_QUERY_RESULTS = 1000;
-const EXPORT_RATE_LIMIT = new Map<string, { count: number; windowStart: number }>();
+const EXPORT_RATE_LIMIT = new Map<
+  string,
+  { count: number; windowStart: number }
+>();
 
-export function dataExfiltrationPrevention(req: Request, res: Response, next: NextFunction) {
+export function dataExfiltrationPrevention(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Limit bulk data exports
-  if (req.url.includes("export") || req.url.includes("download") || req.url.includes("bulk")) {
+  if (
+    req.url.includes("export") ||
+    req.url.includes("download") ||
+    req.url.includes("bulk")
+  ) {
     const userId = (req as any).userId || "anonymous";
     const now = Date.now();
     let window = EXPORT_RATE_LIMIT.get(userId);
@@ -424,8 +551,11 @@ export function dataExfiltrationPrevention(req: Request, res: Response, next: Ne
     }
     window.count++;
 
-    if (window.count > 20) { // Max 20 exports per hour
-      res.status(429).json({ error: "Export rate limit exceeded", maxPerHour: 20 });
+    if (window.count > 20) {
+      // Max 20 exports per hour
+      res
+        .status(429)
+        .json({ error: "Export rate limit exceeded", maxPerHour: 20 });
       return;
     }
   }
@@ -448,9 +578,20 @@ export function maskPII(data: any): any {
   if (data && typeof data === "object") {
     const masked: any = {};
     for (const [key, value] of Object.entries(data)) {
-      const sensitiveKeys = ["phone", "email", "bvn", "nin", "ssn", "pan", "cardNumber", "accountNumber", "pin"];
+      const sensitiveKeys = [
+        "phone",
+        "email",
+        "bvn",
+        "nin",
+        "ssn",
+        "pan",
+        "cardNumber",
+        "accountNumber",
+        "pin",
+      ];
       if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
-        masked[key] = typeof value === "string" ? maskPII(value) : "***REDACTED***";
+        masked[key] =
+          typeof value === "string" ? maskPII(value) : "***REDACTED***";
       } else {
         masked[key] = maskPII(value);
       }
@@ -473,7 +614,12 @@ interface SessionRecord {
 const activeSessions = new Map<string, SessionRecord[]>();
 const MAX_CONCURRENT_SESSIONS = 3;
 
-export function concurrentSessionControl(userId: string, deviceFingerprint: string, ip: string, userAgent: string): {
+export function concurrentSessionControl(
+  userId: string,
+  deviceFingerprint: string,
+  ip: string,
+  userAgent: string
+): {
   allowed: boolean;
   activeSessions: number;
   reason?: string;
@@ -502,7 +648,14 @@ export function concurrentSessionControl(userId: string, deviceFingerprint: stri
     };
   }
 
-  active.push({ userId, deviceFingerprint, ip, userAgent, createdAt: now, lastActive: now });
+  active.push({
+    userId,
+    deviceFingerprint,
+    ip,
+    userAgent,
+    createdAt: now,
+    lastActive: now,
+  });
   activeSessions.set(userId, active);
   return { allowed: true, activeSessions: active.length };
 }
@@ -510,7 +663,10 @@ export function concurrentSessionControl(userId: string, deviceFingerprint: stri
 export function terminateSession(userId: string, deviceFingerprint?: string) {
   if (deviceFingerprint) {
     const sessions = activeSessions.get(userId) || [];
-    activeSessions.set(userId, sessions.filter(s => s.deviceFingerprint !== deviceFingerprint));
+    activeSessions.set(
+      userId,
+      sessions.filter(s => s.deviceFingerprint !== deviceFingerprint)
+    );
   } else {
     activeSessions.delete(userId); // Terminate all
   }
@@ -531,7 +687,12 @@ interface ImmutableLogEntry {
 const immutableLog: ImmutableLogEntry[] = [];
 let lastHash = "GENESIS";
 
-export function appendImmutableLog(action: string, actor: string, resource: string, details: any): string {
+export function appendImmutableLog(
+  action: string,
+  actor: string,
+  resource: string,
+  details: any
+): string {
   const entry: ImmutableLogEntry = {
     id: crypto.randomUUID(),
     timestamp: Date.now(),
@@ -567,7 +728,10 @@ export function verifyAuditChain(): { valid: boolean; brokenAt?: number } {
     }
     // Verify hash
     const hashInput = `${entry.id}|${entry.timestamp}|${entry.action}|${entry.actor}|${entry.resource}|${JSON.stringify(entry.details)}|${entry.previousHash}`;
-    const expectedHash = crypto.createHash("sha256").update(hashInput).digest("hex");
+    const expectedHash = crypto
+      .createHash("sha256")
+      .update(hashInput)
+      .digest("hex");
     if (entry.hash !== expectedHash) {
       return { valid: false, brokenAt: i };
     }
@@ -575,7 +739,9 @@ export function verifyAuditChain(): { valid: boolean; brokenAt?: number } {
   return { valid: true };
 }
 
-export function getImmutableLogEntries(limit: number = 100): ImmutableLogEntry[] {
+export function getImmutableLogEntries(
+  limit: number = 100
+): ImmutableLogEntry[] {
   return immutableLog.slice(-limit);
 }
 
@@ -587,5 +753,7 @@ export function applyFinancialAttackPrevention(app: any) {
   app.use(credentialStuffingDetection);
   app.use(enumerationPrevention);
   app.use(dataExfiltrationPrevention);
-  console.log("[FinSec] Financial attack prevention applied: replay, card testing, ATO, credential stuffing, enumeration, data exfiltration");
+  console.log(
+    "[FinSec] Financial attack prevention applied: replay, card testing, ATO, credential stuffing, enumeration, data exfiltration"
+  );
 }

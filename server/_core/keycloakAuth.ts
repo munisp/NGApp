@@ -41,14 +41,15 @@ const RETURN_PATH_COOKIE = "kc_return";
 const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET ?? "pos54link-secret-change-in-production";
+  const secret =
+    process.env.JWT_SECRET ?? "pos54link-secret-change-in-production";
   return new TextEncoder().encode(secret);
 }
 
 // ── Session JWT ───────────────────────────────────────────────────────────────
 
 export interface SessionPayload {
-  sub: string;          // Keycloak sub (stable user ID)
+  sub: string; // Keycloak sub (stable user ID)
   name: string;
   email: string;
   role: "admin" | "supervisor" | "user";
@@ -155,7 +156,8 @@ export function registerKeycloakAuthRoutes(app: Express): void {
     if (!process.env.KEYCLOAK_URL) {
       res.status(503).json({
         error: "keycloak_not_configured",
-        message: "Keycloak SSO is not configured on this server. Set KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, and KEYCLOAK_CLIENT_SECRET.",
+        message:
+          "Keycloak SSO is not configured on this server. Set KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, and KEYCLOAK_CLIENT_SECRET.",
       });
       return;
     }
@@ -183,7 +185,9 @@ export function registerKeycloakAuthRoutes(app: Express): void {
 
     if (error) {
       console.error(`[Keycloak] Auth error: ${error} — ${error_description}`);
-      res.redirect(`/?auth_error=${encodeURIComponent(error_description ?? error)}`);
+      res.redirect(
+        `/?auth_error=${encodeURIComponent(error_description ?? error)}`
+      );
       return;
     }
 
@@ -227,7 +231,9 @@ export function registerKeycloakAuthRoutes(app: Express): void {
       res.clearCookie(STATE_COOKIE, { path: "/" });
       res.clearCookie(RETURN_PATH_COOKIE, { path: "/" });
 
-      console.info(`[Keycloak] Login success — role: ${session.role}, sub: ${session.sub.slice(0, 8)}...`);
+      console.info(
+        `[Keycloak] Login success — role: ${session.role}, sub: ${session.sub.slice(0, 8)}...`
+      );
       res.redirect(returnTo);
     } catch (err) {
       console.error("[Keycloak] Callback error:", err);

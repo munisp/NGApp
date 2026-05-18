@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Report Email Delivery — 54Link Agency Banking Platform
- * 
+ *
  * Sends comparison PDF reports via email after scheduled load tests.
  * Uses the existing emailService infrastructure.
  */
@@ -25,7 +25,12 @@ export function generateComparisonReportHtml(data: {
   errorRateDelta: number;
   verdict: "IMPROVEMENT" | "REGRESSION" | "MIXED";
 }): string {
-  const verdictColor = data.verdict === "IMPROVEMENT" ? "#22c55e" : data.verdict === "REGRESSION" ? "#ef4444" : "#f59e0b";
+  const verdictColor =
+    data.verdict === "IMPROVEMENT"
+      ? "#22c55e"
+      : data.verdict === "REGRESSION"
+        ? "#ef4444"
+        : "#f59e0b";
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1e293b;">Load Test Comparison Report</h2>
@@ -45,14 +50,18 @@ export function generateComparisonReportHtml(data: {
   `;
 }
 
-export async function sendReportEmail(payload: ReportEmailPayload): Promise<boolean> {
+export async function sendReportEmail(
+  payload: ReportEmailPayload
+): Promise<boolean> {
   try {
     // Use notifyOwner as the delivery mechanism
     await notifyOwner({
       title: payload.subject,
       content: `Report Type: ${payload.reportType}\n\nRecipient: ${payload.recipientEmail}\n\n${payload.htmlBody.replace(/<[^>]*>/g, "")}`,
     });
-    console.log(`[ReportEmail] Sent ${payload.reportType} report to ${payload.recipientEmail}`);
+    console.log(
+      `[ReportEmail] Sent ${payload.reportType} report to ${payload.recipientEmail}`
+    );
     return true;
   } catch (err: any) {
     console.error(`[ReportEmail] Failed to send: ${err.message}`);

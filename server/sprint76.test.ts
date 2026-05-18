@@ -39,11 +39,17 @@ describe("securityAudit router", () => {
       expect(result.allowed).toBe(true);
     });
     it("should allow merchant settlement access", () => {
-      const result = { allowed: true, policyName: "Merchant Settlement Access" };
+      const result = {
+        allowed: true,
+        policyName: "Merchant Settlement Access",
+      };
       expect(result.allowed).toBe(true);
     });
     it("should default deny when no policy matches", () => {
-      const result = { allowed: false, reason: "No matching policy — default deny" };
+      const result = {
+        allowed: false,
+        reason: "No matching policy — default deny",
+      };
       expect(result.allowed).toBe(false);
     });
   });
@@ -203,7 +209,14 @@ describe("ussdReceipt router", () => {
     expect(statuses).toContain("queued");
   });
   it("should support cash_in, cash_out, balance, transfer, airtime, bills", () => {
-    const types = ["cash_in", "cash_out", "balance", "transfer", "airtime", "bills"];
+    const types = [
+      "cash_in",
+      "cash_out",
+      "balance",
+      "transfer",
+      "airtime",
+      "bills",
+    ];
     expect(types.length).toBe(6);
   });
 });
@@ -227,7 +240,13 @@ describe("networkResilience router", () => {
     expect(mode).toBe("offline");
   });
   it("should track connection metrics", () => {
-    const metrics = { totalConnections: 5, activeWebSocket: 2, activeSSE: 1, activeLongPoll: 1, offlineAgents: 1 };
+    const metrics = {
+      totalConnections: 5,
+      activeWebSocket: 2,
+      activeSSE: 1,
+      activeLongPoll: 1,
+      offlineAgents: 1,
+    };
     expect(metrics.totalConnections).toBe(5);
   });
   it("should determine bandwidth tier", () => {
@@ -251,7 +270,7 @@ describe("ussdAnalytics router", () => {
     expect(rate).toBeGreaterThan(0);
   });
   it("should identify drop-off points", () => {
-    const dropOffs = { "pin_entry": 15, "amount_entry": 8 };
+    const dropOffs = { pin_entry: 15, amount_entry: 8 };
     expect(Object.keys(dropOffs).length).toBeGreaterThan(0);
   });
   it("should track by carrier", () => {
@@ -399,7 +418,10 @@ describe("Sprint 76 infrastructure", () => {
     expect(serviceCount).toBe(19);
   });
   it("should assign unique ports to all services", () => {
-    const ports = [9101, 9102, 9103, 9104, 9105, 9106, 9107, 9108, 9109, 9110, 9111, 9112, 9113, 9114, 9115, 9116, 9117, 9118, 9119];
+    const ports = [
+      9101, 9102, 9103, 9104, 9105, 9106, 9107, 9108, 9109, 9110, 9111, 9112,
+      9113, 9114, 9115, 9116, 9117, 9118, 9119,
+    ];
     const unique = new Set(ports);
     expect(unique.size).toBe(ports.length);
   });
@@ -416,7 +438,12 @@ describe("SecurityAuditDashboard page", () => {
     expect(fields.length).toBe(4);
   });
   it("should render DDoS shield status", () => {
-    const sections = ["totalRequests", "blockedRequests", "blockRate", "activeBlocks"];
+    const sections = [
+      "totalRequests",
+      "blockedRequests",
+      "blockRate",
+      "activeBlocks",
+    ];
     expect(sections.length).toBe(4);
   });
   it("should render file integrity", () => {

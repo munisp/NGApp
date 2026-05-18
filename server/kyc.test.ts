@@ -10,46 +10,48 @@ import type { TrpcContext } from "./_core/context.js";
 // vi.hoisted runs before vi.mock hoisting, so kycRow is available in the factory
 const { kycRow } = vi.hoisted(() => ({
   kycRow: () => ({
-  id: 1,
-  agentId: 1,
-  status: "liveness_passed",
-  livenessPassed: true,
-  livenessScore: "0.97",
-  docType: "NIN",
-  docExtractedName: "Emeka Eze",
-  docExtractedDob: "1990-01-01",
-  docExtractedIdNumber: "12345678901",
-  docConfidence: "0.92",
-  docFraudIndicators: [],
-  complianceRecordId: "case_001",
-  serviceAvailable: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
+    id: 1,
+    agentId: 1,
+    status: "liveness_passed",
+    livenessPassed: true,
+    livenessScore: "0.97",
+    docType: "NIN",
+    docExtractedName: "Emeka Eze",
+    docExtractedDob: "1990-01-01",
+    docExtractedIdNumber: "12345678901",
+    docConfidence: "0.92",
+    docFraudIndicators: [],
+    complianceRecordId: "case_001",
+    serviceAvailable: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }),
 }));
-vi.mock("./db.js", async (importOriginal) => {
+vi.mock("./db.js", async importOriginal => {
   const actual = await importOriginal<typeof import("./db.js")>();
   return {
     ...actual,
     getDb: vi.fn().mockResolvedValue({
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{
-            id: 1,
-            agentId: 1,
-            status: "pending",
-            livenessResult: null,
-            livenessScore: null,
-            ocrResult: null,
-            ocrConfidence: null,
-            extractedName: null,
-            extractedDob: null,
-            extractedIdNumber: null,
-            fraudIndicators: null,
-            serviceAvailable: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }]),
+          returning: vi.fn().mockResolvedValue([
+            {
+              id: 1,
+              agentId: 1,
+              status: "pending",
+              livenessResult: null,
+              livenessScore: null,
+              ocrResult: null,
+              ocrConfidence: null,
+              extractedName: null,
+              extractedDob: null,
+              extractedIdNumber: null,
+              fraudIndicators: null,
+              serviceAvailable: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
         }),
       }),
       select: vi.fn().mockReturnValue({
@@ -70,12 +72,14 @@ vi.mock("./db.js", async (importOriginal) => {
       update: vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{
-              id: 1,
-              status: "liveness_passed",
-              livenessResult: "passed",
-              livenessScore: 0.97,
-            }]),
+            returning: vi.fn().mockResolvedValue([
+              {
+                id: 1,
+                status: "liveness_passed",
+                livenessResult: "passed",
+                livenessScore: 0.97,
+              },
+            ]),
           }),
         }),
       }),
@@ -134,9 +138,15 @@ function makeCaller(role: "agent" | "admin" = "agent") {
   const ctx: TrpcContext = {
     req: { cookies: { agent_session: "mock_token" } } as any,
     res: {} as any,
-    user: role === "admin"
-      ? { id: 1, name: "Admin", role: "admin", keycloakSub: "admin-sub" } as any
-      : null,
+    user:
+      role === "admin"
+        ? ({
+            id: 1,
+            name: "Admin",
+            role: "admin",
+            keycloakSub: "admin-sub",
+          } as any)
+        : null,
   };
   return appRouter.createCaller(ctx);
 }

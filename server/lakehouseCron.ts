@@ -36,7 +36,12 @@ function yesterday(): string {
 
 async function snapshotTransactions(date: string): Promise<void> {
   const db = await getDb();
-  if (!db) { logger.warn("[LakehouseCron] DB unavailable, skipping transaction snapshot"); return; }
+  if (!db) {
+    logger.warn(
+      "[LakehouseCron] DB unavailable, skipping transaction snapshot"
+    );
+    return;
+  }
 
   const start = new Date(`${date}T00:00:00Z`);
   const end = new Date(`${date}T23:59:59Z`);
@@ -44,17 +49,25 @@ async function snapshotTransactions(date: string): Promise<void> {
   const rows = await db
     .select()
     .from(transactions)
-    .where(and(gte(transactions.createdAt, start), lte(transactions.createdAt, end)))
+    .where(
+      and(gte(transactions.createdAt, start), lte(transactions.createdAt, end))
+    )
     .orderBy(desc(transactions.createdAt))
     .limit(100_000);
 
   const key = await uploadTransactionSnapshot(date, rows);
-  logger.info({ key, count: rows.length, date }, "[LakehouseCron] Transaction snapshot uploaded");
+  logger.info(
+    { key, count: rows.length, date },
+    "[LakehouseCron] Transaction snapshot uploaded"
+  );
 }
 
 async function snapshotFraudEvents(date: string): Promise<void> {
   const db = await getDb();
-  if (!db) { logger.warn("[LakehouseCron] DB unavailable, skipping fraud snapshot"); return; }
+  if (!db) {
+    logger.warn("[LakehouseCron] DB unavailable, skipping fraud snapshot");
+    return;
+  }
 
   const start = new Date(`${date}T00:00:00Z`);
   const end = new Date(`${date}T23:59:59Z`);
@@ -62,16 +75,26 @@ async function snapshotFraudEvents(date: string): Promise<void> {
   const rows = await db
     .select()
     .from(fraudAlerts)
-    .where(and(gte(fraudAlerts.createdAt, start), lte(fraudAlerts.createdAt, end)))
+    .where(
+      and(gte(fraudAlerts.createdAt, start), lte(fraudAlerts.createdAt, end))
+    )
     .limit(50_000);
 
   const key = await uploadFraudEvents(date, rows);
-  logger.info({ key, count: rows.length, date }, "[LakehouseCron] Fraud events snapshot uploaded");
+  logger.info(
+    { key, count: rows.length, date },
+    "[LakehouseCron] Fraud events snapshot uploaded"
+  );
 }
 
 async function snapshotAgentMetrics(date: string): Promise<void> {
   const db = await getDb();
-  if (!db) { logger.warn("[LakehouseCron] DB unavailable, skipping agent metrics snapshot"); return; }
+  if (!db) {
+    logger.warn(
+      "[LakehouseCron] DB unavailable, skipping agent metrics snapshot"
+    );
+    return;
+  }
 
   const start = new Date(`${date}T00:00:00Z`);
   const end = new Date(`${date}T23:59:59Z`);
@@ -93,10 +116,12 @@ async function snapshotAgentMetrics(date: string): Promise<void> {
     })
     .from(transactions)
     .innerJoin(agents, eq(transactions.agentId, agents.id))
-    .where(and(gte(transactions.createdAt, start), lte(transactions.createdAt, end)))
+    .where(
+      and(gte(transactions.createdAt, start), lte(transactions.createdAt, end))
+    )
     .groupBy(transactions.agentId, agents.agentCode, agents.tier);
 
-  const metrics = rows.map((r) => ({
+  const metrics = rows.map(r => ({
     date,
     agentId: r.agentId,
     agentCode: r.agentCode,
@@ -127,22 +152,36 @@ async function snapshotAgentMetrics(date: string): Promise<void> {
   const [y, m, d] = date.split("-");
   const key = `${y}/${m}/${d}/agent-metrics-${date}.json`;
   try {
-    await s3.send(new PutObjectCommand({
-      Bucket: BUCKETS.AGENT_METRICS,
-      Key: key,
-      Body: JSON.stringify(metrics, null, 2),
-      ContentType: "application/json",
-      Metadata: { "record-count": String(metrics.length), "snapshot-date": date },
-    }));
-    logger.info({ key, count: metrics.length, date }, "[LakehouseCron] Agent metrics snapshot uploaded");
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKETS.AGENT_METRICS,
+        Key: key,
+        Body: JSON.stringify(metrics, null, 2),
+        ContentType: "application/json",
+        Metadata: {
+          "record-count": String(metrics.length),
+          "snapshot-date": date,
+        },
+      })
+    );
+    logger.info(
+      { key, count: metrics.length, date },
+      "[LakehouseCron] Agent metrics snapshot uploaded"
+    );
   } catch (err) {
-    logger.warn({ err }, "[LakehouseCron] Agent metrics upload failed (MinIO may be unavailable)");
+    logger.warn(
+      { err },
+      "[LakehouseCron] Agent metrics upload failed (MinIO may be unavailable)"
+    );
   }
 }
 
 async function snapshotSettlementSummary(date: string): Promise<void> {
   const db = await getDb();
-  if (!db) { logger.warn("[LakehouseCron] DB unavailable, skipping settlement snapshot"); return; }
+  if (!db) {
+    logger.warn("[LakehouseCron] DB unavailable, skipping settlement snapshot");
+    return;
+  }
 
   const start = new Date(`${date}T00:00:00Z`);
   const end = new Date(`${date}T23:59:59Z`);
@@ -159,7 +198,9 @@ async function snapshotSettlementSummary(date: string): Promise<void> {
       activeAgents: sql<number>`count(distinct ${transactions.agentId})::int`,
     })
     .from(transactions)
-    .where(and(gte(transactions.createdAt, start), lte(transactions.createdAt, end)));
+    .where(
+      and(gte(transactions.createdAt, start), lte(transactions.createdAt, end))
+    );
 
   const summary = {
     date,
@@ -168,14 +209,19 @@ async function snapshotSettlementSummary(date: string): Promise<void> {
     totalVolume: totals?.totalVolume ?? 0,
     totalFees: totals?.totalFees ?? 0,
     totalCommission: totals?.totalCommission ?? 0,
-    successRate: totals?.txCount ? (totals.successCount ?? 0) / totals.txCount : 0,
+    successRate: totals?.txCount
+      ? (totals.successCount ?? 0) / totals.txCount
+      : 0,
     failedCount: totals?.failedCount ?? 0,
     fraudCount: totals?.fraudCount ?? 0,
     activeAgents: totals?.activeAgents ?? 0,
   };
 
   const key = await uploadSettlementSummary(date, summary);
-  logger.info({ key, date }, "[LakehouseCron] Settlement summary snapshot uploaded");
+  logger.info(
+    { key, date },
+    "[LakehouseCron] Settlement summary snapshot uploaded"
+  );
 }
 
 /**
@@ -186,8 +232,11 @@ export function registerLakehouseCron(): void {
   // 02:00 WAT = 01:00 UTC (UTC+1 = WAT)
   cron.schedule("0 1 * * *", async () => {
     const date = yesterday();
-    logger.info({ date }, "[LakehouseCron] Starting daily transaction snapshot");
-    await snapshotTransactions(date).catch((err) =>
+    logger.info(
+      { date },
+      "[LakehouseCron] Starting daily transaction snapshot"
+    );
+    await snapshotTransactions(date).catch(err =>
       logger.error({ err }, "[LakehouseCron] Transaction snapshot failed")
     );
   });
@@ -195,8 +244,11 @@ export function registerLakehouseCron(): void {
   // 02:05 WAT = 01:05 UTC
   cron.schedule("5 1 * * *", async () => {
     const date = yesterday();
-    logger.info({ date }, "[LakehouseCron] Starting daily fraud events snapshot");
-    await snapshotFraudEvents(date).catch((err) =>
+    logger.info(
+      { date },
+      "[LakehouseCron] Starting daily fraud events snapshot"
+    );
+    await snapshotFraudEvents(date).catch(err =>
       logger.error({ err }, "[LakehouseCron] Fraud events snapshot failed")
     );
   });
@@ -204,8 +256,11 @@ export function registerLakehouseCron(): void {
   // 02:10 WAT = 01:10 UTC
   cron.schedule("10 1 * * *", async () => {
     const date = yesterday();
-    logger.info({ date }, "[LakehouseCron] Starting daily agent metrics snapshot");
-    await snapshotAgentMetrics(date).catch((err) =>
+    logger.info(
+      { date },
+      "[LakehouseCron] Starting daily agent metrics snapshot"
+    );
+    await snapshotAgentMetrics(date).catch(err =>
       logger.error({ err }, "[LakehouseCron] Agent metrics snapshot failed")
     );
   });
@@ -213,14 +268,27 @@ export function registerLakehouseCron(): void {
   // 02:15 WAT = 01:15 UTC
   cron.schedule("15 1 * * *", async () => {
     const date = yesterday();
-    logger.info({ date }, "[LakehouseCron] Starting daily settlement summary snapshot");
-    await snapshotSettlementSummary(date).catch((err) =>
-      logger.error({ err }, "[LakehouseCron] Settlement summary snapshot failed")
+    logger.info(
+      { date },
+      "[LakehouseCron] Starting daily settlement summary snapshot"
+    );
+    await snapshotSettlementSummary(date).catch(err =>
+      logger.error(
+        { err },
+        "[LakehouseCron] Settlement summary snapshot failed"
+      )
     );
   });
 
-  logger.info("[LakehouseCron] Registered 4 daily snapshot jobs (02:00–02:15 WAT)");
+  logger.info(
+    "[LakehouseCron] Registered 4 daily snapshot jobs (02:00–02:15 WAT)"
+  );
 }
 
 // Export individual functions for use in tRPC mutations (manual triggers)
-export { snapshotTransactions, snapshotFraudEvents, snapshotAgentMetrics, snapshotSettlementSummary };
+export {
+  snapshotTransactions,
+  snapshotFraudEvents,
+  snapshotAgentMetrics,
+  snapshotSettlementSummary,
+};

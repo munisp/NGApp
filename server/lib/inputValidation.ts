@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Input Validation & Sanitization — 54Link Agency Banking Platform
- * 
+ *
  * Centralized Zod schemas and sanitization for all tRPC inputs.
  * Prevents:
  * - SQL injection via parameterized queries + input sanitization
@@ -16,10 +16,10 @@ import { z } from "zod";
 
 export function sanitizeString(input: string): string {
   return input
-    .replace(/[<>]/g, "")           // Strip angle brackets (XSS)
-    .replace(/javascript:/gi, "")   // Strip JS protocol
-    .replace(/on\w+=/gi, "")        // Strip event handlers
-    .replace(/\0/g, "")             // Strip null bytes
+    .replace(/[<>]/g, "") // Strip angle brackets (XSS)
+    .replace(/javascript:/gi, "") // Strip JS protocol
+    .replace(/on\w+=/gi, "") // Strip event handlers
+    .replace(/\0/g, "") // Strip null bytes
     .trim();
 }
 
@@ -34,7 +34,7 @@ export function sanitizeHtml(input: string): string {
 
 export function sanitizePath(input: string): string {
   return input
-    .replace(/\.\./g, "")           // Prevent path traversal
+    .replace(/\.\./g, "") // Prevent path traversal
     .replace(/[~`!#$%^&*+=[\]\\';,/{}|":<>?]/g, "")
     .trim();
 }
@@ -50,12 +50,24 @@ export function sanitizeEmail(input: string): string {
 // ── Reusable Zod Schemas ────────────────────────────────────────────────
 
 export const SafeString = z.string().min(1).max(500).transform(sanitizeString);
-export const SafeLongString = z.string().min(1).max(5000).transform(sanitizeString);
+export const SafeLongString = z
+  .string()
+  .min(1)
+  .max(5000)
+  .transform(sanitizeString);
 export const SafeEmail = z.string().email().max(254).transform(sanitizeEmail);
-export const SafePhone = z.string().min(10).max(15).transform(sanitizePhoneNumber);
-export const SafeAgentCode = z.string().regex(/^[A-Z0-9]{3,10}$/, "Invalid agent code format");
+export const SafePhone = z
+  .string()
+  .min(10)
+  .max(15)
+  .transform(sanitizePhoneNumber);
+export const SafeAgentCode = z
+  .string()
+  .regex(/^[A-Z0-9]{3,10}$/, "Invalid agent code format");
 export const SafePin = z.string().regex(/^\d{4,6}$/, "PIN must be 4-6 digits");
-export const SafeTransactionRef = z.string().regex(/^[A-Z0-9-]{8,36}$/, "Invalid transaction reference");
+export const SafeTransactionRef = z
+  .string()
+  .regex(/^[A-Z0-9-]{8,36}$/, "Invalid transaction reference");
 export const SafeAmount = z.number().positive().max(10_000_000); // ₦10M max
 export const SafeId = z.number().int().positive();
 export const SafeUuid = z.string().uuid();
@@ -70,7 +82,16 @@ export const SafePagination = z.object({
 // ── Transaction Input Schema ────────────────────────────────────────────
 
 export const TransactionInputSchema = z.object({
-  type: z.enum(["cash_in", "cash_out", "transfer", "airtime", "bills", "card_payment", "qr_payment", "nfc_payment"]),
+  type: z.enum([
+    "cash_in",
+    "cash_out",
+    "transfer",
+    "airtime",
+    "bills",
+    "card_payment",
+    "qr_payment",
+    "nfc_payment",
+  ]),
   amount: SafeAmount,
   customer: SafeString.optional(),
   customerPhone: SafePhone.optional(),
@@ -95,7 +116,13 @@ export const AgentRegistrationSchema = z.object({
 export const DisputeCreateSchema = z.object({
   transactionRef: SafeTransactionRef,
   reason: SafeLongString,
-  category: z.enum(["unauthorized", "duplicate", "wrong_amount", "service_not_received", "other"]),
+  category: z.enum([
+    "unauthorized",
+    "duplicate",
+    "wrong_amount",
+    "service_not_received",
+    "other",
+  ]),
   evidence: z.array(z.string().url()).max(5).optional(),
 });
 
@@ -103,7 +130,9 @@ export const DisputeCreateSchema = z.object({
 
 export const GlobalSearchSchema = z.object({
   query: z.string().min(2).max(200).transform(sanitizeString),
-  entityTypes: z.array(z.enum(["agents", "transactions", "customers", "disputes"])).optional(),
+  entityTypes: z
+    .array(z.enum(["agents", "transactions", "customers", "disputes"]))
+    .optional(),
   ...SafePagination.shape,
 });
 
@@ -119,7 +148,9 @@ export const WebhookCreateSchema = z.object({
 
 // ── Deep Freeze for Prototype Pollution Prevention ──────────────────────
 
-export function deepFreeze<T extends Record<string, unknown>>(obj: T): Readonly<T> {
+export function deepFreeze<T extends Record<string, unknown>>(
+  obj: T
+): Readonly<T> {
   Object.freeze(obj);
   for (const key of Object.keys(obj)) {
     const val = obj[key];
@@ -133,8 +164,8 @@ export function deepFreeze<T extends Record<string, unknown>>(obj: T): Readonly<
 // ── Request Size Limits ─────────────────────────────────────────────────
 
 export const REQUEST_SIZE_LIMITS = {
-  maxJsonBodyBytes: 1_048_576,      // 1 MB
-  maxFileUploadBytes: 10_485_760,   // 10 MB
+  maxJsonBodyBytes: 1_048_576, // 1 MB
+  maxFileUploadBytes: 10_485_760, // 10 MB
   maxUrlLength: 2048,
   maxHeaderSize: 8192,
   maxQueryParams: 50,

@@ -3,14 +3,23 @@ import { Server as SocketIOServer } from "socket.io";
 import type { Server as HttpServer } from "http";
 import { jwtVerify } from "jose";
 import { eq, desc, gte } from "drizzle-orm";
-import { getAgentById, addChatMessage, getChatMessages, getChatSession, getDb } from "./db";
+import {
+  getAgentById,
+  addChatMessage,
+  getChatMessages,
+  getChatSession,
+  getDb,
+} from "./db";
 import { setIO } from "./socketSingleton";
 import { initRealtimeNotifications } from "./lib/realtimeNotifications";
 import { invokeLLM } from "./_core/llm";
 import { fraudAlerts } from "../drizzle/schema";
 
 // ─── Support chat: LLM-powered auto-reply ────────────────────────────────────
-async function generateSupportReply(agentMessage: string, sessionRef: string): Promise<string> {
+async function generateSupportReply(
+  agentMessage: string,
+  sessionRef: string
+): Promise<string> {
   try {
     const response = await invokeLLM({
       messages: [
@@ -49,7 +58,7 @@ async function pollNewFraudAlerts(): Promise<any[]> {
       .orderBy(desc(fraudAlerts.id))
       .limit(20);
     if (rows.length > 0) {
-      lastFraudAlertId = Math.max(...rows.map((r) => r.id));
+      lastFraudAlertId = Math.max(...rows.map(r => r.id));
     }
     return rows;
   } catch {
@@ -61,7 +70,7 @@ export function initSocketIO(httpServer: HttpServer) {
   // SECURITY: Restrict Socket.IO CORS to known origins only.
   // In production, set ALLOWED_ORIGINS env var to comma-separated list.
   const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
     : ["https://54link.io", "https://app.54link.io", "https://admin.54link.io"];
   const isDev = process.env.NODE_ENV !== "production";
 
@@ -78,12 +87,18 @@ export function initSocketIO(httpServer: HttpServer) {
   const fraudNs = io.of("/fraud");
 
   // Seed the cursor to current max ID so we only emit new alerts going forward
-  getDb().then(async (db) => {
+  getDb().then(async db => {
     if (!db) return;
     try {
-      const rows = await db.select({ id: fraudAlerts.id }).from(fraudAlerts).orderBy(desc(fraudAlerts.id)).limit(1);
+      const rows = await db
+        .select({ id: fraudAlerts.id })
+        .from(fraudAlerts)
+        .orderBy(desc(fraudAlerts.id))
+        .limit(1);
       if (rows[0]) lastFraudAlertId = rows[0].id;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   });
 
   // Poll the DB every 5 seconds and broadcast any new fraud_alerts rows
@@ -106,12 +121,15 @@ export function initSocketIO(httpServer: HttpServer) {
     }
   }, 5000);
 
-  fraudNs.on("connection", (socket) => {
+  fraudNs.on("connection", socket => {
     console.log(`[Fraud] Admin connected: ${socket.id}`);
 
-    socket.on("alert:updateStatus", async (data: { alertId: number; status: string }) => {
-      fraudNs.emit("alert:statusUpdated", data);
-    });
+    socket.on(
+      "alert:updateStatus",
+      async (data: { alertId: number; status: string }) => {
+        fraudNs.emit("alert:statusUpdated", data);
+      }
+    );
 
     socket.on("disconnect", () => {
       console.log(`[Fraud] Admin disconnected: ${socket.id}`);
@@ -126,7 +144,9 @@ export function initSocketIO(httpServer: HttpServer) {
     const match = cookie.match(/agent_session=([^;]+)/);
     if (match) {
       try {
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "pos54link-secret");
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET ?? "pos54link-secret"
+        );
         const { payload } = await jwtVerify(match[1], secret);
         (socket as any).agentId = Number(payload.sub);
         (socket as any).agentName = payload.name;
@@ -137,7 +157,7 @@ export function initSocketIO(httpServer: HttpServer) {
     next();
   });
 
-  chatNs.on("connection", (socket) => {
+  chatNs.on("connection", socket => {
     const agentName = (socket as any).agentName ?? "Agent";
     console.log(`[Chat] Agent connected: ${agentName} (${socket.id})`);
 
@@ -145,37 +165,54 @@ export function initSocketIO(httpServer: HttpServer) {
       socket.join(`session:${sessionRef}`);
     });
 
-    socket.on("chat:message", async (data: { sessionRef: string; content: string }) => {
-      try {
-        const session = await getChatSession(data.sessionRef);
-        if (!session) return;
+    socket.on(
+      "chat:message",
+      async (data: { sessionRef: string; content: string }) => {
+        try {
+          const session = await getChatSession(data.sessionRef);
+          if (!session) return;
 
-        // Persist agent message
-        const agentMsg = await addChatMessage(session.id, "agent", agentName, data.content);
-        chatNs.to(`session:${data.sessionRef}`).emit("chat:message", agentMsg);
+          // Persist agent message
+          const agentMsg = await addChatMessage(
+            session.id,
+            "agent",
+            agentName,
+            data.content
+          );
+          chatNs
+            .to(`session:${data.sessionRef}`)
+            .emit("chat:message", agentMsg);
 
-        // Show support typing indicator
-        setTimeout(() => {
-          chatNs.to(`session:${data.sessionRef}`).emit("chat:typing", {
-            senderType: "support",
-            name: session.supportAgentName ?? "Support",
-          });
-        }, 400);
+          // Show support typing indicator
+          setTimeout(() => {
+            chatNs.to(`session:${data.sessionRef}`).emit("chat:typing", {
+              senderType: "support",
+              name: session.supportAgentName ?? "Support",
+            });
+          }, 400);
 
-        // LLM-powered support auto-reply
-        const reply = await generateSupportReply(data.content, data.sessionRef);
-        const supportMsg = await addChatMessage(
-          session.id,
-          "support",
-          session.supportAgentName ?? "Support Agent",
-          reply
-        );
-        chatNs.to(`session:${data.sessionRef}`).emit("chat:message", supportMsg);
-        chatNs.to(`session:${data.sessionRef}`).emit("chat:stopTyping", { senderType: "support" });
-      } catch (err) {
-        console.error("[Chat] Error handling message:", err);
+          // LLM-powered support auto-reply
+          const reply = await generateSupportReply(
+            data.content,
+            data.sessionRef
+          );
+          const supportMsg = await addChatMessage(
+            session.id,
+            "support",
+            session.supportAgentName ?? "Support Agent",
+            reply
+          );
+          chatNs
+            .to(`session:${data.sessionRef}`)
+            .emit("chat:message", supportMsg);
+          chatNs
+            .to(`session:${data.sessionRef}`)
+            .emit("chat:stopTyping", { senderType: "support" });
+        } catch (err) {
+          console.error("[Chat] Error handling message:", err);
+        }
       }
-    });
+    );
 
     socket.on("chat:typing", (data: { sessionRef: string }) => {
       socket.to(`session:${data.sessionRef}`).emit("chat:typing", {
@@ -185,7 +222,9 @@ export function initSocketIO(httpServer: HttpServer) {
     });
 
     socket.on("chat:stopTyping", (data: { sessionRef: string }) => {
-      socket.to(`session:${data.sessionRef}`).emit("chat:stopTyping", { senderType: "agent" });
+      socket
+        .to(`session:${data.sessionRef}`)
+        .emit("chat:stopTyping", { senderType: "agent" });
     });
 
     socket.on("disconnect", () => {
@@ -196,11 +235,13 @@ export function initSocketIO(httpServer: HttpServer) {
   // ── Terminal status namespace ─────────────────────────────────────────────
   const terminalNs = io.of("/terminal");
 
-  terminalNs.on("connection", (socket) => {
+  terminalNs.on("connection", socket => {
     socket.on("terminal:register", (agentCode: string) => {
       if (agentCode) {
         socket.join(`agent:${agentCode}`);
-        console.log(`[Terminal] Agent ${agentCode} registered socket ${socket.id}`);
+        console.log(
+          `[Terminal] Agent ${agentCode} registered socket ${socket.id}`
+        );
       }
     });
 
@@ -219,7 +260,7 @@ export function initSocketIO(httpServer: HttpServer) {
   // ── Settlement batch progress namespace ────────────────────────────────────
   const settlementNs = io.of("/settlement");
 
-  settlementNs.on("connection", (socket) => {
+  settlementNs.on("connection", socket => {
     console.log(`[Settlement] Dashboard connected: ${socket.id}`);
 
     // Client can subscribe to a specific batch
@@ -243,6 +284,8 @@ export function initSocketIO(httpServer: HttpServer) {
   // Register singleton so routers can emit events
   setIO(io);
 
-  console.log("[Socket.IO] Initialized — /fraud, /chat, /terminal, /settlement, /notifications namespaces ready");
+  console.log(
+    "[Socket.IO] Initialized — /fraud, /chat, /terminal, /settlement, /notifications namespaces ready"
+  );
   return io;
 }

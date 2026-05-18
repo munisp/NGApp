@@ -1,6 +1,6 @@
 /**
  * Sprint 95 — Security Posture Enhancement
- * 
+ *
  * Comprehensive security hardening for financial platform:
  * - API key rotation enforcement
  * - Transaction signing verification
@@ -39,14 +39,21 @@ export function auditApiKeyAge(keyId: string, createdAt: number): ApiKeyAudit {
 // ─── 2. Transaction Signing ─────────────────────────────────────────────────
 import crypto from "crypto";
 
-const TX_SIGNING_SECRET = process.env.TX_SIGNING_SECRET || "default-tx-signing-key-change-in-prod";
+const TX_SIGNING_SECRET =
+  process.env.TX_SIGNING_SECRET || "default-tx-signing-key-change-in-prod";
 
 export function signTransaction(payload: Record<string, unknown>): string {
   const canonical = JSON.stringify(payload, Object.keys(payload).sort());
-  return crypto.createHmac("sha256", TX_SIGNING_SECRET).update(canonical).digest("hex");
+  return crypto
+    .createHmac("sha256", TX_SIGNING_SECRET)
+    .update(canonical)
+    .digest("hex");
 }
 
-export function verifyTransactionSignature(payload: Record<string, unknown>, signature: string): boolean {
+export function verifyTransactionSignature(
+  payload: Record<string, unknown>,
+  signature: string
+): boolean {
   const expected = signTransaction(payload);
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
@@ -62,13 +69,22 @@ interface TransactionPattern {
 
 const patterns = new Map<number, TransactionPattern>();
 
-export function recordTransactionPattern(agentId: number, amount: number): void {
+export function recordTransactionPattern(
+  agentId: number,
+  amount: number
+): void {
   const existing = patterns.get(agentId);
   if (!existing) {
-    patterns.set(agentId, { agentId, avgAmount: amount, avgFrequency: 1, maxAmount: amount, lastActivity: Date.now() });
+    patterns.set(agentId, {
+      agentId,
+      avgAmount: amount,
+      avgFrequency: 1,
+      maxAmount: amount,
+      lastActivity: Date.now(),
+    });
     return;
   }
-  existing.avgAmount = (existing.avgAmount * 0.9) + (amount * 0.1); // EMA
+  existing.avgAmount = existing.avgAmount * 0.9 + amount * 0.1; // EMA
   existing.maxAmount = Math.max(existing.maxAmount, amount);
   existing.lastActivity = Date.now();
 }
@@ -79,7 +95,11 @@ export interface AnomalyResult {
   reasons: string[];
 }
 
-export function detectAnomaly(agentId: number, amount: number, metadata?: { ip?: string; deviceId?: string }): AnomalyResult {
+export function detectAnomaly(
+  agentId: number,
+  amount: number,
+  metadata?: { ip?: string; deviceId?: string }
+): AnomalyResult {
   const pattern = patterns.get(agentId);
   const reasons: string[] = [];
   let score = 0;
@@ -92,7 +112,9 @@ export function detectAnomaly(agentId: number, amount: number, metadata?: { ip?:
   // Amount anomaly (> 3x average)
   if (amount > pattern.avgAmount * 3) {
     score += 30;
-    reasons.push(`amount_spike: ${amount} vs avg ${pattern.avgAmount.toFixed(0)}`);
+    reasons.push(
+      `amount_spike: ${amount} vs avg ${pattern.avgAmount.toFixed(0)}`
+    );
   }
 
   // Exceeds historical max by 2x
@@ -103,7 +125,8 @@ export function detectAnomaly(agentId: number, amount: number, metadata?: { ip?:
 
   // Velocity check (activity within last 5 minutes)
   const timeSinceLastMs = Date.now() - pattern.lastActivity;
-  if (timeSinceLastMs < 60000) { // Less than 1 minute
+  if (timeSinceLastMs < 60000) {
+    // Less than 1 minute
     score += 20;
     reasons.push("rapid_succession");
   }
@@ -118,18 +141,35 @@ export function detectAnomaly(agentId: number, amount: number, metadata?: { ip?:
 }
 
 // ─── 4. IP Reputation Scoring ───────────────────────────────────────────────
-const ipReputation = new Map<string, { score: number; lastSeen: number; failedAttempts: number }>();
+const ipReputation = new Map<
+  string,
+  { score: number; lastSeen: number; failedAttempts: number }
+>();
 
-export function getIpReputation(ip: string): { score: number; risk: "low" | "medium" | "high" | "critical" } {
+export function getIpReputation(ip: string): {
+  score: number;
+  risk: "low" | "medium" | "high" | "critical";
+} {
   const entry = ipReputation.get(ip);
   if (!entry) return { score: 100, risk: "low" };
-  
-  const risk = entry.score >= 80 ? "low" : entry.score >= 60 ? "medium" : entry.score >= 30 ? "high" : "critical";
+
+  const risk =
+    entry.score >= 80
+      ? "low"
+      : entry.score >= 60
+        ? "medium"
+        : entry.score >= 30
+          ? "high"
+          : "critical";
   return { score: entry.score, risk };
 }
 
 export function recordIpFailure(ip: string): void {
-  const entry = ipReputation.get(ip) ?? { score: 100, lastSeen: Date.now(), failedAttempts: 0 };
+  const entry = ipReputation.get(ip) ?? {
+    score: 100,
+    lastSeen: Date.now(),
+    failedAttempts: 0,
+  };
   entry.failedAttempts++;
   entry.score = Math.max(0, entry.score - 10);
   entry.lastSeen = Date.now();
@@ -137,7 +177,11 @@ export function recordIpFailure(ip: string): void {
 }
 
 export function recordIpSuccess(ip: string): void {
-  const entry = ipReputation.get(ip) ?? { score: 100, lastSeen: Date.now(), failedAttempts: 0 };
+  const entry = ipReputation.get(ip) ?? {
+    score: 100,
+    lastSeen: Date.now(),
+    failedAttempts: 0,
+  };
   entry.score = Math.min(100, entry.score + 2);
   entry.lastSeen = Date.now();
   ipReputation.set(ip, entry);
@@ -152,7 +196,11 @@ interface GeoLocation {
 
 const lastLocations = new Map<string, GeoLocation>();
 
-export function checkGeoVelocity(userId: string, lat: number, lng: number): { suspicious: boolean; speedKmh: number; reason?: string } {
+export function checkGeoVelocity(
+  userId: string,
+  lat: number,
+  lng: number
+): { suspicious: boolean; speedKmh: number; reason?: string } {
   const last = lastLocations.get(userId);
   const current: GeoLocation = { lat, lng, timestamp: Date.now() };
   lastLocations.set(userId, current);
@@ -161,10 +209,14 @@ export function checkGeoVelocity(userId: string, lat: number, lng: number): { su
 
   // Haversine distance
   const R = 6371; // Earth radius km
-  const dLat = (lat - last.lat) * Math.PI / 180;
-  const dLng = (lng - last.lng) * Math.PI / 180;
-  const a = Math.sin(dLat/2) ** 2 + Math.cos(last.lat * Math.PI/180) * Math.cos(lat * Math.PI/180) * Math.sin(dLng/2) ** 2;
-  const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((lat - last.lat) * Math.PI) / 180;
+  const dLng = ((lng - last.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((last.lat * Math.PI) / 180) *
+      Math.cos((lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   const timeDiffHours = (current.timestamp - last.timestamp) / 3600000;
   const speedKmh = timeDiffHours > 0 ? distance / timeDiffHours : 0;
@@ -180,7 +232,10 @@ export function checkGeoVelocity(userId: string, lat: number, lng: number): { su
 // ─── 6. Device Fingerprint Validation ───────────────────────────────────────
 const knownDevices = new Map<string, Set<string>>(); // userId -> set of device fingerprints
 
-export function validateDevice(userId: string, fingerprint: string): { known: boolean; totalDevices: number } {
+export function validateDevice(
+  userId: string,
+  fingerprint: string
+): { known: boolean; totalDevices: number } {
   const devices = knownDevices.get(userId) ?? new Set();
   const known = devices.has(fingerprint);
   if (!known) {
@@ -198,23 +253,75 @@ export function getDeviceCount(userId: string): number {
 export interface PciComplianceResult {
   compliant: boolean;
   score: number; // 0-100
-  findings: Array<{ requirement: string; status: "pass" | "fail" | "warning"; detail: string }>;
+  findings: Array<{
+    requirement: string;
+    status: "pass" | "fail" | "warning";
+    detail: string;
+  }>;
 }
 
 export function runPciComplianceCheck(): PciComplianceResult {
   const findings: PciComplianceResult["findings"] = [
-    { requirement: "REQ-1: Firewall configuration", status: "pass", detail: "Network segmentation via APISIX gateway" },
-    { requirement: "REQ-2: No vendor defaults", status: "pass", detail: "All default credentials rotated" },
-    { requirement: "REQ-3: Protect stored data", status: "pass", detail: "AES-256 encryption for sensitive fields" },
-    { requirement: "REQ-4: Encrypt transmission", status: "pass", detail: "TLS 1.3 enforced for all API traffic" },
-    { requirement: "REQ-5: Anti-virus", status: "pass", detail: "Container scanning via CI/CD pipeline" },
-    { requirement: "REQ-6: Secure systems", status: "pass", detail: "Automated patching, vulnerability scanning" },
-    { requirement: "REQ-7: Restrict access", status: "pass", detail: "PBAC with Permify, least-privilege enforcement" },
-    { requirement: "REQ-8: Unique IDs", status: "pass", detail: "Keycloak SSO with unique user identifiers" },
-    { requirement: "REQ-9: Physical access", status: "pass", detail: "Cloud infrastructure with SOC2 compliance" },
-    { requirement: "REQ-10: Track access", status: "pass", detail: "Comprehensive audit logging to OpenSearch" },
-    { requirement: "REQ-11: Test security", status: "pass", detail: "Automated security testing in CI/CD" },
-    { requirement: "REQ-12: Security policy", status: "pass", detail: "Documented security policies and procedures" },
+    {
+      requirement: "REQ-1: Firewall configuration",
+      status: "pass",
+      detail: "Network segmentation via APISIX gateway",
+    },
+    {
+      requirement: "REQ-2: No vendor defaults",
+      status: "pass",
+      detail: "All default credentials rotated",
+    },
+    {
+      requirement: "REQ-3: Protect stored data",
+      status: "pass",
+      detail: "AES-256 encryption for sensitive fields",
+    },
+    {
+      requirement: "REQ-4: Encrypt transmission",
+      status: "pass",
+      detail: "TLS 1.3 enforced for all API traffic",
+    },
+    {
+      requirement: "REQ-5: Anti-virus",
+      status: "pass",
+      detail: "Container scanning via CI/CD pipeline",
+    },
+    {
+      requirement: "REQ-6: Secure systems",
+      status: "pass",
+      detail: "Automated patching, vulnerability scanning",
+    },
+    {
+      requirement: "REQ-7: Restrict access",
+      status: "pass",
+      detail: "PBAC with Permify, least-privilege enforcement",
+    },
+    {
+      requirement: "REQ-8: Unique IDs",
+      status: "pass",
+      detail: "Keycloak SSO with unique user identifiers",
+    },
+    {
+      requirement: "REQ-9: Physical access",
+      status: "pass",
+      detail: "Cloud infrastructure with SOC2 compliance",
+    },
+    {
+      requirement: "REQ-10: Track access",
+      status: "pass",
+      detail: "Comprehensive audit logging to OpenSearch",
+    },
+    {
+      requirement: "REQ-11: Test security",
+      status: "pass",
+      detail: "Automated security testing in CI/CD",
+    },
+    {
+      requirement: "REQ-12: Security policy",
+      status: "pass",
+      detail: "Documented security policies and procedures",
+    },
   ];
 
   const passCount = findings.filter(f => f.status === "pass").length;
@@ -226,21 +333,56 @@ export function runPciComplianceCheck(): PciComplianceResult {
 // ─── 8. Security Posture Score ──────────────────────────────────────────────
 export interface SecurityPostureScore {
   overall: number; // 0-100
-  categories: Record<string, { score: number; weight: number; details: string }>;
+  categories: Record<
+    string,
+    { score: number; weight: number; details: string }
+  >;
   vulnerabilities: number;
   lastAssessed: string;
 }
 
 export function assessSecurityPosture(): SecurityPostureScore {
   const categories = {
-    authentication: { score: 95, weight: 20, details: "JWT + Keycloak SSO + MFA + biometric" },
-    authorization: { score: 92, weight: 15, details: "PBAC via Permify, role hierarchy, least privilege" },
-    encryption: { score: 90, weight: 15, details: "TLS 1.3, AES-256 at rest, HMAC transaction signing" },
-    inputValidation: { score: 95, weight: 15, details: "Zod schemas on all 424 routers, XSS/SQLi protection" },
-    networkSecurity: { score: 88, weight: 10, details: "DDoS protection, APISIX gateway, rate limiting" },
-    auditLogging: { score: 93, weight: 10, details: "Full audit trail, OpenSearch indexing, immutable logs" },
-    dataProtection: { score: 90, weight: 10, details: "PCI-DSS compliance, data masking, key rotation" },
-    incidentResponse: { score: 85, weight: 5, details: "Ransomware mitigation, alert notifications, auto-lockdown" },
+    authentication: {
+      score: 95,
+      weight: 20,
+      details: "JWT + Keycloak SSO + MFA + biometric",
+    },
+    authorization: {
+      score: 92,
+      weight: 15,
+      details: "PBAC via Permify, role hierarchy, least privilege",
+    },
+    encryption: {
+      score: 90,
+      weight: 15,
+      details: "TLS 1.3, AES-256 at rest, HMAC transaction signing",
+    },
+    inputValidation: {
+      score: 95,
+      weight: 15,
+      details: "Zod schemas on all 424 routers, XSS/SQLi protection",
+    },
+    networkSecurity: {
+      score: 88,
+      weight: 10,
+      details: "DDoS protection, APISIX gateway, rate limiting",
+    },
+    auditLogging: {
+      score: 93,
+      weight: 10,
+      details: "Full audit trail, OpenSearch indexing, immutable logs",
+    },
+    dataProtection: {
+      score: 90,
+      weight: 10,
+      details: "PCI-DSS compliance, data masking, key rotation",
+    },
+    incidentResponse: {
+      score: 85,
+      weight: 5,
+      details: "Ransomware mitigation, alert notifications, auto-lockdown",
+    },
   };
 
   let weightedSum = 0;
@@ -276,7 +418,14 @@ export function isBlockedCountry(countryCode: string): boolean {
 }
 
 // ─── 10. Security Event Bus ─────────────────────────────────────────────────
-type SecurityEventType = "auth_failure" | "anomaly_detected" | "ip_blocked" | "geo_velocity_alert" | "device_unknown" | "key_rotation_due" | "pci_violation";
+type SecurityEventType =
+  | "auth_failure"
+  | "anomaly_detected"
+  | "ip_blocked"
+  | "geo_velocity_alert"
+  | "device_unknown"
+  | "key_rotation_due"
+  | "pci_violation";
 
 interface SecurityEvent {
   id: string;
@@ -289,7 +438,11 @@ interface SecurityEvent {
 const securityEvents: SecurityEvent[] = [];
 const MAX_EVENTS = 10000;
 
-export function emitSecurityEvent(type: SecurityEventType, severity: SecurityEvent["severity"], details: Record<string, unknown>): SecurityEvent {
+export function emitSecurityEvent(
+  type: SecurityEventType,
+  severity: SecurityEvent["severity"],
+  details: Record<string, unknown>
+): SecurityEvent {
   const event: SecurityEvent = {
     id: crypto.randomUUID(),
     type,
@@ -306,8 +459,16 @@ export function getRecentSecurityEvents(limit: number = 100): SecurityEvent[] {
   return securityEvents.slice(-limit);
 }
 
-export function getSecurityEventStats(): { total: number; bySeverity: Record<string, number>; byType: Record<string, number> } {
-  const bySeverity: Record<string, number> = { info: 0, warning: 0, critical: 0 };
+export function getSecurityEventStats(): {
+  total: number;
+  bySeverity: Record<string, number>;
+  byType: Record<string, number>;
+} {
+  const bySeverity: Record<string, number> = {
+    info: 0,
+    warning: 0,
+    critical: 0,
+  };
   const byType: Record<string, number> = {};
   for (const event of securityEvents) {
     bySeverity[event.severity] = (bySeverity[event.severity] ?? 0) + 1;

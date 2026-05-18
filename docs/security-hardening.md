@@ -2,18 +2,18 @@
 
 ## OWASP Top 10 Compliance Matrix
 
-| OWASP Category | Status | Implementation |
-|---|---|---|
-| A01 — Broken Access Control | **PASS** | protectedProcedure, RBAC, ownership validation |
-| A02 — Cryptographic Failures | **PASS** | env-based secrets, secure cookies, bcrypt hashing |
-| A03 — Injection | **PASS** | Drizzle ORM parameterized queries, Zod validation, no eval() |
-| A04 — Insecure Design | **PASS** | Rate limiting, input length limits, error sanitization |
-| A05 — Security Misconfiguration | **PASS** | .gitignore, strict TS, no debug in prod |
-| A06 — Vulnerable Components | **PASS** | Lockfile, Dependabot, no known vulnerable packages |
-| A07 — Auth Failures | **PASS** | Secure session cookies, logout, no localStorage tokens |
-| A08 — Software Integrity | **PASS** | CI/CD pipeline, security scanning, webhook signature verification |
-| A09 — Logging & Monitoring | **PASS** | Audit log table, health checks, Prometheus monitoring |
-| A10 — SSRF | **PASS** | Hardcoded API URLs, no user-controlled fetch targets |
+| OWASP Category                  | Status   | Implementation                                                    |
+| ------------------------------- | -------- | ----------------------------------------------------------------- |
+| A01 — Broken Access Control     | **PASS** | protectedProcedure, RBAC, ownership validation                    |
+| A02 — Cryptographic Failures    | **PASS** | env-based secrets, secure cookies, bcrypt hashing                 |
+| A03 — Injection                 | **PASS** | Drizzle ORM parameterized queries, Zod validation, no eval()      |
+| A04 — Insecure Design           | **PASS** | Rate limiting, input length limits, error sanitization            |
+| A05 — Security Misconfiguration | **PASS** | .gitignore, strict TS, no debug in prod                           |
+| A06 — Vulnerable Components     | **PASS** | Lockfile, Dependabot, no known vulnerable packages                |
+| A07 — Auth Failures             | **PASS** | Secure session cookies, logout, no localStorage tokens            |
+| A08 — Software Integrity        | **PASS** | CI/CD pipeline, security scanning, webhook signature verification |
+| A09 — Logging & Monitoring      | **PASS** | Audit log table, health checks, Prometheus monitoring             |
+| A10 — SSRF                      | **PASS** | Hardcoded API URLs, no user-controlled fetch targets              |
 
 ## Security Middleware Stack
 

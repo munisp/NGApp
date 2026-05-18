@@ -11,7 +11,11 @@
  *   import { triggerSettlement, getTemporalClient } from "./temporal";
  *   await triggerSettlement({ date: "2025-01-15" });
  */
-import { Connection, Client, WorkflowExecutionAlreadyStartedError } from "@temporalio/client";
+import {
+  Connection,
+  Client,
+  WorkflowExecutionAlreadyStartedError,
+} from "@temporalio/client";
 import logger from "./_core/logger";
 
 const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
@@ -35,17 +39,22 @@ export async function getTemporalClient(): Promise<Client | null> {
       connection,
       namespace: TEMPORAL_NAMESPACE,
     });
-    logger.info(`[Temporal] Connected to ${TEMPORAL_ADDRESS} (namespace: ${TEMPORAL_NAMESPACE})`);
+    logger.info(
+      `[Temporal] Connected to ${TEMPORAL_ADDRESS} (namespace: ${TEMPORAL_NAMESPACE})`
+    );
     return _client;
   } catch (err) {
-    logger.warn({ err }, "[Temporal] Connection failed — workflow scheduling unavailable");
+    logger.warn(
+      { err },
+      "[Temporal] Connection failed — workflow scheduling unavailable"
+    );
     return null;
   }
 }
 
 export interface SettlementInput {
-  date: string;           // ISO date string e.g. "2025-01-15"
-  triggeredBy?: string;   // "cron" | "manual" | agentCode
+  date: string; // ISO date string e.g. "2025-01-15"
+  triggeredBy?: string; // "cron" | "manual" | agentCode
 }
 
 export interface SettlementResult {
@@ -61,7 +70,9 @@ export interface SettlementResult {
  * Trigger the SettlementWorkflow for a given date.
  * Uses workflowId = `settlement-{date}` to prevent duplicate runs.
  */
-export async function triggerSettlement(input: SettlementInput): Promise<string | null> {
+export async function triggerSettlement(
+  input: SettlementInput
+): Promise<string | null> {
   const client = await getTemporalClient();
   if (!client) {
     logger.warn("[Temporal] Cannot trigger settlement — Temporal unavailable");
@@ -76,7 +87,9 @@ export async function triggerSettlement(input: SettlementInput): Promise<string 
       workflowId,
       args: [input],
     });
-    logger.info(`[Temporal] Settlement workflow started: ${workflowId} (runId: ${handle.firstExecutionRunId})`);
+    logger.info(
+      `[Temporal] Settlement workflow started: ${workflowId} (runId: ${handle.firstExecutionRunId})`
+    );
     return handle.firstExecutionRunId;
   } catch (err) {
     if (err instanceof WorkflowExecutionAlreadyStartedError) {
@@ -96,7 +109,9 @@ export async function triggerSettlement(input: SettlementInput): Promise<string 
 export async function scheduleSettlementCron(): Promise<void> {
   const client = await getTemporalClient();
   if (!client) {
-    logger.info("[Temporal] Skipping cron schedule — Temporal unavailable (node-cron will be used)");
+    logger.info(
+      "[Temporal] Skipping cron schedule — Temporal unavailable (node-cron will be used)"
+    );
     return;
   }
 
@@ -115,13 +130,18 @@ export async function scheduleSettlementCron(): Promise<void> {
         args: [{ triggeredBy: "cron" }],
       },
     });
-    logger.info(`[Temporal] Daily settlement cron scheduled (scheduleId: ${scheduleId})`);
+    logger.info(
+      `[Temporal] Daily settlement cron scheduled (scheduleId: ${scheduleId})`
+    );
   } catch (err: unknown) {
     // Schedule already exists — that's fine
     if (err instanceof Error && err.message?.includes("already exists")) {
       logger.debug("[Temporal] Settlement cron schedule already exists");
     } else {
-      logger.warn({ err }, "[Temporal] Failed to create settlement cron schedule");
+      logger.warn(
+        { err },
+        "[Temporal] Failed to create settlement cron schedule"
+      );
     }
   }
 }
@@ -146,4 +166,9 @@ export async function getSettlementStatus(date: string): Promise<{
   }
 }
 
-export default { getTemporalClient, triggerSettlement, scheduleSettlementCron, getSettlementStatus };
+export default {
+  getTemporalClient,
+  triggerSettlement,
+  scheduleSettlementCron,
+  getSettlementStatus,
+};

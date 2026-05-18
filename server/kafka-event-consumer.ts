@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 86: Kafka Event Sourcing Consumer
 /**
  * Kafka Event Consumer (S86-29)
- * 
+ *
  * Consumes events from Kafka topics for:
  * - Transaction event sourcing (payment.created, payment.completed, payment.failed)
  * - Agent lifecycle events (agent.registered, agent.suspended, agent.reactivated)
@@ -18,7 +18,12 @@
  * - Lag monitoring and alerting
  */
 
-import type { Consumer, Producer, Kafka as KafkaClient, EachMessagePayload } from "kafkajs";
+import type {
+  Consumer,
+  Producer,
+  Kafka as KafkaClient,
+  EachMessagePayload,
+} from "kafkajs";
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -89,60 +94,75 @@ type EventHandler = (event: PosEvent) => Promise<void>;
 const eventHandlers: Map<string, EventHandler> = new Map();
 
 // Transaction events
-eventHandlers.set("payment.created", async (event) => {
+eventHandlers.set("payment.created", async event => {
   const { agentId, amount, currency, reference } = event.payload as any;
-  console.log(`[Kafka] Payment created: agent=${agentId} amount=${amount} ${currency} ref=${reference}`);
+  console.log(
+    `[Kafka] Payment created: agent=${agentId} amount=${amount} ${currency} ref=${reference}`
+  );
   // Persist to event store, update read model
 });
 
-eventHandlers.set("payment.completed", async (event) => {
+eventHandlers.set("payment.completed", async event => {
   const { transactionId, agentId, amount, fee } = event.payload as any;
-  console.log(`[Kafka] Payment completed: tx=${transactionId} agent=${agentId} amount=${amount} fee=${fee}`);
+  console.log(
+    `[Kafka] Payment completed: tx=${transactionId} agent=${agentId} amount=${amount} fee=${fee}`
+  );
   // Update agent balance, trigger settlement calculation, emit notification
 });
 
-eventHandlers.set("payment.failed", async (event) => {
+eventHandlers.set("payment.failed", async event => {
   const { transactionId, reason, agentId } = event.payload as any;
   console.log(`[Kafka] Payment failed: tx=${transactionId} reason=${reason}`);
   // Reverse pending balance, alert agent, log to fraud system
 });
 
 // Agent lifecycle events
-eventHandlers.set("agent.registered", async (event) => {
+eventHandlers.set("agent.registered", async event => {
   const { agentId, name, region, tier } = event.payload as any;
-  console.log(`[Kafka] Agent registered: ${agentId} name=${name} region=${region}`);
+  console.log(
+    `[Kafka] Agent registered: ${agentId} name=${name} region=${region}`
+  );
   // Initialize float account, send welcome notification, assign to region
 });
 
-eventHandlers.set("agent.suspended", async (event) => {
+eventHandlers.set("agent.suspended", async event => {
   const { agentId, reason, suspendedBy } = event.payload as any;
   console.log(`[Kafka] Agent suspended: ${agentId} reason=${reason}`);
   // Lock float, disable terminal, notify compliance
 });
 
 // Float events
-eventHandlers.set("float.topup", async (event) => {
+eventHandlers.set("float.topup", async event => {
   const { agentId, amount, source, reference } = event.payload as any;
-  console.log(`[Kafka] Float topup: agent=${agentId} amount=${amount} source=${source}`);
+  console.log(
+    `[Kafka] Float topup: agent=${agentId} amount=${amount} source=${source}`
+  );
   // Credit float balance, emit receipt, update daily limits
 });
 
-eventHandlers.set("float.reconciled", async (event) => {
-  const { batchId, agentCount, totalAmount, discrepancies } = event.payload as any;
-  console.log(`[Kafka] Float reconciled: batch=${batchId} agents=${agentCount} total=${totalAmount}`);
+eventHandlers.set("float.reconciled", async event => {
+  const { batchId, agentCount, totalAmount, discrepancies } =
+    event.payload as any;
+  console.log(
+    `[Kafka] Float reconciled: batch=${batchId} agents=${agentCount} total=${totalAmount}`
+  );
   // Update reconciliation status, flag discrepancies for review
 });
 
 // Settlement events
-eventHandlers.set("settlement.initiated", async (event) => {
+eventHandlers.set("settlement.initiated", async event => {
   const { settlementId, agentId, amount, bankAccount } = event.payload as any;
-  console.log(`[Kafka] Settlement initiated: ${settlementId} agent=${agentId} amount=${amount}`);
+  console.log(
+    `[Kafka] Settlement initiated: ${settlementId} agent=${agentId} amount=${amount}`
+  );
   // Debit agent float, initiate bank transfer, set pending status
 });
 
-eventHandlers.set("settlement.completed", async (event) => {
+eventHandlers.set("settlement.completed", async event => {
   const { settlementId, bankReference, completedAt } = event.payload as any;
-  console.log(`[Kafka] Settlement completed: ${settlementId} ref=${bankReference}`);
+  console.log(
+    `[Kafka] Settlement completed: ${settlementId} ref=${bankReference}`
+  );
   // Update status, notify agent, emit receipt
 });
 
@@ -223,7 +243,9 @@ export class PosEventConsumer {
         },
       });
 
-      console.log(`[Kafka Consumer] Started - topics: ${this.config.topics.join(", ")}`);
+      console.log(
+        `[Kafka Consumer] Started - topics: ${this.config.topics.join(", ")}`
+      );
     } catch (error) {
       console.error("[Kafka Consumer] Failed to start:", error);
       // Graceful degradation - consumer will retry
@@ -252,7 +274,9 @@ export class PosEventConsumer {
         await handler(event);
         this.metrics.messagesProcessed++;
       } else {
-        console.warn(`[Kafka Consumer] No handler for event type: ${event.type}`);
+        console.warn(
+          `[Kafka Consumer] No handler for event type: ${event.type}`
+        );
       }
 
       // Mark as processed
@@ -267,7 +291,10 @@ export class PosEventConsumer {
       this.metrics.lastMessageAt = Date.now();
     } catch (error: any) {
       this.metrics.messagesFailed++;
-      console.error(`[Kafka Consumer] Processing error on ${topic}:${partition}:`, error.message);
+      console.error(
+        `[Kafka Consumer] Processing error on ${topic}:${partition}:`,
+        error.message
+      );
 
       // Send to DLQ
       await this.sendToDLQ(message, topic, partition, error.message);
@@ -275,28 +302,36 @@ export class PosEventConsumer {
 
     // Update avg processing time
     const elapsed = Date.now() - startTime;
-    this.metrics.avgProcessingTimeMs = 
-      (this.metrics.avgProcessingTimeMs * (this.metrics.messagesConsumed - 1) + elapsed) / 
+    this.metrics.avgProcessingTimeMs =
+      (this.metrics.avgProcessingTimeMs * (this.metrics.messagesConsumed - 1) +
+        elapsed) /
       this.metrics.messagesConsumed;
   }
 
-  private async sendToDLQ(message: any, sourceTopic: string, partition: number, error: string): Promise<void> {
+  private async sendToDLQ(
+    message: any,
+    sourceTopic: string,
+    partition: number,
+    error: string
+  ): Promise<void> {
     if (!this.producer) return;
 
     try {
       await this.producer.send({
         topic: this.config.dlqTopic,
-        messages: [{
-          key: message.key,
-          value: message.value,
-          headers: {
-            "x-original-topic": sourceTopic,
-            "x-original-partition": String(partition),
-            "x-error": error,
-            "x-failed-at": String(Date.now()),
-            "x-retry-count": String(this.config.maxRetries),
+        messages: [
+          {
+            key: message.key,
+            value: message.value,
+            headers: {
+              "x-original-topic": sourceTopic,
+              "x-original-partition": String(partition),
+              "x-error": error,
+              "x-failed-at": String(Date.now()),
+              "x-retry-count": String(this.config.maxRetries),
+            },
           },
-        }],
+        ],
       });
       this.metrics.messagesDLQ++;
     } catch (dlqError) {

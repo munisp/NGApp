@@ -8,8 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
-  BarChart3, Clock, TrendingUp, TrendingDown,
-  AlertTriangle, CheckCircle, RefreshCw, Shield, DollarSign,
+  BarChart3,
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
+  Shield,
+  DollarSign,
 } from "lucide-react";
 
 export default function DisputeAnalyticsDashboard() {
@@ -41,12 +48,19 @@ export default function DisputeAnalyticsDashboard() {
               <BarChart3 className="h-6 w-6 text-primary" />
               Dispute Analytics
             </h1>
-            <p className="text-muted-foreground">Resolution times, refund rates, SLA compliance, and dispute patterns</p>
+            <p className="text-muted-foreground">
+              Resolution times, refund rates, SLA compliance, and dispute
+              patterns
+            </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => {
-            utils.disputeAnalytics.invalidate();
-            toast.success("Analytics refreshed");
-          }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              utils.disputeAnalytics.invalidate();
+              toast.success("Analytics refreshed");
+            }}
+          >
             <RefreshCw className="h-4 w-4 mr-1" /> Refresh
           </Button>
         </div>
@@ -60,8 +74,12 @@ export default function DisputeAnalyticsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? "—" : `${summary.data?.avgResolutionHours} hrs`}</div>
-              <p className="text-xs text-green-500 flex items-center gap-1"><TrendingDown className="h-3 w-3" /> Improving</p>
+              <div className="text-2xl font-bold">
+                {isLoading ? "—" : `${summary.data?.avgResolutionHours} hrs`}
+              </div>
+              <p className="text-xs text-green-500 flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> Improving
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -71,8 +89,16 @@ export default function DisputeAnalyticsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? "—" : `${summary.data?.refundRate}%`}</div>
-              <p className="text-xs text-muted-foreground">₦{isLoading ? "—" : (refunds.data?.totalRefunded ?? 0).toLocaleString()} total</p>
+              <div className="text-2xl font-bold">
+                {isLoading ? "—" : `${summary.data?.refundRate}%`}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ₦
+                {isLoading
+                  ? "—"
+                  : (refunds.data?.totalRefunded ?? 0).toLocaleString()}{" "}
+                total
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -82,8 +108,12 @@ export default function DisputeAnalyticsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{isLoading ? "—" : `${summary.data?.slaCompliance}%`}</div>
-              <p className="text-xs text-muted-foreground">{sla.data?.breachCount ?? "—"} breaches</p>
+              <div className="text-2xl font-bold text-green-600">
+                {isLoading ? "—" : `${summary.data?.slaCompliance}%`}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {sla.data?.breachCount ?? "—"} breaches
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -93,8 +123,12 @@ export default function DisputeAnalyticsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{isLoading ? "—" : summary.data?.openDisputes}</div>
-              <p className="text-xs text-muted-foreground">{summary.data?.escalatedThisMonth ?? "—"} escalated this month</p>
+              <div className="text-2xl font-bold text-amber-600">
+                {isLoading ? "—" : summary.data?.openDisputes}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {summary.data?.escalatedThisMonth ?? "—"} escalated this month
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -115,24 +149,32 @@ export default function DisputeAnalyticsDashboard() {
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
                   <p className="text-xs text-muted-foreground">Average</p>
-                  <p className="text-2xl font-bold">{resolution.data?.avgResolutionHours ?? "—"} hrs</p>
+                  <p className="text-2xl font-bold">
+                    {resolution.data?.avgResolutionHours ?? "—"} hrs
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
                   <p className="text-xs text-muted-foreground">Median</p>
-                  <p className="text-2xl font-bold">{resolution.data?.medianResolutionHours ?? "—"} hrs</p>
+                  <p className="text-2xl font-bold">
+                    {resolution.data?.medianResolutionHours ?? "—"} hrs
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
                   <p className="text-xs text-muted-foreground">P95</p>
-                  <p className="text-2xl font-bold">{resolution.data?.p95ResolutionHours ?? "—"} hrs</p>
+                  <p className="text-2xl font-bold">
+                    {resolution.data?.p95ResolutionHours ?? "—"} hrs
+                  </p>
                 </CardContent>
               </Card>
             </div>
             <Card>
-              <CardHeader><CardTitle>Resolution by Category</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Resolution by Category</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -146,19 +188,26 @@ export default function DisputeAnalyticsDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(resolution.data?.byCategory ?? []).map((c: any, i: number) => (
-                        <tr key={i} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">{c.category}</td>
-                          <td className="p-2 text-right">{c.count}</td>
-                          <td className="p-2 text-right">{c.avgHours} hrs</td>
-                          <td className="p-2 text-right font-bold">{c.resolvedPct}%</td>
-                          <td className="p-2">
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div className="bg-primary h-2 rounded-full" style={{ width: `${c.resolvedPct}%` }} />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {(resolution.data?.byCategory ?? []).map(
+                        (c: any, i: number) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">{c.category}</td>
+                            <td className="p-2 text-right">{c.count}</td>
+                            <td className="p-2 text-right">{c.avgHours} hrs</td>
+                            <td className="p-2 text-right font-bold">
+                              {c.resolvedPct}%
+                            </td>
+                            <td className="p-2">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{ width: `${c.resolvedPct}%` }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -171,25 +220,39 @@ export default function DisputeAnalyticsDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Overall Refund Rate</p>
-                  <p className="text-2xl font-bold">{refunds.data?.overallRefundRate ?? "—"}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    Overall Refund Rate
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {refunds.data?.overallRefundRate ?? "—"}%
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Avg Refund Amount</p>
-                  <p className="text-2xl font-bold">₦{(refunds.data?.avgRefundAmount ?? 0).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Avg Refund Amount
+                  </p>
+                  <p className="text-2xl font-bold">
+                    ₦{(refunds.data?.avgRefundAmount ?? 0).toLocaleString()}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Total Refunded</p>
-                  <p className="text-2xl font-bold text-red-500">₦{(refunds.data?.totalRefunded ?? 0).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Refunded
+                  </p>
+                  <p className="text-2xl font-bold text-red-500">
+                    ₦{(refunds.data?.totalRefunded ?? 0).toLocaleString()}
+                  </p>
                 </CardContent>
               </Card>
             </div>
             <Card>
-              <CardHeader><CardTitle>Monthly Refund Breakdown</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Monthly Refund Breakdown</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -202,32 +265,45 @@ export default function DisputeAnalyticsDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(refunds.data?.byMonth ?? []).map((m: any, i: number) => (
-                        <tr key={i} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">{m.month}</td>
-                          <td className="p-2 text-right">{m.refundRate}%</td>
-                          <td className="p-2 text-right">{m.count}</td>
-                          <td className="p-2 text-right font-bold">₦{m.amount.toLocaleString()}</td>
-                        </tr>
-                      ))}
+                      {(refunds.data?.byMonth ?? []).map(
+                        (m: any, i: number) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">{m.month}</td>
+                            <td className="p-2 text-right">{m.refundRate}%</td>
+                            <td className="p-2 text-right">{m.count}</td>
+                            <td className="p-2 text-right font-bold">
+                              ₦{m.amount.toLocaleString()}
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Refund Rate by Category</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Refund Rate by Category</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {(refunds.data?.byCategory ?? []).map((c: any, i: number) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-48 text-sm font-medium truncate">{c.category}</div>
+                      <div className="w-48 text-sm font-medium truncate">
+                        {c.category}
+                      </div>
                       <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
-                        <div className="h-full bg-primary/80 rounded-full flex items-center justify-end pr-2 text-[10px] text-white font-bold" style={{ width: `${c.refundRate}%` }}>
+                        <div
+                          className="h-full bg-primary/80 rounded-full flex items-center justify-end pr-2 text-[10px] text-white font-bold"
+                          style={{ width: `${c.refundRate}%` }}
+                        >
                           {c.refundRate}%
                         </div>
                       </div>
-                      <div className="w-24 text-right text-sm font-mono">₦{c.avgAmount.toLocaleString()}</div>
+                      <div className="w-24 text-right text-sm font-mono">
+                        ₦{c.avgAmount.toLocaleString()}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -240,25 +316,37 @@ export default function DisputeAnalyticsDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Overall Compliance</p>
-                  <p className="text-2xl font-bold text-green-600">{sla.data?.overallCompliance ?? "—"}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    Overall Compliance
+                  </p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {sla.data?.overallCompliance ?? "—"}%
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Total Breaches</p>
-                  <p className="text-2xl font-bold text-red-500">{sla.data?.breachCount ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Breaches
+                  </p>
+                  <p className="text-2xl font-bold text-red-500">
+                    {sla.data?.breachCount ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
                   <p className="text-xs text-muted-foreground">Total Tracked</p>
-                  <p className="text-2xl font-bold">{sla.data?.totalTracked ?? "—"}</p>
+                  <p className="text-2xl font-bold">
+                    {sla.data?.totalTracked ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
             </div>
             <Card>
-              <CardHeader><CardTitle>SLA by Priority Level</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>SLA by Priority Level</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -276,13 +364,27 @@ export default function DisputeAnalyticsDashboard() {
                       {(sla.data?.byPriority ?? []).map((p: any, i: number) => (
                         <tr key={i} className="border-b hover:bg-muted/50">
                           <td className="p-2 font-medium">{p.priority}</td>
-                          <td className="p-2 text-right font-bold">{p.compliance}%</td>
-                          <td className="p-2 text-right text-muted-foreground">{p.target}%</td>
+                          <td className="p-2 text-right font-bold">
+                            {p.compliance}%
+                          </td>
+                          <td className="p-2 text-right text-muted-foreground">
+                            {p.target}%
+                          </td>
                           <td className="p-2 text-right">{p.breaches}</td>
-                          <td className="p-2 text-right">{p.avgResponseHours} hrs</td>
+                          <td className="p-2 text-right">
+                            {p.avgResponseHours} hrs
+                          </td>
                           <td className="p-2">
-                            <Badge variant={p.compliance >= p.target ? "default" : "destructive"}>
-                              {p.compliance >= p.target ? "Meeting" : "Below Target"}
+                            <Badge
+                              variant={
+                                p.compliance >= p.target
+                                  ? "default"
+                                  : "destructive"
+                              }
+                            >
+                              {p.compliance >= p.target
+                                ? "Meeting"
+                                : "Below Target"}
                             </Badge>
                           </td>
                         </tr>
@@ -293,19 +395,25 @@ export default function DisputeAnalyticsDashboard() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Weekly Compliance Trend</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Weekly Compliance Trend</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {(sla.data?.trend ?? []).map((t: any, i: number) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-20 text-sm text-muted-foreground">{t.week}</div>
+                      <div className="w-20 text-sm text-muted-foreground">
+                        {t.week}
+                      </div>
                       <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${t.compliance >= 94 ? "bg-green-500" : t.compliance >= 90 ? "bg-amber-500" : "bg-red-500"}`}
                           style={{ width: `${t.compliance}%` }}
                         />
                       </div>
-                      <div className="w-16 text-right text-sm font-bold">{t.compliance}%</div>
+                      <div className="w-16 text-right text-sm font-bold">
+                        {t.compliance}%
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -318,16 +426,24 @@ export default function DisputeAnalyticsDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Weekly Avg Filed</p>
+                  <p className="text-xs text-muted-foreground">
+                    Weekly Avg Filed
+                  </p>
                   {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
-                  <p className="text-2xl font-bold">{trends.data?.weeklyAvg?.filed ?? "—"}</p>
+                  <p className="text-2xl font-bold">
+                    {trends.data?.weeklyAvg?.filed ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Weekly Avg Resolved</p>
+                  <p className="text-xs text-muted-foreground">
+                    Weekly Avg Resolved
+                  </p>
                   {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
-                  <p className="text-2xl font-bold text-green-600">{trends.data?.weeklyAvg?.resolved ?? "—"}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {trends.data?.weeklyAvg?.resolved ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
@@ -335,16 +451,24 @@ export default function DisputeAnalyticsDashboard() {
                   <p className="text-xs text-muted-foreground">Trend</p>
                   <p className="text-2xl font-bold flex items-center justify-center gap-1">
                     {trends.data?.trendDirection === "improving" ? (
-                      <><TrendingDown className="h-5 w-5 text-green-500" /> Improving</>
+                      <>
+                        <TrendingDown className="h-5 w-5 text-green-500" />{" "}
+                        Improving
+                      </>
                     ) : (
-                      <><TrendingUp className="h-5 w-5 text-red-500" /> Worsening</>
+                      <>
+                        <TrendingUp className="h-5 w-5 text-red-500" />{" "}
+                        Worsening
+                      </>
                     )}
                   </p>
                 </CardContent>
               </Card>
             </div>
             <Card>
-              <CardHeader><CardTitle>Daily Dispute Activity (Last 7 Days)</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Daily Dispute Activity (Last 7 Days)</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -363,11 +487,21 @@ export default function DisputeAnalyticsDashboard() {
                         return (
                           <tr key={i} className="border-b hover:bg-muted/50">
                             <td className="p-2 font-medium">{d.date}</td>
-                            <td className="p-2 text-right text-amber-600">{d.filed}</td>
-                            <td className="p-2 text-right text-green-600">{d.resolved}</td>
-                            <td className="p-2 text-right text-red-500">{d.escalated}</td>
+                            <td className="p-2 text-right text-amber-600">
+                              {d.filed}
+                            </td>
+                            <td className="p-2 text-right text-green-600">
+                              {d.resolved}
+                            </td>
+                            <td className="p-2 text-right text-red-500">
+                              {d.escalated}
+                            </td>
                             <td className="p-2">
-                              <span className={net >= 0 ? "text-green-600" : "text-red-500"}>
+                              <span
+                                className={
+                                  net >= 0 ? "text-green-600" : "text-red-500"
+                                }
+                              >
                                 {net >= 0 ? `+${net}` : net} net resolved
                               </span>
                             </td>
@@ -386,19 +520,29 @@ export default function DisputeAnalyticsDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Total Disputes</p>
-                  <p className="text-2xl font-bold">{categories.data?.totalDisputes ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Disputes
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {categories.data?.totalDisputes ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground">Total Financial Impact</p>
-                  <p className="text-2xl font-bold text-red-500">₦{(categories.data?.totalImpact ?? 0).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Financial Impact
+                  </p>
+                  <p className="text-2xl font-bold text-red-500">
+                    ₦{(categories.data?.totalImpact ?? 0).toLocaleString()}
+                  </p>
                 </CardContent>
               </Card>
             </div>
             <Card>
-              <CardHeader><CardTitle>Dispute Categories by Impact</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Dispute Categories by Impact</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -413,22 +557,40 @@ export default function DisputeAnalyticsDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(categories.data?.categories ?? []).map((c: any, i: number) => (
-                        <tr key={i} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">{c.category}</td>
-                          <td className="p-2 text-right">{c.count}</td>
-                          <td className="p-2 text-right">{c.pctOfTotal}%</td>
-                          <td className="p-2 text-right">₦{c.avgAmount.toLocaleString()}</td>
-                          <td className="p-2 text-right font-bold">₦{c.totalImpact.toLocaleString()}</td>
-                          <td className="p-2">
-                            <Badge variant={c.trend === "decreasing" ? "default" : c.trend === "increasing" ? "destructive" : "secondary"}>
-                              {c.trend === "decreasing" && <TrendingDown className="h-3 w-3 mr-1" />}
-                              {c.trend === "increasing" && <TrendingUp className="h-3 w-3 mr-1" />}
-                              {c.trend}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
+                      {(categories.data?.categories ?? []).map(
+                        (c: any, i: number) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">{c.category}</td>
+                            <td className="p-2 text-right">{c.count}</td>
+                            <td className="p-2 text-right">{c.pctOfTotal}%</td>
+                            <td className="p-2 text-right">
+                              ₦{c.avgAmount.toLocaleString()}
+                            </td>
+                            <td className="p-2 text-right font-bold">
+                              ₦{c.totalImpact.toLocaleString()}
+                            </td>
+                            <td className="p-2">
+                              <Badge
+                                variant={
+                                  c.trend === "decreasing"
+                                    ? "default"
+                                    : c.trend === "increasing"
+                                      ? "destructive"
+                                      : "secondary"
+                                }
+                              >
+                                {c.trend === "decreasing" && (
+                                  <TrendingDown className="h-3 w-3 mr-1" />
+                                )}
+                                {c.trend === "increasing" && (
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                )}
+                                {c.trend}
+                              </Badge>
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>

@@ -16,14 +16,17 @@ Sprint 92 addressed 5 user requests: (1) confirmed PostgreSQL as the primary dat
 ## Changes by Category
 
 ### Database & Schema
+
 - **S92-01:** Confirmed `drizzle.config.ts` already uses `dialect: "postgresql"` — no MySQL/TiDB dialect issues
 - **S92-02:** Added 6 missing values to `billingAuditActionEnum`: `invoice_generated`, `invoice_sent`, `invoice_voided`, `payment_refunded`, `subscription_paused`, `subscription_resumed`
 - **S92-03:** Migration 0042 generated and applied for enum updates
 
 ### TypeScript Error Reduction
+
 - **S92-04:** Reduced from 1,284 to 1,281 errors (enum fix resolved 3). Remaining 1,281 are pre-existing TS2339/TS7006 across 286 files — all runtime-functional, non-blocking
 
 ### New Feature: Offline Queue Dashboard (`/offline-queue`)
+
 - **S92-05:** `OfflineQueueDashboard.tsx` — real-time queue visualization for 2G/3G users
   - Queue size gauge with pending/syncing/synced/failed breakdown
   - Network quality indicator (offline/2G/3G/4G/WiFi) with signal strength bars
@@ -38,6 +41,7 @@ Sprint 92 addressed 5 user requests: (1) confirmed PostgreSQL as the primary dat
   - `clearSynced` — purge successfully synced items from local store
 
 ### New Feature: Ransomware Alert Dashboard (`/security-alerts`)
+
 - **S92-07:** `RansomwareAlertDashboard.tsx` — admin security alert center
   - 6 alert categories: ransomware, bulk_operation, file_integrity, exfiltration, brute_force, canary_trigger
   - Severity badges (critical/high/medium/low) with color coding
@@ -54,6 +58,7 @@ Sprint 92 addressed 5 user requests: (1) confirmed PostgreSQL as the primary dat
   - `getAlertDetail` — full alert with timeline and affected resources
 
 ### New Feature: PBAC Management Interface (`/pbac-management`)
+
 - **S92-09:** `PBACManagement.tsx` — 7-role hierarchy management
   - Visual role hierarchy with level indicators and inheritance arrows
   - Click-to-expand role detail with users, permissions, and audit tabs
@@ -73,6 +78,7 @@ Sprint 92 addressed 5 user requests: (1) confirmed PostgreSQL as the primary dat
   - `getAuditLog` — paginated PBAC change history
 
 ### Routing & Integration
+
 - **S92-11:** Wired 3 new routes in `App.tsx` and 3 new routers in `appRouter`:
   - `/offline-queue` → `OfflineQueueDashboard`
   - `/security-alerts` → `RansomwareAlertDashboard`
@@ -83,23 +89,25 @@ Sprint 92 addressed 5 user requests: (1) confirmed PostgreSQL as the primary dat
 ## Files Changed
 
 ### New Files (10)
-| File | Lines | Purpose |
-|------|-------|---------|
-| `server/routers/offlineQueue.ts` | ~180 | Offline queue tRPC router |
-| `server/routers/ransomwareAlerts.ts` | ~280 | Ransomware alert tRPC router |
-| `server/routers/pbacManagement.ts` | ~350 | PBAC management tRPC router |
-| `client/src/pages/OfflineQueueDashboard.tsx` | ~420 | Offline queue UI |
-| `client/src/pages/RansomwareAlertDashboard.tsx` | ~450 | Ransomware alert UI |
-| `client/src/pages/PBACManagement.tsx` | ~380 | PBAC management UI |
-| `server/sprint92.test.ts` | ~236 | Sprint 92 tests (33 tests) |
-| `CHANGELOG-sprint92.md` | this file | Change manifest |
+
+| File                                            | Lines     | Purpose                      |
+| ----------------------------------------------- | --------- | ---------------------------- |
+| `server/routers/offlineQueue.ts`                | ~180      | Offline queue tRPC router    |
+| `server/routers/ransomwareAlerts.ts`            | ~280      | Ransomware alert tRPC router |
+| `server/routers/pbacManagement.ts`              | ~350      | PBAC management tRPC router  |
+| `client/src/pages/OfflineQueueDashboard.tsx`    | ~420      | Offline queue UI             |
+| `client/src/pages/RansomwareAlertDashboard.tsx` | ~450      | Ransomware alert UI          |
+| `client/src/pages/PBACManagement.tsx`           | ~380      | PBAC management UI           |
+| `server/sprint92.test.ts`                       | ~236      | Sprint 92 tests (33 tests)   |
+| `CHANGELOG-sprint92.md`                         | this file | Change manifest              |
 
 ### Modified Files (3)
-| File | Change |
-|------|--------|
-| `drizzle/schema.ts` | Added 6 missing enum values to `billingAuditActionEnum` |
-| `server/routers.ts` | Added 3 new router imports and wired into `appRouter` |
-| `client/src/App.tsx` | Added 3 new page imports and routes |
+
+| File                 | Change                                                  |
+| -------------------- | ------------------------------------------------------- |
+| `drizzle/schema.ts`  | Added 6 missing enum values to `billingAuditActionEnum` |
+| `server/routers.ts`  | Added 3 new router imports and wired into `appRouter`   |
+| `client/src/App.tsx` | Added 3 new page imports and routes                     |
 
 ---
 

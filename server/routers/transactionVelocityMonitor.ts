@@ -6,11 +6,13 @@ import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const transactionVelocityMonitorRouter = router({
   list: publicProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(20),
-      offset: z.number().min(0).default(0),
-      search: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
@@ -20,11 +22,11 @@ export const transactionVelocityMonitorRouter = router({
         .orderBy(desc(transactions.id))
         .limit(input.limit)
         .offset(input.offset);
-      
+
       const [totalResult] = await database
         .select({ total: count() })
         .from(transactions);
-      
+
       return {
         data: results,
         total: totalResult?.total ?? 0,
@@ -43,44 +45,45 @@ export const transactionVelocityMonitorRouter = router({
         .from(transactions)
         .where(eq(transactions.id, input.id))
         .limit(1);
-      
+
       if (!record) {
         throw new Error(`Record with id ${input.id} not found`);
       }
       return record;
     }),
 
-  getSummary: publicProcedure
-    .query(async () => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(transactions);
-      
-      return {
-        totalRecords: totalResult?.total ?? 0,
-        lastUpdated: new Date().toISOString(),
-      };
-    }),
+  getSummary: publicProcedure.query(async () => {
+    const database = await getDb();
+    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+    const [totalResult] = await database
+      .select({ total: count() })
+      .from(transactions);
+
+    return {
+      totalRecords: totalResult?.total ?? 0,
+      lastUpdated: new Date().toISOString(),
+    };
+  }),
 
   getRecent: publicProcedure
-    .input(z.object({
-      days: z.number().min(1).max(90).default(7),
-      limit: z.number().min(1).max(50).default(10),
-    }))
+    .input(
+      z.object({
+        days: z.number().min(1).max(90).default(7),
+        limit: z.number().min(1).max(50).default(10),
+      })
+    )
     .query(async ({ input }) => {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const since = new Date();
       since.setDate(since.getDate() - input.days);
-      
+
       const results = await database
         .select()
         .from(transactions)
         .orderBy(desc(transactions.id))
         .limit(input.limit);
-      
+
       return results;
     }),
 });

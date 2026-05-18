@@ -151,7 +151,11 @@ export async function notifyFloatApproval(params: {
     body: `₦${params.amount.toLocaleString()} added to your float. New balance: ₦${params.newBalance.toLocaleString()}`,
     tag: "float-topup",
     icon: "/icons/float-approved.png",
-    data: { type: "float_approval", amount: params.amount, newBalance: params.newBalance },
+    data: {
+      type: "float_approval",
+      amount: params.amount,
+      newBalance: params.newBalance,
+    },
   });
 }
 

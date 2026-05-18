@@ -41,7 +41,9 @@ export function PWAInstallBanner() {
           <Smartphone className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-card-foreground">Install 54Link POS Shell</p>
+          <p className="text-sm font-semibold text-card-foreground">
+            Install 54Link POS Shell
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Install for faster access, offline support, and push notifications.
           </p>

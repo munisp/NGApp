@@ -11,46 +11,50 @@ import { appRouter } from "../../server/routers";
 import type { TrpcContext } from "../../server/_core/context";
 
 vi.mock("../../server/db", () => ({
-  getDb:                   vi.fn().mockResolvedValue(null),
-  getAgentByCode:          vi.fn(),
-  getAgentById:            vi.fn(),
-  createAgent:             vi.fn(),
-  updateAgentLastLogin:    vi.fn(),
-  updateAgentFloat:        vi.fn(),
-  updateAgentCommission:   vi.fn(),
-  addLoyaltyHistory:       vi.fn(),
-  writeAuditLog:           vi.fn(),
-  createTransaction:       vi.fn(),
-  getTransactionsByAgent:  vi.fn(),
-  getTransactionByRef:     vi.fn(),
+  getDb: vi.fn().mockResolvedValue(null),
+  getAgentByCode: vi.fn(),
+  getAgentById: vi.fn(),
+  createAgent: vi.fn(),
+  updateAgentLastLogin: vi.fn(),
+  updateAgentFloat: vi.fn(),
+  updateAgentCommission: vi.fn(),
+  addLoyaltyHistory: vi.fn(),
+  writeAuditLog: vi.fn(),
+  createTransaction: vi.fn(),
+  getTransactionsByAgent: vi.fn(),
+  getTransactionByRef: vi.fn(),
   updateTransactionStatus: vi.fn(),
-  getFraudAlerts:          vi.fn(),
-  createFraudAlert:        vi.fn(),
-  updateFraudAlertStatus:  vi.fn(),
-  getLoyaltyHistory:       vi.fn(),
-  createChatSession:       vi.fn(),
-  getChatSession:          vi.fn(),
-  addChatMessage:          vi.fn(),
-  getChatMessages:         vi.fn(),
-  getAuditLog:             vi.fn(),
-  upsertUser:              vi.fn(),
-  getUserByOpenId:         vi.fn(),
-  getUserByKeycloakSub:    vi.fn(),
+  getFraudAlerts: vi.fn(),
+  createFraudAlert: vi.fn(),
+  updateFraudAlertStatus: vi.fn(),
+  getLoyaltyHistory: vi.fn(),
+  createChatSession: vi.fn(),
+  getChatSession: vi.fn(),
+  addChatMessage: vi.fn(),
+  getChatMessages: vi.fn(),
+  getAuditLog: vi.fn(),
+  upsertUser: vi.fn(),
+  getUserByOpenId: vi.fn(),
+  getUserByKeycloakSub: vi.fn(),
 }));
 
 vi.mock("../../server/_core/platformClient", () => ({
   disputePlatform: {
-    raise:                vi.fn().mockResolvedValue(null),
-    myDisputes:           vi.fn().mockResolvedValue(null),
-    issueProvisionalCredit: vi.fn().mockResolvedValue({ success: true, creditRef: "CRED001" }),
-    initiateChargeback:   vi.fn().mockResolvedValue({ success: true, chargebackRef: "CB001" }),
-    completeChargeback:   vi.fn().mockResolvedValue({ success: true }),
-    stats:                vi.fn().mockResolvedValue(null),
+    raise: vi.fn().mockResolvedValue(null),
+    myDisputes: vi.fn().mockResolvedValue(null),
+    issueProvisionalCredit: vi
+      .fn()
+      .mockResolvedValue({ success: true, creditRef: "CRED001" }),
+    initiateChargeback: vi
+      .fn()
+      .mockResolvedValue({ success: true, chargebackRef: "CB001" }),
+    completeChargeback: vi.fn().mockResolvedValue({ success: true }),
+    stats: vi.fn().mockResolvedValue(null),
   },
   floatPlatform: {
-    utilize:         vi.fn().mockResolvedValue({ success: true }),
-    settle:          vi.fn().mockResolvedValue({ success: true }),
-    getBalance:      vi.fn().mockResolvedValue(null),
+    utilize: vi.fn().mockResolvedValue({ success: true }),
+    settle: vi.fn().mockResolvedValue({ success: true }),
+    getBalance: vi.fn().mockResolvedValue(null),
     getTransactions: vi.fn().mockResolvedValue(null),
   },
   analyticsPlatform: {
@@ -61,24 +65,33 @@ vi.mock("../../server/_core/platformClient", () => ({
 vi.mock("jose", () => ({
   SignJWT: vi.fn().mockImplementation(() => ({
     setProtectedHeader: vi.fn().mockReturnThis(),
-    setIssuedAt:        vi.fn().mockReturnThis(),
-    setExpirationTime:  vi.fn().mockReturnThis(),
-    sign:               vi.fn().mockResolvedValue("mock.jwt.token"),
+    setIssuedAt: vi.fn().mockReturnThis(),
+    setExpirationTime: vi.fn().mockReturnThis(),
+    sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "AGT001", name: "Emeka Obi", tier: "Gold", role: "agent" },
+    payload: {
+      sub: "1",
+      agentCode: "AGT001",
+      name: "Emeka Obi",
+      tier: "Gold",
+      role: "agent",
+    },
   }),
 }));
 
 vi.mock("bcryptjs", () => ({
-  default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue("$2b$10$hash") },
+  default: {
+    compare: vi.fn().mockResolvedValue(true),
+    hash: vi.fn().mockResolvedValue("$2b$10$hash"),
+  },
   compare: vi.fn().mockResolvedValue(true),
-  hash:    vi.fn().mockResolvedValue("$2b$10$hash"),
+  hash: vi.fn().mockResolvedValue("$2b$10$hash"),
 }));
 
 // ── DB mock setup ─────────────────────────────────────────────────────────────
 // We need to mock drizzle ORM calls used by the disputes router
-vi.mock("../../drizzle/schema", async (importOriginal) => {
+vi.mock("../../drizzle/schema", async importOriginal => {
   const actual = await importOriginal<typeof import("../../drizzle/schema")>();
   return actual;
 });
@@ -87,8 +100,14 @@ function makeAgentCtx(): TrpcContext {
   return {
     req: { headers: { cookie: "agent_session=mock.jwt.token" } } as any,
     res: { setHeader: vi.fn(), getHeader: vi.fn() } as any,
-    agent: { id: 1, agentCode: "AGT001", name: "Emeka Obi", role: "agent", tier: "Gold" },
-    user:  null,
+    agent: {
+      id: 1,
+      agentCode: "AGT001",
+      name: "Emeka Obi",
+      role: "agent",
+      tier: "Gold",
+    },
+    user: null,
   };
 }
 
@@ -97,7 +116,13 @@ function makeAdminCtx(): TrpcContext {
     req: { headers: { cookie: "kc_session=mock.kc.token" } } as any,
     res: { setHeader: vi.fn(), getHeader: vi.fn() } as any,
     agent: null,
-    user:  { id: "admin1", openId: "admin1", name: "Admin User", email: "admin@54link.io", role: "admin" },
+    user: {
+      id: "admin1",
+      openId: "admin1",
+      name: "Admin User",
+      email: "admin@54link.io",
+      role: "admin",
+    },
   };
 }
 
@@ -124,7 +149,8 @@ describe("Dispute Lifecycle", () => {
       const caller = appRouter.createCaller({
         req: { headers: {} } as any,
         res: { setHeader: vi.fn(), getHeader: vi.fn() } as any,
-        agent: null, user: null,
+        agent: null,
+        user: null,
       });
       await expect(
         caller.disputes.raise({
@@ -142,8 +168,8 @@ describe("Dispute Lifecycle", () => {
       await expect(
         caller.disputes.issueProvisionalCredit({
           disputeRef: "DSP-20260330-001",
-          amount:     5000,
-          reason:     "Provisional credit pending investigation",
+          amount: 5000,
+          reason: "Provisional credit pending investigation",
         })
       ).rejects.toThrow(); // NOT_FOUND because DB is mocked
     });
@@ -152,7 +178,9 @@ describe("Dispute Lifecycle", () => {
       const caller = appRouter.createCaller(makeAgentCtx());
       await expect(
         caller.disputes.issueProvisionalCredit({
-          disputeRef: "DSP-20260330-001", amount: 5000, reason: "Provisional credit pending investigation",
+          disputeRef: "DSP-20260330-001",
+          amount: 5000,
+          reason: "Provisional credit pending investigation",
         })
       ).rejects.toThrow(); // FORBIDDEN — agent is not admin
     });
@@ -165,8 +193,8 @@ describe("Dispute Lifecycle", () => {
       await expect(
         caller.disputes.initiateChargeback({
           disputeRef: "DSP-20260330-001",
-          amount:     5000,
-          reason:     "Confirmed fraudulent transaction",
+          amount: 5000,
+          reason: "Confirmed fraudulent transaction",
         })
       ).rejects.toThrow(); // NOT_FOUND because DB is mocked
     });
@@ -179,8 +207,8 @@ describe("Dispute Lifecycle", () => {
       await expect(
         caller.disputes.completeChargeback({
           disputeRef: "DSP-20260330-001",
-          success:    true,
-          notes:      "Chargeback completed successfully",
+          success: true,
+          notes: "Chargeback completed successfully",
         })
       ).rejects.toThrow(); // NOT_FOUND because DB is mocked
     });

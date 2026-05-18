@@ -17,17 +17,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Wallet, TrendingUp, Star, BookOpen, CreditCard,
-  ArrowUpRight, ArrowDownLeft, RefreshCw, ChevronLeft,
-  QrCode, AlertTriangle, User,
+  Wallet,
+  TrendingUp,
+  Star,
+  BookOpen,
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownLeft,
+  RefreshCw,
+  ChevronLeft,
+  QrCode,
+  AlertTriangle,
+  User,
 } from "lucide-react";
 
 export default function AgentPortal() {
-  const agent = usePosStore((s) => s.agent);
+  const agent = usePosStore(s => s.agent);
   const [, navigate] = useLocation();
   const [tab, setTab] = useState("wallet");
   // Transaction search/filter/pagination state
@@ -63,10 +76,22 @@ export default function AgentPortal() {
   );
 
   // Additional queries
-  const floatHistoryQ = trpc.agentBanking.float.history.useQuery({ agentId, page: 1, limit: 10 }, { enabled: agentId > 0 && tab === "wallet", retry: false });
-  const disputesQ = trpc.agentBanking.disputes.list.useQuery({ agentId, page: 1, limit: 10 }, { enabled: agentId > 0 && tab === "disputes", retry: false });
-  const loyaltyQ = trpc.agentBanking.loyalty.history.useQuery({ agentId, page: 1, limit: 10 }, { enabled: agentId > 0 && tab === "scorecard", retry: false });
-  const qrCodesQ = trpc.agentBanking.qr.myQrCodes.useQuery({ agentId, page: 1, limit: 5 }, { enabled: agentId > 0 && tab === "qr", retry: false });
+  const floatHistoryQ = trpc.agentBanking.float.history.useQuery(
+    { agentId, page: 1, limit: 10 },
+    { enabled: agentId > 0 && tab === "wallet", retry: false }
+  );
+  const disputesQ = trpc.agentBanking.disputes.list.useQuery(
+    { agentId, page: 1, limit: 10 },
+    { enabled: agentId > 0 && tab === "disputes", retry: false }
+  );
+  const loyaltyQ = trpc.agentBanking.loyalty.history.useQuery(
+    { agentId, page: 1, limit: 10 },
+    { enabled: agentId > 0 && tab === "scorecard", retry: false }
+  );
+  const qrCodesQ = trpc.agentBanking.qr.myQrCodes.useQuery(
+    { agentId, page: 1, limit: 5 },
+    { enabled: agentId > 0 && tab === "qr", retry: false }
+  );
 
   const utils = trpc.useUtils();
 
@@ -74,31 +99,64 @@ export default function AgentPortal() {
   const [floatOpen, setFloatOpen] = useState(false);
   const [floatAmount, setFloatAmount] = useState("");
   const [disputeOpen, setDisputeOpen] = useState(false);
-  const [disputeForm, setDisputeForm] = useState({ transactionRef: "", transactionId: 0, reason: "", evidence: "" });
+  const [disputeForm, setDisputeForm] = useState({
+    transactionRef: "",
+    transactionId: 0,
+    reason: "",
+    evidence: "",
+  });
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", phone: "", email: "" });
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  });
 
   const requestFloat = trpc.agentBanking.float.requestTopUp.useMutation({
-    onSuccess: () => { toast.success("Float request submitted"); utils.agentBanking.dashboard.summary.invalidate(); utils.agentBanking.float.history.invalidate(); setFloatOpen(false); setFloatAmount(""); },
-    onError: (e) => toast.error("Request failed", { description: e.message }),
+    onSuccess: () => {
+      toast.success("Float request submitted");
+      utils.agentBanking.dashboard.summary.invalidate();
+      utils.agentBanking.float.history.invalidate();
+      setFloatOpen(false);
+      setFloatAmount("");
+    },
+    onError: e => toast.error("Request failed", { description: e.message }),
   });
   const raiseDispute = trpc.agentBanking.disputes.raise.useMutation({
-    onSuccess: () => { toast.success("Dispute raised"); utils.agentBanking.disputes.list.invalidate(); setDisputeOpen(false); setDisputeForm({ transactionRef: "", transactionId: 0, reason: "", evidence: "" }); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onSuccess: () => {
+      toast.success("Dispute raised");
+      utils.agentBanking.disputes.list.invalidate();
+      setDisputeOpen(false);
+      setDisputeForm({
+        transactionRef: "",
+        transactionId: 0,
+        reason: "",
+        evidence: "",
+      });
+    },
+    onError: e => toast.error("Error", { description: e.message }),
   });
   const generateQr = trpc.agentBanking.qr.generate.useMutation({
-    onSuccess: () => { toast.success("QR code generated"); utils.agentBanking.qr.myQrCodes.invalidate(); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onSuccess: () => {
+      toast.success("QR code generated");
+      utils.agentBanking.qr.myQrCodes.invalidate();
+    },
+    onError: e => toast.error("Error", { description: e.message }),
   });
   const updateProfile = trpc.agentBanking.profile.update.useMutation({
-    onSuccess: () => { toast.success("Profile updated"); utils.agentBanking.profile.get.invalidate(); setProfileOpen(false); },
-    onError: (e) => toast.error("Error", { description: e.message }),
+    onSuccess: () => {
+      toast.success("Profile updated");
+      utils.agentBanking.profile.get.invalidate();
+      setProfileOpen(false);
+    },
+    onError: e => toast.error("Error", { description: e.message }),
   });
 
   const dashData = dashboardQuery.data;
   const wallet = {
     floatBalance: dashData?.floatBalance ?? agent?.floatBalance ?? "0",
-    commissionBalance: (dashData as any)?.commissionBalance ?? agent?.commissionBalance ?? "0",
+    commissionBalance:
+      (dashData as any)?.commissionBalance ?? agent?.commissionBalance ?? "0",
     loyaltyPoints: dashData?.loyaltyPoints ?? agent?.loyaltyPoints ?? 0,
   };
 
@@ -116,11 +174,15 @@ export default function AgentPortal() {
           </Button>
           <div>
             <h1 className="text-sm font-bold">Agent Portal</h1>
-            <p className="text-xs text-muted-foreground">{agent?.name ?? "Agent"} · {agent?.agentCode}</p>
+            <p className="text-xs text-muted-foreground">
+              {agent?.name ?? "Agent"} · {agent?.agentCode}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">{agent?.tier ?? "Bronze"}</Badge>
+          <Badge variant="outline" className="text-xs">
+            {agent?.tier ?? "Bronze"}
+          </Badge>
           <EnableNotificationsButton />
         </div>
       </header>
@@ -130,19 +192,25 @@ export default function AgentPortal() {
         <Card className="bg-primary text-primary-foreground">
           <CardContent className="p-3">
             <p className="text-xs opacity-80">Float Balance</p>
-            <p className="text-lg font-bold">₦{Number(wallet.floatBalance).toLocaleString()}</p>
+            <p className="text-lg font-bold">
+              ₦{Number(wallet.floatBalance).toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-card">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Commission</p>
-            <p className="text-lg font-bold">₦{Number(wallet.commissionBalance).toLocaleString()}</p>
+            <p className="text-lg font-bold">
+              ₦{Number(wallet.commissionBalance).toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-card">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Loyalty Pts</p>
-            <p className="text-lg font-bold">{Number(wallet.loyaltyPoints).toLocaleString()}</p>
+            <p className="text-lg font-bold">
+              {Number(wallet.loyaltyPoints).toLocaleString()}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -151,12 +219,30 @@ export default function AgentPortal() {
       <div className="px-4">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full grid grid-cols-6 mb-4">
-            <TabsTrigger value="wallet" className="text-xs"><Wallet size={12} className="mr-1" />Float</TabsTrigger>
-            <TabsTrigger value="transactions" className="text-xs"><CreditCard size={12} className="mr-1" />Txns</TabsTrigger>
-            <TabsTrigger value="scorecard" className="text-xs"><Star size={12} className="mr-1" />Score</TabsTrigger>
-            <TabsTrigger value="disputes" className="text-xs"><AlertTriangle size={12} className="mr-1" />Disputes</TabsTrigger>
-            <TabsTrigger value="qr" className="text-xs"><QrCode size={12} className="mr-1" />QR</TabsTrigger>
-            <TabsTrigger value="profile" className="text-xs"><User size={12} className="mr-1" />Profile</TabsTrigger>
+            <TabsTrigger value="wallet" className="text-xs">
+              <Wallet size={12} className="mr-1" />
+              Float
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs">
+              <CreditCard size={12} className="mr-1" />
+              Txns
+            </TabsTrigger>
+            <TabsTrigger value="scorecard" className="text-xs">
+              <Star size={12} className="mr-1" />
+              Score
+            </TabsTrigger>
+            <TabsTrigger value="disputes" className="text-xs">
+              <AlertTriangle size={12} className="mr-1" />
+              Disputes
+            </TabsTrigger>
+            <TabsTrigger value="qr" className="text-xs">
+              <QrCode size={12} className="mr-1" />
+              QR
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs">
+              <User size={12} className="mr-1" />
+              Profile
+            </TabsTrigger>
           </TabsList>
 
           {/* Wallet tab */}
@@ -167,26 +253,49 @@ export default function AgentPortal() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 text-xs gap-1" onClick={() => { setFloatAmount(""); setFloatOpen(true); }}>
+                  <Button
+                    size="sm"
+                    className="flex-1 text-xs gap-1"
+                    onClick={() => {
+                      setFloatAmount("");
+                      setFloatOpen(true);
+                    }}
+                  >
                     <ArrowUpRight size={12} /> Request Float
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1 text-xs gap-1" onClick={() => dashboardQuery.refetch()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-xs gap-1"
+                    onClick={() => dashboardQuery.refetch()}
+                  >
                     <RefreshCw size={12} /> Refresh
                   </Button>
                 </div>
                 <div className="rounded-lg bg-muted/30 p-3 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Float Limit</span>
-                    <span className="font-medium">₦{Number(agent?.floatLimit ?? 1000000).toLocaleString()}</span>
+                    <span className="font-medium">
+                      ₦{Number(agent?.floatLimit ?? 1000000).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Available</span>
-                    <span className="font-medium text-green-500">₦{Number(wallet.floatBalance).toLocaleString()}</span>
+                    <span className="font-medium text-green-500">
+                      ₦{Number(wallet.floatBalance).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Utilisation</span>
                     <span className="font-medium">
-                      {agent?.floatLimit ? Math.round((Number(wallet.floatBalance) / Number(agent.floatLimit)) * 100) : 0}%
+                      {agent?.floatLimit
+                        ? Math.round(
+                            (Number(wallet.floatBalance) /
+                              Number(agent.floatLimit)) *
+                              100
+                          )
+                        : 0}
+                      %
                     </span>
                   </div>
                 </div>
@@ -206,12 +315,18 @@ export default function AgentPortal() {
                   <Input
                     placeholder="Search by ref or type…"
                     value={txSearch}
-                    onChange={e => { setTxSearch(e.target.value); setTxPage(1); }}
+                    onChange={e => {
+                      setTxSearch(e.target.value);
+                      setTxPage(1);
+                    }}
                     className="flex-1 min-w-[120px] h-7 text-xs"
                   />
                   <select
                     value={txStatus}
-                    onChange={e => { setTxStatus(e.target.value); setTxPage(1); }}
+                    onChange={e => {
+                      setTxStatus(e.target.value);
+                      setTxPage(1);
+                    }}
                     className="h-7 text-xs px-2 rounded-md border border-input bg-background"
                   >
                     <option value="all">All Status</option>
@@ -222,7 +337,10 @@ export default function AgentPortal() {
                   </select>
                   <select
                     value={txType}
-                    onChange={e => { setTxType(e.target.value); setTxPage(1); }}
+                    onChange={e => {
+                      setTxType(e.target.value);
+                      setTxPage(1);
+                    }}
                     className="h-7 text-xs px-2 rounded-md border border-input bg-background"
                   >
                     <option value="all">All Types</option>
@@ -235,28 +353,63 @@ export default function AgentPortal() {
                 </div>
 
                 {txQuery.isLoading ? (
-                  <div className="p-4 text-xs text-muted-foreground text-center">Loading…</div>
+                  <div className="p-4 text-xs text-muted-foreground text-center">
+                    Loading…
+                  </div>
                 ) : (
                   <div className="divide-y divide-border rounded-md border">
                     {(txQuery.data?.items ?? [])
-                      .filter((t: any) => !txSearch || t.ref?.toLowerCase().includes(txSearch.toLowerCase()) || t.type?.toLowerCase().includes(txSearch.toLowerCase()))
+                      .filter(
+                        (t: any) =>
+                          !txSearch ||
+                          t.ref
+                            ?.toLowerCase()
+                            .includes(txSearch.toLowerCase()) ||
+                          t.type?.toLowerCase().includes(txSearch.toLowerCase())
+                      )
                       .map((t: any) => (
-                        <div key={t.id} className="flex items-center justify-between p-3">
+                        <div
+                          key={t.id}
+                          className="flex items-center justify-between p-3"
+                        >
                           <div>
-                            <p className="text-xs font-medium capitalize">{t.type?.replace(/_/g, " ")}</p>
-                            <p className="text-xs text-muted-foreground font-mono">{t.ref}</p>
-                            <p className="text-xs text-muted-foreground">{t.createdAt ? new Date(t.createdAt).toLocaleDateString("en-NG") : ""}</p>
+                            <p className="text-xs font-medium capitalize">
+                              {t.type?.replace(/_/g, " ")}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {t.ref}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {t.createdAt
+                                ? new Date(t.createdAt).toLocaleDateString(
+                                    "en-NG"
+                                  )
+                                : ""}
+                            </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-bold">₦{Number(t.amount).toLocaleString()}</p>
-                            <Badge variant={t.status === "success" ? "default" : t.status === "failed" ? "destructive" : "secondary"} className="text-xs">
+                            <p className="text-xs font-bold">
+                              ₦{Number(t.amount).toLocaleString()}
+                            </p>
+                            <Badge
+                              variant={
+                                t.status === "success"
+                                  ? "default"
+                                  : t.status === "failed"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                              className="text-xs"
+                            >
                               {t.status}
                             </Badge>
                           </div>
                         </div>
                       ))}
                     {(txQuery.data?.items ?? []).length === 0 && (
-                      <div className="p-6 text-center text-xs text-muted-foreground">No transactions found</div>
+                      <div className="p-6 text-center text-xs text-muted-foreground">
+                        No transactions found
+                      </div>
                     )}
                   </div>
                 )}
@@ -265,11 +418,30 @@ export default function AgentPortal() {
                 {(txQuery.data?.total ?? 0) > 15 && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                      Page {txPage} of {Math.ceil((txQuery.data?.total ?? 0) / 15)}
+                      Page {txPage} of{" "}
+                      {Math.ceil((txQuery.data?.total ?? 0) / 15)}
                     </span>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="h-6 text-xs" disabled={txPage === 1} onClick={() => setTxPage(p => p - 1)}>Prev</Button>
-                      <Button size="sm" variant="outline" className="h-6 text-xs" disabled={txPage >= Math.ceil((txQuery.data?.total ?? 0) / 15)} onClick={() => setTxPage(p => p + 1)}>Next</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-xs"
+                        disabled={txPage === 1}
+                        onClick={() => setTxPage(p => p - 1)}
+                      >
+                        Prev
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-xs"
+                        disabled={
+                          txPage >= Math.ceil((txQuery.data?.total ?? 0) / 15)
+                        }
+                        onClick={() => setTxPage(p => p + 1)}
+                      >
+                        Next
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -282,7 +454,8 @@ export default function AgentPortal() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp size={14} className="text-primary" /> Performance Scorecard
+                  <TrendingUp size={14} className="text-primary" /> Performance
+                  Scorecard
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -290,11 +463,22 @@ export default function AgentPortal() {
                   {[
                     { label: "Current Tier", value: agent?.tier ?? "Bronze" },
                     { label: "Platform Rank", value: `#${agent?.rank ?? 0}` },
-                    { label: "Active Streak", value: `${agent?.streak ?? 0} days` },
-                    { label: "Loyalty Points", value: Number(agent?.loyaltyPoints ?? 0).toLocaleString() },
+                    {
+                      label: "Active Streak",
+                      value: `${agent?.streak ?? 0} days`,
+                    },
+                    {
+                      label: "Loyalty Points",
+                      value: Number(agent?.loyaltyPoints ?? 0).toLocaleString(),
+                    },
                   ].map((item: any) => (
-                    <div key={item.label} className="rounded-lg bg-muted/30 p-3">
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <div
+                      key={item.label}
+                      className="rounded-lg bg-muted/30 p-3"
+                    >
+                      <p className="text-xs text-muted-foreground">
+                        {item.label}
+                      </p>
                       <p className="text-sm font-bold">{item.value}</p>
                     </div>
                   ))}
@@ -306,25 +490,53 @@ export default function AgentPortal() {
           {/* Disputes tab */}
           <TabsContent value="disputes" className="space-y-3">
             <div className="flex justify-end">
-              <Button size="sm" className="text-xs gap-1" onClick={() => setDisputeOpen(true)}>
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => setDisputeOpen(true)}
+              >
                 <AlertTriangle size={12} /> Raise Dispute
               </Button>
             </div>
             <Card>
               <CardContent className="p-0">
-                {disputesQ.isLoading ? <div className="p-4 text-xs text-center text-muted-foreground">Loading…</div> : (
+                {disputesQ.isLoading ? (
+                  <div className="p-4 text-xs text-center text-muted-foreground">
+                    Loading…
+                  </div>
+                ) : (
                   <div className="divide-y divide-border">
                     {(disputesQ.data?.items ?? []).map((d: any) => (
-                      <div key={d.id} className="flex items-center justify-between p-3">
+                      <div
+                        key={d.id}
+                        className="flex items-center justify-between p-3"
+                      >
                         <div>
-                          <p className="text-xs font-medium">{d.type ?? "Dispute"}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{d.transactionRef}</p>
-                          <p className="text-xs text-muted-foreground">{d.description?.slice(0, 60)}</p>
+                          <p className="text-xs font-medium">
+                            {d.type ?? "Dispute"}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            {d.transactionRef}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {d.description?.slice(0, 60)}
+                          </p>
                         </div>
-                        <Badge variant={d.status === "resolved" ? "default" : "secondary"} className="text-xs">{d.status}</Badge>
+                        <Badge
+                          variant={
+                            d.status === "resolved" ? "default" : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {d.status}
+                        </Badge>
                       </div>
                     ))}
-                    {(disputesQ.data?.items ?? []).length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No disputes</div>}
+                    {(disputesQ.data?.items ?? []).length === 0 && (
+                      <div className="p-6 text-center text-xs text-muted-foreground">
+                        No disputes
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -334,24 +546,49 @@ export default function AgentPortal() {
           {/* QR tab */}
           <TabsContent value="qr" className="space-y-3">
             <div className="flex justify-end">
-              <Button size="sm" className="text-xs gap-1" onClick={() => generateQr.mutate({ agentId, type: "payment" })} disabled={generateQr.isPending}>
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => generateQr.mutate({ agentId, type: "payment" })}
+                disabled={generateQr.isPending}
+              >
                 <QrCode size={12} /> Generate QR
               </Button>
             </div>
             <Card>
               <CardContent className="p-0">
-                {qrCodesQ.isLoading ? <div className="p-4 text-xs text-center text-muted-foreground">Loading…</div> : (
+                {qrCodesQ.isLoading ? (
+                  <div className="p-4 text-xs text-center text-muted-foreground">
+                    Loading…
+                  </div>
+                ) : (
                   <div className="divide-y divide-border">
                     {(qrCodesQ.data?.items ?? []).map((q: any) => (
-                      <div key={q.id} className="flex items-center justify-between p-3">
+                      <div
+                        key={q.id}
+                        className="flex items-center justify-between p-3"
+                      >
                         <div>
-                          <p className="text-xs font-medium font-mono">{q.code}</p>
-                          <p className="text-xs text-muted-foreground">{q.label ?? "QR Code"}</p>
+                          <p className="text-xs font-medium font-mono">
+                            {q.code}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {q.label ?? "QR Code"}
+                          </p>
                         </div>
-                        <Badge variant={q.isActive ? "default" : "secondary"} className="text-xs">{q.isActive ? "Active" : "Inactive"}</Badge>
+                        <Badge
+                          variant={q.isActive ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {q.isActive ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
                     ))}
-                    {(qrCodesQ.data?.items ?? []).length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No QR codes yet</div>}
+                    {(qrCodesQ.data?.items ?? []).length === 0 && (
+                      <div className="p-6 text-center text-xs text-muted-foreground">
+                        No QR codes yet
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -364,7 +601,19 @@ export default function AgentPortal() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Agent Profile</CardTitle>
-                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => { setProfileForm({ name: (profile as any)?.name ?? "", phone: (profile as any)?.phone ?? "", email: (profile as any)?.email ?? "" }); setProfileOpen(true); }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1"
+                    onClick={() => {
+                      setProfileForm({
+                        name: (profile as any)?.name ?? "",
+                        phone: (profile as any)?.phone ?? "",
+                        email: (profile as any)?.email ?? "",
+                      });
+                      setProfileOpen(true);
+                    }}
+                  >
                     <User size={11} /> Edit
                   </Button>
                 </div>
@@ -378,12 +627,18 @@ export default function AgentPortal() {
                   { label: "Tier", value: (profile as any)?.tier },
                   { label: "KYC Level", value: (profile as any)?.kycLevel },
                   { label: "Status", value: (profile as any)?.status },
-                ].map((f: any) => f.value && (
-                  <div key={f.label} className="flex justify-between py-1.5 border-b border-border/50">
-                    <span className="text-muted-foreground">{f.label}</span>
-                    <span className="font-medium">{f.value}</span>
-                  </div>
-                ))}
+                ].map(
+                  (f: any) =>
+                    f.value && (
+                      <div
+                        key={f.label}
+                        className="flex justify-between py-1.5 border-b border-border/50"
+                      >
+                        <span className="text-muted-foreground">{f.label}</span>
+                        <span className="font-medium">{f.value}</span>
+                      </div>
+                    )
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -393,14 +648,31 @@ export default function AgentPortal() {
       {/* Float Request Dialog */}
       <Dialog open={floatOpen} onOpenChange={setFloatOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Request Float Top-Up</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Request Float Top-Up</DialogTitle>
+          </DialogHeader>
           <div className="py-2">
-            <Label className="text-xs text-muted-foreground">Amount (NGN)</Label>
-            <Input className="mt-1 h-8 text-sm" type="number" placeholder="50000" value={floatAmount} onChange={(e) => setFloatAmount(e.target.value)} />
+            <Label className="text-xs text-muted-foreground">
+              Amount (NGN)
+            </Label>
+            <Input
+              className="mt-1 h-8 text-sm"
+              type="number"
+              placeholder="50000"
+              value={floatAmount}
+              onChange={e => setFloatAmount(e.target.value)}
+            />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setFloatOpen(false)}>Cancel</Button>
-            <Button onClick={() => requestFloat.mutate({ agentId, amount: floatAmount })} disabled={requestFloat.isPending || !floatAmount}>
+            <Button variant="ghost" onClick={() => setFloatOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                requestFloat.mutate({ agentId, amount: floatAmount })
+              }
+              disabled={requestFloat.isPending || !floatAmount}
+            >
               {requestFloat.isPending ? "Submitting…" : "Submit Request"}
             </Button>
           </DialogFooter>
@@ -410,20 +682,84 @@ export default function AgentPortal() {
       {/* Dispute Dialog */}
       <Dialog open={disputeOpen} onOpenChange={setDisputeOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Raise a Dispute</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Raise a Dispute</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3 py-2">
-            <div><Label className="text-xs text-muted-foreground">Transaction Ref</Label>
-              <Input className="mt-1 h-8 text-sm" value={disputeForm.transactionRef} onChange={(e) => setDisputeForm(f=>({...f,transactionRef:e.target.value}))} /></div>
-            <div><Label className="text-xs text-muted-foreground">Transaction ID</Label>
-              <Input className="mt-1 h-8 text-sm" type="number" value={disputeForm.transactionId || ""} onChange={(e) => setDisputeForm(f=>({...f,transactionId:Number(e.target.value)}))} /></div>
-            <div><Label className="text-xs text-muted-foreground">Reason</Label>
-              <Input className="mt-1 h-8 text-sm" value={disputeForm.reason} onChange={(e) => setDisputeForm(f=>({...f,reason:e.target.value}))} /></div>
-            <div><Label className="text-xs text-muted-foreground">Evidence (optional)</Label>
-              <Input className="mt-1 h-8 text-sm" value={disputeForm.evidence} onChange={(e) => setDisputeForm(f=>({...f,evidence:e.target.value}))} /></div>
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                Transaction Ref
+              </Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={disputeForm.transactionRef}
+                onChange={e =>
+                  setDisputeForm(f => ({
+                    ...f,
+                    transactionRef: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                Transaction ID
+              </Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                type="number"
+                value={disputeForm.transactionId || ""}
+                onChange={e =>
+                  setDisputeForm(f => ({
+                    ...f,
+                    transactionId: Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Reason</Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={disputeForm.reason}
+                onChange={e =>
+                  setDisputeForm(f => ({ ...f, reason: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                Evidence (optional)
+              </Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={disputeForm.evidence}
+                onChange={e =>
+                  setDisputeForm(f => ({ ...f, evidence: e.target.value }))
+                }
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDisputeOpen(false)}>Cancel</Button>
-            <Button onClick={() => raiseDispute.mutate({ agentId, transactionRef: disputeForm.transactionRef, transactionId: disputeForm.transactionId, reason: disputeForm.reason, evidence: disputeForm.evidence || undefined })} disabled={raiseDispute.isPending || !disputeForm.transactionRef || !disputeForm.reason}>
+            <Button variant="ghost" onClick={() => setDisputeOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                raiseDispute.mutate({
+                  agentId,
+                  transactionRef: disputeForm.transactionRef,
+                  transactionId: disputeForm.transactionId,
+                  reason: disputeForm.reason,
+                  evidence: disputeForm.evidence || undefined,
+                })
+              }
+              disabled={
+                raiseDispute.isPending ||
+                !disputeForm.transactionRef ||
+                !disputeForm.reason
+              }
+            >
               {raiseDispute.isPending ? "Submitting…" : "Raise Dispute"}
             </Button>
           </DialogFooter>
@@ -433,18 +769,49 @@ export default function AgentPortal() {
       {/* Profile Edit Dialog */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3 py-2">
-            <div><Label className="text-xs text-muted-foreground">Name</Label>
-              <Input className="mt-1 h-8 text-sm" value={profileForm.name} onChange={(e) => setProfileForm(f=>({...f,name:e.target.value}))} /></div>
-            <div><Label className="text-xs text-muted-foreground">Phone</Label>
-              <Input className="mt-1 h-8 text-sm" value={profileForm.phone} onChange={(e) => setProfileForm(f=>({...f,phone:e.target.value}))} /></div>
-            <div><Label className="text-xs text-muted-foreground">Email</Label>
-              <Input className="mt-1 h-8 text-sm" value={profileForm.email} onChange={(e) => setProfileForm(f=>({...f,email:e.target.value}))} /></div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Name</Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={profileForm.name}
+                onChange={e =>
+                  setProfileForm(f => ({ ...f, name: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Phone</Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={profileForm.phone}
+                onChange={e =>
+                  setProfileForm(f => ({ ...f, phone: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Email</Label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                value={profileForm.email}
+                onChange={e =>
+                  setProfileForm(f => ({ ...f, email: e.target.value }))
+                }
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setProfileOpen(false)}>Cancel</Button>
-            <Button onClick={() => updateProfile.mutate({ agentId, ...profileForm })} disabled={updateProfile.isPending}>
+            <Button variant="ghost" onClick={() => setProfileOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateProfile.mutate({ agentId, ...profileForm })}
+              disabled={updateProfile.isPending}
+            >
               {updateProfile.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

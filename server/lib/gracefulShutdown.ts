@@ -11,13 +11,15 @@ export function setupGracefulShutdown(server: Server) {
   const shutdown = async (signal: string) => {
     if (isShuttingDown) return;
     isShuttingDown = true;
-    console.log(`[Shutdown] ${signal} received — starting graceful shutdown...`);
-    
+    console.log(
+      `[Shutdown] ${signal} received — starting graceful shutdown...`
+    );
+
     // 1. Stop accepting new connections
     server.close(() => {
       console.log("[Shutdown] HTTP server closed");
     });
-    
+
     // 2. Close database connections
     try {
       const { getDb } = await import("../db");
@@ -29,34 +31,38 @@ export function setupGracefulShutdown(server: Server) {
     } catch (e) {
       console.error("[Shutdown] DB close error:", (e as Error).message);
     }
-    
+
     // 3. Close Redis
     try {
       const { closeRedis } = await import("../../redisClient");
       await closeRedis?.();
       console.log("[Shutdown] Redis connection closed");
-    } catch { /* Redis may not be available */ }
-    
+    } catch {
+      /* Redis may not be available */
+    }
+
     // 4. Close Kafka producer
     try {
       const { closeKafka } = await import("../../kafkaClient");
       await closeKafka?.();
       console.log("[Shutdown] Kafka producer closed");
-    } catch { /* Kafka may not be available */ }
-    
+    } catch {
+      /* Kafka may not be available */
+    }
+
     // 5. Force exit after 10s if graceful shutdown stalls
     setTimeout(() => {
       console.error("[Shutdown] Forced exit after 10s timeout");
       process.exit(1);
     }, 10000).unref();
-    
+
     console.log("[Shutdown] Graceful shutdown complete");
     process.exit(0);
   };
-  
+
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
-  
+
   // Health check middleware — reject new requests during shutdown
   return (req: any, res: any, next: any) => {
     if (isShuttingDown) {

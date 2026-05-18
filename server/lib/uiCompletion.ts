@@ -12,7 +12,12 @@
 // F11: Global Notification Center
 // ============================================================
 
-export type NotificationType = "info" | "warning" | "error" | "success" | "system";
+export type NotificationType =
+  | "info"
+  | "warning"
+  | "error"
+  | "success"
+  | "system";
 export type NotificationChannel = "in_app" | "email" | "sms" | "push";
 
 export interface AppNotification {
@@ -65,14 +70,20 @@ export function createNotification(params: {
   };
 }
 
-export function summarizeNotifications(notifications: AppNotification[]): NotificationSummary {
+export function summarizeNotifications(
+  notifications: AppNotification[]
+): NotificationSummary {
   const active = notifications.filter(
-    (n) => !n.expiresAt || n.expiresAt > new Date()
+    n => !n.expiresAt || n.expiresAt > new Date()
   );
-  const unread = active.filter((n) => !n.read);
+  const unread = active.filter(n => !n.read);
 
   const byType: Record<NotificationType, number> = {
-    info: 0, warning: 0, error: 0, success: 0, system: 0,
+    info: 0,
+    warning: 0,
+    error: 0,
+    success: 0,
+    system: 0,
   };
   for (const n of unread) {
     byType[n.type]++;
@@ -91,9 +102,22 @@ export function summarizeNotifications(notifications: AppNotification[]): Notifi
 // ============================================================
 
 export type AuditAction =
-  | "login" | "logout" | "create" | "read" | "update" | "delete"
-  | "approve" | "reject" | "export" | "import" | "configure"
-  | "escalate" | "assign" | "transfer" | "settle" | "reverse";
+  | "login"
+  | "logout"
+  | "create"
+  | "read"
+  | "update"
+  | "delete"
+  | "approve"
+  | "reject"
+  | "export"
+  | "import"
+  | "configure"
+  | "escalate"
+  | "assign"
+  | "transfer"
+  | "settle"
+  | "reverse";
 
 export interface AuditEntry {
   id: string;
@@ -151,7 +175,7 @@ export function filterAuditLog(
     search?: string;
   }
 ): AuditEntry[] {
-  return entries.filter((e) => {
+  return entries.filter(e => {
     if (filters.userId && e.userId !== filters.userId) return false;
     if (filters.action && e.action !== filters.action) return false;
     if (filters.resource && e.resource !== filters.resource) return false;
@@ -191,18 +215,27 @@ export interface SystemHealthReport {
   services: ServiceHealth[];
   checkedAt: Date;
   uptimeSeconds: number;
-  memoryUsage: { heapUsed: number; heapTotal: number; rss: number; external: number };
+  memoryUsage: {
+    heapUsed: number;
+    heapTotal: number;
+    rss: number;
+    external: number;
+  };
   cpuUsage: { user: number; system: number };
 }
 
-export function aggregateHealthStatus(services: ServiceHealth[]): ServiceStatus {
-  if (services.some((s) => s.status === "down")) return "down";
-  if (services.some((s) => s.status === "degraded")) return "degraded";
-  if (services.every((s) => s.status === "healthy")) return "healthy";
+export function aggregateHealthStatus(
+  services: ServiceHealth[]
+): ServiceStatus {
+  if (services.some(s => s.status === "down")) return "down";
+  if (services.some(s => s.status === "degraded")) return "degraded";
+  if (services.every(s => s.status === "healthy")) return "healthy";
   return "unknown";
 }
 
-export function generateHealthReport(services: ServiceHealth[]): SystemHealthReport {
+export function generateHealthReport(
+  services: ServiceHealth[]
+): SystemHealthReport {
   const mem = process.memoryUsage();
   const cpu = process.cpuUsage();
 
@@ -261,7 +294,7 @@ export async function executeBulkOperation<T>(
   for (let i = 0; i < ids.length; i += concurrency) {
     const batch = ids.slice(i, i + concurrency);
     const batchResults = await Promise.allSettled(
-      batch.map(async (id) => {
+      batch.map(async id => {
         const data = await operation(id);
         return { id, data };
       })
@@ -269,15 +302,30 @@ export async function executeBulkOperation<T>(
 
     for (const result of batchResults) {
       if (result.status === "fulfilled") {
-        results.push({ id: result.value.id, status: "success", data: result.value.data });
+        results.push({
+          id: result.value.id,
+          status: "success",
+          data: result.value.data,
+        });
         succeeded++;
       } else {
-        const errorMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        const errorMsg =
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
         if (skipOnError) {
-          results.push({ id: batch[batchResults.indexOf(result)], status: "failure", error: errorMsg });
+          results.push({
+            id: batch[batchResults.indexOf(result)],
+            status: "failure",
+            error: errorMsg,
+          });
           failed++;
         } else {
-          results.push({ id: batch[batchResults.indexOf(result)], status: "skipped", error: errorMsg });
+          results.push({
+            id: batch[batchResults.indexOf(result)],
+            status: "skipped",
+            error: errorMsg,
+          });
           skipped++;
         }
       }
@@ -303,7 +351,11 @@ export type ExportFormat = "csv" | "json" | "xlsx_csv";
 
 export interface ExportConfig {
   format: ExportFormat;
-  columns: Array<{ key: string; label: string; formatter?: (value: unknown) => string }>;
+  columns: Array<{
+    key: string;
+    label: string;
+    formatter?: (value: unknown) => string;
+  }>;
   filename: string;
   includeHeaders: boolean;
   dateFormat: string;
@@ -316,11 +368,11 @@ export function exportToCsv<T extends Record<string, unknown>>(
   const rows: string[] = [];
 
   if (config.includeHeaders) {
-    rows.push(config.columns.map((c) => `"${c.label}"`).join(","));
+    rows.push(config.columns.map(c => `"${c.label}"`).join(","));
   }
 
   for (const item of data) {
-    const row = config.columns.map((col) => {
+    const row = config.columns.map(col => {
       const value = item[col.key];
       if (col.formatter) return `"${col.formatter(value)}"`;
       if (value === null || value === undefined) return '""';
@@ -338,7 +390,10 @@ export function exportToJson<T>(data: T[], pretty: boolean = true): string {
   return pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
 }
 
-export function getExportFilename(baseName: string, format: ExportFormat): string {
+export function getExportFilename(
+  baseName: string,
+  format: ExportFormat
+): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const ext = format === "xlsx_csv" ? "csv" : format;
   return `${baseName}_${timestamp}.${ext}`;

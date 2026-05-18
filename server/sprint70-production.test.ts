@@ -25,7 +25,9 @@ describe("Sprint 70: Data Export Router", () => {
   it("should export dataExportRouter with export procedures", async () => {
     const mod = await import("./routers/dataExport");
     expect(mod.dataExportRouter).toBeDefined();
-    expect(mod.dataExportRouter._def.procedures.exportTransactions).toBeDefined();
+    expect(
+      mod.dataExportRouter._def.procedures.exportTransactions
+    ).toBeDefined();
     expect(mod.dataExportRouter._def.procedures.exportAgents).toBeDefined();
     expect(mod.dataExportRouter._def.procedures.exportAuditLog).toBeDefined();
   });
@@ -45,7 +47,7 @@ describe("Sprint 70: Error Tracking Middleware", () => {
     expect(typeof mod.getRecentErrors).toBe("function");
     expect(typeof mod.getErrorStats).toBe("function");
   });
-  
+
   it("should return empty error stats initially", async () => {
     const { getErrorStats } = await import("./middleware/errorTracking");
     const stats = getErrorStats();
@@ -83,7 +85,7 @@ describe("Sprint 70: DB Pool Monitor", () => {
     expect(typeof mod.getPoolStats).toBe("function");
     expect(typeof mod.startPoolMonitor).toBe("function");
   });
-  
+
   it("should return pool stats", async () => {
     const { getPoolStats } = await import("./lib/dbPoolMonitor");
     const stats = await getPoolStats();
@@ -100,7 +102,7 @@ describe("Sprint 70: Feature Flags", () => {
     expect(typeof mod.isFeatureEnabled).toBe("function");
     expect(typeof mod.getAllDefaultFlags).toBe("function");
   });
-  
+
   it("should return default flags", async () => {
     const { getAllDefaultFlags } = await import("./lib/featureFlags");
     const flags = getAllDefaultFlags();
@@ -108,7 +110,7 @@ describe("Sprint 70: Feature Flags", () => {
     expect(flags.some(f => f.key === "geofencing")).toBe(true);
     expect(flags.some(f => f.key === "biometric_auth")).toBe(true);
   });
-  
+
   it("should check feature enabled status", async () => {
     const { isFeatureEnabled } = await import("./lib/featureFlags");
     const geofencing = await isFeatureEnabled("geofencing");
@@ -123,18 +125,21 @@ describe("Sprint 70: Email Service", () => {
     expect(typeof mod.buildTransactionReceiptEmail).toBe("function");
     expect(typeof mod.buildKycExpiryWarningEmail).toBe("function");
   });
-  
+
   it("should build transaction receipt email", async () => {
     const { buildTransactionReceiptEmail } = await import("./lib/emailService");
     const html = buildTransactionReceiptEmail({
-      ref: "TXN-001", type: "Cash In", amount: 50000,
-      agentCode: "AG001", timestamp: new Date(),
+      ref: "TXN-001",
+      type: "Cash In",
+      amount: 50000,
+      agentCode: "AG001",
+      timestamp: new Date(),
     });
     expect(html).toContain("TXN-001");
     expect(html).toContain("Cash In");
     expect(html).toContain("50,000");
   });
-  
+
   it("should send email with fallback when SMTP not configured", async () => {
     const { sendEmail } = await import("./lib/emailService");
     const result = await sendEmail({

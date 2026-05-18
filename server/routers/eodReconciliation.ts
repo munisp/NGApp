@@ -19,58 +19,93 @@ export const eodReconciliationRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         const targetDate = input.date ? new Date(input.date) : new Date();
-        const dayStart = new Date(targetDate); dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(targetDate); dayEnd.setHours(23, 59, 59, 999);
+        const dayStart = new Date(targetDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(targetDate);
+        dayEnd.setHours(23, 59, 59, 999);
 
-        const [summary] = await db.select({
-          totalTxns: sql<number>`count(*)::int`,
-          totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-          totalFees: sql<string>`COALESCE(sum(CAST(fee AS numeric)), 0)`,
-          totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-          successCount: sql<number>`count(*) FILTER (WHERE status = 'success')::int`,
-          failedCount: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
-          pendingCount: sql<number>`count(*) FILTER (WHERE status = 'pending')::int`,
-        }).from(transactions).where(and(
-          eq(transactions.agentId, session.id),
-          gte(transactions.createdAt, dayStart),
-          lte(transactions.createdAt, dayEnd)
-        ));
+        const [summary] = await db
+          .select({
+            totalTxns: sql<number>`count(*)::int`,
+            totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+            totalFees: sql<string>`COALESCE(sum(CAST(fee AS numeric)), 0)`,
+            totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
+            successCount: sql<number>`count(*) FILTER (WHERE status = 'success')::int`,
+            failedCount: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
+            pendingCount: sql<number>`count(*) FILTER (WHERE status = 'pending')::int`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              gte(transactions.createdAt, dayStart),
+              lte(transactions.createdAt, dayEnd)
+            )
+          );
 
-        const byType = await db.select({
-          type: transactions.type,
-          count: sql<number>`count(*)::int`,
-          total: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-        }).from(transactions).where(and(
-          eq(transactions.agentId, session.id),
-          gte(transactions.createdAt, dayStart),
-          lte(transactions.createdAt, dayEnd),
-          eq(transactions.status, "success")
-        )).groupBy(transactions.type);
+        const byType = await db
+          .select({
+            type: transactions.type,
+            count: sql<number>`count(*)::int`,
+            total: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              gte(transactions.createdAt, dayStart),
+              lte(transactions.createdAt, dayEnd),
+              eq(transactions.status, "success")
+            )
+          )
+          .groupBy(transactions.type);
 
-        const [agent] = await db.select({
-          floatBalance: agents.floatBalance, commission: agents.commissionBalance,
-        }).from(agents).where(eq(agents.id, session.id)).limit(1);
+        const [agent] = await db
+          .select({
+            floatBalance: agents.floatBalance,
+            commission: agents.commissionBalance,
+          })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
 
         const reportId = `EOD-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "EOD_REPORT_GENERATED", resource: "eod_reconciliation", resourceId: reportId, status: "success",
-          metadata: { date: dayStart.toISOString().split("T")[0], totalTxns: summary.totalTxns, totalAmount: summary.totalAmount },
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "EOD_REPORT_GENERATED",
+          resource: "eod_reconciliation",
+          resourceId: reportId,
+          status: "success",
+          metadata: {
+            date: dayStart.toISOString().split("T")[0],
+            totalTxns: summary.totalTxns,
+            totalAmount: summary.totalAmount,
+          },
         });
 
         return {
-          reportId, date: dayStart.toISOString().split("T")[0],
+          reportId,
+          date: dayStart.toISOString().split("T")[0],
           summary: {
-            totalTransactions: summary.totalTxns, totalAmount: summary.totalAmount,
-            totalFees: summary.totalFees, totalCommission: summary.totalCommission,
-            successCount: summary.successCount, failedCount: summary.failedCount, pendingCount: summary.pendingCount,
+            totalTransactions: summary.totalTxns,
+            totalAmount: summary.totalAmount,
+            totalFees: summary.totalFees,
+            totalCommission: summary.totalCommission,
+            successCount: summary.successCount,
+            failedCount: summary.failedCount,
+            pendingCount: summary.pendingCount,
           },
           byType,
           currentFloat: Number(agent?.floatBalance ?? 0),
@@ -79,7 +114,11 @@ export const eodReconciliationRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -102,7 +141,11 @@ export const eodReconciliationRouter = router({
         return { reports: reports.rows ?? [] };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -112,24 +155,37 @@ export const eodReconciliationRouter = router({
       if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const db = (await getDb())!;
-      if (!db) return { today: { totalTxns: 0, totalAmount: "0", totalCommission: "0" } };
+      if (!db)
+        return {
+          today: { totalTxns: 0, totalAmount: "0", totalCommission: "0" },
+        };
 
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      const [stats] = await db.select({
-        totalTxns: sql<number>`count(*)::int`,
-        totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-        totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-      }).from(transactions).where(and(
-        eq(transactions.agentId, session.id),
-        gte(transactions.createdAt, today),
-        eq(transactions.status, "success")
-      ));
+      const [stats] = await db
+        .select({
+          totalTxns: sql<number>`count(*)::int`,
+          totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+          totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.agentId, session.id),
+            gte(transactions.createdAt, today),
+            eq(transactions.status, "success")
+          )
+        );
 
       return { today: stats };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -143,26 +199,41 @@ export const eodReconciliationRouter = router({
         const db = (await getDb())!;
         if (!db) return { discrepancies: [] };
 
-        const dayStart = new Date(input.date); dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(input.date); dayEnd.setHours(23, 59, 59, 999);
+        const dayStart = new Date(input.date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(input.date);
+        dayEnd.setHours(23, 59, 59, 999);
 
-        const pending = await db.select().from(transactions).where(and(
-          eq(transactions.agentId, session.id),
-          eq(transactions.status, "pending"),
-          gte(transactions.createdAt, dayStart),
-          lte(transactions.createdAt, dayEnd)
-        )).limit(100);
+        const pending = await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              eq(transactions.status, "pending"),
+              gte(transactions.createdAt, dayStart),
+              lte(transactions.createdAt, dayEnd)
+            )
+          )
+          .limit(100);
 
         const discrepancies = pending.map(tx => ({
-          transactionId: tx.id, ref: tx.ref, type: tx.type,
-          amount: tx.amount, status: tx.status,
+          transactionId: tx.id,
+          ref: tx.ref,
+          type: tx.type,
+          amount: tx.amount,
+          status: tx.status,
           issue: "Transaction still pending at EOD",
         }));
 
         return { discrepancies, date: input.date };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

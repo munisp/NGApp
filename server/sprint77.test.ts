@@ -65,7 +65,12 @@ describe("Security Hardening Middleware", () => {
   });
 
   it("enforces rate limits", () => {
-    const bucket: RateLimitBucket = { key: "test", count: 0, windowStart: Date.now(), blocked: false };
+    const bucket: RateLimitBucket = {
+      key: "test",
+      count: 0,
+      windowStart: Date.now(),
+      blocked: false,
+    };
     for (let i = 0; i < 100; i++) {
       const result = checkRateLimit(bucket, DEFAULT_SECURITY_CONFIG);
       expect(result.allowed).toBe(true);
@@ -76,7 +81,12 @@ describe("Security Hardening Middleware", () => {
   });
 
   it("resets rate limit after window expires", () => {
-    const bucket: RateLimitBucket = { key: "test", count: 101, windowStart: Date.now() - 120000, blocked: true };
+    const bucket: RateLimitBucket = {
+      key: "test",
+      count: 101,
+      windowStart: Date.now() - 120000,
+      blocked: true,
+    };
     const result = checkRateLimit(bucket, DEFAULT_SECURITY_CONFIG);
     expect(result.allowed).toBe(true);
   });
@@ -150,8 +160,13 @@ describe("WebSocket Resilience Middleware", () => {
     it("enqueues and dequeues transactions", () => {
       const q = new OfflineTransactionQueue();
       q.enqueue({
-        id: "tx1", type: "cash_in", payload: { amount: 1000 },
-        timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000,
+        id: "tx1",
+        type: "cash_in",
+        payload: { amount: 1000 },
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
       });
       expect(q.size()).toBe(1);
       const tx = q.dequeue();
@@ -161,9 +176,33 @@ describe("WebSocket Resilience Middleware", () => {
 
     it("sorts by priority", () => {
       const q = new OfflineTransactionQueue();
-      q.enqueue({ id: "low1", type: "check", payload: {}, timestamp: Date.now(), priority: "low", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      q.enqueue({ id: "crit1", type: "cash_out", payload: {}, timestamp: Date.now(), priority: "critical", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      q.enqueue({ id: "high1", type: "transfer", payload: {}, timestamp: Date.now(), priority: "high", maxRetries: 3, expiresAt: Date.now() + 3600000 });
+      q.enqueue({
+        id: "low1",
+        type: "check",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "low",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      q.enqueue({
+        id: "crit1",
+        type: "cash_out",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "critical",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      q.enqueue({
+        id: "high1",
+        type: "transfer",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "high",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
       const first = q.dequeue();
       expect(first?.id).toBe("crit1");
       const second = q.dequeue();
@@ -172,8 +211,24 @@ describe("WebSocket Resilience Middleware", () => {
 
     it("removes expired transactions", () => {
       const q = new OfflineTransactionQueue();
-      q.enqueue({ id: "exp1", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() - 1000 });
-      q.enqueue({ id: "valid1", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000 });
+      q.enqueue({
+        id: "exp1",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() - 1000,
+      });
+      q.enqueue({
+        id: "valid1",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
       const removed = q.removeExpired();
       expect(removed).toBe(1);
       expect(q.size()).toBe(1);
@@ -181,17 +236,57 @@ describe("WebSocket Resilience Middleware", () => {
 
     it("respects max size", () => {
       const q = new OfflineTransactionQueue(2);
-      q.enqueue({ id: "t1", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      q.enqueue({ id: "t2", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      const result = q.enqueue({ id: "t3", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000 });
+      q.enqueue({
+        id: "t1",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      q.enqueue({
+        id: "t2",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      const result = q.enqueue({
+        id: "t3",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
       // Should evict or reject
       expect(q.size()).toBeLessThanOrEqual(2);
     });
 
     it("drains all transactions", () => {
       const q = new OfflineTransactionQueue();
-      q.enqueue({ id: "d1", type: "test", payload: {}, timestamp: Date.now(), priority: "normal", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      q.enqueue({ id: "d2", type: "test", payload: {}, timestamp: Date.now(), priority: "high", maxRetries: 3, expiresAt: Date.now() + 3600000 });
+      q.enqueue({
+        id: "d1",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "normal",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      q.enqueue({
+        id: "d2",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "high",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
       const items = q.drain();
       expect(items.length).toBe(2);
       expect(q.size()).toBe(0);
@@ -199,8 +294,24 @@ describe("WebSocket Resilience Middleware", () => {
 
     it("provides queue stats", () => {
       const q = new OfflineTransactionQueue();
-      q.enqueue({ id: "s1", type: "test", payload: {}, timestamp: Date.now(), priority: "critical", maxRetries: 3, expiresAt: Date.now() + 3600000 });
-      q.enqueue({ id: "s2", type: "test", payload: {}, timestamp: Date.now(), priority: "low", maxRetries: 3, expiresAt: Date.now() + 3600000 });
+      q.enqueue({
+        id: "s1",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "critical",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
+      q.enqueue({
+        id: "s2",
+        type: "test",
+        payload: {},
+        timestamp: Date.now(),
+        priority: "low",
+        maxRetries: 3,
+        expiresAt: Date.now() + 3600000,
+      });
       const stats = q.getStats();
       expect(stats.total).toBe(2);
       expect(stats.critical).toBe(1);
@@ -251,7 +362,9 @@ describe("WebSocket Resilience Middleware", () => {
   });
 
   it("has African carrier configs for all major carriers", () => {
-    expect(Object.keys(AFRICAN_CARRIER_CONFIGS).length).toBeGreaterThanOrEqual(10);
+    expect(Object.keys(AFRICAN_CARRIER_CONFIGS).length).toBeGreaterThanOrEqual(
+      10
+    );
     expect(AFRICAN_CARRIER_CONFIGS["MTN_NG"]).toBeDefined();
     expect(AFRICAN_CARRIER_CONFIGS["Safaricom_KE"]).toBeDefined();
     expect(AFRICAN_CARRIER_CONFIGS["MTN_ZA"]).toBeDefined();

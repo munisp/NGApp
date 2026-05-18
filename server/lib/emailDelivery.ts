@@ -10,7 +10,11 @@ interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
-  attachments?: Array<{ filename: string; content: string | Buffer; contentType?: string }>;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+  }>;
 }
 
 interface EmailResult {
@@ -58,7 +62,7 @@ export function weeklyReportTemplate(data: {
         <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Total Transactions</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;">${data.totalTransactions.toLocaleString()}</td></tr>
         <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Total Volume</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;">₦${data.totalVolume.toLocaleString()}</td></tr>
         <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Commission Earned</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;color:#16a34a;">₦${data.totalCommission.toLocaleString()}</td></tr>
-        <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Fraud Alerts</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;color:${data.fraudAlerts > 0 ? '#dc2626' : '#16a34a'};">${data.fraudAlerts}</td></tr>
+        <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Fraud Alerts</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;color:${data.fraudAlerts > 0 ? "#dc2626" : "#16a34a"};">${data.fraudAlerts}</td></tr>
         <tr><td style="padding:12px;border-bottom:1px solid #eee;color:#666;">Top Transaction Type</td><td style="padding:12px;border-bottom:1px solid #eee;font-weight:bold;text-align:right;">${data.topTransactionType}</td></tr>
         <tr><td style="padding:12px;color:#666;">Current Float Balance</td><td style="padding:12px;font-weight:bold;text-align:right;">₦${data.floatBalance.toLocaleString()}</td></tr>
       </table>
@@ -110,7 +114,11 @@ export function transactionReceiptTemplate(data: {
 </html>`;
 }
 
-export function kycReminderTemplate(data: { agentName: string; currentTier: string; requiredDocs: string[] }): string {
+export function kycReminderTemplate(data: {
+  agentName: string;
+  currentTier: string;
+  requiredDocs: string[];
+}): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -137,9 +145,13 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
   if (!isSmtpConfigured) {
-    console.log(`[Email] SMTP not configured — would send to: ${recipients.join(", ")}`);
+    console.log(
+      `[Email] SMTP not configured — would send to: ${recipients.join(", ")}`
+    );
     console.log(`[Email] Subject: ${options.subject}`);
-    console.log(`[Email] Body preview: ${options.text || options.html.substring(0, 200)}...`);
+    console.log(
+      `[Email] Body preview: ${options.text || options.html.substring(0, 200)}...`
+    );
     return { success: true, messageId: `local-${Date.now()}` };
   }
 
@@ -162,7 +174,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       attachments: options.attachments,
     });
 
-    console.log(`[Email] Sent to ${recipients.join(", ")} — messageId: ${info.messageId}`);
+    console.log(
+      `[Email] Sent to ${recipients.join(", ")} — messageId: ${info.messageId}`
+    );
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error(`[Email] Failed to send: ${error.message}`);
@@ -196,6 +210,8 @@ export async function sendBatchEmails(
     }
   }
 
-  console.log(`[Email] Batch complete: ${sent} sent, ${failed} failed out of ${emails.length}`);
+  console.log(
+    `[Email] Batch complete: ${sent} sent, ${failed} failed out of ${emails.length}`
+  );
   return { sent, failed, results };
 }

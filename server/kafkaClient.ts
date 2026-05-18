@@ -56,7 +56,11 @@ async function getProducer(): Promise<Producer | null> {
 }
 
 // ── Proxy helper ──────────────────────────────────────────────────────────────
-async function proxyPublish(topic: string, key: string, payload: unknown): Promise<void> {
+async function proxyPublish(
+  topic: string,
+  key: string,
+  payload: unknown
+): Promise<void> {
   const res = await fetch(`${PLATFORM_BASE_URL}/v1/events/publish`, {
     method: "POST",
     headers: {
@@ -88,7 +92,7 @@ export type KafkaTopic =
 export interface KafkaEvent<T = unknown> {
   eventId: string;
   eventType: KafkaTopic;
-  timestamp: string;   // ISO 8601
+  timestamp: string; // ISO 8601
   agentCode?: string;
   tenantId?: string;
   payload: T;
@@ -127,7 +131,10 @@ export async function publishEvent<T>(
     await proxyPublish(topic, key, event);
     return true;
   } catch (err) {
-    console.error(`[Kafka] Failed to publish ${topic}:`, (err as Error).message);
+    console.error(
+      `[Kafka] Failed to publish ${topic}:`,
+      (err as Error).message
+    );
     return false;
   }
 }
@@ -138,7 +145,11 @@ export async function publishEvent<T>(
  */
 export async function disconnectKafka(): Promise<void> {
   if (_producer) {
-    try { await _producer.disconnect(); } catch { /* ignore */ }
+    try {
+      await _producer.disconnect();
+    } catch {
+      /* ignore */
+    }
     _producer = null;
   }
 }

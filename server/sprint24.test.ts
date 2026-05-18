@@ -54,12 +54,23 @@ describe("AI Chat Support Router", () => {
     // Simulate fallback logic
     function getFallbackTopic(msg: string): string {
       const lower = msg.toLowerCase();
-      if (lower.includes("transaction") && (lower.includes("fail") || lower.includes("error"))) return "transaction";
+      if (
+        lower.includes("transaction") &&
+        (lower.includes("fail") || lower.includes("error"))
+      )
+        return "transaction";
       if (lower.includes("kyc") || lower.includes("verification")) return "KYC";
-      if (lower.includes("commission") || lower.includes("payout")) return "commission";
+      if (lower.includes("commission") || lower.includes("payout"))
+        return "commission";
       if (lower.includes("float") || lower.includes("balance")) return "float";
-      if (lower.includes("password") || lower.includes("pin") || lower.includes("login")) return "PIN";
-      if (lower.includes("fraud") || lower.includes("suspicious")) return "fraud";
+      if (
+        lower.includes("password") ||
+        lower.includes("pin") ||
+        lower.includes("login")
+      )
+        return "PIN";
+      if (lower.includes("fraud") || lower.includes("suspicious"))
+        return "fraud";
       return "general";
     }
 
@@ -70,7 +81,10 @@ describe("AI Chat Support Router", () => {
   });
 
   it("should support session escalation", () => {
-    const session = { status: "active", escalatedTo: undefined as string | undefined };
+    const session = {
+      status: "active",
+      escalatedTo: undefined as string | undefined,
+    };
     session.status = "escalated";
     session.escalatedTo = "support-team";
 
@@ -79,7 +93,11 @@ describe("AI Chat Support Router", () => {
   });
 
   it("should support session closure with satisfaction rating", () => {
-    const session = { status: "active", closedAt: undefined as string | undefined, satisfaction: undefined as number | undefined };
+    const session = {
+      status: "active",
+      closedAt: undefined as string | undefined,
+      satisfaction: undefined as number | undefined,
+    };
     session.status = "closed";
     session.closedAt = new Date().toISOString();
     session.satisfaction = 4;
@@ -105,9 +123,11 @@ describe("AI Chat Support Router", () => {
     const escalated = sessions.filter(s => s.status === "escalated").length;
     const closed = sessions.filter(s => s.status === "closed").length;
     const rated = sessions.filter(s => s.satisfaction !== undefined);
-    const avgSatisfaction = rated.length > 0
-      ? rated.reduce((sum, s) => sum + (s.satisfaction || 0), 0) / rated.length
-      : 0;
+    const avgSatisfaction =
+      rated.length > 0
+        ? rated.reduce((sum, s) => sum + (s.satisfaction || 0), 0) /
+          rated.length
+        : 0;
 
     expect(active).toBe(2);
     expect(escalated).toBe(1);
@@ -149,7 +169,11 @@ describe("Notification Center", () => {
   });
 
   it("should mark notifications as read", () => {
-    const notification = { id: "1", read: false, readAt: undefined as string | undefined };
+    const notification = {
+      id: "1",
+      read: false,
+      readAt: undefined as string | undefined,
+    };
     notification.read = true;
     notification.readAt = new Date().toISOString();
 
@@ -192,7 +216,9 @@ describe("Stripe Integration", () => {
     const { AGENT_PLANS } = await import("./stripe/products");
 
     for (let i = 1; i < AGENT_PLANS.length; i++) {
-      expect(AGENT_PLANS[i].monthlyPriceUSD).toBeGreaterThan(AGENT_PLANS[i - 1].monthlyPriceUSD);
+      expect(AGENT_PLANS[i].monthlyPriceUSD).toBeGreaterThan(
+        AGENT_PLANS[i - 1].monthlyPriceUSD
+      );
     }
   });
 
@@ -247,15 +273,28 @@ describe("User Guide", () => {
 
   it("should support search across all sections", () => {
     const content = [
-      { id: "cash-in", title: "Cash-In (Deposits)", content: "Cash-in allows customers to deposit money" },
-      { id: "cash-out", title: "Cash-Out (Withdrawals)", content: "Cash-out enables customers to withdraw" },
-      { id: "transfers", title: "Fund Transfers", content: "Process bank-to-bank transfers" },
+      {
+        id: "cash-in",
+        title: "Cash-In (Deposits)",
+        content: "Cash-in allows customers to deposit money",
+      },
+      {
+        id: "cash-out",
+        title: "Cash-Out (Withdrawals)",
+        content: "Cash-out enables customers to withdraw",
+      },
+      {
+        id: "transfers",
+        title: "Fund Transfers",
+        content: "Process bank-to-bank transfers",
+      },
     ];
 
     const query = "cash";
-    const results = content.filter(c =>
-      c.title.toLowerCase().includes(query) ||
-      c.content.toLowerCase().includes(query)
+    const results = content.filter(
+      c =>
+        c.title.toLowerCase().includes(query) ||
+        c.content.toLowerCase().includes(query)
     );
 
     expect(results).toHaveLength(2);
@@ -277,7 +316,18 @@ describe("User Guide", () => {
   });
 
   it("should have error codes reference", () => {
-    const errorCodes = ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010"];
+    const errorCodes = [
+      "E001",
+      "E002",
+      "E003",
+      "E004",
+      "E005",
+      "E006",
+      "E007",
+      "E008",
+      "E009",
+      "E010",
+    ];
     expect(errorCodes).toHaveLength(10);
   });
 });

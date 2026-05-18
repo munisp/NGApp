@@ -8,8 +8,14 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Shield, Server, Activity, Database, Cpu,
-  HardDrive, RefreshCw, Wifi
+  Shield,
+  Server,
+  Activity,
+  Database,
+  Cpu,
+  HardDrive,
+  RefreshCw,
+  Wifi,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -23,16 +29,21 @@ export default function AdminSystemHealth() {
         <div className="text-center py-20">
           <Shield className="h-16 w-16 text-red-500/30 mx-auto mb-4" />
           <h1 className="text-xl font-bold">Access Denied</h1>
-          <p className="text-sm text-muted-foreground mt-2">Administrator privileges required.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Administrator privileges required.
+          </p>
         </div>
       </DashboardLayout>
     );
   }
 
-  const { data: health, refetch, isLoading } = trpc.adminDashboard.getSystemHealth.useQuery(
-    undefined,
-    { refetchInterval: 30000 }
-  );
+  const {
+    data: health,
+    refetch,
+    isLoading,
+  } = trpc.adminDashboard.getSystemHealth.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
   const { data: stats } = trpc.adminDashboard.getSystemStats.useQuery();
   const { data: pipeline } = trpc.analyticsQuery.getPipelineHealth.useQuery();
 
@@ -44,8 +55,10 @@ export default function AdminSystemHealth() {
   };
 
   const statusColor = (status: string) => {
-    if (status === "healthy" || status === "green") return "bg-green-500/20 text-green-400";
-    if (status === "degraded" || status === "yellow") return "bg-amber-500/20 text-amber-400";
+    if (status === "healthy" || status === "green")
+      return "bg-green-500/20 text-green-400";
+    if (status === "degraded" || status === "yellow")
+      return "bg-amber-500/20 text-amber-400";
     return "bg-red-500/20 text-red-400";
   };
 
@@ -62,7 +75,14 @@ export default function AdminSystemHealth() {
               Real-time platform health monitoring
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { refetch(); toast.info("Refreshed"); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetch();
+              toast.info("Refreshed");
+            }}
+          >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
           </Button>
         </div>
@@ -77,7 +97,9 @@ export default function AdminSystemHealth() {
                     <Database className="h-5 w-5 text-blue-400" />
                     <span className="text-sm font-semibold">Database</span>
                   </div>
-                  <Badge className={statusColor(health.database)}>{health.database}</Badge>
+                  <Badge className={statusColor(health.database)}>
+                    {health.database}
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">PostgreSQL</p>
               </div>
@@ -88,7 +110,9 @@ export default function AdminSystemHealth() {
                     <Server className="h-5 w-5 text-green-400" />
                     <span className="text-sm font-semibold">Server</span>
                   </div>
-                  <Badge className={statusColor(health.server)}>{health.server}</Badge>
+                  <Badge className={statusColor(health.server)}>
+                    {health.server}
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">Express + tRPC</p>
               </div>
@@ -100,7 +124,9 @@ export default function AdminSystemHealth() {
                     <span className="text-sm font-semibold">Uptime</span>
                   </div>
                 </div>
-                <p className="text-lg font-bold">{formatUptime(health.uptime)}</p>
+                <p className="text-lg font-bold">
+                  {formatUptime(health.uptime)}
+                </p>
               </div>
             </div>
 
@@ -112,12 +138,20 @@ export default function AdminSystemHealth() {
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Heap Used</p>
-                  <p className="text-xl font-bold">{health.memory.heapUsed} MB</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Heap Used
+                  </p>
+                  <p className="text-xl font-bold">
+                    {health.memory.heapUsed} MB
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Heap Total</p>
-                  <p className="text-xl font-bold">{health.memory.heapTotal} MB</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Heap Total
+                  </p>
+                  <p className="text-xl font-bold">
+                    {health.memory.heapTotal} MB
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">RSS</p>
@@ -127,11 +161,16 @@ export default function AdminSystemHealth() {
               <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${Math.min((health.memory.heapUsed / health.memory.heapTotal) * 100, 100)}%` }}
+                  style={{
+                    width: `${Math.min((health.memory.heapUsed / health.memory.heapTotal) * 100, 100)}%`,
+                  }}
                 />
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {Math.round((health.memory.heapUsed / health.memory.heapTotal) * 100)}% heap utilization
+                {Math.round(
+                  (health.memory.heapUsed / health.memory.heapTotal) * 100
+                )}
+                % heap utilization
               </p>
             </div>
           </>
@@ -147,13 +186,21 @@ export default function AdminSystemHealth() {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-muted/30">
                 <p className="text-xs text-muted-foreground mb-1">Fluvio</p>
-                <Badge className={statusColor(pipeline.fluvio.status)}>{pipeline.fluvio.status}</Badge>
-                <p className="text-[10px] text-muted-foreground mt-1">{pipeline.fluvio.endpoint}</p>
+                <Badge className={statusColor(pipeline.fluvio.status)}>
+                  {pipeline.fluvio.status}
+                </Badge>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {pipeline.fluvio.endpoint}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <p className="text-xs text-muted-foreground mb-1">OpenSearch</p>
-                <Badge className={statusColor(pipeline.opensearch.status)}>{pipeline.opensearch.status}</Badge>
-                <p className="text-[10px] text-muted-foreground mt-1">{pipeline.opensearch.endpoint}</p>
+                <Badge className={statusColor(pipeline.opensearch.status)}>
+                  {pipeline.opensearch.status}
+                </Badge>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {pipeline.opensearch.endpoint}
+                </p>
               </div>
             </div>
           </div>
@@ -178,7 +225,9 @@ export default function AdminSystemHealth() {
               </div>
               <div>
                 <span className="text-muted-foreground">Last Check</span>
-                <p className="font-medium">{new Date(stats.timestamp).toLocaleTimeString()}</p>
+                <p className="font-medium">
+                  {new Date(stats.timestamp).toLocaleTimeString()}
+                </p>
               </div>
             </div>
           </div>

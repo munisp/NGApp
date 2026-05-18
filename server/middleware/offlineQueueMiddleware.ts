@@ -48,7 +48,10 @@ const TX_PRIORITY: Record<string, number> = {
 };
 
 // Retry backoff configuration per network tier
-const BACKOFF_CONFIG: Record<string, { baseMs: number; maxMs: number; factor: number }> = {
+const BACKOFF_CONFIG: Record<
+  string,
+  { baseMs: number; maxMs: number; factor: number }
+> = {
   "4g": { baseMs: 1000, maxMs: 30000, factor: 2 },
   "3g": { baseMs: 2000, maxMs: 60000, factor: 2 },
   "2g": { baseMs: 5000, maxMs: 120000, factor: 2.5 },
@@ -56,9 +59,15 @@ const BACKOFF_CONFIG: Record<string, { baseMs: number; maxMs: number; factor: nu
   offline: { baseMs: 30000, maxMs: 600000, factor: 3 },
 };
 
-export function calculateBackoff(retryCount: number, networkTier: string): number {
+export function calculateBackoff(
+  retryCount: number,
+  networkTier: string
+): number {
   const config = BACKOFF_CONFIG[networkTier] || BACKOFF_CONFIG["3g"];
-  const delay = Math.min(config.baseMs * Math.pow(config.factor, retryCount), config.maxMs);
+  const delay = Math.min(
+    config.baseMs * Math.pow(config.factor, retryCount),
+    config.maxMs
+  );
   // Add jitter (±20%)
   const jitter = delay * 0.2 * (Math.random() * 2 - 1);
   return Math.round(delay + jitter);
@@ -69,13 +78,16 @@ export function generateChecksum(payload: Record<string, unknown>): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0;
   }
   return Math.abs(hash).toString(36).padStart(8, "0");
 }
 
-export function detectConflict(local: QueuedTransaction, remote: { checksum: string; updatedAt: number }): boolean {
+export function detectConflict(
+  local: QueuedTransaction,
+  remote: { checksum: string; updatedAt: number }
+): boolean {
   return local.checksum !== remote.checksum;
 }
 
@@ -90,7 +102,12 @@ export function resolveConflict(
     case "server_wins":
       return remote.payload;
     case "manual":
-      return { ...remote.payload, _conflict: true, _localPayload: local.payload, _remotePayload: remote.payload };
+      return {
+        ...remote.payload,
+        _conflict: true,
+        _localPayload: local.payload,
+        _remotePayload: remote.payload,
+      };
     default:
       return remote.payload;
   }
@@ -130,8 +147,11 @@ export function getQueueStats(queue: QueuedTransaction[]): QueueStats {
   const failed = queue.filter(q => q.status === "failed");
   const conflicts = queue.filter(q => q.status === "conflict");
   const totalRetries = queue.reduce((sum, q) => sum + q.retryCount, 0);
-  const oldestPending = pending.length > 0 ? Math.min(...pending.map(q => q.createdAt)) : now;
-  const recentCompleted = completed.filter(q => q.createdAt > now - 60000).length;
+  const oldestPending =
+    pending.length > 0 ? Math.min(...pending.map(q => q.createdAt)) : now;
+  const recentCompleted = completed.filter(
+    q => q.createdAt > now - 60000
+  ).length;
 
   return {
     totalQueued: queue.length,
@@ -140,7 +160,10 @@ export function getQueueStats(queue: QueuedTransaction[]): QueueStats {
     completed: completed.length,
     failed: failed.length,
     conflicts: conflicts.length,
-    avgRetryCount: queue.length > 0 ? Math.round((totalRetries / queue.length) * 100) / 100 : 0,
+    avgRetryCount:
+      queue.length > 0
+        ? Math.round((totalRetries / queue.length) * 100) / 100
+        : 0,
     oldestPendingAge: now - oldestPending,
     throughputPerMinute: recentCompleted,
   };
@@ -153,9 +176,15 @@ export function compressBatch(transactions: QueuedTransaction[]): {
   compressedSize: number;
   ratio: number;
 } {
-  const json = JSON.stringify(transactions.map(t => ({
-    i: t.id, t: t.type, p: t.payload, a: t.agentId, c: t.checksum,
-  })));
+  const json = JSON.stringify(
+    transactions.map(t => ({
+      i: t.id,
+      t: t.type,
+      p: t.payload,
+      a: t.agentId,
+      c: t.checksum,
+    }))
+  );
   // Simple dedup + minification (real impl would use gzip/brotli)
   const compressed = json.replace(/"([a-z])"/g, "$1");
   return {

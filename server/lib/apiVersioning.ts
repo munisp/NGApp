@@ -1,12 +1,12 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * API Versioning Middleware
- * 
+ *
  * Supports versioned API endpoints via:
  * - URL prefix: /api/v1/trpc, /api/v2/trpc
  * - Header: X-API-Version: 2
  * - Query param: ?api-version=2
- * 
+ *
  * Current version: v1 (default)
  * Supported versions: v1
  */

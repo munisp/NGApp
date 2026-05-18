@@ -11,10 +11,16 @@ import { TRPCError } from "@trpc/server";
  */
 export const requireAdmin = ({ ctx, next }: any) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
   }
   if (ctx.user.role !== "admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
   }
   return next({ ctx });
 };
@@ -22,18 +28,23 @@ export const requireAdmin = ({ ctx, next }: any) => {
 /**
  * RBAC middleware — checks if user has any of the specified roles.
  */
-export const requireRole = (...roles: string[]) => ({ ctx, next }: any) => {
-  if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-  }
-  if (!roles.includes(ctx.user.role)) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: `Access restricted to roles: ${roles.join(", ")}`,
-    });
-  }
-  return next({ ctx });
-};
+export const requireRole =
+  (...roles: string[]) =>
+  ({ ctx, next }: any) => {
+    if (!ctx.user) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+      });
+    }
+    if (!roles.includes(ctx.user.role)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `Access restricted to roles: ${roles.join(", ")}`,
+      });
+    }
+    return next({ ctx });
+  };
 
 /**
  * List of sensitive routes that require admin access.

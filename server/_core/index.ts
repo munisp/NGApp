@@ -35,7 +35,10 @@ import { initSocketIO } from "../socket";
 import { registerSettlementCron } from "../settlementCron";
 import { registerLakehouseCron } from "../lakehouseCron";
 import { startErpRetryWorker } from "../lib/erpRetryWorker";
-import { startArchivalCronWorker, stopArchivalCronWorker } from "../lib/archivalCronWorker";
+import {
+  startArchivalCronWorker,
+  stopArchivalCronWorker,
+} from "../lib/archivalCronWorker";
 import { restBridgeRouter } from "../restBridge";
 import { registry, httpRequestDurationMs } from "../metrics";
 import { verifyWebhookHmac, captureRawBody } from "../middleware/webhookHmac";
@@ -83,22 +86,32 @@ async function startServer() {
     const shutdownMiddleware = setupGracefulShutdown(server);
     app.use(shutdownMiddleware);
     console.log("[Shutdown] Graceful shutdown handler registered");
-  } catch (e) { console.warn("[Shutdown] Setup failed:", (e as any).message); }
+  } catch (e) {
+    console.warn("[Shutdown] Setup failed:", (e as any).message);
+  }
   // ── Sprint 70: DB Pool Monitor ──────────────────────────────────────
   try {
     const { startPoolMonitor } = require("../lib/dbPoolMonitor");
     startPoolMonitor(60000);
     console.log("[DBPool] Connection pool monitoring started");
-  } catch (e) { console.warn("[DBPool] Monitor failed:", (e as any).message); }
+  } catch (e) {
+    console.warn("[DBPool] Monitor failed:", (e as any).message);
+  }
   // ── Sprint 70: Cron Jobs ──────────────────────────────────────────
   try {
     const cron = require("node-cron");
-    const { runDisputeAutoEscalation } = require("../cron/disputeAutoEscalation");
+    const {
+      runDisputeAutoEscalation,
+    } = require("../cron/disputeAutoEscalation");
     const { runKycExpiryCheck } = require("../cron/kycExpiryCheck");
     cron.schedule("*/15 * * * *", runDisputeAutoEscalation); // Every 15 min
     cron.schedule("0 6 * * *", runKycExpiryCheck); // Daily at 6 AM
-    console.log("[Cron] Dispute auto-escalation (15min) and KYC expiry check (daily) registered");
-  } catch (e) { console.warn("[Cron] Registration failed:", (e as any).message); }
+    console.log(
+      "[Cron] Dispute auto-escalation (15min) and KYC expiry check (daily) registered"
+    );
+  } catch (e) {
+    console.warn("[Cron] Registration failed:", (e as any).message);
+  }
 
   // Trust reverse proxy (nginx, Cloudflare, etc.) for accurate IP detection
   app.set("trust proxy", 1);
@@ -113,7 +126,10 @@ async function startServer() {
 
   // Named helper so esbuild can parse the CSP directive array correctly.
   // Helmet 8.x accepts (req, res) => string entries in directive arrays.
-  function getNonce(_req: unknown, res: { locals: { cspNonce: string } }): string {
+  function getNonce(
+    _req: unknown,
+    res: { locals: { cspNonce: string } }
+  ): string {
     return `'nonce-${res.locals.cspNonce}'`;
   }
 
@@ -203,8 +219,8 @@ async function startServer() {
 
   // ── X-Request-ID (distributed tracing correlation) ───────────────────────────────
   app.use((req, res, next) => {
-    const reqId = (req.headers["x-request-id"] as string) ||
-      crypto.randomUUID();
+    const reqId =
+      (req.headers["x-request-id"] as string) || crypto.randomUUID();
     req.headers["x-request-id"] = reqId;
     res.setHeader("X-Request-ID", reqId);
     next();
@@ -225,7 +241,12 @@ async function startServer() {
     try {
       const redisClient = getRedisClient();
       return new RedisStore({
-        sendCommand: (...args: string[]) => (redisClient as unknown as { call: (...a: unknown[]) => Promise<number> }).call(...args),
+        sendCommand: (...args: string[]) =>
+          (
+            redisClient as unknown as {
+              call: (...a: unknown[]) => Promise<number>;
+            }
+          ).call(...args),
         prefix: `rl:54link:${prefix}:`,
       });
     } catch {
@@ -244,7 +265,7 @@ async function startServer() {
     store: makeRedisStore("global"),
     message: { error: "Too many requests, please try again later." },
     // Skip rate limiting for static assets, Vite HMR, and health checks
-    skip: (req) => {
+    skip: req => {
       const path = req.path;
       return (
         path.startsWith("/@") || // Vite internal (/@vite, /@react-refresh, /@fs)
@@ -271,7 +292,9 @@ async function startServer() {
     standardHeaders: true,
     legacyHeaders: false,
     store: makeRedisStore("auth"),
-    message: { error: "Too many authentication attempts, please try again later." },
+    message: {
+      error: "Too many authentication attempts, please try again later.",
+    },
   });
   app.use("/api/auth", authLimiter);
 
@@ -281,7 +304,9 @@ async function startServer() {
     express.raw({ type: "application/json" }),
     async (req, res) => {
       try {
-        const { handleStripeWebhook } = await import("../stripe/webhookHandler");
+        const { handleStripeWebhook } = await import(
+          "../stripe/webhookHandler"
+        );
         return handleStripeWebhook(req, res);
       } catch (err: any) {
         console.error("[Stripe Webhook] Handler load error:", err.message);
@@ -300,40 +325,70 @@ async function startServer() {
   try {
     const secMod = await import("../middleware/securityHardening.js");
     secMod.applySecurityMiddleware(app);
-    console.log("[Security] Hardening middleware applied (CSP, HSTS, CSRF, XSS, SQLi, rate limiting, CORS)");
-  } catch (secErr) { console.warn("[Security] Middleware load failed (non-fatal):", (secErr as any).message); }
+    console.log(
+      "[Security] Hardening middleware applied (CSP, HSTS, CSRF, XSS, SQLi, rate limiting, CORS)"
+    );
+  } catch (secErr) {
+    console.warn(
+      "[Security] Middleware load failed (non-fatal):",
+      (secErr as any).message
+    );
+  }
 
   try {
     const logMod = await import("../middleware/structuredLogging.js");
     app.use(logMod.structuredLoggingMiddleware);
     console.log("[Middleware] Structured logging enabled");
-  } catch (e) { console.warn("[Middleware] Structured logging failed:", (e as any).message); }
+  } catch (e) {
+    console.warn("[Middleware] Structured logging failed:", (e as any).message);
+  }
 
   try {
     const verMod = await import("../middleware/apiVersioning.js");
     app.use("/api", verMod.apiVersionMiddleware);
     console.log("[Middleware] API versioning enabled");
-  } catch (e) { console.warn("[Middleware] API versioning failed:", (e as any).message); }
+  } catch (e) {
+    console.warn("[Middleware] API versioning failed:", (e as any).message);
+  }
 
   try {
     const compMod = await import("../middleware/responseCompression.js");
     app.use(compMod.responseCompressionMiddleware);
     console.log("[Middleware] Response compression enabled");
-  } catch (e) { console.warn("[Middleware] Response compression failed:", (e as any).message); }
+  } catch (e) {
+    console.warn(
+      "[Middleware] Response compression failed:",
+      (e as any).message
+    );
+  }
 
   // ── Sprint 71: Multi-Language Security Orchestrator (Rust DDoS + Go PBAC + Python Fraud ML) ──
   try {
     const orchMod = await import("../middleware/securityOrchestrator.js");
     orchMod.applySecurityOrchestrator(app);
-    console.log("[Security] Multi-language security orchestrator registered (Rust DDoS, Go PBAC, Python Fraud ML)");
-  } catch (e) { console.warn("[Security] Orchestrator load failed (non-fatal):", (e as any).message); }
+    console.log(
+      "[Security] Multi-language security orchestrator registered (Rust DDoS, Go PBAC, Python Fraud ML)"
+    );
+  } catch (e) {
+    console.warn(
+      "[Security] Orchestrator load failed (non-fatal):",
+      (e as any).message
+    );
+  }
 
   // ── Sprint 71: Financial Attack Prevention Middleware ──
   try {
     const finMod = await import("../middleware/financialAttackPrevention.js");
     finMod.applyFinancialAttackPrevention(app);
-    console.log("[Security] Financial attack prevention registered (replay, card-testing, ATO, collusion, exfiltration)");
-  } catch (e) { console.warn("[Security] Financial attack prevention failed (non-fatal):", (e as any).message); }
+    console.log(
+      "[Security] Financial attack prevention registered (replay, card-testing, ATO, collusion, exfiltration)"
+    );
+  } catch (e) {
+    console.warn(
+      "[Security] Financial attack prevention failed (non-fatal):",
+      (e as any).message
+    );
+  }
 
   // ── HTTP request duration instrumentation ─────────────────────────────────
   app.use((req, res, next) => {
@@ -392,16 +447,26 @@ async function startServer() {
         httpOnly: true,
         path: "/",
         sameSite: "none",
-        secure: req.protocol === "https" || (req.headers["x-forwarded-proto"] ?? "").toString().includes("https"),
+        secure:
+          req.protocol === "https" ||
+          (req.headers["x-forwarded-proto"] ?? "").toString().includes("https"),
         maxAge: 8 * 60 * 60 * 1000,
       });
 
       // S94-06: Prevent open redirect — validate returnTo is internal path only
-      const rawReturnTo = (req.query.returnTo as string) || "/agent-float-forecasting";
-      const safeReturnTo = rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//") && !/[\\/][@\\]/.test(rawReturnTo.charAt(1)) ? rawReturnTo : "/";
+      const rawReturnTo =
+        (req.query.returnTo as string) || "/agent-float-forecasting";
+      const safeReturnTo =
+        rawReturnTo.startsWith("/") &&
+        !rawReturnTo.startsWith("//") &&
+        !/[\\/][@\\]/.test(rawReturnTo.charAt(1))
+          ? rawReturnTo
+          : "/";
       res.redirect(safeReturnTo);
     });
-    console.log("[DEV] Auto-login bypass available at GET /api/dev-login?returnTo=/path");
+    console.log(
+      "[DEV] Auto-login bypass available at GET /api/dev-login?returnTo=/path"
+    );
   }
 
   // ── Socket.IO ────────────────────────────────────────────────────────────────
@@ -474,7 +539,9 @@ async function startServer() {
   );
 
   // ── Scheduled cron handlers ──────────────────────────────────────────────────
-  const { handleMonthlyInvoiceCron } = await import("../scheduled/monthlyInvoiceCron");
+  const { handleMonthlyInvoiceCron } = await import(
+    "../scheduled/monthlyInvoiceCron"
+  );
   app.post("/api/scheduled/monthly-invoices", handleMonthlyInvoiceCron);
 
   // ── Health check ─────────────────────────────────────────────────────────────
@@ -485,7 +552,11 @@ async function startServer() {
     // ── DB connectivity + latency ──────────────────────────────────────────
     try {
       const { Pool } = await import("pg");
-      const pool = new Pool({ connectionString: process.env.POSTGRES_URL, max: 1, connectionTimeoutMillis: 3000 });
+      const pool = new Pool({
+        connectionString: process.env.POSTGRES_URL,
+        max: 1,
+        connectionTimeoutMillis: 3000,
+      });
       const t0 = Date.now();
       await pool.query("SELECT 1");
       latencies.db = Date.now() - t0;
@@ -515,7 +586,9 @@ async function startServer() {
       const t0 = Date.now();
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 2000);
-      const resp = await fetch(`${minioUrl}/minio/health/live`, { signal: ctrl.signal });
+      const resp = await fetch(`${minioUrl}/minio/health/live`, {
+        signal: ctrl.signal,
+      });
       clearTimeout(timer);
       latencies.minio = Date.now() - t0;
       checks.minio = resp.ok ? "reachable" : "degraded";
@@ -530,7 +603,9 @@ async function startServer() {
       const t0 = Date.now();
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 2000);
-      const resp = await fetch(`${kafkaUrl}/v1/cluster`, { signal: ctrl.signal });
+      const resp = await fetch(`${kafkaUrl}/v1/cluster`, {
+        signal: ctrl.signal,
+      });
       clearTimeout(timer);
       latencies.kafka = Date.now() - t0;
       checks.kafka = resp.ok ? "reachable" : "degraded";
@@ -540,7 +615,9 @@ async function startServer() {
     }
 
     // ── Keycloak configuration ─────────────────────────────────────────────
-    checks.keycloak = process.env.KEYCLOAK_URL ? "configured" : "not configured";
+    checks.keycloak = process.env.KEYCLOAK_URL
+      ? "configured"
+      : "not configured";
 
     // ── TB sidecar ────────────────────────────────────────────────────────
     try {
@@ -588,7 +665,7 @@ async function startServer() {
     res.set({
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
       "X-Accel-Buffering": "no", // Disable nginx buffering
     });
     res.flushHeaders();
@@ -603,10 +680,14 @@ async function startServer() {
       res.write(`data: ${JSON.stringify(alert)}\n\n`);
     };
     let fraudAlertBus: any;
-    import("../lib/fraudDetectionEngine").then(mod => {
-      fraudAlertBus = mod.fraudAlertBus;
-      fraudAlertBus.on("alert", onAlert);
-    }).catch(err => console.warn("[Fraud SSE] Could not load fraudDetectionEngine:", err));
+    import("../lib/fraudDetectionEngine")
+      .then(mod => {
+        fraudAlertBus = mod.fraudAlertBus;
+        fraudAlertBus.on("alert", onAlert);
+      })
+      .catch(err =>
+        console.warn("[Fraud SSE] Could not load fraudDetectionEngine:", err)
+      );
 
     // Clean up on disconnect
     req.on("close", () => {
@@ -644,7 +725,10 @@ async function startServer() {
     // Start Temporal worker for SettlementWorkflow, FloatReplenishmentWorkflow, etc.
     // Runs in-process; in production it can also be a separate Docker container.
     startTemporalWorker().catch(err =>
-      console.warn("[Temporal] Worker startup skipped (Temporal server not available):", (err as Error).message)
+      console.warn(
+        "[Temporal] Worker startup skipped (Temporal server not available):",
+        (err as Error).message
+      )
     );
   });
 
@@ -667,7 +751,7 @@ async function startServer() {
 
     // Phase 2: Close HTTP server (drain in-flight requests)
     console.log("[Server] Phase 2: Draining in-flight HTTP requests…");
-    server.close(async (err) => {
+    server.close(async err => {
       if (err) {
         console.error("[Server] Error during HTTP shutdown:", err);
       }
@@ -700,7 +784,9 @@ async function startServer() {
       }
 
       const elapsed = Date.now() - shutdownStart;
-      console.log(`[Server] Graceful shutdown complete in ${elapsed}ms. Exiting.`);
+      console.log(
+        `[Server] Graceful shutdown complete in ${elapsed}ms. Exiting.`
+      );
       process.exit(0);
     });
 
@@ -713,7 +799,7 @@ async function startServer() {
   }
 
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-  process.on("SIGINT",  () => gracefulShutdown("SIGINT"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
   // SIGHUP — zero-downtime mTLS certificate rotation
   process.on("SIGHUP", () => {

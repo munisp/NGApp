@@ -31,7 +31,11 @@ import logger from "../_core/logger";
 const COMMISSION_KAFKA_TOPIC: KafkaTopic = "pos.transactions.created";
 
 export async function publishCommissionEvent(params: {
-  eventType: "commission.credited" | "commission.cascade.completed" | "commission.payout.requested" | "commission.split.updated";
+  eventType:
+    | "commission.credited"
+    | "commission.cascade.completed"
+    | "commission.payout.requested"
+    | "commission.split.updated";
   transactionId?: number;
   transactionRef?: string;
   agentId: number;
@@ -57,11 +61,15 @@ export async function publishCommissionEvent(params: {
         hierarchyLevel: params.hierarchyLevel,
         ...params.metadata,
       },
-      { agentCode: params.agentCode },
+      { agentCode: params.agentCode }
     );
-    logger.info(`[Kafka] Commission event published: ${params.eventType} for agent ${params.agentCode}`);
+    logger.info(
+      `[Kafka] Commission event published: ${params.eventType} for agent ${params.agentCode}`
+    );
   } catch (e) {
-    logger.warn(`[Kafka] Commission event publish failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[Kafka] Commission event publish failed (fail-open): ${(e as Error).message}`
+    );
   }
 }
 
@@ -69,17 +77,30 @@ export async function publishCommissionEvent(params: {
 const SPLIT_CACHE_TTL = 300;
 const HIERARCHY_CACHE_TTL = 600;
 
-export async function getCachedSplitRatios(txType: string): Promise<Record<string, number> | null> {
+export async function getCachedSplitRatios(
+  txType: string
+): Promise<Record<string, number> | null> {
   try {
     const cached = await cacheGet(`commission:splits:${txType}`);
     return cached ? JSON.parse(cached) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-export async function setCachedSplitRatios(txType: string, splits: Record<string, number>): Promise<void> {
+export async function setCachedSplitRatios(
+  txType: string,
+  splits: Record<string, number>
+): Promise<void> {
   try {
-    await cacheSet(`commission:splits:${txType}`, JSON.stringify(splits), SPLIT_CACHE_TTL);
-  } catch { /* fail-open */ }
+    await cacheSet(
+      `commission:splits:${txType}`,
+      JSON.stringify(splits),
+      SPLIT_CACHE_TTL
+    );
+  } catch {
+    /* fail-open */
+  }
 }
 
 export async function invalidateSplitCache(txType?: string): Promise<void> {
@@ -87,24 +108,53 @@ export async function invalidateSplitCache(txType?: string): Promise<void> {
     if (txType) {
       await cacheDel(`commission:splits:${txType}`);
     } else {
-      const types = ["cash_in", "cash_out", "transfer", "bill_payment", "airtime"];
+      const types = [
+        "cash_in",
+        "cash_out",
+        "transfer",
+        "bill_payment",
+        "airtime",
+      ];
       for (const t of types) await cacheDel(`commission:splits:${t}`);
       await cacheDel("commission:splits:all");
     }
-  } catch { /* fail-open */ }
+  } catch {
+    /* fail-open */
+  }
 }
 
-export async function getCachedHierarchyChain(agentId: number): Promise<Array<{ id: number; agentCode: string; hierarchyRole: string; level: number }> | null> {
+export async function getCachedHierarchyChain(agentId: number): Promise<Array<{
+  id: number;
+  agentCode: string;
+  hierarchyRole: string;
+  level: number;
+}> | null> {
   try {
     const cached = await cacheGet(`commission:hierarchy:${agentId}`);
     return cached ? JSON.parse(cached) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-export async function setCachedHierarchyChain(agentId: number, chain: Array<{ id: number; agentCode: string; hierarchyRole: string; level: number }>): Promise<void> {
+export async function setCachedHierarchyChain(
+  agentId: number,
+  chain: Array<{
+    id: number;
+    agentCode: string;
+    hierarchyRole: string;
+    level: number;
+  }>
+): Promise<void> {
   try {
-    await cacheSet(`commission:hierarchy:${agentId}`, JSON.stringify(chain), HIERARCHY_CACHE_TTL);
-  } catch { /* fail-open */ }
+    await cacheSet(
+      `commission:hierarchy:${agentId}`,
+      JSON.stringify(chain),
+      HIERARCHY_CACHE_TTL
+    );
+  } catch {
+    /* fail-open */
+  }
 }
 
 // ── TigerBeetle: Double-Entry Commission Ledger ─────────────────────────
@@ -135,7 +185,9 @@ export async function tbRecordCommissionCredit(params: {
     }
     return null;
   } catch (e) {
-    logger.warn(`[TB-Commission] Transfer failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[TB-Commission] Transfer failed (fail-open): ${(e as Error).message}`
+    );
     return null;
   }
 }
@@ -156,17 +208,24 @@ export async function triggerCommissionPayoutWorkflow(params: {
       workflowId: `commission-payout-${params.batchId}`,
       args: [params],
     });
-    logger.info(`[Temporal] Commission payout workflow started: ${handle.workflowId}`);
+    logger.info(
+      `[Temporal] Commission payout workflow started: ${handle.workflowId}`
+    );
     return handle.workflowId;
   } catch (e) {
-    logger.warn(`[Temporal] Commission payout workflow failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[Temporal] Commission payout workflow failed (fail-open): ${(e as Error).message}`
+    );
     return null;
   }
 }
 
 // ── Permify: RBAC for Commission Operations ──────────────────────────────
 // permifyCheck({ subjectType, subjectId, entityType, entityId, permission })
-export async function canUpdateSplitRatios(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canUpdateSplitRatios(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   try {
     return await permifyCheck({
       subjectType: "agent",
@@ -180,7 +239,10 @@ export async function canUpdateSplitRatios(agentCode: string, agentRole: string)
   }
 }
 
-export async function canApproveCommissionPayout(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canApproveCommissionPayout(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   try {
     return await permifyCheck({
       subjectType: "agent",
@@ -218,19 +280,26 @@ export async function streamCommissionEvent(params: {
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
-    logger.debug(`[Fluvio] Commission stream failed (fail-open): ${(e as Error).message}`);
+    logger.debug(
+      `[Fluvio] Commission stream failed (fail-open): ${(e as Error).message}`
+    );
   }
 }
 
 // ── Lakehouse: Commission Snapshot Trigger (via Python sidecar) ──────────
-const LAKEHOUSE_SIDECAR_URL = process.env.LAKEHOUSE_SIDECAR_URL ?? "http://localhost:8050";
+const LAKEHOUSE_SIDECAR_URL =
+  process.env.LAKEHOUSE_SIDECAR_URL ?? "http://localhost:8050";
 
-export async function triggerCommissionSnapshot(date?: string): Promise<boolean> {
+export async function triggerCommissionSnapshot(
+  date?: string
+): Promise<boolean> {
   try {
     const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/snapshot/commission`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: date ?? new Date().toISOString().slice(0, 10) }),
+      body: JSON.stringify({
+        date: date ?? new Date().toISOString().slice(0, 10),
+      }),
       signal: AbortSignal.timeout(5000),
     });
     return res.ok;
@@ -244,30 +313,47 @@ export async function triggerCommissionSnapshot(date?: string): Promise<boolean>
 const DAPR_HTTP_PORT = process.env.DAPR_HTTP_PORT ?? "3500";
 const DAPR_STATE_STORE = "commission-cache";
 
-export async function daprGetCommissionState(key: string): Promise<unknown | null> {
+export async function daprGetCommissionState(
+  key: string
+): Promise<unknown | null> {
   try {
-    const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/state/${DAPR_STATE_STORE}/${key}`, {
-      signal: AbortSignal.timeout(1000),
-    });
+    const res = await fetch(
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/state/${DAPR_STATE_STORE}/${key}`,
+      {
+        signal: AbortSignal.timeout(1000),
+      }
+    );
     if (res.ok) return await res.json();
     return null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-export async function daprSetCommissionState(key: string, value: unknown): Promise<boolean> {
+export async function daprSetCommissionState(
+  key: string,
+  value: unknown
+): Promise<boolean> {
   try {
-    const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/state/${DAPR_STATE_STORE}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([{ key, value }]),
-      signal: AbortSignal.timeout(1000),
-    });
+    const res = await fetch(
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/state/${DAPR_STATE_STORE}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ key, value }]),
+        signal: AbortSignal.timeout(1000),
+      }
+    );
     return res.ok;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ── Keycloak: Token Validation for Commission Admin ──────────────────────
-export async function validateKeycloakTokenForCommission(token: string): Promise<{ valid: boolean; roles: string[] }> {
+export async function validateKeycloakTokenForCommission(
+  token: string
+): Promise<{ valid: boolean; roles: string[] }> {
   try {
     const { verifyKeycloakToken } = await import("../_core/keycloak");
     const payload = await verifyKeycloakToken(token);
@@ -284,10 +370,16 @@ export function getCommissionRateLimitConfig() {
     route_id: "commission-engine",
     plugins: {
       "limit-count": {
-        count: 100, time_window: 60, key_type: "var", key: "remote_addr",
-        rejected_code: 429, rejected_msg: "Commission API rate limit exceeded",
+        count: 100,
+        time_window: 60,
+        key_type: "var",
+        key: "remote_addr",
+        rejected_code: 429,
+        rejected_msg: "Commission API rate limit exceeded",
         policy: "redis",
-        redis_host: (ENV.redisUrl ?? "redis://localhost:6379").replace("redis://", "").split(":")[0],
+        redis_host: (ENV.redisUrl ?? "redis://localhost:6379")
+          .replace("redis://", "")
+          .split(":")[0],
         redis_port: 6379,
       },
       "key-auth": { header: "X-API-Key" },
@@ -298,7 +390,8 @@ export function getCommissionRateLimitConfig() {
 }
 
 // ── Mojaloop: ILP Commission Settlement for Cross-Border Agents ──────────
-const MOJALOOP_SIDECAR_URL = process.env.MOJALOOP_SIDECAR_URL ?? "http://localhost:8050";
+const MOJALOOP_SIDECAR_URL =
+  process.env.MOJALOOP_SIDECAR_URL ?? "http://localhost:8050";
 
 export async function initiateIlpCommissionTransfer(params: {
   payerFsp: string;
@@ -307,21 +400,28 @@ export async function initiateIlpCommissionTransfer(params: {
   currency: string;
   agentCode: string;
   transactionRef: string;
-}): Promise<{ transferId: string; ilpPacket: string; condition: string } | null> {
+}): Promise<{
+  transferId: string;
+  ilpPacket: string;
+  condition: string;
+} | null> {
   try {
-    const res = await fetch(`${MOJALOOP_SIDECAR_URL}/mojaloop/commission-transfer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        payerFsp: params.payerFsp,
-        payeeFsp: params.payeeFsp,
-        amount: params.amount,
-        currency: params.currency,
-        agentCode: params.agentCode,
-        transactionRef: params.transactionRef,
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await fetch(
+      `${MOJALOOP_SIDECAR_URL}/mojaloop/commission-transfer`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payerFsp: params.payerFsp,
+          payeeFsp: params.payeeFsp,
+          amount: params.amount,
+          currency: params.currency,
+          agentCode: params.agentCode,
+          transactionRef: params.transactionRef,
+        }),
+        signal: AbortSignal.timeout(5000),
+      }
+    );
     if (res.ok) return await res.json();
     return null;
   } catch {
@@ -331,30 +431,86 @@ export async function initiateIlpCommissionTransfer(params: {
 }
 
 // ── Middleware Health Check ───────────────────────────────────────────────
-export async function getCommissionMiddlewareHealth(): Promise<Record<string, { status: string; latencyMs: number }>> {
+export async function getCommissionMiddlewareHealth(): Promise<
+  Record<string, { status: string; latencyMs: number }>
+> {
   const results: Record<string, { status: string; latencyMs: number }> = {};
   const check = async (name: string, fn: () => Promise<boolean>) => {
     const start = Date.now();
     try {
       const ok = await fn();
-      results[name] = { status: ok ? "healthy" : "degraded", latencyMs: Date.now() - start };
+      results[name] = {
+        status: ok ? "healthy" : "degraded",
+        latencyMs: Date.now() - start,
+      };
     } catch {
       results[name] = { status: "unavailable", latencyMs: Date.now() - start };
     }
   };
   await Promise.allSettled([
-    check("kafka", async () => { const { kafkaIsHealthy } = await import("../kafkaClient"); return kafkaIsHealthy(); }),
-    check("redis", async () => { const { redisIsHealthy } = await import("../redisClient"); return redisIsHealthy(); }),
-    check("tigerbeetle", async () => { const { tbIsHealthy } = await import("../tbClient"); return tbIsHealthy(); }),
-    check("temporal", async () => { const { getTemporalClient } = await import("../temporal"); return !!(await getTemporalClient()); }),
-    check("permify", async () => { const res = await fetch(`${ENV.permifyUrl}/healthz`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("fluvio", async () => { const { getFluvioStatus } = await import("../lib/fluvioClient"); return getFluvioStatus().connected; }),
-    check("lakehouse", async () => { const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/health`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("dapr", async () => { const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/healthz`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("keycloak", async () => { const res = await fetch(`${ENV.keycloakUrl}/realms/${ENV.keycloakRealm}`, { signal: AbortSignal.timeout(2000) }); return res.ok; }),
-    check("apisix", async () => { const res = await fetch(`${ENV.apisixAdminUrl}/apisix/admin/routes`, { headers: { "X-API-KEY": ENV.apisixAdminKey }, signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("mojaloop", async () => { const res = await fetch(`${MOJALOOP_SIDECAR_URL}/health`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("postgresql", async () => { const { getDb } = await import("../db"); return !!(await getDb()); }),
+    check("kafka", async () => {
+      const { kafkaIsHealthy } = await import("../kafkaClient");
+      return kafkaIsHealthy();
+    }),
+    check("redis", async () => {
+      const { redisIsHealthy } = await import("../redisClient");
+      return redisIsHealthy();
+    }),
+    check("tigerbeetle", async () => {
+      const { tbIsHealthy } = await import("../tbClient");
+      return tbIsHealthy();
+    }),
+    check("temporal", async () => {
+      const { getTemporalClient } = await import("../temporal");
+      return !!(await getTemporalClient());
+    }),
+    check("permify", async () => {
+      const res = await fetch(`${ENV.permifyUrl}/healthz`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("fluvio", async () => {
+      const { getFluvioStatus } = await import("../lib/fluvioClient");
+      return getFluvioStatus().connected;
+    }),
+    check("lakehouse", async () => {
+      const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("dapr", async () => {
+      const res = await fetch(
+        `http://localhost:${DAPR_HTTP_PORT}/v1.0/healthz`,
+        { signal: AbortSignal.timeout(1000) }
+      );
+      return res.ok;
+    }),
+    check("keycloak", async () => {
+      const res = await fetch(
+        `${ENV.keycloakUrl}/realms/${ENV.keycloakRealm}`,
+        { signal: AbortSignal.timeout(2000) }
+      );
+      return res.ok;
+    }),
+    check("apisix", async () => {
+      const res = await fetch(`${ENV.apisixAdminUrl}/apisix/admin/routes`, {
+        headers: { "X-API-KEY": ENV.apisixAdminKey },
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("mojaloop", async () => {
+      const res = await fetch(`${MOJALOOP_SIDECAR_URL}/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("postgresql", async () => {
+      const { getDb } = await import("../db");
+      return !!(await getDb());
+    }),
   ]);
   return results;
 }

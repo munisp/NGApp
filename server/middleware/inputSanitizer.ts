@@ -20,7 +20,7 @@ export function sanitizeString(input: string): string {
   // Strip null bytes
   let clean = input.replace(/\0/g, "");
   // Encode HTML entities to prevent XSS
-  clean = clean.replace(/[&<>"'/]/g, (char) => HTML_ENTITIES[char] || char);
+  clean = clean.replace(/[&<>"'/]/g, char => HTML_ENTITIES[char] || char);
   // Strip control characters (except newline, tab, carriage return)
   clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
   return clean;
@@ -57,15 +57,38 @@ export function isValidAmount(amount: number): boolean {
 }
 
 // ── PIN complexity enforcement ──────────────────────────────────────────
-export function validatePinComplexity(pin: string): { valid: boolean; reason?: string } {
-  if (pin.length < 4) return { valid: false, reason: "PIN must be at least 4 digits" };
-  if (pin.length > 8) return { valid: false, reason: "PIN must be at most 8 digits" };
-  if (!/^\d+$/.test(pin)) return { valid: false, reason: "PIN must contain only digits" };
+export function validatePinComplexity(pin: string): {
+  valid: boolean;
+  reason?: string;
+} {
+  if (pin.length < 4)
+    return { valid: false, reason: "PIN must be at least 4 digits" };
+  if (pin.length > 8)
+    return { valid: false, reason: "PIN must be at most 8 digits" };
+  if (!/^\d+$/.test(pin))
+    return { valid: false, reason: "PIN must contain only digits" };
   // Reject sequential PINs
-  const sequential = ["1234", "2345", "3456", "4567", "5678", "6789", "0123", "9876", "8765", "7654", "6543", "5432", "4321", "3210"];
-  if (sequential.some(s => pin.includes(s))) return { valid: false, reason: "PIN must not contain sequential digits" };
+  const sequential = [
+    "1234",
+    "2345",
+    "3456",
+    "4567",
+    "5678",
+    "6789",
+    "0123",
+    "9876",
+    "8765",
+    "7654",
+    "6543",
+    "5432",
+    "4321",
+    "3210",
+  ];
+  if (sequential.some(s => pin.includes(s)))
+    return { valid: false, reason: "PIN must not contain sequential digits" };
   // Reject repeated digits
-  if (/^(\d)\1+$/.test(pin)) return { valid: false, reason: "PIN must not be all the same digit" };
+  if (/^(\d)\1+$/.test(pin))
+    return { valid: false, reason: "PIN must not be all the same digit" };
   return { valid: true };
 }
 
@@ -74,7 +97,10 @@ const loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-export function checkAccountLockout(agentCode: string): { locked: boolean; remainingMs?: number } {
+export function checkAccountLockout(agentCode: string): {
+  locked: boolean;
+  remainingMs?: number;
+} {
   const record = loginAttempts.get(agentCode);
   if (!record) return { locked: false };
   if (record.lockedUntil > Date.now()) {

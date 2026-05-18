@@ -67,31 +67,109 @@ describe("S61-2: Comparison Report Export", () => {
       id: "run-001",
       name: "Baseline Test",
       startedAt: "2026-04-22T10:00:00Z",
-      config: { targetRps: 500, duration: 60, concurrency: 10, zipfExponent: 1.07, merchantCount: 1000 },
+      config: {
+        targetRps: 500,
+        duration: 60,
+        concurrency: 10,
+        zipfExponent: 1.07,
+        merchantCount: 1000,
+      },
     },
     runB: {
       id: "run-002",
       name: "Candidate Test",
       startedAt: "2026-04-22T11:00:00Z",
-      config: { targetRps: 500, duration: 60, concurrency: 10, zipfExponent: 1.07, merchantCount: 1000 },
+      config: {
+        targetRps: 500,
+        duration: 60,
+        concurrency: 10,
+        zipfExponent: 1.07,
+        merchantCount: 1000,
+      },
     },
     comparison: {
       latency: {
-        avg: { valueA: 45, valueB: 38, diff: -7, pctChange: -15.6, improved: true },
-        p50: { valueA: 30, valueB: 25, diff: -5, pctChange: -16.7, improved: true },
-        p95: { valueA: 120, valueB: 100, diff: -20, pctChange: -16.7, improved: true },
-        p99: { valueA: 250, valueB: 200, diff: -50, pctChange: -20.0, improved: true },
-        max: { valueA: 500, valueB: 450, diff: -50, pctChange: -10.0, improved: true },
+        avg: {
+          valueA: 45,
+          valueB: 38,
+          diff: -7,
+          pctChange: -15.6,
+          improved: true,
+        },
+        p50: {
+          valueA: 30,
+          valueB: 25,
+          diff: -5,
+          pctChange: -16.7,
+          improved: true,
+        },
+        p95: {
+          valueA: 120,
+          valueB: 100,
+          diff: -20,
+          pctChange: -16.7,
+          improved: true,
+        },
+        p99: {
+          valueA: 250,
+          valueB: 200,
+          diff: -50,
+          pctChange: -20.0,
+          improved: true,
+        },
+        max: {
+          valueA: 500,
+          valueB: 450,
+          diff: -50,
+          pctChange: -10.0,
+          improved: true,
+        },
       },
       throughput: {
-        actualRps: { valueA: 480, valueB: 495, diff: 15, pctChange: 3.1, improved: true },
-        totalRequests: { valueA: 28800, valueB: 29700, diff: 900, pctChange: 3.1, improved: true },
-        throughputMbps: { valueA: 12.5, valueB: 13.2, diff: 0.7, pctChange: 5.6, improved: true },
+        actualRps: {
+          valueA: 480,
+          valueB: 495,
+          diff: 15,
+          pctChange: 3.1,
+          improved: true,
+        },
+        totalRequests: {
+          valueA: 28800,
+          valueB: 29700,
+          diff: 900,
+          pctChange: 3.1,
+          improved: true,
+        },
+        throughputMbps: {
+          valueA: 12.5,
+          valueB: 13.2,
+          diff: 0.7,
+          pctChange: 5.6,
+          improved: true,
+        },
       },
       reliability: {
-        errorRate: { valueA: 2.1, valueB: 1.5, diff: -0.6, pctChange: -28.6, improved: true },
-        failedRequests: { valueA: 605, valueB: 446, diff: -159, pctChange: -26.3, improved: true },
-        successRate: { valueA: 97.9, valueB: 98.5, diff: 0.6, pctChange: 0.6, improved: true },
+        errorRate: {
+          valueA: 2.1,
+          valueB: 1.5,
+          diff: -0.6,
+          pctChange: -28.6,
+          improved: true,
+        },
+        failedRequests: {
+          valueA: 605,
+          valueB: 446,
+          diff: -159,
+          pctChange: -26.3,
+          improved: true,
+        },
+        successRate: {
+          valueA: 97.9,
+          valueB: 98.5,
+          diff: 0.6,
+          pctChange: 0.6,
+          improved: true,
+        },
       },
       zipfComparison: [
         { rank: 1, requestsA: 5000, requestsB: 5200, pctA: 17.4, pctB: 17.5 },
@@ -108,13 +186,24 @@ describe("S61-2: Comparison Report Export", () => {
     const data = mockComparisonData;
     const cmp = data.comparison;
 
-    const headerRow = ["Metric", "Category", "Run A", "Run B", "Delta", "% Change", "Improved"];
+    const headerRow = [
+      "Metric",
+      "Category",
+      "Run A",
+      "Run B",
+      "Delta",
+      "% Change",
+      "Improved",
+    ];
     expect(headerRow).toHaveLength(7);
 
     const latencyRow = [
-      "Avg Latency (ms)", "Latency",
-      String(cmp.latency.avg.valueA), String(cmp.latency.avg.valueB),
-      String(cmp.latency.avg.diff), `${cmp.latency.avg.pctChange}%`,
+      "Avg Latency (ms)",
+      "Latency",
+      String(cmp.latency.avg.valueA),
+      String(cmp.latency.avg.valueB),
+      String(cmp.latency.avg.diff),
+      `${cmp.latency.avg.pctChange}%`,
       String(cmp.latency.avg.improved),
     ];
     expect(latencyRow[0]).toBe("Avg Latency (ms)");
@@ -132,7 +221,11 @@ describe("S61-2: Comparison Report Export", () => {
 
   it("should include Zipf distribution data in export", () => {
     const zipfRows = mockComparisonData.comparison.zipfComparison.map(z => [
-      `#${z.rank}`, String(z.requestsA), String(z.requestsB), `${z.pctA}%`, `${z.pctB}%`,
+      `#${z.rank}`,
+      String(z.requestsA),
+      String(z.requestsB),
+      `${z.pctA}%`,
+      `${z.pctB}%`,
     ]);
     expect(zipfRows).toHaveLength(2);
     expect(zipfRows[0][0]).toBe("#1");
@@ -141,9 +234,15 @@ describe("S61-2: Comparison Report Export", () => {
   });
 
   it("should include timeline data in export", () => {
-    const timelineRows = mockComparisonData.comparison.timelineOverlay.map(t => [
-      String(t.second), String(t.rpsA), String(t.rpsB), String(t.latencyA), String(t.latencyB),
-    ]);
+    const timelineRows = mockComparisonData.comparison.timelineOverlay.map(
+      t => [
+        String(t.second),
+        String(t.rpsA),
+        String(t.rpsB),
+        String(t.latencyA),
+        String(t.latencyB),
+      ]
+    );
     expect(timelineRows).toHaveLength(2);
     expect(timelineRows[1][1]).toBe("480");
     expect(timelineRows[1][2]).toBe("495");
@@ -158,7 +257,12 @@ describe("S61-2: Comparison Report Export", () => {
     ].filter(Boolean).length;
 
     expect(improvements).toBe(3);
-    const verdict = improvements >= 2 ? "IMPROVEMENT" : improvements === 1 ? "MIXED" : "REGRESSION";
+    const verdict =
+      improvements >= 2
+        ? "IMPROVEMENT"
+        : improvements === 1
+          ? "MIXED"
+          : "REGRESSION";
     expect(verdict).toBe("IMPROVEMENT");
   });
 

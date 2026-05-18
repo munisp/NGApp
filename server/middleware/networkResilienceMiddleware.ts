@@ -29,7 +29,9 @@ export const DEFAULT_RESILIENCE_CONFIG: ResilienceConfig = {
 };
 
 // Bandwidth tier determination
-export function determineBandwidthTier(kbps: number): "high" | "medium" | "low" | "minimal" | "offline" {
+export function determineBandwidthTier(
+  kbps: number
+): "high" | "medium" | "low" | "minimal" | "offline" {
   if (kbps <= 0) return "offline";
   if (kbps < 50) return "minimal";
   if (kbps < 200) return "low";
@@ -41,24 +43,38 @@ export function determineBandwidthTier(kbps: number): "high" | "medium" | "low" 
 export function getMaxPayloadForBandwidth(kbps: number): number {
   const tier = determineBandwidthTier(kbps);
   switch (tier) {
-    case "high": return 500 * 1024;    // 500KB
-    case "medium": return 100 * 1024;  // 100KB
-    case "low": return 25 * 1024;      // 25KB
-    case "minimal": return 5 * 1024;   // 5KB
-    case "offline": return 0;
+    case "high":
+      return 500 * 1024; // 500KB
+    case "medium":
+      return 100 * 1024; // 100KB
+    case "low":
+      return 25 * 1024; // 25KB
+    case "minimal":
+      return 5 * 1024; // 5KB
+    case "offline":
+      return 0;
   }
 }
 
 // Protocol selection based on network conditions
-export function selectProtocol(latencyMs: number, lossPercent: number, bandwidthKbps: number): "websocket" | "sse" | "long-poll" | "offline" {
+export function selectProtocol(
+  latencyMs: number,
+  lossPercent: number,
+  bandwidthKbps: number
+): "websocket" | "sse" | "long-poll" | "offline" {
   if (bandwidthKbps < 50 || lossPercent > 30) return "offline";
-  if (bandwidthKbps < 100 || lossPercent > 15 || latencyMs > 800) return "long-poll";
+  if (bandwidthKbps < 100 || lossPercent > 15 || latencyMs > 800)
+    return "long-poll";
   if (bandwidthKbps < 500 || lossPercent > 5 || latencyMs > 400) return "sse";
   return "websocket";
 }
 
 // Exponential backoff with jitter
-export function calculateBackoff(attempt: number, baseMs: number = 1000, maxMs: number = 60000): number {
+export function calculateBackoff(
+  attempt: number,
+  baseMs: number = 1000,
+  maxMs: number = 60000
+): number {
   const exponential = Math.min(baseMs * Math.pow(2, attempt), maxMs);
   const jitter = exponential * 0.5 * Math.random();
   return Math.round(exponential + jitter);
@@ -66,7 +82,10 @@ export function calculateBackoff(attempt: number, baseMs: number = 1000, maxMs: 
 
 // Request priority for offline queue
 export type RequestPriority = "critical" | "high" | "normal" | "low";
-export function getRequestPriority(path: string, method: string): RequestPriority {
+export function getRequestPriority(
+  path: string,
+  method: string
+): RequestPriority {
   if (path.includes("transaction") && method === "POST") return "critical";
   if (path.includes("float") || path.includes("settlement")) return "high";
   if (path.includes("audit") || path.includes("telemetry")) return "low";
@@ -81,4 +100,6 @@ export function estimateCompressionRatio(contentType: string): number {
   return 0.8; // binary content doesn't compress well
 }
 
-console.log("[networkResilienceMiddleware] Sprint 76 resilience middleware loaded");
+console.log(
+  "[networkResilienceMiddleware] Sprint 76 resilience middleware loaded"
+);

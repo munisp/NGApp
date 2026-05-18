@@ -34,7 +34,13 @@ const UnsubscribePushInput = z.object({
 
 const SendTestPushInput = z.object({
   agentCode: z.string().max(32),
-  type: z.enum(["sim_failover", "float_approved", "float_rejected", "fraud_alert", "settlement_complete"]),
+  type: z.enum([
+    "sim_failover",
+    "float_approved",
+    "float_rejected",
+    "fraud_alert",
+    "settlement_complete",
+  ]),
 });
 
 // ── Mock push module ──────────────────────────────────────────────────────────
@@ -142,9 +148,15 @@ describe("pushNotifications router", () => {
   });
 
   describe("sendTestPush input validation", () => {
-    const validTypes = ["sim_failover", "float_approved", "float_rejected", "fraud_alert", "settlement_complete"] as const;
+    const validTypes = [
+      "sim_failover",
+      "float_approved",
+      "float_rejected",
+      "fraud_alert",
+      "settlement_complete",
+    ] as const;
 
-    it.each(validTypes)("accepts type '%s'", (type) => {
+    it.each(validTypes)("accepts type '%s'", type => {
       const input = { agentCode: "AGT001", type };
       expect(() => SendTestPushInput.parse(input)).not.toThrow();
     });
@@ -173,10 +185,13 @@ describe("pushNotifications router", () => {
         terminalId: "TRM001",
       });
       expect(result).toEqual({ sent: 1, failed: 0 });
-      expect(sendPushToAgent).toHaveBeenCalledWith("AGT001", expect.objectContaining({
-        type: "sim_failover",
-        terminalId: "TRM001",
-      }));
+      expect(sendPushToAgent).toHaveBeenCalledWith(
+        "AGT001",
+        expect.objectContaining({
+          type: "sim_failover",
+          terminalId: "TRM001",
+        })
+      );
     });
   });
 });

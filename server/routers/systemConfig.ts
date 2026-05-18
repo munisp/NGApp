@@ -33,10 +33,18 @@ export const systemConfigRouter = router({
           .where(eq(systemConfig.key, input.key))
           .limit(1);
         if (rows.length === 0) return { key: input.key, value: null };
-        return { key: rows[0].key, value: rows[0].value, description: rows[0].description };
+        return {
+          key: rows[0].key,
+          value: rows[0].value,
+          description: rows[0].description,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -44,32 +52,52 @@ export const systemConfigRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
       if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin access required",
+        });
       }
       const db = (await getDb())!;
       if (!db) return { entries: [] };
-      const rows = await db.select().from(systemConfig).orderBy(systemConfig.key).limit(100);
+      const rows = await db
+        .select()
+        .from(systemConfig)
+        .orderBy(systemConfig.key)
+        .limit(100);
       return { entries: rows };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   // ── Set a config value (admin-only) ──────────────────────────────────────
   set: protectedProcedure
-    .input(z.object({
-      key:         z.string().min(1).max(128),
-      value:       z.string().max(4096),
-      description: z.string().max(512).optional(),
-    }))
+    .input(
+      z.object({
+        key: z.string().min(1).max(128),
+        value: z.string().max(4096),
+        description: z.string().max(512).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
         if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin access required",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         const now = new Date();
         const updatedBy = ctx.user.name ?? ctx.user.email ?? "unknown";
@@ -78,27 +106,36 @@ export const systemConfigRouter = router({
         await db
           .insert(systemConfig)
           .values({
-            key:         input.key,
-            value:       input.value,
+            key: input.key,
+            value: input.value,
             description: input.description,
             updatedBy,
-            createdAt:   now,
-            updatedAt:   now,
+            createdAt: now,
+            updatedAt: now,
           })
           .onConflictDoUpdate({
             target: systemConfig.key,
             set: {
-              value:       input.value,
+              value: input.value,
               description: input.description ?? undefined,
               updatedBy,
-              updatedAt:   now,
+              updatedAt: now,
             },
           });
 
-        return { key: input.key, value: input.value, updatedBy, updatedAt: now };
+        return {
+          key: input.key,
+          value: input.value,
+          updatedBy,
+          updatedAt: now,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

@@ -28,18 +28,36 @@ export interface SettlementBatch {
   createdAt: string;
 }
 
-export async function initiateSettlement(request: SettlementRequest): Promise<AdapterResponse<SettlementResult>> {
-  return settlementGateway.post<SettlementResult>("/api/v1/settlement/initiate", request);
+export async function initiateSettlement(
+  request: SettlementRequest
+): Promise<AdapterResponse<SettlementResult>> {
+  return settlementGateway.post<SettlementResult>(
+    "/api/v1/settlement/initiate",
+    request
+  );
 }
 
-export async function getSettlementStatus(settlementId: string): Promise<AdapterResponse<SettlementResult>> {
-  return settlementGateway.get<SettlementResult>(`/api/v1/settlement/${settlementId}/status`);
+export async function getSettlementStatus(
+  settlementId: string
+): Promise<AdapterResponse<SettlementResult>> {
+  return settlementGateway.get<SettlementResult>(
+    `/api/v1/settlement/${settlementId}/status`
+  );
 }
 
-export async function createBatch(settlements: SettlementRequest[]): Promise<AdapterResponse<SettlementBatch>> {
-  return settlementGateway.post<SettlementBatch>("/api/v1/settlement/batch", { settlements });
+export async function createBatch(
+  settlements: SettlementRequest[]
+): Promise<AdapterResponse<SettlementBatch>> {
+  return settlementGateway.post<SettlementBatch>("/api/v1/settlement/batch", {
+    settlements,
+  });
 }
 
-export async function listBatches(status?: string): Promise<AdapterResponse<SettlementBatch[]>> {
-  return settlementGateway.get<SettlementBatch[]>("/api/v1/settlement/batches", status ? { status } : undefined);
+export async function listBatches(
+  status?: string
+): Promise<AdapterResponse<SettlementBatch[]>> {
+  return settlementGateway.get<SettlementBatch[]>(
+    "/api/v1/settlement/batches",
+    status ? { status } : undefined
+  );
 }

@@ -1,6 +1,6 @@
 /**
  * Sprint 85 Tests — 54Link POS Shell
- * 
+ *
  * Validates:
  * H1: TypeScript strict-mode compliance (0 errors after @ts-nocheck removal)
  * L2: OpenAPI/Swagger documentation completeness
@@ -26,7 +26,7 @@ describe("H1: TypeScript Strict-Mode Compliance", () => {
 
   it("should not have any @ts-nocheck directives in page files", () => {
     const pagesDir = path.join(PROJECT_ROOT, "client/src/pages");
-    const files = fs.readdirSync(pagesDir).filter((f) => f.endsWith(".tsx"));
+    const files = fs.readdirSync(pagesDir).filter(f => f.endsWith(".tsx"));
     const violations: string[] = [];
 
     for (const file of files) {
@@ -41,7 +41,7 @@ describe("H1: TypeScript Strict-Mode Compliance", () => {
 
   it("should have @ts-ignore comments annotated with Sprint 85 context", () => {
     const pagesDir = path.join(PROJECT_ROOT, "client/src/pages");
-    const files = fs.readdirSync(pagesDir).filter((f) => f.endsWith(".tsx"));
+    const files = fs.readdirSync(pagesDir).filter(f => f.endsWith(".tsx"));
     let totalIgnores = 0;
     let annotatedIgnores = 0;
 
@@ -105,7 +105,7 @@ describe("L2: OpenAPI/Swagger Documentation", () => {
     ];
 
     for (const endpoint of requiredEndpoints) {
-      const found = paths.some((p) => p.includes(endpoint));
+      const found = paths.some(p => p.includes(endpoint));
       expect(found).toBe(true);
     }
   });
@@ -151,7 +151,7 @@ describe("L3: Architecture Decision Records", () => {
   });
 
   it("should have 10 ADR files (ADR-001 through ADR-010)", () => {
-    const files = fs.readdirSync(adrDir).filter((f) => f.startsWith("ADR-"));
+    const files = fs.readdirSync(adrDir).filter(f => f.startsWith("ADR-"));
     expect(files.length).toBe(10);
   });
 
@@ -192,7 +192,10 @@ describe("L3: Architecture Decision Records", () => {
 
 // ─── L4: Load Testing Framework ──────────────────────────────────────────────
 describe("L4: Load Testing Framework", () => {
-  const loadTestPath = path.join(PROJECT_ROOT, "tests/load/k6-billing-load-test.js");
+  const loadTestPath = path.join(
+    PROJECT_ROOT,
+    "tests/load/k6-billing-load-test.js"
+  );
 
   it("should have k6 load test configuration", () => {
     expect(fs.existsSync(loadTestPath)).toBe(true);

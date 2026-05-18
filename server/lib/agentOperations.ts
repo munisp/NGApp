@@ -51,7 +51,7 @@ export function getAgentPresence(agentId: string): AgentPresence | undefined {
 
 export function getAllOnlineAgents(): AgentPresence[] {
   return Array.from(presenceStore.values()).filter(
-    (a) => a.status === "online" || a.status === "busy"
+    a => a.status === "online" || a.status === "busy"
   );
 }
 
@@ -113,7 +113,9 @@ const PRIORITY_ORDER: Record<QueuePriority, number> = {
   low: 3,
 };
 
-export function enqueueChat(entry: Omit<QueueEntry, "position" | "estimatedWaitMs">): QueueEntry {
+export function enqueueChat(
+  entry: Omit<QueueEntry, "position" | "estimatedWaitMs">
+): QueueEntry {
   const queueEntry: QueueEntry = {
     ...entry,
     position: 0,
@@ -125,7 +127,7 @@ export function enqueueChat(entry: Omit<QueueEntry, "position" | "estimatedWaitM
 }
 
 export function dequeueChat(sessionId: number): QueueEntry | undefined {
-  const idx = chatQueue.findIndex((e) => e.sessionId === sessionId);
+  const idx = chatQueue.findIndex(e => e.sessionId === sessionId);
   if (idx === -1) return undefined;
   const [entry] = chatQueue.splice(idx, 1);
   recomputeQueuePositions();
@@ -139,11 +141,12 @@ export function getQueueStatus(): {
   longestWaitMs: number;
 } {
   const now = Date.now();
-  const waits = chatQueue.map((e) => now - e.enqueuedAt);
+  const waits = chatQueue.map(e => now - e.enqueuedAt);
   return {
     entries: [...chatQueue],
     totalWaiting: chatQueue.length,
-    avgWaitMs: waits.length > 0 ? waits.reduce((a, b) => a + b, 0) / waits.length : 0,
+    avgWaitMs:
+      waits.length > 0 ? waits.reduce((a, b) => a + b, 0) / waits.length : 0,
     longestWaitMs: waits.length > 0 ? Math.max(...waits) : 0,
   };
 }
@@ -181,7 +184,9 @@ export interface SurveyResponse {
 
 const surveyStore: SurveyResponse[] = [];
 
-export function submitSurvey(response: Omit<SurveyResponse, "submittedAt">): SurveyResponse {
+export function submitSurvey(
+  response: Omit<SurveyResponse, "submittedAt">
+): SurveyResponse {
   const survey: SurveyResponse = {
     ...response,
     rating: Math.max(1, Math.min(5, Math.round(response.rating))),
@@ -211,11 +216,11 @@ export function getSurveyStats(): {
 
   const avg = surveyStore.reduce((s, r) => s + r.rating, 0) / total;
   const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  surveyStore.forEach((r) => dist[r.rating]++);
+  surveyStore.forEach(r => dist[r.rating]++);
 
   const catMap = new Map<string, number>();
-  surveyStore.forEach((r) =>
-    r.categories.forEach((c) => catMap.set(c, (catMap.get(c) || 0) + 1))
+  surveyStore.forEach(r =>
+    r.categories.forEach(c => catMap.set(c, (catMap.get(c) || 0) + 1))
   );
   const topCats = Array.from(catMap.entries())
     .map(([category, count]) => ({ category, count }))
@@ -223,8 +228,8 @@ export function getSurveyStats(): {
     .slice(0, 5);
 
   // NPS: promoters (4-5) minus detractors (1-2) as percentage
-  const promoters = surveyStore.filter((r) => r.rating >= 4).length;
-  const detractors = surveyStore.filter((r) => r.rating <= 2).length;
+  const promoters = surveyStore.filter(r => r.rating >= 4).length;
+  const detractors = surveyStore.filter(r => r.rating <= 2).length;
   const nps = Math.round(((promoters - detractors) / total) * 100);
 
   return {
@@ -236,8 +241,10 @@ export function getSurveyStats(): {
   };
 }
 
-export function getSurveyForSession(sessionId: number): SurveyResponse | undefined {
-  return surveyStore.find((s) => s.sessionId === sessionId);
+export function getSurveyForSession(
+  sessionId: number
+): SurveyResponse | undefined {
+  return surveyStore.find(s => s.sessionId === sessionId);
 }
 
 // ─── F14: Chat Routing Rules Engine ─────────────────────────────────────────
@@ -257,38 +264,69 @@ export interface RoutingCondition {
 }
 
 export interface RoutingAction {
-  type: "assign_agent" | "assign_team" | "assign_skill" | "enqueue" | "auto_respond";
+  type:
+    | "assign_agent"
+    | "assign_team"
+    | "assign_skill"
+    | "enqueue"
+    | "auto_respond";
   target: string;
   fallback?: string;
 }
 
 const routingRules: RoutingRule[] = [
   {
-    id: "rule-fraud", name: "Fraud → Security Team", priority: 1,
+    id: "rule-fraud",
+    name: "Fraud → Security Team",
+    priority: 1,
     conditions: [{ field: "category", operator: "equals", value: "fraud" }],
-    action: { type: "assign_team", target: "security-team", fallback: "general-queue" },
+    action: {
+      type: "assign_team",
+      target: "security-team",
+      fallback: "general-queue",
+    },
     enabled: true,
   },
   {
-    id: "rule-vip", name: "VIP → Senior Agents", priority: 2,
-    conditions: [{ field: "customer_tier", operator: "in", value: ["platinum", "gold"] }],
-    action: { type: "assign_skill", target: "senior-support", fallback: "general-queue" },
+    id: "rule-vip",
+    name: "VIP → Senior Agents",
+    priority: 2,
+    conditions: [
+      { field: "customer_tier", operator: "in", value: ["platinum", "gold"] },
+    ],
+    action: {
+      type: "assign_skill",
+      target: "senior-support",
+      fallback: "general-queue",
+    },
     enabled: true,
   },
   {
-    id: "rule-billing", name: "Billing → Finance Team", priority: 3,
+    id: "rule-billing",
+    name: "Billing → Finance Team",
+    priority: 3,
     conditions: [{ field: "category", operator: "equals", value: "billing" }],
     action: { type: "assign_team", target: "finance-team" },
     enabled: true,
   },
   {
-    id: "rule-technical", name: "Technical → Tech Support", priority: 4,
-    conditions: [{ field: "category", operator: "in", value: ["technical", "bug", "error"] }],
+    id: "rule-technical",
+    name: "Technical → Tech Support",
+    priority: 4,
+    conditions: [
+      {
+        field: "category",
+        operator: "in",
+        value: ["technical", "bug", "error"],
+      },
+    ],
     action: { type: "assign_skill", target: "technical-support" },
     enabled: true,
   },
   {
-    id: "rule-default", name: "Default → General Queue", priority: 99,
+    id: "rule-default",
+    name: "Default → General Queue",
+    priority: 99,
     conditions: [],
     action: { type: "enqueue", target: "general-queue" },
     enabled: true,
@@ -303,14 +341,14 @@ export function evaluateRoutingRules(context: {
   messageContent: string;
 }): RoutingAction {
   const sorted = routingRules
-    .filter((r) => r.enabled)
+    .filter(r => r.enabled)
     .sort((a, b) => a.priority - b.priority);
 
   for (const rule of sorted) {
     if (rule.conditions.length === 0 && rule.priority === 99) {
       return rule.action; // default fallback
     }
-    const allMatch = rule.conditions.every((cond) => {
+    const allMatch = rule.conditions.every(cond => {
       const fieldValue = getFieldValue(context, cond.field);
       return evaluateCondition(fieldValue, cond.operator, cond.value);
     });
@@ -342,9 +380,11 @@ function evaluateCondition(
     case "contains":
       return fieldValue.includes((value as string).toLowerCase());
     case "in":
-      return (value as string[]).map((v) => v.toLowerCase()).includes(fieldValue);
+      return (value as string[]).map(v => v.toLowerCase()).includes(fieldValue);
     case "not_in":
-      return !(value as string[]).map((v) => v.toLowerCase()).includes(fieldValue);
+      return !(value as string[])
+        .map(v => v.toLowerCase())
+        .includes(fieldValue);
     default:
       return false;
   }
@@ -376,19 +416,28 @@ const escalationChains: EscalationChain[] = [
     name: "Default Escalation Chain",
     levels: [
       {
-        level: 1, name: "L1 — Frontline Support", team: "frontline",
+        level: 1,
+        name: "L1 — Frontline Support",
+        team: "frontline",
         timeoutMs: 30 * 60 * 1000, // 30 min
-        notifyChannels: ["inApp"], autoEscalate: true,
+        notifyChannels: ["inApp"],
+        autoEscalate: true,
       },
       {
-        level: 2, name: "L2 — Senior Support", team: "senior-support",
+        level: 2,
+        name: "L2 — Senior Support",
+        team: "senior-support",
         timeoutMs: 60 * 60 * 1000, // 1 hour
-        notifyChannels: ["inApp", "email"], autoEscalate: true,
+        notifyChannels: ["inApp", "email"],
+        autoEscalate: true,
       },
       {
-        level: 3, name: "L3 — Engineering / Management", team: "engineering",
+        level: 3,
+        name: "L3 — Engineering / Management",
+        team: "engineering",
         timeoutMs: 4 * 60 * 60 * 1000, // 4 hours
-        notifyChannels: ["inApp", "email", "sms"], autoEscalate: false,
+        notifyChannels: ["inApp", "email", "sms"],
+        autoEscalate: false,
       },
     ],
   },
@@ -397,19 +446,28 @@ const escalationChains: EscalationChain[] = [
     name: "Critical Issue Chain",
     levels: [
       {
-        level: 1, name: "L1 — Senior Support", team: "senior-support",
+        level: 1,
+        name: "L1 — Senior Support",
+        team: "senior-support",
         timeoutMs: 10 * 60 * 1000, // 10 min
-        notifyChannels: ["inApp", "push"], autoEscalate: true,
+        notifyChannels: ["inApp", "push"],
+        autoEscalate: true,
       },
       {
-        level: 2, name: "L2 — Engineering", team: "engineering",
+        level: 2,
+        name: "L2 — Engineering",
+        team: "engineering",
         timeoutMs: 30 * 60 * 1000, // 30 min
-        notifyChannels: ["inApp", "email", "sms"], autoEscalate: true,
+        notifyChannels: ["inApp", "email", "sms"],
+        autoEscalate: true,
       },
       {
-        level: 3, name: "L3 — CTO / VP", team: "executive",
+        level: 3,
+        name: "L3 — CTO / VP",
+        team: "executive",
         timeoutMs: 60 * 60 * 1000, // 1 hour
-        notifyChannels: ["inApp", "email", "sms", "phone"], autoEscalate: false,
+        notifyChannels: ["inApp", "email", "sms", "phone"],
+        autoEscalate: false,
       },
     ],
   },
@@ -418,26 +476,37 @@ const escalationChains: EscalationChain[] = [
     name: "Fraud Escalation Chain",
     levels: [
       {
-        level: 1, name: "L1 — Security Team", team: "security-team",
+        level: 1,
+        name: "L1 — Security Team",
+        team: "security-team",
         timeoutMs: 5 * 60 * 1000, // 5 min
-        notifyChannels: ["inApp", "push", "sms"], autoEscalate: true,
+        notifyChannels: ["inApp", "push", "sms"],
+        autoEscalate: true,
       },
       {
-        level: 2, name: "L2 — Fraud Investigators", team: "fraud-investigation",
+        level: 2,
+        name: "L2 — Fraud Investigators",
+        team: "fraud-investigation",
         timeoutMs: 15 * 60 * 1000, // 15 min
-        notifyChannels: ["inApp", "email", "sms"], autoEscalate: true,
+        notifyChannels: ["inApp", "email", "sms"],
+        autoEscalate: true,
       },
       {
-        level: 3, name: "L3 — Compliance Officer", team: "compliance",
+        level: 3,
+        name: "L3 — Compliance Officer",
+        team: "compliance",
         timeoutMs: 60 * 60 * 1000, // 1 hour
-        notifyChannels: ["inApp", "email", "sms", "phone"], autoEscalate: false,
+        notifyChannels: ["inApp", "email", "sms", "phone"],
+        autoEscalate: false,
       },
     ],
   },
 ];
 
-export function getEscalationChain(chainId: string): EscalationChain | undefined {
-  return escalationChains.find((c) => c.id === chainId);
+export function getEscalationChain(
+  chainId: string
+): EscalationChain | undefined {
+  return escalationChains.find(c => c.id === chainId);
 }
 
 export function getAllEscalationChains(): EscalationChain[] {
@@ -450,7 +519,7 @@ export function getNextEscalationLevel(
 ): EscalationLevel | null {
   const chain = getEscalationChain(chainId);
   if (!chain) return null;
-  const next = chain.levels.find((l) => l.level === currentLevel + 1);
+  const next = chain.levels.find(l => l.level === currentLevel + 1);
   return next || null;
 }
 
@@ -461,7 +530,7 @@ export function shouldAutoEscalate(
 ): boolean {
   const chain = getEscalationChain(chainId);
   if (!chain) return false;
-  const level = chain.levels.find((l) => l.level === currentLevel);
+  const level = chain.levels.find(l => l.level === currentLevel);
   if (!level) return false;
   return level.autoEscalate && elapsedMs > level.timeoutMs;
 }

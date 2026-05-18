@@ -12,7 +12,10 @@ const ROOT = resolve(__dirname, "..");
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("WebSocket Real-Time Notifications", () => {
   const wsFile = resolve(ROOT, "server/lib/realtimeNotifications.ts");
-  const hookFile = resolve(ROOT, "client/src/hooks/useRealtimeNotifications.tsx");
+  const hookFile = resolve(
+    ROOT,
+    "client/src/hooks/useRealtimeNotifications.tsx"
+  );
   const socketFile = resolve(ROOT, "server/socket.ts");
 
   it("realtimeNotifications.ts exists", () => {

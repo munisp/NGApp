@@ -5,7 +5,10 @@
  */
 import { cn } from "@/lib/utils";
 
-function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+function Skeleton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn("animate-pulse rounded-md bg-muted", className)}
@@ -26,7 +29,13 @@ export function KpiCardSkeleton() {
 }
 
 /** Table skeleton with configurable rows/columns */
-export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+export function TableSkeleton({
+  rows = 5,
+  cols = 5,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
   return (
     <div className="rounded-lg border overflow-hidden">
       {/* Header */}
@@ -48,7 +57,13 @@ export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: nu
 }
 
 /** Dashboard page skeleton — KPI cards + table */
-export function DashboardPageSkeleton({ cards = 4, rows = 8 }: { cards?: number; rows?: number }) {
+export function DashboardPageSkeleton({
+  cards = 4,
+  rows = 8,
+}: {
+  cards?: number;
+  rows?: number;
+}) {
   return (
     <div className="space-y-6 p-6">
       {/* KPI Cards */}

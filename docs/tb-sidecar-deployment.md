@@ -4,23 +4,23 @@
 
 The **54Link TB Sidecar** is a Go process that runs on every POS terminal alongside the Node.js server. It provides:
 
-| Capability | Detail |
-|---|---|
-| **Offline-first double-entry ledger** | Commits transfers to a local SQLite WAL instantly, even without internet |
-| **Automatic upstream sync** | Pushes committed transfers to the TigerBeetle Zig cluster when connectivity is restored |
-| **PostgreSQL metadata mirror** | Writes transfer metadata to the central PG database for reporting |
-| **Agent float balance** | Serves `/agent/{code}/balance` for real-time float queries from the Node.js server |
+| Capability                            | Detail                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Offline-first double-entry ledger** | Commits transfers to a local SQLite WAL instantly, even without internet                |
+| **Automatic upstream sync**           | Pushes committed transfers to the TigerBeetle Zig cluster when connectivity is restored |
+| **PostgreSQL metadata mirror**        | Writes transfer metadata to the central PG database for reporting                       |
+| **Agent float balance**               | Serves `/agent/{code}/balance` for real-time float queries from the Node.js server      |
 
 ---
 
 ## Prerequisites
 
-| Requirement | Version |
-|---|---|
-| Linux (x86_64 or aarch64) | Ubuntu 20.04+ / Debian 11+ |
-| Go | 1.22+ (for building from source) |
-| systemd | For service management |
-| TigerBeetle binary | 0.16.78 (auto-downloaded by installer) |
+| Requirement               | Version                                |
+| ------------------------- | -------------------------------------- |
+| Linux (x86_64 or aarch64) | Ubuntu 20.04+ / Debian 11+             |
+| Go                        | 1.22+ (for building from source)       |
+| systemd                   | For service management                 |
+| TigerBeetle binary        | 0.16.78 (auto-downloaded by installer) |
 
 ---
 
@@ -103,6 +103,7 @@ curl http://localhost:3000/api/health
 ```
 
 The `tbSidecar` field reports one of:
+
 - `"running"` — sidecar is reachable and healthy
 - `"offline"` — sidecar is not responding (Node.js falls back to direct PG writes)
 - `"not configured"` — `TB_SIDECAR_URL` is not set
@@ -193,13 +194,13 @@ The Node.js server starts successfully even if the sidecar is offline — all `t
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `tbSidecar: "offline"` in `/api/health` | Sidecar not running or wrong port | `systemctl status 54link-tb-sidecar`; check `SIDECAR_PORT` |
-| `sync/status` shows `postgres: "disconnected"` | PG unreachable from terminal | Check `POSTGRES_URL` in `/etc/54link/sidecar.env` |
-| `sync/status` shows `failed > 0` | Transfers failed to sync after 3 retries | `journalctl -u 54link-tb-sidecar -n 100` for error details |
-| TigerBeetle binary not found | Installer skipped step 2 | `sudo bash tb-sidecar/scripts/install-sidecar.sh` again |
-| Port 7070 already in use | Another process on the port | Change `SIDECAR_PORT` in `/etc/54link/sidecar.env` and `TB_SIDECAR_URL` in Node.js env |
+| Symptom                                        | Cause                                    | Fix                                                                                    |
+| ---------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| `tbSidecar: "offline"` in `/api/health`        | Sidecar not running or wrong port        | `systemctl status 54link-tb-sidecar`; check `SIDECAR_PORT`                             |
+| `sync/status` shows `postgres: "disconnected"` | PG unreachable from terminal             | Check `POSTGRES_URL` in `/etc/54link/sidecar.env`                                      |
+| `sync/status` shows `failed > 0`               | Transfers failed to sync after 3 retries | `journalctl -u 54link-tb-sidecar -n 100` for error details                             |
+| TigerBeetle binary not found                   | Installer skipped step 2                 | `sudo bash tb-sidecar/scripts/install-sidecar.sh` again                                |
+| Port 7070 already in use                       | Another process on the port              | Change `SIDECAR_PORT` in `/etc/54link/sidecar.env` and `TB_SIDECAR_URL` in Node.js env |
 
 ---
 

@@ -14,7 +14,13 @@ import { Request, Response, NextFunction } from "express";
 
 // ── Network Tier Detection ───────────────────────────────────────────────────
 
-export type NetworkTier = "2g_gprs" | "2g_edge" | "3g" | "4g_lte" | "5g_wifi" | "unknown";
+export type NetworkTier =
+  | "2g_gprs"
+  | "2g_edge"
+  | "3g"
+  | "4g_lte"
+  | "5g_wifi"
+  | "unknown";
 
 export interface ConnectionInfo {
   tier: NetworkTier;
@@ -126,7 +132,7 @@ const TIER_CONFIGS: Record<NetworkTier, AdaptationConfig> = {
     compressionLevel: "none",
     maxPayloadBytes: 1048576,
   },
-  "unknown": {
+  unknown: {
     stripNulls: false,
     stripMetadata: false,
     abbreviateFields: false,
@@ -163,19 +169,29 @@ const FIELD_ABBREVIATIONS: Record<string, string> = {
 };
 
 const METADATA_FIELDS = new Set([
-  "createdAt", "updatedAt", "deletedAt", "__v", "_rev",
-  "metadata", "auditTrail", "version", "lastModifiedBy",
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+  "__v",
+  "_rev",
+  "metadata",
+  "auditTrail",
+  "version",
+  "lastModifiedBy",
 ]);
 
 // ── Adaptation Functions ─────────────────────────────────────────────────────
 
-export function adaptResponse(data: unknown, config: AdaptationConfig): unknown {
+export function adaptResponse(
+  data: unknown,
+  config: AdaptationConfig
+): unknown {
   if (data === null || data === undefined) return data;
   if (typeof data !== "object") return data;
 
   if (Array.isArray(data)) {
     const limited = data.slice(0, config.maxListItems);
-    return limited.map((item) => adaptResponse(item, config));
+    return limited.map(item => adaptResponse(item, config));
   }
 
   const obj = data as Record<string, unknown>;
@@ -189,7 +205,11 @@ export function adaptResponse(data: unknown, config: AdaptationConfig): unknown 
     if (config.stripMetadata && METADATA_FIELDS.has(key)) continue;
 
     // Strip timestamps if not needed
-    if (!config.includeTimestamps && (key === "createdAt" || key === "updatedAt")) continue;
+    if (
+      !config.includeTimestamps &&
+      (key === "createdAt" || key === "updatedAt")
+    )
+      continue;
 
     // Strip audit trail
     if (!config.includeAuditTrail && key === "auditTrail") continue;
@@ -200,9 +220,10 @@ export function adaptResponse(data: unknown, config: AdaptationConfig): unknown 
       : key;
 
     // Recurse for nested objects
-    result[outputKey] = typeof value === "object" && value !== null
-      ? adaptResponse(value, config)
-      : value;
+    result[outputKey] =
+      typeof value === "object" && value !== null
+        ? adaptResponse(value, config)
+        : value;
   }
 
   return result;
@@ -228,8 +249,11 @@ export function connectionAwareMiddleware() {
     const originalJson = res.json.bind(res);
     res.json = function (body: any) {
       // Only adapt for low-bandwidth tiers
-      if (connectionInfo.tier === "2g_gprs" || connectionInfo.tier === "2g_edge" ||
-          connectionInfo.saveData) {
+      if (
+        connectionInfo.tier === "2g_gprs" ||
+        connectionInfo.tier === "2g_edge" ||
+        connectionInfo.saveData
+      ) {
         body = adaptResponse(body, config);
       }
       return originalJson(body);
@@ -248,7 +272,7 @@ export function getRetryAfter(tier: NetworkTier): number {
     "3g": 30,
     "4g_lte": 10,
     "5g_wifi": 5,
-    "unknown": 30,
+    unknown: 30,
   };
   return retrySeconds[tier];
 }
@@ -257,12 +281,12 @@ export function getRetryAfter(tier: NetworkTier): number {
 
 export function getPollingInterval(tier: NetworkTier): number {
   const intervals: Record<NetworkTier, number> = {
-    "2g_gprs": 120000,   // 2 min
-    "2g_edge": 60000,    // 1 min
-    "3g": 30000,         // 30s
-    "4g_lte": 10000,     // 10s
-    "5g_wifi": 3000,     // 3s
-    "unknown": 30000,
+    "2g_gprs": 120000, // 2 min
+    "2g_edge": 60000, // 1 min
+    "3g": 30000, // 30s
+    "4g_lte": 10000, // 10s
+    "5g_wifi": 3000, // 3s
+    unknown: 30000,
   };
   return intervals[tier];
 }

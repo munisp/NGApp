@@ -47,14 +47,30 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
 
   describe("S87-03: All 25 CRUD Routers Have Domain Logic", () => {
     const crudRouters = [
-      "agentBankAccountsCrud", "agentPerformanceScoresCrud", "agentSuspensionLogCrud",
-      "analyticsDashboardsCrud", "biReportDefinitionsCrud", "billingRevenuePeriodsCrud",
-      "commissionCascadeHistoryCrud", "customerJourneyEventsCrud", "dataConsentRecordsCrud",
-      "emailDeliveryLogCrud", "encryptedFieldsCrud", "floatReconciliationsCrud",
-      "geoFencesCrud", "glAccountsCrud", "glJournalEntriesCrud",
-      "kycDocumentsCrud", "notificationChannelsCrud", "notificationLogsCrud",
-      "observabilityAlertsCrud", "pnlReportsCrud", "realtimeTxAlertsCrud",
-      "tenantBrandingCrud", "tenantFeeOverridesCrud", "trainingCoursesCrud",
+      "agentBankAccountsCrud",
+      "agentPerformanceScoresCrud",
+      "agentSuspensionLogCrud",
+      "analyticsDashboardsCrud",
+      "biReportDefinitionsCrud",
+      "billingRevenuePeriodsCrud",
+      "commissionCascadeHistoryCrud",
+      "customerJourneyEventsCrud",
+      "dataConsentRecordsCrud",
+      "emailDeliveryLogCrud",
+      "encryptedFieldsCrud",
+      "floatReconciliationsCrud",
+      "geoFencesCrud",
+      "glAccountsCrud",
+      "glJournalEntriesCrud",
+      "kycDocumentsCrud",
+      "notificationChannelsCrud",
+      "notificationLogsCrud",
+      "observabilityAlertsCrud",
+      "pnlReportsCrud",
+      "realtimeTxAlertsCrud",
+      "tenantBrandingCrud",
+      "tenantFeeOverridesCrud",
+      "trainingCoursesCrud",
       "trainingEnrollmentsCrud",
     ];
 
@@ -64,7 +80,11 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
         expect(fs.existsSync(filePath)).toBe(true);
         const content = fs.readFileSync(filePath, "utf-8");
         // Should have real DB operations (getDb, select, insert, etc.)
-        const hasDbOps = content.includes("getDb") || content.includes("db.") || content.includes("select") || content.includes("insert");
+        const hasDbOps =
+          content.includes("getDb") ||
+          content.includes("db.") ||
+          content.includes("select") ||
+          content.includes("insert");
         expect(hasDbOps).toBe(true);
       });
     }
@@ -83,7 +103,10 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
       const noExport: string[] = [];
       for (const f of files) {
         const content = fs.readFileSync(path.join(routerDir, f), "utf-8");
-        if (!content.includes("export const") && !content.includes("export {")) {
+        if (
+          !content.includes("export const") &&
+          !content.includes("export {")
+        ) {
           noExport.push(f);
         }
       }
@@ -107,7 +130,19 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
       const pagesDir = path.join(ROOT, "client/src/pages");
       const files = fs.readdirSync(pagesDir).filter(f => f.endsWith(".tsx"));
       const staticPages: string[] = [];
-      const allowedStatic = ["Home", "NotFound", "ApiDocs", "PrivacyPolicy", "PlatformHub", "ComponentShowcase", "DbSchemaPush", "E2ETestFramework", "OperationalRunbook", "ProductionReadinessChecklist", "VideoTutorials"];
+      const allowedStatic = [
+        "Home",
+        "NotFound",
+        "ApiDocs",
+        "PrivacyPolicy",
+        "PlatformHub",
+        "ComponentShowcase",
+        "DbSchemaPush",
+        "E2ETestFramework",
+        "OperationalRunbook",
+        "ProductionReadinessChecklist",
+        "VideoTutorials",
+      ];
       for (const f of files) {
         const content = fs.readFileSync(path.join(pagesDir, f), "utf-8");
         if (!content.includes("trpc.")) {
@@ -123,10 +158,21 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
 
   describe("S87-06: Python Services Expanded", () => {
     const expandedServices = [
-      "agent-baas", "agent-hierarchy-service", "agent-lms", "agent-performance",
-      "agent-service", "agent-training", "transaction-limits", "terminal-ownership",
-      "support-crm", "receipt-engine", "realtime-services", "grpc",
-      "agent-commerce-integration", "art-agent-service", "agent-business-dashboard",
+      "agent-baas",
+      "agent-hierarchy-service",
+      "agent-lms",
+      "agent-performance",
+      "agent-service",
+      "agent-training",
+      "transaction-limits",
+      "terminal-ownership",
+      "support-crm",
+      "receipt-engine",
+      "realtime-services",
+      "grpc",
+      "agent-commerce-integration",
+      "art-agent-service",
+      "agent-business-dashboard",
       "agent-ecommerce-platform",
     ];
 
@@ -165,8 +211,12 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
       expect(fs.existsSync(filePath)).toBe(true);
       const content = fs.readFileSync(filePath, "utf-8");
       const requiredExports = [
-        "bulkNotifRouter", "retryQueueRouter", "digestRouter",
-        "notifTemplateRouter", "notificationAnalyticsRouter", "userQuietHoursRouter",
+        "bulkNotifRouter",
+        "retryQueueRouter",
+        "digestRouter",
+        "notifTemplateRouter",
+        "notificationAnalyticsRouter",
+        "userQuietHoursRouter",
       ];
       for (const exp of requiredExports) {
         expect(content).toContain(exp);
@@ -178,7 +228,9 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
     it("Go services: at least 45", () => {
       const goDir = path.join(ROOT, "services/go");
       if (fs.existsSync(goDir)) {
-        const dirs = fs.readdirSync(goDir).filter(d => fs.statSync(path.join(goDir, d)).isDirectory());
+        const dirs = fs
+          .readdirSync(goDir)
+          .filter(d => fs.statSync(path.join(goDir, d)).isDirectory());
         expect(dirs.length).toBeGreaterThanOrEqual(45);
       }
     });
@@ -186,7 +238,9 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
     it("Rust services: at least 25", () => {
       const rustDir = path.join(ROOT, "services/rust");
       if (fs.existsSync(rustDir)) {
-        const dirs = fs.readdirSync(rustDir).filter(d => fs.statSync(path.join(rustDir, d)).isDirectory());
+        const dirs = fs
+          .readdirSync(rustDir)
+          .filter(d => fs.statSync(path.join(rustDir, d)).isDirectory());
         expect(dirs.length).toBeGreaterThanOrEqual(25);
       }
     });
@@ -194,7 +248,9 @@ describe("Sprint 87 — Orphan/Partial/Generic Feature Elimination", () => {
     it("Python services: at least 250", () => {
       const pyDir = path.join(ROOT, "services/python");
       if (fs.existsSync(pyDir)) {
-        const dirs = fs.readdirSync(pyDir).filter(d => fs.statSync(path.join(pyDir, d)).isDirectory());
+        const dirs = fs
+          .readdirSync(pyDir)
+          .filter(d => fs.statSync(path.join(pyDir, d)).isDirectory());
         expect(dirs.length).toBeGreaterThanOrEqual(250);
       }
     });

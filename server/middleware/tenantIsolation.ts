@@ -41,7 +41,10 @@ export const withTenant = async ({
   next: (opts: { ctx: TenantContext }) => Promise<any>;
 }) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
   }
 
   const isSuperAdmin = (ctx.user as any).role === "super_admin";
@@ -49,7 +52,8 @@ export const withTenant = async ({
   if (!ctx.user.tenantId && !isSuperAdmin) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "No tenant assigned to this account. Contact your administrator.",
+      message:
+        "No tenant assigned to this account. Contact your administrator.",
     });
   }
 

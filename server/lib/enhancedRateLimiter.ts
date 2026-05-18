@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Enhanced Rate Limiter — 54Link Agency Banking Platform
- * 
+ *
  * Sliding window rate limiting with Redis backing.
  * Features:
  * - Per-endpoint configurable limits
@@ -35,7 +35,7 @@ export function checkRateLimit(
 ): { allowed: boolean; remaining: number; resetMs: number; total: number } {
   const now = Date.now();
   const timestamps = cleanExpired(key, rule.windowMs);
-  
+
   if (timestamps.length >= rule.maxRequests) {
     const oldestInWindow = timestamps[0];
     const resetMs = oldestInWindow + rule.windowMs - now;
@@ -46,10 +46,10 @@ export function checkRateLimit(
       total: rule.maxRequests,
     };
   }
-  
+
   timestamps.push(now);
   memoryStore.set(key, timestamps);
-  
+
   return {
     allowed: true,
     remaining: rule.maxRequests - timestamps.length,
@@ -62,55 +62,59 @@ export function checkRateLimit(
 export const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
   "auth.login": {
     endpoint: "auth.login",
-    windowMs: 15 * 60 * 1000,  // 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: 10,
-    keyExtractor: (req) => `auth:${req.ip}`,
+    keyExtractor: req => `auth:${req.ip}`,
   },
   "auth.pinReset": {
     endpoint: "auth.pinReset",
-    windowMs: 60 * 60 * 1000,  // 1 hour
+    windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 3,
-    keyExtractor: (req) => `pinreset:${req.ip}`,
+    keyExtractor: req => `pinreset:${req.ip}`,
   },
   "transactions.create": {
     endpoint: "transactions.create",
-    windowMs: 60 * 1000,  // 1 minute
+    windowMs: 60 * 1000, // 1 minute
     maxRequests: 30,
-    keyExtractor: (req) => `tx:${req.agentId ?? req.ip}`,
+    keyExtractor: req => `tx:${req.agentId ?? req.ip}`,
   },
   "smsReceipt.send": {
     endpoint: "smsReceipt.send",
     windowMs: 60 * 1000,
     maxRequests: 10,
-    keyExtractor: (req) => `sms:${req.agentId ?? req.ip}`,
+    keyExtractor: req => `sms:${req.agentId ?? req.ip}`,
   },
   "webhook.create": {
     endpoint: "webhook.create",
     windowMs: 60 * 60 * 1000,
     maxRequests: 20,
-    keyExtractor: (req) => `webhook:${req.agentId ?? req.ip}`,
+    keyExtractor: req => `webhook:${req.agentId ?? req.ip}`,
   },
   "loadTest.run": {
     endpoint: "loadTest.run",
-    windowMs: 5 * 60 * 1000,  // 5 minutes
+    windowMs: 5 * 60 * 1000, // 5 minutes
     maxRequests: 2,
-    keyExtractor: (req) => `loadtest:${req.agentId ?? req.ip}`,
+    keyExtractor: req => `loadtest:${req.agentId ?? req.ip}`,
   },
   "export.csv": {
     endpoint: "export.csv",
     windowMs: 60 * 1000,
     maxRequests: 5,
-    keyExtractor: (req) => `export:${req.agentId ?? req.ip}`,
+    keyExtractor: req => `export:${req.agentId ?? req.ip}`,
   },
-  "global": {
+  global: {
     endpoint: "global",
     windowMs: 60 * 1000,
     maxRequests: 100,
-    keyExtractor: (req) => `global:${req.ip}`,
+    keyExtractor: req => `global:${req.ip}`,
   },
 };
 
-export function getRateLimitHeaders(result: { remaining: number; resetMs: number; total: number }) {
+export function getRateLimitHeaders(result: {
+  remaining: number;
+  resetMs: number;
+  total: number;
+}) {
   return {
     "X-RateLimit-Limit": String(result.total),
     "X-RateLimit-Remaining": String(result.remaining),

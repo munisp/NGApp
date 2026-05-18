@@ -4,11 +4,11 @@ A single self-contained Go binary that installs and manages the three 54Link POS
 
 ## Services Installed
 
-| Service | Port | Language | Purpose |
-|---|---|---|---|
-| `54link-resilience-agent` | 8031 | Go | Connection probe, carrier detection, retry engine |
-| `54link-offline-queue` | 8032 | Rust | Durable SQLite WAL queue, USSD encoder |
-| `54link-analytics` | 8033 | Python (PyInstaller) | 7-day success rate analytics |
+| Service                   | Port | Language             | Purpose                                           |
+| ------------------------- | ---- | -------------------- | ------------------------------------------------- |
+| `54link-resilience-agent` | 8031 | Go                   | Connection probe, carrier detection, retry engine |
+| `54link-offline-queue`    | 8032 | Rust                 | Durable SQLite WAL queue, USSD encoder            |
+| `54link-analytics`        | 8033 | Python (PyInstaller) | 7-day success rate analytics                      |
 
 ## Download
 
@@ -52,13 +52,13 @@ sudo ./54link-installer --uninstall
 
 Set these before running the installer, or add them to the systemd unit `Environment=` lines after installation:
 
-| Variable | Service | Description |
-|---|---|---|
-| `DATABASE_URL` | analytics | PostgreSQL connection string |
-| `TERMII_API_KEY` | (Node.js app) | Live SMS delivery key |
-| `ANALYTICS_PORT` | analytics | Override default port 8033 |
-| `PROBE_PORT` | resilience-agent | Override default port 8031 |
-| `QUEUE_PORT` | offline-queue | Override default port 8032 |
+| Variable         | Service          | Description                  |
+| ---------------- | ---------------- | ---------------------------- |
+| `DATABASE_URL`   | analytics        | PostgreSQL connection string |
+| `TERMII_API_KEY` | (Node.js app)    | Live SMS delivery key        |
+| `ANALYTICS_PORT` | analytics        | Override default port 8033   |
+| `PROBE_PORT`     | resilience-agent | Override default port 8031   |
+| `QUEUE_PORT`     | offline-queue    | Override default port 8032   |
 
 ## Uninstall
 

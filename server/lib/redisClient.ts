@@ -31,10 +31,13 @@ export function getRedisClient(): Redis {
       reconnectOnError: () => false, // Don't reconnect on errors in dev
     });
 
-    _client.on("error", (err) => {
+    _client.on("error", err => {
       // Log but don't crash — app degrades gracefully without Redis
       if (process.env.NODE_ENV !== "test") {
-        console.warn("[Redis] Connection error (rate-limit will use memory store):", err.message);
+        console.warn(
+          "[Redis] Connection error (rate-limit will use memory store):",
+          err.message
+        );
       }
     });
 
@@ -65,7 +68,10 @@ export async function pingRedis(): Promise<number | null> {
  * Acquire a distributed lock. Returns true if lock was acquired.
  * Lock expires after ttlMs milliseconds.
  */
-export async function acquireLock(key: string, ttlMs: number = 10_000): Promise<boolean> {
+export async function acquireLock(
+  key: string,
+  ttlMs: number = 10_000
+): Promise<boolean> {
   try {
     const client = getRedisClient();
     const result = await client.set(`lock:${key}`, "1", "PX", ttlMs, "NX");

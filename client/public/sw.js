@@ -5,8 +5,8 @@
  */
 const CACHE_VERSION = "v5";
 const SHELL_CACHE = `54link-shell-${CACHE_VERSION}`;
-const API_CACHE   = `54link-api-${CACHE_VERSION}`;
-const DATA_CACHE  = `54link-data-${CACHE_VERSION}`;
+const API_CACHE = `54link-api-${CACHE_VERSION}`;
+const DATA_CACHE = `54link-data-${CACHE_VERSION}`;
 const SHELL_ASSETS = ["/", "/offline.html", "/manifest.json", "/favicon.ico"];
 
 // API routes to cache with network-first strategy (old data OK)
@@ -25,22 +25,30 @@ const NO_CACHE_API_ROUTES = [
   "/api/oauth",
 ];
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", event => {
   event.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL_ASSETS)));
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k.startsWith("54link-") && k !== SHELL_CACHE && k !== API_CACHE)
-          .map(k => caches.delete(k))
-    ))
+    caches
+      .keys()
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(
+              k =>
+                k.startsWith("54link-") && k !== SHELL_CACHE && k !== API_CACHE
+            )
+            .map(k => caches.delete(k))
+        )
+      )
   );
   self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
@@ -55,7 +63,9 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const cache = await caches.open(DATA_CACHE);
         try {
-          const response = await fetch(event.request, { signal: AbortSignal.timeout(15000) });
+          const response = await fetch(event.request, {
+            signal: AbortSignal.timeout(15000),
+          });
           if (response.ok) cache.put(event.request, response.clone());
           return response;
         } catch {
@@ -63,13 +73,26 @@ self.addEventListener("fetch", (event) => {
           if (cached) {
             const headers = new Headers(cached.headers);
             headers.set("X-Cache-Status", "offline-fallback");
-            return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers });
+            return new Response(cached.body, {
+              status: cached.status,
+              statusText: cached.statusText,
+              headers,
+            });
           }
-          return new Response(JSON.stringify({
-            error: "offline",
-            message: "You are offline. Data will sync when you reconnect.",
-            cached: false,
-          }), { status: 503, headers: { "Content-Type": "application/json", "X-Cache-Status": "offline-no-cache" } });
+          return new Response(
+            JSON.stringify({
+              error: "offline",
+              message: "You are offline. Data will sync when you reconnect.",
+              cached: false,
+            }),
+            {
+              status: 503,
+              headers: {
+                "Content-Type": "application/json",
+                "X-Cache-Status": "offline-no-cache",
+              },
+            }
+          );
         }
       })()
     );
@@ -77,14 +100,22 @@ self.addEventListener("fetch", (event) => {
   }
 
   // static assets (.js, .css, images): cache-first with background refresh
-  if (/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$/i.test(url.pathname)) {
+  if (
+    /\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$/i.test(
+      url.pathname
+    )
+  ) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(SHELL_CACHE);
         const cached = await cache.match(event.request);
         if (cached) {
           // Background refresh
-          fetch(event.request).then(r => { if (r.ok) cache.put(event.request, r); }).catch(() => {});
+          fetch(event.request)
+            .then(r => {
+              if (r.ok) cache.put(event.request, r);
+            })
+            .catch(() => {});
           return cached;
         }
         try {
@@ -105,7 +136,10 @@ self.addEventListener("fetch", (event) => {
       const cache = await caches.open(SHELL_CACHE);
       const cached = await cache.match(event.request);
       const fetchPromise = fetch(event.request)
-        .then(r => { if (r.ok) cache.put(event.request, r.clone()); return r; })
+        .then(r => {
+          if (r.ok) cache.put(event.request, r.clone());
+          return r;
+        })
         .catch(() => null);
       if (cached) return cached;
       const networkResponse = await fetchPromise;
@@ -114,31 +148,37 @@ self.addEventListener("fetch", (event) => {
       const offlinePage = await cache.match("/offline.html");
       if (offlinePage) return offlinePage;
       return new Response(
-        '<!DOCTYPE html><html><head><title>54Link - Offline</title>' +
-        '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-        '<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;' +
-        'min-height:100vh;margin:0;background:#1a1a2e;color:#e0e0e0;text-align:center}' +
-        '.c{padding:2rem;max-width:400px}h1{font-size:1.5rem}.i{font-size:3rem;margin-bottom:1rem}' +
-        'p{color:#888;line-height:1.6}.q{background:#16213e;padding:1rem;border-radius:8px;margin-top:1rem}' +
-        '.r{background:#e94560;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:1rem}' +
-        '</style></head><body><div class="c"><div class="i">📡</div>' +
-        '<h1>You\'re Offline</h1>' +
-        '<p>Transactions are safely queued and will sync when you reconnect.</p>' +
-        '<div class="q"><p><strong>Offline Mode Active</strong></p>' +
-        '<p>Cash-in, cash-out, and balance checks available via SMS.</p>' +
-        '<p>Send <strong>HELP</strong> to your 54Link SMS number.</p></div>' +
-        '<button class="r" onclick="location.reload()">Try Again</button>' +
-        '</div></body></html>',
+        "<!DOCTYPE html><html><head><title>54Link - Offline</title>" +
+          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+          "<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;" +
+          "min-height:100vh;margin:0;background:#1a1a2e;color:#e0e0e0;text-align:center}" +
+          ".c{padding:2rem;max-width:400px}h1{font-size:1.5rem}.i{font-size:3rem;margin-bottom:1rem}" +
+          "p{color:#888;line-height:1.6}.q{background:#16213e;padding:1rem;border-radius:8px;margin-top:1rem}" +
+          ".r{background:#e94560;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:1rem}" +
+          '</style></head><body><div class="c"><div class="i">📡</div>' +
+          "<h1>You're Offline</h1>" +
+          "<p>Transactions are safely queued and will sync when you reconnect.</p>" +
+          '<div class="q"><p><strong>Offline Mode Active</strong></p>' +
+          "<p>Cash-in, cash-out, and balance checks available via SMS.</p>" +
+          "<p>Send <strong>HELP</strong> to your 54Link SMS number.</p></div>" +
+          '<button class="r" onclick="location.reload()">Try Again</button>' +
+          "</div></body></html>",
         { status: 200, headers: { "Content-Type": "text/html" } }
       );
     })()
   );
 });
 
-self.addEventListener("push", (event) => {
+self.addEventListener("push", event => {
   let data = {};
-  try { data = event.data ? event.data.json() : {}; }
-  catch { data = { title: "54Link Alert", body: event.data ? event.data.text() : "New alert" }; }
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {
+      title: "54Link Alert",
+      body: event.data ? event.data.text() : "New alert",
+    };
+  }
 
   const type = data.type || "generic";
   let title, body, tag, requireInteraction, url, actions, vibrate;
@@ -148,71 +188,116 @@ self.addEventListener("push", (event) => {
       title = data.title || "SIM Failover Alert";
       body = data.body || "Terminal switched to backup SIM";
       tag = "failover-" + (data.terminalId || Date.now());
-      requireInteraction = true; url = "/admin?tab=sim-orchestrator";
-      actions = [{ action: "view", title: "View Details" }, { action: "dismiss", title: "Dismiss" }];
-      vibrate = [200, 100, 200, 100, 400]; break;
+      requireInteraction = true;
+      url = "/admin?tab=sim-orchestrator";
+      actions = [
+        { action: "view", title: "View Details" },
+        { action: "dismiss", title: "Dismiss" },
+      ];
+      vibrate = [200, 100, 200, 100, 400];
+      break;
     case "float_approved":
       title = data.title || "Float Top-Up Approved";
       body = data.body || "Your float top-up request has been approved.";
       tag = "float-approved-" + (data.requestId || Date.now());
-      requireInteraction = false; url = "/agent?tab=float";
-      actions = [{ action: "view", title: "View Balance" }, { action: "dismiss", title: "Dismiss" }];
-      vibrate = [200, 100, 200]; break;
+      requireInteraction = false;
+      url = "/agent?tab=float";
+      actions = [
+        { action: "view", title: "View Balance" },
+        { action: "dismiss", title: "Dismiss" },
+      ];
+      vibrate = [200, 100, 200];
+      break;
     case "float_rejected":
       title = data.title || "Float Top-Up Rejected";
       body = data.body || "Your float top-up request was rejected.";
       tag = "float-rejected-" + (data.requestId || Date.now());
-      requireInteraction = true; url = "/agent?tab=float";
-      actions = [{ action: "view", title: "View Details" }, { action: "dismiss", title: "Dismiss" }];
-      vibrate = [300, 100, 300]; break;
+      requireInteraction = true;
+      url = "/agent?tab=float";
+      actions = [
+        { action: "view", title: "View Details" },
+        { action: "dismiss", title: "Dismiss" },
+      ];
+      vibrate = [300, 100, 300];
+      break;
     case "fraud_alert":
       title = data.title || "Fraud Alert";
       body = data.body || "A suspicious transaction has been detected.";
       tag = "fraud-" + (data.alertId || Date.now());
       requireInteraction = data.severity === "critical";
       url = data.url || "/admin?tab=fraud";
-      actions = [{ action: "investigate", title: "Investigate" }, { action: "dismiss", title: "Dismiss" }];
-      vibrate = data.severity === "critical" ? [200, 100, 200, 100, 400] : [200]; break;
+      actions = [
+        { action: "investigate", title: "Investigate" },
+        { action: "dismiss", title: "Dismiss" },
+      ];
+      vibrate =
+        data.severity === "critical" ? [200, 100, 200, 100, 400] : [200];
+      break;
     case "settlement_complete":
       title = data.title || "Settlement Complete";
       body = data.body || "Daily settlement has been processed successfully.";
       tag = "settlement-" + (data.batchId || Date.now());
-      requireInteraction = false; url = "/admin?tab=settlement";
-      actions = [{ action: "view", title: "View Report" }, { action: "dismiss", title: "Dismiss" }];
-      vibrate = [200]; break;
+      requireInteraction = false;
+      url = "/admin?tab=settlement";
+      actions = [
+        { action: "view", title: "View Report" },
+        { action: "dismiss", title: "Dismiss" },
+      ];
+      vibrate = [200];
+      break;
     default:
-      title = data.title || "54Link POS"; body = data.body || "You have a new notification.";
-      tag = data.tag || ("notification-" + Date.now()); requireInteraction = false;
-      url = data.url || "/"; actions = [{ action: "dismiss", title: "Dismiss" }]; vibrate = [200];
+      title = data.title || "54Link POS";
+      body = data.body || "You have a new notification.";
+      tag = data.tag || "notification-" + Date.now();
+      requireInteraction = false;
+      url = data.url || "/";
+      actions = [{ action: "dismiss", title: "Dismiss" }];
+      vibrate = [200];
   }
 
-  event.waitUntil(self.registration.showNotification(title, {
-    body, icon: "/icons/icon-192x192.png", badge: "/icons/badge-72x72.png",
-    tag, renotify: true, requireInteraction,
-    data: Object.assign({ url, type }, data), actions, vibrate,
-  }));
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  if (event.action === "dismiss") return;
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
-      for (const client of clientList) {
-        if (client.url.includes(targetUrl) && "focus" in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-72x72.png",
+      tag,
+      renotify: true,
+      requireInteraction,
+      data: Object.assign({ url, type }, data),
+      actions,
+      vibrate,
     })
   );
 });
 
-self.addEventListener("sync", (event) => {
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  if (event.action === "dismiss") return;
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(clientList => {
+        for (const client of clientList) {
+          if (client.url.includes(targetUrl) && "focus" in client)
+            return client.focus();
+        }
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      })
+  );
+});
+
+self.addEventListener("sync", event => {
   if (["fraud-status-sync", "offline-tx-sync", "qr-sync"].includes(event.tag)) {
     event.waitUntil(
       self.clients.matchAll().then(clients => {
-        const msgType = event.tag === "fraud-status-sync" ? "SYNC_FRAUD_STATUS"
-          : event.tag === "qr-sync" ? "SYNC_QR_CODES" : "SYNC_OFFLINE_TRANSACTIONS";
+        const msgType =
+          event.tag === "fraud-status-sync"
+            ? "SYNC_FRAUD_STATUS"
+            : event.tag === "qr-sync"
+              ? "SYNC_QR_CODES"
+              : "SYNC_OFFLINE_TRANSACTIONS";
         clients.forEach(c => c.postMessage({ type: msgType }));
       })
     );
@@ -249,7 +334,11 @@ self.addEventListener("sync", (event) => {
             }),
           });
           if (response.ok) {
-            console.log("[SW] Background sync completed:", queued.length, "transactions");
+            console.log(
+              "[SW] Background sync completed:",
+              queued.length,
+              "transactions"
+            );
           }
         } catch (err) {
           console.error("[SW] Background sync error:", err);
@@ -259,24 +348,25 @@ self.addEventListener("sync", (event) => {
   }
 });
 
-self.addEventListener("periodicsync", (event) => {
+self.addEventListener("periodicsync", event => {
   if (event.tag === "fraud-periodic-sync") {
     event.waitUntil(
-      self.clients.matchAll().then(clients =>
-        clients.forEach(c => c.postMessage({ type: "PERIODIC_FRAUD_SYNC" }))
-      )
+      self.clients
+        .matchAll()
+        .then(clients =>
+          clients.forEach(c => c.postMessage({ type: "PERIODIC_FRAUD_SYNC" }))
+        )
     );
   }
 });
 
-self.addEventListener("message", (event) => {
+self.addEventListener("message", event => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
   if (event.data && event.data.type === "CACHE_URLS") {
     const urls = event.data.payload || [];
     event.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(urls)));
   }
 });
-
 
 // ── Sprint 48: Commission Cascade Offline Cache ──────────────────────────────
 const COMMISSION_CACHE = "commission-cascade-v1";
@@ -290,17 +380,21 @@ const COMMISSION_ENDPOINTS = [
 ];
 
 // Cache commission data on successful fetch for offline use
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
-  const isCommissionEndpoint = COMMISSION_ENDPOINTS.some(ep => url.pathname.startsWith(ep));
-  
+  const isCommissionEndpoint = COMMISSION_ENDPOINTS.some(ep =>
+    url.pathname.startsWith(ep)
+  );
+
   if (isCommissionEndpoint && event.request.method === "GET") {
     event.respondWith(
       fetch(event.request)
         .then(response => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open(COMMISSION_CACHE).then(cache => cache.put(event.request, clone));
+            caches
+              .open(COMMISSION_CACHE)
+              .then(cache => cache.put(event.request, clone));
           }
           return response;
         })
@@ -308,10 +402,13 @@ self.addEventListener("fetch", (event) => {
           // Offline fallback — serve cached commission data
           return caches.match(event.request).then(cached => {
             if (cached) return cached;
-            return new Response(JSON.stringify({ error: "offline", cached: false }), {
-              status: 503,
-              headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+              JSON.stringify({ error: "offline", cached: false }),
+              {
+                status: 503,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
           });
         })
     );
@@ -319,13 +416,15 @@ self.addEventListener("fetch", (event) => {
 });
 
 // Handle commission data sync when coming back online
-self.addEventListener("message", (event) => {
+self.addEventListener("message", event => {
   if (event.data && event.data.type === "COMMISSION_SYNC") {
     event.waitUntil(
       caches.open(COMMISSION_CACHE).then(cache =>
         Promise.all(
           COMMISSION_ENDPOINTS.map(ep =>
-            fetch(ep).then(r => r.ok ? cache.put(new Request(ep), r) : null).catch(() => null)
+            fetch(ep)
+              .then(r => (r.ok ? cache.put(new Request(ep), r) : null))
+              .catch(() => null)
           )
         )
       )

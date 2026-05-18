@@ -1,4 +1,3 @@
-
 /**
  * Customer Onboarding Pipeline Router
  * 7-stage pipeline: Registration → KYC Submission → KYC Review → Account Setup → Training → Activation → Live
@@ -12,7 +11,15 @@ import { getDb, writeAuditLog } from "../db";
 import { users, kycSessions } from "../../drizzle/schema";
 import { sql, desc, eq, and } from "drizzle-orm";
 
-const STAGES = ["registration", "kyc_submission", "kyc_review", "account_setup", "training", "activation", "live"] as const;
+const STAGES = [
+  "registration",
+  "kyc_submission",
+  "kyc_review",
+  "account_setup",
+  "training",
+  "activation",
+  "live",
+] as const;
 
 export const customerOnboardingPipelineRouter = router({
   getStages: protectedProcedure.query(() => {
@@ -33,7 +40,11 @@ export const customerOnboardingPipelineRouter = router({
       try {
         const db = (await getDb())!;
         const userId = input.userId || ctx.user.id;
-        const [user] = await db.select().from(users).where(eq(users.id, userId as any)).limit(1);
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId as any))
+          .limit(1);
         const currentStage = user ? "live" : "registration";
         const stageIndex = STAGES.indexOf(currentStage);
         return {
@@ -41,22 +52,30 @@ export const customerOnboardingPipelineRouter = router({
           currentStage,
           stageIndex,
           totalStages: STAGES.length,
-          completionPercent: Math.round(((stageIndex + 1) / STAGES.length) * 100),
+          completionPercent: Math.round(
+            ((stageIndex + 1) / STAGES.length) * 100
+          ),
           startedAt: user?.createdAt?.toISOString() || new Date().toISOString(),
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   advanceStage: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      fromStage: z.string(),
-      toStage: z.string(),
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        fromStage: z.string(),
+        toStage: z.string(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         // @ts-expect-error auto-fix
@@ -64,58 +83,79 @@ export const customerOnboardingPipelineRouter = router({
         // @ts-expect-error auto-fix
         const toIdx = STAGES.indexOf(input.toStage);
         if (fromIdx < 0 || toIdx < 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid stage name" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid stage name",
+          });
         }
         if (toIdx <= fromIdx) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot go backward in pipeline" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot go backward in pipeline",
+          });
         }
         if (toIdx - fromIdx > 1) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot skip stages — advance one step at a time" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot skip stages — advance one step at a time",
+          });
         }
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // ── KYC Gate: Block advancement from kyc_submission → kyc_review
         //    unless the customer has a completed KYC session ──────────────
-        if (input.fromStage === "kyc_submission" && input.toStage === "kyc_review") {
+        if (
+          input.fromStage === "kyc_submission" &&
+          input.toStage === "kyc_review"
+        ) {
           const [kycSession] = await db
             .select()
             .from(kycSessions)
             .where(
               and(
                 eq(kycSessions.agentId, parseInt(input.userId, 10) || 0),
-                eq(kycSessions.status, "completed"),
-              ),
+                eq(kycSessions.status, "completed")
+              )
             )
             .limit(1);
 
           if (!kycSession) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: "KYC must be completed before advancing to review. Please submit all required documents and pass liveness verification.",
+              message:
+                "KYC must be completed before advancing to review. Please submit all required documents and pass liveness verification.",
             });
           }
         }
 
         // ── KYC Review Gate: Block advancement from kyc_review → account_setup
         //    unless KYC review is approved (session status is still completed) ──
-        if (input.fromStage === "kyc_review" && input.toStage === "account_setup") {
+        if (
+          input.fromStage === "kyc_review" &&
+          input.toStage === "account_setup"
+        ) {
           const [kycSession] = await db
             .select()
             .from(kycSessions)
             .where(
               and(
                 eq(kycSessions.agentId, parseInt(input.userId, 10) || 0),
-                eq(kycSessions.status, "completed"),
-              ),
+                eq(kycSessions.status, "completed")
+              )
             )
             .limit(1);
 
           if (!kycSession) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: "KYC review must be approved before proceeding to account setup.",
+              message:
+                "KYC review must be approved before proceeding to account setup.",
             });
           }
         }
@@ -127,7 +167,11 @@ export const customerOnboardingPipelineRouter = router({
           resource: "customer_onboarding",
           resourceId: input.userId,
           status: "success",
-          metadata: { fromStage: input.fromStage, toStage: input.toStage, notes: input.notes },
+          metadata: {
+            fromStage: input.fromStage,
+            toStage: input.toStage,
+            notes: input.notes,
+          },
         });
 
         return {
@@ -139,12 +183,22 @@ export const customerOnboardingPipelineRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   list: protectedProcedure
-    .input(z.object({ page: z.number().default(1), limit: z.number().default(20), stage: z.string().optional() }))
+    .input(
+      z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+        stage: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
@@ -154,21 +208,35 @@ export const customerOnboardingPipelineRouter = router({
           .orderBy(desc(users.createdAt))
           .limit(input.limit)
           .offset((input.page - 1) * input.limit);
-        const [{ count }] = await db.select({ count: sql<number>`COUNT(*)` }).from(users).limit(100);
+        const [{ count }] = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(users)
+          .limit(100);
         return {
-          items: items.map((u: any) => ({ ...u, stage: "live", completionPercent: 100 })),
+          items: items.map((u: any) => ({
+            ...u,
+            stage: "live",
+            completionPercent: 100,
+          })),
           total: Number(count),
           page: input.page,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   getMetrics: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [{ count }] = await db.select({ count: sql<number>`COUNT(*)` }).from(users).limit(100);
+    const [{ count }] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .limit(100);
     return {
       totalOnboarded: Number(count),
       avgDaysToComplete: 3.2,

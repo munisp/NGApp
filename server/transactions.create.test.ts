@@ -171,15 +171,17 @@ describe("transactions.create — idempotency", () => {
     const caller = appRouter.createCaller(makeCtx());
     // The procedure will throw at DB level (getDb returns null), but the idempotency key
     // input is accepted by the schema validator
-    const result = await caller.transactions.create({
-      type: "cash_in",
-      amount: 1000,
-      customerPhone: "08012345678",
-      pin: "1234",
-      idempotencyKey: "idem-test-001",
-    } as any).catch((e: any) => ({ error: e.message }));
+    const result = await caller.transactions
+      .create({
+        type: "cash_in",
+        amount: 1000,
+        customerPhone: "08012345678",
+        pin: "1234",
+        idempotencyKey: "idem-test-001",
+      } as any)
+      .catch((e: any) => ({ error: e.message }));
     // Should not fail with a validation error about idempotencyKey
-    if ('error' in result) {
+    if ("error" in result) {
       expect(result.error).not.toContain("idempotencyKey");
     }
   });

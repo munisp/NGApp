@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Real-Time Notification System — 54Link Agency Banking Platform
- * 
+ *
  * Uses Socket.IO /notifications namespace with Redis pub/sub for
  * cross-process event distribution. Supports JWT authentication,
  * heartbeat, auto-reconnect guidance, and typed event channels.
@@ -64,7 +64,11 @@ class InMemoryPubSub {
     const subs = this.subscribers.get(channel);
     if (!subs) return 0;
     for (const cb of Array.from(subs)) {
-      try { cb(channel, message); } catch (e) { console.error("[PubSub] Subscriber error:", e); }
+      try {
+        cb(channel, message);
+      } catch (e) {
+        console.error("[PubSub] Subscriber error:", e);
+      }
     }
     return subs.size;
   }
@@ -88,7 +92,9 @@ async function initRedisPubSub(): Promise<boolean> {
     console.log("[RealtimeNotifications] Redis pub/sub connected");
     return true;
   } catch (e) {
-    console.log("[RealtimeNotifications] Redis unavailable, using in-memory pub/sub");
+    console.log(
+      "[RealtimeNotifications] Redis unavailable, using in-memory pub/sub"
+    );
     return false;
   }
 }
@@ -103,7 +109,9 @@ function getPubSub(): InMemoryPubSub {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Notification Publisher (call from any service)
 // ═══════════════════════════════════════════════════════════════════════════════
-export async function publishNotification(notification: RealtimeNotification): Promise<void> {
+export async function publishNotification(
+  notification: RealtimeNotification
+): Promise<void> {
   const channel = `notifications:${notification.channel}`;
   const message = JSON.stringify(notification);
 
@@ -144,13 +152,16 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
 
   // JWT Authentication middleware
   notifNs.use(async (socket: Socket, next) => {
-    const token = socket.handshake.auth?.token
-      || socket.handshake.headers?.authorization?.replace("Bearer ", "")
-      || extractCookieToken(socket.handshake.headers.cookie ?? "");
+    const token =
+      socket.handshake.auth?.token ||
+      socket.handshake.headers?.authorization?.replace("Bearer ", "") ||
+      extractCookieToken(socket.handshake.headers.cookie ?? "");
 
     if (token) {
       try {
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "pos54link-secret");
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET ?? "pos54link-secret"
+        );
         const { payload } = await jwtVerify(token, secret);
         (socket as any).userId = String(payload.sub);
         (socket as any).userName = payload.name ?? "Unknown";
@@ -180,7 +191,9 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
     connectedUsers.get(userId)!.add(socket.id);
     socketToUser.set(socket.id, userId);
 
-    console.log(`[Notifications] ${userName} connected (${socket.id}), active users: ${connectedUsers.size}`);
+    console.log(
+      `[Notifications] ${userName} connected (${socket.id}), active users: ${connectedUsers.size}`
+    );
 
     // Send connection confirmation
     socket.emit("notification:connected", {
@@ -212,7 +225,9 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
       if (userSockets) {
         for (const sid of Array.from(userSockets)) {
           if (sid !== socket.id) {
-            notifNs.to(sid).emit("notification:markedRead", { ids: notificationIds });
+            notifNs
+              .to(sid)
+              .emit("notification:markedRead", { ids: notificationIds });
           }
         }
       }
@@ -232,7 +247,7 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
     });
 
     // ── Disconnect ─────────────────────────────────────────────────────────
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", reason => {
       clearInterval(heartbeatInterval);
       const userSocketSet = connectedUsers.get(userId);
       if (userSocketSet) {
@@ -242,13 +257,22 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
         }
       }
       socketToUser.delete(socket.id);
-      console.log(`[Notifications] ${userName} disconnected (${reason}), active users: ${connectedUsers.size}`);
+      console.log(
+        `[Notifications] ${userName} disconnected (${reason}), active users: ${connectedUsers.size}`
+      );
     });
   });
 
   // ── Subscribe to pub/sub channels and broadcast to Socket.IO rooms ──────
   const allChannels: NotificationChannel[] = [
-    "transaction", "fraud", "rate_alert", "kyc", "settlement", "system", "commission", "compliance"
+    "transaction",
+    "fraud",
+    "rate_alert",
+    "kyc",
+    "settlement",
+    "system",
+    "commission",
+    "compliance",
   ];
 
   const handleMessage = (pubSubChannel: string, message: string) => {
@@ -257,7 +281,9 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
       const socketChannel = notification.channel;
 
       // Broadcast to channel subscribers
-      notifNs.to(`channel:${socketChannel}`).emit("notification:new", notification);
+      notifNs
+        .to(`channel:${socketChannel}`)
+        .emit("notification:new", notification);
 
       // If targeted to a specific user, also emit directly
       if (notification.userId) {
@@ -290,13 +316,18 @@ export function initRealtimeNotifications(io: SocketIOServer): void {
     }
   }
 
-  console.log("[RealtimeNotifications] /notifications namespace initialized with pub/sub");
+  console.log(
+    "[RealtimeNotifications] /notifications namespace initialized with pub/sub"
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helper: Send notification to specific user
 // ═══════════════════════════════════════════════════════════════════════════════
-export async function notifyUser(userId: string, notification: Omit<RealtimeNotification, "id" | "timestamp" | "userId">): Promise<void> {
+export async function notifyUser(
+  userId: string,
+  notification: Omit<RealtimeNotification, "id" | "timestamp" | "userId">
+): Promise<void> {
   await publishNotification({
     ...notification,
     id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -308,7 +339,9 @@ export async function notifyUser(userId: string, notification: Omit<RealtimeNoti
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helper: Broadcast to all connected users
 // ═══════════════════════════════════════════════════════════════════════════════
-export async function broadcastNotification(notification: Omit<RealtimeNotification, "id" | "timestamp">): Promise<void> {
+export async function broadcastNotification(
+  notification: Omit<RealtimeNotification, "id" | "timestamp">
+): Promise<void> {
   await publishNotification({
     ...notification,
     id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,

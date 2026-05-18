@@ -29,20 +29,35 @@ const offlineTxSchema = z.object({
 
 export const offlineSyncRouter = router({
   syncBatch: protectedProcedure
-    .input(z.object({
-      sessionId: z.string(),
-      transactions: z.array(offlineTxSchema).min(1).max(200),
-      deviceToken: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        sessionId: z.string(),
+        transactions: z.array(offlineTxSchema).min(1).max(200),
+        deviceToken: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
-        const results: Array<{ localId: string; serverId: number | null; status: string; error?: string }> = [];
+        const results: Array<{
+          localId: string;
+          serverId: number | null;
+          status: string;
+          error?: string;
+        }> = [];
 
         for (const tx of input.transactions) {
           try {
@@ -54,35 +69,72 @@ export const offlineSyncRouter = router({
               .limit(1);
 
             if (existing[0]) {
-              results.push({ localId: tx.localId, serverId: existing[0].id, status: "duplicate" });
+              results.push({
+                localId: tx.localId,
+                serverId: existing[0].id,
+                status: "duplicate",
+              });
               continue;
             }
 
             const ref = `OFL-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
-            const [inserted] = await db.insert(transactions).values({
-              ref, idempotencyKey, agentId: session.id, type: tx.type,
-              amount: String(tx.amount), customerName: tx.customerName ?? null,
-              customerPhone: tx.customerPhone ?? null, customerAccount: tx.customerAccount ?? null,
-              destinationBank: tx.destinationBank ?? null, destinationAccount: tx.destinationAccount ?? null,
-              channel: tx.channel, status: "pending", deviceToken: input.deviceToken ?? null,
-              metadata: { offlineSessionId: input.sessionId, localId: tx.localId, syncedAt: new Date().toISOString() },
-            }).returning();
+            const [inserted] = await db
+              .insert(transactions)
+              .values({
+                ref,
+                idempotencyKey,
+                agentId: session.id,
+                type: tx.type,
+                amount: String(tx.amount),
+                customerName: tx.customerName ?? null,
+                customerPhone: tx.customerPhone ?? null,
+                customerAccount: tx.customerAccount ?? null,
+                destinationBank: tx.destinationBank ?? null,
+                destinationAccount: tx.destinationAccount ?? null,
+                channel: tx.channel,
+                status: "pending",
+                deviceToken: input.deviceToken ?? null,
+                metadata: {
+                  offlineSessionId: input.sessionId,
+                  localId: tx.localId,
+                  syncedAt: new Date().toISOString(),
+                },
+              })
+              .returning();
 
             if (["Cash Out", "Transfer"].includes(tx.type)) {
-              await db.update(agents)
-                .set({ floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(tx.amount)}` })
+              await db
+                .update(agents)
+                .set({
+                  floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(tx.amount)}`,
+                })
                 .where(eq(agents.id, session.id));
             }
             if (tx.type === "Cash In") {
-              await db.update(agents)
-                .set({ floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(tx.amount)}` })
+              await db
+                .update(agents)
+                .set({
+                  floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(tx.amount)}`,
+                })
                 .where(eq(agents.id, session.id));
             }
 
-            await db.update(transactions).set({ status: "success" }).where(eq(transactions.id, inserted.id));
-            results.push({ localId: tx.localId, serverId: inserted.id, status: "synced" });
+            await db
+              .update(transactions)
+              .set({ status: "success" })
+              .where(eq(transactions.id, inserted.id));
+            results.push({
+              localId: tx.localId,
+              serverId: inserted.id,
+              status: "synced",
+            });
           } catch (err) {
-            results.push({ localId: tx.localId, serverId: null, status: "failed", error: String(err) });
+            results.push({
+              localId: tx.localId,
+              serverId: null,
+              status: "failed",
+              error: String(err),
+            });
           }
         }
 
@@ -91,15 +143,35 @@ export const offlineSyncRouter = router({
         const failed = results.filter(r => r.status === "failed").length;
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "OFFLINE_SYNC_BATCH", resource: "offline_sync", resourceId: input.sessionId, status: "success",
-          metadata: { total: input.transactions.length, synced, duplicates, failed },
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "OFFLINE_SYNC_BATCH",
+          resource: "offline_sync",
+          resourceId: input.sessionId,
+          status: "success",
+          metadata: {
+            total: input.transactions.length,
+            synced,
+            duplicates,
+            failed,
+          },
         });
 
-        return { sessionId: input.sessionId, total: input.transactions.length, synced, duplicates, failed, results };
+        return {
+          sessionId: input.sessionId,
+          total: input.transactions.length,
+          synced,
+          duplicates,
+          failed,
+          results,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -111,45 +183,93 @@ export const offlineSyncRouter = router({
         if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const db = (await getDb())!;
-        if (!db) return { sessionId: input.sessionId, synced: 0, pending: 0, failed: 0 };
+        if (!db)
+          return {
+            sessionId: input.sessionId,
+            synced: 0,
+            pending: 0,
+            failed: 0,
+          };
 
         const rows = await db
-          .select({ status: transactions.status, cnt: sql<number>`count(*)::int` })
+          .select({
+            status: transactions.status,
+            cnt: sql<number>`count(*)::int`,
+          })
           .from(transactions)
-          .where(sql`${transactions.metadata}->>'offlineSessionId' = ${input.sessionId}`)
+          .where(
+            sql`${transactions.metadata}->>'offlineSessionId' = ${input.sessionId}`
+          )
           .groupBy(transactions.status);
 
         const counts: Record<string, number> = {};
         for (const r of rows) counts[r.status] = r.cnt;
 
-        return { sessionId: input.sessionId, synced: counts["success"] ?? 0, pending: counts["pending"] ?? 0, failed: counts["failed"] ?? 0 };
+        return {
+          sessionId: input.sessionId,
+          synced: counts["success"] ?? 0,
+          pending: counts["pending"] ?? 0,
+          failed: counts["failed"] ?? 0,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+    .input(
+      z.object({ limit: z.number().default(50), offset: z.number().default(0) })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const db = (await getDb())!;
-        if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+        if (!db)
+          return {
+            items: [],
+            total: 0,
+            limit: input.limit,
+            offset: input.offset,
+          };
 
-        const rows = await db.select().from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`))
-          .orderBy(desc(transactions.createdAt)).limit(input.limit).offset(input.offset);
+        const rows = await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`
+            )
+          )
+          .orderBy(desc(transactions.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-        const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`));
+        const [{ total }] = await db
+          .select({ total: sql<number>`count(*)::int` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`
+            )
+          );
 
         return { items: rows, total, limit: input.limit, offset: input.offset };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -162,20 +282,33 @@ export const offlineSyncRouter = router({
       if (!db) return { totalSynced: 0, totalAmount: 0, failureRate: 0 };
 
       const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const [stats] = await db.select({
-        total: sql<number>`count(*)::int`,
-        totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-        failed: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
-      }).from(transactions).where(and(
-        eq(transactions.agentId, session.id),
-        sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`,
-        gte(transactions.createdAt, oneMonth)
-      ));
+      const [stats] = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+          failed: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.agentId, session.id),
+            sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`,
+            gte(transactions.createdAt, oneMonth)
+          )
+        );
 
-      return { totalSynced: stats.total, totalAmount: Number(stats.totalAmount), failureRate: stats.total > 0 ? stats.failed / stats.total : 0 };
+      return {
+        totalSynced: stats.total,
+        totalAmount: Number(stats.totalAmount),
+        failureRate: stats.total > 0 ? stats.failed / stats.total : 0,
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -189,41 +322,71 @@ export const offlineSyncRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const updated = await db.update(transactions)
+        const updated = await db
+          .update(transactions)
           .set({ status: "pending", failureReason: null })
-          .where(and(eq(transactions.agentId, session.id), eq(transactions.status, "failed"),
-            sql`${transactions.metadata}->>'offlineSessionId' = ${input.sessionId}`))
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              eq(transactions.status, "failed"),
+              sql`${transactions.metadata}->>'offlineSessionId' = ${input.sessionId}`
+            )
+          )
           .returning({ id: transactions.id });
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "OFFLINE_SYNC_RETRY", resource: "offline_sync", resourceId: input.sessionId, status: "success",
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "OFFLINE_SYNC_RETRY",
+          resource: "offline_sync",
+          resourceId: input.sessionId,
+          status: "success",
           metadata: { retriedCount: updated.length },
         });
 
         return { retriedCount: updated.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return { totalOfflineTxns: 0, totalSynced: 0, totalFailed: 0, totalAmount: "0" };
+    if (!db)
+      return {
+        totalOfflineTxns: 0,
+        totalSynced: 0,
+        totalFailed: 0,
+        totalAmount: "0",
+      };
 
     const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [stats] = await db.select({
-      total: sql<number>`count(*)::int`,
-      synced: sql<number>`count(*) FILTER (WHERE status = 'success')::int`,
-      failed: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
-      totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-    }).from(transactions).where(and(
-      sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`,
-      gte(transactions.createdAt, oneWeek)
-    ));
+    const [stats] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        synced: sql<number>`count(*) FILTER (WHERE status = 'success')::int`,
+        failed: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
+        totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`,
+          gte(transactions.createdAt, oneWeek)
+        )
+      );
 
-    return { totalOfflineTxns: stats.total, totalSynced: stats.synced, totalFailed: stats.failed, totalAmount: stats.totalAmount };
+    return {
+      totalOfflineTxns: stats.total,
+      totalSynced: stats.synced,
+      totalFailed: stats.failed,
+      totalAmount: stats.totalAmount,
+    };
   }),
 
   queue: protectedProcedure.query(async ({ ctx }) => {
@@ -234,15 +397,27 @@ export const offlineSyncRouter = router({
       const db = (await getDb())!;
       if (!db) return { pending: [] };
 
-      const pending = await db.select().from(transactions)
-        .where(and(eq(transactions.agentId, session.id), eq(transactions.status, "pending"),
-          sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`))
-        .orderBy(transactions.createdAt).limit(100);
+      const pending = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.agentId, session.id),
+            eq(transactions.status, "pending"),
+            sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`
+          )
+        )
+        .orderBy(transactions.createdAt)
+        .limit(100);
 
       return { pending };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 });

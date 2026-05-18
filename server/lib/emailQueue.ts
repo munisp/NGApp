@@ -71,7 +71,9 @@ export function enqueueEmail(opts: {
     nextRetryAt: Date.now(),
   };
   queue.push(job);
-  console.log(`[EmailQueue] Enqueued ${id} → ${Array.isArray(opts.to) ? opts.to.join(", ") : opts.to}`);
+  console.log(
+    `[EmailQueue] Enqueued ${id} → ${Array.isArray(opts.to) ? opts.to.join(", ") : opts.to}`
+  );
   if (!workerRunning) startWorker();
   return id;
 }
@@ -109,7 +111,7 @@ export async function sendEmailNow(opts: {
 
 function startWorker() {
   workerRunning = true;
-  processQueue().catch((err) => {
+  processQueue().catch(err => {
     console.error("[EmailQueue] Worker crashed:", err);
     workerRunning = false;
   });
@@ -118,11 +120,13 @@ function startWorker() {
 async function processQueue() {
   while (true) {
     const now = Date.now();
-    const job = queue.find((j) => j.attempts < j.maxAttempts && j.nextRetryAt <= now);
+    const job = queue.find(
+      j => j.attempts < j.maxAttempts && j.nextRetryAt <= now
+    );
 
     if (!job) {
       // No ready jobs — check if any are pending future retry
-      const hasPending = queue.some((j) => j.attempts < j.maxAttempts);
+      const hasPending = queue.some(j => j.attempts < j.maxAttempts);
       if (!hasPending) {
         workerRunning = false;
         return;
@@ -146,7 +150,9 @@ async function processQueue() {
         `[EmailQueue] Delivery failed for ${job.id} (attempt ${job.attempts}/${job.maxAttempts}): ${(err as Error).message}. Retry in ${delay}ms.`
       );
       if (job.attempts >= job.maxAttempts) {
-        console.error(`[EmailQueue] Giving up on ${job.id} after ${job.maxAttempts} attempts.`);
+        console.error(
+          `[EmailQueue] Giving up on ${job.id} after ${job.maxAttempts} attempts.`
+        );
         const idx = queue.indexOf(job);
         if (idx !== -1) queue.splice(idx, 1);
       }
@@ -170,7 +176,9 @@ async function deliverEmail(job: EmailJob): Promise<void> {
   try {
     nodemailer = await import("nodemailer");
   } catch {
-    throw new Error("nodemailer is not installed. Run: pnpm add nodemailer @types/nodemailer");
+    throw new Error(
+      "nodemailer is not installed. Run: pnpm add nodemailer @types/nodemailer"
+    );
   }
 
   const transporter = nodemailer.createTransport({
@@ -193,7 +201,7 @@ async function deliverEmail(job: EmailJob): Promise<void> {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ── Email templates ──────────────────────────────────────────────────────────
@@ -301,7 +309,8 @@ export function buildFloatAlertEmail(opts: {
   currency?: string;
 }): { subject: string; html: string; text: string } {
   const cur = opts.currency ?? "NGN";
-  const fmt = (n: number) => `${cur} ${n.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
+  const fmt = (n: number) =>
+    `${cur} ${n.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
   const subject = `Float Balance Alert — ${opts.agentCode} below threshold`;
   const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;border:2px solid #d97706;border-radius:8px;background:#fffbeb;"><h2 style="color:#92400e;">⚠️ Low Float Balance</h2><p>Dear <strong>${opts.agentName}</strong> (${opts.agentCode}),</p><p>Current: <strong style="color:#dc2626;">${fmt(opts.currentBalance)}</strong> | Threshold: ${fmt(opts.threshold)}</p><p>Please top up immediately.</p></div>`;
   const text = `Float Alert\n\n${opts.agentName} (${opts.agentCode})\nCurrent: ${fmt(opts.currentBalance)}\nThreshold: ${fmt(opts.threshold)}`;
@@ -318,7 +327,8 @@ export function buildCommissionPayoutEmail(opts: {
   currency?: string;
 }): { subject: string; html: string; text: string } {
   const cur = opts.currency ?? "NGN";
-  const fmt = (n: number) => `${cur} ${n.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
+  const fmt = (n: number) =>
+    `${cur} ${n.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
   const subject = `Commission Payout — ${fmt(opts.amount)} for ${opts.period}`;
   const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #d1fae5;border-radius:8px;background:#f0fdf4;"><h2 style="color:#065f46;">💰 Commission Payout Processed</h2><p>Dear <strong>${opts.agentName}</strong> (${opts.agentCode}),</p><p>Ref: ${opts.payoutRef} | Amount: <strong>${fmt(opts.amount)}</strong> | Period: ${opts.period}</p><p style="color:#6b7280;font-size:12px;">Processed: ${opts.paidAt.toLocaleString("en-NG")}</p></div>`;
   const text = `Commission Payout\n\n${opts.agentName} (${opts.agentCode})\nRef: ${opts.payoutRef}\nAmount: ${fmt(opts.amount)}\nPeriod: ${opts.period}`;

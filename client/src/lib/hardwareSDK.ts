@@ -53,7 +53,9 @@ export const printer = {
    * Print receipt via browser print dialog (fallback for WebUSB).
    * In production: use WebUSB to send ESC/POS commands to the thermal printer.
    */
-  async printReceipt(data: ReceiptData): Promise<{ success: boolean; method: string }> {
+  async printReceipt(
+    data: ReceiptData
+  ): Promise<{ success: boolean; method: string }> {
     const timestamp = (data.timestamp ?? new Date()).toLocaleString("en-NG", {
       timeZone: "Africa/Lagos",
       dateStyle: "medium",
@@ -131,13 +133,17 @@ export const printer = {
     if ("usb" in navigator) {
       try {
         const devices = await (navigator as any).usb.getDevices();
-        const printer = devices.find((d: any) =>
-          d.vendorId === 0x0483 || // STMicroelectronics (common in POS printers)
-          d.vendorId === 0x04b8 || // Epson
-          d.vendorId === 0x067b    // Prolific (USB-Serial adapters)
+        const printer = devices.find(
+          (d: any) =>
+            d.vendorId === 0x0483 || // STMicroelectronics (common in POS printers)
+            d.vendorId === 0x04b8 || // Epson
+            d.vendorId === 0x067b // Prolific (USB-Serial adapters)
         );
         if (printer) {
-          return { connected: true, model: printer.productName ?? "USB Thermal Printer" };
+          return {
+            connected: true,
+            model: printer.productName ?? "USB Thermal Printer",
+          };
         }
       } catch {
         // Permission not granted yet
@@ -171,7 +177,7 @@ export const biometric = {
             displayName: customerName,
           },
           pubKeyCredParams: [
-            { type: "public-key", alg: -7 },  // ES256
+            { type: "public-key", alg: -7 }, // ES256
             { type: "public-key", alg: -257 }, // RS256
           ],
           authenticatorSelection: {
@@ -185,12 +191,19 @@ export const biometric = {
       if (credential) {
         return {
           success: true,
-          credentialId: btoa(Array.from(new Uint8Array((credential as any).rawId)).map((b) => String.fromCharCode(b)).join("")),
+          credentialId: btoa(
+            Array.from(new Uint8Array((credential as any).rawId))
+              .map(b => String.fromCharCode(b))
+              .join("")
+          ),
         };
       }
       return { success: false, error: "Enrolment cancelled" };
     } catch (err: any) {
-      return { success: false, error: err.message ?? "Biometric enrolment failed" };
+      return {
+        success: false,
+        error: err.message ?? "Biometric enrolment failed",
+      };
     }
   },
 
@@ -200,7 +213,7 @@ export const biometric = {
   async verify(credentialId: string): Promise<BiometricResult> {
     if (!window.PublicKeyCredential) {
       // Simulate success for demo
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 1500));
       return { success: true, credentialId };
     }
 
@@ -232,7 +245,7 @@ export const nfc = {
       try {
         const reader = new (window as any).NDEFReader();
         await reader.scan();
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
           reader.onreading = (event: any) => {
             const record = event.message.records[0];
             resolve({
@@ -245,7 +258,10 @@ export const nfc = {
             resolve({ success: false, error: "NFC read error" });
           };
           // Timeout after 30s
-          setTimeout(() => resolve({ success: false, error: "NFC read timeout" }), 30000);
+          setTimeout(
+            () => resolve({ success: false, error: "NFC read timeout" }),
+            30000
+          );
         });
       } catch (err: any) {
         // Fall through to simulation
@@ -253,7 +269,7 @@ export const nfc = {
     }
 
     // Simulation fallback
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 2000));
     const cardTypes = ["Verve", "Mastercard", "Visa"];
     return {
       success: true,
@@ -270,7 +286,7 @@ export const emv = {
    * In production: use the PAX EMV SDK.
    */
   async readCard(): Promise<CardResult> {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1500));
     const cardTypes = ["Verve", "Mastercard", "Visa"];
     const year = new Date().getFullYear() + Math.floor(Math.random() * 4 + 1);
     return {
@@ -284,7 +300,7 @@ export const emv = {
 
   async verifyPin(pin: string): Promise<{ success: boolean; error?: string }> {
     // Simulate DUKPT PIN block verification
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 800));
     // In production: encrypt PIN with DUKPT key and send to HSM
     return { success: pin.length === 4 };
   },
@@ -295,12 +311,20 @@ export async function getHardwareStatus() {
   const [printerStatus] = await Promise.all([printer.checkPrinterStatus()]);
   return {
     printer: printerStatus,
-    nfc: { connected: "NDEFReader" in window || true, model: "PAX NFC Module (Simulated)" },
+    nfc: {
+      connected: "NDEFReader" in window || true,
+      model: "PAX NFC Module (Simulated)",
+    },
     biometric: {
       connected: !!window.PublicKeyCredential,
-      model: window.PublicKeyCredential ? "Platform Authenticator" : "PAX FP200 (Simulated)",
+      model: window.PublicKeyCredential
+        ? "Platform Authenticator"
+        : "PAX FP200 (Simulated)",
     },
     cardReader: { connected: true, model: "PAX EMV Module (Simulated)" },
-    network: { connected: navigator.onLine, type: (navigator as any).connection?.effectiveType ?? "unknown" },
+    network: {
+      connected: navigator.onLine,
+      type: (navigator as any).connection?.effectiveType ?? "unknown",
+    },
   };
 }

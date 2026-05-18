@@ -15,64 +15,129 @@ import { getAgentFromCookie } from "../middleware/agentAuth";
 
 export const merchantPaymentsRouter = router({
   processPayment: protectedProcedure
-    .input(z.object({
-      merchantCode: z.string().min(4).max(32),
-      amount: z.number().positive().max(10_000_000),
-      customerPhone: z.string().max(20).optional(),
-      customerName: z.string().max(128).optional(),
-      narration: z.string().max(256).optional(),
-    }))
+    .input(
+      z.object({
+        merchantCode: z.string().min(4).max(32),
+        amount: z.number().positive().max(10_000_000),
+        customerPhone: z.string().max(20).optional(),
+        customerName: z.string().max(128).optional(),
+        narration: z.string().max(256).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const [merchant] = await db.select().from(merchants)
-          .where(and(eq(merchants.merchantCode, input.merchantCode), eq(merchants.status, "active"))).limit(1);
-        if (!merchant) throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found or inactive" });
+        const [merchant] = await db
+          .select()
+          .from(merchants)
+          .where(
+            and(
+              eq(merchants.merchantCode, input.merchantCode),
+              eq(merchants.status, "active")
+            )
+          )
+          .limit(1);
+        if (!merchant)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Merchant not found or inactive",
+          });
 
-        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-          .where(eq(agents.id, session.id)).limit(1);
+        const [agent] = await db
+          .select({ floatBalance: agents.floatBalance })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
         if (!agent || Number(agent.floatBalance) < input.amount)
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient float balance",
+          });
 
         const agentCommission = Math.round(input.amount * 0.01);
         const merchantFee = Math.round(input.amount * 0.015);
         const ref = `MPY-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-        const [tx] = await db.insert(transactions).values({
-          ref, agentId: session.id, type: "Cash In",
-          amount: String(input.amount), fee: String(merchantFee), commission: String(agentCommission),
-          customerPhone: input.customerPhone ?? null, customerName: input.customerName ?? null,
-          status: "success", channel: "App",
-          metadata: { merchantCode: input.merchantCode, merchantName: merchant.businessName, narration: input.narration, paymentType: "merchant" },
-        }).returning();
+        const [tx] = await db
+          .insert(transactions)
+          .values({
+            ref,
+            agentId: session.id,
+            type: "Cash In",
+            amount: String(input.amount),
+            fee: String(merchantFee),
+            commission: String(agentCommission),
+            customerPhone: input.customerPhone ?? null,
+            customerName: input.customerName ?? null,
+            status: "success",
+            channel: "App",
+            metadata: {
+              merchantCode: input.merchantCode,
+              merchantName: merchant.businessName,
+              narration: input.narration,
+              paymentType: "merchant",
+            },
+          })
+          .returning();
 
         // Credit merchant wallet
-        await db.update(merchants).set({
-          walletBalance: sql`CAST(${merchants.walletBalance} AS numeric) + ${String(input.amount - merchantFee)}`,
-          totalVolume: sql`CAST(${merchants.totalVolume} AS numeric) + ${String(input.amount)}`,
-          totalTransactions: sql`${merchants.totalTransactions} + 1`,
-        }).where(eq(merchants.id, merchant.id));
+        await db
+          .update(merchants)
+          .set({
+            walletBalance: sql`CAST(${merchants.walletBalance} AS numeric) + ${String(input.amount - merchantFee)}`,
+            totalVolume: sql`CAST(${merchants.totalVolume} AS numeric) + ${String(input.amount)}`,
+            totalTransactions: sql`${merchants.totalTransactions} + 1`,
+          })
+          .where(eq(merchants.id, merchant.id));
 
         // Agent commission
-        await db.update(agents).set({
-          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(agentCommission)}`, // removed: not in schema
-        }).where(eq(agents.id, session.id));
+        await db
+          .update(agents)
+          .set({
+            // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(agentCommission)}`, // removed: not in schema
+          })
+          .where(eq(agents.id, session.id));
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "MERCHANT_PAYMENT_PROCESSED", resource: "merchant_payment", resourceId: ref, status: "success",
-          metadata: { merchantCode: input.merchantCode, amount: input.amount, merchantFee, agentCommission },
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "MERCHANT_PAYMENT_PROCESSED",
+          resource: "merchant_payment",
+          resourceId: ref,
+          status: "success",
+          metadata: {
+            merchantCode: input.merchantCode,
+            amount: input.amount,
+            merchantFee,
+            agentCommission,
+          },
         });
 
-        return { ref, merchantName: merchant.businessName, amount: input.amount, merchantFee, agentCommission, status: "success", transactionId: tx.id };
+        return {
+          ref,
+          merchantName: merchant.businessName,
+          amount: input.amount,
+          merchantFee,
+          agentCommission,
+          status: "success",
+          transactionId: tx.id,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -83,41 +148,87 @@ export const merchantPaymentsRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const [merchant] = await db.select({
-          merchantCode: merchants.merchantCode, businessName: merchants.businessName,
-          category: merchants.category, status: merchants.status,
-        }).from(merchants).where(eq(merchants.merchantCode, input.merchantCode)).limit(1);
+        const [merchant] = await db
+          .select({
+            merchantCode: merchants.merchantCode,
+            businessName: merchants.businessName,
+            category: merchants.category,
+            status: merchants.status,
+          })
+          .from(merchants)
+          .where(eq(merchants.merchantCode, input.merchantCode))
+          .limit(1);
 
-        if (!merchant) throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+        if (!merchant)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Merchant not found",
+          });
 
         return merchant;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
+    .input(
+      z.object({
+        limit: z.number().default(50),
+        offset: z.number().default(0),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         const db = (await getDb())!;
-        if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+        if (!db)
+          return {
+            items: [],
+            total: 0,
+            limit: input.limit,
+            offset: input.offset,
+          };
 
-        const items = await db.select().from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'paymentType' = 'merchant'`))
-          .orderBy(desc(transactions.createdAt)).limit(input.limit).offset(input.offset);
+        const items = await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'paymentType' = 'merchant'`
+            )
+          )
+          .orderBy(desc(transactions.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-        const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'paymentType' = 'merchant'`));
+        const [{ total }] = await db
+          .select({ total: sql<number>`count(*)::int` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'paymentType' = 'merchant'`
+            )
+          );
 
         return { items, total, limit: input.limit, offset: input.offset };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -127,23 +238,37 @@ export const merchantPaymentsRouter = router({
       if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const db = (await getDb())!;
-      if (!db) return { totalPayments: 0, totalVolume: "0", totalCommission: "0" };
+      if (!db)
+        return { totalPayments: 0, totalVolume: "0", totalCommission: "0" };
 
       const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const [stats] = await db.select({
-        total: sql<number>`count(*)::int`,
-        volume: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-        commission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-      }).from(transactions).where(and(
-        eq(transactions.agentId, session.id),
-        sql`${transactions.metadata}->>'paymentType' = 'merchant'`,
-        gte(transactions.createdAt, oneMonth)
-      ));
+      const [stats] = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          volume: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+          commission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.agentId, session.id),
+            sql`${transactions.metadata}->>'paymentType' = 'merchant'`,
+            gte(transactions.createdAt, oneMonth)
+          )
+        );
 
-      return { totalPayments: stats.total, totalVolume: stats.volume, totalCommission: stats.commission };
+      return {
+        totalPayments: stats.total,
+        totalVolume: stats.volume,
+        totalCommission: stats.commission,
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -166,7 +291,11 @@ export const merchantPaymentsRouter = router({
       return { daily: daily.rows ?? [] };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 });

@@ -61,23 +61,27 @@ describe("KYC Liveness Improvements", () => {
 
     it("should weight quality dimensions correctly (25/30/25/20)", () => {
       // All perfect scores
-      const perfect = Math.round(100 * 0.25 + 100 * 0.30 + 100 * 0.25 + 100 * 0.20);
+      const perfect = Math.round(
+        100 * 0.25 + 100 * 0.3 + 100 * 0.25 + 100 * 0.2
+      );
       expect(perfect).toBe(100);
 
       // Only sharpness is bad (0), rest perfect
-      const blurry = Math.round(100 * 0.25 + 0 * 0.30 + 100 * 0.25 + 100 * 0.20);
+      const blurry = Math.round(100 * 0.25 + 0 * 0.3 + 100 * 0.25 + 100 * 0.2);
       expect(blurry).toBe(70); // Sharpness has highest weight
 
       // Only stability is bad (0), rest perfect
-      const shaky = Math.round(100 * 0.25 + 100 * 0.30 + 100 * 0.25 + 0 * 0.20);
+      const shaky = Math.round(100 * 0.25 + 100 * 0.3 + 100 * 0.25 + 0 * 0.2);
       expect(shaky).toBe(80); // Stability has lowest weight
     });
 
     it("should provide appropriate recommendations per level", () => {
       const getRecommendation = (level: string) => {
-        if (level === "excellent") return "Camera quality is great — proceed with liveness check";
+        if (level === "excellent")
+          return "Camera quality is great — proceed with liveness check";
         if (level === "good") return "Camera quality is acceptable";
-        if (level === "fair") return "Try improving lighting or holding device steadier";
+        if (level === "fair")
+          return "Try improving lighting or holding device steadier";
         return "Poor camera quality — move to better lighting and hold still";
       };
 
@@ -155,7 +159,7 @@ describe("KYC Liveness Improvements", () => {
       expect(recoveryLevel).toBe(0.22 + 0.03); // 0.25
 
       // Normal open-eye EAR (~0.30) must exceed recovery level
-      const normalEAR = 0.30;
+      const normalEAR = 0.3;
       expect(normalEAR > recoveryLevel).toBe(true);
 
       // But would FAIL with old logic (adaptive + recovery_margin)
@@ -216,7 +220,9 @@ describe("KYC Liveness Improvements", () => {
     it("should exist and export default component", () => {
       expect(fs.existsSync(componentPath)).toBe(true);
       const content = fs.readFileSync(componentPath, "utf-8");
-      expect(content).toContain("export default function LivenessCameraCapture");
+      expect(content).toContain(
+        "export default function LivenessCameraCapture"
+      );
     });
 
     it("should include QualityIndicator sub-component", () => {
@@ -313,12 +319,16 @@ describe("KYC Liveness Improvements", () => {
     it("should use dip_threshold (not blink_threshold) in service", () => {
       const content = fs.readFileSync(servicePath, "utf-8");
       expect(content).toContain("dip_threshold");
-      expect(content).toContain("recovery_level = threshold + max(0.03, 0.05 - noise)");
+      expect(content).toContain(
+        "recovery_level = threshold + max(0.03, 0.05 - noise)"
+      );
     });
 
     it("should use scale=1.5 for dip threshold (not 2.0)", () => {
       const content = fs.readFileSync(servicePath, "utf-8");
-      expect(content).toContain("_adapt_threshold(threshold, noise, scale=1.5)");
+      expect(content).toContain(
+        "_adapt_threshold(threshold, noise, scale=1.5)"
+      );
     });
 
     it("should check min_ear < dip_threshold and max_ear > recovery_level", () => {

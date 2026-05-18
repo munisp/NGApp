@@ -12,7 +12,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function withEnv(overrides: Record<string, string | undefined>, fn: () => void) {
+function withEnv(
+  overrides: Record<string, string | undefined>,
+  fn: () => void
+) {
   const saved: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(overrides)) {
     saved[k] = process.env[k];
@@ -127,7 +130,8 @@ describe("Keycloak OIDC endpoint URL construction", () => {
 
 describe("Keycloak — buildAuthorizationUrl", () => {
   it("produces a valid URL with required OAuth2 params", () => {
-    const base = "https://auth.54link.io/realms/54link/protocol/openid-connect/auth";
+    const base =
+      "https://auth.54link.io/realms/54link/protocol/openid-connect/auth";
     const params = new URLSearchParams({
       client_id: "pos-shell",
       redirect_uri: "https://pos-shell.manus.space/api/auth/keycloak/callback",
@@ -143,7 +147,9 @@ describe("Keycloak — buildAuthorizationUrl", () => {
     expect(parsed.searchParams.get("response_type")).toBe("code");
     expect(parsed.searchParams.get("scope")).toContain("openid");
     expect(parsed.searchParams.get("state")).toBe("random-state-value");
-    expect(parsed.searchParams.get("redirect_uri")).toContain("/api/auth/keycloak/callback");
+    expect(parsed.searchParams.get("redirect_uri")).toContain(
+      "/api/auth/keycloak/callback"
+    );
   });
 });
 
@@ -151,7 +157,8 @@ describe("Keycloak — role mapping", () => {
   // Inline the mapping logic to test it without importing the module
   // (avoids module-level side-effects from getConfig() at import time)
   function mapRole(roles: string[]): "admin" | "supervisor" | "agent" | "user" {
-    if (roles.includes("pos-admin") || roles.includes("realm-admin")) return "admin";
+    if (roles.includes("pos-admin") || roles.includes("realm-admin"))
+      return "admin";
     if (roles.includes("pos-supervisor")) return "supervisor";
     if (roles.includes("pos-agent")) return "agent";
     return "user";

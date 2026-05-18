@@ -36,7 +36,7 @@ export async function exportChartAsPng(
       ctx.fillRect(0, 0, img.width, img.height);
       ctx.drawImage(img, 0, 0);
 
-      canvas.toBlob((blob) => {
+      canvas.toBlob(blob => {
         if (!blob) {
           reject(new Error("Failed to create PNG blob"));
           return;
@@ -75,9 +75,9 @@ export function exportDataAsCsv(
 ): void {
   if (!data.length) throw new Error("No data to export");
 
-  const headers = columns.map((c) => c.header);
-  const rows = data.map((row) =>
-    columns.map((col) => {
+  const headers = columns.map(c => c.header);
+  const rows = data.map(row =>
+    columns.map(col => {
       const value = row[col.key];
       if (col.formatter) return escapeCsvField(col.formatter(value));
       if (value === null || value === undefined) return "";
@@ -85,7 +85,7 @@ export function exportDataAsCsv(
     })
   );
 
-  const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join(
+  const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join(
     "\n"
   );
 

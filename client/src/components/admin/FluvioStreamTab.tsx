@@ -17,27 +17,47 @@ import { toast } from "sonner";
 import { MQTTBridgeTab } from "./MQTTBridgeTab";
 
 // ── Design tokens (match AdminPanel) ─────────────────────────────────────────
-const BG    = "#0a0e1a";
-const CARD  = "oklch(0.14 0.02 240)";
+const BG = "#0a0e1a";
+const CARD = "oklch(0.14 0.02 240)";
 const CARD2 = "oklch(0.17 0.02 240)";
 const BORDER = "oklch(0.22 0.02 240)";
-const GREEN  = "oklch(0.65 0.18 160)";
-const RED    = "oklch(0.60 0.22 25)";
-const GOLD   = "oklch(0.78 0.18 80)";
-const BLUE   = "oklch(0.60 0.22 260)";
+const GREEN = "oklch(0.65 0.18 160)";
+const RED = "oklch(0.60 0.22 25)";
+const GOLD = "oklch(0.78 0.18 80)";
+const BLUE = "oklch(0.60 0.22 260)";
 const PURPLE = "oklch(0.65 0.20 300)";
-const DISP   = "'Space Grotesk', sans-serif";
-const MONO   = "'JetBrains Mono', monospace";
+const DISP = "'Space Grotesk', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
 
 // ── Topic config ──────────────────────────────────────────────────────────────
 const TOPICS = [
-  { id: "pos.transactions.created", label: "Transactions",  color: GREEN,  icon: "💳" },
-  { id: "pos.fraud-alerts.created", label: "Fraud Alerts",  color: RED,    icon: "⚠️" },
-  { id: "pos.float-events.created", label: "Float Events",  color: GOLD,   icon: "🏦" },
-  { id: "pos.kyc-events.created",   label: "KYC Events",    color: PURPLE, icon: "🪪" },
+  {
+    id: "pos.transactions.created",
+    label: "Transactions",
+    color: GREEN,
+    icon: "💳",
+  },
+  {
+    id: "pos.fraud-alerts.created",
+    label: "Fraud Alerts",
+    color: RED,
+    icon: "⚠️",
+  },
+  {
+    id: "pos.float-events.created",
+    label: "Float Events",
+    color: GOLD,
+    icon: "🏦",
+  },
+  {
+    id: "pos.kyc-events.created",
+    label: "KYC Events",
+    color: PURPLE,
+    icon: "🪪",
+  },
 ] as const;
 
-type TopicId = typeof TOPICS[number]["id"];
+type TopicId = (typeof TOPICS)[number]["id"];
 
 interface StreamEvent {
   id: string;
@@ -67,7 +87,13 @@ function StatusDot({ ok, pulse = false }: { ok: boolean; pulse?: boolean }) {
 }
 
 // ── Event row ─────────────────────────────────────────────────────────────────
-function EventRow({ event, topicColor }: { event: StreamEvent; topicColor: string }) {
+function EventRow({
+  event,
+  topicColor,
+}: {
+  event: StreamEvent;
+  topicColor: string;
+}) {
   const [expanded, setExpanded] = useState(false);
   const topic = TOPICS.find(t => t.id === event.topic);
 
@@ -81,41 +107,65 @@ function EventRow({ event, topicColor }: { event: StreamEvent; topicColor: strin
         <span className="text-base">{topic?.icon ?? "📨"}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: topicColor, fontFamily: DISP }}>
+            <span
+              className="text-xs font-bold uppercase tracking-wider"
+              style={{ color: topicColor, fontFamily: DISP }}
+            >
               {topic?.label ?? event.topic}
             </span>
-            <span className="text-xs text-gray-500" style={{ fontFamily: MONO }}>
-              {new Date(event.timestamp).toLocaleTimeString("en-NG", { hour12: false })}
+            <span
+              className="text-xs text-gray-500"
+              style={{ fontFamily: MONO }}
+            >
+              {new Date(event.timestamp).toLocaleTimeString("en-NG", {
+                hour12: false,
+              })}
             </span>
             {event.payload.ref != null && (
-              <span className="text-xs text-gray-400" style={{ fontFamily: MONO }}>
+              <span
+                className="text-xs text-gray-400"
+                style={{ fontFamily: MONO }}
+              >
                 ref: {String(event.payload.ref)}
               </span>
             )}
             {event.payload.amount != null && (
-              <span className="text-xs font-bold" style={{ color: GOLD, fontFamily: MONO }}>
+              <span
+                className="text-xs font-bold"
+                style={{ color: GOLD, fontFamily: MONO }}
+              >
                 ₦{Number(event.payload.amount).toLocaleString("en-NG")}
               </span>
             )}
             {event.payload.severity != null && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full font-bold uppercase"
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full font-bold uppercase"
                 style={{
-                  background: String(event.payload.severity) === "critical" ? `${RED}33` : `${GOLD}33`,
-                  color: String(event.payload.severity) === "critical" ? RED : GOLD,
+                  background:
+                    String(event.payload.severity) === "critical"
+                      ? `${RED}33`
+                      : `${GOLD}33`,
+                  color:
+                    String(event.payload.severity) === "critical" ? RED : GOLD,
                   fontFamily: DISP,
-                }}>
+                }}
+              >
                 {String(event.payload.severity)}
               </span>
             )}
           </div>
           {expanded && (
-            <pre className="mt-2 text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap break-all"
-              style={{ fontFamily: MONO, maxHeight: "200px" }}>
+            <pre
+              className="mt-2 text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap break-all"
+              style={{ fontFamily: MONO, maxHeight: "200px" }}
+            >
               {JSON.stringify(event.payload, null, 2)}
             </pre>
           )}
         </div>
-        <span className="text-gray-600 text-xs" style={{ fontFamily: MONO }}>{expanded ? "▲" : "▼"}</span>
+        <span className="text-gray-600 text-xs" style={{ fontFamily: MONO }}>
+          {expanded ? "▲" : "▼"}
+        </span>
       </div>
     </div>
   );
@@ -126,7 +176,9 @@ export function FluvioStreamTab() {
   const [activeTopic, setActiveTopic] = useState<TopicId | "all">("all");
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [stats, setStats] = useState<FluvioStats | null>(null);
-  const [sseStatus, setSseStatus] = useState<"connecting" | "connected" | "error" | "closed">("connecting");
+  const [sseStatus, setSseStatus] = useState<
+    "connecting" | "connected" | "error" | "closed"
+  >("connecting");
   const [paused, setPaused] = useState(false);
   const [maxEvents] = useState(200);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -137,7 +189,9 @@ export function FluvioStreamTab() {
   // ── Fetch Fluvio stats ────────────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/fluvio/stats", { credentials: "include" });
+      const res = await fetch("/api/v1/fluvio/stats", {
+        credentials: "include",
+      });
       if (res.ok) setStats(await res.json());
     } catch {
       // stats fetch is non-critical
@@ -152,7 +206,8 @@ export function FluvioStreamTab() {
 
   // ── SSE connection ────────────────────────────────────────────────────────
   useEffect(() => {
-    const topic = activeTopic === "all" ? "all" : encodeURIComponent(activeTopic);
+    const topic =
+      activeTopic === "all" ? "all" : encodeURIComponent(activeTopic);
     const url = `/api/v1/fluvio/sse/${topic}`;
 
     // Close existing connection
@@ -168,7 +223,7 @@ export function FluvioStreamTab() {
 
     es.onopen = () => setSseStatus("connected");
 
-    es.onmessage = (e) => {
+    es.onmessage = e => {
       if (pausedRef.current) return;
       try {
         const data = JSON.parse(e.data) as StreamEvent;
@@ -233,41 +288,77 @@ export function FluvioStreamTab() {
     }
   };
 
-  const filteredEvents = activeTopic === "all"
-    ? events
-    : events.filter(e => e.topic === activeTopic);
+  const filteredEvents =
+    activeTopic === "all"
+      ? events
+      : events.filter(e => e.topic === activeTopic);
 
-  const modeColor = stats?.mode === "live" ? GREEN : stats?.mode === "buffer" ? GOLD : RED;
-  const modeLabel = stats?.mode === "live" ? "Live (Fluvio)" : stats?.mode === "buffer" ? "Buffered (fallback)" : "Offline";
+  const modeColor =
+    stats?.mode === "live" ? GREEN : stats?.mode === "buffer" ? GOLD : RED;
+  const modeLabel =
+    stats?.mode === "live"
+      ? "Live (Fluvio)"
+      : stats?.mode === "buffer"
+        ? "Buffered (fallback)"
+        : "Offline";
 
   return (
     <div className="flex flex-col gap-5">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <div className="text-lg font-black text-white" style={{ fontFamily: DISP }}>Fluvio Stream Dashboard</div>
-          <div className="text-xs text-gray-500 mt-0.5" style={{ fontFamily: MONO }}>
+          <div
+            className="text-lg font-black text-white"
+            style={{ fontFamily: DISP }}
+          >
+            Fluvio Stream Dashboard
+          </div>
+          <div
+            className="text-xs text-gray-500 mt-0.5"
+            style={{ fontFamily: MONO }}
+          >
             Real-time event bus — InfinyOn Fluvio
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* SSE status */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-            style={{ background: CARD2, border: `1px solid ${BORDER}` }}>
-            <StatusDot ok={sseStatus === "connected"} pulse={sseStatus === "connecting"} />
-            <span className="text-xs font-semibold" style={{
-              color: sseStatus === "connected" ? GREEN : sseStatus === "connecting" ? GOLD : RED,
-              fontFamily: DISP,
-            }}>
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            style={{ background: CARD2, border: `1px solid ${BORDER}` }}
+          >
+            <StatusDot
+              ok={sseStatus === "connected"}
+              pulse={sseStatus === "connecting"}
+            />
+            <span
+              className="text-xs font-semibold"
+              style={{
+                color:
+                  sseStatus === "connected"
+                    ? GREEN
+                    : sseStatus === "connecting"
+                      ? GOLD
+                      : RED,
+                fontFamily: DISP,
+              }}
+            >
               SSE {sseStatus}
             </span>
           </div>
           {/* Fluvio mode */}
           {stats && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-              style={{ background: CARD2, border: `1px solid ${BORDER}` }}>
-              <StatusDot ok={stats.mode === "live"} pulse={stats.mode === "live"} />
-              <span className="text-xs font-semibold" style={{ color: modeColor, fontFamily: DISP }}>
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+              style={{ background: CARD2, border: `1px solid ${BORDER}` }}
+            >
+              <StatusDot
+                ok={stats.mode === "live"}
+                pulse={stats.mode === "live"}
+              />
+              <span
+                className="text-xs font-semibold"
+                style={{ color: modeColor, fontFamily: DISP }}
+              >
                 {modeLabel}
               </span>
             </div>
@@ -281,14 +372,21 @@ export function FluvioStreamTab() {
               color: paused ? GOLD : BLUE,
               border: `1px solid ${paused ? GOLD : BLUE}44`,
               fontFamily: DISP,
-            }}>
+            }}
+          >
             {paused ? "▶ Resume" : "⏸ Pause"}
           </button>
           {/* Clear */}
           <button
             onClick={() => setEvents([])}
             className="px-3 py-1.5 rounded-lg text-xs font-bold"
-            style={{ background: `${RED}22`, color: RED, border: `1px solid ${RED}44`, fontFamily: DISP }}>
+            style={{
+              background: `${RED}22`,
+              color: RED,
+              border: `1px solid ${RED}44`,
+              fontFamily: DISP,
+            }}
+          >
             🗑 Clear
           </button>
         </div>
@@ -298,15 +396,44 @@ export function FluvioStreamTab() {
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Msg/sec",       value: stats.messagesPerSecond.toFixed(1), color: GREEN },
-            { label: "Total Messages",value: stats.totalMessages.toLocaleString(), color: BLUE },
-            { label: "Active Topics", value: String(stats.activeTopics.length),   color: GOLD },
-            { label: "Buffer Size",   value: String(stats.bufferSize),             color: PURPLE },
+            {
+              label: "Msg/sec",
+              value: stats.messagesPerSecond.toFixed(1),
+              color: GREEN,
+            },
+            {
+              label: "Total Messages",
+              value: stats.totalMessages.toLocaleString(),
+              color: BLUE,
+            },
+            {
+              label: "Active Topics",
+              value: String(stats.activeTopics.length),
+              color: GOLD,
+            },
+            {
+              label: "Buffer Size",
+              value: String(stats.bufferSize),
+              color: PURPLE,
+            },
           ].map(s => (
-            <div key={s.label} className="rounded-xl p-3 flex flex-col gap-1"
-              style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-              <div className="text-xs text-gray-500 uppercase tracking-widest" style={{ fontFamily: DISP }}>{s.label}</div>
-              <div className="text-xl font-black" style={{ color: s.color, fontFamily: MONO }}>{s.value}</div>
+            <div
+              key={s.label}
+              className="rounded-xl p-3 flex flex-col gap-1"
+              style={{ background: CARD, border: `1px solid ${BORDER}` }}
+            >
+              <div
+                className="text-xs text-gray-500 uppercase tracking-widest"
+                style={{ fontFamily: DISP }}
+              >
+                {s.label}
+              </div>
+              <div
+                className="text-xl font-black"
+                style={{ color: s.color, fontFamily: MONO }}
+              >
+                {s.value}
+              </div>
             </div>
           ))}
         </div>
@@ -322,7 +449,8 @@ export function FluvioStreamTab() {
             color: activeTopic === "all" ? BLUE : "oklch(0.55 0.015 230)",
             border: `1px solid ${activeTopic === "all" ? BLUE : BORDER}`,
             fontFamily: DISP,
-          }}>
+          }}
+        >
           All Topics
         </button>
         {TOPICS.map(t => (
@@ -335,12 +463,15 @@ export function FluvioStreamTab() {
               color: activeTopic === t.id ? t.color : "oklch(0.55 0.015 230)",
               border: `1px solid ${activeTopic === t.id ? t.color : BORDER}44`,
               fontFamily: DISP,
-            }}>
+            }}
+          >
             {t.icon} {t.label}
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-gray-500" style={{ fontFamily: DISP }}>Produce test:</span>
+          <span className="text-xs text-gray-500" style={{ fontFamily: DISP }}>
+            Produce test:
+          </span>
           {TOPICS.map(t => (
             <button
               key={t.id}
@@ -352,7 +483,8 @@ export function FluvioStreamTab() {
                 color: t.color,
                 border: `1px solid ${t.color}33`,
                 fontFamily: MONO,
-              }}>
+              }}
+            >
               {t.icon}
             </button>
           ))}
@@ -363,18 +495,38 @@ export function FluvioStreamTab() {
       <div
         ref={feedRef}
         className="flex flex-col gap-2 overflow-y-auto"
-        style={{ maxHeight: "500px" }}>
+        style={{ maxHeight: "500px" }}
+      >
         {filteredEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center"
-            style={{ background: CARD, borderRadius: "16px", border: `1px solid ${BORDER}` }}>
+          <div
+            className="flex flex-col items-center justify-center py-16 text-center"
+            style={{
+              background: CARD,
+              borderRadius: "16px",
+              border: `1px solid ${BORDER}`,
+            }}
+          >
             <div className="text-4xl mb-3">📡</div>
-            <div className="text-sm font-semibold text-gray-400" style={{ fontFamily: DISP }}>
-              {sseStatus === "connecting" ? "Connecting to Fluvio stream…" : "Waiting for events…"}
+            <div
+              className="text-sm font-semibold text-gray-400"
+              style={{ fontFamily: DISP }}
+            >
+              {sseStatus === "connecting"
+                ? "Connecting to Fluvio stream…"
+                : "Waiting for events…"}
             </div>
-            <div className="text-xs text-gray-600 mt-1" style={{ fontFamily: MONO }}>
-              {activeTopic === "all" ? "Subscribed to all topics" : `Subscribed to ${activeTopic}`}
+            <div
+              className="text-xs text-gray-600 mt-1"
+              style={{ fontFamily: MONO }}
+            >
+              {activeTopic === "all"
+                ? "Subscribed to all topics"
+                : `Subscribed to ${activeTopic}`}
             </div>
-            <div className="text-xs text-gray-600 mt-3" style={{ fontFamily: DISP }}>
+            <div
+              className="text-xs text-gray-600 mt-3"
+              style={{ fontFamily: DISP }}
+            >
               Use the produce buttons above to inject a test event.
             </div>
           </div>
@@ -394,14 +546,26 @@ export function FluvioStreamTab() {
 
       {/* ── Endpoint info ───────────────────────────────────────────────────── */}
       {stats?.endpoint && (
-        <div className="rounded-xl p-3 flex items-center gap-3"
-          style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <span className="text-xs text-gray-500" style={{ fontFamily: DISP }}>Fluvio endpoint:</span>
-          <span className="text-xs font-mono" style={{ color: BLUE, fontFamily: MONO }}>{stats.endpoint}</span>
+        <div
+          className="rounded-xl p-3 flex items-center gap-3"
+          style={{ background: CARD, border: `1px solid ${BORDER}` }}
+        >
+          <span className="text-xs text-gray-500" style={{ fontFamily: DISP }}>
+            Fluvio endpoint:
+          </span>
+          <span
+            className="text-xs font-mono"
+            style={{ color: BLUE, fontFamily: MONO }}
+          >
+            {stats.endpoint}
+          </span>
         </div>
       )}
       {/* ── MQTT Bridge Configuration ──────────────────────────────────────── */}
-      <div className="rounded-xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+      <div
+        className="rounded-xl p-5"
+        style={{ background: CARD, border: `1px solid ${BORDER}` }}
+      >
         <MQTTBridgeTab />
       </div>
     </div>

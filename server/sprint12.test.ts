@@ -8,7 +8,10 @@ import * as path from "path";
 
 // ─── Chart Export Utility Tests ──────────────────────────────────────────────
 describe("Chart Export Utility", () => {
-  const chartExportPath = path.resolve(__dirname, "../client/src/lib/chartExport.ts");
+  const chartExportPath = path.resolve(
+    __dirname,
+    "../client/src/lib/chartExport.ts"
+  );
 
   it("chartExport.ts exists", () => {
     expect(fs.existsSync(chartExportPath)).toBe(true);
@@ -25,7 +28,10 @@ describe("Chart Export Utility", () => {
   });
 
   it("ChartExportMenu component exists", () => {
-    const menuPath = path.resolve(__dirname, "../client/src/components/ChartExportMenu.tsx");
+    const menuPath = path.resolve(
+      __dirname,
+      "../client/src/components/ChartExportMenu.tsx"
+    );
     expect(fs.existsSync(menuPath)).toBe(true);
   });
 });
@@ -63,7 +69,10 @@ describe("Scheduled Reports Router", () => {
   });
 
   it("ScheduledReports page exists", () => {
-    const pagePath = path.resolve(__dirname, "../client/src/pages/ScheduledReports.tsx");
+    const pagePath = path.resolve(
+      __dirname,
+      "../client/src/pages/ScheduledReports.tsx"
+    );
     expect(fs.existsSync(pagePath)).toBe(true);
   });
 });
@@ -98,7 +107,10 @@ describe("Dashboard Layout Router", () => {
   });
 
   it("DashboardLayoutEditor component exists with drag-and-drop", () => {
-    const compPath = path.resolve(__dirname, "../client/src/components/DashboardLayoutEditor.tsx");
+    const compPath = path.resolve(
+      __dirname,
+      "../client/src/components/DashboardLayoutEditor.tsx"
+    );
     expect(fs.existsSync(compPath)).toBe(true);
     const content = fs.readFileSync(compPath, "utf-8");
     expect(content).toContain("DashboardLayoutEditor");
@@ -111,7 +123,10 @@ describe("Dashboard Layout Router", () => {
 
 // ─── Broadcast Announcements Router Tests ────────────────────────────────────
 describe("Broadcast Announcements Router", () => {
-  const routerPath = path.resolve(__dirname, "./routers/broadcastAnnouncements.ts");
+  const routerPath = path.resolve(
+    __dirname,
+    "./routers/broadcastAnnouncements.ts"
+  );
 
   it("router file exists", () => {
     expect(fs.existsSync(routerPath)).toBe(true);
@@ -160,7 +175,10 @@ describe("Broadcast Announcements Router", () => {
   });
 
   it("BroadcastManager page exists with compose dialog", () => {
-    const pagePath = path.resolve(__dirname, "../client/src/pages/BroadcastManager.tsx");
+    const pagePath = path.resolve(
+      __dirname,
+      "../client/src/pages/BroadcastManager.tsx"
+    );
     expect(fs.existsSync(pagePath)).toBe(true);
     const content = fs.readFileSync(pagePath, "utf-8");
     expect(content).toContain("BroadcastManager");
@@ -170,7 +188,10 @@ describe("Broadcast Announcements Router", () => {
 
 // ─── User Notification Preferences Router Tests ──────────────────────────────
 describe("User Notification Preferences Router", () => {
-  const routerPath = path.resolve(__dirname, "./routers/userNotifPreferences.ts");
+  const routerPath = path.resolve(
+    __dirname,
+    "./routers/userNotifPreferences.ts"
+  );
 
   it("router file exists", () => {
     expect(fs.existsSync(routerPath)).toBe(true);
@@ -186,7 +207,12 @@ describe("User Notification Preferences Router", () => {
     for (const g of ["Transactions", "Security", "Financial", "System"]) {
       expect(content).toContain(g);
     }
-    for (const c of ["txn_success", "sec_fraud", "fin_settlement", "sys_maintenance"]) {
+    for (const c of [
+      "txn_success",
+      "sec_fraud",
+      "fin_settlement",
+      "sys_maintenance",
+    ]) {
       expect(content).toContain(c);
     }
   });
@@ -215,7 +241,10 @@ describe("User Notification Preferences Router", () => {
   });
 
   it("UserNotifSettings page exists with 3 tabs", () => {
-    const pagePath = path.resolve(__dirname, "../client/src/pages/UserNotifSettings.tsx");
+    const pagePath = path.resolve(
+      __dirname,
+      "../client/src/pages/UserNotifSettings.tsx"
+    );
     expect(fs.existsSync(pagePath)).toBe(true);
     const content = fs.readFileSync(pagePath, "utf-8");
     expect(content).toContain("UserNotifSettings");

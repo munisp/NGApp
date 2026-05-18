@@ -30,7 +30,9 @@ export function useOfflineSync() {
   // ── Sync Zustand in-memory queue ──────────────────────────────────────────
   const syncZustandQueue = useCallback(async () => {
     if (!isOnline || offlineQueue.length === 0) return;
-    console.log(`[OfflineSync] Syncing ${offlineQueue.length} in-memory queued transactions...`);
+    console.log(
+      `[OfflineSync] Syncing ${offlineQueue.length} in-memory queued transactions...`
+    );
 
     for (const tx of offlineQueue) {
       try {
@@ -44,7 +46,9 @@ export function useOfflineSync() {
           metadata: { offlineId: tx.id, queuedAt: tx.createdAt },
         });
         dequeueOfflineTx(tx.id);
-        toast.success(`Offline transaction synced: ₦${tx.amount.toLocaleString()} ${tx.type}`);
+        toast.success(
+          `Offline transaction synced: ₦${tx.amount.toLocaleString()} ${tx.type}`
+        );
       } catch (err) {
         console.error(`[OfflineSync] Failed to sync ${tx.id}:`, err);
       }
@@ -93,7 +97,10 @@ export function useOfflineSync() {
         } catch (createErr) {
           // Dead-letter guarantee: re-enqueue via typed tRPC mutation so the item is not lost
           failed++;
-          console.error(`[OfflineSync] createTx failed for rustQueueId=${item.id}, re-enqueueing:`, createErr);
+          console.error(
+            `[OfflineSync] createTx failed for rustQueueId=${item.id}, re-enqueueing:`,
+            createErr
+          );
           try {
             await requeue.mutateAsync({
               txType: item.tx_type,
@@ -102,9 +109,14 @@ export function useOfflineSync() {
               customerPhone: item.customer_phone ?? "",
               channel: item.channel ?? "Offline",
             });
-            console.log(`[OfflineSync] Re-enqueued ${item.id} to Rust queue after createTx failure`);
+            console.log(
+              `[OfflineSync] Re-enqueued ${item.id} to Rust queue after createTx failure`
+            );
           } catch (requeueErr) {
-            console.error(`[OfflineSync] Re-enqueue also failed for ${item.id}:`, requeueErr);
+            console.error(
+              `[OfflineSync] Re-enqueue also failed for ${item.id}:`,
+              requeueErr
+            );
           }
           break; // Stop draining — backend is rejecting; avoid data-loss loop
         }
@@ -118,11 +130,17 @@ export function useOfflineSync() {
       await utils.resilience.queueCount.invalidate();
 
       if (synced > 0 && failed === 0) {
-        toast.success(`${synced} offline transaction${synced > 1 ? "s" : ""} synced from durable queue`);
+        toast.success(
+          `${synced} offline transaction${synced > 1 ? "s" : ""} synced from durable queue`
+        );
       } else if (synced > 0 && failed > 0) {
-        toast.warning(`${synced} synced, ${failed} failed — items re-enqueued for next retry`);
+        toast.warning(
+          `${synced} synced, ${failed} failed — items re-enqueued for next retry`
+        );
       } else if (failed > 0) {
-        toast.error(`${failed} offline transaction${failed > 1 ? "s" : ""} failed — re-enqueued for retry`);
+        toast.error(
+          `${failed} offline transaction${failed > 1 ? "s" : ""} failed — re-enqueued for retry`
+        );
       }
     }
   }, [dequeue, requeue, createTx, utils]);
@@ -168,7 +186,9 @@ export function useOfflineSync() {
 
     if (wasOfflinePrev && isNowOnline) {
       // POS-level reconnect detected — drain both queues
-      console.log("[OfflineSync] POS probe reconnect detected — triggering auto-sync");
+      console.log(
+        "[OfflineSync] POS probe reconnect detected — triggering auto-sync"
+      );
       toast.info("POS reconnected — syncing queued transactions…");
       const timer = setTimeout(async () => {
         await syncZustandQueue();

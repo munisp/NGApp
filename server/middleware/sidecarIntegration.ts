@@ -14,14 +14,21 @@
 
 import { initTRPC } from "@trpc/server";
 import type { TrpcContext } from "../_core/context";
-import { rustBridge, goLedger, pythonML, emitTransactionEvent, auditAndCache, runCompliancePipeline } from "../lib/sidecarBridge";
+import {
+  rustBridge,
+  goLedger,
+  pythonML,
+  emitTransactionEvent,
+  auditAndCache,
+  runCompliancePipeline,
+} from "../lib/sidecarBridge";
 
 /**
  * Factory: creates the global sidecar integration middleware.
  * Call once from _core/trpc.ts, passing the tRPC instance.
  */
 export function createSidecarMiddleware(
-  t: ReturnType<typeof initTRPC.context<TrpcContext>["create"]>
+  t: ReturnType<(typeof initTRPC.context<TrpcContext>)["create"]>
 ) {
   return t.middleware(async ({ ctx, path, type, next }) => {
     const startTime = Date.now();
@@ -29,7 +36,9 @@ export function createSidecarMiddleware(
     const procedurePath = path;
 
     // Pre-execution: Rate limiting via Rust sidecar (fire-and-forget)
-    rustBridge.rateLimit(`trpc:${userId}:${procedurePath}`, 100, 60).catch(() => {});
+    rustBridge
+      .rateLimit(`trpc:${userId}:${procedurePath}`, 100, 60)
+      .catch(() => {});
 
     // Pre-execution: Audit log via Rust sidecar (fire-and-forget)
     rustBridge.auditLog(userId, type, procedurePath).catch(() => {});
@@ -51,14 +60,16 @@ export function createSidecarMiddleware(
 
     // Post-execution: Publish event to Kafka (fire-and-forget)
     const duration = Date.now() - startTime;
-    rustBridge.kafkaPublish("pos.trpc.events", userId, {
-      procedure: procedurePath,
-      type,
-      userId,
-      duration,
-      success: result.ok,
-      timestamp: Date.now(),
-    }).catch(() => {});
+    rustBridge
+      .kafkaPublish("pos.trpc.events", userId, {
+        procedure: procedurePath,
+        type,
+        userId,
+        duration,
+        success: result.ok,
+        timestamp: Date.now(),
+      })
+      .catch(() => {});
 
     return result;
   });

@@ -2,7 +2,7 @@
 // SECURITY-AUDIT-TOOL: This file is a security scanner. References to eval/XSS/CORS are detection patterns, not vulnerabilities.
 /**
  * Deep Security Audit — OWASP Top 10 + Platform-Specific Checks
- * 
+ *
  * Covers: A01-Broken Access Control, A02-Crypto Failures, A03-Injection,
  * A04-Insecure Design, A05-Security Misconfiguration, A06-Vulnerable Components,
  * A07-Auth Failures, A08-Software Integrity, A09-Logging Failures, A10-SSRF
@@ -14,20 +14,34 @@ import * as path from "path";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 
 function readFile(relPath: string): string {
-  try { return fs.readFileSync(path.join(PROJECT_ROOT, relPath), "utf-8"); } catch { return ""; }
+  try {
+    return fs.readFileSync(path.join(PROJECT_ROOT, relPath), "utf-8");
+  } catch {
+    return "";
+  }
 }
 
 function findFiles(dir: string, ext: string): string[] {
   const results: string[] = [];
   try {
-    const entries = fs.readdirSync(path.join(PROJECT_ROOT, dir), { withFileTypes: true, recursive: true });
+    const entries = fs.readdirSync(path.join(PROJECT_ROOT, dir), {
+      withFileTypes: true,
+      recursive: true,
+    });
     for (const entry of entries) {
       if (entry.isFile() && entry.name.endsWith(ext)) {
-        const fullPath = path.join(entry.parentPath || entry.path || dir, entry.name);
-        results.push(fullPath.replace(PROJECT_ROOT + "/", "").replace(PROJECT_ROOT, ""));
+        const fullPath = path.join(
+          entry.parentPath || entry.path || dir,
+          entry.name
+        );
+        results.push(
+          fullPath.replace(PROJECT_ROOT + "/", "").replace(PROJECT_ROOT, "")
+        );
       }
     }
-  } catch { /* dir doesn't exist */ }
+  } catch {
+    /* dir doesn't exist */
+  }
   return results;
 }
 
@@ -52,7 +66,8 @@ describe("A01 — Broken Access Control", () => {
       allRouterCode += readFile(f);
     }
     // Sensitive operations should use protectedProcedure
-    const publicMutations = (allRouterCode.match(/publicProcedure\s*\.\s*input[^}]*\.mutation/g) || []);
+    const publicMutations =
+      allRouterCode.match(/publicProcedure\s*\.\s*input[^}]*\.mutation/g) || [];
     // Allow limited public mutations (login, register, webhook ingest)
     expect(publicMutations.length).toBeLessThan(10);
   });
@@ -93,19 +108,21 @@ describe("A02 — Cryptographic Failures", () => {
     for (const f of allFiles) {
       const content = readFile(f);
       // Skip test files and config examples
-      if (f.includes(".test.") || f.includes("example") || f.includes("mock")) continue;
+      if (f.includes(".test.") || f.includes("example") || f.includes("mock"))
+        continue;
       for (const pattern of secretPatterns) {
         pattern.lastIndex = 0;
         const matches = content.match(pattern) || [];
         // Filter out env references and placeholder values
-        const realSecrets = matches.filter(m =>
-          !m.includes("process.env") &&
-          !m.includes("PLACEHOLDER") &&
-          !m.includes("your_") &&
-          !m.includes("default_") &&
-          !m.includes("test_") &&
-          !m.includes("example") &&
-          !m.includes("CHANGE_ME")
+        const realSecrets = matches.filter(
+          m =>
+            !m.includes("process.env") &&
+            !m.includes("PLACEHOLDER") &&
+            !m.includes("your_") &&
+            !m.includes("default_") &&
+            !m.includes("test_") &&
+            !m.includes("example") &&
+            !m.includes("CHANGE_ME")
         );
         violations += realSecrets.length;
       }
@@ -132,7 +149,9 @@ describe("A02 — Cryptographic Failures", () => {
     const dbFile = readFile("server/db.ts");
     // If there are password fields, they should reference hashing
     if (schema.includes("password")) {
-      const allServerCode = findFiles("server", ".ts").map(f => readFile(f)).join("\n");
+      const allServerCode = findFiles("server", ".ts")
+        .map(f => readFile(f))
+        .join("\n");
       expect(allServerCode).toMatch(/hash|bcrypt|argon|scrypt|pbkdf/i);
     }
   });
@@ -182,7 +201,7 @@ describe("A03 — Injection", () => {
       const content = readFile(f);
       if (f.includes(".test.")) continue;
       // Count dangerouslySetInnerHTML usage
-      const matches = (content.match(/dangerouslySetInnerHTML/g) || []);
+      const matches = content.match(/dangerouslySetInnerHTML/g) || [];
       dangerousHtml += matches.length;
     }
     // Should be minimal — ideally 0, but allow up to 3 for markdown rendering
@@ -283,12 +302,16 @@ describe("A07 — Authentication Failures", () => {
   });
 
   it("should not store session tokens in localStorage", () => {
-    const clientFiles = findFiles("client/src", ".tsx").concat(findFiles("client/src", ".ts"));
+    const clientFiles = findFiles("client/src", ".tsx").concat(
+      findFiles("client/src", ".ts")
+    );
     for (const f of clientFiles) {
       const content = readFile(f);
       if (f.includes(".test.")) continue;
       // Should not store auth tokens in localStorage
-      expect(content).not.toMatch(/localStorage\.(setItem|getItem)\s*\(\s*["'](token|jwt|session|auth)/i);
+      expect(content).not.toMatch(
+        /localStorage\.(setItem|getItem)\s*\(\s*["'](token|jwt|session|auth)/i
+      );
     }
   });
 });
@@ -347,7 +370,7 @@ describe("A10 — SSRF Prevention", () => {
       const content = readFile(f);
       if (f.includes(".test.")) continue;
       // Check for fetch with template literals using input directly
-      const unsafeFetch = (content.match(/fetch\s*\(\s*`\$\{input\./g) || []);
+      const unsafeFetch = content.match(/fetch\s*\(\s*`\$\{input\./g) || [];
       violations += unsafeFetch.length;
     }
     expect(violations).toBe(0);
@@ -383,7 +406,9 @@ describe("Platform-Specific Security", () => {
     let allCode = "";
     for (const f of coreFiles) allCode += readFile(f);
     // Either helmet package or manual header setting
-    const hasSecurityHeaders = allDeps["helmet"] || allCode.match(/Content-Security-Policy|X-Frame-Options|X-Content-Type/i);
+    const hasSecurityHeaders =
+      allDeps["helmet"] ||
+      allCode.match(/Content-Security-Policy|X-Frame-Options|X-Content-Type/i);
     // This is informational — we'll add helmet if missing
     expect(true).toBe(true); // Placeholder — will be hardened in Phase 5
   });
@@ -394,7 +419,9 @@ describe("Platform-Specific Security", () => {
     // PIN, password fields should reference encryption
     if (schema.match(/pin|password/i)) {
       const dbFile = readFile("server/db.ts");
-      const allServerCode = findFiles("server", ".ts").map(f => readFile(f)).join("\n");
+      const allServerCode = findFiles("server", ".ts")
+        .map(f => readFile(f))
+        .join("\n");
       expect(allServerCode).toMatch(/hash|encrypt|bcrypt|argon|cipher/i);
     }
   });
@@ -428,7 +455,9 @@ describe("Security Score Summary", () => {
 
     if (!allDeps["helmet"]) {
       // Will be added in hardening phase
-      deductions.push("Missing helmet for security headers (-0, will be added)");
+      deductions.push(
+        "Missing helmet for security headers (-0, will be added)"
+      );
     }
 
     const gitignore = readFile(".gitignore");

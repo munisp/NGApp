@@ -150,7 +150,11 @@ const CIRCUIT_RESET_TIMEOUT_MS = 30_000;
 
 function getCircuitBreaker(serviceName: string): CircuitBreakerState {
   if (!circuitBreakers.has(serviceName)) {
-    circuitBreakers.set(serviceName, { failures: 0, lastFailure: 0, state: "closed" });
+    circuitBreakers.set(serviceName, {
+      failures: 0,
+      lastFailure: 0,
+      state: "closed",
+    });
   }
   return circuitBreakers.get(serviceName)!;
 }
@@ -191,7 +195,10 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
     clearTimeout(id);
     return response;
   } catch (err) {
@@ -201,7 +208,7 @@ async function fetchWithTimeout(
 }
 
 async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export class GoServiceAdapter {
@@ -210,7 +217,9 @@ export class GoServiceAdapter {
   constructor(serviceName: string) {
     const config = SERVICE_REGISTRY[serviceName];
     if (!config) {
-      throw new Error(`Unknown Go service: ${serviceName}. Available: ${Object.keys(SERVICE_REGISTRY).join(", ")}`);
+      throw new Error(
+        `Unknown Go service: ${serviceName}. Available: ${Object.keys(SERVICE_REGISTRY).join(", ")}`
+      );
     }
     this.config = config;
   }
@@ -227,7 +236,10 @@ export class GoServiceAdapter {
     return this.get<{ status: string }>(this.config.healthPath);
   }
 
-  async get<T = unknown>(path: string, params?: Record<string, string>): Promise<AdapterResponse<T>> {
+  async get<T = unknown>(
+    path: string,
+    params?: Record<string, string>
+  ): Promise<AdapterResponse<T>> {
     let url = `${this.config.baseUrl}${path}`;
     if (params) {
       const qs = new URLSearchParams(params).toString();
@@ -236,12 +248,18 @@ export class GoServiceAdapter {
     return this.request<T>("GET", url);
   }
 
-  async post<T = unknown>(path: string, body?: unknown): Promise<AdapterResponse<T>> {
+  async post<T = unknown>(
+    path: string,
+    body?: unknown
+  ): Promise<AdapterResponse<T>> {
     const url = `${this.config.baseUrl}${path}`;
     return this.request<T>("POST", url, body);
   }
 
-  async put<T = unknown>(path: string, body?: unknown): Promise<AdapterResponse<T>> {
+  async put<T = unknown>(
+    path: string,
+    body?: unknown
+  ): Promise<AdapterResponse<T>> {
     const url = `${this.config.baseUrl}${path}`;
     return this.request<T>("PUT", url, body);
   }
@@ -251,7 +269,11 @@ export class GoServiceAdapter {
     return this.request<T>("DELETE", url);
   }
 
-  private async request<T>(method: string, url: string, body?: unknown): Promise<AdapterResponse<T>> {
+  private async request<T>(
+    method: string,
+    url: string,
+    body?: unknown
+  ): Promise<AdapterResponse<T>> {
     const start = Date.now();
     const cb = getCircuitBreaker(this.config.name);
 
@@ -326,11 +348,19 @@ export class GoServiceAdapter {
 }
 
 // Pre-instantiated adapters for each Go service
-export const workflowOrchestrator = new GoServiceAdapter("workflow-orchestrator");
-export const tigerbeetleIntegrated = new GoServiceAdapter("tigerbeetle-integrated");
-export const mdmComplianceEngine = new GoServiceAdapter("mdm-compliance-engine");
+export const workflowOrchestrator = new GoServiceAdapter(
+  "workflow-orchestrator"
+);
+export const tigerbeetleIntegrated = new GoServiceAdapter(
+  "tigerbeetle-integrated"
+);
+export const mdmComplianceEngine = new GoServiceAdapter(
+  "mdm-compliance-engine"
+);
 export const pbacEngine = new GoServiceAdapter("pbac-engine");
-export const connectivityResilience = new GoServiceAdapter("connectivity-resilience");
+export const connectivityResilience = new GoServiceAdapter(
+  "connectivity-resilience"
+);
 export const billingAggregator = new GoServiceAdapter("billing-aggregator");
 export const rbacService = new GoServiceAdapter("rbac-service");
 export const ussdGateway = new GoServiceAdapter("ussd-gateway");
@@ -355,4 +385,9 @@ export function getServiceHealth(): Record<string, CircuitBreakerState> {
   return result;
 }
 
-export { SERVICE_REGISTRY, type ServiceConfig, type AdapterResponse, type CircuitBreakerState };
+export {
+  SERVICE_REGISTRY,
+  type ServiceConfig,
+  type AdapterResponse,
+  type CircuitBreakerState,
+};

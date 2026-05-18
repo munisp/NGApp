@@ -44,11 +44,15 @@ describe("F1: Go Connectivity-Resilience Service", () => {
 
   it("should have main.go with store-and-forward queue", () => {
     expect(fileExists(`${base}/main.go`)).toBe(true);
-    expect(fileContains(`${base}/main.go`, "StoreAndForward", "queue", "enqueue")).toBe(true);
+    expect(
+      fileContains(`${base}/main.go`, "StoreAndForward", "queue", "enqueue")
+    ).toBe(true);
   });
 
   it("should implement adaptive retry with exponential backoff", () => {
-    expect(fileContains(`${base}/main.go`, "backoff", "retry", "maxRetries")).toBe(true);
+    expect(
+      fileContains(`${base}/main.go`, "backoff", "retry", "maxRetries")
+    ).toBe(true);
   });
 
   it("should implement compression for low-bandwidth", () => {
@@ -56,7 +60,9 @@ describe("F1: Go Connectivity-Resilience Service", () => {
   });
 
   it("should have health and metrics endpoints", () => {
-    expect(fileContains(`${base}/main.go`, "/health", "/metrics", "/queue")).toBe(true);
+    expect(
+      fileContains(`${base}/main.go`, "/health", "/metrics", "/queue")
+    ).toBe(true);
   });
 
   it("should have Dockerfile", () => {
@@ -78,19 +84,33 @@ describe("F2: Go USSD Gateway Service", () => {
 
   it("should have main.go with USSD session management", () => {
     expect(fileExists(`${base}/main.go`)).toBe(true);
-    expect(fileContains(`${base}/main.go`, "USSDSession", "session")).toBe(true);
+    expect(fileContains(`${base}/main.go`, "USSDSession", "session")).toBe(
+      true
+    );
   });
 
   it("should support transaction types: cash_in, cash_out, balance, transfer", () => {
-    expect(fileContains(`${base}/main.go`, "cash_in", "cash_out", "balance", "transfer")).toBe(true);
+    expect(
+      fileContains(
+        `${base}/main.go`,
+        "cash_in",
+        "cash_out",
+        "balance",
+        "transfer"
+      )
+    ).toBe(true);
   });
 
   it("should implement session timeout and cleanup", () => {
-    expect(fileContains(`${base}/main.go`, "timeout", "cleanup", "expire")).toBe(true);
+    expect(
+      fileContains(`${base}/main.go`, "timeout", "cleanup", "expire")
+    ).toBe(true);
   });
 
   it("should have USSD menu navigation", () => {
-    expect(fileContains(`${base}/main.go`, "menu", "Welcome", "Enter")).toBe(true);
+    expect(fileContains(`${base}/main.go`, "menu", "Welcome", "Enter")).toBe(
+      true
+    );
   });
 
   it("should have Dockerfile", () => {
@@ -107,11 +127,22 @@ describe("F3: Go Connection Multiplexer Service", () => {
 
   it("should have main.go with request coalescing", () => {
     expect(fileExists(`${base}/main.go`)).toBe(true);
-    expect(fileContains(`${base}/main.go`, "coalesce", "RequestCoalescer")).toBe(true);
+    expect(
+      fileContains(`${base}/main.go`, "coalesce", "RequestCoalescer")
+    ).toBe(true);
   });
 
   it("should implement priority queue for requests", () => {
-    expect(fileContains(`${base}/main.go`, "priority", "critical", "high", "normal", "low")).toBe(true);
+    expect(
+      fileContains(
+        `${base}/main.go`,
+        "priority",
+        "critical",
+        "high",
+        "normal",
+        "low"
+      )
+    ).toBe(true);
   });
 
   it("should implement connection pooling", () => {
@@ -132,15 +163,26 @@ describe("F4: Rust Bandwidth Optimizer Service", () => {
 
   it("should have main.rs with binary protocol encoding", () => {
     expect(fileExists(`${base}/src/main.rs`)).toBe(true);
-    expect(fileContains(`${base}/src/main.rs`, "BinaryTransaction", "encode", "decode")).toBe(true);
+    expect(
+      fileContains(
+        `${base}/src/main.rs`,
+        "BinaryTransaction",
+        "encode",
+        "decode"
+      )
+    ).toBe(true);
   });
 
   it("should implement delta sync for incremental updates", () => {
-    expect(fileContains(`${base}/src/main.rs`, "delta", "DeltaSync", "diff")).toBe(true);
+    expect(
+      fileContains(`${base}/src/main.rs`, "delta", "DeltaSync", "diff")
+    ).toBe(true);
   });
 
   it("should implement payload minimization", () => {
-    expect(fileContains(`${base}/src/main.rs`, "minimize", "compress")).toBe(true);
+    expect(fileContains(`${base}/src/main.rs`, "minimize", "compress")).toBe(
+      true
+    );
   });
 
   it("should have Cargo.toml with required dependencies", () => {
@@ -162,15 +204,21 @@ describe("F5: Rust Offline Ledger Service", () => {
 
   it("should have main.rs with CRDT-based ledger", () => {
     expect(fileExists(`${base}/src/main.rs`)).toBe(true);
-    expect(fileContains(`${base}/src/main.rs`, "CRDT", "Ledger", "merge")).toBe(true);
+    expect(fileContains(`${base}/src/main.rs`, "CRDT", "Ledger", "merge")).toBe(
+      true
+    );
   });
 
   it("should implement conflict resolution for concurrent offline edits", () => {
-    expect(fileContains(`${base}/src/main.rs`, "conflict", "resolve", "vector_clock")).toBe(true);
+    expect(
+      fileContains(`${base}/src/main.rs`, "conflict", "resolve", "vector_clock")
+    ).toBe(true);
   });
 
   it("should support transaction operations: credit, debit, reversal", () => {
-    expect(fileContains(`${base}/src/main.rs`, "Credit", "Debit", "Reversal")).toBe(true);
+    expect(
+      fileContains(`${base}/src/main.rs`, "Credit", "Debit", "Reversal")
+    ).toBe(true);
   });
 
   it("should have Cargo.toml", () => {
@@ -191,15 +239,26 @@ describe("F6: Rust Adaptive Compression Service", () => {
 
   it("should have main.rs with multiple compression algorithms", () => {
     expect(fileExists(`${base}/src/main.rs`)).toBe(true);
-    expect(fileContains(`${base}/src/main.rs`, "gzip", "zstd", "lz4")).toBe(true);
+    expect(fileContains(`${base}/src/main.rs`, "gzip", "zstd", "lz4")).toBe(
+      true
+    );
   });
 
   it("should select compression algorithm based on network tier", () => {
-    expect(fileContains(`${base}/src/main.rs`, "network_tier", "select_algorithm")).toBe(true);
+    expect(
+      fileContains(`${base}/src/main.rs`, "network_tier", "select_algorithm")
+    ).toBe(true);
   });
 
   it("should report compression ratio and timing", () => {
-    expect(fileContains(`${base}/src/main.rs`, "ratio", "compressed_size", "original_size")).toBe(true);
+    expect(
+      fileContains(
+        `${base}/src/main.rs`,
+        "ratio",
+        "compressed_size",
+        "original_size"
+      )
+    ).toBe(true);
   });
 
   it("should have Cargo.toml", () => {
@@ -220,15 +279,27 @@ describe("F7: Python Network Quality Predictor Service", () => {
 
   it("should have main.py with ML-based prediction", () => {
     expect(fileExists(`${base}/main.py`)).toBe(true);
-    expect(fileContains(`${base}/main.py`, "predict", "model", "features")).toBe(true);
+    expect(
+      fileContains(`${base}/main.py`, "predict", "model", "features")
+    ).toBe(true);
   });
 
   it("should detect network tier from telemetry", () => {
-    expect(fileContains(`${base}/main.py`, "tier", "latency", "bandwidth", "packet_loss")).toBe(true);
+    expect(
+      fileContains(
+        `${base}/main.py`,
+        "tier",
+        "latency",
+        "bandwidth",
+        "packet_loss"
+      )
+    ).toBe(true);
   });
 
   it("should provide time-of-day quality prediction", () => {
-    expect(fileContains(`${base}/main.py`, "time_of_day", "predict")).toBe(true);
+    expect(fileContains(`${base}/main.py`, "time_of_day", "predict")).toBe(
+      true
+    );
   });
 
   it("should have health endpoint", () => {
@@ -253,7 +324,9 @@ describe("F8: Python SMS Transaction Bridge Service", () => {
   });
 
   it("should support transaction commands: CI, CO, BAL, TRF, HELP", () => {
-    expect(fileContains(`${base}/main.py`, "CI", "CO", "BAL", "TRF", "HELP")).toBe(true);
+    expect(
+      fileContains(`${base}/main.py`, "CI", "CO", "BAL", "TRF", "HELP")
+    ).toBe(true);
   });
 
   it("should validate PIN for transactions", () => {
@@ -282,7 +355,9 @@ describe("F9: Python Connectivity Analytics Service", () => {
   });
 
   it("should track network quality over time", () => {
-    expect(fileContains(`${base}/main.py`, "history", "trend", "latency")).toBe(true);
+    expect(fileContains(`${base}/main.py`, "history", "trend", "latency")).toBe(
+      true
+    );
   });
 
   it("should generate alerts for poor connectivity", () => {
@@ -365,7 +440,17 @@ describe("F12: TypeScript Graceful Degradation Manager", () => {
   });
 
   it("should implement feature flags per network tier", () => {
-    expect(fileContains(filePath, "2g_gprs", "2g_edge", "3g", "4g_lte", "5g_wifi", "offline")).toBe(true);
+    expect(
+      fileContains(
+        filePath,
+        "2g_gprs",
+        "2g_edge",
+        "3g",
+        "4g_lte",
+        "5g_wifi",
+        "offline"
+      )
+    ).toBe(true);
   });
 
   it("should support text-only mode for very low bandwidth", () => {
@@ -394,11 +479,22 @@ describe("F13: Client Offline Transaction Queue", () => {
   });
 
   it("should support priority queuing (critical, high, normal, low)", () => {
-    expect(fileContains(filePath, "critical", "high", "normal", "low")).toBe(true);
+    expect(fileContains(filePath, "critical", "high", "normal", "low")).toBe(
+      true
+    );
   });
 
   it("should track queue statistics", () => {
-    expect(fileContains(filePath, "QueueStats", "total", "queued", "synced", "failed")).toBe(true);
+    expect(
+      fileContains(
+        filePath,
+        "QueueStats",
+        "total",
+        "queued",
+        "synced",
+        "failed"
+      )
+    ).toBe(true);
   });
 
   it("should auto-sync when coming back online", () => {
@@ -419,7 +515,18 @@ describe("F14: Client Adaptive Network Hook", () => {
   });
 
   it("should define feature matrix for all tiers", () => {
-    expect(fileContains(filePath, "FEATURE_MATRIX", "2g_gprs", "2g_edge", "3g", "4g_lte", "5g_wifi", "offline")).toBe(true);
+    expect(
+      fileContains(
+        filePath,
+        "FEATURE_MATRIX",
+        "2g_gprs",
+        "2g_edge",
+        "3g",
+        "4g_lte",
+        "5g_wifi",
+        "offline"
+      )
+    ).toBe(true);
   });
 
   it("should probe server latency", () => {
@@ -435,7 +542,9 @@ describe("F14: Client Adaptive Network Hook", () => {
   });
 
   it("should support SMS and USSD fallback flags", () => {
-    expect(fileContains(filePath, "useSmssFallback", "useUssdFallback")).toBe(true);
+    expect(fileContains(filePath, "useSmssFallback", "useUssdFallback")).toBe(
+      true
+    );
   });
 });
 
@@ -461,23 +570,33 @@ describe("F15: Service Worker", () => {
 
   it("should implement stale-while-revalidate for app shell", () => {
     expect(fileContains(filePath, "stale", "revalidate")).toBe(false) || // may not use exact term
-    expect(fileContains(filePath, "SHELL_CACHE", "cached", "fetch")).toBe(true);
+      expect(fileContains(filePath, "SHELL_CACHE", "cached", "fetch")).toBe(
+        true
+      );
   });
 
   it("should have background sync for offline transactions", () => {
-    expect(fileContains(filePath, "sync", "offline-transaction-sync")).toBe(true);
+    expect(fileContains(filePath, "sync", "offline-transaction-sync")).toBe(
+      true
+    );
   });
 
   it("should have offline fallback page", () => {
-    expect(fileContains(filePath, "Offline", "offline", "reconnect")).toBe(true);
+    expect(fileContains(filePath, "Offline", "offline", "reconnect")).toBe(
+      true
+    );
   });
 
   it("should exclude mutation routes from caching", () => {
-    expect(fileContains(filePath, "NO_CACHE_API_ROUTES", "/api/sync/push")).toBe(true);
+    expect(
+      fileContains(filePath, "NO_CACHE_API_ROUTES", "/api/sync/push")
+    ).toBe(true);
   });
 
   it("should add X-Cache-Status header for cached responses", () => {
-    expect(fileContains(filePath, "X-Cache-Status", "offline-fallback")).toBe(true);
+    expect(fileContains(filePath, "X-Cache-Status", "offline-fallback")).toBe(
+      true
+    );
   });
 });
 
@@ -505,11 +624,23 @@ describe("F16: Resilience Router Extensions", () => {
   });
 
   it("should define feature matrix with all 6 tiers", () => {
-    expect(fileContains(filePath, "2g_gprs", "2g_edge", "3g", "4g_lte", "5g_wifi", "offline")).toBe(true);
+    expect(
+      fileContains(
+        filePath,
+        "2g_gprs",
+        "2g_edge",
+        "3g",
+        "4g_lte",
+        "5g_wifi",
+        "offline"
+      )
+    ).toBe(true);
   });
 
   it("should include SMS and USSD fallback recommendations", () => {
-    expect(fileContains(filePath, "useSmssFallback", "useUssdFallback")).toBe(true);
+    expect(fileContains(filePath, "useSmssFallback", "useUssdFallback")).toBe(
+      true
+    );
   });
 });
 
@@ -542,24 +673,28 @@ describe("F17: Docker Integration", () => {
 
 describe("F18: Integration Verification", () => {
   it("should wire resilience router in main routers.ts", () => {
-    expect(fileContains("server/routers.ts", "resilienceRouter", "resilience")).toBe(true);
+    expect(
+      fileContains("server/routers.ts", "resilienceRouter", "resilience")
+    ).toBe(true);
   });
 
   it("should wire offlineSync router in main routers.ts", () => {
-    expect(fileContains("server/routers.ts", "offlineSyncRouter", "offlineSync")).toBe(true);
+    expect(
+      fileContains("server/routers.ts", "offlineSyncRouter", "offlineSync")
+    ).toBe(true);
   });
 
   it("should have useOfflineSync hook in client", () => {
     expect(
       fileExists("client/src/hooks/useOfflineSync.ts") ||
-      fileExists("client/src/hooks/useOfflineTransactionQueue.ts")
+        fileExists("client/src/hooks/useOfflineTransactionQueue.ts")
     ).toBe(true);
   });
 
   it("should have useAdaptiveNetwork or useConnectionQuality hook", () => {
     expect(
       fileExists("client/src/hooks/useAdaptiveNetwork.ts") ||
-      fileExists("client/src/hooks/useConnectionQuality.ts")
+        fileExists("client/src/hooks/useConnectionQuality.ts")
     ).toBe(true);
   });
 
@@ -568,15 +703,19 @@ describe("F18: Integration Verification", () => {
   });
 
   it("should have at least 9 resilience microservices total", () => {
-    const goServices = fs.readdirSync(path.join(ROOT, "services/go")).filter(d =>
-      fs.existsSync(path.join(ROOT, "services/go", d, "main.go"))
-    );
-    const rustServices = fs.readdirSync(path.join(ROOT, "services/rust")).filter(d =>
-      fs.existsSync(path.join(ROOT, "services/rust", d, "src/main.rs"))
-    );
-    const pyServices = fs.readdirSync(path.join(ROOT, "services/python")).filter(d =>
-      fs.existsSync(path.join(ROOT, "services/python", d, "main.py"))
-    );
+    const goServices = fs
+      .readdirSync(path.join(ROOT, "services/go"))
+      .filter(d => fs.existsSync(path.join(ROOT, "services/go", d, "main.go")));
+    const rustServices = fs
+      .readdirSync(path.join(ROOT, "services/rust"))
+      .filter(d =>
+        fs.existsSync(path.join(ROOT, "services/rust", d, "src/main.rs"))
+      );
+    const pyServices = fs
+      .readdirSync(path.join(ROOT, "services/python"))
+      .filter(d =>
+        fs.existsSync(path.join(ROOT, "services/python", d, "main.py"))
+      );
     const total = goServices.length + rustServices.length + pyServices.length;
     expect(total).toBeGreaterThanOrEqual(9);
   });

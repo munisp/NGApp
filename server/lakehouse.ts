@@ -10,7 +10,12 @@
  *   54link-fraud-events   — fraud alert history (JSON)
  *   54link-agent-metrics  — agent performance metrics (Parquet)
  */
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import logger from "./_core/logger";
 
@@ -71,7 +76,9 @@ export async function uploadJsonSnapshot(
         },
       })
     );
-    logger.info(`[Lakehouse] Uploaded ${data.length} records → s3://${bucket}/${key}`);
+    logger.info(
+      `[Lakehouse] Uploaded ${data.length} records → s3://${bucket}/${key}`
+    );
     return key;
   } catch (err) {
     logger.warn({ err }, `[Lakehouse] Upload to s3://${bucket}/${key} failed`);
@@ -86,7 +93,11 @@ export async function uploadTransactionSnapshot(
   date: string,
   transactions: object[]
 ): Promise<string | null> {
-  return uploadJsonSnapshot(BUCKETS.TRANSACTIONS, `transactions-${date}`, transactions);
+  return uploadJsonSnapshot(
+    BUCKETS.TRANSACTIONS,
+    `transactions-${date}`,
+    transactions
+  );
 }
 
 /**
@@ -107,7 +118,9 @@ export async function uploadSettlementSummary(
         ContentType: "application/json",
       })
     );
-    logger.info(`[Lakehouse] Settlement summary uploaded → s3://${BUCKETS.SETTLEMENTS}/${key}`);
+    logger.info(
+      `[Lakehouse] Settlement summary uploaded → s3://${BUCKETS.SETTLEMENTS}/${key}`
+    );
     return key;
   } catch (err) {
     logger.warn({ err }, "[Lakehouse] Settlement summary upload failed");
@@ -122,7 +135,11 @@ export async function uploadFraudEvents(
   date: string,
   events: object[]
 ): Promise<string | null> {
-  return uploadJsonSnapshot(BUCKETS.FRAUD_EVENTS, `fraud-events-${date}`, events);
+  return uploadJsonSnapshot(
+    BUCKETS.FRAUD_EVENTS,
+    `fraud-events-${date}`,
+    events
+  );
 }
 
 /**
@@ -141,7 +158,7 @@ export async function listSnapshots(
         MaxKeys: 100,
       })
     );
-    return (res.Contents ?? []).map((obj) => obj.Key ?? "").filter(Boolean);
+    return (res.Contents ?? []).map(obj => obj.Key ?? "").filter(Boolean);
   } catch (err) {
     logger.warn({ err }, `[Lakehouse] List snapshots in ${bucket} failed`);
     return [];

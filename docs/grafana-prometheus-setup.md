@@ -55,12 +55,12 @@ The dashboard UID is `pos-shell-prod-v1`. If you already have a dashboard with t
 
 The dashboard contains four row groups:
 
-| Row | Panels | Key Metrics |
-|---|---|---|
-| **Transaction Volume** | Stat cards + time series | `pos_transactions_total`, `pos_http_request_duration_ms` |
-| **Float & Fraud** | Time series | `pos_float_topup_requests_total`, `pos_float_locks_total`, `pos_fraud_alerts_total` |
-| **Platform Service Health** | Time series | `pos_platform_calls_total`, `pos_platform_call_duration_ms` |
-| **Node.js Process Health** | Time series | `pos_node_heap_size_*`, `pos_node_gc_duration_seconds`, `pos_node_active_handles_total` |
+| Row                         | Panels                   | Key Metrics                                                                             |
+| --------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| **Transaction Volume**      | Stat cards + time series | `pos_transactions_total`, `pos_http_request_duration_ms`                                |
+| **Float & Fraud**           | Time series              | `pos_float_topup_requests_total`, `pos_float_locks_total`, `pos_fraud_alerts_total`     |
+| **Platform Service Health** | Time series              | `pos_platform_calls_total`, `pos_platform_call_duration_ms`                             |
+| **Node.js Process Health**  | Time series              | `pos_node_heap_size_*`, `pos_node_gc_duration_seconds`, `pos_node_active_handles_total` |
 
 The **Environment** template variable (top-left) filters all panels by the `environment` label set during scraping.
 
@@ -76,7 +76,6 @@ groups:
   - name: pos_shell_alerts
     interval: 1m
     rules:
-
       # ── SLA: p95 latency > 500 ms for 2 consecutive minutes ────────────────
       - alert: PosShellHighLatency
         expr: |
@@ -155,16 +154,16 @@ This streams VU count, RPS, and latency percentiles into Grafana Cloud in real t
 
 ## Metric Reference
 
-| Metric | Type | Labels | Description |
-|---|---|---|---|
-| `pos_transactions_total` | Counter | `type`, `status`, `channel` | Total transactions processed |
-| `pos_transaction_errors_total` | Counter | `type`, `reason` | Transaction failures by reason |
-| `pos_float_locks_total` | Counter | `trigger` | Float account lock events |
-| `pos_disputes_raised_total` | Counter | `type` | Disputes raised by type |
-| `pos_float_topup_requests_total` | Counter | `status` | Float top-up request submissions |
-| `pos_platform_calls_total` | Counter | `service`, `status` | Outbound platform service calls |
-| `pos_fraud_alerts_total` | Counter | `severity` | Fraud alerts by severity |
-| `pos_transaction_duration_ms` | Histogram | `type` | Transaction processing time |
-| `pos_platform_call_duration_ms` | Histogram | `service` | Platform service call latency |
-| `pos_http_request_duration_ms` | Histogram | `method`, `route`, `status_code` | HTTP request duration |
-| `pos_node_*` | Various | — | Default Node.js process metrics |
+| Metric                           | Type      | Labels                           | Description                      |
+| -------------------------------- | --------- | -------------------------------- | -------------------------------- |
+| `pos_transactions_total`         | Counter   | `type`, `status`, `channel`      | Total transactions processed     |
+| `pos_transaction_errors_total`   | Counter   | `type`, `reason`                 | Transaction failures by reason   |
+| `pos_float_locks_total`          | Counter   | `trigger`                        | Float account lock events        |
+| `pos_disputes_raised_total`      | Counter   | `type`                           | Disputes raised by type          |
+| `pos_float_topup_requests_total` | Counter   | `status`                         | Float top-up request submissions |
+| `pos_platform_calls_total`       | Counter   | `service`, `status`              | Outbound platform service calls  |
+| `pos_fraud_alerts_total`         | Counter   | `severity`                       | Fraud alerts by severity         |
+| `pos_transaction_duration_ms`    | Histogram | `type`                           | Transaction processing time      |
+| `pos_platform_call_duration_ms`  | Histogram | `service`                        | Platform service call latency    |
+| `pos_http_request_duration_ms`   | Histogram | `method`, `route`, `status_code` | HTTP request duration            |
+| `pos_node_*`                     | Various   | —                                | Default Node.js process metrics  |

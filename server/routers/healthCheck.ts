@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
@@ -6,8 +5,11 @@ import { TRPCError } from "@trpc/server";
 
 export const healthCheckRouter = router({
   status: publicProcedure.query(async () => {
-    const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
-    
+    const checks: Record<
+      string,
+      { status: string; latencyMs?: number; error?: string }
+    > = {};
+
     // Database check
     const dbStart = Date.now();
     try {
@@ -15,14 +17,21 @@ export const healthCheckRouter = router({
       if (db) {
         // @ts-expect-error auto-fix
         await db.execute({ sql: "SELECT 1" });
-        checks.database = { status: "healthy", latencyMs: Date.now() - dbStart };
+        checks.database = {
+          status: "healthy",
+          latencyMs: Date.now() - dbStart,
+        };
       } else {
         checks.database = { status: "unavailable", error: "No DB connection" };
       }
     } catch (e) {
-      checks.database = { status: "unhealthy", latencyMs: Date.now() - dbStart, error: (e as Error).message };
+      checks.database = {
+        status: "unhealthy",
+        latencyMs: Date.now() - dbStart,
+        error: (e as Error).message,
+      };
     }
-    
+
     // Redis check
     try {
       // @ts-expect-error auto-fix
@@ -33,31 +42,33 @@ export const healthCheckRouter = router({
     } catch (e) {
       checks.redis = { status: "unavailable", error: (e as Error).message };
     }
-    
+
     // Kafka check
     try {
       const kafkaStart = Date.now();
       // @ts-expect-error auto-fix
       const { getKafkaStatus } = await import("../../kafkaClient");
-      const kafkaUp = await getKafkaStatus?.() ?? false;
-      checks.kafka = kafkaUp 
+      const kafkaUp = (await getKafkaStatus?.()) ?? false;
+      checks.kafka = kafkaUp
         ? { status: "healthy", latencyMs: Date.now() - kafkaStart }
         : { status: "unavailable" };
     } catch {
       checks.kafka = { status: "unavailable" };
     }
-    
+
     // TigerBeetle sidecar check
     try {
       const tbStart = Date.now();
-      const resp = await fetch("http://localhost:9090/health", { signal: AbortSignal.timeout(2000) });
-      checks.tigerBeetle = resp.ok 
+      const resp = await fetch("http://localhost:9090/health", {
+        signal: AbortSignal.timeout(2000),
+      });
+      checks.tigerBeetle = resp.ok
         ? { status: "healthy", latencyMs: Date.now() - tbStart }
         : { status: "unhealthy", error: `HTTP ${resp.status}` };
     } catch {
       checks.tigerBeetle = { status: "unavailable" };
     }
-    
+
     // Go microservice health checks
     const goServices = [
       { name: "api-gateway", port: 8080 },
@@ -71,7 +82,9 @@ export const healthCheckRouter = router({
     for (const svc of goServices) {
       try {
         const start = Date.now();
-        const resp = await fetch(`http://localhost:${svc.port}/health`, { signal: AbortSignal.timeout(2000) });
+        const resp = await fetch(`http://localhost:${svc.port}/health`, {
+          signal: AbortSignal.timeout(2000),
+        });
         checks[`go:${svc.name}`] = resp.ok
           ? { status: "healthy", latencyMs: Date.now() - start }
           : { status: "unhealthy", error: `HTTP ${resp.status}` };
@@ -90,7 +103,9 @@ export const healthCheckRouter = router({
     for (const svc of pyServices) {
       try {
         const start = Date.now();
-        const resp = await fetch(`http://localhost:${svc.port}/health`, { signal: AbortSignal.timeout(2000) });
+        const resp = await fetch(`http://localhost:${svc.port}/health`, {
+          signal: AbortSignal.timeout(2000),
+        });
         checks[`py:${svc.name}`] = resp.ok
           ? { status: "healthy", latencyMs: Date.now() - start }
           : { status: "unhealthy", error: `HTTP ${resp.status}` };
@@ -107,7 +122,9 @@ export const healthCheckRouter = router({
     for (const svc of rustServices) {
       try {
         const start = Date.now();
-        const resp = await fetch(`http://localhost:${svc.port}/health`, { signal: AbortSignal.timeout(2000) });
+        const resp = await fetch(`http://localhost:${svc.port}/health`, {
+          signal: AbortSignal.timeout(2000),
+        });
         checks[`rust:${svc.name}`] = resp.ok
           ? { status: "healthy", latencyMs: Date.now() - start }
           : { status: "unhealthy", error: `HTTP ${resp.status}` };
@@ -117,7 +134,9 @@ export const healthCheckRouter = router({
     }
 
     const overallHealthy = checks.database?.status === "healthy";
-    const healthyCount = Object.values(checks).filter(c => c.status === "healthy").length;
+    const healthyCount = Object.values(checks).filter(
+      c => c.status === "healthy"
+    ).length;
     const totalCount = Object.keys(checks).length;
     return {
       status: overallHealthy ? "healthy" : "degraded",
@@ -131,7 +150,13 @@ export const healthCheckRouter = router({
   }),
 
   microservices: publicProcedure.query(async () => {
-    const services: Array<{ name: string; type: string; port: number; status: string; latencyMs?: number }> = [];
+    const services: Array<{
+      name: string;
+      type: string;
+      port: number;
+      status: string;
+      latencyMs?: number;
+    }> = [];
     const allServices = [
       { name: "api-gateway", type: "go", port: 8080 },
       { name: "kyb-engine", type: "go", port: 8130 },
@@ -145,8 +170,14 @@ export const healthCheckRouter = router({
     for (const svc of allServices) {
       try {
         const start = Date.now();
-        const resp = await fetch(`http://localhost:${svc.port}/health`, { signal: AbortSignal.timeout(2000) });
-        services.push({ ...svc, status: resp.ok ? "healthy" : "unhealthy", latencyMs: Date.now() - start });
+        const resp = await fetch(`http://localhost:${svc.port}/health`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        services.push({
+          ...svc,
+          status: resp.ok ? "healthy" : "unhealthy",
+          latencyMs: Date.now() - start,
+        });
       } catch {
         services.push({ ...svc, status: "unavailable" });
       }

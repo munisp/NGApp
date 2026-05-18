@@ -8,7 +8,11 @@ import type { Request, Response, NextFunction } from "express";
 const CURRENT_VERSION = "v1";
 const SUPPORTED_VERSIONS = ["v1"];
 
-export function apiVersionMiddleware(req: Request, res: Response, next: NextFunction) {
+export function apiVersionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const versionMatch = req.path.match(/^\/api\/(v\d+)\//);
 
   if (versionMatch) {

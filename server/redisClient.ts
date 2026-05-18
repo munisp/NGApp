@@ -56,7 +56,10 @@ async function getDirectClient(): Promise<RedisType | null> {
 // ── Proxy helper (via APISix) ─────────────────────────────────────────────────
 async function proxyGet(path: string): Promise<unknown> {
   const res = await fetch(`${PLATFORM_BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${PLATFORM_API_KEY}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${PLATFORM_API_KEY}`,
+      Accept: "application/json",
+    },
     signal: AbortSignal.timeout(3000),
   });
   if (!res.ok) throw new Error(`Redis proxy ${path} → ${res.status}`);
@@ -87,7 +90,9 @@ export async function cacheGet(key: string): Promise<string | null> {
   try {
     const client = await getDirectClient();
     if (client) return client.get(key);
-    const data = await proxyGet(`/v1/cache/${encodeURIComponent(key)}`) as { value: string | null };
+    const data = (await proxyGet(`/v1/cache/${encodeURIComponent(key)}`)) as {
+      value: string | null;
+    };
     return data.value ?? null;
   } catch {
     return null;
@@ -98,7 +103,11 @@ export async function cacheGet(key: string): Promise<string | null> {
  * Set a cached value with an optional TTL in seconds.
  * Returns true on success, false on failure.
  */
-export async function cacheSet(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+export async function cacheSet(
+  key: string,
+  value: string,
+  ttlSeconds?: number
+): Promise<boolean> {
   try {
     const client = await getDirectClient();
     if (client) {
@@ -119,7 +128,10 @@ export async function cacheSet(key: string, value: string, ttlSeconds?: number):
 export async function cacheDel(key: string): Promise<boolean> {
   try {
     const client = await getDirectClient();
-    if (client) { await client.del(key); return true; }
+    if (client) {
+      await client.del(key);
+      return true;
+    }
     await fetch(`${PLATFORM_BASE_URL}/v1/cache/${encodeURIComponent(key)}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${PLATFORM_API_KEY}` },
@@ -134,7 +146,10 @@ export async function cacheDel(key: string): Promise<boolean> {
 /**
  * Increment a counter (used for rate limiting, leaderboards).
  */
-export async function cacheIncr(key: string, ttlSeconds?: number): Promise<number> {
+export async function cacheIncr(
+  key: string,
+  ttlSeconds?: number
+): Promise<number> {
   try {
     const client = await getDirectClient();
     if (client) {
@@ -142,7 +157,10 @@ export async function cacheIncr(key: string, ttlSeconds?: number): Promise<numbe
       if (ttlSeconds && val === 1) await client.expire(key, ttlSeconds);
       return val;
     }
-    const data = await proxyPost("/v1/cache/incr", { key, ttl: ttlSeconds }) as { value: number };
+    const data = (await proxyPost("/v1/cache/incr", {
+      key,
+      ttl: ttlSeconds,
+    })) as { value: number };
     return data.value;
   } catch {
     return 0;
@@ -152,10 +170,16 @@ export async function cacheIncr(key: string, ttlSeconds?: number): Promise<numbe
 /**
  * Publish a message to a Redis pub/sub channel.
  */
-export async function cachePublish(channel: string, message: string): Promise<boolean> {
+export async function cachePublish(
+  channel: string,
+  message: string
+): Promise<boolean> {
   try {
     const client = await getDirectClient();
-    if (client) { await client.publish(channel, message); return true; }
+    if (client) {
+      await client.publish(channel, message);
+      return true;
+    }
     await proxyPost("/v1/cache/publish", { channel, message });
     return true;
   } catch {
@@ -169,7 +193,10 @@ export async function cachePublish(channel: string, message: string): Promise<bo
 export async function redisIsHealthy(): Promise<boolean> {
   try {
     const client = await getDirectClient();
-    if (client) { await client.ping(); return true; }
+    if (client) {
+      await client.ping();
+      return true;
+    }
     await proxyGet("/v1/cache/health");
     return true;
   } catch {

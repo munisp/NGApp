@@ -289,7 +289,7 @@ describe("scoreFraud", () => {
 
   it("flags geofence violation with high weight", () => {
     const result = scoreFraud({ ...baseParams, isOutsideGeofence: true });
-    expect(result.score).toBeGreaterThanOrEqual(0.30);
+    expect(result.score).toBeGreaterThanOrEqual(0.3);
     const geoSignal = result.signals.find(s => s.type === "geofence_violation");
     expect(geoSignal).toBeDefined();
   });
@@ -302,7 +302,7 @@ describe("scoreFraud", () => {
       hourlyCount: 18, // >70% of Silver 20/hr limit
     });
     expect(result.shouldAlert).toBe(true);
-    expect(result.score).toBeGreaterThanOrEqual(0.50);
+    expect(result.score).toBeGreaterThanOrEqual(0.5);
   });
 
   it("blocks transaction with geofence + velocity + pin brute force", () => {
@@ -314,7 +314,7 @@ describe("scoreFraud", () => {
       failedPinAttempts: 3,
     });
     expect(result.shouldBlock).toBe(true);
-    expect(result.score).toBeGreaterThanOrEqual(0.70);
+    expect(result.score).toBeGreaterThanOrEqual(0.7);
   });
 
   it("flags rapid succession (< 30 seconds)", () => {
@@ -330,8 +330,14 @@ describe("scoreFraud", () => {
   });
 
   it("flags round amount structuring for large round amounts", () => {
-    const result = scoreFraud({ ...baseParams, amount: 100_000, isRoundAmount: true });
-    const signal = result.signals.find(s => s.type === "round_amount_structuring");
+    const result = scoreFraud({
+      ...baseParams,
+      amount: 100_000,
+      isRoundAmount: true,
+    });
+    const signal = result.signals.find(
+      s => s.type === "round_amount_structuring"
+    );
     expect(signal).toBeDefined();
   });
 
@@ -449,9 +455,15 @@ describe("CBN_LIMITS data integrity", () => {
   });
 
   it("has increasing limits across tiers", () => {
-    expect(CBN_LIMITS.Silver.maxSingleTx).toBeGreaterThan(CBN_LIMITS.Bronze.maxSingleTx);
-    expect(CBN_LIMITS.Gold.maxSingleTx).toBeGreaterThan(CBN_LIMITS.Silver.maxSingleTx);
-    expect(CBN_LIMITS.Platinum.maxSingleTx).toBeGreaterThan(CBN_LIMITS.Gold.maxSingleTx);
+    expect(CBN_LIMITS.Silver.maxSingleTx).toBeGreaterThan(
+      CBN_LIMITS.Bronze.maxSingleTx
+    );
+    expect(CBN_LIMITS.Gold.maxSingleTx).toBeGreaterThan(
+      CBN_LIMITS.Silver.maxSingleTx
+    );
+    expect(CBN_LIMITS.Platinum.maxSingleTx).toBeGreaterThan(
+      CBN_LIMITS.Gold.maxSingleTx
+    );
   });
 
   it("requires BVN for Silver and above", () => {
@@ -478,8 +490,12 @@ describe("KYC_TIER_LIMITS data integrity", () => {
   });
 
   it("has increasing limits across KYC tiers", () => {
-    expect(KYC_TIER_LIMITS[2].maxSingleTx).toBeGreaterThan(KYC_TIER_LIMITS[1].maxSingleTx);
-    expect(KYC_TIER_LIMITS[3].maxSingleTx).toBeGreaterThan(KYC_TIER_LIMITS[2].maxSingleTx);
+    expect(KYC_TIER_LIMITS[2].maxSingleTx).toBeGreaterThan(
+      KYC_TIER_LIMITS[1].maxSingleTx
+    );
+    expect(KYC_TIER_LIMITS[3].maxSingleTx).toBeGreaterThan(
+      KYC_TIER_LIMITS[2].maxSingleTx
+    );
   });
 });
 

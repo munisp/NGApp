@@ -23,15 +23,31 @@ export interface DeviceInfo {
   lastSeen: string;
 }
 
-export async function checkDevice(deviceId: string, agentCode: string): Promise<AdapterResponse<DeviceCheckResult>> {
-  return mdmComplianceEngine.post<DeviceCheckResult>("/api/v1/device/check", { deviceId, agentCode });
+export async function checkDevice(
+  deviceId: string,
+  agentCode: string
+): Promise<AdapterResponse<DeviceCheckResult>> {
+  return mdmComplianceEngine.post<DeviceCheckResult>("/api/v1/device/check", {
+    deviceId,
+    agentCode,
+  });
 }
 
-export async function listDevices(agentCode?: string): Promise<AdapterResponse<DeviceInfo[]>> {
+export async function listDevices(
+  agentCode?: string
+): Promise<AdapterResponse<DeviceInfo[]>> {
   const params = agentCode ? { agentCode } : undefined;
   return mdmComplianceEngine.get<DeviceInfo[]>("/api/v1/device/list", params);
 }
 
-export async function enrollDevice(deviceId: string, agentCode: string, model: string): Promise<AdapterResponse<DeviceInfo>> {
-  return mdmComplianceEngine.post<DeviceInfo>("/api/v1/device/enroll", { deviceId, agentCode, model });
+export async function enrollDevice(
+  deviceId: string,
+  agentCode: string,
+  model: string
+): Promise<AdapterResponse<DeviceInfo>> {
+  return mdmComplianceEngine.post<DeviceInfo>("/api/v1/device/enroll", {
+    deviceId,
+    agentCode,
+    model,
+  });
 }

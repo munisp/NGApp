@@ -36,8 +36,8 @@ metadata:
   namespace: 54link
 spec:
   secretName: pos-shell-mtls-tls
-  duration: 720h        # 30 days
-  renewBefore: 168h     # Renew 7 days before expiry
+  duration: 720h # 30 days
+  renewBefore: 168h # Renew 7 days before expiry
   subject:
     organizations: ["54Link"]
   commonName: pos-shell.svc.54link.internal
@@ -69,18 +69,24 @@ export function getMtlsAgent(): https.Agent {
   if (_agent) return _agent;
 
   const certPath = path.join(CERT_DIR, "tls.crt");
-  const keyPath  = path.join(CERT_DIR, "tls.key");
-  const caPath   = path.join(CERT_DIR, "ca.crt");
+  const keyPath = path.join(CERT_DIR, "tls.key");
+  const caPath = path.join(CERT_DIR, "ca.crt");
 
-  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath) || !fs.existsSync(caPath)) {
-    console.warn("[mTLS] Certificates not found — falling back to plain HTTPS (dev mode only)");
+  if (
+    !fs.existsSync(certPath) ||
+    !fs.existsSync(keyPath) ||
+    !fs.existsSync(caPath)
+  ) {
+    console.warn(
+      "[mTLS] Certificates not found — falling back to plain HTTPS (dev mode only)"
+    );
     return new https.Agent({ rejectUnauthorized: false });
   }
 
   _agent = new https.Agent({
     cert: fs.readFileSync(certPath),
-    key:  fs.readFileSync(keyPath),
-    ca:   fs.readFileSync(caPath),
+    key: fs.readFileSync(keyPath),
+    ca: fs.readFileSync(caPath),
     rejectUnauthorized: true,
     // Enforce TLS 1.3 minimum
     minVersion: "TLSv1.3",
@@ -122,17 +128,17 @@ export async function callPlatformService(
 
 ## Per-Service Configuration
 
-| Service | Internal DNS | Port | Protocol | Notes |
-|---|---|---|---|---|
-| KYC Service (Python FastAPI) | `kyc-service.svc.54link.internal` | 8443 | mTLS | Liveness + OCR endpoints |
-| Fraud Service (Go) | `fraud-service.svc.54link.internal` | 8443 | mTLS | Real-time scoring |
-| Settlement Service (Rust) | `settlement-service.svc.54link.internal` | 8443 | mTLS | ISO 8583 bridge |
-| Float Service (Go) | `float-service.svc.54link.internal` | 8443 | mTLS | Balance + history |
-| Analytics Service (Python) | `analytics-service.svc.54link.internal` | 8443 | mTLS | Metrics aggregation |
-| Geofencing Service (Go) | `geofencing-service.svc.54link.internal` | 8443 | mTLS | Polygon enforcement |
-| TigerBeetle Sidecar | `tigerbeetle-sidecar.svc.54link.internal` | 3001 | mTLS | Offline-first ledger |
-| Keycloak | `keycloak.svc.54link.internal` | 8443 | TLS (server-only) | OIDC discovery |
-| APISix Gateway | `apisix.svc.54link.internal` | 9443 | mTLS | Upstream auth |
+| Service                      | Internal DNS                              | Port | Protocol          | Notes                    |
+| ---------------------------- | ----------------------------------------- | ---- | ----------------- | ------------------------ |
+| KYC Service (Python FastAPI) | `kyc-service.svc.54link.internal`         | 8443 | mTLS              | Liveness + OCR endpoints |
+| Fraud Service (Go)           | `fraud-service.svc.54link.internal`       | 8443 | mTLS              | Real-time scoring        |
+| Settlement Service (Rust)    | `settlement-service.svc.54link.internal`  | 8443 | mTLS              | ISO 8583 bridge          |
+| Float Service (Go)           | `float-service.svc.54link.internal`       | 8443 | mTLS              | Balance + history        |
+| Analytics Service (Python)   | `analytics-service.svc.54link.internal`   | 8443 | mTLS              | Metrics aggregation      |
+| Geofencing Service (Go)      | `geofencing-service.svc.54link.internal`  | 8443 | mTLS              | Polygon enforcement      |
+| TigerBeetle Sidecar          | `tigerbeetle-sidecar.svc.54link.internal` | 3001 | mTLS              | Offline-first ledger     |
+| Keycloak                     | `keycloak.svc.54link.internal`            | 8443 | TLS (server-only) | OIDC discovery           |
+| APISix Gateway               | `apisix.svc.54link.internal`              | 9443 | mTLS              | Upstream auth            |
 
 ---
 
@@ -203,18 +209,18 @@ dapr mtls status -k
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `MTLS_CERT_DIR` | `/etc/54link/certs` | Directory containing `tls.crt`, `tls.key`, `ca.crt` |
-| `MTLS_ENABLED` | `true` in production | Set to `false` to bypass mTLS (dev/test only) |
-| `PLATFORM_KYC_URL` | — | Full URL of KYC service including scheme and port |
-| `PLATFORM_FRAUD_URL` | — | Full URL of Fraud service |
-| `PLATFORM_SETTLEMENT_URL` | — | Full URL of Settlement service |
-| `PLATFORM_FLOAT_URL` | — | Full URL of Float service |
-| `PLATFORM_ANALYTICS_URL` | — | Full URL of Analytics service |
-| `PLATFORM_GEOFENCING_URL` | — | Full URL of Geofencing service |
-| `TB_SIDECAR_URL` | `http://localhost:3001` | TigerBeetle sidecar (local, no mTLS) |
+| Variable                  | Default                 | Description                                         |
+| ------------------------- | ----------------------- | --------------------------------------------------- |
+| `MTLS_CERT_DIR`           | `/etc/54link/certs`     | Directory containing `tls.crt`, `tls.key`, `ca.crt` |
+| `MTLS_ENABLED`            | `true` in production    | Set to `false` to bypass mTLS (dev/test only)       |
+| `PLATFORM_KYC_URL`        | —                       | Full URL of KYC service including scheme and port   |
+| `PLATFORM_FRAUD_URL`      | —                       | Full URL of Fraud service                           |
+| `PLATFORM_SETTLEMENT_URL` | —                       | Full URL of Settlement service                      |
+| `PLATFORM_FLOAT_URL`      | —                       | Full URL of Float service                           |
+| `PLATFORM_ANALYTICS_URL`  | —                       | Full URL of Analytics service                       |
+| `PLATFORM_GEOFENCING_URL` | —                       | Full URL of Geofencing service                      |
+| `TB_SIDECAR_URL`          | `http://localhost:3001` | TigerBeetle sidecar (local, no mTLS)                |
 
 ---
 
-*Last updated: 2026-03-31 — Production Readiness Sprint Phase 94*
+_Last updated: 2026-03-31 — Production Readiness Sprint Phase 94_

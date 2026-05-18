@@ -7,15 +7,15 @@ import { useState } from "react";
 import { trpc } from "../../lib/trpc";
 import { toast } from "sonner";
 
-const BG   = "#0a0e1a";
+const BG = "#0a0e1a";
 const CARD = "oklch(0.14 0.02 240)";
 const BORDER = "oklch(0.22 0.02 240)";
-const GREEN  = "oklch(0.65 0.18 160)";
-const RED    = "oklch(0.60 0.22 25)";
-const GOLD   = "oklch(0.78 0.18 80)";
-const BLUE   = "oklch(0.60 0.22 260)";
-const DISP   = "'Space Grotesk', sans-serif";
-const MONO   = "'JetBrains Mono', monospace";
+const GREEN = "oklch(0.65 0.18 160)";
+const RED = "oklch(0.60 0.22 25)";
+const GOLD = "oklch(0.78 0.18 80)";
+const BLUE = "oklch(0.60 0.22 260)";
+const DISP = "'Space Grotesk', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
 
 const fmt = (n: number) =>
   `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -36,12 +36,19 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function AgentManagementTab() {
   const [search, setSearch] = useState("");
-  const [assignModal, setAssignModal] = useState<{ agentId: number; agentCode: string } | null>(null);
+  const [assignModal, setAssignModal] = useState<{
+    agentId: number;
+    agentCode: string;
+  } | null>(null);
   const [supervisorCode, setSupervisorCode] = useState("");
 
   const assignMut = trpc.supervisor.assignAgent.useMutation({
-    onSuccess: () => { toast.success("Agent assigned to supervisor"); setAssignModal(null); setSupervisorCode(""); },
-    onError: (e) => toast.error(`Assignment failed: ${e.message}`),
+    onSuccess: () => {
+      toast.success("Agent assigned to supervisor");
+      setAssignModal(null);
+      setSupervisorCode("");
+    },
+    onError: e => toast.error(`Assignment failed: ${e.message}`),
   });
 
   const [confirmModal, setConfirmModal] = useState<{
@@ -51,15 +58,25 @@ export default function AgentManagementTab() {
     newRole?: string;
   } | null>(null);
 
-  const { data: agents, refetch, isLoading } = trpc.agentMgmt.listAll.useQuery();
+  const {
+    data: agents,
+    refetch,
+    isLoading,
+  } = trpc.agentMgmt.listAll.useQuery();
 
   // Per-agent 7-day success rates from Python analytics service
-  const { data: ratesData } = trpc.resilience.agentSuccessRates.useQuery({ days: 7 }, {
-    refetchInterval: 60_000,
-    retry: false,
-  });
-  const ratesMap = new Map<string, { rate: number | null; tier: string | null }>(
-    (ratesData?.agents ?? []).map((a) => [
+  const { data: ratesData } = trpc.resilience.agentSuccessRates.useQuery(
+    { days: 7 },
+    {
+      refetchInterval: 60_000,
+      retry: false,
+    }
+  );
+  const ratesMap = new Map<
+    string,
+    { rate: number | null; tier: string | null }
+  >(
+    (ratesData?.agents ?? []).map(a => [
       a.agent_code,
       { rate: a.success_rate_pct, tier: a.tier },
     ])
@@ -79,7 +96,7 @@ export default function AgentManagementTab() {
       refetch();
       setConfirmModal(null);
     },
-    onError: (e) => toast.error(`Failed to update role: ${e.message}`),
+    onError: e => toast.error(`Failed to update role: ${e.message}`),
   });
 
   const setActiveMut = trpc.agentMgmt.setActive.useMutation({
@@ -88,11 +105,11 @@ export default function AgentManagementTab() {
       refetch();
       setConfirmModal(null);
     },
-    onError: (e) => toast.error(`Failed: ${e.message}`),
+    onError: e => toast.error(`Failed: ${e.message}`),
   });
 
   const filtered = (agents ?? []).filter(
-    (a) =>
+    a =>
       a.agentCode.toLowerCase().includes(search.toLowerCase()) ||
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       (a.location ?? "").toLowerCase().includes(search.toLowerCase())
@@ -102,7 +119,10 @@ export default function AgentManagementTab() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="text-lg font-black text-white" style={{ fontFamily: DISP }}>
+        <div
+          className="text-lg font-black text-white"
+          style={{ fontFamily: DISP }}
+        >
           Agent Directory
           <span className="ml-2 text-sm font-normal text-gray-500">
             ({agents?.length ?? 0} agents)
@@ -110,7 +130,7 @@ export default function AgentManagementTab() {
         </div>
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           placeholder="Search by code, name, location…"
           className="px-3 py-2 rounded-xl text-sm text-white bg-transparent border outline-none w-64"
           style={{ borderColor: BORDER, fontFamily: DISP, background: CARD }}
@@ -121,74 +141,154 @@ export default function AgentManagementTab() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Agents", value: agents?.length ?? 0, color: BLUE },
-          { label: "Active", value: agents?.filter((a) => a.isActive).length ?? 0, color: GREEN },
-          { label: "Suspended", value: agents?.filter((a) => !a.isActive).length ?? 0, color: RED },
-          { label: "Admins", value: agents?.filter((a) => a.role === "admin").length ?? 0, color: GOLD },
-        ].map((c) => (
-          <div key={c.label} className="rounded-2xl p-4 flex flex-col gap-1"
-            style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <div className="text-xs text-gray-500 uppercase tracking-widest" style={{ fontFamily: DISP }}>{c.label}</div>
-            <div className="text-2xl font-black" style={{ color: c.color, fontFamily: MONO }}>{c.value}</div>
+          {
+            label: "Active",
+            value: agents?.filter(a => a.isActive).length ?? 0,
+            color: GREEN,
+          },
+          {
+            label: "Suspended",
+            value: agents?.filter(a => !a.isActive).length ?? 0,
+            color: RED,
+          },
+          {
+            label: "Admins",
+            value: agents?.filter(a => a.role === "admin").length ?? 0,
+            color: GOLD,
+          },
+        ].map(c => (
+          <div
+            key={c.label}
+            className="rounded-2xl p-4 flex flex-col gap-1"
+            style={{ background: CARD, border: `1px solid ${BORDER}` }}
+          >
+            <div
+              className="text-xs text-gray-500 uppercase tracking-widest"
+              style={{ fontFamily: DISP }}
+            >
+              {c.label}
+            </div>
+            <div
+              className="text-2xl font-black"
+              style={{ color: c.color, fontFamily: MONO }}
+            >
+              {c.value}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Agent table */}
-      <div className="overflow-x-auto rounded-xl" style={{ border: `1px solid ${BORDER}` }}>
+      <div
+        className="overflow-x-auto rounded-xl"
+        style={{ border: `1px solid ${BORDER}` }}
+      >
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-500" style={{ fontFamily: DISP }}>
+          <div
+            className="flex items-center justify-center h-32 text-gray-500"
+            style={{ fontFamily: DISP }}
+          >
             Loading agents…
           </div>
         ) : (
           <table className="w-full text-xs">
             <thead>
-              <tr style={{ background: CARD, borderBottom: `1px solid ${BORDER}` }}>
-                {["Code", "Name", "Tier", "Role", "Float Balance", "Commission", "Points", "Location", "7d Success", "Status", "Actions"].map((h) => (
-                  <th key={h} className="px-3 py-3 text-left font-semibold text-gray-400 uppercase tracking-wider"
-                    style={{ fontFamily: DISP }}>{h}</th>
+              <tr
+                style={{
+                  background: CARD,
+                  borderBottom: `1px solid ${BORDER}`,
+                }}
+              >
+                {[
+                  "Code",
+                  "Name",
+                  "Tier",
+                  "Role",
+                  "Float Balance",
+                  "Commission",
+                  "Points",
+                  "Location",
+                  "7d Success",
+                  "Status",
+                  "Actions",
+                ].map(h => (
+                  <th
+                    key={h}
+                    className="px-3 py-3 text-left font-semibold text-gray-400 uppercase tracking-wider"
+                    style={{ fontFamily: DISP }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((agent, i) => (
-                <tr key={agent.id}
-                  style={{ background: i % 2 === 0 ? BG : CARD, borderBottom: `1px solid ${BORDER}` }}>
-                  <td className="px-3 py-3 font-bold" style={{ color: BLUE, fontFamily: MONO }}>
+                <tr
+                  key={agent.id}
+                  style={{
+                    background: i % 2 === 0 ? BG : CARD,
+                    borderBottom: `1px solid ${BORDER}`,
+                  }}
+                >
+                  <td
+                    className="px-3 py-3 font-bold"
+                    style={{ color: BLUE, fontFamily: MONO }}
+                  >
                     {agent.agentCode}
                   </td>
-                  <td className="px-3 py-3 text-white font-semibold" style={{ fontFamily: DISP }}>
+                  <td
+                    className="px-3 py-3 text-white font-semibold"
+                    style={{ fontFamily: DISP }}
+                  >
                     {agent.name}
                   </td>
                   <td className="px-3 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold"
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-bold"
                       style={{
                         background: `${TIER_COLORS[agent.tier] ?? BLUE}22`,
                         color: TIER_COLORS[agent.tier] ?? BLUE,
                         fontFamily: DISP,
-                      }}>
+                      }}
+                    >
                       {agent.tier}
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase"
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-bold uppercase"
                       style={{
                         background: `${ROLE_COLORS[agent.role] ?? BLUE}22`,
                         color: ROLE_COLORS[agent.role] ?? BLUE,
                         fontFamily: DISP,
-                      }}>
+                      }}
+                    >
                       {agent.role}
                     </span>
                   </td>
-                  <td className="px-3 py-3 font-bold" style={{ color: GREEN, fontFamily: MONO }}>
+                  <td
+                    className="px-3 py-3 font-bold"
+                    style={{ color: GREEN, fontFamily: MONO }}
+                  >
                     {fmt(agent.floatBalance)}
                   </td>
-                  <td className="px-3 py-3 font-bold" style={{ color: GOLD, fontFamily: MONO }}>
+                  <td
+                    className="px-3 py-3 font-bold"
+                    style={{ color: GOLD, fontFamily: MONO }}
+                  >
                     {fmt(agent.commissionBalance)}
                   </td>
-                  <td className="px-3 py-3 text-gray-400" style={{ fontFamily: MONO }}>
+                  <td
+                    className="px-3 py-3 text-gray-400"
+                    style={{ fontFamily: MONO }}
+                  >
                     {agent.loyaltyPoints.toLocaleString()}
                   </td>
-                  <td className="px-3 py-3 text-gray-400 text-xs" style={{ fontFamily: DISP }}>
+                  <td
+                    className="px-3 py-3 text-gray-400 text-xs"
+                    style={{ fontFamily: DISP }}
+                  >
                     {agent.location ?? "—"}
                   </td>
                   {/* 7-day success rate from Python analytics */}
@@ -196,14 +296,34 @@ export default function AgentManagementTab() {
                     {(() => {
                       const r = ratesMap.get(agent.agentCode);
                       if (!r || r.rate === null) {
-                        return <span className="text-gray-600 text-xs" style={{ fontFamily: MONO }}>—</span>;
+                        return (
+                          <span
+                            className="text-gray-600 text-xs"
+                            style={{ fontFamily: MONO }}
+                          >
+                            —
+                          </span>
+                        );
                       }
                       return (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-bold" style={{ color: RATE_COLOR(r.tier), fontFamily: MONO }}>
+                          <span
+                            className="text-xs font-bold"
+                            style={{
+                              color: RATE_COLOR(r.tier),
+                              fontFamily: MONO,
+                            }}
+                          >
                             {r.rate.toFixed(1)}%
                           </span>
-                          <span className="text-xs" style={{ color: RATE_COLOR(r.tier), fontFamily: DISP, opacity: 0.8 }}>
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: RATE_COLOR(r.tier),
+                              fontFamily: DISP,
+                              opacity: 0.8,
+                            }}
+                          >
                             {r.tier}
                           </span>
                         </div>
@@ -211,12 +331,16 @@ export default function AgentManagementTab() {
                     })()}
                   </td>
                   <td className="px-3 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-semibold"
                       style={{
-                        background: agent.isActive ? "oklch(0.65 0.18 160 / 0.15)" : "oklch(0.60 0.22 25 / 0.15)",
+                        background: agent.isActive
+                          ? "oklch(0.65 0.18 160 / 0.15)"
+                          : "oklch(0.60 0.22 25 / 0.15)",
                         color: agent.isActive ? GREEN : RED,
                         fontFamily: DISP,
-                      }}>
+                      }}
+                    >
                       {agent.isActive ? "Active" : "Suspended"}
                     </span>
                   </td>
@@ -225,7 +349,7 @@ export default function AgentManagementTab() {
                       {/* Role promotion */}
                       <select
                         value={agent.role}
-                        onChange={(e) =>
+                        onChange={e =>
                           setConfirmModal({
                             type: "role",
                             agentId: agent.id,
@@ -239,7 +363,8 @@ export default function AgentManagementTab() {
                           borderColor: BORDER,
                           color: ROLE_COLORS[agent.role] ?? BLUE,
                           fontFamily: DISP,
-                        }}>
+                        }}
+                      >
                         <option value="agent">Agent</option>
                         <option value="supervisor">Supervisor</option>
                         <option value="admin">Admin</option>
@@ -247,9 +372,19 @@ export default function AgentManagementTab() {
 
                       {/* Assign to Supervisor */}
                       <button
-                        onClick={() => setAssignModal({ agentId: agent.id, agentCode: agent.agentCode })}
+                        onClick={() =>
+                          setAssignModal({
+                            agentId: agent.id,
+                            agentCode: agent.agentCode,
+                          })
+                        }
                         className="text-xs px-2 py-1 rounded-lg font-semibold transition-all"
-                        style={{ background: "oklch(0.55 0.22 300 / 0.15)", color: "#a855f7", fontFamily: DISP }}>
+                        style={{
+                          background: "oklch(0.55 0.22 300 / 0.15)",
+                          color: "#a855f7",
+                          fontFamily: DISP,
+                        }}
+                      >
                         Assign
                       </button>
 
@@ -269,7 +404,8 @@ export default function AgentManagementTab() {
                             : "oklch(0.65 0.18 160 / 0.15)",
                           color: agent.isActive ? RED : GREEN,
                           fontFamily: DISP,
-                        }}>
+                        }}
+                      >
                         {agent.isActive ? "Suspend" : "Activate"}
                       </button>
                     </div>
@@ -283,11 +419,18 @@ export default function AgentManagementTab() {
 
       {/* Supervisor Assignment Modal */}
       {assignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.7)" }}>
-          <div className="rounded-2xl p-6 w-80 flex flex-col gap-4"
-            style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <div className="text-base font-black text-white" style={{ fontFamily: DISP }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.7)" }}
+        >
+          <div
+            className="rounded-2xl p-6 w-80 flex flex-col gap-4"
+            style={{ background: CARD, border: `1px solid ${BORDER}` }}
+          >
+            <div
+              className="text-base font-black text-white"
+              style={{ fontFamily: DISP }}
+            >
               Assign {assignModal.agentCode} to Supervisor
             </div>
             <div className="text-sm text-gray-400" style={{ fontFamily: DISP }}>
@@ -295,26 +438,49 @@ export default function AgentManagementTab() {
             </div>
             <input
               value={supervisorCode}
-              onChange={(e) => setSupervisorCode(e.target.value.toUpperCase())}
+              onChange={e => setSupervisorCode(e.target.value.toUpperCase())}
               placeholder="Supervisor agent code (e.g. AGT-001)"
               className="px-3 py-2 rounded-xl text-sm text-white bg-transparent border outline-none"
-              style={{ borderColor: BORDER, fontFamily: DISP, background: "oklch(0.10 0.015 240)" }}
+              style={{
+                borderColor: BORDER,
+                fontFamily: DISP,
+                background: "oklch(0.10 0.015 240)",
+              }}
             />
             <div className="flex gap-3">
               <button
-                onClick={() => { setAssignModal(null); setSupervisorCode(""); }}
+                onClick={() => {
+                  setAssignModal(null);
+                  setSupervisorCode("");
+                }}
                 className="flex-1 py-2 rounded-xl text-sm font-semibold"
-                style={{ background: "oklch(0.22 0.02 240)", color: "oklch(0.55 0.015 230)", fontFamily: DISP }}>
+                style={{
+                  background: "oklch(0.22 0.02 240)",
+                  color: "oklch(0.55 0.015 230)",
+                  fontFamily: DISP,
+                }}
+              >
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  if (supervisorCode.trim().length < 3) { toast.error("Enter a valid supervisor code"); return; }
-                  assignMut.mutate({ agentId: assignModal.agentId, supervisorCode: supervisorCode.trim() });
+                  if (supervisorCode.trim().length < 3) {
+                    toast.error("Enter a valid supervisor code");
+                    return;
+                  }
+                  assignMut.mutate({
+                    agentId: assignModal.agentId,
+                    supervisorCode: supervisorCode.trim(),
+                  });
                 }}
                 disabled={assignMut.isPending}
                 className="flex-1 py-2 rounded-xl text-sm font-bold text-white"
-                style={{ background: "oklch(0.55 0.22 300)", fontFamily: DISP, opacity: assignMut.isPending ? 0.5 : 1 }}>
+                style={{
+                  background: "oklch(0.55 0.22 300)",
+                  fontFamily: DISP,
+                  opacity: assignMut.isPending ? 0.5 : 1,
+                }}
+              >
                 {assignMut.isPending ? "Assigning…" : "Assign"}
               </button>
             </div>
@@ -324,35 +490,62 @@ export default function AgentManagementTab() {
 
       {/* Confirmation modal */}
       {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.7)" }}>
-          <div className="rounded-2xl p-6 w-80 flex flex-col gap-4"
-            style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <div className="text-base font-black text-white" style={{ fontFamily: DISP }}>
-              {confirmModal.type === "role" && `Change role for ${confirmModal.agentCode}?`}
-              {confirmModal.type === "suspend" && `Suspend ${confirmModal.agentCode}?`}
-              {confirmModal.type === "activate" && `Activate ${confirmModal.agentCode}?`}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.7)" }}
+        >
+          <div
+            className="rounded-2xl p-6 w-80 flex flex-col gap-4"
+            style={{ background: CARD, border: `1px solid ${BORDER}` }}
+          >
+            <div
+              className="text-base font-black text-white"
+              style={{ fontFamily: DISP }}
+            >
+              {confirmModal.type === "role" &&
+                `Change role for ${confirmModal.agentCode}?`}
+              {confirmModal.type === "suspend" &&
+                `Suspend ${confirmModal.agentCode}?`}
+              {confirmModal.type === "activate" &&
+                `Activate ${confirmModal.agentCode}?`}
             </div>
             <div className="text-sm text-gray-400" style={{ fontFamily: DISP }}>
-              {confirmModal.type === "role" && `New role: ${confirmModal.newRole}`}
-              {confirmModal.type === "suspend" && "The agent will not be able to log in until reactivated."}
-              {confirmModal.type === "activate" && "The agent will regain full access to the POS terminal."}
+              {confirmModal.type === "role" &&
+                `New role: ${confirmModal.newRole}`}
+              {confirmModal.type === "suspend" &&
+                "The agent will not be able to log in until reactivated."}
+              {confirmModal.type === "activate" &&
+                "The agent will regain full access to the POS terminal."}
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmModal(null)}
                 className="flex-1 py-2 rounded-xl text-sm font-semibold"
-                style={{ background: "oklch(0.22 0.02 240)", color: "oklch(0.55 0.015 230)", fontFamily: DISP }}>
+                style={{
+                  background: "oklch(0.22 0.02 240)",
+                  color: "oklch(0.55 0.015 230)",
+                  fontFamily: DISP,
+                }}
+              >
                 Cancel
               </button>
               <button
                 onClick={() => {
                   if (confirmModal.type === "role" && confirmModal.newRole) {
-                    setRoleMut.mutate({ agentId: confirmModal.agentId, role: confirmModal.newRole as any });
+                    setRoleMut.mutate({
+                      agentId: confirmModal.agentId,
+                      role: confirmModal.newRole as any,
+                    });
                   } else if (confirmModal.type === "suspend") {
-                    setActiveMut.mutate({ agentId: confirmModal.agentId, isActive: false });
+                    setActiveMut.mutate({
+                      agentId: confirmModal.agentId,
+                      isActive: false,
+                    });
                   } else if (confirmModal.type === "activate") {
-                    setActiveMut.mutate({ agentId: confirmModal.agentId, isActive: true });
+                    setActiveMut.mutate({
+                      agentId: confirmModal.agentId,
+                      isActive: true,
+                    });
                   }
                 }}
                 disabled={setRoleMut.isPending || setActiveMut.isPending}
@@ -360,9 +553,13 @@ export default function AgentManagementTab() {
                 style={{
                   background: confirmModal.type === "suspend" ? RED : BLUE,
                   fontFamily: DISP,
-                  opacity: setRoleMut.isPending || setActiveMut.isPending ? 0.5 : 1,
-                }}>
-                {setRoleMut.isPending || setActiveMut.isPending ? "Processing…" : "Confirm"}
+                  opacity:
+                    setRoleMut.isPending || setActiveMut.isPending ? 0.5 : 1,
+                }}
+              >
+                {setRoleMut.isPending || setActiveMut.isPending
+                  ? "Processing…"
+                  : "Confirm"}
               </button>
             </div>
           </div>

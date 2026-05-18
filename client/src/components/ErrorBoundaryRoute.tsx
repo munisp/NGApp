@@ -3,8 +3,14 @@ import { Component, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
-interface Props { children: ReactNode; fallbackPath?: string }
-interface State { hasError: boolean; error: Error | null }
+interface Props {
+  children: ReactNode;
+  fallbackPath?: string;
+}
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
 
 export class ErrorBoundaryRoute extends Component<Props, State> {
   constructor(props: Props) {
@@ -30,19 +36,32 @@ export class ErrorBoundaryRoute extends Component<Props, State> {
             </div>
             <h2 className="text-xl font-bold">Something went wrong</h2>
             <p className="text-sm text-muted-foreground">
-              {this.state.error?.message || "An unexpected error occurred while rendering this page."}
+              {this.state.error?.message ||
+                "An unexpected error occurred while rendering this page."}
             </p>
             <div className="flex gap-2 justify-center">
-              <Button variant="outline" size="sm" onClick={() => this.setState({ hasError: false, error: null })}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => this.setState({ hasError: false, error: null })}
+              >
                 <RefreshCw className="w-4 h-4 mr-1" /> Retry
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.location.href = this.props.fallbackPath ?? "/"}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  (window.location.href = this.props.fallbackPath ?? "/")
+                }
+              >
                 <Home className="w-4 h-4 mr-1" /> Go Home
               </Button>
             </div>
             {import.meta.env.DEV && this.state.error && (
               <details className="text-left mt-4">
-                <summary className="text-xs text-muted-foreground cursor-pointer">Error details</summary>
+                <summary className="text-xs text-muted-foreground cursor-pointer">
+                  Error details
+                </summary>
                 <pre className="text-[10px] mt-2 p-2 bg-muted rounded overflow-auto max-h-32 font-mono">
                   {this.state.error.stack}
                 </pre>

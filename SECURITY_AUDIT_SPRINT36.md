@@ -16,51 +16,60 @@ Sprint 36 introduces 20 new routers focused on the White-Label Partner Platform,
 ## Vulnerability Assessment
 
 ### Critical (0 found)
+
 No critical vulnerabilities detected.
 
 ### High (0 found)
+
 No high-severity issues detected.
 
 ### Medium (1 found — mitigated)
-| ID | Category | Description | Status |
-|----|----------|-------------|--------|
+
+| ID     | Category         | Description                                    | Status                                             |
+| ------ | ---------------- | ---------------------------------------------- | -------------------------------------------------- |
 | S36-M1 | Input Validation | webhookManagement URL field accepts any string | Mitigated — URL validation enforced via Zod schema |
 
 ### Low (2 found — accepted risk)
-| ID | Category | Description | Status |
-|----|----------|-------------|--------|
-| S36-L1 | Rate Limiting | NL query endpoints lack per-user rate limiting | Accepted — platform-level rate limiter covers this |
-| S36-L2 | Logging | Bulk transaction processing logs may contain PII | Accepted — log sanitization applied at middleware level |
+
+| ID     | Category      | Description                                      | Status                                                  |
+| ------ | ------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| S36-L1 | Rate Limiting | NL query endpoints lack per-user rate limiting   | Accepted — platform-level rate limiter covers this      |
+| S36-L2 | Logging       | Bulk transaction processing logs may contain PII | Accepted — log sanitization applied at middleware level |
 
 ---
 
 ## Security Controls Verified
 
 ### Authentication & Authorization
+
 - All 20 routers use `protectedProcedure` requiring authenticated sessions
 - Partner self-service endpoints enforce tenant-scoped access
 - White-label approval workflow requires admin role elevation
 - Revenue sharing configuration restricted to platform administrators
 
 ### Input Validation
+
 - All mutation endpoints use Zod schema validation
 - String inputs sanitized against XSS injection patterns
 - Numeric inputs bounded with min/max constraints
 - File upload paths validated against directory traversal
 
 ### Data Protection
+
 - No sensitive data (passwords, API keys, secrets) exposed in router definitions
 - Partner branding assets served through signed S3 URLs
 - Customer 360 view masks PII fields by default
 - Export engine applies data classification before CSV generation
 
 ### White-Label Security
+
 - Partner onboarding workflow enforces KYC document verification
 - Branding customization sandboxed per tenant
 - Approval workflow maintains immutable audit trail
 - Self-service portal scoped to partner's own data only
 
 ### Infrastructure Security
+
 - No raw SQL queries exposed in any router
 - All database operations use parameterized Drizzle ORM queries
 - Webhook endpoints validate signatures before processing
@@ -70,13 +79,13 @@ No high-severity issues detected.
 
 ## Compliance Status
 
-| Standard | Status | Notes |
-|----------|--------|-------|
-| OWASP Top 10 | Compliant | All categories addressed |
-| GDPR | Compliant | Data retention policies configurable per partner |
-| PCI DSS | Compliant | No card data stored; Stripe handles payment processing |
+| Standard       | Status    | Notes                                                  |
+| -------------- | --------- | ------------------------------------------------------ |
+| OWASP Top 10   | Compliant | All categories addressed                               |
+| GDPR           | Compliant | Data retention policies configurable per partner       |
+| PCI DSS        | Compliant | No card data stored; Stripe handles payment processing |
 | CBN Guidelines | Compliant | Regulatory reporting engine generates required formats |
-| SOC 2 Type II | Ready | Audit log viewer provides complete trail |
+| SOC 2 Type II  | Ready     | Audit log viewer provides complete trail               |
 
 ---
 
@@ -101,11 +110,11 @@ No high-severity issues detected.
 
 ## Score Breakdown
 
-| Category | Score | Max |
-|----------|-------|-----|
-| Authentication | 20 | 20 |
-| Authorization | 19 | 20 |
-| Input Validation | 19 | 20 |
-| Data Protection | 20 | 20 |
-| Infrastructure | 19 | 20 |
-| **Total** | **97** | **100** |
+| Category         | Score  | Max     |
+| ---------------- | ------ | ------- |
+| Authentication   | 20     | 20      |
+| Authorization    | 19     | 20      |
+| Input Validation | 19     | 20      |
+| Data Protection  | 20     | 20      |
+| Infrastructure   | 19     | 20      |
+| **Total**        | **97** | **100** |

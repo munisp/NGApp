@@ -32,7 +32,9 @@ describe("Sprint 47 — Rust Sidecar Bridge", () => {
   it("kafkaPublish should return fallback when sidecar is unreachable", async () => {
     const { rustBridge } = await import("./lib/sidecarBridge");
     // This will fail gracefully since sidecar may not be running in test
-    const result = await rustBridge.kafkaPublish("test.topic", "key1", { data: "test" });
+    const result = await rustBridge.kafkaPublish("test.topic", "key1", {
+      data: "test",
+    });
     expect(result).toBeDefined();
     // Either real response or fallback
     expect(result.status).toBeDefined();
@@ -40,7 +42,10 @@ describe("Sprint 47 — Rust Sidecar Bridge", () => {
 
   it("sanitize should return fallback when sidecar is unreachable", async () => {
     const { rustBridge } = await import("./lib/sidecarBridge");
-    const result = await rustBridge.sanitize("<script>alert(1)</script>", "html");
+    const result = await rustBridge.sanitize(
+      "<script>alert(1)</script>",
+      "html"
+    );
     expect(result).toBeDefined();
     expect(typeof result.safe).toBe("boolean");
   });
@@ -107,14 +112,20 @@ describe("Sprint 47 — Python ML Bridge", () => {
 
   it("detectAnomaly should return fallback when sidecar is unreachable", async () => {
     const { pythonML } = await import("./lib/sidecarBridge");
-    const result = await pythonML.detectAnomaly({ amount: 5000, agent_id: "agent1" });
+    const result = await pythonML.detectAnomaly({
+      amount: 5000,
+      agent_id: "agent1",
+    });
     expect(result).toBeDefined();
     expect(typeof result.is_anomalous).toBe("boolean");
   });
 
   it("complianceCheck should return fallback when sidecar is unreachable", async () => {
     const { pythonML } = await import("./lib/sidecarBridge");
-    const result = await pythonML.complianceCheck({ name: "Test Entity", country: "NG" });
+    const result = await pythonML.complianceCheck({
+      name: "Test Entity",
+      country: "NG",
+    });
     expect(result).toBeDefined();
     expect(typeof result.compliant).toBe("boolean");
   });
@@ -128,7 +139,10 @@ describe("Sprint 47 — Python ML Bridge", () => {
 
   it("scoreFraud should return fallback when sidecar is unreachable", async () => {
     const { pythonML } = await import("./lib/sidecarBridge");
-    const result = await pythonML.scoreFraud({ amount: 100000, agent_id: "agent1" });
+    const result = await pythonML.scoreFraud({
+      amount: 100000,
+      agent_id: "agent1",
+    });
     expect(result).toBeDefined();
     expect(typeof result.fraud_score).toBe("number");
   });
@@ -138,7 +152,9 @@ describe("Sprint 47 — Python ML Bridge", () => {
 
 describe("Sprint 47 — Sidecar Middleware Factory", () => {
   it("should export createSidecarMiddleware factory", async () => {
-    const { createSidecarMiddleware } = await import("./middleware/sidecarIntegration");
+    const { createSidecarMiddleware } = await import(
+      "./middleware/sidecarIntegration"
+    );
     expect(typeof createSidecarMiddleware).toBe("function");
   });
 });
@@ -197,7 +213,9 @@ describe("Sprint 47 — Router Middleware Coverage", () => {
   }, 120000);
 
   it("sidecar bridge should have 30+ methods across 3 clients", async () => {
-    const { rustBridge, goLedger, pythonML } = await import("./lib/sidecarBridge");
+    const { rustBridge, goLedger, pythonML } = await import(
+      "./lib/sidecarBridge"
+    );
     const rustMethods = Object.keys(rustBridge).length;
     const goMethods = Object.keys(goLedger).length;
     const pythonMethods = Object.keys(pythonML).length;

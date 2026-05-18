@@ -19,8 +19,14 @@ import { getUserByKeycloakSub } from "../db";
 const isDev = process.env.NODE_ENV === "development";
 const devBypassEnabled = isDev && process.env.DEV_AUTH_BYPASS === "true";
 
-if (!isDev && (!process.env.JWT_SECRET || process.env.JWT_SECRET === "pos54link-secret-change-in-production")) {
-  console.error("[SECURITY] FATAL: JWT_SECRET is not set or is using the default value. Set a strong secret in production.");
+if (
+  !isDev &&
+  (!process.env.JWT_SECRET ||
+    process.env.JWT_SECRET === "pos54link-secret-change-in-production")
+) {
+  console.error(
+    "[SECURITY] FATAL: JWT_SECRET is not set or is using the default value. Set a strong secret in production."
+  );
 }
 
 export type TrpcContext = {
@@ -38,7 +44,12 @@ function parseCookies(cookieHeader: string): Map<string, string> {
   return map;
 }
 
-function createDevFallbackUser(session: { sub: string; name: string; email: string; role: string }): User {
+function createDevFallbackUser(session: {
+  sub: string;
+  name: string;
+  email: string;
+  role: string;
+}): User {
   return {
     id: 1,
     keycloakSub: session.sub,

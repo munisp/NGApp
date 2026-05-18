@@ -14,36 +14,36 @@ Sprint 91 executes the 16-point production readiness directive, transforming the
 
 ## New Modules Created
 
-| Module | Path | Purpose |
-|--------|------|---------|
-| PBAC Enforcement | `server/middleware/pbacEnforcement.ts` | Policy-based access control with Permify integration, 7-role hierarchy, permission caching |
-| Ransomware Mitigation | `server/middleware/ransomwareMitigation.ts` | File integrity monitoring, bulk op detection, exfiltration prevention, canary files, immutable audit chain |
-| Connectivity Resilience | `server/middleware/connectivityResilience.ts` | Request deduplication, adaptive compression, batch sync, load shedding, WebSocket fallback for 2G/3G |
-| Middleware Connectors | `server/middleware/middlewareConnectors.ts` | 12 production-grade clients (Kafka, Dapr, Fluvio, Temporal, Keycloak, Permify, Redis, Mojaloop, OpenSearch, APISIX, TigerBeetle, Lakehouse) |
-| Service Orchestrator | `server/middleware/serviceOrchestrator.ts` | Service registry, event routing, saga coordination, dead letter queue, observability |
-| Mock Replacements | `server/middleware/mockReplacements.ts` | Real implementations for transactions, notifications, inventory, revenue splits, KYC, mobile money, analytics |
-| OpenAppSec WAF | `server/middleware/openAppSec.ts` | Web application firewall with threat classification, API abuse detection |
-| Security Hardening | `server/middleware/securityHardening.ts` | Rate limiting, CSRF, XSS, SQL injection, brute-force, DDoS throttling |
-| Integration Health | `server/middleware/integrationHealth.ts` | Platform-wide health monitoring across all 12 middleware services |
-| Offline Resilience (client) | `client/src/lib/offlineResilience.ts` | IndexedDB queue, service worker, network detection, sync manager |
+| Module                      | Path                                          | Purpose                                                                                                                                     |
+| --------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| PBAC Enforcement            | `server/middleware/pbacEnforcement.ts`        | Policy-based access control with Permify integration, 7-role hierarchy, permission caching                                                  |
+| Ransomware Mitigation       | `server/middleware/ransomwareMitigation.ts`   | File integrity monitoring, bulk op detection, exfiltration prevention, canary files, immutable audit chain                                  |
+| Connectivity Resilience     | `server/middleware/connectivityResilience.ts` | Request deduplication, adaptive compression, batch sync, load shedding, WebSocket fallback for 2G/3G                                        |
+| Middleware Connectors       | `server/middleware/middlewareConnectors.ts`   | 12 production-grade clients (Kafka, Dapr, Fluvio, Temporal, Keycloak, Permify, Redis, Mojaloop, OpenSearch, APISIX, TigerBeetle, Lakehouse) |
+| Service Orchestrator        | `server/middleware/serviceOrchestrator.ts`    | Service registry, event routing, saga coordination, dead letter queue, observability                                                        |
+| Mock Replacements           | `server/middleware/mockReplacements.ts`       | Real implementations for transactions, notifications, inventory, revenue splits, KYC, mobile money, analytics                               |
+| OpenAppSec WAF              | `server/middleware/openAppSec.ts`             | Web application firewall with threat classification, API abuse detection                                                                    |
+| Security Hardening          | `server/middleware/securityHardening.ts`      | Rate limiting, CSRF, XSS, SQL injection, brute-force, DDoS throttling                                                                       |
+| Integration Health          | `server/middleware/integrationHealth.ts`      | Platform-wide health monitoring across all 12 middleware services                                                                           |
+| Offline Resilience (client) | `client/src/lib/offlineResilience.ts`         | IndexedDB queue, service worker, network detection, sync manager                                                                            |
 
 ---
 
 ## New tRPC Routers
 
-| Router | Path | Procedures |
-|--------|------|-----------|
-| Face Enrollment | `server/routers/faceEnrollment.ts` | enroll, verify, list, delete, getStatus |
+| Router                    | Path                                        | Procedures                                     |
+| ------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Face Enrollment           | `server/routers/faceEnrollment.ts`          | enroll, verify, list, delete, getStatus        |
 | Biometric Audit Dashboard | `server/routers/biometricAuditDashboard.ts` | getEvents, getStats, getTimeline, exportReport |
 
 ---
 
 ## Database Changes
 
-| Table | Columns | Purpose |
-|-------|---------|---------|
-| `face_enrollments` | id, userId, embedding (512-d vector), quality, deviceId, createdAt, updatedAt, active | ArcFace embedding persistence for face verification |
-| `biometric_audit_events` | id, userId, sessionId, eventType, result, confidence, spoofType, deviceId, ip, timestamp, metadata | Immutable biometric audit trail |
+| Table                    | Columns                                                                                            | Purpose                                             |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `face_enrollments`       | id, userId, embedding (512-d vector), quality, deviceId, createdAt, updatedAt, active              | ArcFace embedding persistence for face verification |
+| `biometric_audit_events` | id, userId, sessionId, eventType, result, confidence, spoofType, deviceId, ip, timestamp, metadata | Immutable biometric audit trail                     |
 
 ---
 

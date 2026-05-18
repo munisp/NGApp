@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Input Validation & Sanitization — 54Link Agency Banking Platform
- * 
+ *
  * Provides:
  * 1. XSS sanitization for all text inputs
  * 2. SQL injection prevention (parameterized queries audit)
@@ -28,7 +28,7 @@ const HTML_ENTITIES: Record<string, string> = {
  * Escape HTML entities to prevent XSS
  */
 export function escapeHtml(str: string): string {
-  return str.replace(/[&<>"'`/]/g, (char) => HTML_ENTITIES[char] || char);
+  return str.replace(/[&<>"'`/]/g, char => HTML_ENTITIES[char] || char);
 }
 
 /**
@@ -49,7 +49,22 @@ export function sanitizeText(str: string, maxLength = 1000): string {
  * Sanitize rich text: allow safe HTML tags only
  */
 export function sanitizeRichText(str: string): string {
-  const allowedTags = ["b", "i", "u", "em", "strong", "p", "br", "ul", "ol", "li", "a", "h1", "h2", "h3"];
+  const allowedTags = [
+    "b",
+    "i",
+    "u",
+    "em",
+    "strong",
+    "p",
+    "br",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "h1",
+    "h2",
+    "h3",
+  ];
   const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/gi;
   return str.replace(tagRegex, (match, tag) => {
     if (allowedTags.includes(tag.toLowerCase())) return match;
@@ -95,16 +110,37 @@ export const zodSchemas = {
   email: z.string().email("Invalid email address").max(254),
 
   /** Safe text (no HTML, limited length) */
-  safeText: (maxLength = 500) => z.string().max(maxLength).transform(s => sanitizeText(s, maxLength)),
+  safeText: (maxLength = 500) =>
+    z
+      .string()
+      .max(maxLength)
+      .transform(s => sanitizeText(s, maxLength)),
 
   /** Safe name (letters, spaces, hyphens, apostrophes) */
-  safeName: z.string().min(2).max(100).regex(/^[a-zA-Z\s'-]+$/, "Name contains invalid characters"),
+  safeName: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-zA-Z\s'-]+$/, "Name contains invalid characters"),
 
   /** Amount (positive number with max 2 decimal places) */
-  amount: z.number().positive("Amount must be positive").max(999_999_999, "Amount too large"),
+  amount: z
+    .number()
+    .positive("Amount must be positive")
+    .max(999_999_999, "Amount too large"),
 
   /** Currency code (ISO 4217) */
-  currency: z.enum(["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR", "XOF", "XAF"]),
+  currency: z.enum([
+    "NGN",
+    "USD",
+    "GBP",
+    "EUR",
+    "GHS",
+    "KES",
+    "ZAR",
+    "XOF",
+    "XAF",
+  ]),
 
   /** UUID */
   uuid: z.string().uuid("Invalid ID format"),
@@ -118,19 +154,27 @@ export const zodSchemas = {
   }),
 
   /** Date range */
-  dateRange: z.object({
-    from: z.number().int().positive(),
-    to: z.number().int().positive(),
-  }).refine(d => d.to >= d.from, "End date must be after start date"),
+  dateRange: z
+    .object({
+      from: z.number().int().positive(),
+      to: z.number().int().positive(),
+    })
+    .refine(d => d.to >= d.from, "End date must be after start date"),
 
   /** Search query */
-  searchQuery: z.string().min(1).max(200).transform(s => sanitizeText(s, 200)),
+  searchQuery: z
+    .string()
+    .min(1)
+    .max(200)
+    .transform(s => sanitizeText(s, 200)),
 
   /** Agent code */
   agentCode: z.string().regex(/^AGT\d{4,6}$/, "Invalid agent code format"),
 
   /** Transaction reference */
-  transactionRef: z.string().regex(/^TXN-[\w-]+$/, "Invalid transaction reference"),
+  transactionRef: z
+    .string()
+    .regex(/^TXN-[\w-]+$/, "Invalid transaction reference"),
 
   /** BVN (Bank Verification Number - Nigeria) */
   bvn: z.string().regex(/^\d{11}$/, "BVN must be 11 digits"),
@@ -150,13 +194,21 @@ export const zodSchemas = {
 // ═══════════════════════════════════════════════════════════════════════════════
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-export function checkRateLimit(key: string, maxRequests: number, windowMs: number): { allowed: boolean; remaining: number; resetAt: number } {
+export function checkRateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
   const entry = rateLimitStore.get(key);
 
   if (!entry || now >= entry.resetAt) {
     rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: maxRequests - 1, resetAt: now + windowMs };
+    return {
+      allowed: true,
+      remaining: maxRequests - 1,
+      resetAt: now + windowMs,
+    };
   }
 
   if (entry.count >= maxRequests) {
@@ -164,7 +216,11 @@ export function checkRateLimit(key: string, maxRequests: number, windowMs: numbe
   }
 
   entry.count++;
-  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt };
+  return {
+    allowed: true,
+    remaining: maxRequests - entry.count,
+    resetAt: entry.resetAt,
+  };
 }
 
 // Cleanup expired entries periodically

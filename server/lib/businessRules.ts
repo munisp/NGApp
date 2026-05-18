@@ -25,14 +25,17 @@
  * - Tier 3 (Gold):   ₦500,000 single, ₦5,000,000 daily, 50 tx/hr
  * - Tier 4 (Platinum): ₦1,000,000 single, ₦20,000,000 daily, 100 tx/hr
  */
-export const CBN_LIMITS: Record<string, {
-  maxSingleTx: number;
-  maxDailyVolume: number;
-  maxHourlyCount: number;
-  maxMonthlyVolume: number;
-  requiresBvn: boolean;
-  requiresNin: boolean;
-}> = {
+export const CBN_LIMITS: Record<
+  string,
+  {
+    maxSingleTx: number;
+    maxDailyVolume: number;
+    maxHourlyCount: number;
+    maxMonthlyVolume: number;
+    requiresBvn: boolean;
+    requiresNin: boolean;
+  }
+> = {
   Bronze: {
     maxSingleTx: 50_000,
     maxDailyVolume: 200_000,
@@ -70,7 +73,12 @@ export const CBN_LIMITS: Record<string, {
 export interface LimitCheckResult {
   allowed: boolean;
   reason?: string;
-  code?: "SINGLE_TX_LIMIT" | "DAILY_LIMIT" | "HOURLY_LIMIT" | "MONTHLY_LIMIT" | "KYC_REQUIRED";
+  code?:
+    | "SINGLE_TX_LIMIT"
+    | "DAILY_LIMIT"
+    | "HOURLY_LIMIT"
+    | "MONTHLY_LIMIT"
+    | "KYC_REQUIRED";
   limit?: number;
   used?: number;
 }
@@ -135,9 +143,9 @@ export function checkCbnHourlyCount(
 
 export const FLOAT_ALERT_THRESHOLDS = {
   /** Warn agent when float drops below this percentage of their typical daily volume */
-  WARNING_PCT: 0.20,
+  WARNING_PCT: 0.2,
   /** Critical alert — agent should immediately request top-up */
-  CRITICAL_PCT: 0.10,
+  CRITICAL_PCT: 0.1,
   /** Absolute minimum floor — transactions blocked below this */
   MINIMUM_FLOOR: 5_000,
 };
@@ -157,7 +165,8 @@ export function evaluateFloatAlert(
   tier: string
 ): FloatAlertResult {
   const limits = CBN_LIMITS[tier];
-  const referenceVolume = avgDailyVolume || (limits?.maxDailyVolume ?? 200_000) * 0.3;
+  const referenceVolume =
+    avgDailyVolume || (limits?.maxDailyVolume ?? 200_000) * 0.3;
 
   if (currentBalance < FLOAT_ALERT_THRESHOLDS.MINIMUM_FLOOR) {
     return {
@@ -168,8 +177,9 @@ export function evaluateFloatAlert(
     };
   }
 
-  const criticalThreshold = referenceVolume * FLOAT_ALERT_THRESHOLDS.CRITICAL_PCT;
-  const warningThreshold  = referenceVolume * FLOAT_ALERT_THRESHOLDS.WARNING_PCT;
+  const criticalThreshold =
+    referenceVolume * FLOAT_ALERT_THRESHOLDS.CRITICAL_PCT;
+  const warningThreshold = referenceVolume * FLOAT_ALERT_THRESHOLDS.WARNING_PCT;
 
   if (currentBalance < criticalThreshold) {
     return {
@@ -204,15 +214,33 @@ export function evaluateFloatAlert(
  * - Tier 2: BVN verified — max ₦200,000 single, ₦1,000,000 daily
  * - Tier 3: BVN + NIN + document — max ₦500,000 single, ₦5,000,000 daily
  */
-export const KYC_TIER_LIMITS: Record<number, {
-  maxSingleTx: number;
-  maxDailyBalance: number;
-  maxAccountBalance: number;
-  description: string;
-}> = {
-  1: { maxSingleTx: 50_000,  maxDailyBalance: 300_000,   maxAccountBalance: 300_000,   description: "Phone only — basic KYC" },
-  2: { maxSingleTx: 200_000, maxDailyBalance: 1_000_000, maxAccountBalance: 1_000_000, description: "BVN verified — standard KYC" },
-  3: { maxSingleTx: 500_000, maxDailyBalance: 5_000_000, maxAccountBalance: 5_000_000, description: "Full KYC — BVN + NIN + document" },
+export const KYC_TIER_LIMITS: Record<
+  number,
+  {
+    maxSingleTx: number;
+    maxDailyBalance: number;
+    maxAccountBalance: number;
+    description: string;
+  }
+> = {
+  1: {
+    maxSingleTx: 50_000,
+    maxDailyBalance: 300_000,
+    maxAccountBalance: 300_000,
+    description: "Phone only — basic KYC",
+  },
+  2: {
+    maxSingleTx: 200_000,
+    maxDailyBalance: 1_000_000,
+    maxAccountBalance: 1_000_000,
+    description: "BVN verified — standard KYC",
+  },
+  3: {
+    maxSingleTx: 500_000,
+    maxDailyBalance: 5_000_000,
+    maxAccountBalance: 5_000_000,
+    description: "Full KYC — BVN + NIN + document",
+  },
 };
 
 export interface KycCheckResult {
@@ -230,8 +258,9 @@ export function checkKycTierForTransaction(
 
   if (amount > tierLimits.maxSingleTx) {
     // Find the minimum tier that would allow this transaction
-    const requiredTier = Object.entries(KYC_TIER_LIMITS)
-      .find(([, limits]) => limits.maxSingleTx >= amount);
+    const requiredTier = Object.entries(KYC_TIER_LIMITS).find(
+      ([, limits]) => limits.maxSingleTx >= amount
+    );
     return {
       allowed: false,
       currentTier: customerKycTier,
@@ -252,7 +281,7 @@ export interface FraudSignal {
 }
 
 export interface FraudScoringResult {
-  score: number;  // 0.0 – 1.0
+  score: number; // 0.0 – 1.0
   level: "low" | "medium" | "high" | "critical";
   signals: FraudSignal[];
   shouldBlock: boolean;
@@ -285,67 +314,103 @@ export function scoreFraud(params: {
   // Large single transaction (>80% of tier limit)
   if (params.amount > maxSingle * 0.8) {
     const weight = (params.amount / maxSingle) * 0.25;
-    signals.push({ type: "large_amount", weight, description: `Amount is ${Math.round(params.amount / maxSingle * 100)}% of tier limit` });
+    signals.push({
+      type: "large_amount",
+      weight,
+      description: `Amount is ${Math.round((params.amount / maxSingle) * 100)}% of tier limit`,
+    });
     score += weight;
   }
 
   // Velocity breach (>70% of hourly limit)
   const maxHourly = limits?.maxHourlyCount ?? 20;
   if (params.hourlyCount > maxHourly * 0.7) {
-    const weight = 0.20;
-    signals.push({ type: "velocity_breach", weight, description: `${params.hourlyCount} transactions in the last hour (limit: ${maxHourly})` });
+    const weight = 0.2;
+    signals.push({
+      type: "velocity_breach",
+      weight,
+      description: `${params.hourlyCount} transactions in the last hour (limit: ${maxHourly})`,
+    });
     score += weight;
   }
 
   // Outside geofence
   if (params.isOutsideGeofence) {
-    signals.push({ type: "geofence_violation", weight: 0.30, description: "Transaction originated outside assigned geofence zone" });
-    score += 0.30;
+    signals.push({
+      type: "geofence_violation",
+      weight: 0.3,
+      description: "Transaction originated outside assigned geofence zone",
+    });
+    score += 0.3;
   }
 
   // Failed PIN attempts
   if (params.failedPinAttempts >= 3) {
     const weight = Math.min(params.failedPinAttempts * 0.08, 0.25);
-    signals.push({ type: "pin_brute_force", weight, description: `${params.failedPinAttempts} failed PIN attempts before this transaction` });
+    signals.push({
+      type: "pin_brute_force",
+      weight,
+      description: `${params.failedPinAttempts} failed PIN attempts before this transaction`,
+    });
     score += weight;
   }
 
   // Round amount (common in structuring)
   if (params.isRoundAmount && params.amount >= 50_000) {
-    signals.push({ type: "round_amount_structuring", weight: 0.10, description: "Suspiciously round large amount — possible structuring" });
-    score += 0.10;
+    signals.push({
+      type: "round_amount_structuring",
+      weight: 0.1,
+      description: "Suspiciously round large amount — possible structuring",
+    });
+    score += 0.1;
   }
 
   // Rapid successive transactions (< 30 seconds apart)
   if (params.timeSinceLastTx < 30 && params.timeSinceLastTx >= 0) {
-    signals.push({ type: "rapid_succession", weight: 0.15, description: `Transaction ${params.timeSinceLastTx}s after previous — possible automation` });
+    signals.push({
+      type: "rapid_succession",
+      weight: 0.15,
+      description: `Transaction ${params.timeSinceLastTx}s after previous — possible automation`,
+    });
     score += 0.15;
   }
 
   // Low KYC customer with high amount
   if (params.customerKycTier === 1 && params.amount > 30_000) {
-    signals.push({ type: "kyc_amount_mismatch", weight: 0.15, description: "Tier 1 KYC customer with high transaction amount" });
+    signals.push({
+      type: "kyc_amount_mismatch",
+      weight: 0.15,
+      description: "Tier 1 KYC customer with high transaction amount",
+    });
     score += 0.15;
   }
 
   // New customer with large amount
   if (params.isNewCustomer && params.amount > 100_000) {
-    signals.push({ type: "new_customer_large_amount", weight: 0.10, description: "First-time customer with large transaction" });
-    score += 0.10;
+    signals.push({
+      type: "new_customer_large_amount",
+      weight: 0.1,
+      description: "First-time customer with large transaction",
+    });
+    score += 0.1;
   }
 
   const finalScore = Math.min(score, 1.0);
   const level: FraudScoringResult["level"] =
-    finalScore >= 0.8 ? "critical" :
-    finalScore >= 0.6 ? "high" :
-    finalScore >= 0.4 ? "medium" : "low";
+    finalScore >= 0.8
+      ? "critical"
+      : finalScore >= 0.6
+        ? "high"
+        : finalScore >= 0.4
+          ? "medium"
+          : "low";
 
   return {
     score: Math.round(finalScore * 100) / 100,
     level,
     signals,
-    shouldBlock: finalScore >= 0.70,
-    shouldAlert: finalScore >= 0.50,
+    shouldBlock: finalScore >= 0.7,
+    shouldAlert: finalScore >= 0.5,
   };
 }
 
@@ -356,21 +421,21 @@ export function scoreFraud(params: {
  * These are the default rates; overridden by commissionRules table.
  */
 export const DEFAULT_COMMISSION_RATES: Record<string, number> = {
-  "Cash In":       0.0050,  // 0.50%
-  "Cash Out":      0.0075,  // 0.75%
-  "Transfer":      0.0030,  // 0.30%
-  "Airtime":       0.0200,  // 2.00%
-  "Bill Payment":  0.0100,  // 1.00%
-  "Card Payment":  0.0025,  // 0.25%
-  "QR Payment":    0.0025,  // 0.25%
-  "NFC Payment":   0.0025,  // 0.25%
+  "Cash In": 0.005, // 0.50%
+  "Cash Out": 0.0075, // 0.75%
+  Transfer: 0.003, // 0.30%
+  Airtime: 0.02, // 2.00%
+  "Bill Payment": 0.01, // 1.00%
+  "Card Payment": 0.0025, // 0.25%
+  "QR Payment": 0.0025, // 0.25%
+  "NFC Payment": 0.0025, // 0.25%
 };
 
 /** Tier multipliers applied on top of base commission rates */
 export const TIER_COMMISSION_MULTIPLIERS: Record<string, number> = {
-  Bronze:   1.00,
-  Silver:   1.10,
-  Gold:     1.20,
+  Bronze: 1.0,
+  Silver: 1.1,
+  Gold: 1.2,
   Platinum: 1.35,
 };
 
@@ -408,30 +473,34 @@ export function calculateCommission(
  * Points earned per ₦1,000 transacted, by transaction type.
  */
 export const LOYALTY_EARN_RATES: Record<string, number> = {
-  "Cash In":       1.0,
-  "Cash Out":      1.5,
-  "Transfer":      2.0,
-  "Airtime":       3.0,
-  "Bill Payment":  2.5,
-  "Card Payment":  1.0,
-  "QR Payment":    1.5,
-  "NFC Payment":   2.0,
+  "Cash In": 1.0,
+  "Cash Out": 1.5,
+  Transfer: 2.0,
+  Airtime: 3.0,
+  "Bill Payment": 2.5,
+  "Card Payment": 1.0,
+  "QR Payment": 1.5,
+  "NFC Payment": 2.0,
 };
 
 /** Tier multipliers for loyalty point accrual */
 export const TIER_LOYALTY_MULTIPLIERS: Record<string, number> = {
-  Bronze:   1.00,
-  Silver:   1.25,
-  Gold:     1.50,
-  Platinum: 2.00,
+  Bronze: 1.0,
+  Silver: 1.25,
+  Gold: 1.5,
+  Platinum: 2.0,
 };
 
 /** Streak bonuses: consecutive days active → bonus points per transaction */
-export const STREAK_BONUSES: Array<{ minDays: number; bonusPoints: number; label: string }> = [
+export const STREAK_BONUSES: Array<{
+  minDays: number;
+  bonusPoints: number;
+  label: string;
+}> = [
   { minDays: 30, bonusPoints: 100, label: "30-day streak" },
-  { minDays: 14, bonusPoints: 50,  label: "14-day streak" },
-  { minDays: 7,  bonusPoints: 25,  label: "7-day streak" },
-  { minDays: 3,  bonusPoints: 10,  label: "3-day streak" },
+  { minDays: 14, bonusPoints: 50, label: "14-day streak" },
+  { minDays: 7, bonusPoints: 25, label: "7-day streak" },
+  { minDays: 3, bonusPoints: 10, label: "3-day streak" },
 ];
 
 export interface LoyaltyAccrualResult {
@@ -470,7 +539,12 @@ export function calculateLoyaltyPoints(
 
 // ── Agent Lifecycle Transitions ───────────────────────────────────────────────
 
-export type AgentStatus = "active" | "suspended" | "probation" | "terminated" | "pending_kyc";
+export type AgentStatus =
+  | "active"
+  | "suspended"
+  | "probation"
+  | "terminated"
+  | "pending_kyc";
 
 export interface LifecycleTransitionResult {
   allowed: boolean;
@@ -493,7 +567,8 @@ export function evaluateAgentSuspension(params: {
     return {
       allowed: true,
       newStatus: "pending_kyc",
-      reason: "Agent KYC documents have expired — transactions blocked until renewal",
+      reason:
+        "Agent KYC documents have expired — transactions blocked until renewal",
       requiresApproval: false,
       notifyAgent: true,
       notifySupervisor: true,
@@ -550,13 +625,16 @@ export function evaluateTierUpgrade(params: {
   kycLevel: number;
   streakDays: number;
 }): { eligible: boolean; targetTier?: string; reason: string } {
-  const UPGRADE_CRITERIA: Record<string, {
-    minMonthlyVolume: number;
-    minMonthlyTxCount: number;
-    minLoyaltyPoints: number;
-    minKycLevel: number;
-    minStreakDays: number;
-  }> = {
+  const UPGRADE_CRITERIA: Record<
+    string,
+    {
+      minMonthlyVolume: number;
+      minMonthlyTxCount: number;
+      minLoyaltyPoints: number;
+      minKycLevel: number;
+      minStreakDays: number;
+    }
+  > = {
     Silver: {
       minMonthlyVolume: 500_000,
       minMonthlyTxCount: 50,
@@ -583,19 +661,38 @@ export function evaluateTierUpgrade(params: {
   const tierOrder = ["Bronze", "Silver", "Gold", "Platinum"];
   const currentIdx = tierOrder.indexOf(params.currentTier);
   if (currentIdx === -1 || currentIdx === tierOrder.length - 1) {
-    return { eligible: false, reason: "Already at maximum tier or unknown tier" };
+    return {
+      eligible: false,
+      reason: "Already at maximum tier or unknown tier",
+    };
   }
 
   const nextTier = tierOrder[currentIdx + 1];
   const criteria = UPGRADE_CRITERIA[nextTier];
-  if (!criteria) return { eligible: false, reason: "No upgrade criteria defined" };
+  if (!criteria)
+    return { eligible: false, reason: "No upgrade criteria defined" };
 
   const checks = [
-    { met: params.monthlyVolume >= criteria.minMonthlyVolume, label: `Monthly volume ₦${params.monthlyVolume.toLocaleString()} / ₦${criteria.minMonthlyVolume.toLocaleString()} required` },
-    { met: params.monthlyTxCount >= criteria.minMonthlyTxCount, label: `Monthly tx count ${params.monthlyTxCount} / ${criteria.minMonthlyTxCount} required` },
-    { met: params.loyaltyPoints >= criteria.minLoyaltyPoints, label: `Loyalty points ${params.loyaltyPoints.toLocaleString()} / ${criteria.minLoyaltyPoints.toLocaleString()} required` },
-    { met: params.kycLevel >= criteria.minKycLevel, label: `KYC level ${params.kycLevel} / ${criteria.minKycLevel} required` },
-    { met: params.streakDays >= criteria.minStreakDays, label: `Streak ${params.streakDays} / ${criteria.minStreakDays} days required` },
+    {
+      met: params.monthlyVolume >= criteria.minMonthlyVolume,
+      label: `Monthly volume ₦${params.monthlyVolume.toLocaleString()} / ₦${criteria.minMonthlyVolume.toLocaleString()} required`,
+    },
+    {
+      met: params.monthlyTxCount >= criteria.minMonthlyTxCount,
+      label: `Monthly tx count ${params.monthlyTxCount} / ${criteria.minMonthlyTxCount} required`,
+    },
+    {
+      met: params.loyaltyPoints >= criteria.minLoyaltyPoints,
+      label: `Loyalty points ${params.loyaltyPoints.toLocaleString()} / ${criteria.minLoyaltyPoints.toLocaleString()} required`,
+    },
+    {
+      met: params.kycLevel >= criteria.minKycLevel,
+      label: `KYC level ${params.kycLevel} / ${criteria.minKycLevel} required`,
+    },
+    {
+      met: params.streakDays >= criteria.minStreakDays,
+      label: `Streak ${params.streakDays} / ${criteria.minStreakDays} days required`,
+    },
   ];
 
   const unmet = checks.filter(c => !c.met);
@@ -616,26 +713,102 @@ export function evaluateTierUpgrade(params: {
 // ── Reward Catalog ────────────────────────────────────────────────────────────
 
 export const REWARD_CATALOG = [
-  { id: "airtime_500",    name: "₦500 Airtime",          pointsCost: 500,   category: "airtime",    description: "₦500 airtime for any Nigerian network" },
-  { id: "airtime_1000",   name: "₦1,000 Airtime",        pointsCost: 1_000, category: "airtime",    description: "₦1,000 airtime for any Nigerian network" },
-  { id: "data_1gb",       name: "1GB Data Bundle",        pointsCost: 1_500, category: "data",       description: "1GB data bundle for MTN, Airtel, or Glo" },
-  { id: "data_5gb",       name: "5GB Data Bundle",        pointsCost: 6_000, category: "data",       description: "5GB data bundle — valid 30 days" },
-  { id: "float_5k",       name: "₦5,000 Float Credit",   pointsCost: 4_500, category: "float",      description: "₦5,000 credited directly to your float balance" },
-  { id: "float_20k",      name: "₦20,000 Float Credit",  pointsCost: 17_000,category: "float",      description: "₦20,000 credited directly to your float balance" },
-  { id: "cashback_1k",    name: "₦1,000 Cash Back",      pointsCost: 2_000, category: "cashback",   description: "₦1,000 cash back on your next settlement" },
-  { id: "cashback_5k",    name: "₦5,000 Cash Back",      pointsCost: 9_000, category: "cashback",   description: "₦5,000 cash back on your next settlement" },
-  { id: "fee_waiver_1d",  name: "1-Day Fee Waiver",       pointsCost: 3_000, category: "fee_waiver", description: "All transaction fees waived for 24 hours" },
-  { id: "tier_boost",     name: "Tier Boost (30 days)",   pointsCost: 25_000,category: "tier",       description: "Operate at the next tier level for 30 days" },
-  { id: "training_cert",  name: "Training Certificate",   pointsCost: 5_000, category: "training",   description: "CBN-accredited agent banking training certificate" },
-  { id: "pos_upgrade",    name: "POS Terminal Upgrade",   pointsCost: 50_000,category: "hardware",   description: "Upgrade to next-generation POS terminal" },
+  {
+    id: "airtime_500",
+    name: "₦500 Airtime",
+    pointsCost: 500,
+    category: "airtime",
+    description: "₦500 airtime for any Nigerian network",
+  },
+  {
+    id: "airtime_1000",
+    name: "₦1,000 Airtime",
+    pointsCost: 1_000,
+    category: "airtime",
+    description: "₦1,000 airtime for any Nigerian network",
+  },
+  {
+    id: "data_1gb",
+    name: "1GB Data Bundle",
+    pointsCost: 1_500,
+    category: "data",
+    description: "1GB data bundle for MTN, Airtel, or Glo",
+  },
+  {
+    id: "data_5gb",
+    name: "5GB Data Bundle",
+    pointsCost: 6_000,
+    category: "data",
+    description: "5GB data bundle — valid 30 days",
+  },
+  {
+    id: "float_5k",
+    name: "₦5,000 Float Credit",
+    pointsCost: 4_500,
+    category: "float",
+    description: "₦5,000 credited directly to your float balance",
+  },
+  {
+    id: "float_20k",
+    name: "₦20,000 Float Credit",
+    pointsCost: 17_000,
+    category: "float",
+    description: "₦20,000 credited directly to your float balance",
+  },
+  {
+    id: "cashback_1k",
+    name: "₦1,000 Cash Back",
+    pointsCost: 2_000,
+    category: "cashback",
+    description: "₦1,000 cash back on your next settlement",
+  },
+  {
+    id: "cashback_5k",
+    name: "₦5,000 Cash Back",
+    pointsCost: 9_000,
+    category: "cashback",
+    description: "₦5,000 cash back on your next settlement",
+  },
+  {
+    id: "fee_waiver_1d",
+    name: "1-Day Fee Waiver",
+    pointsCost: 3_000,
+    category: "fee_waiver",
+    description: "All transaction fees waived for 24 hours",
+  },
+  {
+    id: "tier_boost",
+    name: "Tier Boost (30 days)",
+    pointsCost: 25_000,
+    category: "tier",
+    description: "Operate at the next tier level for 30 days",
+  },
+  {
+    id: "training_cert",
+    name: "Training Certificate",
+    pointsCost: 5_000,
+    category: "training",
+    description: "CBN-accredited agent banking training certificate",
+  },
+  {
+    id: "pos_upgrade",
+    name: "POS Terminal Upgrade",
+    pointsCost: 50_000,
+    category: "hardware",
+    description: "Upgrade to next-generation POS terminal",
+  },
 ];
 
 export function validateRedemption(
   rewardId: string,
   agentPoints: number
-): { valid: boolean; reward?: typeof REWARD_CATALOG[0]; reason?: string } {
+): { valid: boolean; reward?: (typeof REWARD_CATALOG)[0]; reason?: string } {
   const reward = REWARD_CATALOG.find(r => r.id === rewardId);
-  if (!reward) return { valid: false, reason: `Reward '${rewardId}' not found in catalog` };
+  if (!reward)
+    return {
+      valid: false,
+      reason: `Reward '${rewardId}' not found in catalog`,
+    };
   if (agentPoints < reward.pointsCost) {
     return {
       valid: false,

@@ -81,7 +81,7 @@ export interface DunningConfig {
 export interface BillingAlert {
   id: number;
   type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   message: string;
   tenantId: string;
   acknowledged: boolean;

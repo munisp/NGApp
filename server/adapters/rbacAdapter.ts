@@ -23,14 +23,34 @@ export async function listRoles(): Promise<AdapterResponse<Role[]>> {
   return rbacService.get<Role[]>("/api/v1/roles");
 }
 
-export async function createRole(name: string, permissions: string[], description?: string): Promise<AdapterResponse<Role>> {
-  return rbacService.post<Role>("/api/v1/roles", { name, permissions, description });
+export async function createRole(
+  name: string,
+  permissions: string[],
+  description?: string
+): Promise<AdapterResponse<Role>> {
+  return rbacService.post<Role>("/api/v1/roles", {
+    name,
+    permissions,
+    description,
+  });
 }
 
-export async function checkPermission(userId: string, permission: string): Promise<AdapterResponse<PermissionCheck>> {
-  return rbacService.post<PermissionCheck>("/api/v1/check", { userId, permission });
+export async function checkPermission(
+  userId: string,
+  permission: string
+): Promise<AdapterResponse<PermissionCheck>> {
+  return rbacService.post<PermissionCheck>("/api/v1/check", {
+    userId,
+    permission,
+  });
 }
 
-export async function assignRole(userId: string, roleId: string): Promise<AdapterResponse<{ success: boolean }>> {
-  return rbacService.post<{ success: boolean }>("/api/v1/assign", { userId, roleId });
+export async function assignRole(
+  userId: string,
+  roleId: string
+): Promise<AdapterResponse<{ success: boolean }>> {
+  return rbacService.post<{ success: boolean }>("/api/v1/assign", {
+    userId,
+    roleId,
+  });
 }

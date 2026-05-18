@@ -44,9 +44,7 @@ export async function generateCompliancePdfBuffer(
       d.toLocaleDateString("en-NG", { dateStyle: "medium" });
 
     // ── Header ──────────────────────────────────────────────────────────────
-    doc
-      .rect(0, 0, doc.page.width, 80)
-      .fill(DARK);
+    doc.rect(0, 0, doc.page.width, 80).fill(DARK);
     doc
       .fillColor("#ffffff")
       .fontSize(22)
@@ -75,7 +73,11 @@ export async function generateCompliancePdfBuffer(
 
     const cards = [
       { label: "Total Alerts", value: data.totalAlerts, color: BLUE },
-      { label: "Critical/High", value: (data.criticalAlerts ?? 0) + data.highAlerts, color: RED },
+      {
+        label: "Critical/High",
+        value: (data.criticalAlerts ?? 0) + data.highAlerts,
+        color: RED,
+      },
       { label: "Medium", value: data.mediumAlerts, color: AMBER },
       { label: "Escalated", value: data.escalatedAlerts, color: RED },
       { label: "Resolved", value: data.resolvedAlerts, color: GREEN },
@@ -176,9 +178,7 @@ export async function generateCompliancePdfBuffer(
     doc.moveDown(1.5);
 
     // ── Footer ───────────────────────────────────────────────────────────────
-    doc
-      .rect(50, doc.y, 460, 1)
-      .fill(BORDER);
+    doc.rect(50, doc.y, 460, 1).fill(BORDER);
     doc.moveDown(0.5);
     doc
       .fillColor("#9ca3af")

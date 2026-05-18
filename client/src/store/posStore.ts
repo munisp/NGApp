@@ -103,7 +103,9 @@ interface PosState {
   isOnline: boolean;
   setOnline: (online: boolean) => void;
   offlineQueue: OfflineTx[];
-  enqueueOfflineTx: (tx: Omit<OfflineTx, "id" | "createdAt" | "retries">) => void;
+  enqueueOfflineTx: (
+    tx: Omit<OfflineTx, "id" | "createdAt" | "retries">
+  ) => void;
   dequeueOfflineTx: (id: string) => void;
   clearOfflineQueue: () => void;
 }
@@ -114,33 +116,62 @@ export const usePosStore = create<PosState>()(
       // Session
       agent: null,
       isLoggedIn: false,
-      setAgent: (agent) => set({ agent, isLoggedIn: !!agent }),
-      logout: () => set({ agent: null, isLoggedIn: false, recentTxs: [], activeChatSession: null, chatMessages: [] }),
+      setAgent: agent => set({ agent, isLoggedIn: !!agent }),
+      logout: () =>
+        set({
+          agent: null,
+          isLoggedIn: false,
+          recentTxs: [],
+          activeChatSession: null,
+          chatMessages: [],
+        }),
 
       // Float
-      updateFloat: (delta) =>
-        set((s) =>
-          s.agent ? { agent: { ...s.agent, floatBalance: s.agent.floatBalance + delta } } : {}
+      updateFloat: delta =>
+        set(s =>
+          s.agent
+            ? {
+                agent: {
+                  ...s.agent,
+                  floatBalance: s.agent.floatBalance + delta,
+                },
+              }
+            : {}
         ),
-      updateCommission: (delta) =>
-        set((s) =>
-          s.agent ? { agent: { ...s.agent, commissionBalance: s.agent.commissionBalance + delta } } : {}
+      updateCommission: delta =>
+        set(s =>
+          s.agent
+            ? {
+                agent: {
+                  ...s.agent,
+                  commissionBalance: s.agent.commissionBalance + delta,
+                },
+              }
+            : {}
         ),
-      updateLoyaltyPoints: (delta) =>
-        set((s) =>
-          s.agent ? { agent: { ...s.agent, loyaltyPoints: s.agent.loyaltyPoints + delta } } : {}
+      updateLoyaltyPoints: delta =>
+        set(s =>
+          s.agent
+            ? {
+                agent: {
+                  ...s.agent,
+                  loyaltyPoints: s.agent.loyaltyPoints + delta,
+                },
+              }
+            : {}
         ),
 
       // Transactions
       recentTxs: [],
-      addTx: (tx) => set((s) => ({ recentTxs: [tx, ...s.recentTxs].slice(0, 100) })),
-      setRecentTxs: (txs) => set({ recentTxs: txs }),
+      addTx: tx =>
+        set(s => ({ recentTxs: [tx, ...s.recentTxs].slice(0, 100) })),
+      setRecentTxs: txs => set({ recentTxs: txs }),
 
       // Fraud
       fraudEvents: [],
       unreadFraudCount: 0,
-      addFraudEvent: (event) =>
-        set((s) => ({
+      addFraudEvent: event =>
+        set(s => ({
           fraudEvents: [event, ...s.fraudEvents].slice(0, 200),
           unreadFraudCount: s.unreadFraudCount + 1,
         })),
@@ -150,34 +181,42 @@ export const usePosStore = create<PosState>()(
       activeChatSession: null,
       chatMessages: [],
       unreadChatCount: 0,
-      setActiveChatSession: (ref) => set({ activeChatSession: ref }),
-      addChatMessage: (msg) =>
-        set((s) => ({
+      setActiveChatSession: ref => set({ activeChatSession: ref }),
+      addChatMessage: msg =>
+        set(s => ({
           chatMessages: [...s.chatMessages, msg],
-          unreadChatCount: msg.senderType === "support" ? s.unreadChatCount + 1 : s.unreadChatCount,
+          unreadChatCount:
+            msg.senderType === "support"
+              ? s.unreadChatCount + 1
+              : s.unreadChatCount,
         })),
-      setChatMessages: (msgs) => set({ chatMessages: msgs }),
+      setChatMessages: msgs => set({ chatMessages: msgs }),
       clearChatCount: () => set({ unreadChatCount: 0 }),
 
       // Network
       isOnline: true,
-      setOnline: (online) => set({ isOnline: online }),
+      setOnline: online => set({ isOnline: online }),
       offlineQueue: [],
-      enqueueOfflineTx: (tx) =>
-        set((s) => ({
+      enqueueOfflineTx: tx =>
+        set(s => ({
           offlineQueue: [
             ...s.offlineQueue,
-            { ...tx, id: `OFL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, createdAt: Date.now(), retries: 0 },
+            {
+              ...tx,
+              id: `OFL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              createdAt: Date.now(),
+              retries: 0,
+            },
           ],
         })),
-      dequeueOfflineTx: (id) =>
-        set((s) => ({ offlineQueue: s.offlineQueue.filter((t) => t.id !== id) })),
+      dequeueOfflineTx: id =>
+        set(s => ({ offlineQueue: s.offlineQueue.filter(t => t.id !== id) })),
       clearOfflineQueue: () => set({ offlineQueue: [] }),
     }),
     {
       name: "pos54link-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
+      partialize: state => ({
         agent: state.agent,
         isLoggedIn: state.isLoggedIn,
         offlineQueue: state.offlineQueue,

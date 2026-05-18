@@ -8,7 +8,11 @@ import type { TrpcContext } from "./_core/context";
 
 // ─── Mock DB helpers ──────────────────────────────────────────────────────────
 vi.mock("./db", () => ({
-  getDb: vi.fn().mockResolvedValue({ select: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) }),
+  getDb: vi.fn().mockResolvedValue({
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue([]),
+  }),
   getAgentByCode: vi.fn(),
   getAgentById: vi.fn(),
   createAgent: vi.fn(),
@@ -53,7 +57,13 @@ vi.mock("jose", () => ({
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "AGT001", name: "Emeka Obi", tier: "Gold", role: "agent" },
+    payload: {
+      sub: "1",
+      agentCode: "AGT001",
+      name: "Emeka Obi",
+      tier: "Gold",
+      role: "agent",
+    },
   }),
 }));
 
@@ -100,14 +110,18 @@ const MOCK_AGENT = {
 // ─── Agent Auth Tests ─────────────────────────────────────────────────────────
 describe("agent.login", () => {
   it("returns agent profile on valid credentials", async () => {
-    const { getAgentByCode, updateAgentLastLogin, writeAuditLog } = await import("./db");
+    const { getAgentByCode, updateAgentLastLogin, writeAuditLog } =
+      await import("./db");
     vi.mocked(getAgentByCode).mockResolvedValue(MOCK_AGENT);
     vi.mocked(updateAgentLastLogin).mockResolvedValue(undefined);
     vi.mocked(writeAuditLog).mockResolvedValue(undefined);
 
     const ctx = makeCtx("");
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.agent.login({ agentCode: "AGT001", pin: "1234" });
+    const result = await caller.agent.login({
+      agentCode: "AGT001",
+      pin: "1234",
+    });
 
     expect(result.success).toBe(true);
     expect(result.agent.agentCode).toBe("AGT001");
@@ -117,13 +131,16 @@ describe("agent.login", () => {
 
   it("throws UNAUTHORIZED for inactive agent", async () => {
     const { getAgentByCode } = await import("./db");
-    vi.mocked(getAgentByCode).mockResolvedValue({ ...MOCK_AGENT, isActive: false });
+    vi.mocked(getAgentByCode).mockResolvedValue({
+      ...MOCK_AGENT,
+      isActive: false,
+    });
 
     const ctx = makeCtx("");
     const caller = appRouter.createCaller(ctx);
-    await expect(caller.agent.login({ agentCode: "AGT001", pin: "1234" })).rejects.toThrow(
-      "Agent account is suspended"
-    );
+    await expect(
+      caller.agent.login({ agentCode: "AGT001", pin: "1234" })
+    ).rejects.toThrow("Agent account is suspended");
   });
 
   it("throws UNAUTHORIZED for unknown agent code", async () => {
@@ -132,9 +149,9 @@ describe("agent.login", () => {
 
     const ctx = makeCtx("");
     const caller = appRouter.createCaller(ctx);
-    await expect(caller.agent.login({ agentCode: "UNKNOWN", pin: "0000" })).rejects.toThrow(
-      "Invalid agent code or PIN"
-    );
+    await expect(
+      caller.agent.login({ agentCode: "UNKNOWN", pin: "0000" })
+    ).rejects.toThrow("Invalid agent code or PIN");
   });
 
   it("clears cookie on logout", async () => {
@@ -142,16 +159,29 @@ describe("agent.login", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.agent.logout();
     expect(result.success).toBe(true);
-    expect(ctx.res.clearCookie).toHaveBeenCalledWith("agent_session", { path: "/" });
+    expect(ctx.res.clearCookie).toHaveBeenCalledWith("agent_session", {
+      path: "/",
+    });
   });
 });
 
 // ─── Transaction Tests ────────────────────────────────────────────────────────
 describe("transactions.create", () => {
   it("creates a Cash In transaction and returns ref", async () => {
-    const { getAgentById, createTransaction, updateAgentFloat, updateAgentCommission, addLoyaltyHistory, writeAuditLog } = await import("./db");
+    const {
+      getAgentById,
+      createTransaction,
+      updateAgentFloat,
+      updateAgentCommission,
+      addLoyaltyHistory,
+      writeAuditLog,
+    } = await import("./db");
     vi.mocked(getAgentById).mockResolvedValue(MOCK_AGENT);
-    vi.mocked(createTransaction).mockResolvedValue({ id: 1, ref: "TXNABC123", ...MOCK_AGENT } as any);
+    vi.mocked(createTransaction).mockResolvedValue({
+      id: 1,
+      ref: "TXNABC123",
+      ...MOCK_AGENT,
+    } as any);
     vi.mocked(updateAgentFloat).mockResolvedValue(undefined);
     vi.mocked(updateAgentCommission).mockResolvedValue(undefined);
     vi.mocked(addLoyaltyHistory).mockResolvedValue(undefined);
@@ -159,7 +189,10 @@ describe("transactions.create", () => {
 
     const ctx = makeCtx();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.transactions.create({ type: "Cash In", amount: 50000 });
+    const result = await caller.transactions.create({
+      type: "Cash In",
+      amount: 50000,
+    });
 
     expect(result.success).toBe(true);
     expect(typeof result.ref).toBe("string");
@@ -169,7 +202,10 @@ describe("transactions.create", () => {
 
   it("throws BAD_REQUEST when Cash Out exceeds float", async () => {
     const { getAgentById } = await import("./db");
-    vi.mocked(getAgentById).mockResolvedValue({ ...MOCK_AGENT, floatBalance: "1000.00" });
+    vi.mocked(getAgentById).mockResolvedValue({
+      ...MOCK_AGENT,
+      floatBalance: "1000.00",
+    });
 
     const ctx = makeCtx();
     const caller = appRouter.createCaller(ctx);
@@ -194,7 +230,23 @@ describe("fraud.list", () => {
   it("returns fraud alerts", async () => {
     const { getFraudAlerts } = await import("./db");
     vi.mocked(getFraudAlerts).mockResolvedValue([
-      { id: 1, severity: "critical", type: "Structuring", reason: "Test", status: "open", amount: "150000", fraudScore: "0.92", agentId: null, transactionId: null, customerName: "Test", aiExplanation: null, assignedTo: null, resolvedAt: null, createdAt: new Date(), updatedAt: new Date() },
+      {
+        id: 1,
+        severity: "critical",
+        type: "Structuring",
+        reason: "Test",
+        status: "open",
+        amount: "150000",
+        fraudScore: "0.92",
+        agentId: null,
+        transactionId: null,
+        customerName: "Test",
+        aiExplanation: null,
+        assignedTo: null,
+        resolvedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ] as any);
 
     const ctx = makeCtx();
@@ -229,7 +281,9 @@ describe("loyalty.profile", () => {
   it("throws UNAUTHORIZED without session cookie", async () => {
     const ctx = makeCtx("");
     const caller = appRouter.createCaller(ctx);
-    await expect(caller.loyalty.profile()).rejects.toThrow("Agent session required");
+    await expect(caller.loyalty.profile()).rejects.toThrow(
+      "Agent session required"
+    );
   });
 });
 

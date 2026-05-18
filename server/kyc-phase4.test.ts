@@ -68,7 +68,9 @@ describe("KYC Phase 4 — Geo-IP Correlation", () => {
       };
       const result = correlateGeoIp("user-002", "device-def", geo);
       expect(result.riskScore).toBeGreaterThan(0);
-      expect(result.flags.some((f: string) => f.toLowerCase().includes("vpn"))).toBe(true);
+      expect(
+        result.flags.some((f: string) => f.toLowerCase().includes("vpn"))
+      ).toBe(true);
     });
 
     it("flags Tor usage as high risk", () => {
@@ -84,7 +86,9 @@ describe("KYC Phase 4 — Geo-IP Correlation", () => {
       };
       const result = correlateGeoIp("user-003", "device-ghi", geo);
       expect(result.riskScore).toBeGreaterThanOrEqual(40);
-      expect(result.flags.some((f: string) => f.toLowerCase().includes("tor"))).toBe(true);
+      expect(
+        result.flags.some((f: string) => f.toLowerCase().includes("tor"))
+      ).toBe(true);
     });
 
     it("detects impossible travel (same user, different countries, short time)", () => {
@@ -155,7 +159,7 @@ describe("KYC Phase 4 — Geo-IP Correlation", () => {
         asn: "AS36873",
       };
       correlateGeoIp("user-to-clear", "device-x", geo);
-      
+
       const cleared = clearGeoIpData("user-to-clear");
       expect(typeof cleared).toBe("number");
       expect(cleared).toBeGreaterThanOrEqual(1);
@@ -211,12 +215,12 @@ describe("KYC Phase 4 — Lockout Notification", () => {
     );
     // Clear any existing cooldown
     clearCooldown("notify-test-user");
-    
+
     // Record 3 failures to trigger lockout
     recordLivenessFailure("notify-test-user");
     recordLivenessFailure("notify-test-user");
     const result = recordLivenessFailure("notify-test-user");
-    
+
     // After 3 failures, user should be locked out
     const { isLockedOut } = await import(
       "./middleware/livenessSecurityEnhancements"
@@ -235,25 +239,33 @@ describe("KYC Phase 4 — Recommendations Document", () => {
       "../docs/KYC-KYB-LIVENESS-RECOMMENDATIONS.md"
     );
     expect(fs.existsSync(filePath)).toBe(true);
-    
+
     const content = fs.readFileSync(filePath, "utf-8");
     // Check all 8 sections are present
-    expect(content.includes("## 1. Liveness Detection Enhancements")).toBe(true);
+    expect(content.includes("## 1. Liveness Detection Enhancements")).toBe(
+      true
+    );
     expect(content.includes("## 2. KYC Process Improvements")).toBe(true);
-    expect(content.includes("## 3. KYB (Know Your Business) Enhancements")).toBe(true);
-    expect(content.includes("## 4. Device and Infrastructure Improvements")).toBe(true);
-    expect(content.includes("## 5. Fraud Prevention and Risk Scoring")).toBe(true);
+    expect(
+      content.includes("## 3. KYB (Know Your Business) Enhancements")
+    ).toBe(true);
+    expect(
+      content.includes("## 4. Device and Infrastructure Improvements")
+    ).toBe(true);
+    expect(content.includes("## 5. Fraud Prevention and Risk Scoring")).toBe(
+      true
+    );
     expect(content.includes("## 6. Compliance and Audit")).toBe(true);
     expect(content.includes("## 7. Implementation Roadmap")).toBe(true);
     expect(content.includes("## 8. Key Metrics to Track")).toBe(true);
-    
+
     // Check it covers key topics
     expect(content.includes("deepfake")).toBe(true);
     expect(content.includes("ISO 30107")).toBe(true);
     expect(content.includes("CBN")).toBe(true);
     expect(content.includes("NFC")).toBe(true);
     expect(content.includes("NDPA")).toBe(true);
-    
+
     // Should be substantial (>5000 words)
     const wordCount = content.split(/\s+/).length;
     expect(wordCount).toBeGreaterThan(2000);

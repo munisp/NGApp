@@ -231,12 +231,12 @@ golang-migrate uses an advisory lock (`pg_try_advisory_lock`) to prevent concurr
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string (per service) |
-| `MIGRATIONS_PATH` | Override default `./migrations` directory |
+| Variable               | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string (per service)     |
+| `MIGRATIONS_PATH`      | Override default `./migrations` directory      |
 | `MIGRATE_LOCK_TIMEOUT` | Advisory lock timeout in seconds (default: 15) |
 
 ---
 
-*Last updated: 2026-03-31 — Production Readiness Sprint Phase 95*
+_Last updated: 2026-03-31 — Production Readiness Sprint Phase 95_

@@ -1,4 +1,4 @@
-import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "@shared/const";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -18,7 +18,9 @@ export const middleware = t.middleware;
 const observability = createObservabilityMiddleware(t);
 const sidecarMiddleware = createSidecarMiddleware(t);
 
-export const publicProcedure = t.procedure.use(observability).use(sidecarMiddleware);
+export const publicProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware);
 
 // ── requireUser: verify JWT session ──────────────────────────────────────────
 const requireUser = t.middleware(async opts => {
@@ -71,42 +73,52 @@ const requirePermify = t.middleware(async opts => {
 });
 
 // ── protectedProcedure: JWT auth + Permify base access check ─────────────────
-export const protectedProcedure = t.procedure.use(observability).use(sidecarMiddleware).use(requireUser).use(requirePermify);
+export const protectedProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware)
+  .use(requireUser)
+  .use(requirePermify);
 
 // ── adminProcedure: JWT auth + role=admin + Permify admin check ───────────────
-export const adminProcedure = t.procedure.use(observability).use(sidecarMiddleware).use(
-  t.middleware(async opts => {
-    const { ctx, next } = opts;
+export const adminProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware)
+  .use(
+    t.middleware(async opts => {
+      const { ctx, next } = opts;
 
-    if (!ctx.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-    }
+      if (!ctx.user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: UNAUTHED_ERR_MSG,
+        });
+      }
 
-    if (ctx.user.role !== 'admin') {
-      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
-    }
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+      }
 
-    // Permify check: user:<userId> can "admin_access" system:pos-shell
-    const allowed = await permifyCheck({
-      subjectType: "user",
-      subjectId: String(ctx.user.id),
-      entityType: "system",
-      entityId: "pos-shell",
-      permission: "admin_access",
-    });
-
-    if (!allowed) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Admin access denied by authorization policy",
+      // Permify check: user:<userId> can "admin_access" system:pos-shell
+      const allowed = await permifyCheck({
+        subjectType: "user",
+        subjectId: String(ctx.user.id),
+        entityType: "system",
+        entityId: "pos-shell",
+        permission: "admin_access",
       });
-    }
 
-    return next({
-      ctx: {
-        ...ctx,
-        user: ctx.user,
-      },
-    });
-  }),
-);
+      if (!allowed) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin access denied by authorization policy",
+        });
+      }
+
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user,
+        },
+      });
+    })
+  );

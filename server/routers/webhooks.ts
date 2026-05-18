@@ -18,7 +18,11 @@ export const webhooksRouter = router({
   list: mgmtProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return [];
-    return db.select().from(webhookEndpoints).orderBy(desc(webhookEndpoints.createdAt)).limit(100);
+    return db
+      .select()
+      .from(webhookEndpoints)
+      .orderBy(desc(webhookEndpoints.createdAt))
+      .limit(100);
   }),
 
   // ── Create a new webhook endpoint ────────────────────────────────────────
@@ -49,7 +53,11 @@ export const webhooksRouter = router({
         return { ...endpoint, secret }; // Return secret only on creation
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -77,7 +85,11 @@ export const webhooksRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -96,7 +108,11 @@ export const webhooksRouter = router({
         return { secret: newSecret };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -107,11 +123,17 @@ export const webhooksRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) throw new Error("Database unavailable");
-        await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));
+        await db
+          .delete(webhookEndpoints)
+          .where(eq(webhookEndpoints.id, input.id));
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -145,14 +167,19 @@ export const webhooksRouter = router({
         return { items, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Delivery stats for all endpoints ─────────────────────────────────────
   stats: mgmtProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return { total: 0, delivered: 0, failed: 0, retrying: 0, successRate: 0 };
+    if (!db)
+      return { total: 0, delivered: 0, failed: 0, retrying: 0, successRate: 0 };
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24h
     const rows = await db
       .select()
@@ -190,7 +217,11 @@ export const webhooksRouter = router({
         return { retried };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -235,11 +266,18 @@ export const webhooksRouter = router({
           clearTimeout(timeout);
           return { success: response.ok, statusCode: response.status };
         } catch (err) {
-          return { success: false, error: err instanceof Error ? err.message : String(err) };
+          return {
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          };
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

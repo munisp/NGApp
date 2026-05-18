@@ -32,6 +32,7 @@ pnpm test
 ## Coding Standards
 
 ### TypeScript
+
 - No `@ts-nocheck` or `as any` — fix the types properly
 - Use Drizzle ORM for all database queries (no raw SQL, no in-memory arrays)
 - Use `crypto.randomUUID()` for ID generation (never `Date.now()` or `Math.random()`)
@@ -39,12 +40,14 @@ pnpm test
 - Use `auditLog()` for all mutation procedures
 
 ### Go / Rust / Python
+
 - Follow idiomatic conventions for each language
 - All services must expose a `/health` endpoint
 - Externalize state to Redis (no in-memory maps for production state)
 - Use structured JSON logging
 
 ### Git Workflow
+
 1. Create a feature branch from `main`
 2. Make focused, minimal changes
 3. Run `pnpm lint && pnpm typecheck` before committing
@@ -69,6 +72,7 @@ touch server/routers/myFeature.ts
 ## Adding a New Microservice
 
 ### Go
+
 ```bash
 mkdir -p services/go/my-service
 # Create main.go, go.mod, Dockerfile
@@ -77,6 +81,7 @@ mkdir -p services/go/my-service
 ```
 
 ### Python
+
 ```bash
 mkdir -p services/python/my-service
 # Create main.py, requirements.txt, Dockerfile
@@ -84,6 +89,7 @@ mkdir -p services/python/my-service
 ```
 
 ### Rust
+
 ```bash
 mkdir -p services/rust/my-service
 # Create src/main.rs, Cargo.toml, Dockerfile

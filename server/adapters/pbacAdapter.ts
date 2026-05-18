@@ -22,19 +22,34 @@ export interface AuthorizationResult {
   evaluationTimeMs: number;
 }
 
-export async function authorize(subject: string, resource: string, action: string, context?: Record<string, unknown>): Promise<AdapterResponse<AuthorizationResult>> {
-  return pbacEngine.post<AuthorizationResult>("/authorize", { subject, resource, action, context });
+export async function authorize(
+  subject: string,
+  resource: string,
+  action: string,
+  context?: Record<string, unknown>
+): Promise<AdapterResponse<AuthorizationResult>> {
+  return pbacEngine.post<AuthorizationResult>("/authorize", {
+    subject,
+    resource,
+    action,
+    context,
+  });
 }
 
 export async function listPolicies(): Promise<AdapterResponse<Policy[]>> {
   return pbacEngine.get<Policy[]>("/policies");
 }
 
-export async function createPolicy(policy: Omit<Policy, "id">): Promise<AdapterResponse<Policy>> {
+export async function createPolicy(
+  policy: Omit<Policy, "id">
+): Promise<AdapterResponse<Policy>> {
   return pbacEngine.post<Policy>("/policies", policy);
 }
 
-export async function updatePolicy(id: string, policy: Partial<Policy>): Promise<AdapterResponse<Policy>> {
+export async function updatePolicy(
+  id: string,
+  policy: Partial<Policy>
+): Promise<AdapterResponse<Policy>> {
   return pbacEngine.put<Policy>(`/policies/${id}`, policy);
 }
 

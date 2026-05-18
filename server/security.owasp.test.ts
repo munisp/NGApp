@@ -58,13 +58,25 @@ vi.mock("./middleware/agentAuth", () => ({
 }));
 
 vi.mock("./_core/platformClient", () => ({
-  fraudPlatform: { score: vi.fn().mockResolvedValue(null), listAlerts: vi.fn().mockResolvedValue(null), updateAlert: vi.fn().mockResolvedValue(null) },
-  floatPlatform: { utilize: vi.fn().mockResolvedValue({ success: true }), settle: vi.fn().mockResolvedValue({ success: true }), getBalance: vi.fn().mockResolvedValue(null), getTransactions: vi.fn().mockResolvedValue(null) },
+  fraudPlatform: {
+    score: vi.fn().mockResolvedValue(null),
+    listAlerts: vi.fn().mockResolvedValue(null),
+    updateAlert: vi.fn().mockResolvedValue(null),
+  },
+  floatPlatform: {
+    utilize: vi.fn().mockResolvedValue({ success: true }),
+    settle: vi.fn().mockResolvedValue({ success: true }),
+    getBalance: vi.fn().mockResolvedValue(null),
+    getTransactions: vi.fn().mockResolvedValue(null),
+  },
   analyticsPlatform: { transactionSummary: vi.fn().mockResolvedValue(null) },
 }));
 
 vi.mock("bcryptjs", () => ({
-  default: { compare: vi.fn().mockResolvedValue(false), hash: vi.fn().mockResolvedValue("$2b$10$hash") },
+  default: {
+    compare: vi.fn().mockResolvedValue(false),
+    hash: vi.fn().mockResolvedValue("$2b$10$hash"),
+  },
   compare: vi.fn().mockResolvedValue(false),
   hash: vi.fn().mockResolvedValue("$2b$10$hash"),
 }));
@@ -201,7 +213,9 @@ describe("A05: Security Misconfiguration", () => {
     const fs = await import("fs");
     const indexContent = fs.readFileSync("server/_core/index.ts", "utf-8");
     // Should reference env, not a hardcoded string
-    expect(indexContent).not.toMatch(/JWT_SECRET\s*=\s*["'][a-zA-Z0-9]{10,}["']/);
+    expect(indexContent).not.toMatch(
+      /JWT_SECRET\s*=\s*["'][a-zA-Z0-9]{10,}["']/
+    );
   });
 
   it("No hardcoded database passwords in source", async () => {

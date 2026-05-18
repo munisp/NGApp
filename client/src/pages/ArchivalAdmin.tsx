@@ -1,27 +1,61 @@
 // @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
-  Archive, Play, Calendar, Clock, Database, HardDrive, Trash2,
-  RefreshCw, CheckCircle, XCircle, Loader2, Settings, FileArchive,
+  Archive,
+  Play,
+  Calendar,
+  Clock,
+  Database,
+  HardDrive,
+  Trash2,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Settings,
+  FileArchive,
 } from "lucide-react";
 
 const CRON_PRESETS: Record<string, { label: string; cron: string }> = {
   daily_2am: { label: "Daily at 2:00 AM", cron: "0 2 * * *" },
   weekly_sun: { label: "Weekly (Sunday 2:00 AM)", cron: "0 2 * * 0" },
   weekly_sat: { label: "Weekly (Saturday 3:00 AM)", cron: "0 3 * * 6" },
-  biweekly: { label: "Bi-weekly (1st & 15th at 2:00 AM)", cron: "0 2 1,15 * *" },
+  biweekly: {
+    label: "Bi-weekly (1st & 15th at 2:00 AM)",
+    cron: "0 2 1,15 * *",
+  },
   monthly: { label: "Monthly (1st at 2:00 AM)", cron: "0 2 1 * *" },
 };
 
@@ -58,7 +92,7 @@ export default function ArchivalAdmin() {
   const [schedDelete, setSchedDelete] = useState(false);
 
   const triggerMutation = trpc.archivalAdmin.triggerArchival.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       if (data.success) {
         toast.success(`Archival job ${data.jobId} started`);
         setTriggerOpen(false);
@@ -72,7 +106,7 @@ export default function ArchivalAdmin() {
         toast.error(data.error ?? "Failed to start archival job");
       }
     },
-    onError: (err) => toast.error(`Error: ${err.message}`),
+    onError: err => toast.error(`Error: ${err.message}`),
   });
 
   const scheduleMutation = trpc.archivalAdmin.updateSchedule.useMutation({
@@ -81,7 +115,7 @@ export default function ArchivalAdmin() {
       setScheduleOpen(false);
       utils.archivalAdmin.getStats.invalidate();
     },
-    onError: (err) => toast.error(`Error: ${err.message}`),
+    onError: err => toast.error(`Error: ${err.message}`),
   });
 
   const stats = statsQuery.data;
@@ -91,7 +125,8 @@ export default function ArchivalAdmin() {
 
   // Sync schedule state when data loads
   if (schedule && !scheduleOpen) {
-    if (scheduleEnabled !== schedule.enabled) setScheduleEnabled(schedule.enabled);
+    if (scheduleEnabled !== schedule.enabled)
+      setScheduleEnabled(schedule.enabled);
   }
 
   return (
@@ -104,7 +139,8 @@ export default function ArchivalAdmin() {
               <Archive className="h-6 w-6" /> Cold-Tier Archival
             </h1>
             <p className="text-muted-foreground">
-              Archive old settlements and reconciliation data to compressed cold storage
+              Archive old settlements and reconciliation data to compressed cold
+              storage
             </p>
           </div>
           <div className="flex gap-2">
@@ -135,19 +171,33 @@ export default function ArchivalAdmin() {
                 <div className="space-y-4 py-4">
                   <div className="flex items-center justify-between">
                     <Label>Enable Scheduled Archival</Label>
-                    <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                    <Switch
+                      checked={scheduleEnabled}
+                      onCheckedChange={setScheduleEnabled}
+                    />
                   </div>
                   {scheduleEnabled && (
                     <>
                       <div className="space-y-2">
                         <Label>Schedule Frequency</Label>
-                        <Select value={cronPreset} onValueChange={setCronPreset}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        <Select
+                          value={cronPreset}
+                          onValueChange={setCronPreset}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(CRON_PRESETS).map(([key, { label }]) => (
-                              <SelectItem key={key} value={key}>{label}</SelectItem>
-                            ))}
-                            <SelectItem value="custom">Custom Cron Expression</SelectItem>
+                            {Object.entries(CRON_PRESETS).map(
+                              ([key, { label }]) => (
+                                <SelectItem key={key} value={key}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
+                            <SelectItem value="custom">
+                              Custom Cron Expression
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -157,7 +207,7 @@ export default function ArchivalAdmin() {
                           <Input
                             placeholder="0 2 * * 0"
                             value={customCron}
-                            onChange={(e) => setCustomCron(e.target.value)}
+                            onChange={e => setCustomCron(e.target.value)}
                           />
                           <p className="text-xs text-muted-foreground">
                             Format: minute hour day-of-month month day-of-week
@@ -171,7 +221,9 @@ export default function ArchivalAdmin() {
                           min={1}
                           max={3650}
                           value={schedRetention}
-                          onChange={(e) => setSchedRetention(Number(e.target.value))}
+                          onChange={e =>
+                            setSchedRetention(Number(e.target.value))
+                          }
                         />
                         <p className="text-xs text-muted-foreground">
                           Records older than this will be archived
@@ -184,18 +236,27 @@ export default function ArchivalAdmin() {
                             Remove archived records from the database
                           </p>
                         </div>
-                        <Switch checked={schedDelete} onCheckedChange={setSchedDelete} />
+                        <Switch
+                          checked={schedDelete}
+                          onCheckedChange={setSchedDelete}
+                        />
                       </div>
                     </>
                   )}
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setScheduleOpen(false)}
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={() => {
-                      const cron = cronPreset === "custom"
-                        ? customCron
-                        : CRON_PRESETS[cronPreset]?.cron ?? "0 2 * * 0";
+                      const cron =
+                        cronPreset === "custom"
+                          ? customCron
+                          : (CRON_PRESETS[cronPreset]?.cron ?? "0 2 * * 0");
                       scheduleMutation.mutate({
                         enabled: scheduleEnabled,
                         cronExpression: cron,
@@ -205,7 +266,9 @@ export default function ArchivalAdmin() {
                     }}
                     disabled={scheduleMutation.isPending}
                   >
-                    {scheduleMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                    {scheduleMutation.isPending && (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    )}
                     Save Schedule
                   </Button>
                 </DialogFooter>
@@ -232,17 +295,26 @@ export default function ArchivalAdmin() {
                       min={1}
                       max={3650}
                       value={retentionDays}
-                      onChange={(e) => setRetentionDays(Number(e.target.value))}
+                      onChange={e => setRetentionDays(Number(e.target.value))}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Tables to Archive</Label>
-                    <Select value={selectedTables} onValueChange={setSelectedTables}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={selectedTables}
+                      onValueChange={setSelectedTables}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Tables</SelectItem>
-                        <SelectItem value="settlements">Settlements Only</SelectItem>
-                        <SelectItem value="batches">Reconciliation Batches Only</SelectItem>
+                        <SelectItem value="settlements">
+                          Settlements Only
+                        </SelectItem>
+                        <SelectItem value="batches">
+                          Reconciliation Batches Only
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -250,21 +322,39 @@ export default function ArchivalAdmin() {
                     <div>
                       <Label>Delete After Archive</Label>
                       <p className="text-xs text-muted-foreground text-red-400">
-                        Warning: This permanently removes records from the database
+                        Warning: This permanently removes records from the
+                        database
                       </p>
                     </div>
-                    <Switch checked={deleteAfterArchive} onCheckedChange={setDeleteAfterArchive} />
+                    <Switch
+                      checked={deleteAfterArchive}
+                      onCheckedChange={setDeleteAfterArchive}
+                    />
                   </div>
                   {stats && (
                     <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
-                      <p><strong>Eligible settlements:</strong> {stats.eligibleSettlements.toLocaleString()}</p>
-                      <p><strong>Eligible batches:</strong> {stats.eligibleBatches.toLocaleString()}</p>
-                      <p><strong>Cutoff date:</strong> {new Date(stats.cutoffDate).toLocaleDateString()}</p>
+                      <p>
+                        <strong>Eligible settlements:</strong>{" "}
+                        {stats.eligibleSettlements.toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>Eligible batches:</strong>{" "}
+                        {stats.eligibleBatches.toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>Cutoff date:</strong>{" "}
+                        {new Date(stats.cutoffDate).toLocaleDateString()}
+                      </p>
                     </div>
                   )}
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setTriggerOpen(false)}>Cancel</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setTriggerOpen(false)}
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={() => {
                       triggerMutation.mutate({
@@ -276,7 +366,9 @@ export default function ArchivalAdmin() {
                     disabled={triggerMutation.isPending}
                     variant={deleteAfterArchive ? "destructive" : "default"}
                   >
-                    {triggerMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                    {triggerMutation.isPending && (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    )}
                     {deleteAfterArchive ? "Archive & Delete" : "Start Archival"}
                   </Button>
                 </DialogFooter>
@@ -294,7 +386,9 @@ export default function ArchivalAdmin() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.eligibleSettlements?.toLocaleString() ?? "—"}</div>
+              <div className="text-2xl font-bold">
+                {stats?.eligibleSettlements?.toLocaleString() ?? "—"}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Older than {stats?.retentionDays ?? 90} days
               </p>
@@ -307,8 +401,12 @@ export default function ArchivalAdmin() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.eligibleBatches?.toLocaleString() ?? "—"}</div>
-              <p className="text-xs text-muted-foreground">Reconciliation batches</p>
+              <div className="text-2xl font-bold">
+                {stats?.eligibleBatches?.toLocaleString() ?? "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Reconciliation batches
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -320,9 +418,13 @@ export default function ArchivalAdmin() {
             <CardContent>
               <div className="text-2xl font-bold">
                 {schedule?.enabled ? (
-                  <Badge className="bg-emerald-500/20 text-emerald-400">Active</Badge>
+                  <Badge className="bg-emerald-500/20 text-emerald-400">
+                    Active
+                  </Badge>
                 ) : (
-                  <Badge className="bg-yellow-500/20 text-yellow-400">Disabled</Badge>
+                  <Badge className="bg-yellow-500/20 text-yellow-400">
+                    Disabled
+                  </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -338,7 +440,9 @@ export default function ArchivalAdmin() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats?.cutoffDate ? new Date(stats.cutoffDate).toLocaleDateString() : "—"}
+                {stats?.cutoffDate
+                  ? new Date(stats.cutoffDate).toLocaleDateString()
+                  : "—"}
               </div>
               <p className="text-xs text-muted-foreground">
                 {stats?.retentionDays ?? 90}-day retention
@@ -359,12 +463,20 @@ export default function ArchivalAdmin() {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Job ID: <span className="font-mono">{currentJob.id}</span></span>
-                  <span>Started: {new Date(currentJob.startedAt).toLocaleString()}</span>
+                  <span>
+                    Job ID: <span className="font-mono">{currentJob.id}</span>
+                  </span>
+                  <span>
+                    Started: {new Date(currentJob.startedAt).toLocaleString()}
+                  </span>
                 </div>
-                <Progress value={undefined} className="h-2 [&>div]:animate-pulse" />
+                <Progress
+                  value={undefined}
+                  className="h-2 [&>div]:animate-pulse"
+                />
                 <p className="text-xs text-muted-foreground">
-                  Archiving records older than {currentJob.retentionDays} days...
+                  Archiving records older than {currentJob.retentionDays}{" "}
+                  days...
                 </p>
               </div>
             </CardContent>
@@ -383,7 +495,9 @@ export default function ArchivalAdmin() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Cron Expression</p>
-                  <p className="font-mono font-medium">{schedule.cronExpression}</p>
+                  <p className="font-mono font-medium">
+                    {schedule.cronExpression}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Retention</p>
@@ -391,12 +505,16 @@ export default function ArchivalAdmin() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Delete After Archive</p>
-                  <p className="font-medium">{schedule.deleteAfterArchive ? "Yes" : "No"}</p>
+                  <p className="font-medium">
+                    {schedule.deleteAfterArchive ? "Yes" : "No"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Next Run</p>
                   <p className="font-medium">
-                    {schedule.nextRun ? new Date(schedule.nextRun).toLocaleString() : "—"}
+                    {schedule.nextRun
+                      ? new Date(schedule.nextRun).toLocaleString()
+                      : "—"}
                   </p>
                 </div>
               </div>
@@ -408,7 +526,9 @@ export default function ArchivalAdmin() {
         <Card>
           <CardHeader>
             <CardTitle>Archival Job History</CardTitle>
-            <CardDescription>Recent archival operations and their results</CardDescription>
+            <CardDescription>
+              Recent archival operations and their results
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {history.length === 0 ? (
@@ -451,35 +571,56 @@ export default function ArchivalAdmin() {
                     {job.result && (
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
                         <div>
-                          <span className="text-muted-foreground">Archived:</span>{" "}
-                          <span className="font-medium">{job.result.totalArchived.toLocaleString()}</span>
+                          <span className="text-muted-foreground">
+                            Archived:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {job.result.totalArchived.toLocaleString()}
+                          </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Deleted:</span>{" "}
-                          <span className="font-medium">{job.result.totalDeleted.toLocaleString()}</span>
+                          <span className="text-muted-foreground">
+                            Deleted:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {job.result.totalDeleted.toLocaleString()}
+                          </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Duration:</span>{" "}
-                          <span className="font-medium">{formatDuration(job.result.duration)}</span>
+                          <span className="text-muted-foreground">
+                            Duration:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {formatDuration(job.result.duration)}
+                          </span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">By:</span>{" "}
                           <span className="font-medium">{job.triggeredBy}</span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Retention:</span>{" "}
-                          <span className="font-medium">{job.retentionDays}d</span>
+                          <span className="text-muted-foreground">
+                            Retention:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {job.retentionDays}d
+                          </span>
                         </div>
                       </div>
                     )}
                     {job.result?.tables?.map((t: any) => (
-                      <div key={t.table} className="flex items-center gap-4 text-xs pl-6">
+                      <div
+                        key={t.table}
+                        className="flex items-center gap-4 text-xs pl-6"
+                      >
                         <HardDrive className="h-3 w-3 text-muted-foreground" />
                         <span className="font-mono">{t.table}</span>
                         <span>{t.archivedCount.toLocaleString()} rows</span>
                         <span>{formatBytes(t.archiveSizeBytes)}</span>
                         <span>{t.compressionRatio}x compression</span>
-                        <Badge className="text-[10px] bg-muted">{t.format}</Badge>
+                        <Badge className="text-[10px] bg-muted">
+                          {t.format}
+                        </Badge>
                       </div>
                     ))}
                     {job.error && (

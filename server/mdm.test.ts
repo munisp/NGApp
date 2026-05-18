@@ -16,10 +16,25 @@ vi.mock("./db", () => {
   function createQueryChain(): any {
     const chain: any = {};
     const methods = [
-      "select", "from", "where", "limit", "offset", "orderBy",
-      "leftJoin", "innerJoin", "rightJoin", "groupBy", "having",
-      "insert", "values", "returning", "update", "set", "delete",
-      "onConflictDoNothing", "onConflictDoUpdate",
+      "select",
+      "from",
+      "where",
+      "limit",
+      "offset",
+      "orderBy",
+      "leftJoin",
+      "innerJoin",
+      "rightJoin",
+      "groupBy",
+      "having",
+      "insert",
+      "values",
+      "returning",
+      "update",
+      "set",
+      "delete",
+      "onConflictDoNothing",
+      "onConflictDoUpdate",
     ];
     for (const m of methods) {
       chain[m] = (..._args: any[]) => chain;
@@ -28,13 +43,16 @@ vi.mock("./db", () => {
     chain.then = (resolve: any) => Promise.resolve([]).then(resolve);
     return chain;
   }
-  const mockDb = new Proxy({}, {
-    get(_target, prop) {
-      if (prop === "then") return undefined; // NOT thenable at root
-      if (typeof prop === "symbol") return undefined;
-      return (..._args: any[]) => createQueryChain();
-    },
-  });
+  const mockDb = new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (prop === "then") return undefined; // NOT thenable at root
+        if (typeof prop === "symbol") return undefined;
+        return (..._args: any[]) => createQueryChain();
+      },
+    }
+  );
   return {
     getDb: vi.fn().mockResolvedValue(mockDb),
     writeAuditLog: vi.fn().mockResolvedValue(undefined),
@@ -80,7 +98,13 @@ vi.mock("jose", () => ({
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "AGT001", name: "Emeka Obi", tier: "Gold", role: "agent" },
+    payload: {
+      sub: "1",
+      agentCode: "AGT001",
+      name: "Emeka Obi",
+      tier: "Gold",
+      role: "agent",
+    },
   }),
 }));
 
@@ -145,7 +169,9 @@ function makePublicCtx(): TrpcContext {
 describe("mdm.listDevices", () => {
   it("requires admin role — rejects regular user", async () => {
     const caller = appRouter.createCaller(makeUserCtx());
-    await expect(caller.mdm.listDevices({ status: "all" })).rejects.toThrow(/admin|forbidden/i);
+    await expect(caller.mdm.listDevices({ status: "all" })).rejects.toThrow(
+      /admin|forbidden/i
+    );
   });
 
   it("returns devices and total for admin", async () => {
@@ -251,7 +277,14 @@ describe("mdm.issueCommand", () => {
   });
 
   it("accepts all valid command types", async () => {
-    const commands = ["UPDATE", "RECONFIG", "RESTART", "WIPE", "PING", "SCREENSHOT"] as const;
+    const commands = [
+      "UPDATE",
+      "RECONFIG",
+      "RESTART",
+      "WIPE",
+      "PING",
+      "SCREENSHOT",
+    ] as const;
     for (const cmd of commands) {
       const caller = appRouter.createCaller(makeAdminCtx());
       // May throw NOT_FOUND for device, but should not throw validation error
@@ -289,7 +322,10 @@ describe("mdm.enrollWithToken", () => {
     const caller = appRouter.createCaller(makePublicCtx());
     // Should not throw auth error — only data errors
     try {
-      await caller.mdm.enrollWithToken({ token: "test-token", serialNumber: "SN001" });
+      await caller.mdm.enrollWithToken({
+        token: "test-token",
+        serialNumber: "SN001",
+      });
     } catch (e: any) {
       // NOT_FOUND or EXPIRED is expected, not UNAUTHORIZED
       expect(e.message).not.toMatch(/unauthorized|login/i);
@@ -311,7 +347,10 @@ describe("mdm.disableTerminal", () => {
   it("requires admin role", async () => {
     const caller = appRouter.createCaller(makeUserCtx());
     await expect(
-      caller.mdm.disableTerminal({ agentCode: "AGT001", reason: "Suspected fraud" })
+      caller.mdm.disableTerminal({
+        agentCode: "AGT001",
+        reason: "Suspected fraud",
+      })
     ).rejects.toThrow(/admin|forbidden/i);
   });
 
@@ -325,7 +364,10 @@ describe("mdm.disableTerminal", () => {
   it("validates agentCode is non-empty", async () => {
     const caller = appRouter.createCaller(makeAdminCtx());
     await expect(
-      caller.mdm.disableTerminal({ agentCode: "", reason: "Suspected fraud — under investigation" })
+      caller.mdm.disableTerminal({
+        agentCode: "",
+        reason: "Suspected fraud — under investigation",
+      })
     ).rejects.toThrow();
   });
 });
@@ -386,14 +428,18 @@ describe("mdm.createOtaRelease", () => {
 describe("mdm.publishOtaRelease", () => {
   it("requires admin role", async () => {
     const caller = appRouter.createCaller(makeUserCtx());
-    await expect(caller.mdm.publishOtaRelease({ id: 1 })).rejects.toThrow(/admin|forbidden/i);
+    await expect(caller.mdm.publishOtaRelease({ id: 1 })).rejects.toThrow(
+      /admin|forbidden/i
+    );
   });
 });
 
 describe("mdm.archiveOtaRelease", () => {
   it("requires admin role", async () => {
     const caller = appRouter.createCaller(makeUserCtx());
-    await expect(caller.mdm.archiveOtaRelease({ id: 1 })).rejects.toThrow(/admin|forbidden/i);
+    await expect(caller.mdm.archiveOtaRelease({ id: 1 })).rejects.toThrow(
+      /admin|forbidden/i
+    );
   });
 });
 
@@ -473,7 +519,10 @@ describe("mdm.acknowledgeViolation", () => {
   it("validates action enum", async () => {
     const caller = appRouter.createCaller(makeAdminCtx());
     await expect(
-      caller.mdm.acknowledgeViolation({ violationId: 1, action: "invalid" as any })
+      caller.mdm.acknowledgeViolation({
+        violationId: 1,
+        action: "invalid" as any,
+      })
     ).rejects.toThrow();
   });
 
@@ -482,7 +531,10 @@ describe("mdm.acknowledgeViolation", () => {
     for (const action of actions) {
       const caller = appRouter.createCaller(makeAdminCtx());
       // Should not throw validation error
-      const result = await caller.mdm.acknowledgeViolation({ violationId: 1, action });
+      const result = await caller.mdm.acknowledgeViolation({
+        violationId: 1,
+        action,
+      });
       expect(result).toHaveProperty("ok", true);
     }
   });
@@ -537,9 +589,9 @@ describe("mdm.listPolicies", () => {
 describe("mdm.listViolations", () => {
   it("requires admin role", async () => {
     const caller = appRouter.createCaller(makeUserCtx());
-    await expect(
-      caller.mdm.listViolations({ status: "open" })
-    ).rejects.toThrow(/admin|forbidden/i);
+    await expect(caller.mdm.listViolations({ status: "open" })).rejects.toThrow(
+      /admin|forbidden/i
+    );
   });
 
   it("returns array for admin", async () => {

@@ -5,9 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { Download, Search, Shield, AlertTriangle, Activity, Clock, Filter, RefreshCw } from "lucide-react";
+import {
+  Download,
+  Search,
+  Shield,
+  AlertTriangle,
+  Activity,
+  Clock,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
 import { useDataExport } from "@/hooks/useDataExport";
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -18,8 +33,16 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 const ACTION_ICONS: Record<string, string> = {
-  CREATE: "🆕", UPDATE: "✏️", DELETE: "🗑️", LOGIN: "🔑", LOGOUT: "🚪",
-  EXPORT: "📤", APPROVE: "✅", REJECT: "❌", ESCALATE: "⬆️", READ: "👁️",
+  CREATE: "🆕",
+  UPDATE: "✏️",
+  DELETE: "🗑️",
+  LOGIN: "🔑",
+  LOGOUT: "🚪",
+  EXPORT: "📤",
+  APPROVE: "✅",
+  REJECT: "❌",
+  ESCALATE: "⬆️",
+  READ: "👁️",
 };
 
 export default function AuditTrailPage() {
@@ -30,7 +53,11 @@ export default function AuditTrailPage() {
   const [page, setPage] = useState(0);
   const limit = 25;
 
-  const { data: auditData, isLoading, refetch } = trpc.sprint27Export.auditLog.useQuery({
+  const {
+    data: auditData,
+    isLoading,
+    refetch,
+  } = trpc.sprint27Export.auditLog.useQuery({
     format: "json",
     severity: severityFilter !== "all" ? severityFilter : undefined,
     category: categoryFilter !== "all" ? categoryFilter : undefined,
@@ -48,10 +75,11 @@ export default function AuditTrailPage() {
   const filteredEntries = useMemo(() => {
     if (!search) return entries;
     const q = search.toLowerCase();
-    return entries.filter((e: any) =>
-      e.description?.toLowerCase().includes(q) ||
-      e.resource?.toLowerCase().includes(q) ||
-      e.userId?.toLowerCase().includes(q)
+    return entries.filter(
+      (e: any) =>
+        e.description?.toLowerCase().includes(q) ||
+        e.resource?.toLowerCase().includes(q) ||
+        e.userId?.toLowerCase().includes(q)
     );
   }, [entries, search]);
 
@@ -60,7 +88,11 @@ export default function AuditTrailPage() {
       filteredEntries,
       [
         { key: "id", label: "Audit ID" },
-        { key: "timestamp", label: "Timestamp", format: (v: unknown) => new Date(v as string).toLocaleString() },
+        {
+          key: "timestamp",
+          label: "Timestamp",
+          format: (v: unknown) => new Date(v as string).toLocaleString(),
+        },
         { key: "userId", label: "User ID" },
         { key: "action", label: "Action" },
         { key: "resource", label: "Resource" },
@@ -80,7 +112,9 @@ export default function AuditTrailPage() {
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <Shield className="w-6 h-6 text-emerald-400" /> Audit Trail
             </h1>
-            <p className="text-zinc-400 mt-1">Track all system actions, changes, and access events</p>
+            <p className="text-zinc-400 mt-1">
+              Track all system actions, changes, and access events
+            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -98,13 +132,17 @@ export default function AuditTrailPage() {
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardContent className="p-4">
                 <div className="text-sm text-zinc-400">Total Events</div>
-                <div className="text-2xl font-bold text-white">{stats.total.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-white">
+                  {stats.total.toLocaleString()}
+                </div>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardContent className="p-4">
                 <div className="text-sm text-zinc-400">Last 24h</div>
-                <div className="text-2xl font-bold text-emerald-400">{stats.last24h}</div>
+                <div className="text-2xl font-bold text-emerald-400">
+                  {stats.last24h}
+                </div>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900/50 border-zinc-800">
@@ -112,7 +150,9 @@ export default function AuditTrailPage() {
                 <div className="text-sm text-zinc-400 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> Critical
                 </div>
-                <div className="text-2xl font-bold text-red-400">{stats.bySeverity.critical}</div>
+                <div className="text-2xl font-bold text-red-400">
+                  {stats.bySeverity.critical}
+                </div>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900/50 border-zinc-800">
@@ -120,7 +160,9 @@ export default function AuditTrailPage() {
                 <div className="text-sm text-zinc-400 flex items-center gap-1">
                   <Activity className="w-3 h-3" /> High
                 </div>
-                <div className="text-2xl font-bold text-orange-400">{stats.bySeverity.high}</div>
+                <div className="text-2xl font-bold text-orange-400">
+                  {stats.bySeverity.high}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -135,7 +177,7 @@ export default function AuditTrailPage() {
                 <Input
                   placeholder="Search audit entries..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                   className="pl-9 bg-zinc-800 border-zinc-700"
                 />
               </div>
@@ -191,14 +233,20 @@ export default function AuditTrailPage() {
               <span className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-zinc-400" /> Event Log
               </span>
-              <span className="text-sm font-normal text-zinc-500">{total} total entries</span>
+              <span className="text-sm font-normal text-zinc-500">
+                {total} total entries
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-zinc-500">Loading audit entries...</div>
+              <div className="text-center py-8 text-zinc-500">
+                Loading audit entries...
+              </div>
             ) : filteredEntries.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500">No audit entries found</div>
+              <div className="text-center py-8 text-zinc-500">
+                No audit entries found
+              </div>
             ) : (
               <div className="space-y-2">
                 {filteredEntries.map((entry: any) => (
@@ -206,11 +254,18 @@ export default function AuditTrailPage() {
                     key={entry.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
                   >
-                    <span className="text-lg">{ACTION_ICONS[entry.action] || "📋"}</span>
+                    <span className="text-lg">
+                      {ACTION_ICONS[entry.action] || "📋"}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-white text-sm">{entry.description}</span>
-                        <Badge variant="outline" className={SEVERITY_COLORS[entry.severity] || ""}>
+                        <span className="font-medium text-white text-sm">
+                          {entry.description}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={SEVERITY_COLORS[entry.severity] || ""}
+                        >
                           {entry.severity}
                         </Badge>
                       </div>
@@ -221,10 +276,15 @@ export default function AuditTrailPage() {
                         <span>•</span>
                         <span>{entry.category}</span>
                         <span>•</span>
-                        <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                        <span>
+                          {new Date(entry.timestamp).toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-xs bg-zinc-700/50 border-zinc-600">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-zinc-700/50 border-zinc-600"
+                    >
                       {entry.action}
                     </Badge>
                   </div>
@@ -236,14 +296,15 @@ export default function AuditTrailPage() {
             {total > limit && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800">
                 <span className="text-sm text-zinc-500">
-                  Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}
+                  Showing {page * limit + 1}–
+                  {Math.min((page + 1) * limit, total)} of {total}
                 </span>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={page === 0}
-                    onClick={() => setPage((p) => p - 1)}
+                    onClick={() => setPage(p => p - 1)}
                   >
                     Previous
                   </Button>
@@ -251,7 +312,7 @@ export default function AuditTrailPage() {
                     variant="outline"
                     size="sm"
                     disabled={(page + 1) * limit >= total}
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => setPage(p => p + 1)}
                   >
                     Next
                   </Button>

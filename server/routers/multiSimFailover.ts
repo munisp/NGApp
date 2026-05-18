@@ -20,52 +20,102 @@ export const multiSimFailoverRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const [terminal] = await db.select({
-          simIccid: posTerminals.simIccid, configJson: posTerminals.configJson,
-        }).from(posTerminals).where(eq(posTerminals.id, input.terminalId)).limit(1);
+        const [terminal] = await db
+          .select({
+            simIccid: posTerminals.simIccid,
+            configJson: posTerminals.configJson,
+          })
+          .from(posTerminals)
+          .where(eq(posTerminals.id, input.terminalId))
+          .limit(1);
 
         if (!terminal) throw new TRPCError({ code: "NOT_FOUND" });
 
         const config = terminal.configJson as Record<string, unknown> | null;
-        const sims = (config?.sims as Array<{ slot: number; iccid: string; provider: string; active: boolean; signalStrength: number }>) ?? [
-          { slot: 1, iccid: terminal.simIccid ?? "unknown", provider: "MTN", active: true, signalStrength: -65 },
+        const sims = (config?.sims as Array<{
+          slot: number;
+          iccid: string;
+          provider: string;
+          active: boolean;
+          signalStrength: number;
+        }>) ?? [
+          {
+            slot: 1,
+            iccid: terminal.simIccid ?? "unknown",
+            provider: "MTN",
+            active: true,
+            signalStrength: -65,
+          },
         ];
 
-        return { terminalId: input.terminalId, sims, activeSim: sims.find(s => s.active)?.slot ?? 1 };
+        return {
+          terminalId: input.terminalId,
+          sims,
+          activeSim: sims.find(s => s.active)?.slot ?? 1,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   triggerFailover: protectedProcedure
-    .input(z.object({ terminalId: z.number(), targetSlot: z.number().min(1).max(4), reason: z.string().optional() }))
+    .input(
+      z.object({
+        terminalId: z.number(),
+        targetSlot: z.number().min(1).max(4),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "SIM_FAILOVER_TRIGGERED", resource: "sim_failover",
-          resourceId: String(input.terminalId), status: "success",
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "SIM_FAILOVER_TRIGGERED",
+          resource: "sim_failover",
+          resourceId: String(input.terminalId),
+          status: "success",
           metadata: { targetSlot: input.targetSlot, reason: input.reason },
         });
 
-        return { terminalId: input.terminalId, newActiveSlot: input.targetSlot, status: "switched", switchedAt: new Date().toISOString() };
+        return {
+          terminalId: input.terminalId,
+          newActiveSlot: input.targetSlot,
+          status: "switched",
+          switchedAt: new Date().toISOString(),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   updateSimConfig: protectedProcedure
-    .input(z.object({
-      terminalId: z.number(),
-      sims: z.array(z.object({
-        slot: z.number().min(1).max(4), iccid: z.string(), provider: z.string(), active: z.boolean(),
-      })),
-    }))
+    .input(
+      z.object({
+        terminalId: z.number(),
+        sims: z.array(
+          z.object({
+            slot: z.number().min(1).max(4),
+            iccid: z.string(),
+            provider: z.string(),
+            active: z.boolean(),
+          })
+        ),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
@@ -76,23 +126,33 @@ export const multiSimFailoverRouter = router({
 
         const activeSim = input.sims.find(s => s.active);
 
-        await db.update(posTerminals).set({
-          simIccid: activeSim?.iccid ?? null,
-          configJson: sql`jsonb_set(COALESCE(${posTerminals.configJson}::jsonb, '{}'::jsonb), '{sims}', ${JSON.stringify(input.sims)}::jsonb)`,
-          updatedAt: new Date(),
-        }).where(eq(posTerminals.id, input.terminalId));
+        await db
+          .update(posTerminals)
+          .set({
+            simIccid: activeSim?.iccid ?? null,
+            configJson: sql`jsonb_set(COALESCE(${posTerminals.configJson}::jsonb, '{}'::jsonb), '{sims}', ${JSON.stringify(input.sims)}::jsonb)`,
+            updatedAt: new Date(),
+          })
+          .where(eq(posTerminals.id, input.terminalId));
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "SIM_CONFIG_UPDATED", resource: "sim_config",
-          resourceId: String(input.terminalId), status: "success",
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "SIM_CONFIG_UPDATED",
+          resource: "sim_config",
+          resourceId: String(input.terminalId),
+          status: "success",
           metadata: { simCount: input.sims.length },
         });
 
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

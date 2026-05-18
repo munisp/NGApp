@@ -18,9 +18,19 @@ export function addAnalyticsSseListener(fn: SseListener) {
 export function removeAnalyticsSseListener(fn: SseListener) {
   sseListeners.delete(fn);
 }
-function broadcastMetric(metricName: string, value: number, tags: Record<string, string> = {}) {
+function broadcastMetric(
+  metricName: string,
+  value: number,
+  tags: Record<string, string> = {}
+) {
   const payload = JSON.stringify({ metricName, value, tags, ts: Date.now() });
-  sseListeners.forEach(fn => { try { fn(payload); } catch { /* ignore dead client */ } });
+  sseListeners.forEach(fn => {
+    try {
+      fn(payload);
+    } catch {
+      /* ignore dead client */
+    }
+  });
 }
 
 // ── Bucket helper ─────────────────────────────────────────────────────────────
@@ -40,7 +50,7 @@ export async function recordMetric(
   metricName: string,
   value: number,
   tags: Record<string, string> = {},
-  increment = true,
+  increment = true
 ): Promise<void> {
   const db = (await getDb())!;
   if (!db) return;
@@ -56,8 +66,8 @@ export async function recordMetric(
         .where(
           and(
             eq(analyticsMetrics.metricName, metricName),
-            eq(analyticsMetrics.bucketMinute, bucket),
-          ),
+            eq(analyticsMetrics.bucketMinute, bucket)
+          )
         )
         .limit(1);
 
@@ -85,8 +95,8 @@ export async function recordMetric(
         .where(
           and(
             eq(analyticsMetrics.metricName, metricName),
-            eq(analyticsMetrics.bucketMinute, bucket),
-          ),
+            eq(analyticsMetrics.bucketMinute, bucket)
+          )
         )
         .limit(1);
 
@@ -115,7 +125,7 @@ export async function recordMetric(
 export async function getTimeSeries(
   metricName: string,
   fromMs: number,
-  toMs: number,
+  toMs: number
 ): Promise<Array<{ bucket: Date; value: number }>> {
   const db = (await getDb())!;
   if (!db) return [];
@@ -130,12 +140,15 @@ export async function getTimeSeries(
       and(
         eq(analyticsMetrics.metricName, metricName),
         gte(analyticsMetrics.bucketMinute, new Date(fromMs)),
-        lte(analyticsMetrics.bucketMinute, new Date(toMs)),
-      ),
+        lte(analyticsMetrics.bucketMinute, new Date(toMs))
+      )
     )
     .orderBy(analyticsMetrics.bucketMinute);
 
-  return rows.map(r => ({ bucket: r.bucket, value: parseFloat(r.value as string) }));
+  return rows.map(r => ({
+    bucket: r.bucket,
+    value: parseFloat(r.value as string),
+  }));
 }
 
 // ── getLiveStats ──────────────────────────────────────────────────────────────

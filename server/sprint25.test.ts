@@ -36,12 +36,17 @@ describe("Sprint 25: Guide Feedback System", () => {
 // ─── Proactive Help System Tests ────────────────────────────────────────────
 describe("Sprint 25: Proactive Help System", () => {
   it("should have ProactiveHelp component file", () => {
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx"
+    );
     expect(exists).toBe(true);
   });
 
   it("should have page-specific help suggestions", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx",
+      "utf-8"
+    );
     expect(content).toContain("pageHelpSuggestions");
     expect(content).toContain("/admin/fraud");
     expect(content).toContain("/kyc-verification");
@@ -49,7 +54,10 @@ describe("Sprint 25: Proactive Help System", () => {
   });
 
   it("should detect struggle patterns", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx",
+      "utf-8"
+    );
     // Should have idle detection
     expect(content).toContain("idle");
     // Should have navigation detection
@@ -59,7 +67,10 @@ describe("Sprint 25: Proactive Help System", () => {
   });
 
   it("should be wired into App.tsx", () => {
-    const appContent = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/App.tsx", "utf-8");
+    const appContent = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+      "utf-8"
+    );
     expect(appContent).toContain("ProactiveHelp");
   });
 });
@@ -67,12 +78,17 @@ describe("Sprint 25: Proactive Help System", () => {
 // ─── Video Tutorials Page Tests ─────────────────────────────────────────────
 describe("Sprint 25: Video Tutorials Page", () => {
   it("should have VideoTutorials component file", () => {
-    const exists = fs.existsSync("/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx");
+    const exists = fs.existsSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx"
+    );
     expect(exists).toBe(true);
   });
 
   it("should contain 5 tutorial sections for complex features", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx",
+      "utf-8"
+    );
     expect(content).toContain("tutorials");
     // 5 most complex features
     expect(content).toContain("POS Terminal");
@@ -82,13 +98,19 @@ describe("Sprint 25: Video Tutorials Page", () => {
   });
 
   it("should be routed in App.tsx", () => {
-    const appContent = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/App.tsx", "utf-8");
+    const appContent = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+      "utf-8"
+    );
     expect(appContent).toContain("VideoTutorials");
     expect(appContent).toContain("/video-tutorials");
   });
 
   it("should be in DashboardLayout navigation", () => {
-    const layoutContent = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/components/DashboardLayout.tsx", "utf-8");
+    const layoutContent = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/components/DashboardLayout.tsx",
+      "utf-8"
+    );
     expect(layoutContent).toContain("Video Tutorials");
     expect(layoutContent).toContain("/video-tutorials");
   });
@@ -97,7 +119,10 @@ describe("Sprint 25: Video Tutorials Page", () => {
 // ─── User Guide Feedback Integration Tests ──────────────────────────────────
 describe("Sprint 25: User Guide Feedback Integration", () => {
   it("should have feedback widget in UserGuide page", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      "utf-8"
+    );
     expect(content).toContain("SectionFeedback");
     expect(content).toContain("ThumbsUp");
     expect(content).toContain("ThumbsDown");
@@ -105,13 +130,19 @@ describe("Sprint 25: User Guide Feedback Integration", () => {
   });
 
   it("should have sidebar rating badges", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      "utf-8"
+    );
     expect(content).toContain("SidebarRatingBadge");
     expect(content).toContain("guideFeedback.stats");
   });
 
   it("should import trpc for feedback submission", () => {
-    const content = fs.readFileSync("/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      "utf-8"
+    );
     expect(content).toContain("import { trpc }");
     expect(content).toContain("guideFeedback.submit");
   });
@@ -120,34 +151,52 @@ describe("Sprint 25: User Guide Feedback Integration", () => {
 // ─── Reusable Skill Tests ───────────────────────────────────────────────────
 describe("Sprint 25: Reusable Skill (54link-pos-builder)", () => {
   it("should have valid SKILL.md", () => {
-    const exists = fs.existsSync("/home/ubuntu/skills/54link-pos-builder/SKILL.md");
+    const exists = fs.existsSync(
+      "/home/ubuntu/skills/54link-pos-builder/SKILL.md"
+    );
     expect(exists).toBe(true);
-    const content = fs.readFileSync("/home/ubuntu/skills/54link-pos-builder/SKILL.md", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/skills/54link-pos-builder/SKILL.md",
+      "utf-8"
+    );
     expect(content).toContain("name: 54link-pos-builder");
     expect(content).toContain("description:");
     expect(content).not.toContain("[TODO");
   });
 
   it("should have schema-patterns reference", () => {
-    const exists = fs.existsSync("/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md");
+    const exists = fs.existsSync(
+      "/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md"
+    );
     expect(exists).toBe(true);
-    const content = fs.readFileSync("/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md",
+      "utf-8"
+    );
     expect(content).toContain("agents");
     expect(content).toContain("transactions");
     expect(content).toContain("fraud_alerts");
   });
 
   it("should have router-patterns reference", () => {
-    const exists = fs.existsSync("/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md");
+    const exists = fs.existsSync(
+      "/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md"
+    );
     expect(exists).toBe(true);
-    const content = fs.readFileSync("/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md",
+      "utf-8"
+    );
     expect(content).toContain("CRUD Router");
     expect(content).toContain("Transaction Processing");
     expect(content).toContain("Fraud Scoring");
   });
 
   it("should cover core modules in SKILL.md", () => {
-    const content = fs.readFileSync("/home/ubuntu/skills/54link-pos-builder/SKILL.md", "utf-8");
+    const content = fs.readFileSync(
+      "/home/ubuntu/skills/54link-pos-builder/SKILL.md",
+      "utf-8"
+    );
     expect(content).toContain("Agent Authentication");
     expect(content).toContain("POS Terminal");
     expect(content).toContain("Float Management");

@@ -42,8 +42,16 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:8090";
 
-const REPORT_TYPES = ["daily_transaction", "weekly_summary", "monthly_cbn", "quarterly_audit"];
-const INSTITUTIONS = Array.from({ length: 10 }, (_, i) => `INST-${String(i + 1).padStart(4, "0")}`);
+const REPORT_TYPES = [
+  "daily_transaction",
+  "weekly_summary",
+  "monthly_cbn",
+  "quarterly_audit",
+];
+const INSTITUTIONS = Array.from(
+  { length: 10 },
+  (_, i) => `INST-${String(i + 1).padStart(4, "0")}`
+);
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -54,8 +62,8 @@ export default function () {
     const res = http.get(`${BASE_URL}/api/v1/reports/status`);
     totalRequests.add(1);
     check(res, {
-      "status: 200": (r) => r.status === 200,
-      "status: fast": (r) => r.timings.duration < 500,
+      "status: 200": r => r.status === 200,
+      "status: fast": r => r.timings.duration < 500,
     });
   });
 
@@ -63,7 +71,9 @@ export default function () {
 
   group("cbn: generate report", () => {
     const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000)
+      .toISOString()
+      .split("T")[0];
 
     const start = Date.now();
     const res = http.post(
@@ -84,8 +94,8 @@ export default function () {
     reportDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "generate: 200, 201, or 202": (r) => [200, 201, 202].includes(r.status),
-      "generate: has report_id or data": (r) => {
+      "generate: 200, 201, or 202": r => [200, 201, 202].includes(r.status),
+      "generate: has report_id or data": r => {
         try {
           const b = JSON.parse(r.body);
           return b.report_id || b.data || b.status;

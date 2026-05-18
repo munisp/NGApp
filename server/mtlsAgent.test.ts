@@ -72,11 +72,13 @@ describe("getMtlsAgent — certs present", () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mtls-valid-"));
     // Write minimal (non-functional but parseable) PEM stubs
-    const fakeCert = "-----BEGIN CERTIFICATE-----\nZmFrZQ==\n-----END CERTIFICATE-----\n";
-    const fakeKey  = "-----BEGIN RSA PRIVATE KEY-----\nZmFrZQ==\n-----END RSA PRIVATE KEY-----\n";
+    const fakeCert =
+      "-----BEGIN CERTIFICATE-----\nZmFrZQ==\n-----END CERTIFICATE-----\n";
+    const fakeKey =
+      "-----BEGIN RSA PRIVATE KEY-----\nZmFrZQ==\n-----END RSA PRIVATE KEY-----\n";
     fs.writeFileSync(path.join(tmpDir, "tls.crt"), fakeCert);
     fs.writeFileSync(path.join(tmpDir, "tls.key"), fakeKey);
-    fs.writeFileSync(path.join(tmpDir, "ca.crt"),  fakeCert);
+    fs.writeFileSync(path.join(tmpDir, "ca.crt"), fakeCert);
   });
 
   afterEach(() => {

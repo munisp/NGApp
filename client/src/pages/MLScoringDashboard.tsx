@@ -8,16 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
-  Brain, AlertTriangle, CheckCircle, Shield, Zap, BarChart2,
-  Play, MessageSquare, TrendingUp,
+  Brain,
+  AlertTriangle,
+  CheckCircle,
+  Shield,
+  Zap,
+  BarChart2,
+  Play,
+  MessageSquare,
+  TrendingUp,
 } from "lucide-react";
 
 export default function MLScoringDashboard() {
   const [tab, setTab] = useState("score");
   const [amount, setAmount] = useState("25000");
   const [agentId, setAgentId] = useState("AGT-001");
-  const analytics = trpc.mlScoring.analytics.useQuery(undefined, { refetchInterval: 10000 });
-  const history = trpc.mlScoring.scoringHistory.useQuery({ limit: 20 }, { refetchInterval: 5000 });
+  const analytics = trpc.mlScoring.analytics.useQuery(undefined, {
+    refetchInterval: 10000,
+  });
+  const history = trpc.mlScoring.scoringHistory.useQuery(
+    { limit: 20 },
+    { refetchInterval: 5000 }
+  );
 
   const scoreMut = trpc.mlScoring.scoreTransaction.useMutation();
   const batchMut = trpc.mlScoring.batchScore.useMutation();
@@ -44,11 +56,16 @@ export default function MLScoringDashboard() {
 
   const riskColor = (level: string) => {
     switch (level) {
-      case "low": return "text-green-500";
-      case "medium": return "text-yellow-500";
-      case "high": return "text-orange-500";
-      case "critical": return "text-red-500";
-      default: return "";
+      case "low":
+        return "text-green-500";
+      case "medium":
+        return "text-yellow-500";
+      case "high":
+        return "text-orange-500";
+      case "critical":
+        return "text-red-500";
+      default:
+        return "";
     }
   };
 
@@ -86,20 +103,25 @@ export default function MLScoringDashboard() {
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold">{(stats.avgRiskScore * 100).toFixed(1)}%</p>
+                <p className="text-2xl font-bold">
+                  {(stats.avgRiskScore * 100).toFixed(1)}%
+                </p>
                 <p className="text-xs text-muted-foreground">Avg Risk Score</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold">{(stats.avgConfidence * 100).toFixed(0)}%</p>
+                <p className="text-2xl font-bold">
+                  {(stats.avgConfidence * 100).toFixed(0)}%
+                </p>
                 <p className="text-xs text-muted-foreground">Avg Confidence</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-2xl font-bold text-red-500">
-                  {stats.riskDistribution.high + stats.riskDistribution.critical}
+                  {stats.riskDistribution.high +
+                    stats.riskDistribution.critical}
                 </p>
                 <p className="text-xs text-muted-foreground">Flagged</p>
               </CardContent>
@@ -118,20 +140,31 @@ export default function MLScoringDashboard() {
           {/* Score Tab */}
           <TabsContent value="score" className="space-y-4">
             <Card>
-              <CardHeader><CardTitle>Score a Transaction</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Score a Transaction</CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Amount (NGN)</label>
-                    <Input value={amount} onChange={e => setAmount(e.target.value)} placeholder="25000" />
+                    <Input
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="25000"
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Agent ID</label>
-                    <Input value={agentId} onChange={e => setAgentId(e.target.value)} placeholder="AGT-001" />
+                    <Input
+                      value={agentId}
+                      onChange={e => setAgentId(e.target.value)}
+                      placeholder="AGT-001"
+                    />
                   </div>
                 </div>
                 <Button onClick={handleScore} disabled={scoreMut.isPending}>
-                  <Play className="h-4 w-4 mr-2" /> {scoreMut.isPending ? "Scoring..." : "Score Transaction"}
+                  <Play className="h-4 w-4 mr-2" />{" "}
+                  {scoreMut.isPending ? "Scoring..." : "Score Transaction"}
                 </Button>
               </CardContent>
             </Card>
@@ -140,9 +173,13 @@ export default function MLScoringDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {scoreMut.data.result.riskLevel === "low" ? <CheckCircle className="text-green-500" /> :
-                     scoreMut.data.result.riskLevel === "medium" ? <AlertTriangle className="text-yellow-500" /> :
-                     <Shield className="text-red-500" />}
+                    {scoreMut.data.result.riskLevel === "low" ? (
+                      <CheckCircle className="text-green-500" />
+                    ) : scoreMut.data.result.riskLevel === "medium" ? (
+                      <AlertTriangle className="text-yellow-500" />
+                    ) : (
+                      <Shield className="text-red-500" />
+                    )}
                     Score Result: {scoreMut.data.result.riskLevel.toUpperCase()}
                   </CardTitle>
                 </CardHeader>
@@ -150,20 +187,51 @@ export default function MLScoringDashboard() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-muted rounded">
                       <p className="text-xs text-muted-foreground">XGBoost</p>
-                      <p className="text-lg font-bold">{(scoreMut.data.result.modelScores.xgboost * 100).toFixed(1)}%</p>
+                      <p className="text-lg font-bold">
+                        {(
+                          scoreMut.data.result.modelScores.xgboost * 100
+                        ).toFixed(1)}
+                        %
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded">
-                      <p className="text-xs text-muted-foreground">Autoencoder</p>
-                      <p className="text-lg font-bold">{(scoreMut.data.result.modelScores.autoencoder * 100).toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">
+                        Autoencoder
+                      </p>
+                      <p className="text-lg font-bold">
+                        {(
+                          scoreMut.data.result.modelScores.autoencoder * 100
+                        ).toFixed(1)}
+                        %
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded">
                       <p className="text-xs text-muted-foreground">GNN</p>
-                      <p className="text-lg font-bold">{(scoreMut.data.result.modelScores.gnn * 100).toFixed(1)}%</p>
+                      <p className="text-lg font-bold">
+                        {(scoreMut.data.result.modelScores.gnn * 100).toFixed(
+                          1
+                        )}
+                        %
+                      </p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Final Score: <span className={riskColor(scoreMut.data.result.riskLevel)}>{(scoreMut.data.result.finalScore * 100).toFixed(1)}%</span></p>
-                    <p className="text-sm">Confidence: {(scoreMut.data.result.confidence * 100).toFixed(0)}% · Recommendation: <Badge variant="outline">{scoreMut.data.result.recommendation}</Badge></p>
+                    <p className="text-sm font-medium">
+                      Final Score:{" "}
+                      <span
+                        className={riskColor(scoreMut.data.result.riskLevel)}
+                      >
+                        {(scoreMut.data.result.finalScore * 100).toFixed(1)}%
+                      </span>
+                    </p>
+                    <p className="text-sm">
+                      Confidence:{" "}
+                      {(scoreMut.data.result.confidence * 100).toFixed(0)}% ·
+                      Recommendation:{" "}
+                      <Badge variant="outline">
+                        {scoreMut.data.result.recommendation}
+                      </Badge>
+                    </p>
                   </div>
                   {scoreMut.data.result.topRiskFactors.length > 0 && (
                     <div>
@@ -178,13 +246,18 @@ export default function MLScoringDashboard() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => explainMut.mutate({ scoreId: scoreMut.data!.id })}
+                    onClick={() =>
+                      explainMut.mutate({ scoreId: scoreMut.data!.id })
+                    }
                     disabled={explainMut.isPending}
                   >
-                    <MessageSquare className="h-3 w-3 mr-1" /> {explainMut.isPending ? "Generating..." : "LLM Explain"}
+                    <MessageSquare className="h-3 w-3 mr-1" />{" "}
+                    {explainMut.isPending ? "Generating..." : "LLM Explain"}
                   </Button>
                   {explainMut.data && (
-                    <div className="p-3 bg-muted rounded text-sm">{explainMut.data.explanation}</div>
+                    <div className="p-3 bg-muted rounded text-sm">
+                      {explainMut.data.explanation}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -194,38 +267,58 @@ export default function MLScoringDashboard() {
           {/* Batch Tab */}
           <TabsContent value="batch" className="space-y-4">
             <Card>
-              <CardHeader><CardTitle>Batch Scoring</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Batch Scoring</CardTitle>
+              </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Score 50 random transactions using the ensemble model.</p>
-                <Button onClick={handleBatchScore} disabled={batchMut.isPending}>
-                  <Zap className="h-4 w-4 mr-2" /> {batchMut.isPending ? "Scoring..." : "Run Batch (50 txns)"}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Score 50 random transactions using the ensemble model.
+                </p>
+                <Button
+                  onClick={handleBatchScore}
+                  disabled={batchMut.isPending}
+                >
+                  <Zap className="h-4 w-4 mr-2" />{" "}
+                  {batchMut.isPending ? "Scoring..." : "Run Batch (50 txns)"}
                 </Button>
               </CardContent>
             </Card>
             {batchMut.data && (
               <Card>
-                <CardHeader><CardTitle>Batch Results</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Batch Results</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-4 gap-4 mb-4">
                     <div className="text-center p-2 bg-green-500/10 rounded">
-                      <p className="text-lg font-bold text-green-500">{batchMut.data.riskDistribution.low}</p>
+                      <p className="text-lg font-bold text-green-500">
+                        {batchMut.data.riskDistribution.low}
+                      </p>
                       <p className="text-xs">Low Risk</p>
                     </div>
                     <div className="text-center p-2 bg-yellow-500/10 rounded">
-                      <p className="text-lg font-bold text-yellow-500">{batchMut.data.riskDistribution.medium}</p>
+                      <p className="text-lg font-bold text-yellow-500">
+                        {batchMut.data.riskDistribution.medium}
+                      </p>
                       <p className="text-xs">Medium</p>
                     </div>
                     <div className="text-center p-2 bg-orange-500/10 rounded">
-                      <p className="text-lg font-bold text-orange-500">{batchMut.data.riskDistribution.high}</p>
+                      <p className="text-lg font-bold text-orange-500">
+                        {batchMut.data.riskDistribution.high}
+                      </p>
                       <p className="text-xs">High</p>
                     </div>
                     <div className="text-center p-2 bg-red-500/10 rounded">
-                      <p className="text-lg font-bold text-red-500">{batchMut.data.riskDistribution.critical}</p>
+                      <p className="text-lg font-bold text-red-500">
+                        {batchMut.data.riskDistribution.critical}
+                      </p>
                       <p className="text-xs">Critical</p>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Scored {batchMut.data.totalScored} transactions · Avg {batchMut.data.avgLatencyMs}ms · {batchMut.data.flagged} flagged
+                    Scored {batchMut.data.totalScored} transactions · Avg{" "}
+                    {batchMut.data.avgLatencyMs}ms · {batchMut.data.flagged}{" "}
+                    flagged
                   </p>
                 </CardContent>
               </Card>
@@ -252,17 +345,35 @@ export default function MLScoringDashboard() {
                     <tr key={r.id} className="border-b">
                       <td className="p-2 font-mono text-xs">{r.id}</td>
                       <td className="p-2 text-xs">{r.transactionId}</td>
-                      <td className="p-2 font-bold">{(r.result.finalScore * 100).toFixed(1)}%</td>
+                      <td className="p-2 font-bold">
+                        {(r.result.finalScore * 100).toFixed(1)}%
+                      </td>
                       <td className="p-2">
-                        <Badge variant={r.result.riskLevel === "low" ? "default" : r.result.riskLevel === "critical" ? "destructive" : "secondary"}>
+                        <Badge
+                          variant={
+                            r.result.riskLevel === "low"
+                              ? "default"
+                              : r.result.riskLevel === "critical"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
                           {r.result.riskLevel}
                         </Badge>
                       </td>
                       <td className="p-2 text-xs">
-                        {(r.result.modelScores.xgboost * 100).toFixed(0)}% / {(r.result.modelScores.autoencoder * 100).toFixed(0)}% / {(r.result.modelScores.gnn * 100).toFixed(0)}%
+                        {(r.result.modelScores.xgboost * 100).toFixed(0)}% /{" "}
+                        {(r.result.modelScores.autoencoder * 100).toFixed(0)}% /{" "}
+                        {(r.result.modelScores.gnn * 100).toFixed(0)}%
                       </td>
-                      <td className="p-2">{(r.result.confidence * 100).toFixed(0)}%</td>
-                      <td className="p-2"><Badge variant="outline">{r.result.recommendation}</Badge></td>
+                      <td className="p-2">
+                        {(r.result.confidence * 100).toFixed(0)}%
+                      </td>
+                      <td className="p-2">
+                        <Badge variant="outline">
+                          {r.result.recommendation}
+                        </Badge>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -275,7 +386,8 @@ export default function MLScoringDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" /> Feature Importance (XGBoost Weights)
+                  <TrendingUp className="h-5 w-5" /> Feature Importance (XGBoost
+                  Weights)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -289,8 +401,16 @@ export default function MLScoringDashboard() {
                           style={{ width: `${Math.abs(f.weight) * 500}%` }}
                         />
                       </div>
-                      <span className="text-xs w-16 text-right">{f.weight > 0 ? "+" : ""}{f.weight}</span>
-                      <Badge variant={f.direction === "risk" ? "destructive" : "default"} className="text-xs">
+                      <span className="text-xs w-16 text-right">
+                        {f.weight > 0 ? "+" : ""}
+                        {f.weight}
+                      </span>
+                      <Badge
+                        variant={
+                          f.direction === "risk" ? "destructive" : "default"
+                        }
+                        className="text-xs"
+                      >
                         {f.direction}
                       </Badge>
                     </div>

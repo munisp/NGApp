@@ -30,7 +30,10 @@ class LRUQueryCache {
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    if (!entry) { this.missCount++; return null; }
+    if (!entry) {
+      this.missCount++;
+      return null;
+    }
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       this.missCount++;
@@ -94,7 +97,7 @@ export async function cachedQuery<T>(
   key: string,
   queryFn: () => Promise<T>,
   ttlMs = 30_000,
-  useRedis = false,
+  useRedis = false
 ): Promise<T> {
   // L1: In-memory cache
   const memResult = queryCache.get<T>(key);
@@ -118,7 +121,9 @@ export async function cachedQuery<T>(
   // Populate caches
   queryCache.set(key, result, ttlMs);
   if (useRedis) {
-    try { await cacheSet(key, JSON.stringify(result), Math.ceil(ttlMs / 1000)); } catch {}
+    try {
+      await cacheSet(key, JSON.stringify(result), Math.ceil(ttlMs / 1000));
+    } catch {}
   }
 
   return result;
@@ -166,12 +171,23 @@ class RequestMetricsCollector {
 
     return {
       totalRequests: recent.length,
-      avgDurationMs: durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length * 10) / 10 : 0,
+      avgDurationMs:
+        durations.length > 0
+          ? Math.round(
+              (durations.reduce((a, b) => a + b, 0) / durations.length) * 10
+            ) / 10
+          : 0,
       p50Ms: this.getPercentile(durations, 50),
       p90Ms: this.getPercentile(durations, 90),
       p95Ms: this.getPercentile(durations, 95),
       p99Ms: this.getPercentile(durations, 99),
-      errorRate: recent.length > 0 ? Math.round(recent.filter(m => m.statusCode >= 400).length / recent.length * 1000) / 10 : 0,
+      errorRate:
+        recent.length > 0
+          ? Math.round(
+              (recent.filter(m => m.statusCode >= 400).length / recent.length) *
+                1000
+            ) / 10
+          : 0,
       slowestEndpoints: this.getSlowestEndpoints(5),
       cacheStats: queryCache.getStats(),
     };
@@ -195,12 +211,16 @@ export const requestMetrics = new RequestMetricsCollector();
 // ── 4. Express Middleware: Response Time Tracking ─────────────────────────────
 import type { Request, Response, NextFunction } from "express";
 
-export function responseTimeMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function responseTimeMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const start = process.hrtime.bigint();
 
   res.on("finish", () => {
     const durationNs = Number(process.hrtime.bigint() - start);
-    const durationMs = Math.round(durationNs / 1_000_000 * 100) / 100;
+    const durationMs = Math.round((durationNs / 1_000_000) * 100) / 100;
 
     requestMetrics.record({
       path: req.path,
@@ -212,7 +232,9 @@ export function responseTimeMiddleware(req: Request, res: Response, next: NextFu
 
     // Log slow requests (>500ms)
     if (durationMs > 500) {
-      logger.warn(`[SLOW] ${req.method} ${req.path} took ${durationMs}ms (status: ${res.statusCode})`);
+      logger.warn(
+        `[SLOW] ${req.method} ${req.path} took ${durationMs}ms (status: ${res.statusCode})`
+      );
     }
 
     // Set Server-Timing header for observability
@@ -223,16 +245,27 @@ export function responseTimeMiddleware(req: Request, res: Response, next: NextFu
 }
 
 // ── 5. Express Middleware: Response Compression ───────────────────────────────
-export function compressionMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function compressionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const acceptEncoding = req.headers["accept-encoding"] || "";
 
   // Only compress text-based responses > 1KB
   const originalSend = res.send.bind(res);
   res.send = function (body: any) {
-    const contentType = res.getHeader("content-type") as string || "";
-    const isCompressible = /json|text|javascript|css|html|xml|svg/.test(contentType);
+    const contentType = (res.getHeader("content-type") as string) || "";
+    const isCompressible = /json|text|javascript|css|html|xml|svg/.test(
+      contentType
+    );
 
-    if (isCompressible && typeof body === "string" && body.length > 1024 && acceptEncoding.includes("gzip")) {
+    if (
+      isCompressible &&
+      typeof body === "string" &&
+      body.length > 1024 &&
+      acceptEncoding.includes("gzip")
+    ) {
       // Node.js built-in zlib compression
       const zlib = require("zlib");
       const compressed = zlib.gzipSync(Buffer.from(body));
@@ -251,14 +284,14 @@ export function compressionMiddleware(req: Request, res: Response, next: NextFun
 // ── 6. Connection Pool Optimization ───────────────────────────────────────────
 export const POOL_CONFIG = {
   // Optimal settings for production POS workloads
-  max: 25,                      // Max connections (balance between concurrency and DB limits)
-  min: 5,                       // Keep warm connections ready
-  idleTimeoutMillis: 30_000,    // Close idle connections after 30s
+  max: 25, // Max connections (balance between concurrency and DB limits)
+  min: 5, // Keep warm connections ready
+  idleTimeoutMillis: 30_000, // Close idle connections after 30s
   connectionTimeoutMillis: 5_000, // Fail fast if can't connect in 5s
-  maxUses: 7500,                // Recycle connections after 7500 uses to prevent memory leaks
-  allowExitOnIdle: false,       // Keep pool alive for server lifetime
-  statement_timeout: 30_000,    // Kill queries running > 30s
-  query_timeout: 30_000,        // Query-level timeout
+  maxUses: 7500, // Recycle connections after 7500 uses to prevent memory leaks
+  allowExitOnIdle: false, // Keep pool alive for server lifetime
+  statement_timeout: 30_000, // Kill queries running > 30s
+  query_timeout: 30_000, // Query-level timeout
 };
 
 // ── 7. Database Query Optimization Hints ──────────────────────────────────────

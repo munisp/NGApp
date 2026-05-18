@@ -2,27 +2,65 @@ import { describe, it, expect } from "vitest";
 const sprint41Routers = [
   { name: "agentKycDocVault", file: "./routers/agentKycDocVault" },
   { name: "realtimePnlDashboard", file: "./routers/realtimePnlDashboard" },
-  { name: "autoReconciliationEngine", file: "./routers/autoReconciliationEngine" },
-  { name: "agentTerritoryOptimizer", file: "./routers/agentTerritoryOptimizer" },
-  { name: "paymentDisputeArbitration", file: "./routers/paymentDisputeArbitration" },
-  { name: "regulatoryReportGenerator", file: "./routers/regulatoryReportGenerator" },
+  {
+    name: "autoReconciliationEngine",
+    file: "./routers/autoReconciliationEngine",
+  },
+  {
+    name: "agentTerritoryOptimizer",
+    file: "./routers/agentTerritoryOptimizer",
+  },
+  {
+    name: "paymentDisputeArbitration",
+    file: "./routers/paymentDisputeArbitration",
+  },
+  {
+    name: "regulatoryReportGenerator",
+    file: "./routers/regulatoryReportGenerator",
+  },
   { name: "agentTrainingAcademy", file: "./routers/agentTrainingAcademy" },
   { name: "dynamicFeeCalculator", file: "./routers/dynamicFeeCalculator" },
-  { name: "customerOnboardingPipeline", file: "./routers/customerOnboardingPipeline" },
-  { name: "merchantSettlementDashboard", file: "./routers/merchantSettlementDashboard" },
-  { name: "agentFloatInsuranceClaims", file: "./routers/agentFloatInsuranceClaims" },
+  {
+    name: "customerOnboardingPipeline",
+    file: "./routers/customerOnboardingPipeline",
+  },
+  {
+    name: "merchantSettlementDashboard",
+    file: "./routers/merchantSettlementDashboard",
+  },
+  {
+    name: "agentFloatInsuranceClaims",
+    file: "./routers/agentFloatInsuranceClaims",
+  },
   { name: "platformSlaMonitor", file: "./routers/platformSlaMonitor" },
   { name: "bulkDisbursementEngine", file: "./routers/bulkDisbursementEngine" },
-  { name: "transactionReversalManager", file: "./routers/transactionReversalManager" },
+  {
+    name: "transactionReversalManager",
+    file: "./routers/transactionReversalManager",
+  },
   { name: "agentLoanOrigination", file: "./routers/agentLoanOrigination" },
-  { name: "multiChannelNotificationHub", file: "./routers/multiChannelNotificationHub" },
-  { name: "complianceTrainingTracker", file: "./routers/complianceTrainingTracker" },
-  { name: "platformMigrationToolkit", file: "./routers/platformMigrationToolkit" },
-  { name: "agentPerformanceIncentives", file: "./routers/agentPerformanceIncentives" },
+  {
+    name: "multiChannelNotificationHub",
+    file: "./routers/multiChannelNotificationHub",
+  },
+  {
+    name: "complianceTrainingTracker",
+    file: "./routers/complianceTrainingTracker",
+  },
+  {
+    name: "platformMigrationToolkit",
+    file: "./routers/platformMigrationToolkit",
+  },
+  {
+    name: "agentPerformanceIncentives",
+    file: "./routers/agentPerformanceIncentives",
+  },
   { name: "executiveCommandCenter", file: "./routers/executiveCommandCenter" },
 ];
 describe("Sprint 41 — Production Finalization & Domain Completeness", () => {
-  it("should have exactly 20 routers", () => { expect(sprint41Routers).toHaveLength(20); });
+  it("should have exactly 20 routers", () => {
+    expect(sprint41Routers).toHaveLength(20);
+  });
   sprint41Routers.forEach(({ name, file }) => {
     describe(name, () => {
       it("exports a valid router", async () => {
@@ -49,7 +87,9 @@ describe("Sprint 41 — Production Finalization & Domain Completeness", () => {
       const fs = await import("fs");
       const path = await import("path");
       const dir = path.resolve(__dirname, "routers");
-      for (const f of fs.readdirSync(dir).filter((x: string) => x.endsWith(".ts"))) {
+      for (const f of fs
+        .readdirSync(dir)
+        .filter((x: string) => x.endsWith(".ts"))) {
         const c = fs.readFileSync(path.join(dir, f), "utf-8");
         expect(c).not.toMatch(/sk_live_[a-zA-Z0-9]{20,}/);
         expect(c).not.toMatch(/AKIA[A-Z0-9]{16}/);
@@ -58,7 +98,10 @@ describe("Sprint 41 — Production Finalization & Domain Completeness", () => {
     it("all use protectedProcedure", async () => {
       for (const { file } of sprint41Routers) {
         const content = await import("fs").then(fs =>
-          fs.readFileSync(require("path").resolve(__dirname, file.replace("./", "")) + ".ts", "utf-8")
+          fs.readFileSync(
+            require("path").resolve(__dirname, file.replace("./", "")) + ".ts",
+            "utf-8"
+          )
         );
         expect(content).toContain("protectedProcedure");
       }

@@ -25,7 +25,9 @@ describe("AI Monitoring Router", () => {
       { riskLevel: "high", amount: 250000 },
       { riskLevel: "medium", amount: 50000 },
     ];
-    const highAndAbove = events.filter(e => ["high", "critical"].includes(e.riskLevel));
+    const highAndAbove = events.filter(e =>
+      ["high", "critical"].includes(e.riskLevel)
+    );
     expect(highAndAbove.length).toBe(2);
   });
 
@@ -95,18 +97,53 @@ describe("Fraud Report Generator Router", () => {
         detectionRate: 94.2,
       },
       modelPerformance: [
-        { modelName: "XGBoost", accuracy: 0.96, precision: 0.94, recall: 0.91, f1Score: 0.925, auc: 0.98 },
-        { modelName: "Autoencoder", accuracy: 0.93, precision: 0.89, recall: 0.95, f1Score: 0.919, auc: 0.97 },
-        { modelName: "GNN", accuracy: 0.91, precision: 0.88, recall: 0.93, f1Score: 0.904, auc: 0.96 },
-        { modelName: "Ensemble", accuracy: 0.97, precision: 0.95, recall: 0.94, f1Score: 0.945, auc: 0.99 },
+        {
+          modelName: "XGBoost",
+          accuracy: 0.96,
+          precision: 0.94,
+          recall: 0.91,
+          f1Score: 0.925,
+          auc: 0.98,
+        },
+        {
+          modelName: "Autoencoder",
+          accuracy: 0.93,
+          precision: 0.89,
+          recall: 0.95,
+          f1Score: 0.919,
+          auc: 0.97,
+        },
+        {
+          modelName: "GNN",
+          accuracy: 0.91,
+          precision: 0.88,
+          recall: 0.93,
+          f1Score: 0.904,
+          auc: 0.96,
+        },
+        {
+          modelName: "Ensemble",
+          accuracy: 0.97,
+          precision: 0.95,
+          recall: 0.94,
+          f1Score: 0.945,
+          auc: 0.99,
+        },
       ],
       riskAssessment: {
         overallRiskLevel: "medium",
         keyRisks: [
-          { risk: "Cross-border fraud increase", severity: "high", mitigation: "Enhanced geo-fencing" },
+          {
+            risk: "Cross-border fraud increase",
+            severity: "high",
+            mitigation: "Enhanced geo-fencing",
+          },
         ],
       },
-      recommendations: ["Retrain XGBoost with latest data", "Increase monitoring for cross-border txns"],
+      recommendations: [
+        "Retrain XGBoost with latest data",
+        "Increase monitoring for cross-border txns",
+      ],
     };
     expect(report.id).toBeTruthy();
     expect(report.period).toBe("2026-03");
@@ -121,8 +158,22 @@ describe("Fraud Report Generator Router", () => {
 
   it("should list generated reports with pagination", () => {
     const reports = [
-      { id: "rpt-2026-03", period: "2026-03", totalTransactions: 1250000, confirmedFraud: 847, totalFraudAmount: 45000000, overallRiskLevel: "medium" },
-      { id: "rpt-2026-02", period: "2026-02", totalTransactions: 1180000, confirmedFraud: 923, totalFraudAmount: 52000000, overallRiskLevel: "high" },
+      {
+        id: "rpt-2026-03",
+        period: "2026-03",
+        totalTransactions: 1250000,
+        confirmedFraud: 847,
+        totalFraudAmount: 45000000,
+        overallRiskLevel: "medium",
+      },
+      {
+        id: "rpt-2026-02",
+        period: "2026-02",
+        totalTransactions: 1180000,
+        confirmedFraud: 923,
+        totalFraudAmount: 52000000,
+        overallRiskLevel: "high",
+      },
     ];
     expect(reports.length).toBe(2);
     expect(reports[0].period).toBe("2026-03");
@@ -130,9 +181,19 @@ describe("Fraud Report Generator Router", () => {
 
   it("should calculate trend analysis with top fraud categories", () => {
     const categories = [
-      { category: "Card Skimming", count: 234, amount: 12000000, trend: "down" },
+      {
+        category: "Card Skimming",
+        count: 234,
+        amount: 12000000,
+        trend: "down",
+      },
       { category: "SIM Swap", count: 189, amount: 8500000, trend: "up" },
-      { category: "Account Takeover", count: 156, amount: 15000000, trend: "stable" },
+      {
+        category: "Account Takeover",
+        count: 156,
+        amount: 15000000,
+        trend: "stable",
+      },
     ];
     expect(categories.length).toBe(3);
     expect(["up", "down", "stable"]).toContain(categories[0].trend);
@@ -157,7 +218,8 @@ describe("Compliance Chatbot Router", () => {
   it("should start a new chat session with welcome message", () => {
     const session = {
       sessionId: "chat-" + Date.now(),
-      welcomeMessage: "Welcome to the Compliance Assistant. How can I help you today?",
+      welcomeMessage:
+        "Welcome to the Compliance Assistant. How can I help you today?",
     };
     expect(session.sessionId).toBeTruthy();
     expect(session.welcomeMessage).toContain("Compliance");
@@ -165,10 +227,21 @@ describe("Compliance Chatbot Router", () => {
 
   it("should process natural language queries about CBN regulations", () => {
     const response = {
-      response: "CBN agent banking transaction limits are: Tier 1 - ₦50,000 daily, Tier 2 - ₦200,000 daily, Tier 3 - ₦5,000,000 daily.",
+      response:
+        "CBN agent banking transaction limits are: Tier 1 - ₦50,000 daily, Tier 2 - ₦200,000 daily, Tier 3 - ₦5,000,000 daily.",
       sources: [
-        { id: "kb-1", title: "CBN Agent Banking Guidelines 2024", relevance: 0.95, category: "regulation" },
-        { id: "kb-2", title: "Transaction Limit Framework", relevance: 0.87, category: "policy" },
+        {
+          id: "kb-1",
+          title: "CBN Agent Banking Guidelines 2024",
+          relevance: 0.95,
+          category: "regulation",
+        },
+        {
+          id: "kb-2",
+          title: "Transaction Limit Framework",
+          relevance: 0.87,
+          category: "policy",
+        },
       ],
     };
     expect(response.response.length).toBeGreaterThan(20);
@@ -178,9 +251,19 @@ describe("Compliance Chatbot Router", () => {
 
   it("should maintain chat history with message roles", () => {
     const messages = [
-      { role: "assistant", content: "Welcome to the Compliance Assistant.", sources: [] },
+      {
+        role: "assistant",
+        content: "Welcome to the Compliance Assistant.",
+        sources: [],
+      },
       { role: "user", content: "What are KYC requirements?", sources: null },
-      { role: "assistant", content: "KYC requirements include...", sources: [{ id: "kb-3", title: "KYC Policy", relevance: 0.92, category: "kyc" }] },
+      {
+        role: "assistant",
+        content: "KYC requirements include...",
+        sources: [
+          { id: "kb-3", title: "KYC Policy", relevance: 0.92, category: "kyc" },
+        ],
+      },
     ];
     expect(messages.length).toBe(3);
     expect(messages[0].role).toBe("assistant");
@@ -190,19 +273,45 @@ describe("Compliance Chatbot Router", () => {
 
   it("should search knowledge base with relevance scoring", () => {
     const results = [
-      { id: "kb-1", title: "Fraud Detection ML Pipeline", content: "The fraud detection system uses...", relevance: 0.94, category: "technology" },
-      { id: "kb-2", title: "AML Compliance Framework", content: "Anti-money laundering compliance...", relevance: 0.88, category: "compliance" },
-      { id: "kb-3", title: "Transaction Monitoring Rules", content: "Real-time transaction monitoring...", relevance: 0.82, category: "operations" },
+      {
+        id: "kb-1",
+        title: "Fraud Detection ML Pipeline",
+        content: "The fraud detection system uses...",
+        relevance: 0.94,
+        category: "technology",
+      },
+      {
+        id: "kb-2",
+        title: "AML Compliance Framework",
+        content: "Anti-money laundering compliance...",
+        relevance: 0.88,
+        category: "compliance",
+      },
+      {
+        id: "kb-3",
+        title: "Transaction Monitoring Rules",
+        content: "Real-time transaction monitoring...",
+        relevance: 0.82,
+        category: "operations",
+      },
     ];
     expect(results.length).toBe(3);
     // Results should be sorted by relevance descending
     for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].relevance).toBeGreaterThanOrEqual(results[i].relevance);
+      expect(results[i - 1].relevance).toBeGreaterThanOrEqual(
+        results[i].relevance
+      );
     }
   });
 
   it("should perform quick compliance checks for all types", () => {
-    const checkTypes = ["kyc", "aml", "transaction_limit", "agent_onboarding", "reporting"];
+    const checkTypes = [
+      "kyc",
+      "aml",
+      "transaction_limit",
+      "agent_onboarding",
+      "reporting",
+    ];
     const checks = checkTypes.map(t => ({
       checkType: t,
       status: "compliant",
@@ -221,7 +330,11 @@ describe("Compliance Chatbot Router", () => {
       { role: "user", content: "What is KYC?" },
       { role: "assistant", content: "KYC stands for Know Your Customer..." },
       { role: "user", content: "What are the tier levels?" },
-      { role: "assistant", content: "Based on our previous discussion about KYC, the tier levels are..." },
+      {
+        role: "assistant",
+        content:
+          "Based on our previous discussion about KYC, the tier levels are...",
+      },
     ];
     expect(conversation.length).toBe(4);
     // The assistant's second response should reference context
@@ -230,8 +343,18 @@ describe("Compliance Chatbot Router", () => {
 
   it("should list active sessions with metadata", () => {
     const sessions = [
-      { id: "chat-1", preview: "KYC requirements discussion", messageCount: 8, lastActivity: Date.now() },
-      { id: "chat-2", preview: "Fraud detection query", messageCount: 4, lastActivity: Date.now() - 3600000 },
+      {
+        id: "chat-1",
+        preview: "KYC requirements discussion",
+        messageCount: 8,
+        lastActivity: Date.now(),
+      },
+      {
+        id: "chat-2",
+        preview: "Fraud detection query",
+        messageCount: 4,
+        lastActivity: Date.now() - 3600000,
+      },
     ];
     expect(sessions.length).toBe(2);
     expect(sessions[0].messageCount).toBeGreaterThan(sessions[1].messageCount);

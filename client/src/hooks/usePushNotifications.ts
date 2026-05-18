@@ -41,10 +41,11 @@ export function usePushNotifications(): PushState {
   const [permission, setPermission] = useState<PushPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [swRegistration, setSwRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
 
-  const agent = usePosStore((s) => s.agent);
-  const offlineQueue = usePosStore((s) => s.offlineQueue);
+  const agent = usePosStore(s => s.agent);
+  const offlineQueue = usePosStore(s => s.offlineQueue);
 
   // Fetch VAPID public key from server (replaces hardcoded placeholder)
   const { data: vapidData } = trpc.system.vapidPublicKey.useQuery(undefined, {
@@ -72,15 +73,15 @@ export function usePushNotifications(): PushState {
 
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
-      .then((reg) => {
+      .then(reg => {
         setSwRegistration(reg);
         // Check if already subscribed
         return reg.pushManager.getSubscription();
       })
-      .then((sub) => {
+      .then(sub => {
         if (sub) setIsSubscribed(true);
       })
-      .catch((err) => {
+      .catch(err => {
         console.warn("[PushNotifications] SW registration failed:", err);
       });
   }, []);
@@ -95,7 +96,8 @@ export function usePushNotifications(): PushState {
       }
     };
     navigator.serviceWorker.addEventListener("message", handler);
-    return () => navigator.serviceWorker.removeEventListener("message", handler);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", handler);
   }, []);
 
   // ── Notify server when app is backgrounded with pending offline items ──────
@@ -117,7 +119,8 @@ export function usePushNotifications(): PushState {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isSubscribed, agent, offlineQueue, notifyPending]);
 
   // ── Request permission and subscribe ──────────────────────────────────────
@@ -137,12 +140,16 @@ export function usePushNotifications(): PushState {
       setPermission(result as PushPermission);
 
       if (result !== "granted") {
-        toast.warning("Notification permission denied. You won't receive offline sync alerts.");
+        toast.warning(
+          "Notification permission denied. You won't receive offline sync alerts."
+        );
         return;
       }
 
       if (!vapidPublicKey) {
-        toast.error("Push notification configuration not loaded. Please try again.");
+        toast.error(
+          "Push notification configuration not loaded. Please try again."
+        );
         return;
       }
 
@@ -152,7 +159,10 @@ export function usePushNotifications(): PushState {
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      console.info("[PushNotifications] Subscribed:", JSON.stringify(subscription));
+      console.info(
+        "[PushNotifications] Subscribed:",
+        JSON.stringify(subscription)
+      );
       setIsSubscribed(true);
 
       // ── Persist subscription server-side ──────────────────────────────────
@@ -161,23 +171,33 @@ export function usePushNotifications(): PushState {
         const keys = subJson.keys ?? {};
         try {
           await savePushSub.mutateAsync({
-            agentCode:  agent.agentCode,
-            endpoint:   subscription.endpoint,
-            p256dhKey:  keys.p256dh ?? "",
-            authKey:    keys.auth ?? "",
-            userAgent:  navigator.userAgent,
+            agentCode: agent.agentCode,
+            endpoint: subscription.endpoint,
+            p256dhKey: keys.p256dh ?? "",
+            authKey: keys.auth ?? "",
+            userAgent: navigator.userAgent,
           });
-          console.info("[PushNotifications] Subscription saved to server for agent:", agent.agentCode);
+          console.info(
+            "[PushNotifications] Subscription saved to server for agent:",
+            agent.agentCode
+          );
         } catch (saveErr) {
           // Non-fatal: subscription works locally even if server save fails
-          console.warn("[PushNotifications] Failed to save subscription to server:", saveErr);
+          console.warn(
+            "[PushNotifications] Failed to save subscription to server:",
+            saveErr
+          );
         }
       }
 
-      toast.success("Notifications enabled! You'll be alerted when offline items need syncing.");
+      toast.success(
+        "Notifications enabled! You'll be alerted when offline items need syncing."
+      );
     } catch (err) {
       console.error("[PushNotifications] Subscription failed:", err);
-      toast.error("Failed to enable push notifications. Check browser settings.");
+      toast.error(
+        "Failed to enable push notifications. Check browser settings."
+      );
     } finally {
       setIsRegistering(false);
     }
@@ -213,5 +233,11 @@ export function usePushNotifications(): PushState {
     [permission, swRegistration]
   );
 
-  return { permission, isSubscribed, isRegistering, requestPermission, sendLocalAlert };
+  return {
+    permission,
+    isSubscribed,
+    isRegistering,
+    requestPermission,
+    sendLocalAlert,
+  };
 }

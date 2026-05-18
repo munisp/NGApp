@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 86: WebSocket Resilience Layer
 /**
  * WebSocket Resilience Middleware (S86-26)
- * 
+ *
  * Provides:
  * - Automatic reconnection with exponential backoff
  * - Message queuing during disconnection
@@ -14,15 +14,15 @@
 
 export interface WebSocketConfig {
   url: string;
-  reconnectInterval: number;       // Base reconnect interval (ms)
-  maxReconnectInterval: number;    // Max backoff interval (ms)
-  reconnectDecay: number;          // Backoff multiplier
-  maxReconnectAttempts: number;    // Max attempts before fallback
-  heartbeatInterval: number;       // Ping interval (ms)
-  heartbeatTimeout: number;        // Pong timeout (ms)
-  messageQueueSize: number;        // Max queued messages during disconnect
-  enableCompression: boolean;      // Enable per-message deflate
-  lowBandwidthThreshold: number;   // Bytes/sec threshold for low-bandwidth mode
+  reconnectInterval: number; // Base reconnect interval (ms)
+  maxReconnectInterval: number; // Max backoff interval (ms)
+  reconnectDecay: number; // Backoff multiplier
+  maxReconnectAttempts: number; // Max attempts before fallback
+  heartbeatInterval: number; // Ping interval (ms)
+  heartbeatTimeout: number; // Pong timeout (ms)
+  messageQueueSize: number; // Max queued messages during disconnect
+  enableCompression: boolean; // Enable per-message deflate
+  lowBandwidthThreshold: number; // Bytes/sec threshold for low-bandwidth mode
 }
 
 export const DEFAULT_WS_CONFIG: WebSocketConfig = {
@@ -105,7 +105,10 @@ export class ResilientWebSocket {
   }
 
   connect(): void {
-    if (this.state === ConnectionState.OPEN || this.state === ConnectionState.CONNECTING) {
+    if (
+      this.state === ConnectionState.OPEN ||
+      this.state === ConnectionState.CONNECTING
+    ) {
       return;
     }
 
@@ -135,14 +138,14 @@ export class ResilientWebSocket {
       this.flushQueue();
     };
 
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = event => {
       this.metrics.messagesReceived++;
       this.metrics.bytesTransferred += event.data.length;
       this.updateBandwidth(event.data.length);
 
       try {
         const message = JSON.parse(event.data);
-        
+
         // Deduplication check
         if (message.id && this.processedIds.has(message.id)) {
           return; // Already processed
@@ -175,7 +178,7 @@ export class ResilientWebSocket {
       }
     };
 
-    this.ws.onclose = (event) => {
+    this.ws.onclose = event => {
       this.state = ConnectionState.CLOSED;
       this.metrics.state = ConnectionState.CLOSED;
       this.metrics.disconnections++;
@@ -187,7 +190,7 @@ export class ResilientWebSocket {
       }
     };
 
-    this.ws.onerror = (error) => {
+    this.ws.onerror = error => {
       console.error("[WS Resilience] Error:", error);
     };
   }
@@ -201,7 +204,10 @@ export class ResilientWebSocket {
 
         // Check for pong timeout
         setTimeout(() => {
-          if (Date.now() - this.metrics.lastHeartbeat > this.config.heartbeatTimeout) {
+          if (
+            Date.now() - this.metrics.lastHeartbeat >
+            this.config.heartbeatTimeout
+          ) {
             console.warn("[WS Resilience] Heartbeat timeout, reconnecting...");
             this.ws?.close();
           }
@@ -219,7 +225,9 @@ export class ResilientWebSocket {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.warn("[WS Resilience] Max reconnect attempts reached, falling back to polling");
+      console.warn(
+        "[WS Resilience] Max reconnect attempts reached, falling back to polling"
+      );
       this.state = ConnectionState.FALLBACK_POLLING;
       this.metrics.state = ConnectionState.FALLBACK_POLLING;
       return;
@@ -231,11 +239,14 @@ export class ResilientWebSocket {
     this.metrics.reconnectAttempts = this.reconnectAttempts;
 
     const delay = Math.min(
-      this.config.reconnectInterval * Math.pow(this.config.reconnectDecay, this.reconnectAttempts - 1),
+      this.config.reconnectInterval *
+        Math.pow(this.config.reconnectDecay, this.reconnectAttempts - 1),
       this.config.maxReconnectInterval
     );
 
-    console.log(`[WS Resilience] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+    console.log(
+      `[WS Resilience] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+    );
 
     this.reconnectTimer = setTimeout(() => {
       this.connect();
@@ -245,15 +256,30 @@ export class ResilientWebSocket {
   /**
    * Send a message with offline queue support
    */
-  send(type: string, payload: any, priority: "high" | "normal" | "low" = "normal"): string {
+  send(
+    type: string,
+    payload: any,
+    priority: "high" | "normal" | "low" = "normal"
+  ): string {
     const id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const message = JSON.stringify({ id, type, payload, timestamp: Date.now() });
+    const message = JSON.stringify({
+      id,
+      type,
+      payload,
+      timestamp: Date.now(),
+    });
 
     if (this.state === ConnectionState.OPEN && this.ws) {
       try {
         // Low-bandwidth mode: batch messages
         if (this.metrics.isLowBandwidth && priority !== "high") {
-          this.enqueue({ id, payload: message, timestamp: Date.now(), retryCount: 0, priority });
+          this.enqueue({
+            id,
+            payload: message,
+            timestamp: Date.now(),
+            retryCount: 0,
+            priority,
+          });
           return id;
         }
 
@@ -262,11 +288,23 @@ export class ResilientWebSocket {
         this.metrics.bytesTransferred += message.length;
       } catch (error) {
         // Queue on send failure
-        this.enqueue({ id, payload: message, timestamp: Date.now(), retryCount: 0, priority });
+        this.enqueue({
+          id,
+          payload: message,
+          timestamp: Date.now(),
+          retryCount: 0,
+          priority,
+        });
       }
     } else {
       // Offline: queue the message
-      this.enqueue({ id, payload: message, timestamp: Date.now(), retryCount: 0, priority });
+      this.enqueue({
+        id,
+        payload: message,
+        timestamp: Date.now(),
+        retryCount: 0,
+        priority,
+      });
     }
 
     return id;
@@ -313,7 +351,9 @@ export class ResilientWebSocket {
 
     this.messageQueue = failed;
     this.metrics.messagesQueued = this.messageQueue.length;
-    console.log(`[WS Resilience] Flushed queue: ${sorted.length - failed.length} sent, ${failed.length} failed`);
+    console.log(
+      `[WS Resilience] Flushed queue: ${sorted.length - failed.length} sent, ${failed.length} failed`
+    );
   }
 
   private updateBandwidth(bytes: number): void {
@@ -321,8 +361,11 @@ export class ResilientWebSocket {
     if (this.bandwidthSamples.length > 10) {
       this.bandwidthSamples.shift();
     }
-    const avgBytesPerSec = this.bandwidthSamples.reduce((a, b) => a + b, 0) / this.bandwidthSamples.length;
-    this.metrics.isLowBandwidth = avgBytesPerSec < this.config.lowBandwidthThreshold;
+    const avgBytesPerSec =
+      this.bandwidthSamples.reduce((a, b) => a + b, 0) /
+      this.bandwidthSamples.length;
+    this.metrics.isLowBandwidth =
+      avgBytesPerSec < this.config.lowBandwidthThreshold;
   }
 
   /**

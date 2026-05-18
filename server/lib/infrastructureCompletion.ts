@@ -21,11 +21,16 @@ interface ScheduledTaskPayload {
   timestamp?: string;
 }
 
-type ScheduledTaskHandler = (payload: ScheduledTaskPayload) => Promise<{ success: boolean; message: string; data?: unknown }>;
+type ScheduledTaskHandler = (
+  payload: ScheduledTaskPayload
+) => Promise<{ success: boolean; message: string; data?: unknown }>;
 
 const scheduledHandlers = new Map<string, ScheduledTaskHandler>();
 
-export function registerScheduledHandler(action: string, handler: ScheduledTaskHandler): void {
+export function registerScheduledHandler(
+  action: string,
+  handler: ScheduledTaskHandler
+): void {
   scheduledHandlers.set(action, handler);
 }
 
@@ -68,7 +73,7 @@ export function setupScheduledEndpoint(app: Express): void {
     data: { uptime: process.uptime(), memory: process.memoryUsage().heapUsed },
   }));
 
-  registerScheduledHandler("data-refresh", async (payload) => ({
+  registerScheduledHandler("data-refresh", async payload => ({
     success: true,
     message: "Data refresh triggered",
     data: { action: payload.action, processedAt: new Date().toISOString() },
@@ -83,7 +88,10 @@ export function setupScheduledEndpoint(app: Express): void {
   registerScheduledHandler("report", async () => ({
     success: true,
     message: "Report generation triggered",
-    data: { reportId: crypto.randomUUID(), generatedAt: new Date().toISOString() },
+    data: {
+      reportId: crypto.randomUUID(),
+      generatedAt: new Date().toISOString(),
+    },
   }));
 }
 
@@ -123,7 +131,9 @@ const DEFAULT_CORS_CONFIG: CorsConfig = {
   credentials: true,
 };
 
-export function createCorsMiddleware(config: Partial<CorsConfig> = {}): (req: Request, res: Response, next: NextFunction) => void {
+export function createCorsMiddleware(
+  config: Partial<CorsConfig> = {}
+): (req: Request, res: Response, next: NextFunction) => void {
   const finalConfig = { ...DEFAULT_CORS_CONFIG, ...config };
 
   return (req: Request, res: Response, next: NextFunction) => {
@@ -131,16 +141,33 @@ export function createCorsMiddleware(config: Partial<CorsConfig> = {}): (req: Re
 
     // S94-06: Never reflect wildcard "*" when credentials are enabled (browser rejects it).
     // Only set the header when origin is explicitly matched in the whitelist.
-    if (origin && (finalConfig.allowedOrigins.includes("*") || finalConfig.allowedOrigins.includes(origin))) {
+    if (
+      origin &&
+      (finalConfig.allowedOrigins.includes("*") ||
+        finalConfig.allowedOrigins.includes(origin))
+    ) {
       res.setHeader("Access-Control-Allow-Origin", origin);
-    } else if (!origin && finalConfig.allowedOrigins.includes("*") && !finalConfig.credentials) {
+    } else if (
+      !origin &&
+      finalConfig.allowedOrigins.includes("*") &&
+      !finalConfig.credentials
+    ) {
       // Only allow wildcard for non-credentialed, non-origin requests (e.g. server-to-server)
       res.setHeader("Access-Control-Allow-Origin", "*");
     }
 
-    res.setHeader("Access-Control-Allow-Methods", finalConfig.allowedMethods.join(", "));
-    res.setHeader("Access-Control-Allow-Headers", finalConfig.allowedHeaders.join(", "));
-    res.setHeader("Access-Control-Expose-Headers", finalConfig.exposedHeaders.join(", "));
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      finalConfig.allowedMethods.join(", ")
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      finalConfig.allowedHeaders.join(", ")
+    );
+    res.setHeader(
+      "Access-Control-Expose-Headers",
+      finalConfig.exposedHeaders.join(", ")
+    );
     res.setHeader("Access-Control-Max-Age", String(finalConfig.maxAge));
 
     if (finalConfig.credentials) {
@@ -168,18 +195,65 @@ interface EnvRule {
 }
 
 const ENV_RULES: EnvRule[] = [
-  { key: "DATABASE_URL", required: true, description: "PostgreSQL connection string", pattern: /^postgres/ },
-  { key: "JWT_SECRET", required: true, description: "JWT signing secret (min 32 chars)", pattern: /.{32,}/ },
-  { key: "VITE_APP_ID", required: true, description: "Manus OAuth application ID" },
-  { key: "OAUTH_SERVER_URL", required: true, description: "Manus OAuth backend URL", pattern: /^https?:\/\// },
-  { key: "VITE_OAUTH_PORTAL_URL", required: true, description: "Manus login portal URL", pattern: /^https?:\/\// },
+  {
+    key: "DATABASE_URL",
+    required: true,
+    description: "PostgreSQL connection string",
+    pattern: /^postgres/,
+  },
+  {
+    key: "JWT_SECRET",
+    required: true,
+    description: "JWT signing secret (min 32 chars)",
+    pattern: /.{32,}/,
+  },
+  {
+    key: "VITE_APP_ID",
+    required: true,
+    description: "Manus OAuth application ID",
+  },
+  {
+    key: "OAUTH_SERVER_URL",
+    required: true,
+    description: "Manus OAuth backend URL",
+    pattern: /^https?:\/\//,
+  },
+  {
+    key: "VITE_OAUTH_PORTAL_URL",
+    required: true,
+    description: "Manus login portal URL",
+    pattern: /^https?:\/\//,
+  },
   { key: "OWNER_OPEN_ID", required: false, description: "Owner's OpenID" },
   { key: "OWNER_NAME", required: false, description: "Owner's display name" },
-  { key: "BUILT_IN_FORGE_API_URL", required: false, description: "Manus built-in API URL" },
-  { key: "BUILT_IN_FORGE_API_KEY", required: false, description: "Manus built-in API key" },
-  { key: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key", pattern: /^sk_/ },
-  { key: "STRIPE_WEBHOOK_SECRET", required: false, description: "Stripe webhook secret", pattern: /^whsec_/ },
-  { key: "VITE_STRIPE_PUBLISHABLE_KEY", required: false, description: "Stripe publishable key", pattern: /^pk_/ },
+  {
+    key: "BUILT_IN_FORGE_API_URL",
+    required: false,
+    description: "Manus built-in API URL",
+  },
+  {
+    key: "BUILT_IN_FORGE_API_KEY",
+    required: false,
+    description: "Manus built-in API key",
+  },
+  {
+    key: "STRIPE_SECRET_KEY",
+    required: false,
+    description: "Stripe secret key",
+    pattern: /^sk_/,
+  },
+  {
+    key: "STRIPE_WEBHOOK_SECRET",
+    required: false,
+    description: "Stripe webhook secret",
+    pattern: /^whsec_/,
+  },
+  {
+    key: "VITE_STRIPE_PUBLISHABLE_KEY",
+    required: false,
+    description: "Stripe publishable key",
+    pattern: /^pk_/,
+  },
 ];
 
 export interface EnvValidationResult {
@@ -189,7 +263,9 @@ export interface EnvValidationResult {
   checkedAt: string;
 }
 
-export function validateEnvironment(customRules?: EnvRule[]): EnvValidationResult {
+export function validateEnvironment(
+  customRules?: EnvRule[]
+): EnvValidationResult {
   const rules = customRules || ENV_RULES;
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -201,9 +277,13 @@ export function validateEnvironment(customRules?: EnvRule[]): EnvValidationResul
       if (rule.required) {
         if (rule.defaultValue) {
           process.env[rule.key] = rule.defaultValue;
-          warnings.push(`${rule.key}: Missing, using default value — ${rule.description}`);
+          warnings.push(
+            `${rule.key}: Missing, using default value — ${rule.description}`
+          );
         } else {
-          errors.push(`${rule.key}: REQUIRED but not set — ${rule.description}`);
+          errors.push(
+            `${rule.key}: REQUIRED but not set — ${rule.description}`
+          );
         }
       } else {
         warnings.push(`${rule.key}: Optional, not set — ${rule.description}`);
@@ -212,7 +292,9 @@ export function validateEnvironment(customRules?: EnvRule[]): EnvValidationResul
     }
 
     if (rule.pattern && !rule.pattern.test(value)) {
-      errors.push(`${rule.key}: Invalid format (expected ${rule.pattern}) — ${rule.description}`);
+      errors.push(
+        `${rule.key}: Invalid format (expected ${rule.pattern}) — ${rule.description}`
+      );
     }
   }
 
@@ -228,14 +310,16 @@ export function logEnvValidation(result: EnvValidationResult): void {
   console.log(`[Env Validation] Checked at ${result.checkedAt}`);
   if (result.errors.length > 0) {
     console.error(`[Env Validation] ${result.errors.length} ERRORS:`);
-    result.errors.forEach((e) => console.error(`  ✗ ${e}`));
+    result.errors.forEach(e => console.error(`  ✗ ${e}`));
   }
   if (result.warnings.length > 0) {
     console.warn(`[Env Validation] ${result.warnings.length} warnings:`);
-    result.warnings.forEach((w) => console.warn(`  ⚠ ${w}`));
+    result.warnings.forEach(w => console.warn(`  ⚠ ${w}`));
   }
   if (result.valid) {
-    console.log("[Env Validation] ✓ All required environment variables are set");
+    console.log(
+      "[Env Validation] ✓ All required environment variables are set"
+    );
   }
 }
 
@@ -246,9 +330,17 @@ export function logEnvValidation(result: EnvValidationResult): void {
 const CORRELATION_HEADER = "X-Correlation-ID";
 const REQUEST_ID_HEADER = "X-Request-ID";
 
-export function correlationIdMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const correlationId = (req.headers[CORRELATION_HEADER.toLowerCase()] as string) || crypto.randomUUID();
-  const requestId = (req.headers[REQUEST_ID_HEADER.toLowerCase()] as string) || crypto.randomUUID();
+export function correlationIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  const correlationId =
+    (req.headers[CORRELATION_HEADER.toLowerCase()] as string) ||
+    crypto.randomUUID();
+  const requestId =
+    (req.headers[REQUEST_ID_HEADER.toLowerCase()] as string) ||
+    crypto.randomUUID();
 
   // Attach to request for downstream use
   (req as any).correlationId = correlationId;
@@ -284,7 +376,11 @@ export interface ApiVersionInfo {
   sunset?: string;
 }
 
-export function apiVersionMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function apiVersionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   res.setHeader(API_VERSION_HEADER, API_VERSION);
   res.setHeader("X-API-Min-Version", API_MIN_VERSION);
 
@@ -322,5 +418,7 @@ export function wireInfrastructureMiddleware(app: Express): void {
   // F1: Scheduled endpoint
   setupScheduledEndpoint(app);
 
-  console.log("[Infrastructure] All middleware wired: CORS, Correlation ID, API Versioning, /api/scheduled");
+  console.log(
+    "[Infrastructure] All middleware wired: CORS, Correlation ID, API Versioning, /api/scheduled"
+  );
 }

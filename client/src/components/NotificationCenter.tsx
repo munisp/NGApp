@@ -2,31 +2,66 @@
 /**
  * NotificationCenter — Floating notification panel with real-time feed,
  * filters, mark-read, clear, and sound alerts for critical events.
- * 
+ *
  * Integrates with the existing NotificationContext (Socket.IO /notifications namespace)
  * and adds a rich UI panel accessible from the DashboardLayout header.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useNotificationContext, type RealtimeNotification, type NotificationChannel } from "@/contexts/NotificationContext";
+import {
+  useNotificationContext,
+  type RealtimeNotification,
+  type NotificationChannel,
+} from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  Bell, BellRing, Check, CheckCheck, ChevronDown, Filter, Settings,
-  Trash2, Volume2, VolumeX, X, AlertTriangle, Shield, DollarSign,
-  UserCheck, Activity, Globe, Zap, Clock
+  Bell,
+  BellRing,
+  Check,
+  CheckCheck,
+  ChevronDown,
+  Filter,
+  Settings,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
+  AlertTriangle,
+  Shield,
+  DollarSign,
+  UserCheck,
+  Activity,
+  Globe,
+  Zap,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Channel Icons & Colors ──────────────────────────────────────────────────
-const channelConfig: Record<NotificationChannel, { icon: any; color: string; label: string }> = {
-  transaction: { icon: DollarSign, color: "text-emerald-400", label: "Transactions" },
+const channelConfig: Record<
+  NotificationChannel,
+  { icon: any; color: string; label: string }
+> = {
+  transaction: {
+    icon: DollarSign,
+    color: "text-emerald-400",
+    label: "Transactions",
+  },
   fraud: { icon: Shield, color: "text-red-400", label: "Fraud Alerts" },
   rate_alert: { icon: Activity, color: "text-amber-400", label: "Rate Alerts" },
   kyc: { icon: UserCheck, color: "text-blue-400", label: "KYC" },
-  settlement: { icon: DollarSign, color: "text-purple-400", label: "Settlement" },
+  settlement: {
+    icon: DollarSign,
+    color: "text-purple-400",
+    label: "Settlement",
+  },
   system: { icon: Zap, color: "text-cyan-400", label: "System" },
-  commission: { icon: DollarSign, color: "text-green-400", label: "Commission" },
+  commission: {
+    icon: DollarSign,
+    color: "text-green-400",
+    label: "Commission",
+  },
   compliance: { icon: Globe, color: "text-orange-400", label: "Compliance" },
 };
 
@@ -39,13 +74,15 @@ const severityStyles = {
 // ─── Sound Alert ─────────────────────────────────────────────────────────────
 function playAlertSound(severity: "critical" | "warning" | "info") {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
     gain.gain.value = severity === "critical" ? 0.3 : 0.15;
-    osc.frequency.value = severity === "critical" ? 880 : severity === "warning" ? 660 : 440;
+    osc.frequency.value =
+      severity === "critical" ? 880 : severity === "warning" ? 660 : 440;
     osc.type = severity === "critical" ? "square" : "sine";
     osc.start();
     osc.stop(ctx.currentTime + (severity === "critical" ? 0.3 : 0.15));
@@ -72,7 +109,9 @@ function timeAgo(timestamp: string): string {
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<NotificationChannel | "all">("all");
+  const [activeFilter, setActiveFilter] = useState<NotificationChannel | "all">(
+    "all"
+  );
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
@@ -90,11 +129,16 @@ export function NotificationCenter() {
   useEffect(() => {
     if (notifications.length > prevCountRef.current && soundEnabled) {
       const newest = notifications[0];
-      if (newest && (newest.severity === "critical" || newest.severity === "warning")) {
+      if (
+        newest &&
+        (newest.severity === "critical" || newest.severity === "warning")
+      ) {
         playAlertSound(newest.severity);
         // Vibrate on mobile
         if (navigator.vibrate) {
-          navigator.vibrate(newest.severity === "critical" ? [200, 100, 200] : [100]);
+          navigator.vibrate(
+            newest.severity === "critical" ? [200, 100, 200] : [100]
+          );
         }
       }
     }
@@ -110,14 +154,18 @@ export function NotificationCenter() {
     }
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
-  const handleMarkRead = useCallback((id: string) => {
-    setReadIds(prev => new Set(prev).add(id));
-    markAsRead([id]);
-  }, [markAsRead]);
+  const handleMarkRead = useCallback(
+    (id: string) => {
+      setReadIds(prev => new Set(prev).add(id));
+      markAsRead([id]);
+    },
+    [markAsRead]
+  );
 
   const handleMarkAllRead = useCallback(() => {
     const allIds = notifications.map(n => n.id);
@@ -135,9 +183,10 @@ export function NotificationCenter() {
   }, [clearAll]);
 
   // Filter notifications
-  const filtered = activeFilter === "all"
-    ? notifications
-    : notifications.filter(n => n.channel === activeFilter);
+  const filtered =
+    activeFilter === "all"
+      ? notifications
+      : notifications.filter(n => n.channel === activeFilter);
 
   const effectiveUnread = notifications.filter(n => !readIds.has(n.id)).length;
 
@@ -163,10 +212,12 @@ export function NotificationCenter() {
           </span>
         )}
         {/* Connection indicator */}
-        <span className={cn(
-          "absolute bottom-0 right-0 h-2 w-2 rounded-full border border-background",
-          connectionState.connected ? "bg-emerald-500" : "bg-red-500"
-        )} />
+        <span
+          className={cn(
+            "absolute bottom-0 right-0 h-2 w-2 rounded-full border border-background",
+            connectionState.connected ? "bg-emerald-500" : "bg-red-500"
+          )}
+        />
       </button>
 
       {/* ── Floating Panel ─────────────────────────────────────────────── */}
@@ -224,26 +275,34 @@ export function NotificationCenter() {
               onClick={() => setActiveFilter("all")}
               className={cn(
                 "px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors",
-                activeFilter === "all" ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground"
+                activeFilter === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent text-muted-foreground"
               )}
             >
               All
             </button>
             {(Object.keys(channelConfig) as NotificationChannel[]).map(ch => {
               const cfg = channelConfig[ch];
-              const count = notifications.filter(n => n.channel === ch && !readIds.has(n.id)).length;
+              const count = notifications.filter(
+                n => n.channel === ch && !readIds.has(n.id)
+              ).length;
               return (
                 <button
                   key={ch}
                   onClick={() => setActiveFilter(ch)}
                   className={cn(
                     "px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1",
-                    activeFilter === ch ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground"
+                    activeFilter === ch
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent text-muted-foreground"
                   )}
                 >
                   {cfg.label}
                   {count > 0 && (
-                    <span className="bg-red-500/20 text-red-400 px-1 rounded text-[10px]">{count}</span>
+                    <span className="bg-red-500/20 text-red-400 px-1 rounded text-[10px]">
+                      {count}
+                    </span>
                   )}
                 </button>
               );
@@ -261,7 +320,8 @@ export function NotificationCenter() {
             ) : (
               <div className="divide-y divide-border">
                 {filtered.map(notif => {
-                  const cfg = channelConfig[notif.channel] || channelConfig.system;
+                  const cfg =
+                    channelConfig[notif.channel] || channelConfig.system;
                   const Icon = cfg.icon;
                   const isRead = readIds.has(notif.id);
 
@@ -287,7 +347,14 @@ export function NotificationCenter() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className={cn("text-sm font-medium truncate", isRead ? "text-muted-foreground" : "text-foreground")}>
+                            <p
+                              className={cn(
+                                "text-sm font-medium truncate",
+                                isRead
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              )}
+                            >
                               {notif.title}
                             </p>
                             {!isRead && (
@@ -298,7 +365,10 @@ export function NotificationCenter() {
                             {notif.body}
                           </p>
                           <div className="flex items-center gap-2 mt-1.5">
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1.5"
+                            >
                               {cfg.label}
                             </Badge>
                             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
@@ -306,7 +376,10 @@ export function NotificationCenter() {
                               {timeAgo(notif.timestamp)}
                             </span>
                             {notif.severity === "critical" && (
-                              <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+                              <Badge
+                                variant="destructive"
+                                className="text-[10px] h-4 px-1.5"
+                              >
                                 Critical
                               </Badge>
                             )}
@@ -323,13 +396,16 @@ export function NotificationCenter() {
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/30">
             <div className="flex items-center gap-1.5">
-              <span className={cn(
-                "h-2 w-2 rounded-full",
-                connectionState.connected ? "bg-emerald-500" : "bg-red-500"
-              )} />
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  connectionState.connected ? "bg-emerald-500" : "bg-red-500"
+                )}
+              />
               <span className="text-[10px] text-muted-foreground">
                 {connectionState.connected ? "Live" : "Disconnected"}
-                {connectionState.activeUsers > 0 && ` · ${connectionState.activeUsers} online`}
+                {connectionState.activeUsers > 0 &&
+                  ` · ${connectionState.activeUsers} online`}
               </span>
             </div>
             <a

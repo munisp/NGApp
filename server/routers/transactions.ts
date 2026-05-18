@@ -1,4 +1,3 @@
-
 /**
  * transactions router — all transaction operations for the 54Link POS platform.
  *
@@ -57,32 +56,36 @@ import {
 const COMMISSION_RATES: Record<string, number> = {
   "Cash In": 0.003,
   "Cash Out": 0.005,
-  "Transfer": 0.004,
+  Transfer: 0.004,
   "Card Payment": 0.002,
   "QR Payment": 0.002,
   "NFC Payment": 0.002,
-  "Airtime": 0.015,
+  Airtime: 0.015,
   "Bill Payment": 0.01,
   "Nano Loan": 0.02,
-  "Insurance": 0.05,
+  Insurance: 0.05,
 };
 
 const LOYALTY_RATES: Record<string, number> = {
   "Cash In": 1,
   "Cash Out": 1,
-  "Transfer": 2,
+  Transfer: 2,
   "Card Payment": 2,
   "QR Payment": 3,
   "NFC Payment": 3,
-  "Airtime": 5,
+  Airtime: 5,
   "Bill Payment": 5,
   "Nano Loan": 10,
-  "Insurance": 20,
+  Insurance: 20,
 };
 
 // Types that trigger customer SMS confirmation
 const SMS_CONFIRMATION_TYPES = new Set([
-  "Cash Out", "Transfer", "Card Payment", "QR Payment", "NFC Payment",
+  "Cash Out",
+  "Transfer",
+  "Card Payment",
+  "QR Payment",
+  "NFC Payment",
 ]);
 
 const FLOAT_DEBIT_TYPES = new Set(["Cash Out", "Transfer"]);
@@ -95,7 +98,10 @@ function generateRef(): string {
 }
 
 // ─── Platform setting helper ──────────────────────────────────────────────────
-async function getPlatformSetting(key: string, defaultValue: string): Promise<string> {
+async function getPlatformSetting(
+  key: string,
+  defaultValue: string
+): Promise<string> {
   try {
     const db = (await getDb())!;
     if (!db) return defaultValue;
@@ -147,21 +153,29 @@ async function checkVelocityLimits(
     const hourlyRows = await db
       .select({ count: sql<number>`count(*)` })
       .from(transactions)
-      .where(and(eq(transactions.agentId, agentId), gte(transactions.createdAt, oneHourAgo)));
+      .where(
+        and(
+          eq(transactions.agentId, agentId),
+          gte(transactions.createdAt, oneHourAgo)
+        )
+      );
     const hourlyCount = Number(hourlyRows[0]?.count ?? 0);
 
     // Emit 80% warning before hard block
     if (agentCode && maxHourly > 0) {
       const hourlyPct = (hourlyCount + 1) / maxHourly;
       if (hourlyPct >= 0.8 && hourlyPct < 1.0) {
-        getIO()?.of("/terminal").to(`agent:${agentCode}`).emit("terminal:velocity_warning", {
-          type: "hourly_count",
-          used: hourlyCount + 1,
-          limit: maxHourly,
-          pct: Math.round(hourlyPct * 100),
-          tier,
-          timestamp: new Date().toISOString(),
-        });
+        getIO()
+          ?.of("/terminal")
+          .to(`agent:${agentCode}`)
+          .emit("terminal:velocity_warning", {
+            type: "hourly_count",
+            used: hourlyCount + 1,
+            limit: maxHourly,
+            pct: Math.round(hourlyPct * 100),
+            tier,
+            timestamp: new Date().toISOString(),
+          });
       }
     }
 
@@ -177,21 +191,29 @@ async function checkVelocityLimits(
     const dailyRows = await db
       .select({ total: sql<string>`coalesce(sum(amount::numeric), 0)` })
       .from(transactions)
-      .where(and(eq(transactions.agentId, agentId), gte(transactions.createdAt, startOfDay)));
+      .where(
+        and(
+          eq(transactions.agentId, agentId),
+          gte(transactions.createdAt, startOfDay)
+        )
+      );
     const dailyVolume = Number(dailyRows[0]?.total ?? 0);
 
     // Emit 80% daily volume warning
     if (agentCode && maxDaily > 0) {
       const dailyPct = (dailyVolume + amount) / maxDaily;
       if (dailyPct >= 0.8 && dailyPct < 1.0) {
-        getIO()?.of("/terminal").to(`agent:${agentCode}`).emit("terminal:velocity_warning", {
-          type: "daily_volume",
-          used: dailyVolume + amount,
-          limit: maxDaily,
-          pct: Math.round(dailyPct * 100),
-          tier,
-          timestamp: new Date().toISOString(),
-        });
+        getIO()
+          ?.of("/terminal")
+          .to(`agent:${agentCode}`)
+          .emit("terminal:velocity_warning", {
+            type: "daily_volume",
+            used: dailyVolume + amount,
+            limit: maxDaily,
+            pct: Math.round(dailyPct * 100),
+            tier,
+            timestamp: new Date().toISOString(),
+          });
       }
     }
 
@@ -215,24 +237,41 @@ async function validateDeviceToken(
   agentId: number
 ): Promise<{ valid: boolean; reason?: string }> {
   try {
-    const required = await getPlatformSetting("enrollment_token_required", "false");
+    const required = await getPlatformSetting(
+      "enrollment_token_required",
+      "false"
+    );
     if (required !== "true") return { valid: true };
     if (!deviceToken) {
-      return { valid: false, reason: "Device enrollment token required but not provided" };
+      return {
+        valid: false,
+        reason: "Device enrollment token required but not provided",
+      };
     }
     const db = (await getDb())!;
     if (!db) return { valid: true };
     const rows = await db
       .select()
       .from(devices)
-      .where(and(eq(devices.agentId, agentId), eq(devices.enrollmentToken, deviceToken)))
+      .where(
+        and(
+          eq(devices.agentId, agentId),
+          eq(devices.enrollmentToken, deviceToken)
+        )
+      )
       .limit(1);
     const device = rows[0];
     if (!device) {
-      return { valid: false, reason: "Device token not recognised — terminal may not be enrolled" };
+      return {
+        valid: false,
+        reason: "Device token not recognised — terminal may not be enrolled",
+      };
     }
     if (device.enrollmentExpiresAt && device.enrollmentExpiresAt < new Date()) {
-      return { valid: false, reason: "Device enrollment token has expired — re-enroll terminal" };
+      return {
+        valid: false,
+        reason: "Device enrollment token has expired — re-enroll terminal",
+      };
     }
     return { valid: true };
   } catch (err) {
@@ -248,9 +287,17 @@ export const transactionsRouter = router({
     .input(
       z.object({
         type: z.enum([
-          "Cash In", "Cash Out", "Transfer", "Card Payment",
-          "QR Payment", "NFC Payment", "Airtime", "Bill Payment",
-          "Reversal", "Nano Loan", "Insurance",
+          "Cash In",
+          "Cash Out",
+          "Transfer",
+          "Card Payment",
+          "QR Payment",
+          "NFC Payment",
+          "Airtime",
+          "Bill Payment",
+          "Reversal",
+          "Nano Loan",
+          "Insurance",
         ]),
         amount: z.number().positive(),
         customerName: z.string().optional(),
@@ -258,7 +305,9 @@ export const transactionsRouter = router({
         customerAccount: z.string().optional(),
         destinationBank: z.string().optional(),
         destinationAccount: z.string().optional(),
-        channel: z.enum(["Cash", "Card", "USSD", "QR", "NFC", "App"]).optional(),
+        channel: z
+          .enum(["Cash", "Card", "USSD", "QR", "NFC", "App"])
+          .optional(),
         deviceToken: z.string().optional(),
         metadata: z.record(z.string(), z.unknown()).optional(),
         idempotencyKey: z.string().max(64).optional(),
@@ -268,11 +317,18 @@ export const transactionsRouter = router({
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         }
 
         const agentRecord = await getAgentById(agent.id);
-        if (!agentRecord) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        if (!agentRecord)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
 
         // ── P0-A: Idempotency guard ────────────────────────────────────────────
         if (input.idempotencyKey) {
@@ -302,12 +358,16 @@ export const transactionsRouter = router({
           floatLocksTotal.labels("settlement").inc();
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: "Settlement in progress — transactions are temporarily paused. Please try again in a few minutes.",
+            message:
+              "Settlement in progress — transactions are temporarily paused. Please try again in a few minutes.",
           });
         }
 
         // ── Gate 2: Device token enforcement ──────────────────────────────────
-        const deviceCheck = await validateDeviceToken(input.deviceToken, agent.id);
+        const deviceCheck = await validateDeviceToken(
+          input.deviceToken,
+          agent.id
+        );
         if (!deviceCheck.valid) {
           await writeAuditLog({
             agentId: agent.id,
@@ -315,7 +375,10 @@ export const transactionsRouter = router({
             action: "DEVICE_TOKEN_REJECTED",
             resource: "transaction",
             status: "failure",
-            metadata: { reason: deviceCheck.reason, providedToken: input.deviceToken },
+            metadata: {
+              reason: deviceCheck.reason,
+              providedToken: input.deviceToken,
+            },
           });
           // Create fraud alert and notify agent terminal in real-time
           await createFraudAlert({
@@ -327,14 +390,20 @@ export const transactionsRouter = router({
             reason: deviceCheck.reason ?? "Device not enrolled",
             fraudScore: "0.90",
           });
-          getIO()?.of("/terminal").to(`agent:${agent.agentCode}`).emit("terminal:fraud_alert", {
-            severity: "HIGH",
-            type: "DEVICE_TOKEN_FAILURE",
-            reason: deviceCheck.reason ?? "Device not enrolled",
-            amount: input.amount,
-            timestamp: new Date().toISOString(),
+          getIO()
+            ?.of("/terminal")
+            .to(`agent:${agent.agentCode}`)
+            .emit("terminal:fraud_alert", {
+              severity: "HIGH",
+              type: "DEVICE_TOKEN_FAILURE",
+              reason: deviceCheck.reason ?? "Device not enrolled",
+              amount: input.amount,
+              timestamp: new Date().toISOString(),
+            });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: deviceCheck.reason ?? "Device not enrolled",
           });
-          throw new TRPCError({ code: "FORBIDDEN", message: deviceCheck.reason ?? "Device not enrolled" });
         }
 
         // ── Gate 3: Float sufficiency ──────────────────────────────────────────
@@ -349,7 +418,12 @@ export const transactionsRouter = router({
         }
 
         // ── Gate 4: Velocity limits ────────────────────────────────────────────
-        const velocityCheck = await checkVelocityLimits(agent.id, agentRecord.tier, input.amount, agent.agentCode);
+        const velocityCheck = await checkVelocityLimits(
+          agent.id,
+          agentRecord.tier,
+          input.amount,
+          agent.agentCode
+        );
         if (!velocityCheck.allowed) {
           await createFraudAlert({
             agentId: agent.id,
@@ -366,33 +440,48 @@ export const transactionsRouter = router({
             action: "VELOCITY_LIMIT_BREACHED",
             resource: "transaction",
             status: "failure",
-            metadata: { reason: velocityCheck.reason, amount: input.amount, tier: agentRecord.tier },
+            metadata: {
+              reason: velocityCheck.reason,
+              amount: input.amount,
+              tier: agentRecord.tier,
+            },
           });
           // Notify the agent's terminal in real-time
-          getIO()?.of("/terminal").to(`agent:${agent.agentCode}`).emit("terminal:fraud_alert", {
-            severity: "HIGH",
-            type: "VELOCITY_BREACH",
-            reason: velocityCheck.reason ?? "Velocity limit exceeded",
-            amount: input.amount,
-            timestamp: new Date().toISOString(),
-          });
+          getIO()
+            ?.of("/terminal")
+            .to(`agent:${agent.agentCode}`)
+            .emit("terminal:fraud_alert", {
+              severity: "HIGH",
+              type: "VELOCITY_BREACH",
+              reason: velocityCheck.reason ?? "Velocity limit exceeded",
+              amount: input.amount,
+              timestamp: new Date().toISOString(),
+            });
           throw new TRPCError({
             code: "TOO_MANY_REQUESTS",
-            message: velocityCheck.reason ?? "Transaction velocity limit exceeded for your agent tier",
+            message:
+              velocityCheck.reason ??
+              "Transaction velocity limit exceeded for your agent tier",
           });
         }
 
         // ── Gate 5: Geofence enforcement ──────────────────────────────────────
         // Only enforce if agent has assigned zones and a location was reported recently
         try {
-          const geofenceEnabled = await getPlatformSetting("geofencing_enabled", "false");
+          const geofenceEnabled = await getPlatformSetting(
+            "geofencing_enabled",
+            "false"
+          );
           if (geofenceEnabled === "true") {
             const db = (await getDb())!;
             if (db) {
               const assignedZones = await db
                 .select({ zone: geofenceZones })
                 .from(agentGeofenceZones)
-                .innerJoin(geofenceZones, eq(agentGeofenceZones.zoneId, geofenceZones.id))
+                .innerJoin(
+                  geofenceZones,
+                  eq(agentGeofenceZones.zoneId, geofenceZones.id)
+                )
                 .where(
                   and(
                     eq(agentGeofenceZones.agentId, agent.id),
@@ -432,16 +521,21 @@ export const transactionsRouter = router({
                     status: "failure",
                     metadata: { amount: input.amount, type: input.type },
                   });
-                  getIO()?.of("/terminal").to(`agent:${agent.agentCode}`).emit("terminal:fraud_alert", {
-                    severity: "HIGH",
-                    type: "GEOFENCE_VIOLATION",
-                    reason: "Transaction blocked — device outside assigned geofence zone.",
-                    amount: input.amount,
-                    timestamp: new Date().toISOString(),
-                  });
+                  getIO()
+                    ?.of("/terminal")
+                    .to(`agent:${agent.agentCode}`)
+                    .emit("terminal:fraud_alert", {
+                      severity: "HIGH",
+                      type: "GEOFENCE_VIOLATION",
+                      reason:
+                        "Transaction blocked — device outside assigned geofence zone.",
+                      amount: input.amount,
+                      timestamp: new Date().toISOString(),
+                    });
                   throw new TRPCError({
                     code: "FORBIDDEN",
-                    message: "Transaction blocked — device is outside your assigned operational zone.",
+                    message:
+                      "Transaction blocked — device is outside your assigned operational zone.",
                   });
                 }
               }
@@ -468,7 +562,12 @@ export const transactionsRouter = router({
               const ruleRows = await db
                 .select({ value: commissionRules.value })
                 .from(commissionRules)
-                .where(and(eq(commissionRules.txType, input.type), eq(commissionRules.isActive, true)))
+                .where(
+                  and(
+                    eq(commissionRules.txType, input.type),
+                    eq(commissionRules.isActive, true)
+                  )
+                )
                 .limit(1);
               if (ruleRows.length > 0) {
                 commissionRate = Number(ruleRows[0].value);
@@ -477,31 +576,58 @@ export const transactionsRouter = router({
               }
             }
           }
-        } catch { /* fail-open: use hardcoded fallback */ }
+        } catch {
+          /* fail-open: use hardcoded fallback */
+        }
         // ── Sprint 70: Business Rules Engine Integration ──────────────────
         let commission = Math.round(input.amount * commissionRate * 100) / 100;
         try {
-          const { calculateCommission, calculateFraudScore, checkTransactionLimits, checkAmlTriggers } = await import("../lib/businessRulesEngine");
+          const {
+            calculateCommission,
+            calculateFraudScore,
+            checkTransactionLimits,
+            checkAmlTriggers,
+          } = await import("../lib/businessRulesEngine");
           // Override commission with business rules engine calculation
           // @ts-expect-error auto-fix
-          const brCommission = calculateCommission(agentRecord.tier ?? "bronze", input.type, input.amount);
-          const brAmount = typeof brCommission === "number" ? brCommission : Number((brCommission as any)?.amount ?? 0);
+          const brCommission = calculateCommission(
+            agentRecord.tier ?? "bronze",
+            input.type,
+            input.amount
+          );
+          const brAmount =
+            typeof brCommission === "number"
+              ? brCommission
+              : Number((brCommission as any)?.amount ?? 0);
           if (brAmount > 0) commission = brAmount;
           // Fraud scoring
           const fraudScore = calculateFraudScore({
             // @ts-expect-error auto-fix
-            amount: input.amount, hour: new Date().getHours(),
-            isNewCustomer: !input.customerPhone, daysSinceLastTx: 0,
-            failedAttemptsLast24h: 0, isHighRiskRegion: false,
-            deviceAge: 365, txCountLast1h: 0, isRoundAmount: input.amount % 1000 === 0,
-            customerAccountAge: 365, isRecurring: false,
+            amount: input.amount,
+            hour: new Date().getHours(),
+            isNewCustomer: !input.customerPhone,
+            daysSinceLastTx: 0,
+            failedAttemptsLast24h: 0,
+            isHighRiskRegion: false,
+            deviceAge: 365,
+            txCountLast1h: 0,
+            isRoundAmount: input.amount % 1000 === 0,
+            customerAccountAge: 365,
+            isRecurring: false,
           });
-          const fraudScoreVal = typeof fraudScore === "number" ? fraudScore : Number((fraudScore as any)?.score ?? 0);
+          const fraudScoreVal =
+            typeof fraudScore === "number"
+              ? fraudScore
+              : Number((fraudScore as any)?.score ?? 0);
           if (fraudScoreVal > 0.85) {
             await createFraudAlert({
-              agentId: agent.id, severity: "critical", type: "HIGH_FRAUD_SCORE",
-              customerName: input.customerName ?? null, amount: String(input.amount),
-              reason: `Business rules fraud score: ${fraudScoreVal.toFixed(2)}`, fraudScore: String(fraudScoreVal),
+              agentId: agent.id,
+              severity: "critical",
+              type: "HIGH_FRAUD_SCORE",
+              customerName: input.customerName ?? null,
+              amount: String(input.amount),
+              reason: `Business rules fraud score: ${fraudScoreVal.toFixed(2)}`,
+              fraudScore: String(fraudScoreVal),
             });
           }
           // AML triggers for high-value transactions
@@ -509,20 +635,34 @@ export const transactionsRouter = router({
           const amlResult = checkAmlTriggers(input.amount, input.type, 0, 0);
           if (amlResult.triggered) {
             await writeAuditLog({
-              agentId: agent.id, agentCode: agent.agentCode,
-              action: "AML_TRIGGER", resource: "transaction", status: "flagged" as any,
-              metadata: { triggered: amlResult.triggered, amount: input.amount },
+              agentId: agent.id,
+              agentCode: agent.agentCode,
+              action: "AML_TRIGGER",
+              resource: "transaction",
+              status: "flagged" as any,
+              metadata: {
+                triggered: amlResult.triggered,
+                amount: input.amount,
+              },
             });
           }
         } catch (brErr) {
-          console.warn("[BusinessRules] Engine error (fail-open):", (brErr as Error).message);
+          console.warn(
+            "[BusinessRules] Engine error (fail-open):",
+            (brErr as Error).message
+          );
         }
-        const fee = input.type === "Transfer" ? Math.min(input.amount * 0.001, 100) : 0;
+        const fee =
+          input.type === "Transfer" ? Math.min(input.amount * 0.001, 100) : 0;
 
         await tbEnsureAgentAccount(agent.agentCode);
         const tbResult = await tbCreateTransfer({
-          debitAccountId:  FLOAT_CREDIT_TYPES.has(input.type) ? "sys-bank-reserve" : `float-${agent.agentCode}`,
-          creditAccountId: FLOAT_CREDIT_TYPES.has(input.type) ? `float-${agent.agentCode}` : "sys-bank-reserve",
+          debitAccountId: FLOAT_CREDIT_TYPES.has(input.type)
+            ? "sys-bank-reserve"
+            : `float-${agent.agentCode}`,
+          creditAccountId: FLOAT_CREDIT_TYPES.has(input.type)
+            ? `float-${agent.agentCode}`
+            : "sys-bank-reserve",
           amount: Math.round(input.amount * 100),
           ledger: 2000,
           code: 300,
@@ -532,9 +672,13 @@ export const transactionsRouter = router({
         });
 
         if (tbResult) {
-          console.log(`[TB] Transfer committed: ${tbResult.id} (syncStatus=${tbResult.syncStatus})`);
+          console.log(
+            `[TB] Transfer committed: ${tbResult.id} (syncStatus=${tbResult.syncStatus})`
+          );
         } else {
-          console.warn(`[TB] Sidecar unavailable — transaction ${ref} persisted to PostgreSQL only`);
+          console.warn(
+            `[TB] Sidecar unavailable — transaction ${ref} persisted to PostgreSQL only`
+          );
         }
 
         const tx = await createTransaction({
@@ -549,7 +693,7 @@ export const transactionsRouter = router({
           customerAccount: input.customerAccount ?? null,
           destinationBank: input.destinationBank ?? null,
           destinationAccount: input.destinationAccount ?? null,
-          channel: (input.channel ?? "Cash"),
+          channel: input.channel ?? "Cash",
           status: "success",
           fraudScore: "0.00",
           deviceToken: input.deviceToken ?? null,
@@ -562,35 +706,47 @@ export const transactionsRouter = router({
           await updateAgentFloat(agent.id, input.amount);
           // Sync credit to platform float service (fail-open)
           try {
-            const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
+            const token = ctx.req?.cookies?.["kc_access_token"] ?? "";
             if (token) {
-              await floatPlatform.settle({
-                agent_id: String(agent.id),
-                amount: input.amount,
-                reference: ref,
-                transaction_type: input.type,
-                description: `${input.type} — ₦${input.amount.toLocaleString()}`,
-              }, token);
+              await floatPlatform.settle(
+                {
+                  agent_id: String(agent.id),
+                  amount: input.amount,
+                  reference: ref,
+                  transaction_type: input.type,
+                  description: `${input.type} — ₦${input.amount.toLocaleString()}`,
+                },
+                token
+              );
             }
           } catch (floatErr) {
-            console.warn("[float] Platform settle sync failed (fail-open):", (floatErr as Error).message);
+            console.warn(
+              "[float] Platform settle sync failed (fail-open):",
+              (floatErr as Error).message
+            );
           }
         } else if (FLOAT_DEBIT_TYPES.has(input.type)) {
           await updateAgentFloat(agent.id, -input.amount);
           // Sync debit to platform float service (fail-open)
           try {
-            const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
+            const token = ctx.req?.cookies?.["kc_access_token"] ?? "";
             if (token) {
-              await floatPlatform.utilize({
-                agent_id: String(agent.id),
-                amount: input.amount,
-                reference: ref,
-                transaction_type: input.type,
-                description: `${input.type} — ₦${input.amount.toLocaleString()}`,
-              }, token);
+              await floatPlatform.utilize(
+                {
+                  agent_id: String(agent.id),
+                  amount: input.amount,
+                  reference: ref,
+                  transaction_type: input.type,
+                  description: `${input.type} — ₦${input.amount.toLocaleString()}`,
+                },
+                token
+              );
             }
           } catch (floatErr) {
-            console.warn("[float] Platform utilize sync failed (fail-open):", (floatErr as Error).message);
+            console.warn(
+              "[float] Platform utilize sync failed (fail-open):",
+              (floatErr as Error).message
+            );
           }
         }
 
@@ -598,7 +754,9 @@ export const transactionsRouter = router({
         // Instead of crediting the full commission to just the transacting agent,
         // split it across the hierarchy: sub_agent → agent → master → super → platform
         if (commission > 0) {
-          const { executeCommissionCascade } = await import("../lib/commissionCascade");
+          const { executeCommissionCascade } = await import(
+            "../lib/commissionCascade"
+          );
           const cascadeResult = await executeCommissionCascade({
             transactionId: tx.id,
             transactionRef: ref,
@@ -610,7 +768,9 @@ export const transactionsRouter = router({
             tenantId: (agent as any).tenantId ?? undefined,
           });
           if (!cascadeResult.success) {
-            console.warn(`[CommissionCascade] Fallback for ${ref}: ${cascadeResult.error}`);
+            console.warn(
+              `[CommissionCascade] Fallback for ${ref}: ${cascadeResult.error}`
+            );
           }
         }
 
@@ -638,7 +798,10 @@ export const transactionsRouter = router({
 
         // ── Phase 44: Customer SMS confirmation (fire-and-forget) ─────────────
         if (SMS_CONFIRMATION_TYPES.has(input.type) && input.customerPhone) {
-          const smsEnabled = await getPlatformSetting("customer_sms_enabled", "true");
+          const smsEnabled = await getPlatformSetting(
+            "customer_sms_enabled",
+            "true"
+          );
           if (smsEnabled === "true") {
             const message = buildConfirmationSms({
               ref,
@@ -649,16 +812,20 @@ export const transactionsRouter = router({
               customerName: input.customerName,
               timestamp: new Date(),
             });
-            sendSms(input.customerPhone, message).then((result) => {
+            sendSms(input.customerPhone, message).then(result => {
               if (!result.success) {
-                console.error(`[SMS] Confirmation failed for ${ref}: ${result.error}`);
+                console.error(
+                  `[SMS] Confirmation failed for ${ref}: ${result.error}`
+                );
               } else {
-                getDb().then((db) => {
+                getDb().then(db => {
                   if (db) {
                     db.update(transactions)
                       .set({ smsSent: true })
                       .where(eq(transactions.id, tx.id))
-                      .catch((e) => console.error("[SMS] smsSent update failed:", e));
+                      .catch(e =>
+                        console.error("[SMS] smsSent update failed:", e)
+                      );
                   }
                 });
               }
@@ -672,62 +839,81 @@ export const transactionsRouter = router({
           (FLOAT_DEBIT_TYPES.has(input.type) ? input.amount : 0);
 
         // ── Prometheus metrics ─────────────────────────────────────────────────────
-        transactionsTotal.labels(input.type, "success", input.channel ?? "Cash").inc();
+        transactionsTotal
+          .labels(input.type, "success", input.channel ?? "Cash")
+          .inc();
 
         // ── Kafka domain event (fire-and-forget, fail-open) ────────────────────────
-        import("../kafkaClient").then(({ publishEvent }) =>
-          publishEvent(
-            "pos.transactions.created",
-            ref,
-            {
-              transactionId: tx.id,
+        import("../kafkaClient")
+          .then(({ publishEvent }) =>
+            publishEvent(
+              "pos.transactions.created",
+              ref,
+              {
+                transactionId: tx.id,
+                ref,
+                type: input.type,
+                amount: input.amount,
+                commission,
+                agentCode: agent.agentCode,
+                channel: input.channel ?? "Cash",
+              },
+              { agentCode: agent.agentCode }
+            )
+          )
+          .catch((e: unknown) =>
+            console.error("[Kafka] Event publish failed:", e)
+          );
+
+        // ── Fluvio stream event (fire-and-forget, fail-open) ──────────────────────
+        import("../lib/fluvioClient.js")
+          .then(({ publishTransactionEvent }) =>
+            publishTransactionEvent({
+              id: tx.id,
               ref,
               type: input.type,
               amount: input.amount,
-              commission,
-              agentCode: agent.agentCode,
+              agentId: agent.id,
+              status: "committed",
               channel: input.channel ?? "Cash",
-            },
-            { agentCode: agent.agentCode }
+              customerId: (input as any).customerId ?? undefined,
+            })
           )
-        ).catch((e: unknown) => console.error("[Kafka] Event publish failed:", e));
-
-        // ── Fluvio stream event (fire-and-forget, fail-open) ──────────────────────
-        import("../lib/fluvioClient.js").then(({ publishTransactionEvent }) =>
-          publishTransactionEvent({
-            id: tx.id,
-            ref,
-            type: input.type,
-            amount: input.amount,
-            agentId: agent.id,
-            status: "committed",
-            channel: input.channel ?? "Cash",
-            customerId: (input as any).customerId ?? undefined,
-          })
-        ).catch((e: unknown) => console.error("[Fluvio] Transaction event failed:", e));
+          .catch((e: unknown) =>
+            console.error("[Fluvio] Transaction event failed:", e)
+          );
 
         // ── Real-Time Fraud Detection (fire-and-forget, fail-open) ─────────────────────
-        import("../lib/fraudDetectionEngine").then(async ({ detectFraud, createAndEmitFraudAlert }) => {
-          try {
-            const fraudCtx = {
-              id: tx.id,
-              agentId: agent.id,
-              amount: input.amount,
-              type: input.type,
-              customerName: input.customerName ?? null,
-              latitude: (input as any).latitude ?? null,
-              longitude: (input as any).longitude ?? null,
-              timestamp: new Date(),
-            };
-            const result = await detectFraud(fraudCtx);
-            if (result.isFraud) {
-              await createAndEmitFraudAlert(fraudCtx, result);
-              console.warn(`[Fraud] Alert created for tx ${ref}: ${result.reason}`);
+        import("../lib/fraudDetectionEngine")
+          .then(async ({ detectFraud, createAndEmitFraudAlert }) => {
+            try {
+              const fraudCtx = {
+                id: tx.id,
+                agentId: agent.id,
+                amount: input.amount,
+                type: input.type,
+                customerName: input.customerName ?? null,
+                latitude: (input as any).latitude ?? null,
+                longitude: (input as any).longitude ?? null,
+                timestamp: new Date(),
+              };
+              const result = await detectFraud(fraudCtx);
+              if (result.isFraud) {
+                await createAndEmitFraudAlert(fraudCtx, result);
+                console.warn(
+                  `[Fraud] Alert created for tx ${ref}: ${result.reason}`
+                );
+              }
+            } catch (fraudErr) {
+              console.error(
+                "[Fraud] Detection failed (fail-open):",
+                (fraudErr as Error).message
+              );
             }
-          } catch (fraudErr) {
-            console.error("[Fraud] Detection failed (fail-open):", (fraudErr as Error).message);
-          }
-        }).catch((e: unknown) => console.error("[Fraud] Engine import failed:", e));
+          })
+          .catch((e: unknown) =>
+            console.error("[Fraud] Engine import failed:", e)
+          );
 
         return {
           success: true,
@@ -739,18 +925,32 @@ export const transactionsRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── List transactions ─────────────────────────────────────────────────────
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+    .input(
+      z.object({ limit: z.number().default(50), offset: z.number().default(0) })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
-        const txs = await getTransactionsByAgent(agent.id, input.limit, input.offset);
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
+        const txs = await getTransactionsByAgent(
+          agent.id,
+          input.limit,
+          input.offset
+        );
         return txs.map((t: any) => ({
           ...t,
           amount: Number(t.amount),
@@ -760,7 +960,11 @@ export const transactionsRouter = router({
         }));
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
   // ── List transactions (cursor-based pagination) ─────────────────────────
@@ -776,11 +980,15 @@ export const transactionsRouter = router({
     .query(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         const { items, nextCursor } = await getTransactionsByAgentCursor(
           agent.id,
           input.limit,
-          input.cursor,
+          input.cursor
         );
         return {
           items: items.map((t: any) => ({
@@ -794,7 +1002,11 @@ export const transactionsRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -804,15 +1016,31 @@ export const transactionsRouter = router({
     .query(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         const tx = await getTransactionByRef(input.ref);
         if (!tx || tx.agentId !== agent.id) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
         }
-        return { ...tx, amount: Number(tx.amount), fee: Number(tx.fee), commission: Number(tx.commission) };
+        return {
+          ...tx,
+          amount: Number(tx.amount),
+          fee: Number(tx.fee),
+          commission: Number(tx.commission),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -823,17 +1051,33 @@ export const transactionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         const tx = await getTransactionByRef(input.ref);
         if (!tx || tx.agentId !== agent.id) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
         }
-        if (tx.status === "reversed" || tx.status === "pending_reversal_approval") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Transaction already ${tx.status.replace(/_/g, " ")}` });
+        if (
+          tx.status === "reversed" ||
+          tx.status === "pending_reversal_approval"
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Transaction already ${tx.status.replace(/_/g, " ")}`,
+          });
         }
 
         const amount = Number(tx.amount);
-        const thresholdStr = await getPlatformSetting("reversal_approval_threshold", "10000");
+        const thresholdStr = await getPlatformSetting(
+          "reversal_approval_threshold",
+          "10000"
+        );
         const threshold = Number(thresholdStr);
 
         if (amount > threshold) {
@@ -883,9 +1127,14 @@ export const transactionsRouter = router({
         }
 
         // Immediate reversal
-        await updateTransactionStatus(tx.id, "reversed", input.reason ?? "Agent-initiated reversal");
+        await updateTransactionStatus(
+          tx.id,
+          "reversed",
+          input.reason ?? "Agent-initiated reversal"
+        );
         if (tx.type === "Cash In") await updateAgentFloat(agent.id, -amount);
-        if (FLOAT_DEBIT_TYPES.has(tx.type)) await updateAgentFloat(agent.id, amount);
+        if (FLOAT_DEBIT_TYPES.has(tx.type))
+          await updateAgentFloat(agent.id, amount);
 
         const reversalRef = generateRef();
         await writeAuditLog({
@@ -908,7 +1157,11 @@ export const transactionsRouter = router({
         return { success: true, pendingApproval: false, reversalRef };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -916,9 +1169,16 @@ export const transactionsRouter = router({
   pendingReversals: protectedProcedure.query(async ({ ctx }) => {
     try {
       const agent = await getAgentFromCookie(ctx.req);
-      if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      if (!agent)
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Agent session required",
+        });
       if (agent.role !== "admin" && agent.role !== "supervisor") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor privileges required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin or supervisor privileges required",
+        });
       }
       const db = (await getDb())!;
       if (!db) return [];
@@ -941,38 +1201,75 @@ export const transactionsRouter = router({
       return rows.map((r: any) => ({ ...r, amount: Number(r.amount) }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   // ── Approve reversal (admin only) ─────────────────────────────────────────
   approveReversal: protectedProcedure
-    .input(z.object({ transactionId: z.number().int().positive(), notes: z.string().optional() }))
+    .input(
+      z.object({
+        transactionId: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         if (agent.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin privileges required to approve reversals" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin privileges required to approve reversals",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
-        const rows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
+        const rows = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.id, input.transactionId))
+          .limit(1);
         const tx = rows[0];
-        if (!tx) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+        if (!tx)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
         if (tx.status !== "pending_reversal_approval") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Transaction is not pending reversal approval" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Transaction is not pending reversal approval",
+          });
         }
 
         await db
           .update(transactions)
-          .set({ status: "reversed", approvedBy: agent.agentCode, approvedAt: new Date(), approvalRequired: false })
+          .set({
+            status: "reversed",
+            approvedBy: agent.agentCode,
+            approvedAt: new Date(),
+            approvalRequired: false,
+          })
           .where(eq(transactions.id, tx.id));
 
         const amount = Number(tx.amount);
         if (tx.type === "Cash In") await updateAgentFloat(tx.agentId, -amount);
-        if (FLOAT_DEBIT_TYPES.has(tx.type)) await updateAgentFloat(tx.agentId, amount);
+        if (FLOAT_DEBIT_TYPES.has(tx.type))
+          await updateAgentFloat(tx.agentId, amount);
 
         const reversalRef = generateRef();
         await writeAuditLog({
@@ -982,39 +1279,80 @@ export const transactionsRouter = router({
           resource: "transaction",
           resourceId: tx.ref,
           status: "success",
-          metadata: { approvedBy: agent.agentCode, originalRef: tx.ref, reversalRef, amount, notes: input.notes },
+          metadata: {
+            approvedBy: agent.agentCode,
+            originalRef: tx.ref,
+            reversalRef,
+            amount,
+            notes: input.notes,
+          },
         });
 
         return { success: true, reversalRef };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Reject reversal (admin only) ──────────────────────────────────────────
   rejectReversal: protectedProcedure
-    .input(z.object({ transactionId: z.number().int().positive(), reason: z.string().min(5) }))
+    .input(
+      z.object({
+        transactionId: z.number().int().positive(),
+        reason: z.string().min(5),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         if (agent.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin privileges required to reject reversals" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin privileges required to reject reversals",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
-        const rows = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
+        const rows = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.id, input.transactionId))
+          .limit(1);
         const tx = rows[0];
-        if (!tx) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+        if (!tx)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
         if (tx.status !== "pending_reversal_approval") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Transaction is not pending reversal approval" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Transaction is not pending reversal approval",
+          });
         }
 
         await db
           .update(transactions)
-          .set({ status: "success", approvalRequired: false, failureReason: `Reversal rejected: ${input.reason}` })
+          .set({
+            status: "success",
+            approvalRequired: false,
+            failureReason: `Reversal rejected: ${input.reason}`,
+          })
           .where(eq(transactions.id, tx.id));
 
         await writeAuditLog({
@@ -1030,7 +1368,11 @@ export const transactionsRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -1039,7 +1381,10 @@ export const transactionsRouter = router({
     try {
       const agent = await getAgentFromCookie(ctx.req);
       if (!agent || (agent.role !== "admin" && agent.role !== "supervisor")) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin or supervisor access required",
+        });
       }
       const db = (await getDb())!;
       if (!db) return [];
@@ -1051,26 +1396,40 @@ export const transactionsRouter = router({
       }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   updateVelocityLimit: protectedProcedure
-    .input(z.object({
-      tier: z.enum(["Bronze", "Silver", "Gold", "Platinum"]),
-      maxTxPerHour: z.number().int().positive().max(1000),
-      maxSingleTxAmount: z.number().positive(),
-      maxDailyVolume: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        tier: z.enum(["Bronze", "Silver", "Gold", "Platinum"]),
+        maxTxPerHour: z.number().int().positive().max(1000),
+        maxSingleTxAmount: z.number().positive(),
+        maxDailyVolume: z.number().positive(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || agent.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin access required",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db.update(velocityLimits)
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        await db
+          .update(velocityLimits)
           .set({
             maxTxPerHour: input.maxTxPerHour,
             maxSingleTxAmount: String(input.maxSingleTxAmount),
@@ -1085,12 +1444,21 @@ export const transactionsRouter = router({
           resource: "velocity_limits",
           resourceId: input.tier,
           status: "success",
-          metadata: { tier: input.tier, maxTxPerHour: input.maxTxPerHour, maxSingleTxAmount: input.maxSingleTxAmount, maxDailyVolume: input.maxDailyVolume },
+          metadata: {
+            tier: input.tier,
+            maxTxPerHour: input.maxTxPerHour,
+            maxSingleTxAmount: input.maxSingleTxAmount,
+            maxDailyVolume: input.maxDailyVolume,
+          },
         });
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -1099,32 +1467,53 @@ export const transactionsRouter = router({
     try {
       const agent = await getAgentFromCookie(ctx.req);
       if (!agent || (agent.role !== "admin" && agent.role !== "supervisor")) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin or supervisor access required",
+        });
       }
       const db = (await getDb())!;
       if (!db) return [];
       return db.select().from(platformSettings).limit(100);
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   updatePlatformSetting: protectedProcedure
-    .input(z.object({
-      key: z.string().min(1).max(128),
-      value: z.string().min(0).max(1024),
-    }))
+    .input(
+      z.object({
+        key: z.string().min(1).max(128),
+        value: z.string().min(0).max(1024),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || agent.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin access required",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db.update(platformSettings)
-          .set({ value: input.value, updatedBy: agent.agentCode, updatedAt: new Date() })
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        await db
+          .update(platformSettings)
+          .set({
+            value: input.value,
+            updatedBy: agent.agentCode,
+            updatedAt: new Date(),
+          })
           .where(eq(platformSettings.key, input.key));
         await writeAuditLog({
           agentId: agent.id,
@@ -1138,64 +1527,83 @@ export const transactionsRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Security Audit Log ─────────────────────────────────────────────────────────────
   getSecurityAuditLog: protectedProcedure
-    .input(z.object({
-      severity: z.enum(["ALL", "HIGH", "MEDIUM", "LOW"]).default("ALL"),
-      type: z.string().optional(),
-      limit: z.number().int().min(1).max(200).default(50),
-      offset: z.number().int().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        severity: z.enum(["ALL", "HIGH", "MEDIUM", "LOW"]).default("ALL"),
+        type: z.string().optional(),
+        limit: z.number().int().min(1).max(200).default(50),
+        offset: z.number().int().min(0).default(0),
+      })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || (agent.role !== "admin" && agent.role !== "supervisor")) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin or supervisor access required",
+          });
         }
         const db = (await getDb())!;
         if (!db) return { alerts: [], total: 0, highUnreviewed: 0 };
 
         const conditions: ReturnType<typeof eq>[] = [];
         if (input.severity !== "ALL") {
-          conditions.push(eq(fraudAlerts.severity, input.severity.toLowerCase() as any));
+          conditions.push(
+            eq(fraudAlerts.severity, input.severity.toLowerCase() as any)
+          );
         }
         if (input.type && input.type !== "ALL") {
           conditions.push(eq(fraudAlerts.type, input.type));
         }
 
-        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        const whereClause =
+          conditions.length > 0 ? and(...conditions) : undefined;
 
         const [rows, countRows, highRows] = await Promise.all([
-          db.select({
-            id: fraudAlerts.id,
-            agentId: fraudAlerts.agentId,
-            transactionId: fraudAlerts.transactionId,
-            severity: fraudAlerts.severity,
-            type: fraudAlerts.type,
-            reason: fraudAlerts.reason,
-            fraudScore: fraudAlerts.fraudScore,
-            status: fraudAlerts.status,
-            assignedTo: fraudAlerts.assignedTo,
-            amount: fraudAlerts.amount,
-            customerName: fraudAlerts.customerName,
-            createdAt: fraudAlerts.createdAt,
-          })
+          db
+            .select({
+              id: fraudAlerts.id,
+              agentId: fraudAlerts.agentId,
+              transactionId: fraudAlerts.transactionId,
+              severity: fraudAlerts.severity,
+              type: fraudAlerts.type,
+              reason: fraudAlerts.reason,
+              fraudScore: fraudAlerts.fraudScore,
+              status: fraudAlerts.status,
+              assignedTo: fraudAlerts.assignedTo,
+              amount: fraudAlerts.amount,
+              customerName: fraudAlerts.customerName,
+              createdAt: fraudAlerts.createdAt,
+            })
             .from(fraudAlerts)
             .where(whereClause)
             .orderBy(desc(fraudAlerts.createdAt))
             .limit(input.limit)
             .offset(input.offset),
-          db.select({ count: sql<number>`count(*)` }).from(fraudAlerts).where(whereClause),
-          db.select({ count: sql<number>`count(*)` })
+          db
+            .select({ count: sql<number>`count(*)` })
             .from(fraudAlerts)
-            .where(and(
-              eq(fraudAlerts.severity, "high"),
-              eq(fraudAlerts.status, "open"),
-            )),
+            .where(whereClause),
+          db
+            .select({ count: sql<number>`count(*)` })
+            .from(fraudAlerts)
+            .where(
+              and(
+                eq(fraudAlerts.severity, "high"),
+                eq(fraudAlerts.status, "open")
+              )
+            ),
         ]);
 
         return {
@@ -1209,24 +1617,38 @@ export const transactionsRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   markAlertReviewed: protectedProcedure
-    .input(z.object({
-      alertId: z.number().int().positive(),
-      resolution: z.string().min(3).max(512).optional(),
-    }))
+    .input(
+      z.object({
+        alertId: z.number().int().positive(),
+        resolution: z.string().min(3).max(512).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || (agent.role !== "admin" && agent.role !== "supervisor")) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin or supervisor access required",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db.update(fraudAlerts)
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
+        await db
+          .update(fraudAlerts)
           .set({
             status: "resolved",
             assignedTo: agent.agentCode,
@@ -1246,33 +1668,49 @@ export const transactionsRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Export Security Audit Log as CSV ────────────────────────────────────────────
   exportSecurityAuditCsv: protectedProcedure
-    .input(z.object({
-      severity: z.enum(["ALL", "high", "medium", "low"]).default("ALL"),
-      type: z.string().optional(),
-      fromDate: z.string().optional(), // ISO date string
-      toDate: z.string().optional(),   // ISO date string
-    }))
+    .input(
+      z.object({
+        severity: z.enum(["ALL", "high", "medium", "low"]).default("ALL"),
+        type: z.string().optional(),
+        fromDate: z.string().optional(), // ISO date string
+        toDate: z.string().optional(), // ISO date string
+      })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || (agent.role !== "admin" && agent.role !== "supervisor")) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin or supervisor access required",
+          });
         }
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         const conditions: ReturnType<typeof eq>[] = [];
-        if (input.severity !== "ALL") conditions.push(eq(fraudAlerts.severity, input.severity));
+        if (input.severity !== "ALL")
+          conditions.push(eq(fraudAlerts.severity, input.severity));
         if (input.type) conditions.push(eq(fraudAlerts.type, input.type));
-        if (input.fromDate) conditions.push(gte(fraudAlerts.createdAt, new Date(input.fromDate)));
+        if (input.fromDate)
+          conditions.push(gte(fraudAlerts.createdAt, new Date(input.fromDate)));
 
-        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        const whereClause =
+          conditions.length > 0 ? and(...conditions) : undefined;
 
         const rows = await db
           .select()
@@ -1282,7 +1720,20 @@ export const transactionsRouter = router({
           .limit(10000); // cap at 10k rows for compliance exports
 
         // Build CSV
-        const headers = ["ID", "Severity", "Type", "Agent ID", "Customer Name", "Amount (NGN)", "Reason", "Fraud Score", "Status", "Assigned To", "Created At", "Resolved At"];
+        const headers = [
+          "ID",
+          "Severity",
+          "Type",
+          "Agent ID",
+          "Customer Name",
+          "Amount (NGN)",
+          "Reason",
+          "Fraud Score",
+          "Status",
+          "Assigned To",
+          "Created At",
+          "Resolved At",
+        ];
         const escape = (v: unknown) => {
           const s = v == null ? "" : String(v);
           return s.includes(",") || s.includes('"') || s.includes("\n")
@@ -1291,20 +1742,24 @@ export const transactionsRouter = router({
         };
         const lines = [
           headers.join(","),
-          ...rows.map(r => [
-            r.id,
-            r.severity,
-            r.type,
-            r.agentId,
-            r.customerName ?? "",
-            r.amount ?? "",
-            r.reason ?? "",
-            r.fraudScore ?? "",
-            r.status,
-            r.assignedTo ?? "",
-            r.createdAt ? new Date(r.createdAt).toISOString() : "",
-            r.resolvedAt ? new Date(r.resolvedAt).toISOString() : "",
-          ].map(escape).join(",")),
+          ...rows.map(r =>
+            [
+              r.id,
+              r.severity,
+              r.type,
+              r.agentId,
+              r.customerName ?? "",
+              r.amount ?? "",
+              r.reason ?? "",
+              r.fraudScore ?? "",
+              r.status,
+              r.assignedTo ?? "",
+              r.createdAt ? new Date(r.createdAt).toISOString() : "",
+              r.resolvedAt ? new Date(r.resolvedAt).toISOString() : "",
+            ]
+              .map(escape)
+              .join(",")
+          ),
         ];
 
         await writeAuditLog({
@@ -1313,30 +1768,51 @@ export const transactionsRouter = router({
           action: "SECURITY_AUDIT_EXPORTED",
           resource: "fraud_alerts",
           status: "success",
-          metadata: { rowCount: rows.length, severity: input.severity, type: input.type },
+          metadata: {
+            rowCount: rows.length,
+            severity: input.severity,
+            type: input.type,
+          },
         });
 
         return { csv: lines.join("\n"), rowCount: rows.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Snooze a fraud alert for N minutes ──────────────────────────────────────
   snoozeAlert: protectedProcedure
-    .input(z.object({
-      alertId: z.number(),
-      minutesToSnooze: z.number().int().min(5).max(120).default(15),
-    }))
+    .input(
+      z.object({
+        alertId: z.number(),
+        minutesToSnooze: z.number().int().min(5).max(120).default(15),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
-        const snoozedUntil = new Date(Date.now() + input.minutesToSnooze * 60_000);
-        await db.update(fraudAlerts)
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
+        const snoozedUntil = new Date(
+          Date.now() + input.minutesToSnooze * 60_000
+        );
+        await db
+          .update(fraudAlerts)
           .set({ snoozedUntil, status: "investigating" })
           .where(eq(fraudAlerts.id, input.alertId));
         await writeAuditLog({
@@ -1346,33 +1822,63 @@ export const transactionsRouter = router({
           resource: "fraud_alerts",
           resourceId: String(input.alertId),
           status: "success",
-          metadata: { minutesToSnooze: input.minutesToSnooze, snoozedUntil: snoozedUntil.toISOString() },
+          metadata: {
+            minutesToSnooze: input.minutesToSnooze,
+            snoozedUntil: snoozedUntil.toISOString(),
+          },
         });
         return { alertId: input.alertId, snoozedUntil };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Escalate a fraud alert to supervisor ────────────────────────────────────
   escalateAlert: protectedProcedure
-    .input(z.object({
-      alertId: z.number(),
-      supervisorId: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        alertId: z.number(),
+        supervisorId: z.number().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
-        const alertRows = await db.select().from(fraudAlerts).where(eq(fraudAlerts.id, input.alertId)).limit(1);
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
+        const alertRows = await db
+          .select()
+          .from(fraudAlerts)
+          .where(eq(fraudAlerts.id, input.alertId))
+          .limit(1);
         const alert = alertRows[0];
-        if (!alert) throw new TRPCError({ code: "NOT_FOUND", message: "Alert not found" });
+        if (!alert)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Alert not found",
+          });
         const escalatedAt = new Date();
-        await db.update(fraudAlerts)
-          .set({ escalatedAt, escalatedTo: input.supervisorId ? String(input.supervisorId) : null, status: "escalated" })
+        await db
+          .update(fraudAlerts)
+          .set({
+            escalatedAt,
+            escalatedTo: input.supervisorId ? String(input.supervisorId) : null,
+            status: "escalated",
+          })
           .where(eq(fraudAlerts.id, input.alertId));
         try {
           await notifyOwner({
@@ -1389,12 +1895,19 @@ export const transactionsRouter = router({
           resource: "fraud_alerts",
           resourceId: String(input.alertId),
           status: "success",
-          metadata: { escalatedAt: escalatedAt.toISOString(), escalatedTo: input.supervisorId },
+          metadata: {
+            escalatedAt: escalatedAt.toISOString(),
+            escalatedTo: input.supervisorId,
+          },
         });
         return { alertId: input.alertId, escalatedAt };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -1405,39 +1918,49 @@ export const transactionsRouter = router({
     .mutation(async ({ input }) => {
       try {
         if (input.cronSecret !== ENV.cronSecret) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid cron secret" });
-        }
-      const db = (await getDb())!;
-      if (!db) return { escalated: 0 };
-      const now = new Date();
-      // Find alerts that are in "investigating" state (snoozed) and snooze has expired
-      const expired = await db
-        .select()
-        .from(fraudAlerts)
-        .where(and(
-          eq(fraudAlerts.status, "investigating"),
-          lte(fraudAlerts.snoozedUntil, now),
-        ));
-      if (expired.length === 0) return { escalated: 0 };
-      for (const alert of expired) {
-        await db.update(fraudAlerts)
-          .set({ status: "escalated", escalatedAt: now })
-          .where(eq(fraudAlerts.id, alert.id));
-        try {
-          await notifyOwner({
-            title: `Auto-Escalated: ${alert.type} (Snooze Expired)`,
-            content: `Alert #${alert.id} (${alert.severity}) was snoozed but not resolved. Auto-escalated at ${now.toISOString()}.`,
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid cron secret",
           });
-        } catch (e) {
-          console.error("[autoEscalateSnoozedAlerts] notifyOwner failed:", e);
         }
-      }
-      return { escalated: expired.length };
+        const db = (await getDb())!;
+        if (!db) return { escalated: 0 };
+        const now = new Date();
+        // Find alerts that are in "investigating" state (snoozed) and snooze has expired
+        const expired = await db
+          .select()
+          .from(fraudAlerts)
+          .where(
+            and(
+              eq(fraudAlerts.status, "investigating"),
+              lte(fraudAlerts.snoozedUntil, now)
+            )
+          );
+        if (expired.length === 0) return { escalated: 0 };
+        for (const alert of expired) {
+          await db
+            .update(fraudAlerts)
+            .set({ status: "escalated", escalatedAt: now })
+            .where(eq(fraudAlerts.id, alert.id));
+          try {
+            await notifyOwner({
+              title: `Auto-Escalated: ${alert.type} (Snooze Expired)`,
+              content: `Alert #${alert.id} (${alert.severity}) was snoozed but not resolved. Auto-escalated at ${now.toISOString()}.`,
+            });
+          } catch (e) {
+            console.error("[autoEscalateSnoozedAlerts] notifyOwner failed:", e);
+          }
+        }
+        return { escalated: expired.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
-  }),
+    }),
 
   /**
    * getMyVelocityUsage — returns the agent's tier limits and real-time usage
@@ -1446,9 +1969,17 @@ export const transactionsRouter = router({
   getMyVelocityUsage: protectedProcedure.query(async ({ ctx }) => {
     try {
       const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB unavailable",
+        });
       const agent = await getAgentFromCookie(ctx.req);
-      if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent not authenticated" });
+      if (!agent)
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Agent not authenticated",
+        });
 
       // Fetch tier limits
       const tierRow = await db
@@ -1456,7 +1987,11 @@ export const transactionsRouter = router({
         .from(velocityLimits)
         .where(eq(velocityLimits.tier, agent.tier as any))
         .limit(1);
-      const limits = tierRow[0] ?? { maxTxPerHour: 20, maxSingleTxAmount: 50000, maxDailyVolume: 500000 };
+      const limits = tierRow[0] ?? {
+        maxTxPerHour: 20,
+        maxSingleTxAmount: 50000,
+        maxDailyVolume: 500000,
+      };
 
       // Current hour usage
       const hourStart = new Date();
@@ -1465,14 +2000,19 @@ export const transactionsRouter = router({
       hourEnd.setMinutes(59, 59, 999);
 
       const hourRows = await db
-        .select({ count: sql<number>`count(*)`, volume: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
+        .select({
+          count: sql<number>`count(*)`,
+          volume: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        })
         .from(transactions)
-        .where(and(
-          eq(transactions.agentId, agent.id),
-          eq(transactions.status, "success"),
-          gte(transactions.createdAt, hourStart),
-          lte(transactions.createdAt, hourEnd),
-        ));
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            eq(transactions.status, "success"),
+            gte(transactions.createdAt, hourStart),
+            lte(transactions.createdAt, hourEnd)
+          )
+        );
       const hourlyCount = Number(hourRows[0]?.count ?? 0);
 
       // Current day usage
@@ -1482,14 +2022,19 @@ export const transactionsRouter = router({
       dayEnd.setHours(23, 59, 59, 999);
 
       const dayRows = await db
-        .select({ count: sql<number>`count(*)`, volume: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
+        .select({
+          count: sql<number>`count(*)`,
+          volume: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        })
         .from(transactions)
-        .where(and(
-          eq(transactions.agentId, agent.id),
-          eq(transactions.status, "success"),
-          gte(transactions.createdAt, dayStart),
-          lte(transactions.createdAt, dayEnd),
-        ));
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            eq(transactions.status, "success"),
+            gte(transactions.createdAt, dayStart),
+            lte(transactions.createdAt, dayEnd)
+          )
+        );
       const dailyCount = Number(dayRows[0]?.count ?? 0);
       const dailyVolume = Number(dayRows[0]?.volume ?? 0);
 
@@ -1504,10 +2049,12 @@ export const transactionsRouter = router({
           createdAt: transactions.createdAt,
         })
         .from(transactions)
-        .where(and(
-          eq(transactions.agentId, agent.id),
-          gte(transactions.createdAt, dayStart),
-        ))
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            gte(transactions.createdAt, dayStart)
+          )
+        )
         .orderBy(desc(transactions.createdAt))
         .limit(10);
 
@@ -1527,7 +2074,11 @@ export const transactionsRouter = router({
       };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1541,12 +2092,29 @@ export const transactionsRouter = router({
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
       const rows = await db
-        .select({ createdAt: transactions.createdAt, amount: transactions.amount, type: transactions.type })
+        .select({
+          createdAt: transactions.createdAt,
+          amount: transactions.amount,
+          type: transactions.type,
+        })
         .from(transactions)
-        .where(and(eq(transactions.agentId, agent.id), gte(transactions.createdAt, dayStart), eq(transactions.status, "success")));
-      const buckets: Record<string, { cashIn: number; cashOut: number; count: number }> = {};
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            gte(transactions.createdAt, dayStart),
+            eq(transactions.status, "success")
+          )
+        );
+      const buckets: Record<
+        string,
+        { cashIn: number; cashOut: number; count: number }
+      > = {};
       for (let h = 0; h < 24; h++) {
-        buckets[`${h.toString().padStart(2, "0")}:00`] = { cashIn: 0, cashOut: 0, count: 0 };
+        buckets[`${h.toString().padStart(2, "0")}:00`] = {
+          cashIn: 0,
+          cashOut: 0,
+          count: 0,
+        };
       }
       for (const row of rows) {
         const key = `${new Date(row.createdAt).getHours().toString().padStart(2, "0")}:00`;
@@ -1558,7 +2126,11 @@ export const transactionsRouter = router({
       return Object.entries(buckets).map(([h, v]) => ({ h, ...v }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1573,9 +2145,18 @@ export const transactionsRouter = router({
       weekStart.setDate(weekStart.getDate() - 6);
       weekStart.setHours(0, 0, 0, 0);
       const rows = await db
-        .select({ createdAt: transactions.createdAt, commission: transactions.commission })
+        .select({
+          createdAt: transactions.createdAt,
+          commission: transactions.commission,
+        })
         .from(transactions)
-        .where(and(eq(transactions.agentId, agent.id), gte(transactions.createdAt, weekStart), eq(transactions.status, "success")));
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            gte(transactions.createdAt, weekStart),
+            eq(transactions.status, "success")
+          )
+        );
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const buckets: Record<string, number> = {};
       for (let i = 6; i >= 0; i--) {
@@ -1590,7 +2171,11 @@ export const transactionsRouter = router({
       return Object.entries(buckets).map(([day, earned]) => ({ day, earned }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1604,10 +2189,25 @@ export const transactionsRouter = router({
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
       const rows = await db
-        .select({ type: transactions.type, amount: transactions.amount, status: transactions.status, commission: transactions.commission })
+        .select({
+          type: transactions.type,
+          amount: transactions.amount,
+          status: transactions.status,
+          commission: transactions.commission,
+        })
         .from(transactions)
-        .where(and(eq(transactions.agentId, agent.id), gte(transactions.createdAt, dayStart)));
-      let cashIn = 0, cashOut = 0, transfers = 0, commission = 0, count = 0, success = 0;
+        .where(
+          and(
+            eq(transactions.agentId, agent.id),
+            gte(transactions.createdAt, dayStart)
+          )
+        );
+      let cashIn = 0,
+        cashOut = 0,
+        transfers = 0,
+        commission = 0,
+        count = 0,
+        success = 0;
       for (const r of rows) {
         const amt = Number(r.amount);
         if (r.type === "Cash In") cashIn += amt;
@@ -1618,16 +2218,29 @@ export const transactionsRouter = router({
         if (r.status === "success") success++;
       }
       // Fetch live float balance from agents table
-      const agentDbRows = await db.select({ floatBalance: agents.floatBalance }).from(agents).where(eq(agents.id, agent.id)).limit(1);
+      const agentDbRows = await db
+        .select({ floatBalance: agents.floatBalance })
+        .from(agents)
+        .where(eq(agents.id, agent.id))
+        .limit(1);
       const floatBalance = Number(agentDbRows[0]?.floatBalance ?? 0);
       return {
-        cashIn, cashOut, transfers, commission, count,
-        successRate: count > 0 ? Math.round((success / count) * 1000) / 10 : 100,
+        cashIn,
+        cashOut,
+        transfers,
+        commission,
+        count,
+        successRate:
+          count > 0 ? Math.round((success / count) * 1000) / 10 : 100,
         float: floatBalance,
       };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1640,12 +2253,23 @@ export const transactionsRouter = router({
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
       const rows = await db
-        .select({ createdAt: transactions.createdAt, amount: transactions.amount })
+        .select({
+          createdAt: transactions.createdAt,
+          amount: transactions.amount,
+        })
         .from(transactions)
-        .where(and(gte(transactions.createdAt, dayStart), eq(transactions.status, "success")));
+        .where(
+          and(
+            gte(transactions.createdAt, dayStart),
+            eq(transactions.status, "success")
+          )
+        );
       const buckets: Record<string, { volume: number; count: number }> = {};
       for (let h = 0; h < 24; h++) {
-        buckets[`${h.toString().padStart(2, "0")}:00`] = { volume: 0, count: 0 };
+        buckets[`${h.toString().padStart(2, "0")}:00`] = {
+          volume: 0,
+          count: 0,
+        };
       }
       for (const row of rows) {
         const key = `${new Date(row.createdAt).getHours().toString().padStart(2, "0")}:00`;
@@ -1655,7 +2279,11 @@ export const transactionsRouter = router({
       return Object.entries(buckets).map(([hour, v]) => ({ hour, ...v }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1670,7 +2298,12 @@ export const transactionsRouter = router({
       const rows = await db
         .select({ type: transactions.type, amount: transactions.amount })
         .from(transactions)
-        .where(and(gte(transactions.createdAt, since), eq(transactions.status, "success")));
+        .where(
+          and(
+            gte(transactions.createdAt, since),
+            eq(transactions.status, "success")
+          )
+        );
       // Aggregate by type in memory (avoids dialect-specific GROUP BY)
       const map: Record<string, { count: number; volume: number }> = {};
       for (const row of rows) {
@@ -1678,7 +2311,10 @@ export const transactionsRouter = router({
         map[row.type].count++;
         map[row.type].volume += Number(row.amount);
       }
-      const total = Object.values(map).reduce((s: any, v: any) => s + v.count, 0);
+      const total = Object.values(map).reduce(
+        (s: any, v: any) => s + v.count,
+        0
+      );
       return Object.entries(map)
         .map(([type, v]) => ({
           type,
@@ -1689,7 +2325,11 @@ export const transactionsRouter = router({
         .sort((a: any, b: any) => b.count - a.count);
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1700,12 +2340,23 @@ export const transactionsRouter = router({
   getFloatBalance: protectedProcedure.query(async ({ ctx }) => {
     try {
       const agent = await getAgentFromCookie(ctx.req);
-      if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      if (!agent)
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Agent session required",
+        });
       // Try platform float service first
       try {
-        const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
+        const token = ctx.req?.cookies?.["kc_access_token"] ?? "";
         if (token) {
-          const result = await floatPlatform.getBalance(String(agent.id), token) as { balance?: number; available_balance?: number; currency?: string };
+          const result = (await floatPlatform.getBalance(
+            String(agent.id),
+            token
+          )) as {
+            balance?: number;
+            available_balance?: number;
+            currency?: string;
+          };
           return {
             source: "platform" as const,
             balance: result.balance ?? result.available_balance ?? 0,
@@ -1713,12 +2364,19 @@ export const transactionsRouter = router({
           };
         }
       } catch (err) {
-        console.warn("[float] Platform getBalance failed, using local DB:", (err as Error).message);
+        console.warn(
+          "[float] Platform getBalance failed, using local DB:",
+          (err as Error).message
+        );
       }
       // Local DB fallback
       const db = (await getDb())!;
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const [row] = await db.select({ floatBalance: agents.floatBalance }).from(agents).where(eq(agents.id, agent.id)).limit(1);
+      const [row] = await db
+        .select({ floatBalance: agents.floatBalance })
+        .from(agents)
+        .where(eq(agents.id, agent.id))
+        .limit(1);
       return {
         source: "local" as const,
         balance: Number(row?.floatBalance ?? 0),
@@ -1726,7 +2384,11 @@ export const transactionsRouter = router({
       };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
@@ -1739,16 +2401,27 @@ export const transactionsRouter = router({
     .query(async ({ ctx, input }) => {
       try {
         const agent = await getAgentFromCookie(ctx.req);
-        if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!agent)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         // Try platform float service first
         try {
-          const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
+          const token = ctx.req?.cookies?.["kc_access_token"] ?? "";
           if (token) {
-            const result = await floatPlatform.getTransactions(String(agent.id), input.limit, token) as unknown[];
+            const result = (await floatPlatform.getTransactions(
+              String(agent.id),
+              input.limit,
+              token
+            )) as unknown[];
             return { source: "platform" as const, transactions: result };
           }
         } catch (err) {
-          console.warn("[float] Platform getTransactions failed, using local DB:", (err as Error).message);
+          console.warn(
+            "[float] Platform getTransactions failed, using local DB:",
+            (err as Error).message
+          );
         }
         // Local DB fallback — return agent's recent transactions
         const db = (await getDb())!;
@@ -1762,7 +2435,11 @@ export const transactionsRouter = router({
         return { source: "local" as const, transactions: rows };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -1771,37 +2448,59 @@ export const transactionsRouter = router({
    * Falls back to local DB aggregates if the platform service is unavailable.
    */
   platformAnalytics: protectedProcedure
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      agentId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        agentId: z.string().optional(),
+      })
+    )
     .query(async ({ input, ctx }) => {
       try {
-        const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
+        const token = ctx.req?.cookies?.["kc_access_token"] ?? "";
         if (token) {
           try {
             const result = await analyticsPlatform.transactionSummary(
-              { start_date: input.startDate, end_date: input.endDate, agent_id: input.agentId },
+              {
+                start_date: input.startDate,
+                end_date: input.endDate,
+                agent_id: input.agentId,
+              },
               token
             );
             return { source: "platform" as const, data: result };
           } catch (err) {
-            console.warn("[analytics] Platform unavailable, falling back to local DB:", (err as Error).message);
+            console.warn(
+              "[analytics] Platform unavailable, falling back to local DB:",
+              (err as Error).message
+            );
           }
         }
         // Local DB fallback
         const db = (await getDb())!;
         if (!db) return { source: "local" as const, data: null };
         const rows = await db
-          .select({ type: transactions.type, amount: transactions.amount, status: transactions.status })
+          .select({
+            type: transactions.type,
+            amount: transactions.amount,
+            status: transactions.status,
+          })
           .from(transactions)
-          .where(and(
-            input.startDate ? gte(transactions.createdAt, new Date(input.startDate)) : undefined,
-            input.endDate ? lte(transactions.createdAt, new Date(input.endDate)) : undefined,
-          ));
+          .where(
+            and(
+              input.startDate
+                ? gte(transactions.createdAt, new Date(input.startDate))
+                : undefined,
+              input.endDate
+                ? lte(transactions.createdAt, new Date(input.endDate))
+                : undefined
+            )
+          );
         const successRows = rows.filter(r => r.status === "success");
-        const totalVolume = successRows.reduce((s: any, r: any) => s + Number(r.amount), 0);
+        const totalVolume = successRows.reduce(
+          (s: any, r: any) => s + Number(r.amount),
+          0
+        );
         const totalCount = successRows.length;
         const byType: Record<string, { count: number; volume: number }> = {};
         for (const r of successRows) {
@@ -1814,13 +2513,18 @@ export const transactionsRouter = router({
           data: {
             total_transactions: totalCount,
             total_volume: totalVolume,
-            success_rate: rows.length > 0 ? (totalCount / rows.length) * 100 : 0,
+            success_rate:
+              rows.length > 0 ? (totalCount / rows.length) * 100 : 0,
             by_type: byType,
           },
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

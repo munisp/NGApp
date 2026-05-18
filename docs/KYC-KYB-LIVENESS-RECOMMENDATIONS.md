@@ -18,13 +18,13 @@ The POS Shell platform currently implements a multi-layered KYC/KYB system with 
 
 The most critical emerging threat to mobile KYC is **virtual camera injection** — attackers use tools like ManyCam, OBS Virtual Camera, or rooted device camera hooks to inject pre-recorded or AI-generated video directly into the camera feed, bypassing all optical liveness checks.
 
-| Threat Vector | Current Defense | Recommended Enhancement |
-|---|---|---|
-| Virtual camera injection | None | Browser API fingerprinting: detect `enumerateDevices()` anomalies, check `MediaStreamTrack.getSettings()` for synthetic labels |
-| Deepfake video replay | Active challenges (blink/turn/nod) | Add **3D depth estimation** via monocular depth networks (MiDaS) — flat images have uniform depth |
-| Printed photo attack | Texture/frequency analysis | Add **specular reflection challenge** — flash the screen white and analyze reflection pattern on face |
-| Screen replay attack | Edge detection + bright pixel check | Add **moiré pattern detection** — screens produce characteristic interference patterns at certain angles |
-| Mask/prosthetic attack | Color analysis | Add **skin perfusion detection** — measure subtle color changes from blood flow using rPPG (remote photoplethysmography) |
+| Threat Vector            | Current Defense                     | Recommended Enhancement                                                                                                        |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Virtual camera injection | None                                | Browser API fingerprinting: detect `enumerateDevices()` anomalies, check `MediaStreamTrack.getSettings()` for synthetic labels |
+| Deepfake video replay    | Active challenges (blink/turn/nod)  | Add **3D depth estimation** via monocular depth networks (MiDaS) — flat images have uniform depth                              |
+| Printed photo attack     | Texture/frequency analysis          | Add **specular reflection challenge** — flash the screen white and analyze reflection pattern on face                          |
+| Screen replay attack     | Edge detection + bright pixel check | Add **moiré pattern detection** — screens produce characteristic interference patterns at certain angles                       |
+| Mask/prosthetic attack   | Color analysis                      | Add **skin perfusion detection** — measure subtle color changes from blood flow using rPPG (remote photoplethysmography)       |
 
 **Implementation priority:** Virtual camera detection (HIGH) → 3D depth estimation (HIGH) → Specular reflection (MEDIUM) → Moiré detection (MEDIUM) → rPPG (LOW — requires high-quality camera).
 
@@ -65,27 +65,29 @@ To achieve ISO 30107-3 Level 2 (APCER < 5%, BPCER < 5%):
 
 The Central Bank of Nigeria's 2026 baseline standards require:
 
-| Requirement | Current Status | Gap |
-|---|---|---|
-| BVN verification for all agents | Implemented (kycClient.ts) | None |
-| NIN cross-reference | Implemented | None |
-| Tiered KYC (Level 1/2/3) | Partial — single tier | Implement 3-tier system with progressive limits |
-| Real-time BVN-NIN linkage check | Not implemented | Add NIBSS API integration for real-time validation |
-| Biometric deduplication | Not implemented | Add 1:N face matching against enrolled agent database |
-| Periodic re-verification (annual) | Not implemented | Add scheduled re-KYC workflow with notification |
-| PEP/sanctions screening | Not implemented | Integrate ComplyAdvantage or Refinitiv World-Check |
+| Requirement                       | Current Status             | Gap                                                   |
+| --------------------------------- | -------------------------- | ----------------------------------------------------- |
+| BVN verification for all agents   | Implemented (kycClient.ts) | None                                                  |
+| NIN cross-reference               | Implemented                | None                                                  |
+| Tiered KYC (Level 1/2/3)          | Partial — single tier      | Implement 3-tier system with progressive limits       |
+| Real-time BVN-NIN linkage check   | Not implemented            | Add NIBSS API integration for real-time validation    |
+| Biometric deduplication           | Not implemented            | Add 1:N face matching against enrolled agent database |
+| Periodic re-verification (annual) | Not implemented            | Add scheduled re-KYC workflow with notification       |
+| PEP/sanctions screening           | Not implemented            | Integrate ComplyAdvantage or Refinitiv World-Check    |
 
 ### 2.2 Tiered KYC Implementation
 
 Implement CBN's 3-tier system for agent onboarding:
 
 **Tier 1 (Basic — ₦50K daily limit):**
+
 - Phone number verification (OTP)
 - BVN validation
 - Selfie capture (passive liveness only)
 - Maximum 3 transactions per day
 
 **Tier 2 (Standard — ₦200K daily limit):**
+
 - All Tier 1 requirements
 - NIN verification with photo match
 - Active liveness check (2 challenges)
@@ -93,6 +95,7 @@ Implement CBN's 3-tier system for agent onboarding:
 - Maximum 10 transactions per day
 
 **Tier 3 (Enhanced — ₦5M daily limit):**
+
 - All Tier 2 requirements
 - Full active liveness (3 randomized challenges)
 - Government ID document scan (NFC chip reading if available)
@@ -127,15 +130,15 @@ Enhance document verification with:
 
 For merchant and super-agent onboarding:
 
-| Verification Step | Data Source | Automation Level |
-|---|---|---|
-| CAC registration check | CAC API | Fully automated |
-| Business name/RC number validation | CAC registry | Fully automated |
-| Director/shareholder identification | CAC + BVN | Semi-automated |
-| Tax clearance (TIN) verification | FIRS API | Fully automated |
-| Physical address verification | Google Maps + agent visit | Semi-automated |
-| Bank account ownership confirmation | NIBSS NIP | Fully automated |
-| UBO (Ultimate Beneficial Owner) identification | Manual + CAC | Manual with AI assist |
+| Verification Step                              | Data Source               | Automation Level      |
+| ---------------------------------------------- | ------------------------- | --------------------- |
+| CAC registration check                         | CAC API                   | Fully automated       |
+| Business name/RC number validation             | CAC registry              | Fully automated       |
+| Director/shareholder identification            | CAC + BVN                 | Semi-automated        |
+| Tax clearance (TIN) verification               | FIRS API                  | Fully automated       |
+| Physical address verification                  | Google Maps + agent visit | Semi-automated        |
+| Bank account ownership confirmation            | NIBSS NIP                 | Fully automated       |
+| UBO (Ultimate Beneficial Owner) identification | Manual + CAC              | Manual with AI assist |
 
 ### 3.2 Ongoing Business Monitoring
 
@@ -163,13 +166,13 @@ Automatically escalate to EDD when:
 
 Maintain a living device compatibility database:
 
-| Device Category | Market Share (Nigeria) | Liveness Approach | Special Handling |
-|---|---|---|---|
-| Budget Android (<$100) | ~45% | Passive-first, active fallback | Extended timeouts, relaxed thresholds |
-| Mid-range Android ($100-300) | ~35% | Active with 2 challenges | Standard thresholds |
-| High-end Android (>$300) | ~10% | Full active (3 challenges) | Standard thresholds |
-| iPhone (any) | ~8% | Full active (3 challenges) | Standard thresholds |
-| Feature phones (KaiOS) | ~2% | Document-only (no liveness) | SMS-based OTP verification |
+| Device Category              | Market Share (Nigeria) | Liveness Approach              | Special Handling                      |
+| ---------------------------- | ---------------------- | ------------------------------ | ------------------------------------- |
+| Budget Android (<$100)       | ~45%                   | Passive-first, active fallback | Extended timeouts, relaxed thresholds |
+| Mid-range Android ($100-300) | ~35%                   | Active with 2 challenges       | Standard thresholds                   |
+| High-end Android (>$300)     | ~10%                   | Full active (3 challenges)     | Standard thresholds                   |
+| iPhone (any)                 | ~8%                    | Full active (3 challenges)     | Standard thresholds                   |
+| Feature phones (KaiOS)       | ~2%                    | Document-only (no liveness)    | SMS-based OTP verification            |
 
 ### 4.2 Progressive Enhancement Strategy
 
@@ -193,15 +196,15 @@ Maintain a living device compatibility database:
 
 Combine all signals into a single 0-100 risk score:
 
-| Signal | Weight | Description |
-|---|---|---|
-| Liveness confidence | 25% | Active/passive liveness score |
-| Document authenticity | 20% | Template match + MRZ + tampering score |
-| Geo-IP correlation | 15% | Impossible travel, VPN, country mismatch |
-| Device reputation | 15% | Historical success rate, known issues |
-| Behavioral biometrics | 10% | Typing speed, touch pressure, gesture patterns |
-| Network signals | 10% | IP reputation, ISP, time-of-day patterns |
-| Cross-reference consistency | 5% | BVN-NIN-document photo match score |
+| Signal                      | Weight | Description                                    |
+| --------------------------- | ------ | ---------------------------------------------- |
+| Liveness confidence         | 25%    | Active/passive liveness score                  |
+| Document authenticity       | 20%    | Template match + MRZ + tampering score         |
+| Geo-IP correlation          | 15%    | Impossible travel, VPN, country mismatch       |
+| Device reputation           | 15%    | Historical success rate, known issues          |
+| Behavioral biometrics       | 10%    | Typing speed, touch pressure, gesture patterns |
+| Network signals             | 10%    | IP reputation, ISP, time-of-day patterns       |
+| Cross-reference consistency | 5%     | BVN-NIN-document photo match score             |
 
 ### 5.2 Behavioral Biometrics (Passive)
 
@@ -262,24 +265,28 @@ Nigeria's Data Protection Act 2023 requirements:
 ## 7. Implementation Roadmap
 
 ### Phase 1 (Immediate — 0-30 days)
+
 - Virtual camera injection detection
 - Multi-challenge randomization
 - Tiered KYC implementation (Tier 1/2/3)
 - Device compatibility matrix automation
 
 ### Phase 2 (Short-term — 30-90 days)
+
 - 3D depth estimation for deepfake defense
 - NFC document verification (for supported devices)
 - PEP/sanctions screening integration
 - Behavioral biometrics collection (passive)
 
 ### Phase 3 (Medium-term — 90-180 days)
+
 - Full KYB workflow with CAC/FIRS integration
 - ISO 30107-3 formal testing preparation
 - Biometric deduplication (1:N matching)
 - Cross-platform fraud signal sharing
 
 ### Phase 4 (Long-term — 180-365 days)
+
 - rPPG-based skin perfusion detection
 - Industry consortium for fraud signal sharing
 - AI model retraining with Nigerian-specific attack datasets
@@ -289,16 +296,16 @@ Nigeria's Data Protection Act 2023 requirements:
 
 ## 8. Key Metrics to Track
 
-| Metric | Current Baseline | Target | Measurement |
-|---|---|---|---|
-| Liveness pass rate (legitimate users) | ~85% | >95% | Monthly |
-| Liveness false accept rate (attacks) | Unknown | <3% | Quarterly red-team |
-| KYC completion rate (start to finish) | ~70% | >90% | Weekly |
-| Average KYC completion time | ~8 minutes | <4 minutes | Weekly |
-| Device-specific failure rate | Varies | <10% per device | Monthly |
-| Deepfake detection rate | Unknown | >97% | Quarterly |
-| Document fraud detection rate | Unknown | >95% | Quarterly |
-| Agent onboarding dropout (due to KYC) | ~25% | <10% | Monthly |
+| Metric                                | Current Baseline | Target          | Measurement        |
+| ------------------------------------- | ---------------- | --------------- | ------------------ |
+| Liveness pass rate (legitimate users) | ~85%             | >95%            | Monthly            |
+| Liveness false accept rate (attacks)  | Unknown          | <3%             | Quarterly red-team |
+| KYC completion rate (start to finish) | ~70%             | >90%            | Weekly             |
+| Average KYC completion time           | ~8 minutes       | <4 minutes      | Weekly             |
+| Device-specific failure rate          | Varies           | <10% per device | Monthly            |
+| Deepfake detection rate               | Unknown          | >97%            | Quarterly          |
+| Document fraud detection rate         | Unknown          | >95%            | Quarterly          |
+| Agent onboarding dropout (due to KYC) | ~25%             | <10%            | Monthly            |
 
 ---
 

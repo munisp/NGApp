@@ -29,7 +29,9 @@ describe("S94: securityFixes", () => {
 
   it("should allow valid internal paths", async () => {
     const { sanitizeRedirectUrl } = await import("./middleware/securityFixes");
-    expect(sanitizeRedirectUrl("/agent-float-forecasting")).toBe("/agent-float-forecasting");
+    expect(sanitizeRedirectUrl("/agent-float-forecasting")).toBe(
+      "/agent-float-forecasting"
+    );
     expect(sanitizeRedirectUrl("/admin")).toBe("/admin");
     expect(sanitizeRedirectUrl("/")).toBe("/");
   });
@@ -46,8 +48,12 @@ describe("S94: securityFixes", () => {
 
   it("should validate CORS origin against whitelist", async () => {
     const { validateCorsOrigin } = await import("./middleware/securityFixes");
-    expect(validateCorsOrigin("https://example.com", ["https://example.com"])).toBe("https://example.com");
-    expect(validateCorsOrigin("https://evil.com", ["https://example.com"])).toBeNull();
+    expect(
+      validateCorsOrigin("https://example.com", ["https://example.com"])
+    ).toBe("https://example.com");
+    expect(
+      validateCorsOrigin("https://evil.com", ["https://example.com"])
+    ).toBeNull();
   });
 
   it("should not reflect wildcard origin", async () => {
@@ -59,7 +65,10 @@ describe("S94: securityFixes", () => {
     const noOriginResult = validateCorsOrigin(undefined, ["*"]);
     expect(noOriginResult).toBeNull();
     // When origin is explicitly in the list, should reflect it
-    const explicitResult = validateCorsOrigin("https://example.com", ["*", "https://example.com"]);
+    const explicitResult = validateCorsOrigin("https://example.com", [
+      "*",
+      "https://example.com",
+    ]);
     expect(explicitResult).toBe("https://example.com");
   });
 
@@ -105,8 +114,9 @@ describe("S94: securityAlertSocket", () => {
   it("should export initSocketIO or initSecurityAlertSocket", async () => {
     const mod = await import("./services/securityAlertSocket");
     // Should export at least one initialization function
-    const hasInit = typeof mod.initSecurityAlertSocket === "function" ||
-                    typeof mod.broadcastSecurityAlert === "function";
+    const hasInit =
+      typeof mod.initSecurityAlertSocket === "function" ||
+      typeof mod.broadcastSecurityAlert === "function";
     expect(hasInit).toBe(true);
   });
 
@@ -173,18 +183,27 @@ describe("S94: CORS fix", () => {
   });
 
   it("should not set wildcard origin when credentials are enabled", async () => {
-    const { createCorsMiddleware } = await import("./lib/infrastructureCompletion");
-    const middleware = createCorsMiddleware({ credentials: true, allowedOrigins: ["*"] });
+    const { createCorsMiddleware } = await import(
+      "./lib/infrastructureCompletion"
+    );
+    const middleware = createCorsMiddleware({
+      credentials: true,
+      allowedOrigins: ["*"],
+    });
     // Create mock req/res/next
     const headers: Record<string, string> = {};
     const mockRes = {
-      setHeader: (key: string, value: string) => { headers[key] = value; },
+      setHeader: (key: string, value: string) => {
+        headers[key] = value;
+      },
       status: () => mockRes,
       end: () => {},
     };
     const mockReq = { headers: { origin: "" }, method: "GET" };
     let nextCalled = false;
-    middleware(mockReq as any, mockRes as any, () => { nextCalled = true; });
+    middleware(mockReq as any, mockRes as any, () => {
+      nextCalled = true;
+    });
     // When origin is empty string and credentials are enabled, should NOT set wildcard
     expect(headers["Access-Control-Allow-Origin"]).not.toBe("*");
     expect(nextCalled).toBe(true);
@@ -199,7 +218,9 @@ describe("S94: open redirect fix", () => {
     // Should contain the S94-06 fix comment
     expect(content).toContain("S94-06");
     // Should NOT have the old vulnerable pattern
-    expect(content).not.toMatch(/const returnTo = \(req\.query\.returnTo as string\) \|\| "\/agent-float-forecasting";\s*\n\s*res\.redirect\(returnTo\);/);
+    expect(content).not.toMatch(
+      /const returnTo = \(req\.query\.returnTo as string\) \|\| "\/agent-float-forecasting";\s*\n\s*res\.redirect\(returnTo\);/
+    );
   });
 });
 
@@ -257,7 +278,10 @@ describe("S94: service orchestrator", () => {
 describe("S94: DDoS shield configuration", () => {
   it("should have FAIL_OPEN set to true in securityOrchestrator", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("server/middleware/securityOrchestrator.ts", "utf-8");
+    const content = fs.readFileSync(
+      "server/middleware/securityOrchestrator.ts",
+      "utf-8"
+    );
     // FAIL_OPEN must remain true so sidecar unavailability doesn't block requests
     expect(content).toContain("FAIL_OPEN");
     // Default should be fail-open (not false)

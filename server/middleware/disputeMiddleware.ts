@@ -30,8 +30,15 @@ import logger from "../_core/logger";
 const DISPUTE_KAFKA_TOPIC: KafkaTopic = "pos.disputes.opened";
 
 export async function publishDisputeEvent(params: {
-  eventType: "dispute.raised" | "dispute.escalated" | "dispute.resolved" | "dispute.rejected"
-    | "refund.requested" | "refund.approved" | "refund.processed" | "refund.rejected";
+  eventType:
+    | "dispute.raised"
+    | "dispute.escalated"
+    | "dispute.resolved"
+    | "dispute.rejected"
+    | "refund.requested"
+    | "refund.approved"
+    | "refund.processed"
+    | "refund.rejected";
   disputeId?: number;
   refundId?: number;
   agentId?: number;
@@ -57,24 +64,41 @@ export async function publishDisputeEvent(params: {
         transactionRef: params.transactionRef,
         ...params.metadata,
       },
-      { agentCode: params.agentCode },
+      { agentCode: params.agentCode }
     );
     logger.info(`[Kafka] Dispute event: ${params.eventType}`);
   } catch (e) {
-    logger.warn(`[Kafka] Dispute event failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[Kafka] Dispute event failed (fail-open): ${(e as Error).message}`
+    );
   }
 }
 
 // ── Redis: Dispute Status Cache + Rate Limiting ──────────────────────────
-export async function cacheDisputeStatus(disputeId: number, status: string): Promise<void> {
-  try { await cacheSet(`dispute:status:${disputeId}`, status, 600); } catch { /* ignore */ }
+export async function cacheDisputeStatus(
+  disputeId: number,
+  status: string
+): Promise<void> {
+  try {
+    await cacheSet(`dispute:status:${disputeId}`, status, 600);
+  } catch {
+    /* ignore */
+  }
 }
 
-export async function getCachedDisputeStatus(disputeId: number): Promise<string | null> {
-  try { return await cacheGet(`dispute:status:${disputeId}`); } catch { return null; }
+export async function getCachedDisputeStatus(
+  disputeId: number
+): Promise<string | null> {
+  try {
+    return await cacheGet(`dispute:status:${disputeId}`);
+  } catch {
+    return null;
+  }
 }
 
-export async function checkDisputeRateLimit(agentId: number): Promise<{ allowed: boolean; remaining: number }> {
+export async function checkDisputeRateLimit(
+  agentId: number
+): Promise<{ allowed: boolean; remaining: number }> {
   try {
     const key = `dispute:ratelimit:${agentId}:${new Date().toISOString().slice(0, 13)}`;
     const count = await cacheIncr(key, 3600);
@@ -110,7 +134,9 @@ export async function tbRecordRefundReversal(params: {
     }
     return null;
   } catch (e) {
-    logger.warn(`[TB-Refund] Transfer failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[TB-Refund] Transfer failed (fail-open): ${(e as Error).message}`
+    );
     return null;
   }
 }
@@ -133,17 +159,24 @@ export async function triggerDisputeResolutionWorkflow(params: {
       workflowId: `dispute-${params.disputeId}`,
       args: [params],
     });
-    logger.info(`[Temporal] Dispute resolution workflow started: ${handle.workflowId}`);
+    logger.info(
+      `[Temporal] Dispute resolution workflow started: ${handle.workflowId}`
+    );
     return handle.workflowId;
   } catch (e) {
-    logger.warn(`[Temporal] Dispute workflow failed (fail-open): ${(e as Error).message}`);
+    logger.warn(
+      `[Temporal] Dispute workflow failed (fail-open): ${(e as Error).message}`
+    );
     return null;
   }
 }
 
 // ── Permify: RBAC for Dispute Operations ─────────────────────────────────
 // permifyCheck({ subjectType, subjectId, entityType, entityId, permission })
-export async function canApproveDispute(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canApproveDispute(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   try {
     return await permifyCheck({
       subjectType: "agent",
@@ -157,7 +190,10 @@ export async function canApproveDispute(agentCode: string, agentRole: string): P
   }
 }
 
-export async function canProcessRefund(agentCode: string, agentRole: string): Promise<boolean> {
+export async function canProcessRefund(
+  agentCode: string,
+  agentRole: string
+): Promise<boolean> {
   try {
     return await permifyCheck({
       subjectType: "agent",
@@ -195,57 +231,83 @@ export async function streamDisputeEvent(params: {
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
-    logger.debug(`[Fluvio] Dispute stream failed (fail-open): ${(e as Error).message}`);
+    logger.debug(
+      `[Fluvio] Dispute stream failed (fail-open): ${(e as Error).message}`
+    );
   }
 }
 
 // ── Lakehouse: Dispute Snapshot Trigger (via Python sidecar) ─────────────
-const LAKEHOUSE_SIDECAR_URL = process.env.LAKEHOUSE_SIDECAR_URL ?? "http://localhost:8050";
+const LAKEHOUSE_SIDECAR_URL =
+  process.env.LAKEHOUSE_SIDECAR_URL ?? "http://localhost:8050";
 
 export async function triggerDisputeSnapshot(date?: string): Promise<boolean> {
   try {
     const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/snapshot/dispute`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: date ?? new Date().toISOString().slice(0, 10) }),
+      body: JSON.stringify({
+        date: date ?? new Date().toISOString().slice(0, 10),
+      }),
       signal: AbortSignal.timeout(5000),
     });
     return res.ok;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ── Dapr: State Store for Dispute Workflow State ─────────────────────────
 const DAPR_HTTP_PORT = process.env.DAPR_HTTP_PORT ?? "3500";
 
-export async function daprGetDisputeState(disputeId: number): Promise<unknown | null> {
+export async function daprGetDisputeState(
+  disputeId: number
+): Promise<unknown | null> {
   try {
-    const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/state/dispute-store/dispute-${disputeId}`, {
-      signal: AbortSignal.timeout(1000),
-    });
+    const res = await fetch(
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/state/dispute-store/dispute-${disputeId}`,
+      {
+        signal: AbortSignal.timeout(1000),
+      }
+    );
     if (res.ok) return await res.json();
     return null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-export async function daprSetDisputeState(disputeId: number, state: unknown): Promise<boolean> {
+export async function daprSetDisputeState(
+  disputeId: number,
+  state: unknown
+): Promise<boolean> {
   try {
-    const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/state/dispute-store`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([{ key: `dispute-${disputeId}`, value: state }]),
-      signal: AbortSignal.timeout(1000),
-    });
+    const res = await fetch(
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/state/dispute-store`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ key: `dispute-${disputeId}`, value: state }]),
+        signal: AbortSignal.timeout(1000),
+      }
+    );
     return res.ok;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ── Keycloak: Token Validation for Dispute Operations ────────────────────
-export async function validateKeycloakTokenForDispute(token: string): Promise<boolean> {
+export async function validateKeycloakTokenForDispute(
+  token: string
+): Promise<boolean> {
   try {
     const { verifyKeycloakToken } = await import("../_core/keycloak");
     await verifyKeycloakToken(token);
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ── APISIX: Rate Limit Config for Dispute Endpoints ──────────────────────
@@ -254,10 +316,16 @@ export function getDisputeRateLimitConfig() {
     route_id: "dispute-engine",
     plugins: {
       "limit-count": {
-        count: 30, time_window: 60, key_type: "var", key: "remote_addr",
-        rejected_code: 429, rejected_msg: "Dispute API rate limit exceeded",
+        count: 30,
+        time_window: 60,
+        key_type: "var",
+        key: "remote_addr",
+        rejected_code: 429,
+        rejected_msg: "Dispute API rate limit exceeded",
         policy: "redis",
-        redis_host: (ENV.redisUrl ?? "redis://localhost:6379").replace("redis://", "").split(":")[0],
+        redis_host: (ENV.redisUrl ?? "redis://localhost:6379")
+          .replace("redis://", "")
+          .split(":")[0],
         redis_port: 6379,
       },
       "key-auth": { header: "X-API-Key" },
@@ -268,7 +336,8 @@ export function getDisputeRateLimitConfig() {
 }
 
 // ── Mojaloop: ILP Refund Settlement ──────────────────────────────────────
-const MOJALOOP_SIDECAR_URL = process.env.MOJALOOP_SIDECAR_URL ?? "http://localhost:8050";
+const MOJALOOP_SIDECAR_URL =
+  process.env.MOJALOOP_SIDECAR_URL ?? "http://localhost:8050";
 
 export async function initiateIlpRefundTransfer(params: {
   refundId: number;
@@ -277,21 +346,28 @@ export async function initiateIlpRefundTransfer(params: {
   payeeFsp: string;
   amount: number;
   currency: string;
-}): Promise<{ transferId: string; ilpPacket: string; condition: string } | null> {
+}): Promise<{
+  transferId: string;
+  ilpPacket: string;
+  condition: string;
+} | null> {
   try {
-    const res = await fetch(`${MOJALOOP_SIDECAR_URL}/mojaloop/refund-transfer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        refundId: params.refundId,
-        originalTransferRef: params.originalTransferRef,
-        payerFsp: params.payerFsp,
-        payeeFsp: params.payeeFsp,
-        amount: params.amount,
-        currency: params.currency,
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await fetch(
+      `${MOJALOOP_SIDECAR_URL}/mojaloop/refund-transfer`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refundId: params.refundId,
+          originalTransferRef: params.originalTransferRef,
+          payerFsp: params.payerFsp,
+          payeeFsp: params.payeeFsp,
+          amount: params.amount,
+          currency: params.currency,
+        }),
+        signal: AbortSignal.timeout(5000),
+      }
+    );
     if (res.ok) return await res.json();
     return null;
   } catch {
@@ -301,28 +377,86 @@ export async function initiateIlpRefundTransfer(params: {
 }
 
 // ── Middleware Health Check ───────────────────────────────────────────────
-export async function getDisputeMiddlewareHealth(): Promise<Record<string, { status: string; latencyMs: number }>> {
+export async function getDisputeMiddlewareHealth(): Promise<
+  Record<string, { status: string; latencyMs: number }>
+> {
   const results: Record<string, { status: string; latencyMs: number }> = {};
   const check = async (name: string, fn: () => Promise<boolean>) => {
     const start = Date.now();
     try {
       const ok = await fn();
-      results[name] = { status: ok ? "healthy" : "degraded", latencyMs: Date.now() - start };
-    } catch { results[name] = { status: "unavailable", latencyMs: Date.now() - start }; }
+      results[name] = {
+        status: ok ? "healthy" : "degraded",
+        latencyMs: Date.now() - start,
+      };
+    } catch {
+      results[name] = { status: "unavailable", latencyMs: Date.now() - start };
+    }
   };
   await Promise.allSettled([
-    check("kafka", async () => { const { kafkaIsHealthy } = await import("../kafkaClient"); return kafkaIsHealthy(); }),
-    check("redis", async () => { const { redisIsHealthy } = await import("../redisClient"); return redisIsHealthy(); }),
-    check("tigerbeetle", async () => { const { tbIsHealthy } = await import("../tbClient"); return tbIsHealthy(); }),
-    check("temporal", async () => { const { getTemporalClient } = await import("../temporal"); return !!(await getTemporalClient()); }),
-    check("permify", async () => { const res = await fetch(`${ENV.permifyUrl}/healthz`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("fluvio", async () => { const { getFluvioStatus } = await import("../lib/fluvioClient"); return getFluvioStatus().connected; }),
-    check("lakehouse", async () => { const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/health`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("dapr", async () => { const res = await fetch(`http://localhost:${DAPR_HTTP_PORT}/v1.0/healthz`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("keycloak", async () => { const res = await fetch(`${ENV.keycloakUrl}/realms/${ENV.keycloakRealm}`, { signal: AbortSignal.timeout(2000) }); return res.ok; }),
-    check("apisix", async () => { const res = await fetch(`${ENV.apisixAdminUrl}/apisix/admin/routes`, { headers: { "X-API-KEY": ENV.apisixAdminKey }, signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("mojaloop", async () => { const res = await fetch(`${MOJALOOP_SIDECAR_URL}/health`, { signal: AbortSignal.timeout(1000) }); return res.ok; }),
-    check("postgresql", async () => { const { getDb } = await import("../db"); return !!(await getDb()); }),
+    check("kafka", async () => {
+      const { kafkaIsHealthy } = await import("../kafkaClient");
+      return kafkaIsHealthy();
+    }),
+    check("redis", async () => {
+      const { redisIsHealthy } = await import("../redisClient");
+      return redisIsHealthy();
+    }),
+    check("tigerbeetle", async () => {
+      const { tbIsHealthy } = await import("../tbClient");
+      return tbIsHealthy();
+    }),
+    check("temporal", async () => {
+      const { getTemporalClient } = await import("../temporal");
+      return !!(await getTemporalClient());
+    }),
+    check("permify", async () => {
+      const res = await fetch(`${ENV.permifyUrl}/healthz`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("fluvio", async () => {
+      const { getFluvioStatus } = await import("../lib/fluvioClient");
+      return getFluvioStatus().connected;
+    }),
+    check("lakehouse", async () => {
+      const res = await fetch(`${LAKEHOUSE_SIDECAR_URL}/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("dapr", async () => {
+      const res = await fetch(
+        `http://localhost:${DAPR_HTTP_PORT}/v1.0/healthz`,
+        { signal: AbortSignal.timeout(1000) }
+      );
+      return res.ok;
+    }),
+    check("keycloak", async () => {
+      const res = await fetch(
+        `${ENV.keycloakUrl}/realms/${ENV.keycloakRealm}`,
+        { signal: AbortSignal.timeout(2000) }
+      );
+      return res.ok;
+    }),
+    check("apisix", async () => {
+      const res = await fetch(`${ENV.apisixAdminUrl}/apisix/admin/routes`, {
+        headers: { "X-API-KEY": ENV.apisixAdminKey },
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("mojaloop", async () => {
+      const res = await fetch(`${MOJALOOP_SIDECAR_URL}/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      return res.ok;
+    }),
+    check("postgresql", async () => {
+      const { getDb } = await import("../db");
+      return !!(await getDb());
+    }),
   ]);
   return results;
 }

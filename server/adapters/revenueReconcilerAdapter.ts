@@ -29,17 +29,38 @@ export interface ReconciliationReport {
   totalActual: number;
   totalVariance: number;
   matchRate: number;
-  agentBreakdown: Array<{ agentCode: string; expected: number; actual: number; variance: number }>;
+  agentBreakdown: Array<{
+    agentCode: string;
+    expected: number;
+    actual: number;
+    variance: number;
+  }>;
 }
 
-export async function reconcile(request: ReconciliationRequest): Promise<AdapterResponse<ReconciliationResult>> {
-  return revenueReconciler.post<ReconciliationResult>("/api/v1/reconcile", request);
+export async function reconcile(
+  request: ReconciliationRequest
+): Promise<AdapterResponse<ReconciliationResult>> {
+  return revenueReconciler.post<ReconciliationResult>(
+    "/api/v1/reconcile",
+    request
+  );
 }
 
-export async function getDiscrepancies(reconciliationId: string): Promise<AdapterResponse<Array<{ type: string; amount: number; description: string }>>> {
-  return revenueReconciler.get<Array<{ type: string; amount: number; description: string }>>(`/api/v1/reconcile/${reconciliationId}/discrepancies`);
+export async function getDiscrepancies(
+  reconciliationId: string
+): Promise<
+  AdapterResponse<Array<{ type: string; amount: number; description: string }>>
+> {
+  return revenueReconciler.get<
+    Array<{ type: string; amount: number; description: string }>
+  >(`/api/v1/reconcile/${reconciliationId}/discrepancies`);
 }
 
-export async function generateReport(request: ReconciliationRequest): Promise<AdapterResponse<ReconciliationReport>> {
-  return revenueReconciler.post<ReconciliationReport>("/api/v1/report", request);
+export async function generateReport(
+  request: ReconciliationRequest
+): Promise<AdapterResponse<ReconciliationReport>> {
+  return revenueReconciler.post<ReconciliationReport>(
+    "/api/v1/report",
+    request
+  );
 }

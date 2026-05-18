@@ -1,4 +1,3 @@
-
 /**
  * Billing Ledger tRPC Router — Sprint 81 (Real DB Queries with correct schema)
  * Records and queries the platform billing ledger — the source of truth for
@@ -12,7 +11,10 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { platformBillingLedger, tenantBillingConfig } from "../../drizzle/schema";
+import {
+  platformBillingLedger,
+  tenantBillingConfig,
+} from "../../drizzle/schema";
 import { eq, and, desc, gte, lte, sql, count } from "drizzle-orm";
 import { requireBillingPermission } from "./billingRbac";
 import { recordBillingAudit } from "./billingAudit";
@@ -27,104 +29,157 @@ async function db() {
 export const billingLedgerRouter = router({
   // Record a billing split for a transaction
   recordSplit: protectedProcedure
-    .input(z.object({
-      transactionRef: z.string(),
-      transactionType: z.string(),
-      grossAmount: z.number(),
-      grossFee: z.number(),
-      agentCommission: z.number(),
-      switchFee: z.number(),
-      aggregatorFee: z.number().default(0),
-      billingModel: z.enum(["revenue_share", "subscription", "hybrid"]),
-      agentId: z.number(),
-      posTerminalId: z.number().optional(),
-      revenueSharePct: z.number().default(70),
-      currency: z.string().default("NGN"),
-      region: z.string().optional(),
-      carrier: z.string().optional(),
-      tenantId: z.number().default(1),
-    }))
+    .input(
+      z.object({
+        transactionRef: z.string(),
+        transactionType: z.string(),
+        grossAmount: z.number(),
+        grossFee: z.number(),
+        agentCommission: z.number(),
+        switchFee: z.number(),
+        aggregatorFee: z.number().default(0),
+        billingModel: z.enum(["revenue_share", "subscription", "hybrid"]),
+        agentId: z.number(),
+        posTerminalId: z.number().optional(),
+        revenueSharePct: z.number().default(70),
+        currency: z.string().default("NGN"),
+        region: z.string().optional(),
+        carrier: z.string().optional(),
+        tenantId: z.number().default(1),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "record_split");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "record_split"
+        );
         const database = await db();
 
-        const platformNetFee = input.grossFee - input.agentCommission - input.switchFee - input.aggregatorFee;
-        const clientRevenue = Math.floor(platformNetFee * (input.revenueSharePct / 100));
+        const platformNetFee =
+          input.grossFee -
+          input.agentCommission -
+          input.switchFee -
+          input.aggregatorFee;
+        const clientRevenue = Math.floor(
+          platformNetFee * (input.revenueSharePct / 100)
+        );
         const platformRevenue = platformNetFee - clientRevenue;
 
-        const [entry] = await database.insert(platformBillingLedger).values({
-          transactionRef: input.transactionRef,
-          transactionType: input.transactionType,
-          agentId: input.agentId,
-          posTerminalId: input.posTerminalId || null,
-          grossAmount: input.grossAmount,
-          grossFee: input.grossFee,
-          agentCommission: input.agentCommission,
-          switchFee: input.switchFee,
-          aggregatorFee: input.aggregatorFee,
-          platformNetFee,
-          billingModel: input.billingModel,
-          clientRevenue,
-          platformRevenue,
-          revenueSharePct: input.revenueSharePct,
-          currency: input.currency,
-          region: input.region || null,
-          carrier: input.carrier || null,
-        } as any).returning();
+        const [entry] = await database
+          .insert(platformBillingLedger)
+          .values({
+            transactionRef: input.transactionRef,
+            transactionType: input.transactionType,
+            agentId: input.agentId,
+            posTerminalId: input.posTerminalId || null,
+            grossAmount: input.grossAmount,
+            grossFee: input.grossFee,
+            agentCommission: input.agentCommission,
+            switchFee: input.switchFee,
+            aggregatorFee: input.aggregatorFee,
+            platformNetFee,
+            billingModel: input.billingModel,
+            clientRevenue,
+            platformRevenue,
+            revenueSharePct: input.revenueSharePct,
+            currency: input.currency,
+            region: input.region || null,
+            carrier: input.carrier || null,
+          } as any)
+          .returning();
 
         // Publish to Kafka topic: billing.ledger.splits
         const kafkaUrl = process.env.KAFKA_BROKER_URL;
         if (kafkaUrl) {
-          console.log(`[BillingLedger] Kafka publish: billing.ledger.splits`, { entryId: entry.id });
+          console.log(`[BillingLedger] Kafka publish: billing.ledger.splits`, {
+            entryId: entry.id,
+          });
         }
 
         // Audit the split recording
         await recordBillingAudit({
-          ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
+          ctx: {
+            userId: ctx.user.id,
+            userName: ctx.user.name || "unknown",
+            tenantId: input.tenantId,
+          },
           action: "split_recorded",
           resourceType: "platform_billing_ledger",
           resourceId: String(entry.id),
-          afterState: { transactionRef: input.transactionRef, grossFee: input.grossFee, billingModel: input.billingModel },
+          afterState: {
+            transactionRef: input.transactionRef,
+            grossFee: input.grossFee,
+            billingModel: input.billingModel,
+          },
         });
 
         return entry;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // Query billing ledger with filters (real DB)
   query: protectedProcedure
-    .input(z.object({
-      tenantId: z.number().default(1),
-      agentId: z.number().optional(),
-      billingModel: z.enum(["revenue_share", "subscription", "hybrid"]).optional(),
-      dateFrom: z.number().optional(),
-      dateTo: z.number().optional(),
-      transactionType: z.string().optional(),
-      region: z.string().optional(),
-      carrier: z.string().optional(),
-      page: z.number().default(1),
-      pageSize: z.number().default(50),
-    }))
+    .input(
+      z.object({
+        tenantId: z.number().default(1),
+        agentId: z.number().optional(),
+        billingModel: z
+          .enum(["revenue_share", "subscription", "hybrid"])
+          .optional(),
+        dateFrom: z.number().optional(),
+        dateTo: z.number().optional(),
+        transactionType: z.string().optional(),
+        region: z.string().optional(),
+        carrier: z.string().optional(),
+        page: z.number().default(1),
+        pageSize: z.number().default(50),
+      })
+    )
     .query(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "view_ledger"
+        );
         const database = await db();
 
         const conditions: any[] = [];
-        if (input.agentId) conditions.push(eq(platformBillingLedger.agentId, input.agentId));
-        if (input.billingModel) conditions.push(eq(platformBillingLedger.billingModel, input.billingModel));
-        if (input.transactionType) conditions.push(eq(platformBillingLedger.transactionType, input.transactionType));
-        if (input.region) conditions.push(eq(platformBillingLedger.region, input.region));
-        if (input.carrier) conditions.push(eq(platformBillingLedger.carrier, input.carrier));
-        if (input.dateFrom) conditions.push(gte(platformBillingLedger.createdAt, new Date(input.dateFrom)));
-        if (input.dateTo) conditions.push(lte(platformBillingLedger.createdAt, new Date(input.dateTo)));
+        if (input.agentId)
+          conditions.push(eq(platformBillingLedger.agentId, input.agentId));
+        if (input.billingModel)
+          conditions.push(
+            eq(platformBillingLedger.billingModel, input.billingModel)
+          );
+        if (input.transactionType)
+          conditions.push(
+            eq(platformBillingLedger.transactionType, input.transactionType)
+          );
+        if (input.region)
+          conditions.push(eq(platformBillingLedger.region, input.region));
+        if (input.carrier)
+          conditions.push(eq(platformBillingLedger.carrier, input.carrier));
+        if (input.dateFrom)
+          conditions.push(
+            gte(platformBillingLedger.createdAt, new Date(input.dateFrom))
+          );
+        if (input.dateTo)
+          conditions.push(
+            lte(platformBillingLedger.createdAt, new Date(input.dateTo))
+          );
 
         const offset = (input.page - 1) * input.pageSize;
-        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        const whereClause =
+          conditions.length > 0 ? and(...conditions) : undefined;
 
         const entries = await database
           .select()
@@ -148,37 +203,57 @@ export const billingLedgerRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // Aggregate revenue by period (real DB aggregation)
   aggregateRevenue: protectedProcedure
-    .input(z.object({
-      tenantId: z.number().default(1),
-      period: z.enum(["hourly", "daily", "weekly", "monthly"]),
-      dateFrom: z.number().optional(),
-      dateTo: z.number().optional(),
-      groupBy: z.enum(["transactionType", "billingModel", "agent", "region"]).optional(),
-    }))
+    .input(
+      z.object({
+        tenantId: z.number().default(1),
+        period: z.enum(["hourly", "daily", "weekly", "monthly"]),
+        dateFrom: z.number().optional(),
+        dateTo: z.number().optional(),
+        groupBy: z
+          .enum(["transactionType", "billingModel", "agent", "region"])
+          .optional(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "view_dashboard");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "view_dashboard"
+        );
         const database = await db();
 
         const conditions: any[] = [];
-        if (input.dateFrom) conditions.push(gte(platformBillingLedger.createdAt, new Date(input.dateFrom)));
-        if (input.dateTo) conditions.push(lte(platformBillingLedger.createdAt, new Date(input.dateTo)));
+        if (input.dateFrom)
+          conditions.push(
+            gte(platformBillingLedger.createdAt, new Date(input.dateFrom))
+          );
+        if (input.dateTo)
+          conditions.push(
+            lte(platformBillingLedger.createdAt, new Date(input.dateTo))
+          );
 
-        const truncFn = input.period === "hourly"
-          ? sql`date_trunc('hour', ${platformBillingLedger.createdAt})`
-          : input.period === "daily"
-          ? sql`date_trunc('day', ${platformBillingLedger.createdAt})`
-          : input.period === "weekly"
-          ? sql`date_trunc('week', ${platformBillingLedger.createdAt})`
-          : sql`date_trunc('month', ${platformBillingLedger.createdAt})`;
+        const truncFn =
+          input.period === "hourly"
+            ? sql`date_trunc('hour', ${platformBillingLedger.createdAt})`
+            : input.period === "daily"
+              ? sql`date_trunc('day', ${platformBillingLedger.createdAt})`
+              : input.period === "weekly"
+                ? sql`date_trunc('week', ${platformBillingLedger.createdAt})`
+                : sql`date_trunc('month', ${platformBillingLedger.createdAt})`;
 
-        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        const whereClause =
+          conditions.length > 0 ? and(...conditions) : undefined;
 
         const aggregations = await database
           .select({
@@ -198,16 +273,32 @@ export const billingLedgerRouter = router({
           .orderBy(truncFn);
 
         const totals = {
-          totalGrossFees: aggregations.reduce((s: any, a: any) => s + Number(a.grossFees), 0),
-          totalPlatformRevenue: aggregations.reduce((s: any, a: any) => s + Number(a.platformRevenue), 0),
-          totalClientRevenue: aggregations.reduce((s: any, a: any) => s + Number(a.clientRevenue), 0),
-          totalTransactions: aggregations.reduce((s: any, a: any) => s + Number(a.transactionCount), 0),
+          totalGrossFees: aggregations.reduce(
+            (s: any, a: any) => s + Number(a.grossFees),
+            0
+          ),
+          totalPlatformRevenue: aggregations.reduce(
+            (s: any, a: any) => s + Number(a.platformRevenue),
+            0
+          ),
+          totalClientRevenue: aggregations.reduce(
+            (s: any, a: any) => s + Number(a.clientRevenue),
+            0
+          ),
+          totalTransactions: aggregations.reduce(
+            (s: any, a: any) => s + Number(a.transactionCount),
+            0
+          ),
         };
 
         return { period: input.period, aggregations, totals };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -216,7 +307,11 @@ export const billingLedgerRouter = router({
     .input(z.object({ tenantId: z.number().default(1) }))
     .query(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "view_ledger"
+        );
         const database = await db();
 
         const [config] = await database
@@ -251,7 +346,11 @@ export const billingLedgerRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -260,11 +359,19 @@ export const billingLedgerRouter = router({
     .input(z.object({ tenantId: z.number().default(1) }))
     .query(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "view_dashboard");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "view_dashboard"
+        );
         const database = await db();
 
         const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
         // Today's metrics
@@ -321,15 +428,23 @@ export const billingLedgerRouter = router({
             switchFees: Number(monthMetrics?.switchFees || 0),
             platformNetFees: Number(monthMetrics?.platformNetFees || 0),
             transactionCount: Number(monthMetrics?.transactionCount || 0),
-            avgFeePerTx: Number(monthMetrics?.transactionCount || 0) > 0
-              ? Math.round(Number(monthMetrics?.grossFees || 0) / Number(monthMetrics?.transactionCount || 1))
-              : 0,
+            avgFeePerTx:
+              Number(monthMetrics?.transactionCount || 0) > 0
+                ? Math.round(
+                    Number(monthMetrics?.grossFees || 0) /
+                      Number(monthMetrics?.transactionCount || 1)
+                  )
+                : 0,
           },
           lastUpdated: Date.now(),
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

@@ -1,13 +1,13 @@
 // @ts-nocheck — Sprint 84: Monthly Invoice Generation Cron
 /**
  * Monthly Invoice Cron Handler — 54Link POS Shell
- * 
+ *
  * Triggered on the 1st of every month at 02:00 UTC via Manus Heartbeat.
  * Generates Stripe invoices for all active tenants based on their billing model
  * and platform_billing_ledger data from the previous month.
- * 
+ *
  * Middleware: Kafka (event publishing), TigerBeetle (ledger), Stripe (invoicing)
- * 
+ *
  * Setup via CLI:
  *   manus-heartbeat create \
  *     --name monthly-invoice-generation \
@@ -18,16 +18,29 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
 import { getDb } from "../db";
-import { tenantBillingConfig, platformBillingLedger, billingAuditLog } from "../../drizzle/schema";
+import {
+  tenantBillingConfig,
+  platformBillingLedger,
+  billingAuditLog,
+} from "../../drizzle/schema";
 import { eq, and, gte, lt, sql } from "drizzle-orm";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
-  apiVersion: "2025-04-30.basil" as any,
-});
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
+  {
+    apiVersion: "2025-04-30.basil" as any,
+  }
+);
 
 // Kafka event publisher
-async function publishBillingEvent(topic: string, payload: Record<string, any>) {
-  console.log(`[Kafka] Publishing to ${topic}:`, JSON.stringify(payload).slice(0, 200));
+async function publishBillingEvent(
+  topic: string,
+  payload: Record<string, any>
+) {
+  console.log(
+    `[Kafka] Publishing to ${topic}:`,
+    JSON.stringify(payload).slice(0, 200)
+  );
   return { published: true, topic, timestamp: Date.now() };
 }
 
@@ -50,14 +63,21 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const periodEnd = new Date(now.getFullYear(), now.getMonth(), 1);
-    const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const periodLabel = periodStart.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
 
     console.log(`[Monthly Invoice Cron] Starting for period: ${periodLabel}`);
-    console.log(`[Monthly Invoice Cron] Date range: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
+    console.log(
+      `[Monthly Invoice Cron] Date range: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`
+    );
 
     // 1. Get all active tenant billing configs
     const tenantConfigs = await db.select().from(tenantBillingConfig);
-    console.log(`[Monthly Invoice Cron] Found ${tenantConfigs.length} tenant configs`);
+    console.log(
+      `[Monthly Invoice Cron] Found ${tenantConfigs.length} tenant configs`
+    );
 
     for (const config of tenantConfigs) {
       try {
@@ -86,7 +106,9 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         // Skip if no transactions
         if (txCount === 0) {
           results.push({ tenantId: config.tenantId, status: "skipped" });
-          console.log(`[Monthly Invoice Cron] Tenant ${config.tenantId}: No transactions, skipping`);
+          console.log(
+            `[Monthly Invoice Cron] Tenant ${config.tenantId}: No transactions, skipping`
+          );
           continue;
         }
 
@@ -112,7 +134,9 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
             const hybridConfig = config.hybridConfig as any;
             const baseFee = (hybridConfig?.baseFee || 25000) * 100;
             const revenueSharePercent = hybridConfig?.revenueSharePercent || 10;
-            const revenueShareAmount = Math.round(totalGross * (revenueSharePercent / 100) * 100);
+            const revenueShareAmount = Math.round(
+              totalGross * (revenueSharePercent / 100) * 100
+            );
             invoiceAmount = baseFee + revenueShareAmount;
             description = `Hybrid: ₦${(baseFee / 100).toLocaleString()} base + ${revenueSharePercent}% on ₦${totalGross.toLocaleString()} — ${periodLabel}`;
             break;
@@ -123,9 +147,12 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         }
 
         // Skip if amount is below minimum (Stripe requires $0.50 / ₦50)
-        if (invoiceAmount < 5000) { // ₦50 in kobo
+        if (invoiceAmount < 5000) {
+          // ₦50 in kobo
           results.push({ tenantId: config.tenantId, status: "skipped" });
-          console.log(`[Monthly Invoice Cron] Tenant ${config.tenantId}: Amount too low (${invoiceAmount}), skipping`);
+          console.log(
+            `[Monthly Invoice Cron] Tenant ${config.tenantId}: Amount too low (${invoiceAmount}), skipping`
+          );
           continue;
         }
 
@@ -135,11 +162,16 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         if (!customerId) {
           const customer = await stripe.customers.create({
             name: `Tenant ${config.tenantId}`,
-            metadata: { tenant_id: String(config.tenantId), billing_model: config.billingModel },
+            metadata: {
+              tenant_id: String(config.tenantId),
+              billing_model: config.billingModel,
+            },
           });
           customerId = customer.id;
           // Update tenant config with Stripe customer ID
-          console.log(`[Monthly Invoice Cron] Created Stripe customer ${customerId} for tenant ${config.tenantId}`);
+          console.log(
+            `[Monthly Invoice Cron] Created Stripe customer ${customerId} for tenant ${config.tenantId}`
+          );
         }
 
         // Create invoice item
@@ -209,10 +241,19 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
           amount: invoiceAmount / 100,
         });
 
-        console.log(`[Monthly Invoice Cron] Tenant ${config.tenantId}: Invoice ${invoice.id} created for ₦${(invoiceAmount / 100).toLocaleString()}`);
+        console.log(
+          `[Monthly Invoice Cron] Tenant ${config.tenantId}: Invoice ${invoice.id} created for ₦${(invoiceAmount / 100).toLocaleString()}`
+        );
       } catch (err: any) {
-        console.error(`[Monthly Invoice Cron] Tenant ${config.tenantId} error:`, err.message);
-        results.push({ tenantId: config.tenantId, status: "error", error: err.message });
+        console.error(
+          `[Monthly Invoice Cron] Tenant ${config.tenantId} error:`,
+          err.message
+        );
+        results.push({
+          tenantId: config.tenantId,
+          status: "error",
+          error: err.message,
+        });
       }
     }
 
@@ -222,15 +263,20 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
       ok: true,
       period: periodLabel,
       tenantsProcessed: tenantConfigs.length,
-      invoicesGenerated: results.filter((r) => r.status === "success").length,
-      skipped: results.filter((r) => r.status === "skipped").length,
-      errors: results.filter((r) => r.status === "error").length,
-      totalRevenue: results.filter((r) => r.status === "success").reduce((sum, r) => sum + (r.amount || 0), 0),
+      invoicesGenerated: results.filter(r => r.status === "success").length,
+      skipped: results.filter(r => r.status === "skipped").length,
+      errors: results.filter(r => r.status === "error").length,
+      totalRevenue: results
+        .filter(r => r.status === "success")
+        .reduce((sum, r) => sum + (r.amount || 0), 0),
       elapsedMs: elapsed,
       results,
     };
 
-    console.log(`[Monthly Invoice Cron] Complete:`, JSON.stringify(summary, null, 2).slice(0, 500));
+    console.log(
+      `[Monthly Invoice Cron] Complete:`,
+      JSON.stringify(summary, null, 2).slice(0, 500)
+    );
 
     // Publish summary to Kafka
     await publishBillingEvent("billing.cron.monthly_invoice_complete", summary);

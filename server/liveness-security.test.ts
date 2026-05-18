@@ -104,7 +104,7 @@ describe("Retry Cooldown", () => {
     recordLivenessFailure(userId);
 
     const statuses = getCooldownStatus();
-    const found = statuses.find((s) => s.userId === userId);
+    const found = statuses.find(s => s.userId === userId);
     expect(found).toBeDefined();
     expect(found!.failures).toBe(3);
     expect(found!.lockedUntil).not.toBeNull();
@@ -206,7 +206,8 @@ describe("Server-side Passive Liveness", () => {
 describe("Device Fingerprinting", () => {
   it("should create a fingerprint from device info", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 12; TECNO Pop 7 Build/SP1A.210812.016) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 12; TECNO Pop 7 Build/SP1A.210812.016) AppleWebKit/537.36",
       cameraWidth: 640,
       cameraHeight: 480,
       screenWidth: 720,
@@ -224,7 +225,8 @@ describe("Device Fingerprinting", () => {
 
   it("should detect iPhone device model", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
       cameraWidth: 1920,
       cameraHeight: 1080,
       screenWidth: 390,
@@ -239,7 +241,8 @@ describe("Device Fingerprinting", () => {
 
   it("should return relaxed thresholds for known budget devices", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 12; itel A60s Build/SP1A.210812.016) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 12; itel A60s Build/SP1A.210812.016) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0",
       cameraWidth: 320,
       cameraHeight: 240,
       screenWidth: 540,
@@ -256,7 +259,8 @@ describe("Device Fingerprinting", () => {
 
   it("should return standard thresholds for high-end devices", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
       cameraWidth: 1920,
       cameraHeight: 1080,
       screenWidth: 390,
@@ -265,14 +269,15 @@ describe("Device Fingerprinting", () => {
     });
 
     const thresholds = getDeviceThresholds(fp);
-    expect(thresholds.blinkThreshold).toBeGreaterThanOrEqual(0.20);
+    expect(thresholds.blinkThreshold).toBeGreaterThanOrEqual(0.2);
     expect(thresholds.noiseToleranceFactor).toBeLessThanOrEqual(1.5);
     expect(thresholds.maxRetries).toBeLessThanOrEqual(4);
   });
 
   it("should infer thresholds from camera resolution for unknown devices", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 11; Unknown Device Build/RQ3A) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 11; Unknown Device Build/RQ3A) AppleWebKit/537.36",
       cameraWidth: 320,
       cameraHeight: 240,
       screenWidth: 480,
@@ -288,7 +293,8 @@ describe("Device Fingerprinting", () => {
 
   it("should record and retrieve device liveness history", () => {
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 12; Samsung A04 Build/SP1A) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 12; Samsung A04 Build/SP1A) AppleWebKit/537.36",
       cameraWidth: 1280,
       cameraHeight: 720,
       screenWidth: 720,
@@ -310,7 +316,8 @@ describe("Device Fingerprinting", () => {
   it("should identify problematic devices", () => {
     // Create a device with many failures
     const fp = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 10; Problem Device Build/QQ3A) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 10; Problem Device Build/QQ3A) AppleWebKit/537.36",
       cameraWidth: 640,
       cameraHeight: 480,
       screenWidth: 720,
@@ -320,19 +327,25 @@ describe("Device Fingerprinting", () => {
 
     // Record 6 failures and 1 success (14% success rate)
     for (let i = 0; i < 6; i++) {
-      recordDeviceLivenessAttempt(fp, false, "active_blink", 0.2 + Math.random() * 0.1);
+      recordDeviceLivenessAttempt(
+        fp,
+        false,
+        "active_blink",
+        0.2 + Math.random() * 0.1
+      );
     }
     recordDeviceLivenessAttempt(fp, true, "active_blink", 0.6);
 
     const problematic = getProblematicDevices(5, 0.5);
-    const found = problematic.find((d) => d.fingerprint === fp.fingerprintHash);
+    const found = problematic.find(d => d.fingerprint === fp.fingerprintHash);
     expect(found).toBeDefined();
     expect(found!.successRate).toBeLessThan(0.5);
   });
 
   it("should produce consistent fingerprint hashes for same device", () => {
     const params = {
-      userAgent: "Mozilla/5.0 (Linux; Android 12; TECNO Pop 7 Build/SP1A) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 12; TECNO Pop 7 Build/SP1A) AppleWebKit/537.36",
       cameraWidth: 640,
       cameraHeight: 480,
       screenWidth: 720,
@@ -347,7 +360,8 @@ describe("Device Fingerprinting", () => {
 
   it("should produce different hashes for different devices", () => {
     const fp1 = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15",
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15",
       cameraWidth: 1920,
       cameraHeight: 1080,
       screenWidth: 390,
@@ -356,7 +370,8 @@ describe("Device Fingerprinting", () => {
     });
 
     const fp2 = createDeviceFingerprint({
-      userAgent: "Mozilla/5.0 (Linux; Android 12; Samsung A04) AppleWebKit/537.36",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 12; Samsung A04) AppleWebKit/537.36",
       cameraWidth: 1280,
       cameraHeight: 720,
       screenWidth: 720,

@@ -72,7 +72,9 @@ describe("Sprint 16: Main Router Integration", () => {
     const mod = await import("./routers");
     const procedures = Object.keys(mod.appRouter._def.procedures);
     const hasInviteCodes = procedures.some(p => p.startsWith("inviteCodes."));
-    const hasPartnerOnboarding = procedures.some(p => p.startsWith("partnerOnboarding."));
+    const hasPartnerOnboarding = procedures.some(p =>
+      p.startsWith("partnerOnboarding.")
+    );
     const hasTenantAdmin = procedures.some(p => p.startsWith("tenantAdmin."));
     expect(hasInviteCodes).toBe(true);
     expect(hasPartnerOnboarding).toBe(true);
@@ -83,12 +85,22 @@ describe("Sprint 16: Main Router Integration", () => {
 describe("Sprint 16: Navigation Reorganization", () => {
   it("should have all 11 navigation groups in DashboardLayout", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("client/src/components/DashboardLayout.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "client/src/components/DashboardLayout.tsx",
+      "utf-8"
+    );
     const expectedGroups = [
-      "Core", "Portals", "Administration", "Analytics & Reporting",
-      "Agent Management", "Transactions & Finance", "Engagement & Loyalty",
-      "Notifications", "Integrations & Webhooks", "White Label & Tenants",
-      "Infrastructure & System"
+      "Core",
+      "Portals",
+      "Administration",
+      "Analytics & Reporting",
+      "Agent Management",
+      "Transactions & Finance",
+      "Engagement & Loyalty",
+      "Notifications",
+      "Integrations & Webhooks",
+      "White Label & Tenants",
+      "Infrastructure & System",
     ];
     for (const group of expectedGroups) {
       expect(content).toContain(group);
@@ -97,14 +109,20 @@ describe("Sprint 16: Navigation Reorganization", () => {
 
   it("should include search functionality in navigation", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("client/src/components/DashboardLayout.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "client/src/components/DashboardLayout.tsx",
+      "utf-8"
+    );
     expect(content).toContain("searchQuery");
     expect(content).toContain("Search menu");
   });
 
   it("should include collapsible group functionality", async () => {
     const fs = await import("fs");
-    const content = fs.readFileSync("client/src/components/DashboardLayout.tsx", "utf-8");
+    const content = fs.readFileSync(
+      "client/src/components/DashboardLayout.tsx",
+      "utf-8"
+    );
     expect(content).toContain("collapsedGroups");
     expect(content).toContain("toggleGroup");
     expect(content).toContain("ChevronDown");

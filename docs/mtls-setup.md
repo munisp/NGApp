@@ -29,10 +29,10 @@ See `docs/mtls-microservices.md` for the full cert-manager `Certificate` resourc
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
+| Variable        | Default             | Description                                   |
+| --------------- | ------------------- | --------------------------------------------- |
 | `MTLS_CERT_DIR` | `/etc/54link/certs` | Directory with `tls.crt`, `tls.key`, `ca.crt` |
-| `MTLS_ENABLED` | `true` | Set `false` to bypass mTLS (dev only) |
+| `MTLS_ENABLED`  | `true`              | Set `false` to bypass mTLS (dev only)         |
 
 ## Wiring into platformClient.ts
 

@@ -19,11 +19,27 @@ const TopicMappingSchema = z.object({
 });
 
 const DEFAULT_TOPIC_MAPPINGS = [
-  { mqttTopic: "pos/+/transactions", fluvioTopic: "pos.transactions.created", transform: "json" },
-  { mqttTopic: "pos/+/fraud",        fluvioTopic: "pos.fraud-alerts",          transform: "json" },
-  { mqttTopic: "pos/+/float",        fluvioTopic: "pos.float-events",          transform: "json" },
-  { mqttTopic: "pos/+/kyc",          fluvioTopic: "pos.kyc-events",            transform: "json" },
-  { mqttTopic: "pos/+/heartbeat",    fluvioTopic: "pos.terminal-heartbeat",    transform: "json" },
+  {
+    mqttTopic: "pos/+/transactions",
+    fluvioTopic: "pos.transactions.created",
+    transform: "json",
+  },
+  {
+    mqttTopic: "pos/+/fraud",
+    fluvioTopic: "pos.fraud-alerts",
+    transform: "json",
+  },
+  {
+    mqttTopic: "pos/+/float",
+    fluvioTopic: "pos.float-events",
+    transform: "json",
+  },
+  { mqttTopic: "pos/+/kyc", fluvioTopic: "pos.kyc-events", transform: "json" },
+  {
+    mqttTopic: "pos/+/heartbeat",
+    fluvioTopic: "pos.terminal-heartbeat",
+    transform: "json",
+  },
 ];
 
 export const mqttBridgeRouter = router({
@@ -59,58 +75,75 @@ export const mqttBridgeRouter = router({
 
   // ── Save MQTT bridge config ──────────────────────────────────────────────────
   saveConfig: protectedProcedure
-    .input(z.object({
-      name: z.string().min(1).max(128).optional(),
-      brokerUrl: z.string().min(1),
-      port: z.number().int().min(1).max(65535).optional(),
-      useTls: z.boolean().optional(),
-      username: z.string().max(128).optional(),
-      password: z.string().optional(),
-      clientId: z.string().max(128).optional(),
-      topicMappings: z.array(TopicMappingSchema).optional(),
-      qos: z.enum(["0", "1", "2"]).optional(),
-      keepAliveSeconds: z.number().int().min(10).max(3600).optional(),
-      reconnectDelayMs: z.number().int().min(1000).max(60000).optional(),
-      enabled: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(128).optional(),
+        brokerUrl: z.string().min(1),
+        port: z.number().int().min(1).max(65535).optional(),
+        useTls: z.boolean().optional(),
+        username: z.string().max(128).optional(),
+        password: z.string().optional(),
+        clientId: z.string().max(128).optional(),
+        topicMappings: z.array(TopicMappingSchema).optional(),
+        qos: z.enum(["0", "1", "2"]).optional(),
+        keepAliveSeconds: z.number().int().min(10).max(3600).optional(),
+        reconnectDelayMs: z.number().int().min(1000).max(60000).optional(),
+        enabled: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
         if (!db) throw new Error("DB unavailable");
-        const existing = await db.select({ id: mqttBridgeConfig.id }).from(mqttBridgeConfig).limit(1);
+        const existing = await db
+          .select({ id: mqttBridgeConfig.id })
+          .from(mqttBridgeConfig)
+          .limit(1);
         const now = new Date();
         if (existing.length === 0) {
-          const [row] = await db.insert(mqttBridgeConfig).values({
-            ...input,
-            updatedAt: now,
-          }).returning();
+          const [row] = await db
+            .insert(mqttBridgeConfig)
+            .values({
+              ...input,
+              updatedAt: now,
+            })
+            .returning();
           return row;
         }
-        const [row] = await db.update(mqttBridgeConfig)
+        const [row] = await db
+          .update(mqttBridgeConfig)
           .set({ ...input, updatedAt: now })
           .where(eq(mqttBridgeConfig.id, existing[0].id))
           .returning();
         return row;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Test MQTT broker TCP reachability ────────────────────────────────────────
   testMqttBridge: protectedProcedure
-    .input(z.object({
-      brokerUrl: z.string(),
-      port: z.number().int().optional(),
-      useTls: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        brokerUrl: z.string(),
+        port: z.number().int().optional(),
+        useTls: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const start = Date.now();
       try {
         const rawUrl = input.brokerUrl
           .replace(/^mqtts?:\/\//, "http://")
           .replace(/^tcps?:\/\//, "http://");
-        const url = new URL(rawUrl.startsWith("http") ? rawUrl : `http://${rawUrl}`);
+        const url = new URL(
+          rawUrl.startsWith("http") ? rawUrl : `http://${rawUrl}`
+        );
         const host = url.hostname || input.brokerUrl;
         const port = input.port ?? (input.useTls ? 8883 : 1883);
 
@@ -120,7 +153,9 @@ export const mqttBridgeRouter = router({
           const socket = new net.Socket();
           const timeout = setTimeout(() => {
             socket.destroy();
-            reject(new Error(`TCP connection to ${host}:${port} timed out after 5s`));
+            reject(
+              new Error(`TCP connection to ${host}:${port} timed out after 5s`)
+            );
           }, 5000);
           socket.connect(port, host, () => {
             clearTimeout(timeout);
@@ -137,25 +172,47 @@ export const mqttBridgeRouter = router({
 
         const db = (await getDb())!;
         if (db) {
-          const existing = await db.select({ id: mqttBridgeConfig.id }).from(mqttBridgeConfig).limit(1);
+          const existing = await db
+            .select({ id: mqttBridgeConfig.id })
+            .from(mqttBridgeConfig)
+            .limit(1);
           if (existing.length > 0) {
-            await db.update(mqttBridgeConfig)
-              .set({ lastTestAt: new Date(), lastTestStatus: "success", lastTestError: null, updatedAt: new Date() })
+            await db
+              .update(mqttBridgeConfig)
+              .set({
+                lastTestAt: new Date(),
+                lastTestStatus: "success",
+                lastTestError: null,
+                updatedAt: new Date(),
+              })
               .where(eq(mqttBridgeConfig.id, existing[0].id));
           }
         }
 
-        return { success: true, latencyMs, message: `TCP connection to ${host}:${port} succeeded in ${latencyMs}ms` };
+        return {
+          success: true,
+          latencyMs,
+          message: `TCP connection to ${host}:${port} succeeded in ${latencyMs}ms`,
+        };
       } catch (err: unknown) {
         const latencyMs = Date.now() - start;
         const message = err instanceof Error ? err.message : "Unknown error";
 
         const db = (await getDb())!;
         if (db) {
-          const existing = await db.select({ id: mqttBridgeConfig.id }).from(mqttBridgeConfig).limit(1);
+          const existing = await db
+            .select({ id: mqttBridgeConfig.id })
+            .from(mqttBridgeConfig)
+            .limit(1);
           if (existing.length > 0) {
-            await db.update(mqttBridgeConfig)
-              .set({ lastTestAt: new Date(), lastTestStatus: "failed", lastTestError: message, updatedAt: new Date() })
+            await db
+              .update(mqttBridgeConfig)
+              .set({
+                lastTestAt: new Date(),
+                lastTestStatus: "failed",
+                lastTestError: message,
+                updatedAt: new Date(),
+              })
               .where(eq(mqttBridgeConfig.id, existing[0].id));
           }
         }
@@ -168,17 +225,21 @@ export const mqttBridgeRouter = router({
   // Sends a test message to a Fluvio topic and measures end-to-end latency.
   // This validates the full MQTT → Fluvio pipeline is operational.
   publishTest: protectedProcedure
-    .input(z.object({
-      topic: z.string().default("pos.transactions.created"),
-      payload: z.record(z.string(), z.unknown()).optional(),
-    }))
+    .input(
+      z.object({
+        topic: z.string().default("pos.transactions.created"),
+        payload: z.record(z.string(), z.unknown()).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const start = Date.now();
         const testPayload = input.payload ?? {
           type: "MQTT_BRIDGE_TEST",
           ref: `TEST-${Date.now()}`,
-          agentCode: ctx.user?.keycloakSub ? `AGT-${ctx.user.keycloakSub.slice(0, 8)}` : "AGT-TEST",
+          agentCode: ctx.user?.keycloakSub
+            ? `AGT-${ctx.user.keycloakSub.slice(0, 8)}`
+            : "AGT-TEST",
           amount: 0,
           currency: "NGN",
           timestamp: new Date().toISOString(),
@@ -186,7 +247,10 @@ export const mqttBridgeRouter = router({
         };
 
         try {
-          const event: FluvioEvent = { topic: input.topic, payload: testPayload };
+          const event: FluvioEvent = {
+            topic: input.topic,
+            payload: testPayload,
+          };
           await fluvioProduce(event);
           const latencyMs = Date.now() - start;
           return {
@@ -209,23 +273,29 @@ export const mqttBridgeRouter = router({
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Generate InfinyOn MQTT Source Connector YAML spec ───────────────────────
   generateConnectorSpec: protectedProcedure
-    .input(z.object({
-      brokerUrl: z.string(),
-      port: z.number().int().optional(),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      useTls: z.boolean().optional(),
-      clientId: z.string().optional(),
-      topicMappings: z.array(TopicMappingSchema).optional(),
-      qos: z.enum(["0", "1", "2"]).optional(),
-      keepAliveSeconds: z.number().int().optional(),
-    }))
+    .input(
+      z.object({
+        brokerUrl: z.string(),
+        port: z.number().int().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+        useTls: z.boolean().optional(),
+        clientId: z.string().optional(),
+        topicMappings: z.array(TopicMappingSchema).optional(),
+        qos: z.enum(["0", "1", "2"]).optional(),
+        keepAliveSeconds: z.number().int().optional(),
+      })
+    )
     .query(({ input }) => {
       const {
         brokerUrl,
@@ -264,7 +334,10 @@ export const mqttBridgeRouter = router({
         ];
         if (username) {
           lines.push(`  username: "${username}"`);
-          if (password) lines.push(`  password: process.env.MQTT_PASSWORD || "placeholder"  # Set via MQTT_PASSWORD env var`);
+          if (password)
+            lines.push(
+              `  password: process.env.MQTT_PASSWORD || "placeholder"  # Set via MQTT_PASSWORD env var`
+            );
         }
         if (useTls) {
           lines.push(`  tls:`);
@@ -295,14 +368,16 @@ export const mqttBridgeRouter = router({
         `set -e`,
         `echo "Installing 54Link MQTT Source Connectors..."`,
         ``,
-        ...connectors.map(c => [
-          `echo "Creating connector: ${c.name}"`,
-          `cat > ${c.name}.yaml << 'YAML'`,
-          c.yaml,
-          `YAML`,
-          `fluvio cloud connector create --config ${c.name}.yaml`,
-          ``,
-        ].join("\n")),
+        ...connectors.map(c =>
+          [
+            `echo "Creating connector: ${c.name}"`,
+            `cat > ${c.name}.yaml << 'YAML'`,
+            c.yaml,
+            `YAML`,
+            `fluvio cloud connector create --config ${c.name}.yaml`,
+            ``,
+          ].join("\n")
+        ),
         `echo "All connectors installed."`,
         `echo "Verify with: fluvio cloud connector list"`,
       ].join("\n");

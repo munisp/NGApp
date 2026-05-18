@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Security Hardening Module — 54Link Agency Banking Platform
- * 
+ *
  * Implements:
  * - Cryptographically secure CSRF token generation
  * - Account lockout after failed login attempts
@@ -35,47 +35,63 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const ATTEMPT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
-export function isAccountLocked(identifier: string): { locked: boolean; remainingMs: number } {
+export function isAccountLocked(identifier: string): {
+  locked: boolean;
+  remainingMs: number;
+} {
   const entry = lockoutStore.get(identifier);
   if (!entry) return { locked: false, remainingMs: 0 };
-  
+
   const now = Date.now();
-  
+
   // Check if lockout has expired
   if (entry.lockedUntil && entry.lockedUntil > now) {
     return { locked: true, remainingMs: entry.lockedUntil - now };
   }
-  
+
   // Reset if lockout expired
   if (entry.lockedUntil && entry.lockedUntil <= now) {
     lockoutStore.delete(identifier);
     return { locked: false, remainingMs: 0 };
   }
-  
+
   return { locked: false, remainingMs: 0 };
 }
 
-export function recordFailedLogin(identifier: string): { locked: boolean; attemptsRemaining: number } {
+export function recordFailedLogin(identifier: string): {
+  locked: boolean;
+  attemptsRemaining: number;
+} {
   const now = Date.now();
-  const entry = lockoutStore.get(identifier) || { failedAttempts: 0, lockedUntil: null, lastAttempt: 0 };
-  
+  const entry = lockoutStore.get(identifier) || {
+    failedAttempts: 0,
+    lockedUntil: null,
+    lastAttempt: 0,
+  };
+
   // Reset counter if outside the attempt window
   if (now - entry.lastAttempt > ATTEMPT_WINDOW_MS) {
     entry.failedAttempts = 0;
   }
-  
+
   entry.failedAttempts++;
   entry.lastAttempt = now;
-  
+
   if (entry.failedAttempts >= MAX_FAILED_ATTEMPTS) {
     entry.lockedUntil = now + LOCKOUT_DURATION_MS;
     lockoutStore.set(identifier, entry);
-    logSecurityEvent("ACCOUNT_LOCKED", { identifier, attempts: entry.failedAttempts });
+    logSecurityEvent("ACCOUNT_LOCKED", {
+      identifier,
+      attempts: entry.failedAttempts,
+    });
     return { locked: true, attemptsRemaining: 0 };
   }
-  
+
   lockoutStore.set(identifier, entry);
-  return { locked: false, attemptsRemaining: MAX_FAILED_ATTEMPTS - entry.failedAttempts };
+  return {
+    locked: false,
+    attemptsRemaining: MAX_FAILED_ATTEMPTS - entry.failedAttempts,
+  };
 }
 
 export function clearFailedLogins(identifier: string): void {
@@ -140,7 +156,9 @@ export function logSecurityEvent(
     event,
     severity,
     correlationId: req?.headers?.["x-request-id"] as string,
-    ip: req ? maskIp(req.ip || req.socket.remoteAddress || "unknown") : undefined,
+    ip: req
+      ? maskIp(req.ip || req.socket.remoteAddress || "unknown")
+      : undefined,
     userId: details.userId as string,
     userAgent: req?.headers?.["user-agent"]?.substring(0, 100),
     details: maskSensitiveData(details),
@@ -160,7 +178,9 @@ export function logSecurityEvent(
   }
 }
 
-function getSeverity(event: SecurityEventType): "info" | "warning" | "critical" {
+function getSeverity(
+  event: SecurityEventType
+): "info" | "warning" | "critical" {
   switch (event) {
     case "ACCOUNT_LOCKED":
     case "ROLE_ESCALATION_ATTEMPT":
@@ -185,7 +205,7 @@ export function getSecurityEvents(options?: {
   since?: Date;
 }): SecurityEvent[] {
   let events = [...securityEventLog];
-  
+
   if (options?.severity) {
     events = events.filter(e => e.severity === options.severity);
   }
@@ -196,7 +216,7 @@ export function getSecurityEvents(options?: {
     const sinceStr = options.since.toISOString();
     events = events.filter(e => e.timestamp >= sinceStr);
   }
-  
+
   events.reverse(); // newest first
   return events.slice(0, options?.limit || 100);
 }
@@ -205,16 +225,32 @@ export function getSecurityEvents(options?: {
 // Sensitive Data Masking
 // ═══════════════════════════════════════════════════════════════════════════════
 const SENSITIVE_KEYS = new Set([
-  "password", "pin", "secret", "token", "apiKey", "api_key",
-  "authorization", "cookie", "session", "credit_card", "ssn",
-  "bvn", "nin", "passport", "account_number", "accountNumber",
+  "password",
+  "pin",
+  "secret",
+  "token",
+  "apiKey",
+  "api_key",
+  "authorization",
+  "cookie",
+  "session",
+  "credit_card",
+  "ssn",
+  "bvn",
+  "nin",
+  "passport",
+  "account_number",
+  "accountNumber",
 ]);
 
-export function maskSensitiveData(data: Record<string, unknown>): Record<string, unknown> {
+export function maskSensitiveData(
+  data: Record<string, unknown>
+): Record<string, unknown> {
   const masked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     if (SENSITIVE_KEYS.has(key.toLowerCase())) {
-      masked[key] = typeof value === "string" ? maskString(value) : "[REDACTED]";
+      masked[key] =
+        typeof value === "string" ? maskString(value) : "[REDACTED]";
     } else if (typeof value === "string" && isEmail(value)) {
       masked[key] = maskEmail(value);
     } else if (typeof value === "string" && isPhoneNumber(value)) {
@@ -230,7 +266,9 @@ export function maskSensitiveData(data: Record<string, unknown>): Record<string,
 
 function maskString(s: string): string {
   if (s.length <= 4) return "****";
-  return s.substring(0, 2) + "*".repeat(s.length - 4) + s.substring(s.length - 2);
+  return (
+    s.substring(0, 2) + "*".repeat(s.length - 4) + s.substring(s.length - 2)
+  );
 }
 
 function maskEmail(email: string): string {
@@ -279,7 +317,10 @@ const endpointRateLimits: Record<string, EndpointRateConfig> = {
   "/api/health": { windowMs: 60_000, maxRequests: 60 },
 };
 
-const endpointStore = new Map<string, Map<string, { count: number; resetAt: number }>>();
+const endpointStore = new Map<
+  string,
+  Map<string, { count: number; resetAt: number }>
+>();
 
 export function endpointRateLimit() {
   // Cleanup every 5 minutes
@@ -302,34 +343,38 @@ export function endpointRateLimit() {
         break;
       }
     }
-    
+
     if (!config) return next();
-    
+
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const key = path;
-    
+
     if (!endpointStore.has(key)) {
       endpointStore.set(key, new Map());
     }
     const ipMap = endpointStore.get(key)!;
     const now = Date.now();
     const entry = ipMap.get(ip);
-    
+
     if (!entry || entry.resetAt < now) {
       ipMap.set(ip, { count: 1, resetAt: now + config.windowMs });
       return next();
     }
-    
+
     entry.count++;
     if (entry.count > config.maxRequests) {
-      logSecurityEvent("RATE_LIMIT_EXCEEDED", { endpoint: path, ip: maskIp(ip), count: entry.count }, req);
+      logSecurityEvent(
+        "RATE_LIMIT_EXCEEDED",
+        { endpoint: path, ip: maskIp(ip), count: entry.count },
+        req
+      );
       res.setHeader("Retry-After", Math.ceil((entry.resetAt - now) / 1000));
       return res.status(429).json({
         error: "Rate limit exceeded for this endpoint",
         retryAfter: Math.ceil((entry.resetAt - now) / 1000),
       });
     }
-    
+
     next();
   };
 }
@@ -339,7 +384,9 @@ export function endpointRateLimit() {
 // ═══════════════════════════════════════════════════════════════════════════════
 export function correlationId() {
   return (req: Request, res: Response, next: NextFunction) => {
-    const id = (req.headers["x-request-id"] as string) || randomBytes(16).toString("hex");
+    const id =
+      (req.headers["x-request-id"] as string) ||
+      randomBytes(16).toString("hex");
     req.headers["x-request-id"] = id;
     res.setHeader("X-Request-ID", id);
     next();
@@ -357,21 +404,34 @@ interface IpReputation {
 
 const ipReputationStore = new Map<string, IpReputation>();
 
-export function recordIpViolation(ip: string, severity: "low" | "medium" | "high"): void {
-  const entry = ipReputationStore.get(ip) || { score: 100, violations: 0, lastViolation: 0 };
+export function recordIpViolation(
+  ip: string,
+  severity: "low" | "medium" | "high"
+): void {
+  const entry = ipReputationStore.get(ip) || {
+    score: 100,
+    violations: 0,
+    lastViolation: 0,
+  };
   const deduction = severity === "high" ? 30 : severity === "medium" ? 15 : 5;
   entry.score = Math.max(0, entry.score - deduction);
   entry.violations++;
   entry.lastViolation = Date.now();
   ipReputationStore.set(ip, entry);
-  
+
   if (entry.score <= 20) {
-    logSecurityEvent("IP_BLOCKED", { ip: maskIp(ip), score: entry.score, violations: entry.violations });
+    logSecurityEvent("IP_BLOCKED", {
+      ip: maskIp(ip),
+      score: entry.score,
+      violations: entry.violations,
+    });
   }
 }
 
 export function getIpReputation(ip: string): IpReputation {
-  return ipReputationStore.get(ip) || { score: 100, violations: 0, lastViolation: 0 };
+  return (
+    ipReputationStore.get(ip) || { score: 100, violations: 0, lastViolation: 0 }
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -389,17 +449,17 @@ export function getSecuritySummary(): {
   const last24h = securityEventLog.filter(
     e => new Date(e.timestamp).getTime() > now - 86_400_000
   );
-  
+
   let lockedAccounts = 0;
   for (const [, entry] of Array.from(lockoutStore.entries())) {
     if (entry.lockedUntil && entry.lockedUntil > now) lockedAccounts++;
   }
-  
+
   let blockedIps = 0;
   for (const [, rep] of Array.from(ipReputationStore.entries())) {
     if (rep.score <= 20) blockedIps++;
   }
-  
+
   return {
     totalEvents: last24h.length,
     criticalEvents: last24h.filter(e => e.severity === "critical").length,

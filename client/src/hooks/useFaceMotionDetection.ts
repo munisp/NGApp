@@ -35,10 +35,10 @@ export interface MotionState {
   error: string | null;
   /** Real-time metrics for debugging/display */
   metrics: {
-    ear: number;        // Eye Aspect Ratio (blink)
-    mar: number;        // Mouth Aspect Ratio (open mouth)
-    yaw: number;        // Head yaw angle in degrees
-    pitch: number;      // Head pitch angle in degrees
+    ear: number; // Eye Aspect Ratio (blink)
+    mar: number; // Mouth Aspect Ratio (open mouth)
+    yaw: number; // Head yaw angle in degrees
+    pitch: number; // Head pitch angle in degrees
     smileRatio: number; // Mouth width / height ratio
   };
 }
@@ -109,7 +109,10 @@ function computeEAR(
   let verticalSum = 0;
   const pairs = Math.min(upperIndices.length, lowerIndices.length);
   for (let i = 0; i < pairs; i++) {
-    verticalSum += distance(landmarks[upperIndices[i]], landmarks[lowerIndices[i]]);
+    verticalSum += distance(
+      landmarks[upperIndices[i]],
+      landmarks[lowerIndices[i]]
+    );
   }
   return verticalSum / (pairs * horizontal);
 }
@@ -123,7 +126,10 @@ function computeMAR(landmarks: Point3D[]): number {
 
 function computeSmileRatio(landmarks: Point3D[]): number {
   const mouthWidth = distance(landmarks[MOUTH_LEFT], landmarks[MOUTH_RIGHT]);
-  const lipHeight = distance(landmarks[UPPER_LIP_TOP], landmarks[LOWER_LIP_BOTTOM]);
+  const lipHeight = distance(
+    landmarks[UPPER_LIP_TOP],
+    landmarks[LOWER_LIP_BOTTOM]
+  );
   if (lipHeight < 0.001) return 1;
   return mouthWidth / lipHeight;
 }
@@ -154,12 +160,12 @@ function estimateHeadPitch(landmarks: Point3D[]): number {
 // ── Thresholds ───────────────────────────────────────────────────────────────
 
 const THRESHOLDS = {
-  blink: { earBelow: 0.21, minDuration: 80 },      // EAR must drop below 0.21
-  turn_left: { yawBelow: -12 },                      // Head turned left > 12 degrees
-  turn_right: { yawAbove: 12 },                      // Head turned right > 12 degrees
-  nod: { pitchChange: 8 },                            // Pitch must change by 8+ degrees
-  smile: { smileRatioAbove: 3.2 },                   // Mouth width/height ratio > 3.2
-  open_mouth: { marAbove: 0.45 },                    // Mouth Aspect Ratio > 0.45
+  blink: { earBelow: 0.21, minDuration: 80 }, // EAR must drop below 0.21
+  turn_left: { yawBelow: -12 }, // Head turned left > 12 degrees
+  turn_right: { yawAbove: 12 }, // Head turned right > 12 degrees
+  nod: { pitchChange: 8 }, // Pitch must change by 8+ degrees
+  smile: { smileRatioAbove: 3.2 }, // Mouth width/height ratio > 3.2
+  open_mouth: { marAbove: 0.45 }, // Mouth Aspect Ratio > 0.45
 };
 
 // Confirmation: require detection for N consecutive frames to reduce false positives
@@ -206,23 +212,26 @@ export function useFaceMotionDetection({
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
         );
 
-        const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-          baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-            delegate: "GPU",
-          },
-          runningMode: "VIDEO",
-          numFaces: 1,
-          minFaceDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-          outputFaceBlendshapes: false,
-          outputFacialTransformationMatrixes: false,
-        });
+        const landmarker = await FaceLandmarker.createFromOptions(
+          filesetResolver,
+          {
+            baseOptions: {
+              modelAssetPath:
+                "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+              delegate: "GPU",
+            },
+            runningMode: "VIDEO",
+            numFaces: 1,
+            minFaceDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+            outputFaceBlendshapes: false,
+            outputFacialTransformationMatrixes: false,
+          }
+        );
 
         if (!cancelled) {
           landmarkerRef.current = landmarker;
-          setState((s) => ({ ...s, ready: true, error: null }));
+          setState(s => ({ ...s, ready: true, error: null }));
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -235,25 +244,28 @@ export function useFaceMotionDetection({
               "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
             );
 
-            const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-              baseOptions: {
-                modelAssetPath:
-                  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-                delegate: "CPU",
-              },
-              runningMode: "VIDEO",
-              numFaces: 1,
-              minFaceDetectionConfidence: 0.5,
-              minTrackingConfidence: 0.5,
-            });
+            const landmarker = await FaceLandmarker.createFromOptions(
+              filesetResolver,
+              {
+                baseOptions: {
+                  modelAssetPath:
+                    "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                  delegate: "CPU",
+                },
+                runningMode: "VIDEO",
+                numFaces: 1,
+                minFaceDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5,
+              }
+            );
 
             if (!cancelled) {
               landmarkerRef.current = landmarker;
-              setState((s) => ({ ...s, ready: true, error: null }));
+              setState(s => ({ ...s, ready: true, error: null }));
             }
           } catch (cpuErr: any) {
             if (!cancelled) {
-              setState((s) => ({
+              setState(s => ({
                 ...s,
                 error: `Face detection failed to load: ${cpuErr.message}`,
               }));
@@ -295,7 +307,7 @@ export function useFaceMotionDetection({
         const result = landmarker.detectForVideo(video, performance.now());
 
         if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
-          setState((s) => ({
+          setState(s => ({
             ...s,
             faceDetected: false,
             detectedChallenge: null,
@@ -307,8 +319,20 @@ export function useFaceMotionDetection({
         const landmarks: Point3D[] = result.faceLandmarks[0];
 
         // Compute metrics
-        const leftEAR = computeEAR(landmarks, LEFT_EYE_UPPER, LEFT_EYE_LOWER, LEFT_EYE_INNER, LEFT_EYE_OUTER);
-        const rightEAR = computeEAR(landmarks, RIGHT_EYE_UPPER, RIGHT_EYE_LOWER, RIGHT_EYE_INNER, RIGHT_EYE_OUTER);
+        const leftEAR = computeEAR(
+          landmarks,
+          LEFT_EYE_UPPER,
+          LEFT_EYE_LOWER,
+          LEFT_EYE_INNER,
+          LEFT_EYE_OUTER
+        );
+        const rightEAR = computeEAR(
+          landmarks,
+          RIGHT_EYE_UPPER,
+          RIGHT_EYE_LOWER,
+          RIGHT_EYE_INNER,
+          RIGHT_EYE_OUTER
+        );
         const ear = (leftEAR + rightEAR) / 2;
         const mar = computeMAR(landmarks);
         const yaw = estimateHeadYaw(landmarks);
@@ -335,9 +359,16 @@ export function useFaceMotionDetection({
         let detected: ChallengeType | null = null;
         let conf = 0;
 
-        const challengesToCheck = activeChallenge ? [activeChallenge] : (
-          ["blink", "turn_left", "turn_right", "nod", "smile", "open_mouth"] as ChallengeType[]
-        );
+        const challengesToCheck = activeChallenge
+          ? [activeChallenge]
+          : ([
+              "blink",
+              "turn_left",
+              "turn_right",
+              "nod",
+              "smile",
+              "open_mouth",
+            ] as ChallengeType[]);
 
         for (const ch of challengesToCheck) {
           const result = checkChallenge(ch, metrics);
@@ -351,12 +382,16 @@ export function useFaceMotionDetection({
         // Confirmation: require CONFIRM_FRAMES consecutive detections
         if (detected) {
           const key = detected;
-          confirmCountRef.current[key] = (confirmCountRef.current[key] || 0) + 1;
+          confirmCountRef.current[key] =
+            (confirmCountRef.current[key] || 0) + 1;
 
-          if (confirmCountRef.current[key] >= CONFIRM_FRAMES && !detectedRef.current) {
+          if (
+            confirmCountRef.current[key] >= CONFIRM_FRAMES &&
+            !detectedRef.current
+          ) {
             detectedRef.current = true;
             onChallengeDetected?.(detected, conf);
-            setState((s) => ({
+            setState(s => ({
               ...s,
               faceDetected: true,
               detectedChallenge: detected,
@@ -370,7 +405,7 @@ export function useFaceMotionDetection({
           confirmCountRef.current = {};
         }
 
-        setState((s) => ({
+        setState(s => ({
           ...s,
           faceDetected: true,
           detectedChallenge: detectedRef.current ? s.detectedChallenge : null,
@@ -386,7 +421,14 @@ export function useFaceMotionDetection({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [enabled, state.ready, activeChallenge, onChallengeDetected, detectionIntervalMs, videoRef]);
+  }, [
+    enabled,
+    state.ready,
+    activeChallenge,
+    onChallengeDetected,
+    detectionIntervalMs,
+    videoRef,
+  ]);
 
   return state;
 }
@@ -400,7 +442,10 @@ function checkChallenge(
   switch (type) {
     case "blink":
       if (metrics.ear < THRESHOLDS.blink.earBelow) {
-        const conf = Math.min(1, (THRESHOLDS.blink.earBelow - metrics.ear) / 0.08);
+        const conf = Math.min(
+          1,
+          (THRESHOLDS.blink.earBelow - metrics.ear) / 0.08
+        );
         return { detected: true, confidence: conf };
       }
       return { detected: false, confidence: 0 };

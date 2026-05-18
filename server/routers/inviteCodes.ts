@@ -35,14 +35,16 @@ function generateCode(): string {
 export const inviteCodesRouter = router({
   /** Admin: Generate a new invite code */
   generate: protectedProcedure
-    .input(z.object({
-      type: z.enum(["one_time", "multi_use"]).default("one_time"),
-      maxUses: z.number().int().min(1).max(1000).default(1),
-      partnerName: z.string().max(128).optional(),
-      partnerEmail: z.string().email().max(320).optional(),
-      notes: z.string().max(500).optional(),
-      expiresAt: z.string().datetime().optional(),
-    }))
+    .input(
+      z.object({
+        type: z.enum(["one_time", "multi_use"]).default("one_time"),
+        maxUses: z.number().int().min(1).max(1000).default(1),
+        partnerName: z.string().max(128).optional(),
+        partnerEmail: z.string().email().max(320).optional(),
+        notes: z.string().max(500).optional(),
+        expiresAt: z.string().datetime().optional(),
+      })
+    )
     .mutation(({ input, ctx }) => {
       const code = generateCode();
       const record: InviteCodeRecord = {
@@ -67,28 +69,41 @@ export const inviteCodesRouter = router({
 
   /** Admin: List all invite codes with pagination */
   list: protectedProcedure
-    .input(z.object({
-      page: z.number().int().min(1).default(1),
-      limit: z.number().int().min(1).max(100).default(20),
-      status: z.enum(["active", "used", "expired", "revoked"]).optional(),
-      search: z.string().max(128).optional(),
-    }).optional())
+    .input(
+      z
+        .object({
+          page: z.number().int().min(1).default(1),
+          limit: z.number().int().min(1).max(100).default(20),
+          status: z.enum(["active", "used", "expired", "revoked"]).optional(),
+          search: z.string().max(128).optional(),
+        })
+        .optional()
+    )
     .query(({ input }) => {
       const { page = 1, limit = 20, status, search } = input ?? {};
       let filtered = [...store];
       if (status) filtered = filtered.filter(c => c.status === status);
       if (search) {
         const q = search.toLowerCase();
-        filtered = filtered.filter(c =>
-          c.code.toLowerCase().includes(q) ||
-          c.partnerName?.toLowerCase().includes(q) ||
-          c.partnerEmail?.toLowerCase().includes(q)
+        filtered = filtered.filter(
+          c =>
+            c.code.toLowerCase().includes(q) ||
+            c.partnerName?.toLowerCase().includes(q) ||
+            c.partnerEmail?.toLowerCase().includes(q)
         );
       }
-      filtered.sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
+      filtered.sort(
+        (a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
       const total = filtered.length;
       const items = filtered.slice((page - 1) * limit, page * limit);
-      return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+      return {
+        items,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
     }),
 
   /** Public: Validate an invite code (used during partner onboarding) */
@@ -97,9 +112,12 @@ export const inviteCodesRouter = router({
     .query(({ input }) => {
       const record = store.find(c => c.code === input.code);
       if (!record) return { valid: false, reason: "Code not found" };
-      if (record.status === "revoked") return { valid: false, reason: "Code has been revoked" };
-      if (record.status === "used") return { valid: false, reason: "Code has already been used" };
-      if (record.status === "expired") return { valid: false, reason: "Code has expired" };
+      if (record.status === "revoked")
+        return { valid: false, reason: "Code has been revoked" };
+      if (record.status === "used")
+        return { valid: false, reason: "Code has already been used" };
+      if (record.status === "expired")
+        return { valid: false, reason: "Code has expired" };
       if (record.expiresAt && record.expiresAt < new Date()) {
         record.status = "expired";
         return { valid: false, reason: "Code has expired" };
@@ -123,7 +141,11 @@ export const inviteCodesRouter = router({
     .input(z.object({ code: z.string(), tenantId: z.number().int() }))
     .mutation(({ input }) => {
       const record = store.find(c => c.code === input.code);
-      if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Invite code not found" });
+      if (!record)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invite code not found",
+        });
       record.usedCount += 1;
       record.assignedTenantId = input.tenantId;
       record.updatedAt = new Date();
@@ -138,7 +160,11 @@ export const inviteCodesRouter = router({
     .input(z.object({ id: z.number().int() }))
     .mutation(({ input }) => {
       const record = store.find(c => c.id === input.id);
-      if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Invite code not found" });
+      if (!record)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invite code not found",
+        });
       record.status = "revoked";
       record.updatedAt = new Date();
       return record;
@@ -152,7 +178,8 @@ export const inviteCodesRouter = router({
       used: store.filter(c => c.status === "used").length,
       expired: store.filter(c => c.status === "expired").length,
       revoked: store.filter(c => c.status === "revoked").length,
-      totalTenantsCreated: store.filter(c => c.assignedTenantId !== null).length,
+      totalTenantsCreated: store.filter(c => c.assignedTenantId !== null)
+        .length,
     };
   }),
 });

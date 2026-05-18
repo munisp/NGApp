@@ -21,7 +21,9 @@ interface NotificationContextValue {
   unsubscribe: (channels: NotificationChannel[]) => void;
 }
 
-const NotificationContext = createContext<NotificationContextValue | null>(null);
+const NotificationContext = createContext<NotificationContextValue | null>(
+  null
+);
 
 // ── Provider ────────────────────────────────────────────────────────────────
 

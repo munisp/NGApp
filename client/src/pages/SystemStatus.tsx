@@ -2,7 +2,17 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CheckCircle, XCircle, Clock, RefreshCw, Server, Database, Wifi, Shield } from "lucide-react";
+import {
+  Activity,
+  CheckCircle,
+  XCircle,
+  Clock,
+  RefreshCw,
+  Server,
+  Database,
+  Wifi,
+  Shield,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { trpc } from "@/lib/trpc";
@@ -50,7 +60,9 @@ export default function SystemStatus() {
     // tRPC Endpoint
     const trpcStart = Date.now();
     try {
-      const res = await fetch("/api/trpc/system.health", { credentials: "include" });
+      const res = await fetch("/api/trpc/system.health", {
+        credentials: "include",
+      });
       results.push({
         name: "tRPC Router",
         status: res.ok ? "healthy" : "degraded",
@@ -98,8 +110,11 @@ export default function SystemStatus() {
   useEffect(() => {
     runHealthChecks();
     const interval = setInterval(runHealthChecks, 30000);
-  // Sprint 87: Wired to serviceHealth router
-  const { data, isLoading } = trpc.serviceHealth.getAll.useQuery({ page: 1, limit: 10 });
+    // Sprint 87: Wired to serviceHealth router
+    const { data, isLoading } = trpc.serviceHealth.getAll.useQuery({
+      page: 1,
+      limit: 10,
+    });
 
     return () => clearInterval(interval);
   }, []);
@@ -107,8 +122,8 @@ export default function SystemStatus() {
   const overallStatus = checks.every((c: any) => c.status === "healthy")
     ? "healthy"
     : checks.some((c: any) => c.status === "down")
-    ? "down"
-    : "degraded";
+      ? "down"
+      : "degraded";
 
   const statusColors = {
     healthy: "text-emerald-400 bg-emerald-500/20",
@@ -135,14 +150,23 @@ export default function SystemStatus() {
               Last checked: {lastRefresh.toLocaleTimeString()}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={runHealthChecks} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runHealthChecks}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
 
         {/* Overall Status Banner */}
-        <div className={`rounded-lg border p-6 text-center ${statusColors[overallStatus]}`}>
+        <div
+          className={`rounded-lg border p-6 text-center ${statusColors[overallStatus]}`}
+        >
           {overallStatus === "healthy" ? (
             <CheckCircle className="h-10 w-10 mx-auto mb-2" />
           ) : (
@@ -150,7 +174,8 @@ export default function SystemStatus() {
           )}
           <h2 className="text-xl font-bold">{statusLabels[overallStatus]}</h2>
           <p className="text-sm opacity-80 mt-1">
-            {checks.filter((c: any) => c.status === "healthy").length}/{checks.length} services healthy
+            {checks.filter((c: any) => c.status === "healthy").length}/
+            {checks.length} services healthy
           </p>
         </div>
 
@@ -167,7 +192,9 @@ export default function SystemStatus() {
                   <Icon className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium text-sm">{check.name}</p>
-                    <p className="text-xs text-muted-foreground">{check.details}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {check.details}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -192,7 +219,11 @@ export default function SystemStatus() {
               <div
                 key={i}
                 className={`h-8 flex-1 rounded-sm ${
-                  i > 85 ? "bg-emerald-500/80" : i > 80 ? "bg-emerald-500/60" : "bg-emerald-500/40"
+                  i > 85
+                    ? "bg-emerald-500/80"
+                    : i > 80
+                      ? "bg-emerald-500/60"
+                      : "bg-emerald-500/40"
                 }`}
                 title={`Day ${90 - i}: 100% uptime`}
               />

@@ -13,6 +13,7 @@ Billing provisioning, invoice lifecycle, and dunning workflows require reliable,
 We adopt **Temporal** as the workflow orchestration engine for all billing-related business processes. Temporal provides durable execution, automatic retries with configurable backoff, saga pattern support for multi-step provisioning, and a built-in UI for workflow visibility.
 
 Key workflows implemented:
+
 - 7-step tenant billing provisioning (validate, create accounts, configure rates, setup Stripe, provision Kafka topics, initialize ledger, activate)
 - Invoice lifecycle (generation, delivery, payment tracking, dunning escalation)
 - Settlement processing with rollback capabilities

@@ -1,4 +1,3 @@
-
 /**
  * Export router — streams transaction history as CSV.
  * Admin-only: requires agent.role === 'admin'.
@@ -19,9 +18,9 @@ export const exportRouter = router({
   transactionsCsv: protectedProcedure
     .input(
       z.object({
-        from: z.string().optional(),       // ISO date string e.g. "2026-01-01"
-        to: z.string().optional(),         // ISO date string e.g. "2026-03-31"
-        agentCode: z.string().optional(),  // filter by agent (optional for admin)
+        from: z.string().optional(), // ISO date string e.g. "2026-01-01"
+        to: z.string().optional(), // ISO date string e.g. "2026-03-31"
+        agentCode: z.string().optional(), // filter by agent (optional for admin)
         limit: z.number().default(10000),
       })
     )
@@ -29,11 +28,18 @@ export const exportRouter = router({
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
         }
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         // Build filter conditions
         const conditions = [];
@@ -102,9 +108,21 @@ export const exportRouter = router({
 
         // Build CSV
         const headers = [
-          "Ref", "Agent Code", "Type", "Amount (NGN)", "Fee (NGN)", "Commission (NGN)",
-          "Status", "Customer Name", "Customer Phone", "Customer Account",
-          "Destination Bank", "Destination Account", "Channel", "Fraud Score", "Date/Time",
+          "Ref",
+          "Agent Code",
+          "Type",
+          "Amount (NGN)",
+          "Fee (NGN)",
+          "Commission (NGN)",
+          "Status",
+          "Customer Name",
+          "Customer Phone",
+          "Customer Account",
+          "Destination Bank",
+          "Destination Account",
+          "Channel",
+          "Fraud Score",
+          "Date/Time",
         ];
 
         const csvRows = rows.map((r: any) => [
@@ -127,7 +145,9 @@ export const exportRouter = router({
 
         const csv = [headers, ...csvRows]
           .map((row: any) =>
-            row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+            row
+              .map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`)
+              .join(",")
           )
           .join("\n");
 
@@ -138,7 +158,11 @@ export const exportRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -152,11 +176,18 @@ export const exportRouter = router({
       try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent || agent.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Admin access required",
+          });
         }
 
         const db = (await getDb())!;
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "DB unavailable",
+          });
 
         const dayStart = new Date(input.date);
         dayStart.setHours(0, 0, 0, 0);
@@ -183,7 +214,12 @@ export const exportRouter = router({
         // Aggregate by agent
         const summary: Record<
           number,
-          { agentCode: string; txCount: number; totalVolume: number; totalCommission: number }
+          {
+            agentCode: string;
+            txCount: number;
+            totalVolume: number;
+            totalCommission: number;
+          }
         > = {};
 
         for (const row of rows) {
@@ -212,10 +248,16 @@ export const exportRouter = router({
           }
         }
 
-        return Object.values(summary).sort((a: any, b: any) => b.totalVolume - a.totalVolume);
+        return Object.values(summary).sort(
+          (a: any, b: any) => b.totalVolume - a.totalVolume
+        );
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

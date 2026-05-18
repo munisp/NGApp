@@ -39,11 +39,14 @@ export async function getDb() {
       return null;
     }
     // P3-2: Connection pool right-sizing formula from 1B Payments article
-    const cpuCores = typeof require !== 'undefined' ? (await import('os')).cpus().length : 4;
+    const cpuCores =
+      typeof require !== "undefined" ? (await import("os")).cpus().length : 4;
     const effectiveSpindleCount = 1;
-    const formulaPoolSize = (cpuCores * 2) + effectiveSpindleCount;
+    const formulaPoolSize = cpuCores * 2 + effectiveSpindleCount;
     const poolSize = Math.max(5, Math.min(50, formulaPoolSize));
-    console.log(`[DB] Connection pool: ${poolSize} connections (formula: ${cpuCores} cores × 2 + ${effectiveSpindleCount} spindle)`);
+    console.log(
+      `[DB] Connection pool: ${poolSize} connections (formula: ${cpuCores} cores × 2 + ${effectiveSpindleCount} spindle)`
+    );
     _pool = new Pool({
       connectionString: url,
       ssl: false,
@@ -81,14 +84,24 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     .values(user)
     .onConflictDoUpdate({
       target: users.keycloakSub,
-      set: { name: user.name, email: user.email, role: user.role, lastSignedIn: new Date(), updatedAt: new Date() },
+      set: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        lastSignedIn: new Date(),
+        updatedAt: new Date(),
+      },
     });
 }
 
 export async function getUserByKeycloakSub(keycloakSub: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.keycloakSub, keycloakSub)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.keycloakSub, keycloakSub))
+    .limit(1);
   return result[0];
 }
 
@@ -98,17 +111,27 @@ export async function getUserByOpenId(openId: string) {
 }
 
 // ─── Agents ───────────────────────────────────────────────────────────────────
-export async function getAgentByCode(agentCode: string): Promise<Agent | undefined> {
+export async function getAgentByCode(
+  agentCode: string
+): Promise<Agent | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(agents).where(eq(agents.agentCode, agentCode)).limit(1);
+  const result = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.agentCode, agentCode))
+    .limit(1);
   return result[0];
 }
 
 export async function getAgentById(id: number): Promise<Agent | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.id, id))
+    .limit(1);
   return result[0];
 }
 
@@ -122,25 +145,40 @@ export async function createAgent(data: InsertAgent): Promise<Agent> {
 export async function updateAgentLastLogin(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.update(agents).set({ lastLoginAt: new Date() }).where(eq(agents.id, id));
+  await db
+    .update(agents)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(agents.id, id));
 }
 
-export async function updateAgentFloat(id: number, delta: number): Promise<void> {
+export async function updateAgentFloat(
+  id: number,
+  delta: number
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
   const agent = await getAgentById(id);
   if (!agent) return;
   const newBalance = (Number(agent.floatBalance) + delta).toFixed(2);
-  await db.update(agents).set({ floatBalance: newBalance }).where(eq(agents.id, id));
+  await db
+    .update(agents)
+    .set({ floatBalance: newBalance })
+    .where(eq(agents.id, id));
 }
 
-export async function updateAgentCommission(id: number, delta: number): Promise<void> {
+export async function updateAgentCommission(
+  id: number,
+  delta: number
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
   const agent = await getAgentById(id);
   if (!agent) return;
   const newBalance = (Number(agent.commissionBalance) + delta).toFixed(2);
-  await db.update(agents).set({ commissionBalance: newBalance }).where(eq(agents.id, id));
+  await db
+    .update(agents)
+    .set({ commissionBalance: newBalance })
+    .where(eq(agents.id, id));
 }
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
@@ -151,7 +189,11 @@ export async function createTransaction(data: InsertTransaction) {
   return result[0];
 }
 
-export async function getTransactionsByAgent(agentId: number, limit = 50, offset = 0) {
+export async function getTransactionsByAgent(
+  agentId: number,
+  limit = 50,
+  offset = 0
+) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -172,7 +214,7 @@ export async function getTransactionsByAgent(agentId: number, limit = 50, offset
 export async function getTransactionsByAgentCursor(
   agentId: number,
   limit = 50,
-  cursor?: number,
+  cursor?: number
 ) {
   const db = await getDb();
   if (!db) return { items: [], nextCursor: null };
@@ -182,13 +224,13 @@ export async function getTransactionsByAgentCursor(
     .where(
       cursor
         ? and(eq(transactions.agentId, agentId), lt(transactions.id, cursor))
-        : eq(transactions.agentId, agentId),
+        : eq(transactions.agentId, agentId)
     )
     .orderBy(desc(transactions.id))
     .limit(limit + 1); // fetch one extra to determine if there is a next page
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
-  const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+  const nextCursor = hasMore ? (items[items.length - 1]?.id ?? null) : null;
   return { items, nextCursor };
 }
 
@@ -198,15 +240,16 @@ export async function getTransactionsByAgentCursor(
 export async function getAuditLogCursor(
   agentId?: number,
   limit = 50,
-  cursor?: number,
+  cursor?: number
 ) {
   const db = await getDb();
   if (!db) return { items: [], nextCursor: null };
   const baseWhere = agentId ? eq(auditLog.agentId, agentId) : undefined;
   const cursorWhere = cursor ? lt(auditLog.id, cursor) : undefined;
-  const where = baseWhere && cursorWhere
-    ? and(baseWhere, cursorWhere)
-    : baseWhere ?? cursorWhere;
+  const where =
+    baseWhere && cursorWhere
+      ? and(baseWhere, cursorWhere)
+      : (baseWhere ?? cursorWhere);
   const rows = await db
     .select()
     .from(auditLog)
@@ -215,28 +258,43 @@ export async function getAuditLogCursor(
     .limit(limit + 1);
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
-  const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+  const nextCursor = hasMore ? (items[items.length - 1]?.id ?? null) : null;
   return { items, nextCursor };
 }
 
 export async function getTransactionByRef(ref: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(transactions).where(eq(transactions.ref, ref)).limit(1);
+  const result = await db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.ref, ref))
+    .limit(1);
   return result[0];
 }
 
-export async function updateTransactionStatus(id: number, status: string, notes?: string) {
+export async function updateTransactionStatus(
+  id: number,
+  status: string,
+  notes?: string
+) {
   const db = await getDb();
   if (!db) return;
-  await db.update(transactions).set({ status: status as any, failureReason: notes ?? null }).where(eq(transactions.id, id));
+  await db
+    .update(transactions)
+    .set({ status: status as any, failureReason: notes ?? null })
+    .where(eq(transactions.id, id));
 }
 
 // ─── Fraud Alerts ─────────────────────────────────────────────────────────────
 export async function getFraudAlerts(status?: string) {
   const db = await getDb();
   if (!db) return [];
-  const query = db.select().from(fraudAlerts).orderBy(desc(fraudAlerts.createdAt)).limit(100);
+  const query = db
+    .select()
+    .from(fraudAlerts)
+    .orderBy(desc(fraudAlerts.createdAt))
+    .limit(100);
   return query;
 }
 
@@ -250,7 +308,10 @@ export async function createFraudAlert(data: InsertFraudAlert) {
 export async function updateFraudAlertStatus(id: number, status: string) {
   const db = await getDb();
   if (!db) return;
-  await db.update(fraudAlerts).set({ status: status as any, updatedAt: new Date() }).where(eq(fraudAlerts.id, id));
+  await db
+    .update(fraudAlerts)
+    .set({ status: status as any, updatedAt: new Date() })
+    .where(eq(fraudAlerts.id, id));
 }
 
 // ─── Loyalty ──────────────────────────────────────────────────────────────────
@@ -277,25 +338,52 @@ export async function addLoyaltyHistory(
   // compute balanceAfter before updating
   const agentBefore = await getAgentById(agentId);
   const balanceAfter = Math.max(0, (agentBefore?.loyaltyPoints ?? 0) + points);
-  await db.insert(loyaltyHistory).values({ agentId, type, points, description, transactionId: transactionId ?? null, balanceAfter });
+  await db.insert(loyaltyHistory).values({
+    agentId,
+    type,
+    points,
+    description,
+    transactionId: transactionId ?? null,
+    balanceAfter,
+  });
   // Update agent's total points
   const agent = await getAgentById(agentId);
   if (agent) {
     const newPoints = Math.max(0, agent.loyaltyPoints + points);
-    await db.update(agents).set({ loyaltyPoints: newPoints }).where(eq(agents.id, agentId));
+    await db
+      .update(agents)
+      .set({ loyaltyPoints: newPoints })
+      .where(eq(agents.id, agentId));
   }
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
-export async function createChatSession(agentId: number, category: string, subject: string) {
+export async function createChatSession(
+  agentId: number,
+  category: string,
+  subject: string
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const sessionRef = `CHT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
-  const supportAgentNames = ["Amaka Okonkwo", "Chidi Nwosu", "Fatima Bello", "Emeka Eze"];
-  const supportAgentName = supportAgentNames[Math.floor(Math.random() * supportAgentNames.length)];
+  const supportAgentNames = [
+    "Amaka Okonkwo",
+    "Chidi Nwosu",
+    "Fatima Bello",
+    "Emeka Eze",
+  ];
+  const supportAgentName =
+    supportAgentNames[Math.floor(Math.random() * supportAgentNames.length)];
   const result = await db
     .insert(chatSessions)
-    .values({ agentId, sessionRef, category, subject, supportAgentName, status: "open" })
+    .values({
+      agentId,
+      sessionRef,
+      category,
+      subject,
+      supportAgentName,
+      status: "open",
+    })
     .returning();
   return result[0];
 }
@@ -303,7 +391,11 @@ export async function createChatSession(agentId: number, category: string, subje
 export async function getChatSession(sessionRef: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(chatSessions).where(eq(chatSessions.sessionRef, sessionRef)).limit(1);
+  const result = await db
+    .select()
+    .from(chatSessions)
+    .where(eq(chatSessions.sessionRef, sessionRef))
+    .limit(1);
   return result[0];
 }
 
@@ -364,7 +456,12 @@ export async function writeAuditLog(data: {
 export async function getAuditLog(agentId?: number, limit = 50, offset = 0) {
   const db = await getDb();
   if (!db) return [];
-  const query = db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit).offset(offset);
+  const query = db
+    .select()
+    .from(auditLog)
+    .orderBy(desc(auditLog.createdAt))
+    .limit(limit)
+    .offset(offset);
   return query;
 }
 
@@ -373,13 +470,13 @@ export async function getAuditLog(agentId?: number, limit = 50, offset = 0) {
  * Soft-deletes a row by setting its deletedAt timestamp.
  * Use this instead of hard-deletes for auditable entities.
  */
-export async function softDelete(
-  table: any,
-  id: number
-): Promise<void> {
+export async function softDelete(table: any, id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.update(table).set({ deletedAt: new Date() } as any).where(eq((table as any).id, id));
+  await db
+    .update(table)
+    .set({ deletedAt: new Date() } as any)
+    .where(eq((table as any).id, id));
 }
 
 /**

@@ -15,14 +15,14 @@ Prometheus ──(fires alerts)──► Alertmanager ──► Grafana OnCall w
 
 All components are open-source and self-hosted via `monitoring/docker-compose.monitoring.yml`.
 
-| Component | Image | Port | Purpose |
-|-----------|-------|------|---------|
-| Prometheus | `prom/prometheus:v2.53.0` | 9090 | Metrics scraping + alert evaluation |
-| Grafana | `grafana/grafana:11.1.0` | 3001 | Dashboards + OnCall UI |
-| Grafana OnCall | `grafana/oncall:v1.8.9` | 8080 | On-call rotations + escalation chains |
-| Alertmanager | `prom/alertmanager:v0.27.0` | 9093 | Alert routing + deduplication |
-| Node Exporter | `prom/node-exporter:v1.8.2` | 9100 | Host-level metrics |
-| Redis | `redis:7.2-alpine` | 6379 | OnCall message broker |
+| Component      | Image                       | Port | Purpose                               |
+| -------------- | --------------------------- | ---- | ------------------------------------- |
+| Prometheus     | `prom/prometheus:v2.53.0`   | 9090 | Metrics scraping + alert evaluation   |
+| Grafana        | `grafana/grafana:11.1.0`    | 3001 | Dashboards + OnCall UI                |
+| Grafana OnCall | `grafana/oncall:v1.8.9`     | 8080 | On-call rotations + escalation chains |
+| Alertmanager   | `prom/alertmanager:v0.27.0` | 9093 | Alert routing + deduplication         |
+| Node Exporter  | `prom/node-exporter:v1.8.2` | 9100 | Host-level metrics                    |
+| Redis          | `redis:7.2-alpine`          | 6379 | OnCall message broker                 |
 
 ---
 
@@ -39,12 +39,12 @@ Wait approximately 60 seconds for Grafana OnCall to initialise its database.
 
 ### 2. Access the services
 
-| Service | URL | Default credentials |
-|---------|-----|---------------------|
-| Grafana | http://localhost:3001 | admin / admin-change-in-production |
-| Prometheus | http://localhost:9090 | — |
-| Alertmanager | http://localhost:9093 | — |
-| Grafana OnCall | http://localhost:3001/a/grafana-oncall-app | (via Grafana) |
+| Service        | URL                                        | Default credentials                |
+| -------------- | ------------------------------------------ | ---------------------------------- |
+| Grafana        | http://localhost:3001                      | admin / admin-change-in-production |
+| Prometheus     | http://localhost:9090                      | —                                  |
+| Alertmanager   | http://localhost:9093                      | —                                  |
+| Grafana OnCall | http://localhost:3001/a/grafana-oncall-app | (via Grafana)                      |
 
 ### 3. Configure Grafana OnCall
 
@@ -89,16 +89,16 @@ curl -X POST http://localhost:9093/-/reload
 
 All alerting rules are defined in `monitoring/prometheus-rules.yml`. The file is automatically loaded by Prometheus via the `rule_files` directive in `monitoring/prometheus.yml`.
 
-| Alert | Severity | Threshold | For | Channel |
-|-------|----------|-----------|-----|---------|
-| `POSShellHighTransactionLatency` | critical | p95 > 500 ms | 2 min | OnCall + Slack critical |
-| `POSShellHighTransactionErrorRate` | critical | error rate > 5% | 3 min | OnCall + Slack critical |
-| `POSShellNoTransactions` | warning | rate = 0 | 10 min | Slack warning |
-| `POSShellFraudAlertSpike` | critical | > 10 alerts/min | 1 min | OnCall + Slack critical + fraud |
-| `POSShellFloatLockContention` | warning | > 5 locks/min | 2 min | Slack warning |
-| `POSShellPlatformDegradation` | warning | error rate > 10% | 3 min | Slack warning |
-| `POSShellHighMemoryUsage` | warning | heap > 512 MB | 5 min | Slack warning |
-| `POSShellEventLoopLag` | warning | lag > 100 ms | 2 min | Slack warning |
+| Alert                              | Severity | Threshold        | For    | Channel                         |
+| ---------------------------------- | -------- | ---------------- | ------ | ------------------------------- |
+| `POSShellHighTransactionLatency`   | critical | p95 > 500 ms     | 2 min  | OnCall + Slack critical         |
+| `POSShellHighTransactionErrorRate` | critical | error rate > 5%  | 3 min  | OnCall + Slack critical         |
+| `POSShellNoTransactions`           | warning  | rate = 0         | 10 min | Slack warning                   |
+| `POSShellFraudAlertSpike`          | critical | > 10 alerts/min  | 1 min  | OnCall + Slack critical + fraud |
+| `POSShellFloatLockContention`      | warning  | > 5 locks/min    | 2 min  | Slack warning                   |
+| `POSShellPlatformDegradation`      | warning  | error rate > 10% | 3 min  | Slack warning                   |
+| `POSShellHighMemoryUsage`          | warning  | heap > 512 MB    | 5 min  | Slack warning                   |
+| `POSShellEventLoopLag`             | warning  | lag > 100 ms     | 2 min  | Slack warning                   |
 
 ### Adding a new alert rule
 
@@ -130,15 +130,15 @@ The annotation API key requires at minimum the **Editor** role in Grafana.
 
 Before deploying to production, replace all placeholder values:
 
-| File | Placeholder | Replace with |
-|------|-------------|--------------|
-| `alertmanager.yml` | `slack-webhook-url-change-in-production` | Real Slack incoming webhook URL |
-| `alertmanager.yml` | `pos-shell-integration-token-change-in-production` | Grafana OnCall webhook token |
-| `docker-compose.monitoring.yml` | `admin-change-in-production` | Strong Grafana admin password |
-| `docker-compose.monitoring.yml` | `oncall-secret-key-change-in-production-min-50-chars-long` | 50+ char random string |
-| `docker-compose.monitoring.yml` | `slack-oauth-id-change-in-production` | Slack App OAuth client ID |
-| `docker-compose.monitoring.yml` | `slack-oauth-secret-change-in-production` | Slack App OAuth client secret |
-| `docker-compose.monitoring.yml` | `slack-signing-secret-change-in-production` | Slack App signing secret |
+| File                            | Placeholder                                                | Replace with                    |
+| ------------------------------- | ---------------------------------------------------------- | ------------------------------- |
+| `alertmanager.yml`              | `slack-webhook-url-change-in-production`                   | Real Slack incoming webhook URL |
+| `alertmanager.yml`              | `pos-shell-integration-token-change-in-production`         | Grafana OnCall webhook token    |
+| `docker-compose.monitoring.yml` | `admin-change-in-production`                               | Strong Grafana admin password   |
+| `docker-compose.monitoring.yml` | `oncall-secret-key-change-in-production-min-50-chars-long` | 50+ char random string          |
+| `docker-compose.monitoring.yml` | `slack-oauth-id-change-in-production`                      | Slack App OAuth client ID       |
+| `docker-compose.monitoring.yml` | `slack-oauth-secret-change-in-production`                  | Slack App OAuth client secret   |
+| `docker-compose.monitoring.yml` | `slack-signing-secret-change-in-production`                | Slack App signing secret        |
 
 Generate strong secrets with:
 
@@ -150,10 +150,10 @@ openssl rand -base64 50
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| OnCall webhook returns 404 | Wrong integration token | Re-copy webhook URL from OnCall UI |
-| Slack messages not delivered | Invalid webhook URL | Test webhook: `curl -X POST -d '{"text":"test"}' <webhook_url>` |
-| Alerts not firing | Prometheus not scraping `/api/metrics` | Check `http://localhost:9090/targets` |
-| OnCall not starting | Redis not ready | `docker-compose logs redis` — wait for "Ready to accept connections" |
-| Alertmanager config invalid | YAML syntax error | `amtool check-config alertmanager.yml` |
+| Symptom                      | Cause                                  | Fix                                                                  |
+| ---------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| OnCall webhook returns 404   | Wrong integration token                | Re-copy webhook URL from OnCall UI                                   |
+| Slack messages not delivered | Invalid webhook URL                    | Test webhook: `curl -X POST -d '{"text":"test"}' <webhook_url>`      |
+| Alerts not firing            | Prometheus not scraping `/api/metrics` | Check `http://localhost:9090/targets`                                |
+| OnCall not starting          | Redis not ready                        | `docker-compose logs redis` — wait for "Ready to accept connections" |
+| Alertmanager config invalid  | YAML syntax error                      | `amtool check-config alertmanager.yml`                               |

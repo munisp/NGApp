@@ -14,7 +14,9 @@ const mockOffset = vi.fn().mockReturnThis();
 const mockGroupBy = vi.fn().mockReturnThis();
 const mockInsert = vi.fn().mockReturnThis();
 const mockValues = vi.fn().mockReturnThis();
-const mockReturning = vi.fn().mockResolvedValue([{ id: 1, tenantId: 1, billingModel: "revenue_share" }]);
+const mockReturning = vi
+  .fn()
+  .mockResolvedValue([{ id: 1, tenantId: 1, billingModel: "revenue_share" }]);
 const mockUpdate = vi.fn().mockReturnThis();
 const mockSet = vi.fn().mockReturnThis();
 
@@ -29,7 +31,11 @@ vi.mock("../db", () => ({
 // Setup chain returns
 mockSelect.mockReturnValue({ from: mockFrom });
 mockFrom.mockReturnValue({ where: mockWhere, groupBy: mockGroupBy });
-mockWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit, groupBy: mockGroupBy });
+mockWhere.mockReturnValue({
+  orderBy: mockOrderBy,
+  limit: mockLimit,
+  groupBy: mockGroupBy,
+});
 mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset });
 mockLimit.mockReturnValue({ offset: mockOffset });
 mockOffset.mockResolvedValue([]);
@@ -50,9 +56,13 @@ describe("Sprint 80: Billing RBAC", () => {
     expect(BILLING_PERMISSIONS.view_dashboard).toBe("view_dashboard");
     expect(BILLING_PERMISSIONS.run_reconciliation).toBe("run_reconciliation");
     expect(BILLING_PERMISSIONS.resolve_discrepancy).toBe("resolve_discrepancy");
-    expect(BILLING_PERMISSIONS.manage_billing_config).toBe("manage_billing_config");
+    expect(BILLING_PERMISSIONS.manage_billing_config).toBe(
+      "manage_billing_config"
+    );
     expect(BILLING_PERMISSIONS.export_data).toBe("export_data");
-    expect(BILLING_PERMISSIONS.manage_tenant_billing).toBe("manage_tenant_billing");
+    expect(BILLING_PERMISSIONS.manage_tenant_billing).toBe(
+      "manage_tenant_billing"
+    );
   });
 
   it("defines role-permission mappings for all roles", async () => {
@@ -61,7 +71,9 @@ describe("Sprint 80: Billing RBAC", () => {
     expect(ROLE_PERMISSIONS.billing_admin).toContain("view_ledger");
     expect(ROLE_PERMISSIONS.billing_admin).toContain("manage_billing_config");
     expect(ROLE_PERMISSIONS.billing_viewer).toContain("view_ledger");
-    expect(ROLE_PERMISSIONS.billing_viewer).not.toContain("manage_billing_config");
+    expect(ROLE_PERMISSIONS.billing_viewer).not.toContain(
+      "manage_billing_config"
+    );
   });
 
   it("exports Permify schema definition", async () => {
@@ -79,12 +91,14 @@ describe("Sprint 80: Billing RBAC", () => {
   it("getUserBillingPermissions is an async function", async () => {
     const { getUserBillingPermissions } = await import("./routers/billingRbac");
     expect(typeof getUserBillingPermissions).toBe("function");
-  });;
+  });
 
   it("billingRbacRouter has all expected procedures", async () => {
     const { billingRbacRouter } = await import("./routers/billingRbac");
     expect(billingRbacRouter).toBeDefined();
-    const procedures = Object.keys(billingRbacRouter._def.procedures || billingRbacRouter);
+    const procedures = Object.keys(
+      billingRbacRouter._def.procedures || billingRbacRouter
+    );
     // Router should have procedures defined
     expect(billingRbacRouter._def).toBeDefined();
   });
@@ -114,7 +128,9 @@ describe("Sprint 80: Billing Audit", () => {
 // ─── Tenant Billing Onboarding Tests ────────────────────────────────────────
 describe("Sprint 80: Tenant Billing Onboarding", () => {
   it("exports BILLING_TEMPLATES with all three models", async () => {
-    const { BILLING_TEMPLATES } = await import("./routers/tenantBillingOnboarding");
+    const { BILLING_TEMPLATES } = await import(
+      "./routers/tenantBillingOnboarding"
+    );
     expect(BILLING_TEMPLATES).toBeDefined();
     expect(BILLING_TEMPLATES.revenue_share).toBeDefined();
     expect(BILLING_TEMPLATES.subscription).toBeDefined();
@@ -122,7 +138,9 @@ describe("Sprint 80: Tenant Billing Onboarding", () => {
   });
 
   it("revenue_share template has required fields", async () => {
-    const { BILLING_TEMPLATES } = await import("./routers/tenantBillingOnboarding");
+    const { BILLING_TEMPLATES } = await import(
+      "./routers/tenantBillingOnboarding"
+    );
     const rs = BILLING_TEMPLATES.revenue_share;
     expect(rs.revenueShareConfig).toBeDefined();
     expect(rs.revenueShareConfig!.startSplitPct).toBeGreaterThan(0);
@@ -130,7 +148,9 @@ describe("Sprint 80: Tenant Billing Onboarding", () => {
   });
 
   it("subscription template has per-agent and per-pos fees", async () => {
-    const { BILLING_TEMPLATES } = await import("./routers/tenantBillingOnboarding");
+    const { BILLING_TEMPLATES } = await import(
+      "./routers/tenantBillingOnboarding"
+    );
     const sub = BILLING_TEMPLATES.subscription;
     expect(sub.subscriptionConfig).toBeDefined();
     expect(sub.subscriptionConfig!.perAgentFee).toBeGreaterThan(0);
@@ -138,7 +158,9 @@ describe("Sprint 80: Tenant Billing Onboarding", () => {
   });
 
   it("tenantBillingOnboardingRouter has all expected procedures", async () => {
-    const { tenantBillingOnboardingRouter } = await import("./routers/tenantBillingOnboarding");
+    const { tenantBillingOnboardingRouter } = await import(
+      "./routers/tenantBillingOnboarding"
+    );
     expect(tenantBillingOnboardingRouter).toBeDefined();
     expect(tenantBillingOnboardingRouter._def).toBeDefined();
   });
@@ -156,7 +178,9 @@ describe("Sprint 80: Billing Ledger (Real DB)", () => {
 // ─── Revenue Reconciliation (Real DB) Tests ─────────────────────────────────
 describe("Sprint 80: Revenue Reconciliation (Real DB)", () => {
   it("revenueReconciliationRouter is exported and has procedures", async () => {
-    const { revenueReconciliationRouter } = await import("./routers/revenueReconciliation");
+    const { revenueReconciliationRouter } = await import(
+      "./routers/revenueReconciliation"
+    );
     expect(revenueReconciliationRouter).toBeDefined();
     expect(revenueReconciliationRouter._def).toBeDefined();
   });
@@ -165,7 +189,9 @@ describe("Sprint 80: Revenue Reconciliation (Real DB)", () => {
 // ─── Live Billing Dashboard (Real DB) Tests ─────────────────────────────────
 describe("Sprint 80: Live Billing Dashboard (Real DB)", () => {
   it("liveBillingDashboardRouter is exported and has procedures", async () => {
-    const { liveBillingDashboardRouter } = await import("./routers/liveBillingDashboard");
+    const { liveBillingDashboardRouter } = await import(
+      "./routers/liveBillingDashboard"
+    );
     expect(liveBillingDashboardRouter).toBeDefined();
     expect(liveBillingDashboardRouter._def).toBeDefined();
   });
@@ -175,8 +201,11 @@ describe("Sprint 80: Live Billing Dashboard (Real DB)", () => {
 describe("Sprint 80: Kubernetes Manifests", () => {
   it("sprint80-billing-services.yaml exists and contains all 10 services", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
     // All 10 services should be defined
     expect(yaml).toContain("billing-aggregator");
     expect(yaml).toContain("billing-reconciliation-engine");
@@ -192,8 +221,11 @@ describe("Sprint 80: Kubernetes Manifests", () => {
 
   it("K8s manifest has proper namespace and RBAC", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
     expect(yaml).toContain("namespace: billing");
     expect(yaml).toContain("ServiceAccount");
     expect(yaml).toContain("billing-svc");
@@ -203,8 +235,11 @@ describe("Sprint 80: Kubernetes Manifests", () => {
 
   it("K8s manifest has HPA for high-throughput services", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
     expect(yaml).toContain("HorizontalPodAutoscaler");
     expect(yaml).toContain("billing-stream-processor-hpa");
     expect(yaml).toContain("billing-aggregator-hpa");
@@ -213,8 +248,11 @@ describe("Sprint 80: Kubernetes Manifests", () => {
 
   it("K8s manifest connects to all middleware", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
     expect(yaml).toContain("KAFKA_BROKERS");
     expect(yaml).toContain("REDIS_URL");
     expect(yaml).toContain("POSTGRES_HOST");
@@ -233,16 +271,23 @@ describe("Sprint 80: Kubernetes Manifests", () => {
 
   it("K8s manifest has Dapr annotations for all services", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
-    const daprAnnotations = (yaml.match(/dapr\.io\/enabled: "true"/g) || []).length;
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
+    const daprAnnotations = (yaml.match(/dapr\.io\/enabled: "true"/g) || [])
+      .length;
     expect(daprAnnotations).toBe(10); // All 10 services have Dapr
   });
 
   it("K8s manifest has health probes for all services", async () => {
     const fs = await import("fs");
-    const yaml = fs.readFileSync("/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml", "utf-8");
-    
+    const yaml = fs.readFileSync(
+      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      "utf-8"
+    );
+
     const healthProbes = (yaml.match(/livenessProbe:/g) || []).length;
     expect(healthProbes).toBe(10); // All 10 services have liveness probes
   });

@@ -219,9 +219,7 @@
         "agents_agentCode_unique": {
           "name": "agents_agentCode_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "agentCode"
-          ]
+          "columns": ["agentCode"]
         }
       },
       "policies": {},
@@ -501,9 +499,7 @@
         "chat_sessions_sessionRef_unique": {
           "name": "chat_sessions_sessionRef_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sessionRef"
-          ]
+          "columns": ["sessionRef"]
         }
       },
       "policies": {},
@@ -871,12 +867,8 @@
           "name": "customers_preferredAgentId_agents_id_fk",
           "tableFrom": "customers",
           "tableTo": "agents",
-          "columnsFrom": [
-            "preferredAgentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preferredAgentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -886,23 +878,17 @@
         "customers_externalId_unique": {
           "name": "customers_externalId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "externalId"
-          ]
+          "columns": ["externalId"]
         },
         "customers_phone_unique": {
           "name": "customers_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         },
         "customers_keycloakSub_unique": {
           "name": "customers_keycloakSub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloakSub"
-          ]
+          "columns": ["keycloakSub"]
         }
       },
       "policies": {},
@@ -1168,9 +1154,7 @@
         "devices_serialNumber_unique": {
           "name": "devices_serialNumber_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "serialNumber"
-          ]
+          "columns": ["serialNumber"]
         }
       },
       "policies": {},
@@ -1334,9 +1318,7 @@
         "disputes_ref_unique": {
           "name": "disputes_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         }
       },
       "policies": {},
@@ -1979,9 +1961,7 @@
         "inventory_items_sku_unique": {
           "name": "inventory_items_sku_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sku"
-          ]
+          "columns": ["sku"]
         }
       },
       "policies": {},
@@ -2416,12 +2396,8 @@
           "name": "multi_sim_profiles_terminalId_pos_terminals_id_fk",
           "tableFrom": "multi_sim_profiles",
           "tableTo": "pos_terminals",
-          "columnsFrom": [
-            "terminalId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["terminalId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2532,9 +2508,7 @@
         "platform_settings_key_unique": {
           "name": "platform_settings_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -2672,12 +2646,8 @@
           "name": "pos_terminals_agentId_agents_id_fk",
           "tableFrom": "pos_terminals",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2687,9 +2657,7 @@
         "pos_terminals_serialNumber_unique": {
           "name": "pos_terminals_serialNumber_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "serialNumber"
-          ]
+          "columns": ["serialNumber"]
         }
       },
       "policies": {},
@@ -2791,12 +2759,8 @@
           "name": "qr_codes_agentId_agents_id_fk",
           "tableFrom": "qr_codes",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2806,9 +2770,7 @@
         "qr_codes_code_unique": {
           "name": "qr_codes_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -2909,12 +2871,8 @@
           "name": "reversal_requests_agentId_agents_id_fk",
           "tableFrom": "reversal_requests",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2922,12 +2880,8 @@
           "name": "reversal_requests_reviewedBy_users_id_fk",
           "tableFrom": "reversal_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewedBy"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3005,12 +2959,8 @@
           "name": "service_records_terminalId_pos_terminals_id_fk",
           "tableFrom": "service_records",
           "tableTo": "pos_terminals",
-          "columnsFrom": [
-            "terminalId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["terminalId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3125,12 +3075,8 @@
           "name": "shareable_links_agentId_agents_id_fk",
           "tableFrom": "shareable_links",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3140,9 +3086,7 @@
         "shareable_links_slug_unique": {
           "name": "shareable_links_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -3327,12 +3271,8 @@
           "name": "storefront_ads_agentId_agents_id_fk",
           "tableFrom": "storefront_ads",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3498,9 +3438,7 @@
         "tenants_slug_unique": {
           "name": "tenants_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -3739,9 +3677,7 @@
         "transactions_ref_unique": {
           "name": "transactions_ref_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ref"
-          ]
+          "columns": ["ref"]
         }
       },
       "policies": {},
@@ -3819,9 +3755,7 @@
         "users_keycloakSub_unique": {
           "name": "users_keycloakSub_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloakSub"
-          ]
+          "columns": ["keycloakSub"]
         }
       },
       "policies": {},
@@ -3909,12 +3843,8 @@
           "name": "vat_records_agentId_agents_id_fk",
           "tableFrom": "vat_records",
           "tableTo": "agents",
-          "columnsFrom": [
-            "agentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["agentId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3978,9 +3908,7 @@
         "velocity_limits_tier_unique": {
           "name": "velocity_limits_tier_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tier"
-          ]
+          "columns": ["tier"]
         }
       },
       "policies": {},
@@ -3992,123 +3920,62 @@
     "public.ad_status": {
       "name": "ad_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "active",
-        "paused",
-        "expired",
-        "rejected"
-      ]
+      "values": ["draft", "active", "paused", "expired", "rejected"]
     },
     "public.agent_tier": {
       "name": "agent_tier",
       "schema": "public",
-      "values": [
-        "Bronze",
-        "Silver",
-        "Gold",
-        "Platinum"
-      ]
+      "values": ["Bronze", "Silver", "Gold", "Platinum"]
     },
     "public.audit_status": {
       "name": "audit_status",
       "schema": "public",
-      "values": [
-        "success",
-        "failure",
-        "warning"
-      ]
+      "values": ["success", "failure", "warning"]
     },
     "public.chat_status": {
       "name": "chat_status",
       "schema": "public",
-      "values": [
-        "open",
-        "assigned",
-        "resolved",
-        "escalated"
-      ]
+      "values": ["open", "assigned", "resolved", "escalated"]
     },
     "public.command_status": {
       "name": "command_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "acknowledged",
-        "completed",
-        "failed",
-        "expired"
-      ]
+      "values": ["pending", "acknowledged", "completed", "failed", "expired"]
     },
     "public.commission_rule_type": {
       "name": "commission_rule_type",
       "schema": "public",
-      "values": [
-        "flat",
-        "percentage",
-        "tiered"
-      ]
+      "values": ["flat", "percentage", "tiered"]
     },
     "public.customer_status": {
       "name": "customer_status",
       "schema": "public",
-      "values": [
-        "active",
-        "suspended",
-        "pending_kyc",
-        "closed"
-      ]
+      "values": ["active", "suspended", "pending_kyc", "closed"]
     },
     "public.device_command": {
       "name": "device_command",
       "schema": "public",
-      "values": [
-        "UPDATE",
-        "RECONFIG",
-        "RESTART",
-        "WIPE",
-        "PING"
-      ]
+      "values": ["UPDATE", "RECONFIG", "RESTART", "WIPE", "PING"]
     },
     "public.device_status": {
       "name": "device_status",
       "schema": "public",
-      "values": [
-        "online",
-        "offline",
-        "updating",
-        "error"
-      ]
+      "values": ["online", "offline", "updating", "error"]
     },
     "public.dispute_author_role": {
       "name": "dispute_author_role",
       "schema": "public",
-      "values": [
-        "agent",
-        "admin",
-        "supervisor",
-        "system"
-      ]
+      "values": ["agent", "admin", "supervisor", "system"]
     },
     "public.dispute_status": {
       "name": "dispute_status",
       "schema": "public",
-      "values": [
-        "raised",
-        "reviewing",
-        "resolved",
-        "rejected"
-      ]
+      "values": ["raised", "reviewing", "resolved", "rejected"]
     },
     "public.erp_sync_status": {
       "name": "erp_sync_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "synced",
-        "failed",
-        "skipped"
-      ]
+      "values": ["pending", "synced", "failed", "skipped"]
     },
     "public.erp_type": {
       "name": "erp_type",
@@ -4126,44 +3993,22 @@
     "public.fraud_severity": {
       "name": "fraud_severity",
       "schema": "public",
-      "values": [
-        "critical",
-        "high",
-        "medium",
-        "low"
-      ]
+      "values": ["critical", "high", "medium", "low"]
     },
     "public.fraud_status": {
       "name": "fraud_status",
       "schema": "public",
-      "values": [
-        "open",
-        "investigating",
-        "escalated",
-        "dismissed",
-        "resolved"
-      ]
+      "values": ["open", "investigating", "escalated", "dismissed", "resolved"]
     },
     "public.inventory_status": {
       "name": "inventory_status",
       "schema": "public",
-      "values": [
-        "in_stock",
-        "low_stock",
-        "out_of_stock",
-        "discontinued"
-      ]
+      "values": ["in_stock", "low_stock", "out_of_stock", "discontinued"]
     },
     "public.kyc_doc_type": {
       "name": "kyc_doc_type",
       "schema": "public",
-      "values": [
-        "NIN",
-        "BVN_CARD",
-        "PASSPORT",
-        "DRIVERS_LICENCE",
-        "VOTER_CARD"
-      ]
+      "values": ["NIN", "BVN_CARD", "PASSPORT", "DRIVERS_LICENCE", "VOTER_CARD"]
     },
     "public.kyc_status": {
       "name": "kyc_status",
@@ -4181,112 +4026,57 @@
     "public.link_status": {
       "name": "link_status",
       "schema": "public",
-      "values": [
-        "active",
-        "expired",
-        "used",
-        "revoked"
-      ]
+      "values": ["active", "expired", "used", "revoked"]
     },
     "public.link_type": {
       "name": "link_type",
       "schema": "public",
-      "values": [
-        "payment",
-        "invoice",
-        "subscription",
-        "donation"
-      ]
+      "values": ["payment", "invoice", "subscription", "donation"]
     },
     "public.loyalty_type": {
       "name": "loyalty_type",
       "schema": "public",
-      "values": [
-        "earned",
-        "redeemed",
-        "bonus",
-        "penalty",
-        "challenge"
-      ]
+      "values": ["earned", "redeemed", "bonus", "penalty", "challenge"]
     },
     "public.mqtt_qos": {
       "name": "mqtt_qos",
       "schema": "public",
-      "values": [
-        "0",
-        "1",
-        "2"
-      ]
+      "values": ["0", "1", "2"]
     },
     "public.qr_code_status": {
       "name": "qr_code_status",
       "schema": "public",
-      "values": [
-        "active",
-        "expired",
-        "used",
-        "revoked"
-      ]
+      "values": ["active", "expired", "used", "revoked"]
     },
     "public.qr_code_type": {
       "name": "qr_code_type",
       "schema": "public",
-      "values": [
-        "payment",
-        "agent_id",
-        "product",
-        "event",
-        "loyalty"
-      ]
+      "values": ["payment", "agent_id", "product", "event", "loyalty"]
     },
     "public.reversal_status": {
       "name": "reversal_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "approved",
-        "rejected",
-        "completed",
-        "failed"
-      ]
+      "values": ["pending", "approved", "rejected", "completed", "failed"]
     },
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "user",
-        "admin",
-        "supervisor"
-      ]
+      "values": ["user", "admin", "supervisor"]
     },
     "public.sender_type": {
       "name": "sender_type",
       "schema": "public",
-      "values": [
-        "agent",
-        "support",
-        "system"
-      ]
+      "values": ["agent", "support", "system"]
     },
     "public.sim_status": {
       "name": "sim_status",
       "schema": "public",
-      "values": [
-        "active",
-        "standby",
-        "failed",
-        "disabled"
-      ]
+      "values": ["active", "standby", "failed", "disabled"]
     },
     "public.tenant_status": {
       "name": "tenant_status",
       "schema": "public",
-      "values": [
-        "active",
-        "suspended",
-        "trial",
-        "churned"
-      ]
+      "values": ["active", "suspended", "trial", "churned"]
     },
     "public.terminal_command": {
       "name": "terminal_command",
@@ -4304,33 +4094,17 @@
     "public.terminal_status": {
       "name": "terminal_status",
       "schema": "public",
-      "values": [
-        "active",
-        "inactive",
-        "maintenance",
-        "decommissioned"
-      ]
+      "values": ["active", "inactive", "maintenance", "decommissioned"]
     },
     "public.topup_status": {
       "name": "topup_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "approved",
-        "rejected"
-      ]
+      "values": ["pending", "approved", "rejected"]
     },
     "public.tx_channel": {
       "name": "tx_channel",
       "schema": "public",
-      "values": [
-        "Cash",
-        "Card",
-        "USSD",
-        "QR",
-        "NFC",
-        "App"
-      ]
+      "values": ["Cash", "Card", "USSD", "QR", "NFC", "App"]
     },
     "public.tx_status": {
       "name": "tx_status",
@@ -4363,12 +4137,7 @@
     "public.vat_rate_type": {
       "name": "vat_rate_type",
       "schema": "public",
-      "values": [
-        "standard",
-        "zero",
-        "exempt",
-        "reduced"
-      ]
+      "values": ["standard", "zero", "exempt", "reduced"]
     }
   },
   "schemas": {},

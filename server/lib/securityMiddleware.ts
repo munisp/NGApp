@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Security Hardening Middleware — 54Link Agency Banking Platform
- * 
+ *
  * Implements: CSP headers, HSTS, X-Frame-Options, X-Content-Type-Options,
  * Referrer-Policy, Permissions-Policy, CSRF protection, request sanitization,
  * IP-based rate limiting, and request size limits.
@@ -14,20 +14,26 @@ import type { Request, Response, NextFunction } from "express";
 export function securityHeaders() {
   return (_req: Request, res: Response, next: NextFunction) => {
     // Content Security Policy
-    res.setHeader("Content-Security-Policy", [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://api.frankfurter.app https://open.er-api.com wss:",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join("; "));
+    res.setHeader(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: blob: https:",
+        "connect-src 'self' https://api.frankfurter.app https://open.er-api.com wss:",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join("; ")
+    );
 
     // HTTP Strict Transport Security
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
 
     // Prevent clickjacking
     res.setHeader("X-Frame-Options", "DENY");
@@ -39,16 +45,19 @@ export function securityHeaders() {
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
     // Permissions Policy
-    res.setHeader("Permissions-Policy", [
-      "camera=(self)",
-      "microphone=()",
-      "geolocation=(self)",
-      "payment=(self)",
-      "usb=()",
-      "magnetometer=()",
-      "gyroscope=()",
-      "accelerometer=()",
-    ].join(", "));
+    res.setHeader(
+      "Permissions-Policy",
+      [
+        "camera=(self)",
+        "microphone=()",
+        "geolocation=(self)",
+        "payment=(self)",
+        "usb=()",
+        "magnetometer=()",
+        "gyroscope=()",
+        "accelerometer=()",
+      ].join(", ")
+    );
 
     // Prevent XSS (legacy header, CSP is primary)
     res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -71,7 +80,8 @@ const CSRF_COOKIE = "__csrf_token";
 const CSRF_HEADER = "x-csrf-token";
 
 function generateToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < 32; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -136,7 +146,8 @@ function sanitizeValue(value: unknown): unknown {
     const sanitized: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
       // Skip prototype pollution attempts
-      if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+      if (k === "__proto__" || k === "constructor" || k === "prototype")
+        continue;
       sanitized[k] = sanitizeValue(v);
     }
     return sanitized;
@@ -159,9 +170,14 @@ export function inputSanitization() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // IP-Based Rate Limiting (in-memory, production should use Redis)
 // ═══════════════════════════════════════════════════════════════════════════════
-interface RateLimitEntry { count: number; resetAt: number }
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
 
-export function ipRateLimit(options: { windowMs?: number; maxRequests?: number } = {}) {
+export function ipRateLimit(
+  options: { windowMs?: number; maxRequests?: number } = {}
+) {
   const { windowMs = 60_000, maxRequests = 100 } = options;
   const store = new Map<string, RateLimitEntry>();
 
@@ -221,7 +237,9 @@ export function requestSizeLimit(maxBytes: number = 10 * 1024 * 1024) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Export all middleware as a single stack
 // ═══════════════════════════════════════════════════════════════════════════════
-export function applySecurityMiddleware(app: { use: (...args: any[]) => void }) {
+export function applySecurityMiddleware(app: {
+  use: (...args: any[]) => void;
+}) {
   app.use(securityHeaders());
   app.use(inputSanitization());
   app.use(ipRateLimit({ windowMs: 60_000, maxRequests: 2000 }));

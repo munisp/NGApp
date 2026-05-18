@@ -36,11 +36,21 @@ interface ServiceHealthEntry {
 }
 
 const GO_SERVICES = [
-  "workflow-orchestrator", "tigerbeetle-integrated", "mdm-compliance",
-  "pbac-engine", "connectivity-resilience", "billing-aggregator",
-  "rbac-service", "ussd-gateway", "ussd-tx-processor", "hierarchy-engine",
-  "settlement-gateway", "at-ussd-handler", "opensearch-analytics",
-  "revenue-reconciler", "fluvio-streaming"
+  "workflow-orchestrator",
+  "tigerbeetle-integrated",
+  "mdm-compliance",
+  "pbac-engine",
+  "connectivity-resilience",
+  "billing-aggregator",
+  "rbac-service",
+  "ussd-gateway",
+  "ussd-tx-processor",
+  "hierarchy-engine",
+  "settlement-gateway",
+  "at-ussd-handler",
+  "opensearch-analytics",
+  "revenue-reconciler",
+  "fluvio-streaming",
 ];
 
 /**
@@ -53,16 +63,20 @@ export function initRealtimeStreaming(io: SocketServer) {
   // Track connected clients
   let settlementClients = 0;
 
-  settlementNs.on("connection", (socket) => {
+  settlementNs.on("connection", socket => {
     settlementClients++;
-    console.log(`[RealTime] Settlement client connected (${settlementClients} total)`);
+    console.log(
+      `[RealTime] Settlement client connected (${settlementClients} total)`
+    );
 
     // Send initial snapshot of recent transactions
     sendRecentTransactions(socket);
 
     socket.on("disconnect", () => {
       settlementClients--;
-      console.log(`[RealTime] Settlement client disconnected (${settlementClients} total)`);
+      console.log(
+        `[RealTime] Settlement client disconnected (${settlementClients} total)`
+      );
     });
 
     // Allow clients to subscribe to specific agent feeds
@@ -75,7 +89,7 @@ export function initRealtimeStreaming(io: SocketServer) {
     });
   });
 
-  notificationsNs.on("connection", (socket) => {
+  notificationsNs.on("connection", socket => {
     console.log("[RealTime] Notifications client connected");
 
     // Send initial service health
@@ -89,7 +103,7 @@ export function initRealtimeStreaming(io: SocketServer) {
   // Periodic health check broadcast (every 30s)
   setInterval(() => {
     if (notificationsNs.sockets.size > 0) {
-      const healthData = GO_SERVICES.map((name) => ({
+      const healthData = GO_SERVICES.map(name => ({
         name,
         status: "healthy" as const,
         latencyMs: Math.floor(50 + Math.random() * 200),
@@ -126,7 +140,9 @@ export function initRealtimeStreaming(io: SocketServer) {
           type: tx.type || "transfer",
           status: (tx.status as TransactionEvent["status"]) || "completed",
           agentId: tx.agentId ? String(tx.agentId) : "unknown",
-          timestamp: tx.createdAt ? new Date(tx.createdAt).getTime() : Date.now(),
+          timestamp: tx.createdAt
+            ? new Date(tx.createdAt).getTime()
+            : Date.now(),
         };
         settlementNs.emit("transaction:new", event);
       }
@@ -169,7 +185,9 @@ export function initRealtimeStreaming(io: SocketServer) {
     }
   }, 60_000);
 
-  console.log("[RealTime] Streaming initialized on /settlement and /notifications");
+  console.log(
+    "[RealTime] Streaming initialized on /settlement and /notifications"
+  );
 }
 
 async function sendRecentTransactions(socket: any) {
@@ -182,7 +200,7 @@ async function sendRecentTransactions(socket: any) {
       .orderBy(desc(transactions.createdAt))
       .limit(20);
 
-    const events: TransactionEvent[] = recent.map((tx) => ({
+    const events: TransactionEvent[] = recent.map(tx => ({
       id: String(tx.id),
       amount: Number(tx.amount) || 0,
       currency: tx.currency || "KES",
@@ -199,7 +217,7 @@ async function sendRecentTransactions(socket: any) {
 }
 
 function emitServiceHealth(socket: any) {
-  const healthData: ServiceHealthEntry[] = GO_SERVICES.map((name) => ({
+  const healthData: ServiceHealthEntry[] = GO_SERVICES.map(name => ({
     name,
     status: "healthy" as const,
     latencyMs: Math.floor(50 + Math.random() * 200),

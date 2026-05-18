@@ -1,22 +1,54 @@
 // @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Activity, Zap, Clock, AlertTriangle, BarChart3, TrendingUp,
-  RefreshCw, Server, Gauge, Target, ArrowUpRight, ArrowDownRight,
-  Play, Loader2, Settings, GitCompareArrows, Download, Save,
+  Activity,
+  Zap,
+  Clock,
+  AlertTriangle,
+  BarChart3,
+  TrendingUp,
+  RefreshCw,
+  Server,
+  Gauge,
+  Target,
+  ArrowUpRight,
+  ArrowDownRight,
+  Play,
+  Loader2,
+  Settings,
+  GitCompareArrows,
+  Download,
+  Save,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -35,19 +67,24 @@ function BarChartInline({
   labelKey?: string;
   valueKey?: string;
 }) {
-  const max = maxValue ?? Math.max(...data.map((d: any) => d[valueKey] ?? 0), 1);
+  const max =
+    maxValue ?? Math.max(...data.map((d: any) => d[valueKey] ?? 0), 1);
   return (
     <div className="space-y-1.5">
       {data.map((item, i) => (
         <div key={i} className="flex items-center gap-2 text-xs">
-          <span className="w-20 text-right text-muted-foreground truncate">{item[labelKey]}</span>
+          <span className="w-20 text-right text-muted-foreground truncate">
+            {item[labelKey]}
+          </span>
           <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden">
             <div
               className={`h-full ${color} rounded transition-all`}
               style={{ width: `${Math.max(1, (item[valueKey] / max) * 100)}%` }}
             />
           </div>
-          <span className="w-16 text-right font-mono">{item[valueKey]?.toLocaleString()}</span>
+          <span className="w-16 text-right font-mono">
+            {item[valueKey]?.toLocaleString()}
+          </span>
         </div>
       ))}
     </div>
@@ -121,9 +158,13 @@ export default function LoadTestDashboard() {
 
   // S61-1: Load current threshold config
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-  const p99ThresholdQuery = trpc.runtimeConfigAdmin.get.useQuery({ key: "loadtest_p99_threshold_ms" });
+  const p99ThresholdQuery = trpc.runtimeConfigAdmin.get.useQuery({
+    key: "loadtest_p99_threshold_ms",
+  });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
-  const errorThresholdQuery = trpc.runtimeConfigAdmin.get.useQuery({ key: "loadtest_error_rate_threshold" });
+  const errorThresholdQuery = trpc.runtimeConfigAdmin.get.useQuery({
+    key: "loadtest_error_rate_threshold",
+  });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const updateConfigMutation = trpc.runtimeConfigAdmin.batchUpdate.useMutation({
     onSuccess: () => {
@@ -136,14 +177,21 @@ export default function LoadTestDashboard() {
   });
 
   // Sync threshold state from server
-  const currentP99 = p99ThresholdQuery.data?.value ? parseFloat(p99ThresholdQuery.data.value) : 500;
-  const currentErrorRate = errorThresholdQuery.data?.value ? parseFloat(errorThresholdQuery.data.value) : 5.0;
+  const currentP99 = p99ThresholdQuery.data?.value
+    ? parseFloat(p99ThresholdQuery.data.value)
+    : 500;
+  const currentErrorRate = errorThresholdQuery.data?.value
+    ? parseFloat(errorThresholdQuery.data.value)
+    : 5.0;
 
   const runsQuery = trpc.loadTestMetrics.listRuns.useQuery({ limit: 20 });
   const engineMetricsQuery = trpc.loadTestMetrics.getEngineMetrics.useQuery();
-  const activeTestQuery = trpc.loadTestMetrics.getActiveTest.useQuery(undefined, {
-    refetchInterval: 2000,
-  });
+  const activeTestQuery = trpc.loadTestMetrics.getActiveTest.useQuery(
+    undefined,
+    {
+      refetchInterval: 2000,
+    }
+  );
 
   const runLoadTestMutation = trpc.loadTestMetrics.runLoadTest.useMutation({
     onSuccess: (data: any) => {
@@ -152,7 +200,7 @@ export default function LoadTestDashboard() {
         setShowRunDialog(false);
         // Poll for completion
         const pollInterval = setInterval(() => {
-          activeTestQuery.refetch().then((result) => {
+          activeTestQuery.refetch().then(result => {
             if (!result.data) {
               clearInterval(pollInterval);
               runsQuery.refetch();
@@ -173,7 +221,7 @@ export default function LoadTestDashboard() {
   const activeRunId = selectedRun ?? runs[0]?.id ?? null;
   const detailsQuery = trpc.loadTestMetrics.getRunDetails.useQuery(
     { runId: activeRunId! },
-    { enabled: !!activeRunId },
+    { enabled: !!activeRunId }
   );
 
   const run = detailsQuery.data;
@@ -188,7 +236,7 @@ export default function LoadTestDashboard() {
         value: d.requestCount,
         pct: d.percentage,
       })),
-    [results],
+    [results]
   );
 
   const latencyData = useMemo(
@@ -197,17 +245,17 @@ export default function LoadTestDashboard() {
         label: d.bucket,
         value: d.count,
       })),
-    [results],
+    [results]
   );
 
   const timelineRps = useMemo(
     () => (results?.timeline ?? []).map((t: any) => t.rps),
-    [results],
+    [results]
   );
 
   const timelineLatency = useMemo(
     () => (results?.timeline ?? []).map((t: any) => t.avgLatencyMs),
-    [results],
+    [results]
   );
 
   return (
@@ -225,10 +273,17 @@ export default function LoadTestDashboard() {
           </div>
           <div className="flex gap-2">
             {/* S61-1: Threshold Settings Button */}
-            <Dialog open={showThresholdDialog} onOpenChange={(open) => {
-              if (open) setThresholdConfig({ p99ThresholdMs: currentP99, errorRateThreshold: currentErrorRate });
-              setShowThresholdDialog(open);
-            }}>
+            <Dialog
+              open={showThresholdDialog}
+              onOpenChange={open => {
+                if (open)
+                  setThresholdConfig({
+                    p99ThresholdMs: currentP99,
+                    errorRateThreshold: currentErrorRate,
+                  });
+                setShowThresholdDialog(open);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
                   <Settings className="h-4 w-4 mr-1" /> Thresholds
@@ -238,26 +293,38 @@ export default function LoadTestDashboard() {
                 <DialogHeader>
                   <DialogTitle>Alert Threshold Configuration</DialogTitle>
                   <DialogDescription>
-                    Set thresholds for P99 latency and error rate. Owner notifications will fire when load test results exceed these values.
+                    Set thresholds for P99 latency and error rate. Owner
+                    notifications will fire when load test results exceed these
+                    values.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
-                    <Label htmlFor="p99Threshold">P99 Latency Threshold (ms)</Label>
+                    <Label htmlFor="p99Threshold">
+                      P99 Latency Threshold (ms)
+                    </Label>
                     <Input
                       id="p99Threshold"
                       type="number"
                       min={10}
                       max={30000}
                       value={thresholdConfig.p99ThresholdMs}
-                      onChange={(e: any) => setThresholdConfig(prev => ({ ...prev, p99ThresholdMs: parseFloat(e.target.value) || 500 }))}
+                      onChange={(e: any) =>
+                        setThresholdConfig(prev => ({
+                          ...prev,
+                          p99ThresholdMs: parseFloat(e.target.value) || 500,
+                        }))
+                      }
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Current: {currentP99}ms. Notifications fire when P99 exceeds this value.
+                      Current: {currentP99}ms. Notifications fire when P99
+                      exceeds this value.
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="errorRateThreshold">Error Rate Threshold (%)</Label>
+                    <Label htmlFor="errorRateThreshold">
+                      Error Rate Threshold (%)
+                    </Label>
                     <Input
                       id="errorRateThreshold"
                       type="number"
@@ -265,32 +332,63 @@ export default function LoadTestDashboard() {
                       max={100}
                       step={0.1}
                       value={thresholdConfig.errorRateThreshold}
-                      onChange={(e: any) => setThresholdConfig(prev => ({ ...prev, errorRateThreshold: parseFloat(e.target.value) || 5.0 }))}
+                      onChange={(e: any) =>
+                        setThresholdConfig(prev => ({
+                          ...prev,
+                          errorRateThreshold: parseFloat(e.target.value) || 5.0,
+                        }))
+                      }
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Current: {currentErrorRate}%. Notifications fire when error rate exceeds this value.
+                      Current: {currentErrorRate}%. Notifications fire when
+                      error rate exceeds this value.
                     </p>
                   </div>
                   <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground space-y-1">
-                    <p><strong>P95 Warning:</strong> A warning is also sent when P95 latency exceeds 80% of the P99 threshold ({Math.round(thresholdConfig.p99ThresholdMs * 0.8)}ms).</p>
-                    <p><strong>Severity:</strong> CRITICAL when 2+ thresholds breached, WARNING for single breach.</p>
+                    <p>
+                      <strong>P95 Warning:</strong> A warning is also sent when
+                      P95 latency exceeds 80% of the P99 threshold (
+                      {Math.round(thresholdConfig.p99ThresholdMs * 0.8)}ms).
+                    </p>
+                    <p>
+                      <strong>Severity:</strong> CRITICAL when 2+ thresholds
+                      breached, WARNING for single breach.
+                    </p>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowThresholdDialog(false)}>Cancel</Button>
                   <Button
-                    onClick={() => updateConfigMutation.mutate({
-                      updates: [
-                        { key: "loadtest_p99_threshold_ms", value: String(thresholdConfig.p99ThresholdMs) },
-                        { key: "loadtest_error_rate_threshold", value: String(thresholdConfig.errorRateThreshold) },
-                      ],
-                    })}
+                    variant="outline"
+                    onClick={() => setShowThresholdDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      updateConfigMutation.mutate({
+                        updates: [
+                          {
+                            key: "loadtest_p99_threshold_ms",
+                            value: String(thresholdConfig.p99ThresholdMs),
+                          },
+                          {
+                            key: "loadtest_error_rate_threshold",
+                            value: String(thresholdConfig.errorRateThreshold),
+                          },
+                        ],
+                      })
+                    }
                     disabled={updateConfigMutation.isPending}
                   >
                     {updateConfigMutation.isPending ? (
-                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...</>
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />{" "}
+                        Saving...
+                      </>
                     ) : (
-                      <><Save className="h-4 w-4 mr-1" /> Save Thresholds</>
+                      <>
+                        <Save className="h-4 w-4 mr-1" /> Save Thresholds
+                      </>
                     )}
                   </Button>
                 </DialogFooter>
@@ -302,12 +400,19 @@ export default function LoadTestDashboard() {
               <DialogTrigger asChild>
                 <Button
                   size="sm"
-                  disabled={!!activeTestQuery.data || runLoadTestMutation.isPending}
+                  disabled={
+                    !!activeTestQuery.data || runLoadTestMutation.isPending
+                  }
                 >
                   {activeTestQuery.data ? (
-                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Running ({activeTestQuery.data.elapsedSeconds}s)</>
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Running
+                      ({activeTestQuery.data.elapsedSeconds}s)
+                    </>
                   ) : (
-                    <><Play className="h-4 w-4 mr-1" /> Run Load Test</>
+                    <>
+                      <Play className="h-4 w-4 mr-1" /> Run Load Test
+                    </>
                   )}
                 </Button>
               </DialogTrigger>
@@ -315,7 +420,8 @@ export default function LoadTestDashboard() {
                 <DialogHeader>
                   <DialogTitle>Run Pareto Load Test</DialogTitle>
                   <DialogDescription>
-                    Configure and execute a Zipf-distributed load test against the settlement engine.
+                    Configure and execute a Zipf-distributed load test against
+                    the settlement engine.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-4">
@@ -327,7 +433,12 @@ export default function LoadTestDashboard() {
                       min={10}
                       max={10000}
                       value={testConfig.targetRps}
-                      onChange={(e: any) => setTestConfig(prev => ({ ...prev, targetRps: parseInt(e.target.value) || 500 }))}
+                      onChange={(e: any) =>
+                        setTestConfig(prev => ({
+                          ...prev,
+                          targetRps: parseInt(e.target.value) || 500,
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -338,7 +449,12 @@ export default function LoadTestDashboard() {
                       min={5}
                       max={300}
                       value={testConfig.duration}
-                      onChange={(e: any) => setTestConfig(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
+                      onChange={(e: any) =>
+                        setTestConfig(prev => ({
+                          ...prev,
+                          duration: parseInt(e.target.value) || 60,
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -349,7 +465,12 @@ export default function LoadTestDashboard() {
                       min={1}
                       max={200}
                       value={testConfig.concurrency}
-                      onChange={(e: any) => setTestConfig(prev => ({ ...prev, concurrency: parseInt(e.target.value) || 50 }))}
+                      onChange={(e: any) =>
+                        setTestConfig(prev => ({
+                          ...prev,
+                          concurrency: parseInt(e.target.value) || 50,
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -361,7 +482,12 @@ export default function LoadTestDashboard() {
                       max={3.0}
                       step={0.01}
                       value={testConfig.zipfExponent}
-                      onChange={(e: any) => setTestConfig(prev => ({ ...prev, zipfExponent: parseFloat(e.target.value) || 1.07 }))}
+                      onChange={(e: any) =>
+                        setTestConfig(prev => ({
+                          ...prev,
+                          zipfExponent: parseFloat(e.target.value) || 1.07,
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -372,20 +498,35 @@ export default function LoadTestDashboard() {
                       min={10}
                       max={100000}
                       value={testConfig.merchantCount}
-                      onChange={(e: any) => setTestConfig(prev => ({ ...prev, merchantCount: parseInt(e.target.value) || 1000 }))}
+                      onChange={(e: any) =>
+                        setTestConfig(prev => ({
+                          ...prev,
+                          merchantCount: parseInt(e.target.value) || 1000,
+                        }))
+                      }
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowRunDialog(false)}>Cancel</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRunDialog(false)}
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={() => runLoadTestMutation.mutate(testConfig)}
                     disabled={runLoadTestMutation.isPending}
                   >
                     {runLoadTestMutation.isPending ? (
-                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Starting...</>
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />{" "}
+                        Starting...
+                      </>
                     ) : (
-                      <><Play className="h-4 w-4 mr-1" /> Start Test</>
+                      <>
+                        <Play className="h-4 w-4 mr-1" /> Start Test
+                      </>
                     )}
                   </Button>
                 </DialogFooter>
@@ -405,7 +546,10 @@ export default function LoadTestDashboard() {
             </Button>
             {runs.length > 1 && (
               <div className="flex items-center gap-2">
-                <Select value={activeRunId ?? ""} onValueChange={setSelectedRun}>
+                <Select
+                  value={activeRunId ?? ""}
+                  onValueChange={setSelectedRun}
+                >
                   <SelectTrigger className="w-64">
                     <SelectValue placeholder="Select run" />
                   </SelectTrigger>
@@ -424,7 +568,9 @@ export default function LoadTestDashboard() {
                     variant="outline"
                     onClick={() => {
                       setCompareRunA(activeRunId);
-                      toast.info("Run A selected. Now select Run B and click Compare again.");
+                      toast.info(
+                        "Run A selected. Now select Run B and click Compare again."
+                      );
                     }}
                     disabled={!activeRunId}
                   >
@@ -440,7 +586,9 @@ export default function LoadTestDashboard() {
                           toast.error("Select a different run for comparison");
                           return;
                         }
-                        navigate(`/load-test-comparison?a=${compareRunA}&b=${activeRunId}`);
+                        navigate(
+                          `/load-test-comparison?a=${compareRunA}&b=${activeRunId}`
+                        );
                         setCompareRunA(null);
                       }}
                       disabled={!activeRunId || compareRunA === activeRunId}
@@ -450,7 +598,10 @@ export default function LoadTestDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => { setCompareRunA(null); toast.info("Comparison cancelled"); }}
+                      onClick={() => {
+                        setCompareRunA(null);
+                        toast.info("Comparison cancelled");
+                      }}
                     >
                       Cancel
                     </Button>
@@ -469,7 +620,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Target className="h-3 w-3" /> Actual RPS
                 </div>
-                <div className="text-xl font-bold">{results.actualRps.toLocaleString()}</div>
+                <div className="text-xl font-bold">
+                  {results.actualRps.toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Target: {run?.config.targetRps}
                 </p>
@@ -480,7 +633,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Zap className="h-3 w-3" /> Total Requests
                 </div>
-                <div className="text-xl font-bold">{results.totalRequests.toLocaleString()}</div>
+                <div className="text-xl font-bold">
+                  {results.totalRequests.toLocaleString()}
+                </div>
                 <p className="text-xs text-emerald-400">
                   {results.successfulRequests.toLocaleString()} success
                 </p>
@@ -491,7 +646,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Clock className="h-3 w-3" /> Avg Latency
                 </div>
-                <div className="text-xl font-bold">{formatMs(results.avgLatencyMs)}</div>
+                <div className="text-xl font-bold">
+                  {formatMs(results.avgLatencyMs)}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   P50: {formatMs(results.p50LatencyMs)}
                 </p>
@@ -502,7 +659,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Gauge className="h-3 w-3" /> P95 / P99
                 </div>
-                <div className="text-xl font-bold">{formatMs(results.p95LatencyMs)}</div>
+                <div className="text-xl font-bold">
+                  {formatMs(results.p95LatencyMs)}
+                </div>
                 <p className="text-xs text-yellow-400">
                   P99: {formatMs(results.p99LatencyMs)}
                 </p>
@@ -513,7 +672,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <AlertTriangle className="h-3 w-3" /> Error Rate
                 </div>
-                <div className={`text-xl font-bold ${results.errorRate > 5 ? "text-red-400" : results.errorRate > 1 ? "text-yellow-400" : "text-emerald-400"}`}>
+                <div
+                  className={`text-xl font-bold ${results.errorRate > 5 ? "text-red-400" : results.errorRate > 1 ? "text-yellow-400" : "text-emerald-400"}`}
+                >
                   {results.errorRate.toFixed(2)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -526,7 +687,9 @@ export default function LoadTestDashboard() {
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <TrendingUp className="h-3 w-3" /> Throughput
                 </div>
-                <div className="text-xl font-bold">{results.throughputMbps.toFixed(1)} MB/s</div>
+                <div className="text-xl font-bold">
+                  {results.throughputMbps.toFixed(1)} MB/s
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {run?.config.concurrency} concurrent
                 </p>
@@ -542,10 +705,12 @@ export default function LoadTestDashboard() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Zipf Distribution (Top 15 Merchants)
+                  <BarChart3 className="h-4 w-4" /> Zipf Distribution (Top 15
+                  Merchants)
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Pareto-skewed traffic: top merchants receive disproportionate load (s={run?.config.zipfExponent})
+                  Pareto-skewed traffic: top merchants receive disproportionate
+                  load (s={run?.config.zipfExponent})
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -596,7 +761,11 @@ export default function LoadTestDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SparklineInline data={timelineRps} height={80} color="#3b82f6" />
+                <SparklineInline
+                  data={timelineRps}
+                  height={80}
+                  color="#3b82f6"
+                />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>0s</span>
                   <span>Peak: {Math.max(...timelineRps, 0)} RPS</span>
@@ -614,7 +783,11 @@ export default function LoadTestDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SparklineInline data={timelineLatency} height={80} color="#10b981" />
+                <SparklineInline
+                  data={timelineLatency}
+                  height={80}
+                  color="#10b981"
+                />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>0s</span>
                   <span>Avg: {formatMs(results.avgLatencyMs)}</span>
@@ -635,23 +808,33 @@ export default function LoadTestDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground text-xs">Target RPS</p>
-                  <p className="font-mono font-medium">{run.config.targetRps}</p>
+                  <p className="font-mono font-medium">
+                    {run.config.targetRps}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Duration</p>
-                  <p className="font-mono font-medium">{run.config.duration}s</p>
+                  <p className="font-mono font-medium">
+                    {run.config.duration}s
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Concurrency</p>
-                  <p className="font-mono font-medium">{run.config.concurrency}</p>
+                  <p className="font-mono font-medium">
+                    {run.config.concurrency}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Zipf Exponent</p>
-                  <p className="font-mono font-medium">{run.config.zipfExponent}</p>
+                  <p className="font-mono font-medium">
+                    {run.config.zipfExponent}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Merchants</p>
-                  <p className="font-mono font-medium">{run.config.merchantCount.toLocaleString()}</p>
+                  <p className="font-mono font-medium">
+                    {run.config.merchantCount.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -665,18 +848,23 @@ export default function LoadTestDashboard() {
               <Server className="h-5 w-5" /> Real-Time Engine Metrics
             </CardTitle>
             <CardDescription>
-              Live OpenTelemetry metrics from settlement, dispute, and commission engines
+              Live OpenTelemetry metrics from settlement, dispute, and
+              commission engines
             </CardDescription>
           </CardHeader>
           <CardContent>
             {engines.length === 0 ? (
               <p className="text-muted-foreground text-center py-6">
-                No engine metrics recorded yet. Metrics will appear after processing operations.
+                No engine metrics recorded yet. Metrics will appear after
+                processing operations.
               </p>
             ) : (
               <div className="space-y-4">
                 {engines.map((engine: any) => (
-                  <div key={engine.name} className="p-4 border border-border/50 rounded-lg space-y-3">
+                  <div
+                    key={engine.name}
+                    className="p-4 border border-border/50 rounded-lg space-y-3"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge className="bg-blue-500/20 text-blue-400 font-mono">
@@ -702,31 +890,46 @@ export default function LoadTestDashboard() {
                     <div className="grid grid-cols-4 gap-4 text-xs">
                       <div>
                         <span className="text-muted-foreground">Avg</span>
-                        <p className="font-mono font-medium">{formatMs(engine.avgLatencyMs)}</p>
+                        <p className="font-mono font-medium">
+                          {formatMs(engine.avgLatencyMs)}
+                        </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">P50</span>
-                        <p className="font-mono font-medium">{formatMs(engine.p50LatencyMs)}</p>
+                        <p className="font-mono font-medium">
+                          {formatMs(engine.p50LatencyMs)}
+                        </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">P95</span>
-                        <p className="font-mono font-medium text-yellow-400">{formatMs(engine.p95LatencyMs)}</p>
+                        <p className="font-mono font-medium text-yellow-400">
+                          {formatMs(engine.p95LatencyMs)}
+                        </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">P99</span>
-                        <p className="font-mono font-medium text-red-400">{formatMs(engine.p99LatencyMs)}</p>
+                        <p className="font-mono font-medium text-red-400">
+                          {formatMs(engine.p99LatencyMs)}
+                        </p>
                       </div>
                     </div>
                     {engine.topOperations?.length > 0 && (
                       <div className="text-xs">
-                        <span className="text-muted-foreground">Top operations: </span>
-                        {engine.topOperations.slice(0, 5).map((op: any, i: number) => (
-                          <span key={op.operation}>
-                            {i > 0 && " · "}
-                            <span className="font-mono">{op.operation}</span>
-                            <span className="text-muted-foreground"> ({op.count})</span>
-                          </span>
-                        ))}
+                        <span className="text-muted-foreground">
+                          Top operations:{" "}
+                        </span>
+                        {engine.topOperations
+                          .slice(0, 5)
+                          .map((op: any, i: number) => (
+                            <span key={op.operation}>
+                              {i > 0 && " · "}
+                              <span className="font-mono">{op.operation}</span>
+                              <span className="text-muted-foreground">
+                                {" "}
+                                ({op.count})
+                              </span>
+                            </span>
+                          ))}
                       </div>
                     )}
                   </div>
@@ -746,7 +949,8 @@ export default function LoadTestDashboard() {
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   Run the Pareto load test script to generate performance data:
                   <code className="block mt-2 p-2 bg-muted rounded text-xs font-mono">
-                    node scripts/load-test-pareto.mjs --target-rps 500 --duration 60
+                    node scripts/load-test-pareto.mjs --target-rps 500
+                    --duration 60
                   </code>
                 </p>
               </div>

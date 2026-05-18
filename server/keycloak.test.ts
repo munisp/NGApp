@@ -21,9 +21,7 @@ import {
 describe("Keycloak config defaults", () => {
   it("realm defaults to '54link' when KEYCLOAK_REALM is not set", () => {
     // keycloakConfig is cached at import time; in test env KEYCLOAK_REALM is unset
-    expect(keycloakConfig.realm).toBe(
-      process.env.KEYCLOAK_REALM ?? "54link"
-    );
+    expect(keycloakConfig.realm).toBe(process.env.KEYCLOAK_REALM ?? "54link");
   });
 
   it("clientId defaults to 'pos-shell' when KEYCLOAK_CLIENT_ID is not set", () => {
@@ -52,9 +50,7 @@ describe("Keycloak OIDC endpoint URL helpers", () => {
   });
 
   it("endSessionEndpoint ends with /protocol/openid-connect/logout", () => {
-    expect(endSessionEndpoint()).toMatch(
-      /\/protocol\/openid-connect\/logout$/
-    );
+    expect(endSessionEndpoint()).toMatch(/\/protocol\/openid-connect\/logout$/);
   });
 
   it("jwksUri ends with /protocol/openid-connect/certs", () => {
@@ -92,7 +88,9 @@ describe("buildAuthorizationUrl", () => {
       expect(parsed.searchParams.get("redirect_uri")).toBe(mockRedirectUri);
       expect(parsed.searchParams.get("state")).toBe(mockState);
       expect(parsed.searchParams.get("scope")).toBe("openid profile email");
-      expect(parsed.searchParams.get("client_id")).toBe(keycloakConfig.clientId);
+      expect(parsed.searchParams.get("client_id")).toBe(
+        keycloakConfig.clientId
+      );
     }
   );
 
@@ -132,10 +130,12 @@ describe("decodeToken", () => {
       iat: Math.floor(Date.now() / 1000),
       iss: "https://auth.54link.io/realms/54link",
     };
-    const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" }))
-      .toString("base64url");
-    const payload = Buffer.from(JSON.stringify(payloadData))
-      .toString("base64url");
+    const header = Buffer.from(
+      JSON.stringify({ alg: "RS256", typ: "JWT" })
+    ).toString("base64url");
+    const payload = Buffer.from(JSON.stringify(payloadData)).toString(
+      "base64url"
+    );
     const fakeToken = `${header}.${payload}.fakesig`;
 
     const decoded = decodeToken(fakeToken);
@@ -147,11 +147,17 @@ describe("decodeToken", () => {
 
   it("extracts expiry timestamp from token payload", () => {
     const futureExp = Math.floor(Date.now() / 1000) + 3600;
-    const payloadData = { sub: "test", exp: futureExp, iat: Math.floor(Date.now() / 1000) };
-    const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" }))
-      .toString("base64url");
-    const payload = Buffer.from(JSON.stringify(payloadData))
-      .toString("base64url");
+    const payloadData = {
+      sub: "test",
+      exp: futureExp,
+      iat: Math.floor(Date.now() / 1000),
+    };
+    const header = Buffer.from(
+      JSON.stringify({ alg: "RS256", typ: "JWT" })
+    ).toString("base64url");
+    const payload = Buffer.from(JSON.stringify(payloadData)).toString(
+      "base64url"
+    );
     const fakeToken = `${header}.${payload}.fakesig`;
 
     const decoded = decodeToken(fakeToken);
@@ -173,10 +179,12 @@ describe("verifyKeycloakToken", () => {
       exp: Math.floor(Date.now() / 1000) + 3600,
       iss: issuerUrl(),
     };
-    const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "test-key" }))
-      .toString("base64url");
-    const payload = Buffer.from(JSON.stringify(payloadData))
-      .toString("base64url");
+    const header = Buffer.from(
+      JSON.stringify({ alg: "RS256", typ: "JWT", kid: "test-key" })
+    ).toString("base64url");
+    const payload = Buffer.from(JSON.stringify(payloadData)).toString(
+      "base64url"
+    );
     const fakeToken = `${header}.${payload}.fakesignature`;
     // Should throw — either JWKS fetch fails or signature is invalid
     await expect(verifyKeycloakToken(fakeToken)).rejects.toThrow();

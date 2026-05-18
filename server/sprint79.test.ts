@@ -214,7 +214,13 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
     it("runReconciliation supports all source/target combinations", async () => {
       const caller = appRouter.createCaller(makeAuthCtx());
-      const sources = ["tigerbeetle", "postgres", "interswitch", "nibss", "mojaloop"] as const;
+      const sources = [
+        "tigerbeetle",
+        "postgres",
+        "interswitch",
+        "nibss",
+        "mojaloop",
+      ] as const;
 
       for (const source of sources) {
         const result = await caller.revenueReconciliation.runReconciliation({
@@ -284,9 +290,11 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
     it("getSettlementFileStatus returns switch file info", async () => {
       const caller = appRouter.createCaller(makeAuthCtx());
-      const result = await caller.revenueReconciliation.getSettlementFileStatus({
-        switchProvider: "interswitch",
-      });
+      const result = await caller.revenueReconciliation.getSettlementFileStatus(
+        {
+          switchProvider: "interswitch",
+        }
+      );
 
       expect(result).toBeDefined();
       expect(result.switchProvider).toBe("interswitch");
@@ -403,9 +411,22 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
   // ===== MICROSERVICE INFRASTRUCTURE TESTS =====
   describe("Sprint 79 Microservice Infrastructure", () => {
-    const goServices = ["billing-aggregator", "revenue-reconciler", "settlement-ledger-sync"];
-    const rustServices = ["realtime-fee-splitter", "billing-stream-processor", "ledger-integrity-validator"];
-    const pythonServices = ["revenue-forecast-ml", "billing-anomaly-detector", "sla-billing-reporter", "billing-reconciliation-engine"];
+    const goServices = [
+      "billing-aggregator",
+      "revenue-reconciler",
+      "settlement-ledger-sync",
+    ];
+    const rustServices = [
+      "realtime-fee-splitter",
+      "billing-stream-processor",
+      "ledger-integrity-validator",
+    ];
+    const pythonServices = [
+      "revenue-forecast-ml",
+      "billing-anomaly-detector",
+      "sla-billing-reporter",
+      "billing-reconciliation-engine",
+    ];
 
     it("all Go microservices have main.go and Dockerfile", async () => {
       const fs = await import("fs");
@@ -414,8 +435,12 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
         const dockerPath = `services/go/${svc}/Dockerfile`;
         const goModPath = `services/go/${svc}/go.mod`;
         expect(fs.existsSync(mainPath), `${mainPath} should exist`).toBe(true);
-        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(true);
-        expect(fs.existsSync(goModPath), `${goModPath} should exist`).toBe(true);
+        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(
+          true
+        );
+        expect(fs.existsSync(goModPath), `${goModPath} should exist`).toBe(
+          true
+        );
       }
     });
 
@@ -426,8 +451,12 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
         const dockerPath = `services/rust/${svc}/Dockerfile`;
         const cargoPath = `services/rust/${svc}/Cargo.toml`;
         expect(fs.existsSync(mainPath), `${mainPath} should exist`).toBe(true);
-        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(true);
-        expect(fs.existsSync(cargoPath), `${cargoPath} should exist`).toBe(true);
+        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(
+          true
+        );
+        expect(fs.existsSync(cargoPath), `${cargoPath} should exist`).toBe(
+          true
+        );
       }
     });
 
@@ -438,7 +467,9 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
         const dockerPath = `services/python/${svc}/Dockerfile`;
         const reqPath = `services/python/${svc}/requirements.txt`;
         expect(fs.existsSync(mainPath), `${mainPath} should exist`).toBe(true);
-        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(true);
+        expect(fs.existsSync(dockerPath), `${dockerPath} should exist`).toBe(
+          true
+        );
         expect(fs.existsSync(reqPath), `${reqPath} should exist`).toBe(true);
       }
     });
@@ -456,7 +487,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
     it("Rust services integrate with required middleware", async () => {
       const fs = await import("fs");
       for (const svc of rustServices) {
-        const content = fs.readFileSync(`services/rust/${svc}/src/main.rs`, "utf-8");
+        const content = fs.readFileSync(
+          `services/rust/${svc}/src/main.rs`,
+          "utf-8"
+        );
         expect(content.toLowerCase()).toContain("health");
       }
     });
@@ -464,13 +498,16 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
     it("Python services have FastAPI integration", async () => {
       const fs = await import("fs");
       for (const svc of pythonServices) {
-        const content = fs.readFileSync(`services/python/${svc}/main.py`, "utf-8");
+        const content = fs.readFileSync(
+          `services/python/${svc}/main.py`,
+          "utf-8"
+        );
         expect(content).toContain("health");
         // Check for FastAPI or http server pattern
         expect(
-          content.toLowerCase().includes("fastapi") || 
-          content.toLowerCase().includes("httpserver") ||
-          content.toLowerCase().includes("uvicorn")
+          content.toLowerCase().includes("fastapi") ||
+            content.toLowerCase().includes("httpserver") ||
+            content.toLowerCase().includes("uvicorn")
         ).toBe(true);
       }
     });
@@ -497,7 +534,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
       // Verify mathematical consistency
       expect(result.clientShare + result.platformShare).toBe(result.grossFee);
       expect(result.netRevenue).toBe(result.platformShare - result.switchFee);
-      expect(result.splitRatio).toBeCloseTo(result.platformShare / result.grossFee, 4);
+      expect(result.splitRatio).toBeCloseTo(
+        result.platformShare / result.grossFee,
+        4
+      );
     });
 
     it("reconciliation match rate is within expected bounds", async () => {
@@ -511,7 +551,9 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
       // Match rate should be > 99% for well-functioning systems
       expect(result.matchRatePct).toBeGreaterThan(99);
-      expect(result.matchedRecords + result.discrepantRecords).toBe(result.totalRecords);
+      expect(result.matchedRecords + result.discrepantRecords).toBe(
+        result.totalRecords
+      );
     });
 
     it("live billing dashboard data is internally consistent", async () => {
@@ -524,7 +566,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
       // Each month's gross revenue should equal platform + client
       for (const month of result.actualMonthlyData) {
-        expect(month.platformRevenue + month.clientRevenue).toBeCloseTo(month.grossRevenue, -3);
+        expect(month.platformRevenue + month.clientRevenue).toBeCloseTo(
+          month.grossRevenue,
+          -3
+        );
       }
     });
   });
@@ -533,7 +578,8 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
   describe("Financial Model Integration", () => {
     it("financial model v4 HTML file exists with Live Data tab", async () => {
       const fs = await import("fs");
-      const filePath = "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html";
+      const filePath =
+        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html";
       expect(fs.existsSync(filePath)).toBe(true);
 
       const content = fs.readFileSync(filePath, "utf-8");
@@ -548,8 +594,21 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
     it("financial model retains all original tabs", async () => {
       const fs = await import("fs");
-      const content = fs.readFileSync("/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html", "utf-8");
-      const tabs = ["tab-summary", "tab-revenue", "tab-waterfall", "tab-yearly", "tab-roi", "tab-costs", "tab-sensitivity", "tab-modelcompare", "tab-livedata"];
+      const content = fs.readFileSync(
+        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html",
+        "utf-8"
+      );
+      const tabs = [
+        "tab-summary",
+        "tab-revenue",
+        "tab-waterfall",
+        "tab-yearly",
+        "tab-roi",
+        "tab-costs",
+        "tab-sensitivity",
+        "tab-modelcompare",
+        "tab-livedata",
+      ];
       for (const tab of tabs) {
         expect(content).toContain(tab);
       }
@@ -557,7 +616,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
 
     it("financial model has embedded Chart.js for offline operation", async () => {
       const fs = await import("fs");
-      const content = fs.readFileSync("/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html", "utf-8");
+      const content = fs.readFileSync(
+        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html",
+        "utf-8"
+      );
       expect(content).toContain("Chart.js v4.4.1");
       expect(content).toContain("chartjs-embed");
     });

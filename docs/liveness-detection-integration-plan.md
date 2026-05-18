@@ -19,24 +19,24 @@ The integration touches seven microservices, the tRPC backend router, the React 
 
 The existing KYC workflow in POS-54Link follows a linear state machine defined in `drizzle/schema.ts` with the `kycStatusEnum`. Prior to this integration, the workflow supported document upload, basic OCR extraction, and manual review. The enhanced workflow now includes the following 16 states:
 
-| State | Description | Trigger |
-|-------|-------------|---------|
-| `initiated` | KYC session created | User starts verification |
-| `document_uploaded` | ID document image received | File upload complete |
-| `ocr_processing` | PaddleOCR + Rust OCR extracting text | Automatic after upload |
-| `ocr_completed` | OCR results available | OCR pipeline finishes |
-| `vlm_verification` | VLM cross-verifying OCR against visual content | Automatic |
-| `vlm_completed` | VLM analysis and fraud indicators ready | VLM pipeline finishes |
-| `fraud_check` | Document fraud detection running (ELA, metadata, fonts) | Automatic |
-| `fraud_cleared` | Document passes fraud thresholds | Fraud score < 0.35 |
-| `liveness_pending` | Awaiting user liveness challenge | Fraud cleared |
-| `liveness_completed` | Liveness verified as genuine | Challenge passed |
-| `face_matching` | Comparing selfie to ID photo via ArcFace embeddings | Automatic |
-| `face_matched` | Face similarity above threshold (0.45 cosine) | Match confirmed |
-| `manual_review` | Flagged for human review | Edge cases |
-| `approved` | KYC fully approved | All checks pass |
-| `rejected` | KYC rejected | Any critical failure |
-| `expired` | Session timed out (24h) | Inactivity |
+| State                | Description                                             | Trigger                  |
+| -------------------- | ------------------------------------------------------- | ------------------------ |
+| `initiated`          | KYC session created                                     | User starts verification |
+| `document_uploaded`  | ID document image received                              | File upload complete     |
+| `ocr_processing`     | PaddleOCR + Rust OCR extracting text                    | Automatic after upload   |
+| `ocr_completed`      | OCR results available                                   | OCR pipeline finishes    |
+| `vlm_verification`   | VLM cross-verifying OCR against visual content          | Automatic                |
+| `vlm_completed`      | VLM analysis and fraud indicators ready                 | VLM pipeline finishes    |
+| `fraud_check`        | Document fraud detection running (ELA, metadata, fonts) | Automatic                |
+| `fraud_cleared`      | Document passes fraud thresholds                        | Fraud score < 0.35       |
+| `liveness_pending`   | Awaiting user liveness challenge                        | Fraud cleared            |
+| `liveness_completed` | Liveness verified as genuine                            | Challenge passed         |
+| `face_matching`      | Comparing selfie to ID photo via ArcFace embeddings     | Automatic                |
+| `face_matched`       | Face similarity above threshold (0.45 cosine)           | Match confirmed          |
+| `manual_review`      | Flagged for human review                                | Edge cases               |
+| `approved`           | KYC fully approved                                      | All checks pass          |
+| `rejected`           | KYC rejected                                            | Any critical failure     |
+| `expired`            | Session timed out (24h)                                 | Inactivity               |
 
 The liveness detection step sits between `fraud_cleared` and `face_matching`, forming the critical biometric verification gate that prevents identity spoofing.
 
@@ -56,12 +56,12 @@ The liveness system operates at three detection levels, each adding progressivel
 
 ### 3.2 Model Architecture
 
-| Model | Purpose | Input | Output | Latency |
-|-------|---------|-------|--------|---------|
-| MiniFASNetV2 [3] | Binary live/spoof classification | 80x80 face crop | Score 0–1 | ~5ms |
-| CDCN [4] | Depth map estimation | 256x256 face | Depth map + score | ~12ms |
-| FAS-SGTD [5] | Temporal gradient analysis | Frame sequence | Gradient score | ~8ms |
-| MediaPipe Face Mesh [6] | 468-point landmark extraction | Full frame | Landmarks + pose | ~15ms |
+| Model                   | Purpose                          | Input           | Output            | Latency |
+| ----------------------- | -------------------------------- | --------------- | ----------------- | ------- |
+| MiniFASNetV2 [3]        | Binary live/spoof classification | 80x80 face crop | Score 0–1         | ~5ms    |
+| CDCN [4]                | Depth map estimation             | 256x256 face    | Depth map + score | ~12ms   |
+| FAS-SGTD [5]            | Temporal gradient analysis       | Frame sequence  | Gradient score    | ~8ms    |
+| MediaPipe Face Mesh [6] | 468-point landmark extraction    | Full frame      | Landmarks + pose  | ~15ms   |
 
 The ensemble combines model outputs using the weighted average formula:
 
@@ -69,14 +69,14 @@ The ensemble combines model outputs using the weighted average formula:
 
 ### 3.3 Attack Detection Matrix
 
-| Attack Type | Detection Method | Expected APCER |
-|-------------|-----------------|----------------|
-| Print attack (paper photo) | Frequency analysis (moire), color space, texture | < 1.0% |
-| Screen replay (phone/tablet) | Reflection analysis, frequency (pixel grid), flicker | < 1.5% |
-| 3D mask (silicone/resin) | Depth estimation, skin texture, specular reflection | < 3.0% |
-| Deepfake (GAN-generated) | Frequency artifacts, temporal consistency, edge analysis | < 2.5% |
-| Video replay (pre-recorded) | Challenge-response timing, temporal gradients | < 1.0% |
-| Partial attack (eye cutout) | Landmark consistency, face boundary analysis | < 2.0% |
+| Attack Type                  | Detection Method                                         | Expected APCER |
+| ---------------------------- | -------------------------------------------------------- | -------------- |
+| Print attack (paper photo)   | Frequency analysis (moire), color space, texture         | < 1.0%         |
+| Screen replay (phone/tablet) | Reflection analysis, frequency (pixel grid), flicker     | < 1.5%         |
+| 3D mask (silicone/resin)     | Depth estimation, skin texture, specular reflection      | < 3.0%         |
+| Deepfake (GAN-generated)     | Frequency artifacts, temporal consistency, edge analysis | < 2.5%         |
+| Video replay (pre-recorded)  | Challenge-response timing, temporal gradients            | < 1.0%         |
+| Partial attack (eye cutout)  | Landmark consistency, face boundary analysis             | < 2.0%         |
 
 ---
 
@@ -104,15 +104,15 @@ The complete liveness integration follows this sequence within the KYC workflow:
 
 The liveness service exposes the following endpoints:
 
-| Endpoint | Method | Purpose | Request | Response |
-|----------|--------|---------|---------|----------|
-| `/liveness/passive` | POST | Single-frame check | `{image_base64}` | `PassiveLivenessScore` |
-| `/liveness/session/create` | POST | Create challenge session | `{level}` | `{session_id, challenges, timeout}` |
-| `/liveness/session/frame` | POST | Process video frame | `{session_id, frame_base64}` | Challenge progress |
-| `/liveness/session/finalize` | POST | Generate final report | `{session_id, final_frame_base64}` | `LivenessReport` |
-| `/liveness/face-quality` | POST | ICAO face quality check | `{image_base64}` | Quality metrics |
-| `/liveness/ws/{session_id}` | WS | Real-time frame processing | Binary frames | JSON progress |
-| `/health` | GET | Service health | — | Status + capabilities |
+| Endpoint                     | Method | Purpose                    | Request                            | Response                            |
+| ---------------------------- | ------ | -------------------------- | ---------------------------------- | ----------------------------------- |
+| `/liveness/passive`          | POST   | Single-frame check         | `{image_base64}`                   | `PassiveLivenessScore`              |
+| `/liveness/session/create`   | POST   | Create challenge session   | `{level}`                          | `{session_id, challenges, timeout}` |
+| `/liveness/session/frame`    | POST   | Process video frame        | `{session_id, frame_base64}`       | Challenge progress                  |
+| `/liveness/session/finalize` | POST   | Generate final report      | `{session_id, final_frame_base64}` | `LivenessReport`                    |
+| `/liveness/face-quality`     | POST   | ICAO face quality check    | `{image_base64}`                   | Quality metrics                     |
+| `/liveness/ws/{session_id}`  | WS     | Real-time frame processing | Binary frames                      | JSON progress                       |
+| `/health`                    | GET    | Service health             | —                                  | Status + capabilities               |
 
 ### 4.3 tRPC Router Integration
 
@@ -190,15 +190,15 @@ The liveness service enforces rate limits to prevent brute-force attacks: maximu
 
 ## 7. Performance Requirements
 
-| Metric | Target | Measured |
-|--------|--------|----------|
-| Passive check latency (single frame) | < 100ms | ~40ms |
-| Active challenge detection latency | < 50ms per frame | ~35ms |
-| Full session duration (3 challenges) | < 30 seconds | ~20 seconds |
-| Face quality assessment | < 50ms | ~25ms |
-| WebSocket frame processing | 15 FPS sustained | 15 FPS |
-| Memory usage per session | < 256 MB | ~180 MB |
-| Concurrent sessions per instance | > 50 | 75 |
+| Metric                               | Target           | Measured    |
+| ------------------------------------ | ---------------- | ----------- |
+| Passive check latency (single frame) | < 100ms          | ~40ms       |
+| Active challenge detection latency   | < 50ms per frame | ~35ms       |
+| Full session duration (3 challenges) | < 30 seconds     | ~20 seconds |
+| Face quality assessment              | < 50ms           | ~25ms       |
+| WebSocket frame processing           | 15 FPS sustained | 15 FPS      |
+| Memory usage per session             | < 256 MB         | ~180 MB     |
+| Concurrent sessions per instance     | > 50             | 75          |
 
 ### 7.1 Scaling Strategy
 
@@ -232,16 +232,16 @@ Implement model retraining pipeline using collected data (with user consent). Ad
 
 The liveness service exports Prometheus metrics via the `/metrics` endpoint, collected by the POS-54Link metrics aggregator (port 8093). Key metrics include:
 
-| Metric | Type | Alert Threshold |
-|--------|------|-----------------|
-| `liveness_sessions_total` | Counter | — |
-| `liveness_result{result="live"}` | Counter | — |
-| `liveness_result{result="spoof"}` | Counter | > 20% of total |
-| `liveness_passive_score` | Histogram | p50 < 0.5 |
-| `liveness_challenge_duration_ms` | Histogram | p99 > 10000 |
-| `liveness_attack_detected{type}` | Counter | Any spike |
-| `liveness_session_timeout_total` | Counter | > 15% of total |
-| `liveness_face_quality_score` | Histogram | p50 < 0.6 |
+| Metric                            | Type      | Alert Threshold |
+| --------------------------------- | --------- | --------------- |
+| `liveness_sessions_total`         | Counter   | —               |
+| `liveness_result{result="live"}`  | Counter   | —               |
+| `liveness_result{result="spoof"}` | Counter   | > 20% of total  |
+| `liveness_passive_score`          | Histogram | p50 < 0.5       |
+| `liveness_challenge_duration_ms`  | Histogram | p99 > 10000     |
+| `liveness_attack_detected{type}`  | Counter   | Any spike       |
+| `liveness_session_timeout_total`  | Counter   | > 15% of total  |
+| `liveness_face_quality_score`     | Histogram | p50 < 0.6       |
 
 Alerts are configured in the Grafana dashboard with PagerDuty integration for critical events (spoof rate spike, service degradation, model inference errors).
 
@@ -251,18 +251,18 @@ Alerts are configured in the Grafana dashboard with PagerDuty integration for cr
 
 The liveness detection integration depends on and connects to the following services:
 
-| Service | Port | Role in Liveness Flow |
-|---------|------|-----------------------|
-| Liveness Detection | 8104 | Core liveness engine |
-| Face Matching | 8105 | Post-liveness selfie-to-ID comparison |
-| PaddleOCR | 8100 | ID document text extraction (upstream) |
-| VLM Document | 8102 | Document verification (upstream) |
-| Fraud Detection | 8106 | Document fraud check (upstream) |
-| Redis (Sentinel) | 6379 | Session state storage |
-| APISIX | 9080 | API gateway and rate limiting |
-| Temporal | 7233 | Workflow orchestration |
-| PostgreSQL | 5432 | KYC session persistence |
-| S3 (MinIO) | 9000 | Selfie image storage |
+| Service            | Port | Role in Liveness Flow                  |
+| ------------------ | ---- | -------------------------------------- |
+| Liveness Detection | 8104 | Core liveness engine                   |
+| Face Matching      | 8105 | Post-liveness selfie-to-ID comparison  |
+| PaddleOCR          | 8100 | ID document text extraction (upstream) |
+| VLM Document       | 8102 | Document verification (upstream)       |
+| Fraud Detection    | 8106 | Document fraud check (upstream)        |
+| Redis (Sentinel)   | 6379 | Session state storage                  |
+| APISIX             | 9080 | API gateway and rate limiting          |
+| Temporal           | 7233 | Workflow orchestration                 |
+| PostgreSQL         | 5432 | KYC session persistence                |
+| S3 (MinIO)         | 9000 | Selfie image storage                   |
 
 ---
 

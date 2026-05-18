@@ -1,16 +1,37 @@
 // @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
-  ArrowUpRight, ArrowDownRight, Minus, BarChart3, Clock,
-  Zap, AlertTriangle, TrendingUp, GitCompareArrows, RefreshCw,
-  Download, FileText,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  BarChart3,
+  Clock,
+  Zap,
+  AlertTriangle,
+  TrendingUp,
+  GitCompareArrows,
+  RefreshCw,
+  Download,
+  FileText,
 } from "lucide-react";
 
 // ─── Delta Display Component ────────────────────────────────────────────────
@@ -42,22 +63,35 @@ function DeltaCell({
       : "text-red-400";
   const Icon = isNeutral ? Minus : improved ? ArrowDownRight : ArrowUpRight;
   const dirIcon = higherBetter
-    ? (isNeutral ? Minus : improved ? ArrowUpRight : ArrowDownRight)
+    ? isNeutral
+      ? Minus
+      : improved
+        ? ArrowUpRight
+        : ArrowDownRight
     : Icon;
 
   return (
     <div className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
       <span className="text-sm text-muted-foreground w-28">{label}</span>
       <span className="text-sm font-mono w-24 text-right">
-        {typeof valueA === "number" ? valueA.toLocaleString() : valueA}{unit}
+        {typeof valueA === "number" ? valueA.toLocaleString() : valueA}
+        {unit}
       </span>
       <span className="text-sm font-mono w-24 text-right">
-        {typeof valueB === "number" ? valueB.toLocaleString() : valueB}{unit}
+        {typeof valueB === "number" ? valueB.toLocaleString() : valueB}
+        {unit}
       </span>
-      <span className={`text-sm font-mono w-28 text-right flex items-center justify-end gap-1 ${color}`}>
+      <span
+        className={`text-sm font-mono w-28 text-right flex items-center justify-end gap-1 ${color}`}
+      >
         {React.createElement(dirIcon, { className: "h-3 w-3" })}
-        {diff > 0 ? "+" : ""}{diff.toLocaleString()}{unit}
-        <span className="text-xs">({pctChange > 0 ? "+" : ""}{pctChange.toFixed(1)}%)</span>
+        {diff > 0 ? "+" : ""}
+        {diff.toLocaleString()}
+        {unit}
+        <span className="text-xs">
+          ({pctChange > 0 ? "+" : ""}
+          {pctChange.toFixed(1)}%)
+        </span>
       </span>
     </div>
   );
@@ -82,31 +116,41 @@ function OverlayBarChart({
 }) {
   const maxVal = Math.max(
     ...data.map(d => Math.max(d[valueAKey] ?? 0, d[valueBKey] ?? 0)),
-    1,
+    1
   );
   return (
     <div className="space-y-2">
       {data.map((item, i) => (
         <div key={i} className="space-y-0.5">
           <div className="flex items-center gap-2 text-xs">
-            <span className="w-16 text-right text-muted-foreground truncate">{item[labelKey]}</span>
+            <span className="w-16 text-right text-muted-foreground truncate">
+              {item[labelKey]}
+            </span>
             <div className="flex-1 space-y-0.5">
               <div className="h-3 bg-muted/20 rounded overflow-hidden">
                 <div
                   className={`h-full ${colorA} rounded opacity-80`}
-                  style={{ width: `${Math.max(1, (item[valueAKey] / maxVal) * 100)}%` }}
+                  style={{
+                    width: `${Math.max(1, (item[valueAKey] / maxVal) * 100)}%`,
+                  }}
                 />
               </div>
               <div className="h-3 bg-muted/20 rounded overflow-hidden">
                 <div
                   className={`h-full ${colorB} rounded opacity-80`}
-                  style={{ width: `${Math.max(1, (item[valueBKey] / maxVal) * 100)}%` }}
+                  style={{
+                    width: `${Math.max(1, (item[valueBKey] / maxVal) * 100)}%`,
+                  }}
                 />
               </div>
             </div>
             <div className="w-20 text-right">
-              <div className="text-xs font-mono text-blue-400">{item[valueAKey]?.toLocaleString()}</div>
-              <div className="text-xs font-mono text-amber-400">{item[valueBKey]?.toLocaleString()}</div>
+              <div className="text-xs font-mono text-blue-400">
+                {item[valueAKey]?.toLocaleString()}
+              </div>
+              <div className="text-xs font-mono text-amber-400">
+                {item[valueBKey]?.toLocaleString()}
+              </div>
             </div>
           </div>
         </div>
@@ -149,8 +193,24 @@ function DualSparkline({
 
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" style={{ height }}>
-      <polyline points={toPoints(dataA)} fill="none" stroke={colorA} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-      <polyline points={toPoints(dataB)} fill="none" stroke={colorB} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+      <polyline
+        points={toPoints(dataA)}
+        fill="none"
+        stroke={colorA}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.8"
+      />
+      <polyline
+        points={toPoints(dataB)}
+        fill="none"
+        stroke={colorB}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.8"
+      />
     </svg>
   );
 }
@@ -171,36 +231,146 @@ function exportComparisonCsv(data: any) {
     ["Load Test Comparison Report"],
     ["Generated", new Date().toISOString()],
     [],
-    ["Run A (Baseline)", runA.name, `Started: ${runA.startedAt}`, `Config: ${runA.config.targetRps} RPS, ${runA.config.duration}s, ${runA.config.concurrency} concurrent`],
-    ["Run B (Candidate)", runB.name, `Started: ${runB.startedAt}`, `Config: ${runB.config.targetRps} RPS, ${runB.config.duration}s, ${runB.config.concurrency} concurrent`],
+    [
+      "Run A (Baseline)",
+      runA.name,
+      `Started: ${runA.startedAt}`,
+      `Config: ${runA.config.targetRps} RPS, ${runA.config.duration}s, ${runA.config.concurrency} concurrent`,
+    ],
+    [
+      "Run B (Candidate)",
+      runB.name,
+      `Started: ${runB.startedAt}`,
+      `Config: ${runB.config.targetRps} RPS, ${runB.config.duration}s, ${runB.config.concurrency} concurrent`,
+    ],
     [],
     ["Metric", "Category", "Run A", "Run B", "Delta", "% Change", "Improved"],
-    ["Avg Latency (ms)", "Latency", String(cmp.latency.avg.valueA), String(cmp.latency.avg.valueB), String(cmp.latency.avg.diff), `${cmp.latency.avg.pctChange}%`, String(cmp.latency.avg.improved)],
-    ["P50 Latency (ms)", "Latency", String(cmp.latency.p50.valueA), String(cmp.latency.p50.valueB), String(cmp.latency.p50.diff), `${cmp.latency.p50.pctChange}%`, String(cmp.latency.p50.improved)],
-    ["P95 Latency (ms)", "Latency", String(cmp.latency.p95.valueA), String(cmp.latency.p95.valueB), String(cmp.latency.p95.diff), `${cmp.latency.p95.pctChange}%`, String(cmp.latency.p95.improved)],
-    ["P99 Latency (ms)", "Latency", String(cmp.latency.p99.valueA), String(cmp.latency.p99.valueB), String(cmp.latency.p99.diff), `${cmp.latency.p99.pctChange}%`, String(cmp.latency.p99.improved)],
-    ["Max Latency (ms)", "Latency", String(cmp.latency.max.valueA), String(cmp.latency.max.valueB), String(cmp.latency.max.diff), `${cmp.latency.max.pctChange}%`, String(cmp.latency.max.improved)],
-    ["Actual RPS", "Throughput", String(cmp.throughput.actualRps.valueA), String(cmp.throughput.actualRps.valueB), String(cmp.throughput.actualRps.diff), `${cmp.throughput.actualRps.pctChange}%`, String(cmp.throughput.actualRps.improved)],
-    ["Total Requests", "Throughput", String(cmp.throughput.totalRequests.valueA), String(cmp.throughput.totalRequests.valueB), String(cmp.throughput.totalRequests.diff), `${cmp.throughput.totalRequests.pctChange}%`, String(cmp.throughput.totalRequests.improved)],
-    ["Throughput (MB/s)", "Throughput", String(cmp.throughput.throughputMbps.valueA), String(cmp.throughput.throughputMbps.valueB), String(cmp.throughput.throughputMbps.diff), `${cmp.throughput.throughputMbps.pctChange}%`, String(cmp.throughput.throughputMbps.improved)],
-    ["Error Rate (%)", "Reliability", String(cmp.reliability.errorRate.valueA), String(cmp.reliability.errorRate.valueB), String(cmp.reliability.errorRate.diff), `${cmp.reliability.errorRate.pctChange}%`, String(cmp.reliability.errorRate.improved)],
-    ["Failed Requests", "Reliability", String(cmp.reliability.failedRequests.valueA), String(cmp.reliability.failedRequests.valueB), String(cmp.reliability.failedRequests.diff), `${cmp.reliability.failedRequests.pctChange}%`, String(cmp.reliability.failedRequests.improved)],
-    ["Success Rate (%)", "Reliability", String(cmp.reliability.successRate.valueA), String(cmp.reliability.successRate.valueB), String(cmp.reliability.successRate.diff), `${cmp.reliability.successRate.pctChange}%`, String(cmp.reliability.successRate.improved)],
+    [
+      "Avg Latency (ms)",
+      "Latency",
+      String(cmp.latency.avg.valueA),
+      String(cmp.latency.avg.valueB),
+      String(cmp.latency.avg.diff),
+      `${cmp.latency.avg.pctChange}%`,
+      String(cmp.latency.avg.improved),
+    ],
+    [
+      "P50 Latency (ms)",
+      "Latency",
+      String(cmp.latency.p50.valueA),
+      String(cmp.latency.p50.valueB),
+      String(cmp.latency.p50.diff),
+      `${cmp.latency.p50.pctChange}%`,
+      String(cmp.latency.p50.improved),
+    ],
+    [
+      "P95 Latency (ms)",
+      "Latency",
+      String(cmp.latency.p95.valueA),
+      String(cmp.latency.p95.valueB),
+      String(cmp.latency.p95.diff),
+      `${cmp.latency.p95.pctChange}%`,
+      String(cmp.latency.p95.improved),
+    ],
+    [
+      "P99 Latency (ms)",
+      "Latency",
+      String(cmp.latency.p99.valueA),
+      String(cmp.latency.p99.valueB),
+      String(cmp.latency.p99.diff),
+      `${cmp.latency.p99.pctChange}%`,
+      String(cmp.latency.p99.improved),
+    ],
+    [
+      "Max Latency (ms)",
+      "Latency",
+      String(cmp.latency.max.valueA),
+      String(cmp.latency.max.valueB),
+      String(cmp.latency.max.diff),
+      `${cmp.latency.max.pctChange}%`,
+      String(cmp.latency.max.improved),
+    ],
+    [
+      "Actual RPS",
+      "Throughput",
+      String(cmp.throughput.actualRps.valueA),
+      String(cmp.throughput.actualRps.valueB),
+      String(cmp.throughput.actualRps.diff),
+      `${cmp.throughput.actualRps.pctChange}%`,
+      String(cmp.throughput.actualRps.improved),
+    ],
+    [
+      "Total Requests",
+      "Throughput",
+      String(cmp.throughput.totalRequests.valueA),
+      String(cmp.throughput.totalRequests.valueB),
+      String(cmp.throughput.totalRequests.diff),
+      `${cmp.throughput.totalRequests.pctChange}%`,
+      String(cmp.throughput.totalRequests.improved),
+    ],
+    [
+      "Throughput (MB/s)",
+      "Throughput",
+      String(cmp.throughput.throughputMbps.valueA),
+      String(cmp.throughput.throughputMbps.valueB),
+      String(cmp.throughput.throughputMbps.diff),
+      `${cmp.throughput.throughputMbps.pctChange}%`,
+      String(cmp.throughput.throughputMbps.improved),
+    ],
+    [
+      "Error Rate (%)",
+      "Reliability",
+      String(cmp.reliability.errorRate.valueA),
+      String(cmp.reliability.errorRate.valueB),
+      String(cmp.reliability.errorRate.diff),
+      `${cmp.reliability.errorRate.pctChange}%`,
+      String(cmp.reliability.errorRate.improved),
+    ],
+    [
+      "Failed Requests",
+      "Reliability",
+      String(cmp.reliability.failedRequests.valueA),
+      String(cmp.reliability.failedRequests.valueB),
+      String(cmp.reliability.failedRequests.diff),
+      `${cmp.reliability.failedRequests.pctChange}%`,
+      String(cmp.reliability.failedRequests.improved),
+    ],
+    [
+      "Success Rate (%)",
+      "Reliability",
+      String(cmp.reliability.successRate.valueA),
+      String(cmp.reliability.successRate.valueB),
+      String(cmp.reliability.successRate.diff),
+      `${cmp.reliability.successRate.pctChange}%`,
+      String(cmp.reliability.successRate.improved),
+    ],
     [],
     ["Zipf Distribution (Top 10)"],
     ["Rank", "Requests A", "Requests B", "% A", "% B"],
     ...(cmp.zipfComparison ?? []).map((z: any) => [
-      `#${z.rank}`, String(z.requestsA), String(z.requestsB), `${z.pctA}%`, `${z.pctB}%`,
+      `#${z.rank}`,
+      String(z.requestsA),
+      String(z.requestsB),
+      `${z.pctA}%`,
+      `${z.pctB}%`,
     ]),
     [],
     ["Timeline (per second)"],
     ["Second", "RPS A", "RPS B", "Latency A (ms)", "Latency B (ms)"],
     ...(cmp.timelineOverlay ?? []).map((t: any) => [
-      String(t.second), String(t.rpsA), String(t.rpsB), String(t.latencyA), String(t.latencyB),
+      String(t.second),
+      String(t.rpsA),
+      String(t.rpsB),
+      String(t.latencyA),
+      String(t.latencyB),
     ]),
   ];
 
-  const csvContent = rows.map(row => row.map(cell => `"${(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const csvContent = rows
+    .map(row =>
+      row.map(cell => `"${(cell ?? "").replace(/"/g, '""')}"`).join(",")
+    )
+    .join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -222,11 +392,18 @@ function exportComparisonPdf(data: any) {
     cmp.throughput.actualRps.improved,
     cmp.reliability.errorRate.improved,
   ].filter(Boolean).length;
-  const verdict = improvements >= 2 ? "IMPROVEMENT" : improvements === 1 ? "MIXED" : "REGRESSION";
-  const verdictColor = improvements >= 2 ? "#10b981" : improvements === 1 ? "#eab308" : "#ef4444";
+  const verdict =
+    improvements >= 2
+      ? "IMPROVEMENT"
+      : improvements === 1
+        ? "MIXED"
+        : "REGRESSION";
+  const verdictColor =
+    improvements >= 2 ? "#10b981" : improvements === 1 ? "#eab308" : "#ef4444";
 
   function deltaRow(label: string, d: any, unit = "") {
-    const color = Math.abs(d.pctChange) < 0.5 ? "#888" : d.improved ? "#10b981" : "#ef4444";
+    const color =
+      Math.abs(d.pctChange) < 0.5 ? "#888" : d.improved ? "#10b981" : "#ef4444";
     return `<tr>
       <td style="padding:4px 8px">${label}</td>
       <td style="padding:4px 8px;text-align:right;font-family:monospace">${d.valueA.toLocaleString()}${unit}</td>
@@ -316,25 +493,38 @@ export default function LoadTestComparison() {
 
   const comparisonQuery = trpc.loadTestMetrics.compareRuns.useQuery(
     { runIdA: effectiveA!, runIdB: effectiveB! },
-    { enabled: !!effectiveA && !!effectiveB && effectiveA !== effectiveB },
+    { enabled: !!effectiveA && !!effectiveB && effectiveA !== effectiveB }
   );
 
   const data = comparisonQuery.data;
   const cmp = data?.comparison;
 
   const zipfData = useMemo(
-    () => (cmp?.zipfComparison ?? []).map(d => ({
-      label: `#${d.rank}`,
-      reqA: d.requestsA,
-      reqB: d.requestsB,
-    })),
-    [cmp],
+    () =>
+      (cmp?.zipfComparison ?? []).map(d => ({
+        label: `#${d.rank}`,
+        reqA: d.requestsA,
+        reqB: d.requestsB,
+      })),
+    [cmp]
   );
 
-  const timelineRpsA = useMemo(() => (cmp?.timelineOverlay ?? []).map(t => t.rpsA), [cmp]);
-  const timelineRpsB = useMemo(() => (cmp?.timelineOverlay ?? []).map(t => t.rpsB), [cmp]);
-  const timelineLatA = useMemo(() => (cmp?.timelineOverlay ?? []).map(t => t.latencyA), [cmp]);
-  const timelineLatB = useMemo(() => (cmp?.timelineOverlay ?? []).map(t => t.latencyB), [cmp]);
+  const timelineRpsA = useMemo(
+    () => (cmp?.timelineOverlay ?? []).map(t => t.rpsA),
+    [cmp]
+  );
+  const timelineRpsB = useMemo(
+    () => (cmp?.timelineOverlay ?? []).map(t => t.rpsB),
+    [cmp]
+  );
+  const timelineLatA = useMemo(
+    () => (cmp?.timelineOverlay ?? []).map(t => t.latencyA),
+    [cmp]
+  );
+  const timelineLatB = useMemo(
+    () => (cmp?.timelineOverlay ?? []).map(t => t.latencyB),
+    [cmp]
+  );
 
   return (
     <DashboardLayout>
@@ -355,14 +545,20 @@ export default function LoadTestComparison() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { exportComparisonCsv(data); toast.success("CSV downloaded"); }}
+                  onClick={() => {
+                    exportComparisonCsv(data);
+                    toast.success("CSV downloaded");
+                  }}
                 >
                   <Download className="h-4 w-4 mr-1" /> CSV
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { exportComparisonPdf(data); toast.success("PDF print dialog opened"); }}
+                  onClick={() => {
+                    exportComparisonPdf(data);
+                    toast.success("PDF print dialog opened");
+                  }}
                 >
                   <FileText className="h-4 w-4 mr-1" /> PDF
                 </Button>
@@ -371,7 +567,11 @@ export default function LoadTestComparison() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => { runsQuery.refetch(); comparisonQuery.refetch(); toast.success("Refreshed"); }}
+              onClick={() => {
+                runsQuery.refetch();
+                comparisonQuery.refetch();
+                toast.success("Refreshed");
+              }}
             >
               <RefreshCw className="h-4 w-4 mr-1" /> Refresh
             </Button>
@@ -383,7 +583,8 @@ export default function LoadTestComparison() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500" /> Run A (Baseline)
+                <div className="w-3 h-3 rounded-full bg-blue-500" /> Run A
+                (Baseline)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -394,15 +595,22 @@ export default function LoadTestComparison() {
                 <SelectContent>
                   {runs.map((r: any) => (
                     <SelectItem key={r.id} value={r.id}>
-                      {r.name?.slice(0, 50) ?? r.id} — {new Date(r.startedAt).toLocaleDateString()}
+                      {r.name?.slice(0, 50) ?? r.id} —{" "}
+                      {new Date(r.startedAt).toLocaleDateString()}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {data?.runA && (
                 <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                  <div>Config: {data.runA.config.targetRps} RPS, {data.runA.config.duration}s, {data.runA.config.concurrency} concurrent</div>
-                  <div>Started: {new Date(data.runA.startedAt).toLocaleString()}</div>
+                  <div>
+                    Config: {data.runA.config.targetRps} RPS,{" "}
+                    {data.runA.config.duration}s, {data.runA.config.concurrency}{" "}
+                    concurrent
+                  </div>
+                  <div>
+                    Started: {new Date(data.runA.startedAt).toLocaleString()}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -411,7 +619,8 @@ export default function LoadTestComparison() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-amber-500" /> Run B (Candidate)
+                <div className="w-3 h-3 rounded-full bg-amber-500" /> Run B
+                (Candidate)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -422,15 +631,22 @@ export default function LoadTestComparison() {
                 <SelectContent>
                   {runs.map((r: any) => (
                     <SelectItem key={r.id} value={r.id}>
-                      {r.name?.slice(0, 50) ?? r.id} — {new Date(r.startedAt).toLocaleDateString()}
+                      {r.name?.slice(0, 50) ?? r.id} —{" "}
+                      {new Date(r.startedAt).toLocaleDateString()}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {data?.runB && (
                 <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                  <div>Config: {data.runB.config.targetRps} RPS, {data.runB.config.duration}s, {data.runB.config.concurrency} concurrent</div>
-                  <div>Started: {new Date(data.runB.startedAt).toLocaleString()}</div>
+                  <div>
+                    Config: {data.runB.config.targetRps} RPS,{" "}
+                    {data.runB.config.duration}s, {data.runB.config.concurrency}{" "}
+                    concurrent
+                  </div>
+                  <div>
+                    Started: {new Date(data.runB.startedAt).toLocaleString()}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -457,14 +673,19 @@ export default function LoadTestComparison() {
                   <Clock className="h-4 w-4" /> Latency Comparison
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Lower is better. Green indicates improvement from Run A to Run B.
+                  Lower is better. Green indicates improvement from Run A to Run
+                  B.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="mb-2 flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="w-28" />
-                  <span className="w-24 text-right font-medium text-blue-400">Run A</span>
-                  <span className="w-24 text-right font-medium text-amber-400">Run B</span>
+                  <span className="w-24 text-right font-medium text-blue-400">
+                    Run A
+                  </span>
+                  <span className="w-24 text-right font-medium text-amber-400">
+                    Run B
+                  </span>
                   <span className="w-28 text-right font-medium">Delta</span>
                 </div>
                 <DeltaCell label="Avg Latency" unit="ms" {...cmp.latency.avg} />
@@ -482,18 +703,37 @@ export default function LoadTestComparison() {
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Zap className="h-4 w-4" /> Throughput
                   </CardTitle>
-                  <CardDescription className="text-xs">Higher is better.</CardDescription>
+                  <CardDescription className="text-xs">
+                    Higher is better.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-2 flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="w-28" />
-                    <span className="w-24 text-right font-medium text-blue-400">Run A</span>
-                    <span className="w-24 text-right font-medium text-amber-400">Run B</span>
+                    <span className="w-24 text-right font-medium text-blue-400">
+                      Run A
+                    </span>
+                    <span className="w-24 text-right font-medium text-amber-400">
+                      Run B
+                    </span>
                     <span className="w-28 text-right font-medium">Delta</span>
                   </div>
-                  <DeltaCell label="Actual RPS" higherBetter {...cmp.throughput.actualRps} />
-                  <DeltaCell label="Total Reqs" higherBetter {...cmp.throughput.totalRequests} />
-                  <DeltaCell label="Throughput" unit=" MB/s" higherBetter {...cmp.throughput.throughputMbps} />
+                  <DeltaCell
+                    label="Actual RPS"
+                    higherBetter
+                    {...cmp.throughput.actualRps}
+                  />
+                  <DeltaCell
+                    label="Total Reqs"
+                    higherBetter
+                    {...cmp.throughput.totalRequests}
+                  />
+                  <DeltaCell
+                    label="Throughput"
+                    unit=" MB/s"
+                    higherBetter
+                    {...cmp.throughput.throughputMbps}
+                  />
                 </CardContent>
               </Card>
 
@@ -502,18 +742,36 @@ export default function LoadTestComparison() {
                   <CardTitle className="text-sm flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" /> Reliability
                   </CardTitle>
-                  <CardDescription className="text-xs">Lower error rate is better.</CardDescription>
+                  <CardDescription className="text-xs">
+                    Lower error rate is better.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-2 flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="w-28" />
-                    <span className="w-24 text-right font-medium text-blue-400">Run A</span>
-                    <span className="w-24 text-right font-medium text-amber-400">Run B</span>
+                    <span className="w-24 text-right font-medium text-blue-400">
+                      Run A
+                    </span>
+                    <span className="w-24 text-right font-medium text-amber-400">
+                      Run B
+                    </span>
                     <span className="w-28 text-right font-medium">Delta</span>
                   </div>
-                  <DeltaCell label="Error Rate" unit="%" {...cmp.reliability.errorRate} />
-                  <DeltaCell label="Failed Reqs" {...cmp.reliability.failedRequests} />
-                  <DeltaCell label="Success Rate" unit="%" higherBetter {...cmp.reliability.successRate} />
+                  <DeltaCell
+                    label="Error Rate"
+                    unit="%"
+                    {...cmp.reliability.errorRate}
+                  />
+                  <DeltaCell
+                    label="Failed Reqs"
+                    {...cmp.reliability.failedRequests}
+                  />
+                  <DeltaCell
+                    label="Success Rate"
+                    unit="%"
+                    higherBetter
+                    {...cmp.reliability.successRate}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -522,11 +780,14 @@ export default function LoadTestComparison() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Zipf Distribution Overlay (Top 10)
+                  <BarChart3 className="h-4 w-4" /> Zipf Distribution Overlay
+                  (Top 10)
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  <span className="inline-block w-3 h-2 bg-blue-500 rounded mr-1" /> Run A
-                  <span className="inline-block w-3 h-2 bg-amber-500 rounded ml-3 mr-1" /> Run B
+                  <span className="inline-block w-3 h-2 bg-blue-500 rounded mr-1" />{" "}
+                  Run A
+                  <span className="inline-block w-3 h-2 bg-amber-500 rounded ml-3 mr-1" />{" "}
+                  Run B
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -549,11 +810,16 @@ export default function LoadTestComparison() {
                     <TrendingUp className="h-4 w-4" /> RPS Timeline Overlay
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    <span className="text-blue-400">Blue</span> = Run A, <span className="text-amber-400">Amber</span> = Run B
+                    <span className="text-blue-400">Blue</span> = Run A,{" "}
+                    <span className="text-amber-400">Amber</span> = Run B
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DualSparkline dataA={timelineRpsA} dataB={timelineRpsB} height={100} />
+                  <DualSparkline
+                    dataA={timelineRpsA}
+                    dataB={timelineRpsB}
+                    height={100}
+                  />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>0s</span>
                     <span>{cmp.timelineOverlay.length}s</span>
@@ -567,11 +833,18 @@ export default function LoadTestComparison() {
                     <Clock className="h-4 w-4" /> Latency Timeline Overlay
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    <span className="text-blue-400">Blue</span> = Run A, <span className="text-amber-400">Amber</span> = Run B
+                    <span className="text-blue-400">Blue</span> = Run A,{" "}
+                    <span className="text-amber-400">Amber</span> = Run B
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DualSparkline dataA={timelineLatA} dataB={timelineLatB} height={100} colorA="#3b82f6" colorB="#f59e0b" />
+                  <DualSparkline
+                    dataA={timelineLatA}
+                    dataB={timelineLatB}
+                    height={100}
+                    colorA="#3b82f6"
+                    colorB="#f59e0b"
+                  />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>0s</span>
                     <span>{cmp.timelineOverlay.length}s</span>
@@ -597,7 +870,8 @@ export default function LoadTestComparison() {
                             Run B is an improvement
                           </Badge>
                           <p className="text-sm text-muted-foreground">
-                            {improvements}/3 key metrics improved (P99 latency, RPS, error rate)
+                            {improvements}/3 key metrics improved (P99 latency,
+                            RPS, error rate)
                           </p>
                         </>
                       );
@@ -608,7 +882,8 @@ export default function LoadTestComparison() {
                             Mixed results
                           </Badge>
                           <p className="text-sm text-muted-foreground">
-                            Only {improvements}/3 key metrics improved — review tradeoffs carefully
+                            Only {improvements}/3 key metrics improved — review
+                            tradeoffs carefully
                           </p>
                         </>
                       );
@@ -619,7 +894,8 @@ export default function LoadTestComparison() {
                             Run B is a regression
                           </Badge>
                           <p className="text-sm text-muted-foreground">
-                            0/3 key metrics improved — consider reverting changes
+                            0/3 key metrics improved — consider reverting
+                            changes
                           </p>
                         </>
                       );
@@ -639,7 +915,8 @@ export default function LoadTestComparison() {
                 <GitCompareArrows className="h-12 w-12 text-muted-foreground mx-auto" />
                 <h3 className="text-lg font-medium">Need at Least Two Runs</h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Run at least two load tests to enable comparison. Use the Load Test Dashboard to trigger runs.
+                  Run at least two load tests to enable comparison. Use the Load
+                  Test Dashboard to trigger runs.
                 </p>
               </div>
             </CardContent>

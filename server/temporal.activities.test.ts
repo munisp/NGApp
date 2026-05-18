@@ -11,7 +11,9 @@ describe("Settlement Workflow Logic", () => {
     it("generates a batch ID with correct date prefix", () => {
       const date = new Date("2026-04-09T00:00:00Z");
       const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-      const batchId = `SETTLE-${dateStr}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
+      const batchId = `SETTLE-${dateStr}-${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, "0")}`;
       expect(batchId).toMatch(/^SETTLE-20260409-\d{4}$/);
     });
 
@@ -35,13 +37,19 @@ describe("Settlement Workflow Logic", () => {
         { amount: "12500.50" },
         { amount: "750.00" },
       ];
-      const total = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
-      expect(total).toBeCloseTo(18250.50, 2);
+      const total = transactions.reduce(
+        (sum, tx) => sum + parseFloat(tx.amount),
+        0
+      );
+      expect(total).toBeCloseTo(18250.5, 2);
     });
 
     it("handles empty transaction list", () => {
       const transactions: Array<{ amount: string }> = [];
-      const total = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+      const total = transactions.reduce(
+        (sum, tx) => sum + parseFloat(tx.amount),
+        0
+      );
       expect(total).toBe(0);
     });
 
@@ -93,7 +101,12 @@ describe("Settlement Workflow Logic", () => {
   });
 
   describe("workflow status transitions", () => {
-    type WorkflowStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+    type WorkflowStatus =
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled";
 
     it("allows pending → running transition", () => {
       const validTransitions: Record<WorkflowStatus, WorkflowStatus[]> = {
@@ -161,11 +174,15 @@ describe("Temporal Retry Policy", () => {
   });
 
   it("does not retry on InvalidInputError", () => {
-    expect(defaultRetryPolicy.nonRetryableErrorTypes).toContain("InvalidInputError");
+    expect(defaultRetryPolicy.nonRetryableErrorTypes).toContain(
+      "InvalidInputError"
+    );
   });
 
   it("does not retry on AuthorizationError", () => {
-    expect(defaultRetryPolicy.nonRetryableErrorTypes).toContain("AuthorizationError");
+    expect(defaultRetryPolicy.nonRetryableErrorTypes).toContain(
+      "AuthorizationError"
+    );
   });
 
   it("calculates exponential backoff intervals correctly", () => {

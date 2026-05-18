@@ -48,7 +48,11 @@ let lastHealthStatus: DbHealthStatus = {
   errors: [],
 };
 
-const healthHistory: Array<{ timestamp: string; latencyMs: number; connected: boolean }> = [];
+const healthHistory: Array<{
+  timestamp: string;
+  latencyMs: number;
+  connected: boolean;
+}> = [];
 const MAX_HISTORY = 100;
 
 // ── Health Check ────────────────────────────────────────────────────────────
@@ -141,10 +145,10 @@ export async function withRetry<T>(
 
       console.warn(
         `[DB Retry] Attempt ${attempt}/${opts.maxRetries} failed: ${err.message}. ` +
-        `Retrying in ${Math.round(jitter)}ms...`
+          `Retrying in ${Math.round(jitter)}ms...`
       );
 
-      await new Promise((resolve) => setTimeout(resolve, jitter));
+      await new Promise(resolve => setTimeout(resolve, jitter));
     }
   }
 
@@ -187,6 +191,6 @@ export function getAverageLatency(windowSize = 10): number {
 export function getUptimePercentage(windowSize = 100): number {
   const recent = healthHistory.slice(-windowSize);
   if (recent.length === 0) return 100;
-  const connected = recent.filter((h) => h.connected).length;
+  const connected = recent.filter(h => h.connected).length;
   return Math.round((connected / recent.length) * 10000) / 100;
 }

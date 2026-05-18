@@ -22,12 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3,
   Calendar,
@@ -84,15 +79,16 @@ function TrendArrow({ trend }: { trend?: TrendDelta | null }) {
     );
   }
   const isUp = trend.direction === "up";
-  const color = trend.isPositive
-    ? "text-emerald-400"
-    : "text-red-400";
+  const color = trend.isPositive ? "text-emerald-400" : "text-red-400";
   const Icon = isUp ? ArrowUp : ArrowDown;
   const sign = trend.delta > 0 ? "+" : "";
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${color}`}>
+    <span
+      className={`inline-flex items-center gap-1 text-xs font-semibold ${color}`}
+    >
       <Icon className="h-3 w-3" />
-      {sign}{trend.deltaPercent}%
+      {sign}
+      {trend.deltaPercent}%
     </span>
   );
 }
@@ -106,7 +102,8 @@ function ScoreBadge({ score }: { score: number }) {
       : score >= 70
         ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
         : "bg-red-500/20 text-red-400 border-red-500/30";
-  const label = score >= 90 ? "Excellent" : score >= 70 ? "Good" : "Needs Attention";
+  const label =
+    score >= 90 ? "Excellent" : score >= 70 ? "Good" : "Needs Attention";
   return (
     <Badge variant="outline" className={color}>
       {label} — {score}/100
@@ -236,7 +233,9 @@ export default function WeeklyReports() {
           printWindow.print();
         };
       }
-      toast.success("PDF export opened — use your browser print dialog to save as PDF");
+      toast.success(
+        "PDF export opened — use your browser print dialog to save as PDF"
+      );
     } catch {
       toast.error("Failed to generate PDF");
     }
@@ -258,7 +257,8 @@ export default function WeeklyReports() {
             Weekly Health Reports
           </h1>
           <p className="text-muted-foreground mt-1">
-            Automated system health summaries with trend analysis, email delivery, and PDF export
+            Automated system health summaries with trend analysis, email
+            delivery, and PDF export
           </p>
         </div>
         <Button
@@ -287,7 +287,9 @@ export default function WeeklyReports() {
               </div>
               <div className="flex items-center gap-2">
                 <ScoreBadge score={latest.report.score} />
-                {latest.trends && <TrendArrow trend={latest.trends.healthScore} />}
+                {latest.trends && (
+                  <TrendArrow trend={latest.trends.healthScore} />
+                )}
               </div>
             </div>
           </CardHeader>
@@ -307,7 +309,9 @@ export default function WeeklyReports() {
               />
               <MetricCard
                 label="Active Users"
-                value={String(latest.report.metrics.userActivity.totalActiveUsers)}
+                value={String(
+                  latest.report.metrics.userActivity.totalActiveUsers
+                )}
                 trend={latest.trends?.activeUsers}
                 icon={Users}
               />
@@ -336,7 +340,9 @@ export default function WeeklyReports() {
                   {latest.report.alerts.length} Alert(s)
                 </p>
                 {latest.report.alerts.slice(0, 3).map((a: any, i) => (
-                  <p key={i} className="text-xs text-red-300">{a}</p>
+                  <p key={i} className="text-xs text-red-300">
+                    {a}
+                  </p>
                 ))}
               </div>
             )}
@@ -453,15 +459,19 @@ export default function WeeklyReports() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          {detail.report.period.start} → {detail.report.period.end}
+                          {detail.report.period.start} →{" "}
+                          {detail.report.period.end}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Generated: {new Date(detail.report.generatedAt).toLocaleString()}
+                          Generated:{" "}
+                          {new Date(detail.report.generatedAt).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <ScoreBadge score={detail.report.score} />
-                        {detail.trends && <TrendArrow trend={detail.trends.healthScore} />}
+                        {detail.trends && (
+                          <TrendArrow trend={detail.trends.healthScore} />
+                        )}
                       </div>
                     </div>
 
@@ -473,36 +483,102 @@ export default function WeeklyReports() {
                         <BarChart3 className="h-4 w-4" /> Transactions
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <MetricCard label="Count" value={detail.report.metrics.transactions.totalCount.toLocaleString()} trend={detail.trends?.transactionCount} icon={BarChart3} />
-                        <MetricCard label="Value" value={`₦${(detail.report.metrics.transactions.totalValue / 1e6).toFixed(1)}M`} trend={detail.trends?.transactionValue} icon={TrendingUp} />
-                        <MetricCard label="Success" value={`${detail.report.metrics.transactions.successRate}%`} trend={detail.trends?.successRate} icon={CheckCircle2} />
+                        <MetricCard
+                          label="Count"
+                          value={detail.report.metrics.transactions.totalCount.toLocaleString()}
+                          trend={detail.trends?.transactionCount}
+                          icon={BarChart3}
+                        />
+                        <MetricCard
+                          label="Value"
+                          value={`₦${(detail.report.metrics.transactions.totalValue / 1e6).toFixed(1)}M`}
+                          trend={detail.trends?.transactionValue}
+                          icon={TrendingUp}
+                        />
+                        <MetricCard
+                          label="Success"
+                          value={`${detail.report.metrics.transactions.successRate}%`}
+                          trend={detail.trends?.successRate}
+                          icon={CheckCircle2}
+                        />
                       </div>
 
                       <h4 className="text-sm font-semibold flex items-center gap-1 mt-3">
                         <Users className="h-4 w-4" /> Users
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <MetricCard label="Active" value={String(detail.report.metrics.userActivity.totalActiveUsers)} trend={detail.trends?.activeUsers} icon={Users} />
-                        <MetricCard label="New" value={String(detail.report.metrics.userActivity.newUsers)} trend={detail.trends?.newUsers} icon={Plus} />
-                        <MetricCard label="Sessions" value={String(detail.report.metrics.userActivity.totalSessions)} icon={Clock} />
+                        <MetricCard
+                          label="Active"
+                          value={String(
+                            detail.report.metrics.userActivity.totalActiveUsers
+                          )}
+                          trend={detail.trends?.activeUsers}
+                          icon={Users}
+                        />
+                        <MetricCard
+                          label="New"
+                          value={String(
+                            detail.report.metrics.userActivity.newUsers
+                          )}
+                          trend={detail.trends?.newUsers}
+                          icon={Plus}
+                        />
+                        <MetricCard
+                          label="Sessions"
+                          value={String(
+                            detail.report.metrics.userActivity.totalSessions
+                          )}
+                          icon={Clock}
+                        />
                       </div>
 
                       <h4 className="text-sm font-semibold flex items-center gap-1 mt-3">
                         <Zap className="h-4 w-4" /> API Performance
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <MetricCard label="p50" value={`${detail.report.metrics.apiPerformance.p50Ms}ms`} trend={detail.trends?.apiLatencyP50} icon={Zap} />
-                        <MetricCard label="p99" value={`${detail.report.metrics.apiPerformance.p99Ms}ms`} trend={detail.trends?.apiLatencyP99} icon={Zap} />
-                        <MetricCard label="Errors" value={`${detail.report.metrics.errors.errorRate}%`} trend={detail.trends?.errorRate} icon={AlertTriangle} />
+                        <MetricCard
+                          label="p50"
+                          value={`${detail.report.metrics.apiPerformance.p50Ms}ms`}
+                          trend={detail.trends?.apiLatencyP50}
+                          icon={Zap}
+                        />
+                        <MetricCard
+                          label="p99"
+                          value={`${detail.report.metrics.apiPerformance.p99Ms}ms`}
+                          trend={detail.trends?.apiLatencyP99}
+                          icon={Zap}
+                        />
+                        <MetricCard
+                          label="Errors"
+                          value={`${detail.report.metrics.errors.errorRate}%`}
+                          trend={detail.trends?.errorRate}
+                          icon={AlertTriangle}
+                        />
                       </div>
 
                       <h4 className="text-sm font-semibold flex items-center gap-1 mt-3">
                         <Shield className="h-4 w-4" /> Security & System
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <MetricCard label="Uptime" value={`${detail.report.metrics.system.uptimePercent}%`} trend={detail.trends?.uptimePercent} icon={Shield} />
-                        <MetricCard label="Security Events" value={String(detail.report.metrics.security.suspiciousActivities)} trend={detail.trends?.securityEvents} icon={Shield} />
-                        <MetricCard label="DB Latency" value={`${detail.report.metrics.system.dbLatencyAvgMs}ms`} icon={Zap} />
+                        <MetricCard
+                          label="Uptime"
+                          value={`${detail.report.metrics.system.uptimePercent}%`}
+                          trend={detail.trends?.uptimePercent}
+                          icon={Shield}
+                        />
+                        <MetricCard
+                          label="Security Events"
+                          value={String(
+                            detail.report.metrics.security.suspiciousActivities
+                          )}
+                          trend={detail.trends?.securityEvents}
+                          icon={Shield}
+                        />
+                        <MetricCard
+                          label="DB Latency"
+                          value={`${detail.report.metrics.system.dbLatencyAvgMs}ms`}
+                          icon={Zap}
+                        />
                       </div>
                     </div>
 
@@ -513,8 +589,12 @@ export default function WeeklyReports() {
                           Alerts ({detail.report.alerts.length})
                         </p>
                         {detail.report.alerts.map((a: any, i) => (
-                          <p key={i} className="text-xs text-red-300 flex items-start gap-1 mb-1">
-                            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" /> {a}
+                          <p
+                            key={i}
+                            className="text-xs text-red-300 flex items-start gap-1 mb-1"
+                          >
+                            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />{" "}
+                            {a}
                           </p>
                         ))}
                       </div>
@@ -524,11 +604,16 @@ export default function WeeklyReports() {
                     {detail.report.recommendations.length > 0 && (
                       <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                         <p className="text-sm font-semibold text-emerald-400 mb-2">
-                          Recommendations ({detail.report.recommendations.length})
+                          Recommendations (
+                          {detail.report.recommendations.length})
                         </p>
                         {detail.report.recommendations.map((r: any, i) => (
-                          <p key={i} className="text-xs text-emerald-300 flex items-start gap-1 mb-1">
-                            <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" /> {r}
+                          <p
+                            key={i}
+                            className="text-xs text-emerald-300 flex items-start gap-1 mb-1"
+                          >
+                            <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" />{" "}
+                            {r}
                           </p>
                         ))}
                       </div>
@@ -558,7 +643,7 @@ export default function WeeklyReports() {
                   <Label>Email Delivery Enabled</Label>
                   <Switch
                     checked={emailCfg?.enabled ?? false}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       updateEmailConfigM.mutate({ enabled: checked })
                     }
                   />
@@ -567,7 +652,7 @@ export default function WeeklyReports() {
                   <Label>Include Full Report</Label>
                   <Switch
                     checked={emailCfg?.includeFullReport ?? true}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       updateEmailConfigM.mutate({ includeFullReport: checked })
                     }
                   />
@@ -576,8 +661,10 @@ export default function WeeklyReports() {
                   <Label>Include PDF Attachment</Label>
                   <Switch
                     checked={emailCfg?.includePdfAttachment ?? false}
-                    onCheckedChange={(checked) =>
-                      updateEmailConfigM.mutate({ includePdfAttachment: checked })
+                    onCheckedChange={checked =>
+                      updateEmailConfigM.mutate({
+                        includePdfAttachment: checked,
+                      })
                     }
                   />
                 </div>
@@ -600,16 +687,19 @@ export default function WeeklyReports() {
                   <Input
                     placeholder="Email"
                     value={newRecipientEmail}
-                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    onChange={e => setNewRecipientEmail(e.target.value)}
                     className="flex-1"
                   />
                   <Input
                     placeholder="Name"
                     value={newRecipientName}
-                    onChange={(e) => setNewRecipientName(e.target.value)}
+                    onChange={e => setNewRecipientName(e.target.value)}
                     className="w-32"
                   />
-                  <Select value={newRecipientRole} onValueChange={setNewRecipientRole}>
+                  <Select
+                    value={newRecipientRole}
+                    onValueChange={setNewRecipientRole}
+                  >
                     <SelectTrigger className="w-28">
                       <SelectValue />
                     </SelectTrigger>
@@ -648,7 +738,9 @@ export default function WeeklyReports() {
                     >
                       <div>
                         <p className="text-sm font-medium">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {r.email}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">
@@ -694,7 +786,7 @@ export default function WeeklyReports() {
                 <Label>Auto-Generate Enabled</Label>
                 <Switch
                   checked={schedule?.enabled ?? true}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={checked =>
                     updateScheduleM.mutate({ enabled: checked })
                   }
                 />
@@ -705,7 +797,7 @@ export default function WeeklyReports() {
                   <Label>Day of Week</Label>
                   <Select
                     value={String(schedule?.dayOfWeek ?? 1)}
-                    onValueChange={(v) =>
+                    onValueChange={v =>
                       updateScheduleM.mutate({ dayOfWeek: Number(v) })
                     }
                   >
@@ -726,7 +818,7 @@ export default function WeeklyReports() {
                   <Label>Hour (UTC)</Label>
                   <Select
                     value={String(schedule?.hourUtc ?? 8)}
-                    onValueChange={(v) =>
+                    onValueChange={v =>
                       updateScheduleM.mutate({ hourUtc: Number(v) })
                     }
                   >
@@ -748,7 +840,7 @@ export default function WeeklyReports() {
                 <Label>Notify Owner</Label>
                 <Switch
                   checked={schedule?.notifyOwner ?? true}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={checked =>
                     updateScheduleM.mutate({ notifyOwner: checked })
                   }
                 />
@@ -758,7 +850,7 @@ export default function WeeklyReports() {
                 <Label>Retention (weeks)</Label>
                 <Select
                   value={String(schedule?.retentionWeeks ?? 52)}
-                  onValueChange={(v) =>
+                  onValueChange={v =>
                     updateScheduleM.mutate({ retentionWeeks: Number(v) })
                   }
                 >

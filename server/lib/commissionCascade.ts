@@ -31,22 +31,92 @@ import logger from "../_core/logger";
 // ─── Default Commission Split Percentages by Hierarchy Role ──────────────────
 // These define what % of total commission each hierarchy level receives
 export const DEFAULT_SPLITS: Record<string, Record<string, number>> = {
-  cash_in:       { sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5 },
-  cash_out:      { sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5 },
-  transfer:      { sub_agent: 10, agent: 65, master_agent: 12, super_agent: 8,  platform: 5 },
-  bill_payment:  { sub_agent: 15, agent: 55, master_agent: 15, super_agent: 10, platform: 5 },
-  airtime:       { sub_agent: 10, agent: 70, master_agent: 10, super_agent: 5,  platform: 5 },
-  card_payment:  { sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5 },
-  qr_payment:    { sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5 },
-  nfc_payment:   { sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5 },
-  remittance:    { sub_agent: 8,  agent: 55, master_agent: 17, super_agent: 15, platform: 5 },
-  pension:       { sub_agent: 10, agent: 55, master_agent: 15, super_agent: 15, platform: 5 },
-  insurance:     { sub_agent: 10, agent: 55, master_agent: 15, super_agent: 15, platform: 5 },
+  cash_in: {
+    sub_agent: 10,
+    agent: 60,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  cash_out: {
+    sub_agent: 10,
+    agent: 60,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  transfer: {
+    sub_agent: 10,
+    agent: 65,
+    master_agent: 12,
+    super_agent: 8,
+    platform: 5,
+  },
+  bill_payment: {
+    sub_agent: 15,
+    agent: 55,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  airtime: {
+    sub_agent: 10,
+    agent: 70,
+    master_agent: 10,
+    super_agent: 5,
+    platform: 5,
+  },
+  card_payment: {
+    sub_agent: 10,
+    agent: 60,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  qr_payment: {
+    sub_agent: 10,
+    agent: 60,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  nfc_payment: {
+    sub_agent: 10,
+    agent: 60,
+    master_agent: 15,
+    super_agent: 10,
+    platform: 5,
+  },
+  remittance: {
+    sub_agent: 8,
+    agent: 55,
+    master_agent: 17,
+    super_agent: 15,
+    platform: 5,
+  },
+  pension: {
+    sub_agent: 10,
+    agent: 55,
+    master_agent: 15,
+    super_agent: 15,
+    platform: 5,
+  },
+  insurance: {
+    sub_agent: 10,
+    agent: 55,
+    master_agent: 15,
+    super_agent: 15,
+    platform: 5,
+  },
 };
 
 // Fallback split if transaction type not configured
 const FALLBACK_SPLIT: Record<string, number> = {
-  sub_agent: 10, agent: 60, master_agent: 15, super_agent: 10, platform: 5,
+  sub_agent: 10,
+  agent: 60,
+  master_agent: 15,
+  super_agent: 10,
+  platform: 5,
 };
 
 export interface CascadeEntry {
@@ -71,13 +141,15 @@ export interface CascadeResult {
  * Returns array from the transacting agent up to the super agent.
  * Uses Redis cache with 5-minute TTL.
  */
-export async function resolveHierarchyChain(agentId: number): Promise<Array<{
-  id: number;
-  agentCode: string;
-  hierarchyRole: string;
-  level: number;
-  commissionSplitOverride: number | null;
-}>> {
+export async function resolveHierarchyChain(agentId: number): Promise<
+  Array<{
+    id: number;
+    agentCode: string;
+    hierarchyRole: string;
+    level: number;
+    commissionSplitOverride: number | null;
+  }>
+> {
   // Try Redis cache first
   const cached = await getCachedHierarchyChain(agentId);
   if (cached && cached.length > 0) {
@@ -104,14 +176,18 @@ export async function resolveHierarchyChain(agentId: number): Promise<Array<{
     if (visited.has(currentId)) break; // circular reference guard
     visited.add(currentId);
 
-    const rows = await db.select({
-      id: agents.id,
-      agentCode: agents.agentCode,
-      hierarchyRole: agents.hierarchyRole,
-      hierarchyLevel: agents.hierarchyLevel,
-      parentAgentId: agents.parentAgentId,
-      commissionSplitOverride: agents.commissionSplitOverride,
-    }).from(agents).where(eq(agents.id, currentId)).limit(1);
+    const rows = await db
+      .select({
+        id: agents.id,
+        agentCode: agents.agentCode,
+        hierarchyRole: agents.hierarchyRole,
+        hierarchyLevel: agents.hierarchyLevel,
+        parentAgentId: agents.parentAgentId,
+        commissionSplitOverride: agents.commissionSplitOverride,
+      })
+      .from(agents)
+      .where(eq(agents.id, currentId))
+      .limit(1);
 
     if (rows.length === 0) break;
     const row = rows[0];
@@ -121,7 +197,9 @@ export async function resolveHierarchyChain(agentId: number): Promise<Array<{
       agentCode: row.agentCode,
       hierarchyRole: row.hierarchyRole ?? "agent",
       level: row.hierarchyLevel ?? 3,
-      commissionSplitOverride: row.commissionSplitOverride ? Number(row.commissionSplitOverride) : null,
+      commissionSplitOverride: row.commissionSplitOverride
+        ? Number(row.commissionSplitOverride)
+        : null,
     });
 
     currentId = row.parentAgentId;
@@ -130,12 +208,15 @@ export async function resolveHierarchyChain(agentId: number): Promise<Array<{
 
   // Cache the chain (without overrides for simplicity)
   if (chain.length > 0) {
-    await setCachedHierarchyChain(agentId, chain.map(c => ({
-      id: c.id,
-      agentCode: c.agentCode,
-      hierarchyRole: c.hierarchyRole,
-      level: c.level,
-    })));
+    await setCachedHierarchyChain(
+      agentId,
+      chain.map(c => ({
+        id: c.id,
+        agentCode: c.agentCode,
+        hierarchyRole: c.hierarchyRole,
+        level: c.level,
+      }))
+    );
   }
 
   return chain;
@@ -162,13 +243,24 @@ export async function executeCommissionCascade(params: {
   tenantId?: number;
 }): Promise<CascadeResult> {
   const {
-    transactionId, transactionRef, transactionType,
-    transactionAmount, totalCommission, originAgentId, originAgentCode,
+    transactionId,
+    transactionRef,
+    transactionType,
+    transactionAmount,
+    totalCommission,
+    originAgentId,
+    originAgentCode,
     tenantId,
   } = params;
 
   if (totalCommission <= 0) {
-    return { success: true, entries: [], cascadeEntries: [], totalDistributed: 0, platformShare: 0 };
+    return {
+      success: true,
+      entries: [],
+      cascadeEntries: [],
+      totalDistributed: 0,
+      platformShare: 0,
+    };
   }
 
   try {
@@ -179,14 +271,16 @@ export async function executeCommissionCascade(params: {
     // fall back to crediting the full commission to the transacting agent
     if (chain.length === 0) {
       await updateAgentCommission(originAgentId, totalCommission);
-      const fallbackEntry = [{
+      const fallbackEntry = [
+        {
           recipientAgentId: originAgentId,
           recipientAgentCode: originAgentCode,
           recipientHierarchyRole: "agent",
           recipientHierarchyLevel: 3,
           splitPercentage: 100,
           commissionAmount: totalCommission,
-        }];
+        },
+      ];
       return {
         success: true,
         entries: fallbackEntry,
@@ -207,8 +301,9 @@ export async function executeCommissionCascade(params: {
     for (const member of chain) {
       const role = member.hierarchyRole;
       // Use agent-specific override if set, otherwise use default split
-      const splitPct = member.commissionSplitOverride ?? (splitConfig[role] ?? 0);
-      const amount = Math.round(totalCommission * splitPct / 100 * 100) / 100;
+      const splitPct = member.commissionSplitOverride ?? splitConfig[role] ?? 0;
+      const amount =
+        Math.round(((totalCommission * splitPct) / 100) * 100) / 100;
 
       if (amount > 0 && role !== "platform") {
         entries.push({
@@ -224,12 +319,16 @@ export async function executeCommissionCascade(params: {
     }
 
     // Platform share = remainder
-    platformShare = Math.round((totalCommission - totalDistributed) * 100) / 100;
+    platformShare =
+      Math.round((totalCommission - totalDistributed) * 100) / 100;
     if (platformShare < 0) platformShare = 0;
 
     // 4. Credit each recipient's commissionBalance
     for (const entry of entries) {
-      await updateAgentCommission(entry.recipientAgentId, entry.commissionAmount);
+      await updateAgentCommission(
+        entry.recipientAgentId,
+        entry.commissionAmount
+      );
     }
 
     // 5. Record cascade entries in commission_cascade_history
@@ -256,7 +355,10 @@ export async function executeCommissionCascade(params: {
           });
         }
       } catch (dbErr) {
-        logger.warn("[CommissionCascade] Failed to write cascade history:", dbErr);
+        logger.warn(
+          "[CommissionCascade] Failed to write cascade history:",
+          dbErr
+        );
       }
     }
 
@@ -284,7 +386,8 @@ export async function executeCommissionCascade(params: {
         agentId: entry.recipientAgentId,
         agentCode: entry.recipientAgentCode,
         amount: entry.commissionAmount,
-        entryType: entry.recipientAgentId === originAgentId ? "direct" : "cascade",
+        entryType:
+          entry.recipientAgentId === originAgentId ? "direct" : "cascade",
         hierarchyLevel: entry.recipientHierarchyLevel,
       });
     }
@@ -298,22 +401,30 @@ export async function executeCommissionCascade(params: {
 
     logger.info(
       `[CommissionCascade] ${transactionRef}: ₦${totalCommission} distributed to ${entries.length} agents ` +
-      `(platform: ₦${platformShare})`
+        `(platform: ₦${platformShare})`
     );
 
-    return { success: true, entries, cascadeEntries: entries, totalDistributed, platformShare };
+    return {
+      success: true,
+      entries,
+      cascadeEntries: entries,
+      totalDistributed,
+      platformShare,
+    };
   } catch (err) {
     logger.error("[CommissionCascade] Error:", err);
     // Fallback: credit full commission to origin agent
     await updateAgentCommission(originAgentId, totalCommission);
-    const fallbackEntries = [{
+    const fallbackEntries = [
+      {
         recipientAgentId: originAgentId,
         recipientAgentCode: originAgentCode,
         recipientHierarchyRole: "agent",
         recipientHierarchyLevel: 3,
         splitPercentage: 100,
         commissionAmount: totalCommission,
-      }];
+      },
+    ];
     return {
       success: false,
       entries: fallbackEntries,

@@ -3,9 +3,24 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
-  Bell, Mail, MessageSquare, Webhook, Hash, Shield, AlertTriangle,
-  Clock, Send, ChevronDown, ChevronRight, CheckCircle, XCircle,
-  Settings, Zap, BarChart2, RefreshCw, TestTube2
+  Bell,
+  Mail,
+  MessageSquare,
+  Webhook,
+  Hash,
+  Shield,
+  AlertTriangle,
+  Clock,
+  Send,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
+  Settings,
+  Zap,
+  BarChart2,
+  RefreshCw,
+  TestTube2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,10 +65,15 @@ const categoryLabels: Record<string, string> = {
 
 export default function AlertNotificationPreferences() {
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
-  const [expandedEscalation, setExpandedEscalation] = useState<string | null>(null);
+  const [expandedEscalation, setExpandedEscalation] = useState<string | null>(
+    null
+  );
 
-  const { data: preferences, isLoading: loadingPrefs, refetch: refetchPrefs } =
-    trpc.alertNotifications.listPreferences.useQuery();
+  const {
+    data: preferences,
+    isLoading: loadingPrefs,
+    refetch: refetchPrefs,
+  } = trpc.alertNotifications.listPreferences.useQuery();
   const { data: deliveryStats, isLoading: loadingStats } =
     trpc.alertNotifications.getDeliveryStats.useQuery();
   const { data: escalationRules } =
@@ -66,7 +86,7 @@ export default function AlertNotificationPreferences() {
       toast("Preferences updated successfully");
       refetchPrefs();
     },
-    onError: (err) => toast.error(`Failed to update: ${err.message}`),
+    onError: err => toast.error(`Failed to update: ${err.message}`),
   });
 
   const updateRule = trpc.alertNotifications.updateEscalationRule.useMutation({
@@ -74,7 +94,7 @@ export default function AlertNotificationPreferences() {
   });
 
   const sendTest = trpc.alertNotifications.sendTestAlert.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       if (data.success) {
         toast.success(`Test alert sent! ${data.deliveryCount} deliveries`);
       } else {
@@ -82,10 +102,12 @@ export default function AlertNotificationPreferences() {
       }
       refetchHistory();
     },
-    onError: (err) => toast.error(`Test failed: ${err.message}`),
+    onError: err => toast.error(`Test failed: ${err.message}`),
   });
 
-  const currentPref = preferences?.find((p: any) => p.adminId === selectedAdmin) ?? preferences?.[0];
+  const currentPref =
+    preferences?.find((p: any) => p.adminId === selectedAdmin) ??
+    preferences?.[0];
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100 p-6">
@@ -98,7 +120,8 @@ export default function AlertNotificationPreferences() {
               Security Alert Notifications
             </h1>
             <p className="text-gray-400 mt-1">
-              Configure how and when administrators receive critical security alerts
+              Configure how and when administrators receive critical security
+              alerts
             </p>
           </div>
           <Button
@@ -119,8 +142,12 @@ export default function AlertNotificationPreferences() {
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Total Sent</p>
-                    <p className="text-2xl font-bold text-white">{deliveryStats.totalSent}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Total Sent
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      {deliveryStats.totalSent}
+                    </p>
                   </div>
                   <Send className="w-8 h-8 text-blue-400/50" />
                 </div>
@@ -130,8 +157,12 @@ export default function AlertNotificationPreferences() {
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Delivered</p>
-                    <p className="text-2xl font-bold text-green-400">{deliveryStats.totalDelivered}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Delivered
+                    </p>
+                    <p className="text-2xl font-bold text-green-400">
+                      {deliveryStats.totalDelivered}
+                    </p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-400/50" />
                 </div>
@@ -141,8 +172,12 @@ export default function AlertNotificationPreferences() {
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Failed</p>
-                    <p className="text-2xl font-bold text-red-400">{deliveryStats.totalFailed}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Failed
+                    </p>
+                    <p className="text-2xl font-bold text-red-400">
+                      {deliveryStats.totalFailed}
+                    </p>
                   </div>
                   <XCircle className="w-8 h-8 text-red-400/50" />
                 </div>
@@ -152,8 +187,12 @@ export default function AlertNotificationPreferences() {
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Last 24h</p>
-                    <p className="text-2xl font-bold text-yellow-400">{deliveryStats.last24h.sent}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      Last 24h
+                    </p>
+                    <p className="text-2xl font-bold text-yellow-400">
+                      {deliveryStats.last24h.sent}
+                    </p>
                   </div>
                   <Clock className="w-8 h-8 text-yellow-400/50" />
                 </div>
@@ -204,7 +243,10 @@ export default function AlertNotificationPreferences() {
                   className="border-gray-700"
                   onClick={() => {
                     if (currentPref) {
-                      sendTest.mutate({ adminId: currentPref.adminId, severity: "info" });
+                      sendTest.mutate({
+                        adminId: currentPref.adminId,
+                        severity: "info",
+                      });
                     }
                   }}
                   disabled={sendTest.isPending}
@@ -220,45 +262,57 @@ export default function AlertNotificationPreferences() {
                 {/* Channel Toggles */}
                 <Card className="bg-[#12121a] border-gray-800">
                   <CardHeader>
-                    <CardTitle className="text-lg text-white">Delivery Channels</CardTitle>
+                    <CardTitle className="text-lg text-white">
+                      Delivery Channels
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {(Object.entries(currentPref.channels) as [string, boolean][]).map(
-                      ([channel, enabled]) => {
-                        const Icon = channelIcons[channel] || Bell;
-                        return (
-                          <div
-                            key={channel}
-                            className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Icon className="w-5 h-5 text-gray-400" />
-                              <div>
-                                <p className="text-sm font-medium text-white capitalize">
-                                  {channel}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {channel === "push" && "Manus platform notifications"}
-                                  {channel === "email" && currentPref.adminEmail}
-                                  {channel === "sms" && (currentPref.adminPhone || "No phone configured")}
-                                  {channel === "webhook" && (currentPref.webhookUrl || "No URL configured")}
-                                  {channel === "slack" && (currentPref.slackWebhookUrl || "No URL configured")}
-                                </p>
-                              </div>
+                    {(
+                      Object.entries(currentPref.channels) as [
+                        string,
+                        boolean,
+                      ][]
+                    ).map(([channel, enabled]) => {
+                      const Icon = channelIcons[channel] || Bell;
+                      return (
+                        <div
+                          key={channel}
+                          className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-white capitalize">
+                                {channel}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {channel === "push" &&
+                                  "Manus platform notifications"}
+                                {channel === "email" && currentPref.adminEmail}
+                                {channel === "sms" &&
+                                  (currentPref.adminPhone ||
+                                    "No phone configured")}
+                                {channel === "webhook" &&
+                                  (currentPref.webhookUrl ||
+                                    "No URL configured")}
+                                {channel === "slack" &&
+                                  (currentPref.slackWebhookUrl ||
+                                    "No URL configured")}
+                              </p>
                             </div>
-                            <Switch
-                              checked={enabled}
-                              onCheckedChange={(checked) => {
-                                updatePref.mutate({
-                                  adminId: currentPref.adminId,
-                                  channels: { [channel]: checked },
-                                });
-                              }}
-                            />
                           </div>
-                        );
-                      }
-                    )}
+                          <Switch
+                            checked={enabled}
+                            onCheckedChange={checked => {
+                              updatePref.mutate({
+                                adminId: currentPref.adminId,
+                                channels: { [channel]: checked },
+                              });
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </CardContent>
                 </Card>
 
@@ -266,31 +320,36 @@ export default function AlertNotificationPreferences() {
                 <div className="space-y-4">
                   <Card className="bg-[#12121a] border-gray-800">
                     <CardHeader>
-                      <CardTitle className="text-lg text-white">Severity Threshold</CardTitle>
+                      <CardTitle className="text-lg text-white">
+                        Severity Threshold
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-xs text-gray-500 mb-3">
                         Only receive alerts at or above this severity level
                       </p>
                       <div className="flex gap-2 flex-wrap">
-                        {["info", "low", "medium", "high", "critical"].map((sev: any) => (
-                          <button
-                            key={sev}
-                            onClick={() =>
-                              updatePref.mutate({
-                                adminId: currentPref.adminId,
-                                severityThreshold: sev as any,
-                              })
-                            }
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
-                              currentPref.severityThreshold === sev
-                                ? severityColors[sev] + " ring-1 ring-offset-1 ring-offset-[#12121a]"
-                                : "bg-gray-800/50 text-gray-500 border-gray-700 hover:border-gray-600"
-                            }`}
-                          >
-                            {sev.toUpperCase()}
-                          </button>
-                        ))}
+                        {["info", "low", "medium", "high", "critical"].map(
+                          (sev: any) => (
+                            <button
+                              key={sev}
+                              onClick={() =>
+                                updatePref.mutate({
+                                  adminId: currentPref.adminId,
+                                  severityThreshold: sev as any,
+                                })
+                              }
+                              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+                                currentPref.severityThreshold === sev
+                                  ? severityColors[sev] +
+                                    " ring-1 ring-offset-1 ring-offset-[#12121a]"
+                                  : "bg-gray-800/50 text-gray-500 border-gray-700 hover:border-gray-600"
+                              }`}
+                            >
+                              {sev.toUpperCase()}
+                            </button>
+                          )
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -303,17 +362,22 @@ export default function AlertNotificationPreferences() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Enable quiet hours</span>
+                        <span className="text-sm text-gray-400">
+                          Enable quiet hours
+                        </span>
                         <Switch
                           checked={currentPref.quietHours?.enabled ?? false}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             updatePref.mutate({
                               adminId: currentPref.adminId,
                               quietHours: {
                                 enabled: checked,
-                                startHour: currentPref.quietHours?.startHour ?? 23,
+                                startHour:
+                                  currentPref.quietHours?.startHour ?? 23,
                                 endHour: currentPref.quietHours?.endHour ?? 6,
-                                overrideForCritical: currentPref.quietHours?.overrideForCritical ?? true,
+                                overrideForCritical:
+                                  currentPref.quietHours?.overrideForCritical ??
+                                  true,
                               },
                             })
                           }
@@ -330,8 +394,10 @@ export default function AlertNotificationPreferences() {
                               Override for critical alerts
                             </span>
                             <Switch
-                              checked={currentPref.quietHours.overrideForCritical}
-                              onCheckedChange={(checked) =>
+                              checked={
+                                currentPref.quietHours.overrideForCritical
+                              }
+                              onCheckedChange={checked =>
                                 updatePref.mutate({
                                   adminId: currentPref.adminId,
                                   quietHours: {
@@ -351,18 +417,24 @@ export default function AlertNotificationPreferences() {
                 {/* Category Subscriptions */}
                 <Card className="bg-[#12121a] border-gray-800 lg:col-span-2">
                   <CardHeader>
-                    <CardTitle className="text-lg text-white">Alert Categories</CardTitle>
+                    <CardTitle className="text-lg text-white">
+                      Alert Categories
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {Object.entries(categoryLabels).map(([cat, label]) => {
-                        const isSubscribed = currentPref.categories.includes(cat as any);
+                        const isSubscribed = currentPref.categories.includes(
+                          cat as any
+                        );
                         return (
                           <button
                             key={cat}
                             onClick={() => {
                               const newCategories = isSubscribed
-                                ? currentPref.categories.filter((c: any) => c !== cat)
+                                ? currentPref.categories.filter(
+                                    (c: any) => c !== cat
+                                  )
                                 : [...currentPref.categories, cat];
                               updatePref.mutate({
                                 adminId: currentPref.adminId,
@@ -395,58 +467,69 @@ export default function AlertNotificationPreferences() {
           <TabsContent value="channels">
             {deliveryStats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(Object.entries(deliveryStats.byChannel) as [string, any][]).map(
-                  ([channel, stats]) => {
-                    const Icon = channelIcons[channel] || Bell;
-                    const total = stats.sent || 1;
-                    const successRate = Math.round((stats.delivered / total) * 100);
-                    return (
-                      <Card key={channel} className="bg-[#12121a] border-gray-800">
-                        <CardContent className="pt-4 pb-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Icon className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm font-medium text-white capitalize">
-                              {channel}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className={
-                                successRate >= 90
-                                  ? "text-green-400 border-green-500/30"
-                                  : successRate >= 50
+                {(
+                  Object.entries(deliveryStats.byChannel) as [string, any][]
+                ).map(([channel, stats]) => {
+                  const Icon = channelIcons[channel] || Bell;
+                  const total = stats.sent || 1;
+                  const successRate = Math.round(
+                    (stats.delivered / total) * 100
+                  );
+                  return (
+                    <Card
+                      key={channel}
+                      className="bg-[#12121a] border-gray-800"
+                    >
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Icon className="w-5 h-5 text-gray-400" />
+                          <span className="text-sm font-medium text-white capitalize">
+                            {channel}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={
+                              successRate >= 90
+                                ? "text-green-400 border-green-500/30"
+                                : successRate >= 50
                                   ? "text-yellow-400 border-yellow-500/30"
                                   : "text-red-400 border-red-500/30"
-                              }
-                            >
-                              {successRate}% success
-                            </Badge>
+                            }
+                          >
+                            {successRate}% success
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-lg font-bold text-white">
+                              {stats.sent}
+                            </p>
+                            <p className="text-xs text-gray-500">Sent</p>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                              <p className="text-lg font-bold text-white">{stats.sent}</p>
-                              <p className="text-xs text-gray-500">Sent</p>
-                            </div>
-                            <div>
-                              <p className="text-lg font-bold text-green-400">{stats.delivered}</p>
-                              <p className="text-xs text-gray-500">Delivered</p>
-                            </div>
-                            <div>
-                              <p className="text-lg font-bold text-red-400">{stats.failed}</p>
-                              <p className="text-xs text-gray-500">Failed</p>
-                            </div>
+                          <div>
+                            <p className="text-lg font-bold text-green-400">
+                              {stats.delivered}
+                            </p>
+                            <p className="text-xs text-gray-500">Delivered</p>
                           </div>
-                          {/* Progress bar */}
-                          <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all"
-                              style={{ width: `${successRate}%` }}
-                            />
+                          <div>
+                            <p className="text-lg font-bold text-red-400">
+                              {stats.failed}
+                            </p>
+                            <p className="text-xs text-gray-500">Failed</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                )}
+                        </div>
+                        {/* Progress bar */}
+                        <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all"
+                            style={{ width: `${successRate}%` }}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -471,16 +554,24 @@ export default function AlertNotificationPreferences() {
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                       )}
                       <AlertTriangle className="w-4 h-4 text-orange-400" />
-                      <span className="text-sm font-medium text-white">{rule.name}</span>
+                      <span className="text-sm font-medium text-white">
+                        {rule.name}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-gray-400 border-gray-700">
+                      <Badge
+                        variant="outline"
+                        className="text-gray-400 border-gray-700"
+                      >
                         {rule.triggerAfterMinutes}m
                       </Badge>
                       <Switch
                         checked={rule.enabled}
-                        onCheckedChange={(checked) =>
-                          updateRule.mutate({ ruleId: rule.id, enabled: checked })
+                        onCheckedChange={checked =>
+                          updateRule.mutate({
+                            ruleId: rule.id,
+                            enabled: checked,
+                          })
                         }
                       />
                     </div>
@@ -488,7 +579,11 @@ export default function AlertNotificationPreferences() {
                   {expandedEscalation === rule.id && (
                     <div className="mt-3 pl-11 space-y-2 text-sm text-gray-400">
                       <p>
-                        Trigger: After <strong className="text-white">{rule.triggerAfterMinutes} minutes</strong> unacknowledged
+                        Trigger: After{" "}
+                        <strong className="text-white">
+                          {rule.triggerAfterMinutes} minutes
+                        </strong>{" "}
+                        unacknowledged
                       </p>
                       <p>
                         From:{" "}
@@ -496,7 +591,9 @@ export default function AlertNotificationPreferences() {
                           {rule.fromSeverity}
                         </Badge>{" "}
                         → To:{" "}
-                        <Badge className={severityColors[rule.escalateToSeverity]}>
+                        <Badge
+                          className={severityColors[rule.escalateToSeverity]}
+                        >
                           {rule.escalateToSeverity}
                         </Badge>
                       </p>
@@ -517,7 +614,9 @@ export default function AlertNotificationPreferences() {
           <TabsContent value="history">
             <Card className="bg-[#12121a] border-gray-800">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-white">Recent Deliveries</CardTitle>
+                <CardTitle className="text-lg text-white">
+                  Recent Deliveries
+                </CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -528,7 +627,8 @@ export default function AlertNotificationPreferences() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {deliveryHistory?.records && deliveryHistory.records.length > 0 ? (
+                {deliveryHistory?.records &&
+                deliveryHistory.records.length > 0 ? (
                   <div className="space-y-2">
                     {deliveryHistory.records.map((record: any) => {
                       const Icon = channelIcons[record.channel] || Bell;
@@ -550,11 +650,12 @@ export default function AlertNotificationPreferences() {
                           <Badge
                             variant="outline"
                             className={
-                              record.status === "delivered" || record.status === "sent"
+                              record.status === "delivered" ||
+                              record.status === "sent"
                                 ? "text-green-400 border-green-500/30"
                                 : record.status === "pending"
-                                ? "text-yellow-400 border-yellow-500/30"
-                                : "text-red-400 border-red-500/30"
+                                  ? "text-yellow-400 border-yellow-500/30"
+                                  : "text-red-400 border-red-500/30"
                             }
                           >
                             {record.status}
@@ -565,7 +666,8 @@ export default function AlertNotificationPreferences() {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 text-center py-8">
-                    No delivery records yet. Send a test alert to generate history.
+                    No delivery records yet. Send a test alert to generate
+                    history.
                   </p>
                 )}
               </CardContent>

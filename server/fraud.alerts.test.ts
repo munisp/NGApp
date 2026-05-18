@@ -75,7 +75,10 @@ vi.mock("./_core/platformClient", () => ({
 }));
 
 vi.mock("bcryptjs", () => ({
-  default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue("$2b$10$hash") },
+  default: {
+    compare: vi.fn().mockResolvedValue(true),
+    hash: vi.fn().mockResolvedValue("$2b$10$hash"),
+  },
   compare: vi.fn().mockResolvedValue(true),
   hash: vi.fn().mockResolvedValue("$2b$10$hash"),
 }));
@@ -88,7 +91,13 @@ vi.mock("jose", () => ({
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
   jwtVerify: vi.fn().mockResolvedValue({
-    payload: { sub: "1", agentCode: "ADM001", name: "Admin User", role: "admin", tier: "Gold" },
+    payload: {
+      sub: "1",
+      agentCode: "ADM001",
+      name: "Admin User",
+      role: "admin",
+      tier: "Gold",
+    },
   }),
   createRemoteJWKSet: vi.fn(),
 }));
@@ -124,33 +133,39 @@ describe("fraud.updateStatus — validation", () => {
   it("accepts valid status: acknowledged", async () => {
     const caller = appRouter.createCaller(makeCtx());
     // Will fail at DB level but input validation passes
-    const result = await caller.fraud.updateStatus({
-      id: 1,
-      status: "investigating",
-    }).catch((e: any) => ({ error: e.message }));
-    if ('error' in result) {
+    const result = await caller.fraud
+      .updateStatus({
+        id: 1,
+        status: "investigating",
+      })
+      .catch((e: any) => ({ error: e.message }));
+    if ("error" in result) {
       expect(result.error).not.toContain("Invalid enum value");
     }
   });
 
   it("accepts valid status: dismissed", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.fraud.updateStatus({
-      id: 1,
-      status: "dismissed",
-    }).catch((e: any) => ({ error: e.message }));
-    if ('error' in result) {
+    const result = await caller.fraud
+      .updateStatus({
+        id: 1,
+        status: "dismissed",
+      })
+      .catch((e: any) => ({ error: e.message }));
+    if ("error" in result) {
       expect(result.error).not.toContain("Invalid enum value");
     }
   });
 
   it("accepts valid status: escalated", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.fraud.updateStatus({
-      id: 1,
-      status: "escalated",
-    }).catch((e: any) => ({ error: e.message }));
-    if ('error' in result) {
+    const result = await caller.fraud
+      .updateStatus({
+        id: 1,
+        status: "escalated",
+      })
+      .catch((e: any) => ({ error: e.message }));
+    if ("error" in result) {
       expect(result.error).not.toContain("Invalid enum value");
     }
   });
@@ -160,10 +175,13 @@ describe("fraud.updateStatus — invalid inputs", () => {
   it("rejects non-numeric id", async () => {
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.fraud.updateStatus({ id: "not-a-number" as any, status: "investigating" })
+      caller.fraud.updateStatus({
+        id: "not-a-number" as any,
+        status: "investigating",
+      })
     ).rejects.toThrow();
   });
-  
+
   it("rejects invalid status string", async () => {
     const caller = appRouter.createCaller(makeCtx());
     await expect(

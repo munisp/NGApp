@@ -20,7 +20,9 @@ const DDOS_SHIELD_URL = process.env.DDOS_SHIELD_URL || "http://localhost:8090";
 const PBAC_ENGINE_URL = process.env.PBAC_ENGINE_URL || "http://localhost:8091";
 const FRAUD_ML_URL = process.env.FRAUD_ML_URL || "http://localhost:8092";
 
-const SERVICE_TIMEOUT_MS = parseInt(process.env.SECURITY_SERVICE_TIMEOUT || "3000");
+const SERVICE_TIMEOUT_MS = parseInt(
+  process.env.SECURITY_SERVICE_TIMEOUT || "3000"
+);
 const FAIL_OPEN = process.env.SECURITY_FAIL_OPEN !== "false"; // default: fail-open when sidecar services not deployed
 
 // ── HTTP Client with Timeout ─────────────────────────────────────────
@@ -47,7 +49,10 @@ async function fetchWithTimeout(
     } else {
       // Service is down — expected in dev, logged in prod
       if (process.env.NODE_ENV === "production") {
-        console.error(`[SecurityOrchestrator] Failed to reach ${url}:`, err.message);
+        console.error(
+          `[SecurityOrchestrator] Failed to reach ${url}:`,
+          err.message
+        );
       }
     }
     return null;
@@ -86,7 +91,10 @@ async function checkDDoS(req: Request): Promise<DDoSCheckResult> {
     const data = await (resp as any).json();
     return data;
   } catch {
-    return { allowed: FAIL_OPEN, reason: "DDoS service returned invalid response" };
+    return {
+      allowed: FAIL_OPEN,
+      reason: "DDoS service returned invalid response",
+    };
   }
 }
 
@@ -258,7 +266,9 @@ function extractAmount(req: Request): number {
 function isTransactionEndpoint(path: string): boolean {
   return (
     path.includes("/transactions") &&
-    (path.includes("create") || path.includes("transfer") || path.includes("withdraw"))
+    (path.includes("create") ||
+      path.includes("transfer") ||
+      path.includes("withdraw"))
   );
 }
 
@@ -275,7 +285,9 @@ function isProtectedEndpoint(path: string): boolean {
 // ── Orchestrator Registration ────────────────────────────────────────
 
 export function applySecurityOrchestrator(app: Express): void {
-  console.log("[SecurityOrchestrator] Registering multi-language security stack");
+  console.log(
+    "[SecurityOrchestrator] Registering multi-language security stack"
+  );
   console.log(`  → Rust DDoS Shield: ${DDOS_SHIELD_URL}`);
   console.log(`  → Go PBAC Engine: ${PBAC_ENGINE_URL}`);
   console.log(`  → Python Fraud ML: ${FRAUD_ML_URL}`);
@@ -305,7 +317,10 @@ export function applySecurityOrchestrator(app: Express): void {
 
       // Add rate limit headers
       if (ddosResult.rate_limit_remaining !== undefined) {
-        res.setHeader("X-RateLimit-Remaining", ddosResult.rate_limit_remaining.toString());
+        res.setHeader(
+          "X-RateLimit-Remaining",
+          ddosResult.rate_limit_remaining.toString()
+        );
       }
       if (ddosResult.circuit_state) {
         res.setHeader("X-Circuit-State", ddosResult.circuit_state);
@@ -354,7 +369,9 @@ export function applySecurityOrchestrator(app: Express): void {
       res.setHeader("X-PBAC-EvalTime", pbacResult.eval_time_ms.toString());
     } catch (err) {
       if (!FAIL_OPEN) {
-        return res.status(503).json({ error: "Authorization service unavailable" });
+        return res
+          .status(503)
+          .json({ error: "Authorization service unavailable" });
       }
     }
 
@@ -374,7 +391,12 @@ export function applySecurityOrchestrator(app: Express): void {
       if (amount <= 0) return next();
 
       const txId = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const fraudResult = await scoreFraud(req, user.id?.toString() || "", txId, amount);
+      const fraudResult = await scoreFraud(
+        req,
+        user.id?.toString() || "",
+        txId,
+        amount
+      );
 
       if (fraudResult) {
         (req as any).fraudScore = fraudResult;
@@ -401,7 +423,9 @@ export function applySecurityOrchestrator(app: Express): void {
       // Fraud scoring failure should not block transactions in fail-open mode
       if (!FAIL_OPEN) {
         console.error("[FraudML] Scoring failed, blocking transaction:", err);
-        return res.status(503).json({ error: "Fraud scoring service unavailable" });
+        return res
+          .status(503)
+          .json({ error: "Fraud scoring service unavailable" });
       }
     }
 
@@ -418,23 +442,34 @@ export function applySecurityOrchestrator(app: Express): void {
 
     const services = {
       ddos_shield: {
-        status: results[0].status === "fulfilled" && results[0].value ? "healthy" : "unavailable",
+        status:
+          results[0].status === "fulfilled" && results[0].value
+            ? "healthy"
+            : "unavailable",
         url: DDOS_SHIELD_URL,
         language: "Rust",
       },
       pbac_engine: {
-        status: results[1].status === "fulfilled" && results[1].value ? "healthy" : "unavailable",
+        status:
+          results[1].status === "fulfilled" && results[1].value
+            ? "healthy"
+            : "unavailable",
         url: PBAC_ENGINE_URL,
         language: "Go",
       },
       fraud_ml: {
-        status: results[2].status === "fulfilled" && results[2].value ? "healthy" : "unavailable",
+        status:
+          results[2].status === "fulfilled" && results[2].value
+            ? "healthy"
+            : "unavailable",
         url: FRAUD_ML_URL,
         language: "Python",
       },
     };
 
-    const allHealthy = Object.values(services).every((s) => s.status === "healthy");
+    const allHealthy = Object.values(services).every(
+      s => s.status === "healthy"
+    );
 
     res.json({
       status: allHealthy ? "all_services_healthy" : "degraded",
@@ -446,8 +481,11 @@ export function applySecurityOrchestrator(app: Express): void {
 
   // ── PBAC Policy Management Endpoints ──
   app.get("/api/security/policies", async (_req: Request, res: Response) => {
-    const resp = await fetchWithTimeout(`${PBAC_ENGINE_URL}/policies`, { method: "GET" });
-    if (!resp) return res.status(503).json({ error: "PBAC service unavailable" });
+    const resp = await fetchWithTimeout(`${PBAC_ENGINE_URL}/policies`, {
+      method: "GET",
+    });
+    if (!resp)
+      return res.status(503).json({ error: "PBAC service unavailable" });
     const data = await (resp as any).json();
     res.json(data);
   });
@@ -458,15 +496,19 @@ export function applySecurityOrchestrator(app: Express): void {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
     });
-    if (!resp) return res.status(503).json({ error: "PBAC service unavailable" });
+    if (!resp)
+      return res.status(503).json({ error: "PBAC service unavailable" });
     const data = await (resp as any).json();
     res.json(data);
   });
 
   // ── Fraud ML Stats Endpoint ──
   app.get("/api/security/fraud-stats", async (_req: Request, res: Response) => {
-    const resp = await fetchWithTimeout(`${FRAUD_ML_URL}/stats`, { method: "GET" });
-    if (!resp) return res.status(503).json({ error: "Fraud ML service unavailable" });
+    const resp = await fetchWithTimeout(`${FRAUD_ML_URL}/stats`, {
+      method: "GET",
+    });
+    if (!resp)
+      return res.status(503).json({ error: "Fraud ML service unavailable" });
     const data = await (resp as any).json();
     res.json(data);
   });

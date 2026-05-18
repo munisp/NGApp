@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard — 54Link POS Shell (Sprint 89)
- * 
+ *
  * Role-gated admin dashboard with system stats, user management,
  * billing ledger summary, and system health monitoring.
  * Only accessible to users with role=admin.
@@ -12,16 +12,27 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Shield, Users, Activity, Server, Database,
-  Clock, BarChart3, AlertTriangle, RefreshCw,
-  ChevronDown, ChevronUp, Loader2
+  Shield,
+  Users,
+  Activity,
+  Server,
+  Database,
+  Clock,
+  BarChart3,
+  AlertTriangle,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const [userFilter, setUserFilter] = useState<"admin" | "user" | undefined>(undefined);
+  const [userFilter, setUserFilter] = useState<"admin" | "user" | undefined>(
+    undefined
+  );
   const [showAudit, setShowAudit] = useState(false);
 
   // Guard: only admin users
@@ -39,16 +50,24 @@ export default function AdminDashboard() {
     );
   }
 
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = trpc.adminDashboard.getSystemStats.useQuery();
-  const { data: usersData, refetch: refetchUsers } = trpc.adminDashboard.listUsers.useQuery({
-    limit: 50, offset: 0, role: userFilter,
-  });
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    refetch: refetchStats,
+  } = trpc.adminDashboard.getSystemStats.useQuery();
+  const { data: usersData, refetch: refetchUsers } =
+    trpc.adminDashboard.listUsers.useQuery({
+      limit: 50,
+      offset: 0,
+      role: userFilter,
+    });
   const { data: healthData } = trpc.adminDashboard.getSystemHealth.useQuery();
   const { data: auditData } = trpc.adminDashboard.getAuditLog.useQuery(
     { limit: 20, offset: 0 },
     { enabled: showAudit }
   );
-  const { data: ledgerData } = trpc.adminDashboard.getBillingLedgerSummary.useQuery();
+  const { data: ledgerData } =
+    trpc.adminDashboard.getBillingLedgerSummary.useQuery();
 
   const updateRole = trpc.adminDashboard.updateUserRole.useMutation({
     onSuccess: () => {
@@ -56,7 +75,7 @@ export default function AdminDashboard() {
       refetchUsers();
       refetchStats();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const formatUptime = (seconds: number) => {
@@ -80,7 +99,15 @@ export default function AdminDashboard() {
               Platform administration and monitoring
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchUsers(); toast.info("Refreshed"); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchStats();
+              refetchUsers();
+              toast.info("Refreshed");
+            }}
+          >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
           </Button>
         </div>
@@ -104,16 +131,22 @@ export default function AdminDashboard() {
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className="h-4 w-4 text-green-400" />
-              <span className="text-xs text-muted-foreground">Recent Signups (30d)</span>
+              <span className="text-xs text-muted-foreground">
+                Recent Signups (30d)
+              </span>
             </div>
             <p className="text-2xl font-bold">{stats?.recentSignups ?? "—"}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="h-4 w-4 text-purple-400" />
-              <span className="text-xs text-muted-foreground">Stripe Linked</span>
+              <span className="text-xs text-muted-foreground">
+                Stripe Linked
+              </span>
             </div>
-            <p className="text-2xl font-bold">{stats?.stripeLinkedUsers ?? "—"}</p>
+            <p className="text-2xl font-bold">
+              {stats?.stripeLinkedUsers ?? "—"}
+            </p>
           </div>
         </div>
 
@@ -127,21 +160,35 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
               <div>
                 <span className="text-muted-foreground">Database</span>
-                <Badge className={cn("ml-2", healthData.database === "healthy" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
+                <Badge
+                  className={cn(
+                    "ml-2",
+                    healthData.database === "healthy"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400"
+                  )}
+                >
                   {healthData.database}
                 </Badge>
               </div>
               <div>
                 <span className="text-muted-foreground">Server</span>
-                <Badge className="ml-2 bg-green-500/20 text-green-400">{healthData.server}</Badge>
+                <Badge className="ml-2 bg-green-500/20 text-green-400">
+                  {healthData.server}
+                </Badge>
               </div>
               <div>
                 <span className="text-muted-foreground">Uptime</span>
-                <span className="ml-2 font-medium">{formatUptime(healthData.uptime)}</span>
+                <span className="ml-2 font-medium">
+                  {formatUptime(healthData.uptime)}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Memory</span>
-                <span className="ml-2 font-medium">{healthData.memory.heapUsed}MB / {healthData.memory.heapTotal}MB</span>
+                <span className="ml-2 font-medium">
+                  {healthData.memory.heapUsed}MB / {healthData.memory.heapTotal}
+                  MB
+                </span>
               </div>
             </div>
           </div>
@@ -159,7 +206,11 @@ export default function AdminDashboard() {
                 <Button
                   key={f}
                   size="sm"
-                  variant={(!userFilter && f === "all") || userFilter === f ? "default" : "ghost"}
+                  variant={
+                    (!userFilter && f === "all") || userFilter === f
+                      ? "default"
+                      : "ghost"
+                  }
                   className="text-xs h-7"
                   onClick={() => setUserFilter(f === "all" ? undefined : f)}
                 >
@@ -172,14 +223,30 @@ export default function AdminDashboard() {
             <table className="w-full text-xs">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">ID</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Name</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Email</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Role</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Stripe</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">MFA</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Joined</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">Actions</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    ID
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Name
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Email
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Role
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Stripe
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    MFA
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Joined
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -187,31 +254,44 @@ export default function AdminDashboard() {
                   <tr key={u.id} className="hover:bg-muted/20">
                     <td className="px-4 py-2 font-mono">{u.id}</td>
                     <td className="px-4 py-2">{u.name || "—"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{u.email || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {u.email || "—"}
+                    </td>
                     <td className="px-4 py-2">
-                      <Badge variant="outline" className={cn(
-                        "text-[10px]",
-                        u.role === "admin" ? "text-amber-400 border-amber-500/30" : "text-blue-400 border-blue-500/30"
-                      )}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px]",
+                          u.role === "admin"
+                            ? "text-amber-400 border-amber-500/30"
+                            : "text-blue-400 border-blue-500/30"
+                        )}
+                      >
                         {u.role}
                       </Badge>
                     </td>
                     <td className="px-4 py-2">
                       {u.stripeCustomerId ? (
-                        <Badge className="bg-green-500/20 text-green-400 text-[10px]">Linked</Badge>
+                        <Badge className="bg-green-500/20 text-green-400 text-[10px]">
+                          Linked
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-4 py-2">
                       {u.mfaEnabled ? (
-                        <Badge className="bg-green-500/20 text-green-400 text-[10px]">On</Badge>
+                        <Badge className="bg-green-500/20 text-green-400 text-[10px]">
+                          On
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">Off</span>
                       )}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                      {u.createdAt
+                        ? new Date(u.createdAt).toLocaleDateString()
+                        : "—"}
                     </td>
                     <td className="px-4 py-2">
                       {u.id !== user?.id && (
@@ -219,10 +299,12 @@ export default function AdminDashboard() {
                           size="sm"
                           variant="ghost"
                           className="text-[10px] h-6"
-                          onClick={() => updateRole.mutate({
-                            userId: u.id,
-                            role: u.role === "admin" ? "user" : "admin",
-                          })}
+                          onClick={() =>
+                            updateRole.mutate({
+                              userId: u.id,
+                              role: u.role === "admin" ? "user" : "admin",
+                            })
+                          }
                           disabled={updateRole.isPending}
                         >
                           {u.role === "admin" ? "Demote" : "Promote"}
@@ -248,11 +330,21 @@ export default function AdminDashboard() {
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Tenant</th>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Gross</th>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status</th>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Tenant
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Type
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Gross
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Date
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -260,12 +352,18 @@ export default function AdminDashboard() {
                       <tr key={entry.id} className="hover:bg-muted/20">
                         <td className="px-3 py-2">{entry.tenantId}</td>
                         <td className="px-3 py-2">{entry.transactionType}</td>
-                        <td className="px-3 py-2 font-medium">{entry.grossAmount} {entry.currency}</td>
+                        <td className="px-3 py-2 font-medium">
+                          {entry.grossAmount} {entry.currency}
+                        </td>
                         <td className="px-3 py-2">
-                          <Badge variant="outline" className="text-[10px]">{entry.status}</Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {entry.status}
+                          </Badge>
                         </td>
                         <td className="px-3 py-2 text-muted-foreground">
-                          {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}
+                          {entry.createdAt
+                            ? new Date(entry.createdAt).toLocaleDateString()
+                            : "—"}
                         </td>
                       </tr>
                     ))}
@@ -273,7 +371,9 @@ export default function AdminDashboard() {
                 </table>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">No ledger entries yet</p>
+              <p className="text-xs text-muted-foreground">
+                No ledger entries yet
+              </p>
             )}
           </div>
         )}
@@ -288,23 +388,40 @@ export default function AdminDashboard() {
               <Clock className="h-4 w-4 text-primary" />
               Audit Log ({auditData?.total ?? "..."})
             </span>
-            {showAudit ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showAudit ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </button>
           {showAudit && auditData && (
             <div className="px-4 pb-4 space-y-2">
-              {auditData.logs.length > 0 ? auditData.logs.map((log: any) => (
-                <div key={log.id} className="text-xs p-2 rounded bg-muted/30 flex items-center justify-between">
-                  <div>
-                    <span className="font-medium">{log.action}</span>
-                    <span className="text-muted-foreground ml-2">by {log.userName}</span>
-                    <span className="text-muted-foreground ml-2">on {log.resourceType}:{log.resourceId}</span>
+              {auditData.logs.length > 0 ? (
+                auditData.logs.map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="text-xs p-2 rounded bg-muted/30 flex items-center justify-between"
+                  >
+                    <div>
+                      <span className="font-medium">{log.action}</span>
+                      <span className="text-muted-foreground ml-2">
+                        by {log.userName}
+                      </span>
+                      <span className="text-muted-foreground ml-2">
+                        on {log.resourceType}:{log.resourceId}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {log.createdAt
+                        ? new Date(log.createdAt).toLocaleString()
+                        : "—"}
+                    </span>
                   </div>
-                  <span className="text-muted-foreground">
-                    {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
-                  </span>
-                </div>
-              )) : (
-                <p className="text-xs text-muted-foreground text-center py-4">No audit logs</p>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No audit logs
+                </p>
               )}
             </div>
           )}

@@ -29,7 +29,12 @@ export type AlertCategory =
   | "unauthorized_access";
 
 export type DeliveryChannel = "push" | "email" | "sms" | "webhook" | "slack";
-export type DeliveryStatus = "pending" | "sent" | "delivered" | "failed" | "bounced";
+export type DeliveryStatus =
+  | "pending"
+  | "sent"
+  | "delivered"
+  | "failed"
+  | "bounced";
 
 export interface SecurityAlertEvent {
   alertId: string;
@@ -127,7 +132,13 @@ function seedDefaults() {
     adminName: "System Administrator",
     adminEmail: "admin@pos-shell.ng",
     adminPhone: "+2348012345678",
-    channels: { push: true, email: true, sms: true, webhook: false, slack: false },
+    channels: {
+      push: true,
+      email: true,
+      sms: true,
+      webhook: false,
+      slack: false,
+    },
     severityThreshold: "medium",
     quietHours: {
       enabled: true,
@@ -136,9 +147,15 @@ function seedDefaults() {
       overrideForCritical: true,
     },
     categories: [
-      "ransomware", "bulk_operation", "file_integrity",
-      "exfiltration", "brute_force", "canary_trigger",
-      "ddos", "deepfake", "unauthorized_access",
+      "ransomware",
+      "bulk_operation",
+      "file_integrity",
+      "exfiltration",
+      "brute_force",
+      "canary_trigger",
+      "ddos",
+      "deepfake",
+      "unauthorized_access",
     ],
   });
 
@@ -147,9 +164,20 @@ function seedDefaults() {
     adminName: "Security Officer",
     adminEmail: "security@pos-shell.ng",
     adminPhone: "+2348098765432",
-    channels: { push: true, email: true, sms: false, webhook: true, slack: true },
+    channels: {
+      push: true,
+      email: true,
+      sms: false,
+      webhook: true,
+      slack: true,
+    },
     severityThreshold: "high",
-    quietHours: { enabled: false, startHour: 0, endHour: 0, overrideForCritical: true },
+    quietHours: {
+      enabled: false,
+      startHour: 0,
+      endHour: 0,
+      overrideForCritical: true,
+    },
     categories: ["ransomware", "exfiltration", "deepfake", "canary_trigger"],
     webhookUrl: "https://hooks.pos-shell.ng/security-alerts",
     slackWebhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
@@ -222,8 +250,10 @@ function formatAlertContent(event: SecurityAlertEvent): string {
     `Time: ${new Date(event.timestamp).toISOString()}`,
   ];
   if (event.sourceIp) lines.push(`Source IP: ${event.sourceIp}`);
-  if (event.affectedResource) lines.push(`Affected Resource: ${event.affectedResource}`);
-  if (event.actorName) lines.push(`Actor: ${event.actorName} (${event.actorId})`);
+  if (event.affectedResource)
+    lines.push(`Affected Resource: ${event.affectedResource}`);
+  if (event.actorName)
+    lines.push(`Actor: ${event.actorName} (${event.actorId})`);
   lines.push(`Alert ID: ${event.alertId}`);
   return lines.join("\n");
 }
@@ -313,7 +343,8 @@ async function deliverViaEmail(
       ].join("\n"),
     });
     record.status = success ? "delivered" : "failed";
-    if (!success) record.failureReason = "Email delivery service returned false";
+    if (!success)
+      record.failureReason = "Email delivery service returned false";
     record.deliveredAt = success ? Date.now() : undefined;
   } catch (err: any) {
     record.status = "failed";
@@ -405,7 +436,8 @@ async function deliverViaWebhook(
     });
 
     record.status = response.ok ? "delivered" : "failed";
-    if (!response.ok) record.failureReason = `Webhook returned ${response.status}`;
+    if (!response.ok)
+      record.failureReason = `Webhook returned ${response.status}`;
     record.deliveredAt = response.ok ? Date.now() : undefined;
   } catch (err: any) {
     record.status = "failed";
@@ -460,7 +492,8 @@ async function deliverViaSlack(
     });
 
     record.status = response.ok ? "delivered" : "failed";
-    if (!response.ok) record.failureReason = `Slack returned ${response.status}`;
+    if (!response.ok)
+      record.failureReason = `Slack returned ${response.status}`;
     record.deliveredAt = response.ok ? Date.now() : undefined;
   } catch (err: any) {
     record.status = "failed";
@@ -492,7 +525,7 @@ export async function dispatchSecurityAlert(
   let successCount = 0;
   let failCount = 0;
 
-  const eligibleAdmins = Array.from(adminPreferences.values()).filter((pref) => {
+  const eligibleAdmins = Array.from(adminPreferences.values()).filter(pref => {
     // Check severity threshold
     if (!meetsThreshold(event.severity, pref.severityThreshold)) return false;
     // Check category subscription
@@ -503,7 +536,8 @@ export async function dispatchSecurityAlert(
   for (const pref of eligibleAdmins) {
     const inQuiet = isInQuietHours(pref);
     const isCritical = event.severity === "critical";
-    const skipQuiet = inQuiet && !(pref.quietHours?.overrideForCritical && isCritical);
+    const skipQuiet =
+      inQuiet && !(pref.quietHours?.overrideForCritical && isCritical);
 
     if (skipQuiet) {
       // Log suppression for audit
@@ -544,7 +578,10 @@ export async function dispatchSecurityAlert(
     for (const result of results) {
       if (result.status === "fulfilled") {
         records.push(result.value);
-        if (result.value.status === "delivered" || result.value.status === "sent") {
+        if (
+          result.value.status === "delivered" ||
+          result.value.status === "sent"
+        ) {
           successCount++;
         } else {
           failCount++;
@@ -562,7 +599,7 @@ export async function dispatchSecurityAlert(
 
   console.log(
     `[SecurityAlertNotifier] Alert ${event.alertId} dispatched: ` +
-    `${eligibleAdmins.length} recipients, ${successCount} delivered, ${failCount} failed`
+      `${eligibleAdmins.length} recipients, ${successCount} delivered, ${failCount} failed`
   );
 
   return {
@@ -578,27 +615,30 @@ export async function dispatchSecurityAlert(
 
 function startEscalationTimer(event: SecurityAlertEvent): void {
   const applicableRules = escalationRules.filter(
-    (r) => r.enabled && r.fromSeverity === event.severity
+    r => r.enabled && r.fromSeverity === event.severity
   );
 
   for (const rule of applicableRules) {
-    const timer = setTimeout(async () => {
-      console.log(
-        `[SecurityAlertNotifier] Escalation triggered: ${rule.name} for alert ${event.alertId}`
-      );
+    const timer = setTimeout(
+      async () => {
+        console.log(
+          `[SecurityAlertNotifier] Escalation triggered: ${rule.name} for alert ${event.alertId}`
+        );
 
-      // Re-dispatch with escalated severity
-      const escalatedEvent: SecurityAlertEvent = {
-        ...event,
-        severity: rule.escalateToSeverity,
-        title: `[ESCALATED] ${event.title}`,
-        description: `Auto-escalated from ${event.severity} to ${rule.escalateToSeverity} after ${rule.triggerAfterMinutes} minutes unacknowledged.\n\nOriginal: ${event.description}`,
-        timestamp: Date.now(),
-      };
+        // Re-dispatch with escalated severity
+        const escalatedEvent: SecurityAlertEvent = {
+          ...event,
+          severity: rule.escalateToSeverity,
+          title: `[ESCALATED] ${event.title}`,
+          description: `Auto-escalated from ${event.severity} to ${rule.escalateToSeverity} after ${rule.triggerAfterMinutes} minutes unacknowledged.\n\nOriginal: ${event.description}`,
+          timestamp: Date.now(),
+        };
 
-      await dispatchSecurityAlert(escalatedEvent);
-      pendingEscalations.delete(event.alertId);
-    }, rule.triggerAfterMinutes * 60 * 1000);
+        await dispatchSecurityAlert(escalatedEvent);
+        pendingEscalations.delete(event.alertId);
+      },
+      rule.triggerAfterMinutes * 60 * 1000
+    );
 
     pendingEscalations.set(event.alertId, timer);
   }
@@ -624,7 +664,9 @@ export function getAdminPreferences(): NotificationPreference[] {
   return Array.from(adminPreferences.values());
 }
 
-export function getAdminPreference(adminId: string): NotificationPreference | undefined {
+export function getAdminPreference(
+  adminId: string
+): NotificationPreference | undefined {
   seedDefaults();
   return adminPreferences.get(adminId);
 }
@@ -644,9 +686,10 @@ export function updateAdminPreference(
     channels: updates.channels
       ? { ...existing.channels, ...updates.channels }
       : existing.channels,
-    quietHours: updates.quietHours !== undefined
-      ? updates.quietHours
-      : existing.quietHours,
+    quietHours:
+      updates.quietHours !== undefined
+        ? updates.quietHours
+        : existing.quietHours,
   };
 
   adminPreferences.set(adminId, updated);
@@ -671,16 +714,16 @@ export function getDeliveryHistory(options?: {
   let filtered = [...deliveryHistory];
 
   if (options?.alertId) {
-    filtered = filtered.filter((r) => r.alertId === options.alertId);
+    filtered = filtered.filter(r => r.alertId === options.alertId);
   }
   if (options?.adminId) {
-    filtered = filtered.filter((r) => r.recipientId === options.adminId);
+    filtered = filtered.filter(r => r.recipientId === options.adminId);
   }
   if (options?.channel) {
-    filtered = filtered.filter((r) => r.channel === options.channel);
+    filtered = filtered.filter(r => r.channel === options.channel);
   }
   if (options?.status) {
-    filtered = filtered.filter((r) => r.status === options.status);
+    filtered = filtered.filter(r => r.status === options.status);
   }
 
   // Sort by most recent first
@@ -700,11 +743,23 @@ export function getDeliveryStats(): {
   totalSent: number;
   totalDelivered: number;
   totalFailed: number;
-  byChannel: Record<DeliveryChannel, { sent: number; delivered: number; failed: number }>;
+  byChannel: Record<
+    DeliveryChannel,
+    { sent: number; delivered: number; failed: number }
+  >;
   last24h: { sent: number; delivered: number; failed: number };
 } {
-  const channels: DeliveryChannel[] = ["push", "email", "sms", "webhook", "slack"];
-  const byChannel = {} as Record<DeliveryChannel, { sent: number; delivered: number; failed: number }>;
+  const channels: DeliveryChannel[] = [
+    "push",
+    "email",
+    "sms",
+    "webhook",
+    "slack",
+  ];
+  const byChannel = {} as Record<
+    DeliveryChannel,
+    { sent: number; delivered: number; failed: number }
+  >;
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
 
   let totalSent = 0;
@@ -730,8 +785,10 @@ export function getDeliveryStats(): {
 
     if (record.sentAt >= cutoff24h) {
       last24h.sent++;
-      if (record.status === "delivered" || record.status === "sent") last24h.delivered++;
-      if (record.status === "failed" || record.status === "bounced") last24h.failed++;
+      if (record.status === "delivered" || record.status === "sent")
+        last24h.delivered++;
+      if (record.status === "failed" || record.status === "bounced")
+        last24h.failed++;
     }
   }
 
@@ -750,7 +807,7 @@ export function updateEscalationRule(
   updates: Partial<Omit<EscalationRule, "id">>
 ): EscalationRule | null {
   seedDefaults();
-  const idx = escalationRules.findIndex((r) => r.id === ruleId);
+  const idx = escalationRules.findIndex(r => r.id === ruleId);
   if (idx === -1) return null;
 
   escalationRules[idx] = { ...escalationRules[idx], ...updates, id: ruleId };

@@ -27,8 +27,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function EnableNotificationsButton() {
-  const [status, setStatus] = useState<"idle" | "loading" | "subscribed" | "denied" | "unsupported">("idle");
-  const agent = usePosStore((s) => s.agent);
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "subscribed" | "denied" | "unsupported"
+  >("idle");
+  const agent = usePosStore(s => s.agent);
 
   const { data: vapidData } = trpc.push.getVapidPublicKey.useQuery(undefined, {
     retry: false,
@@ -38,11 +40,14 @@ export function EnableNotificationsButton() {
     onSuccess: () => {
       setStatus("subscribed");
       toast.success("Push notifications enabled", {
-        description: "You will receive alerts for float approvals and SIM failovers.",
+        description:
+          "You will receive alerts for float approvals and SIM failovers.",
       });
     },
-    onError: (err) => {
-      toast.error("Failed to enable notifications", { description: err.message });
+    onError: err => {
+      toast.error("Failed to enable notifications", {
+        description: err.message,
+      });
       setStatus("idle");
     },
   });
@@ -64,8 +69,8 @@ export function EnableNotificationsButton() {
       return;
     }
     // Check if already subscribed
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.pushManager.getSubscription().then(sub => {
         if (sub) setStatus("subscribed");
       });
     });
@@ -84,7 +89,8 @@ export function EnableNotificationsButton() {
       if (permission !== "granted") {
         setStatus("denied");
         toast.warning("Notification permission denied", {
-          description: "Enable notifications in your browser settings to receive alerts.",
+          description:
+            "Enable notifications in your browser settings to receive alerts.",
         });
         return;
       }
@@ -92,7 +98,9 @@ export function EnableNotificationsButton() {
       const reg = await navigator.serviceWorker.ready;
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey) as unknown as ArrayBuffer,
+        applicationServerKey: urlBase64ToUint8Array(
+          vapidData.publicKey
+        ) as unknown as ArrayBuffer,
       });
 
       const subJson = subscription.toJSON();
@@ -141,7 +149,12 @@ export function EnableNotificationsButton() {
 
   if (status === "denied") {
     return (
-      <Button variant="outline" disabled size="sm" className="text-destructive border-destructive">
+      <Button
+        variant="outline"
+        disabled
+        size="sm"
+        className="text-destructive border-destructive"
+      >
         Notifications Blocked
       </Button>
     );

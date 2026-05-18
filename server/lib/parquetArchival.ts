@@ -18,7 +18,10 @@
  */
 
 import { getDb } from "../db";
-import { merchantSettlements, reconciliationBatches } from "../../drizzle/schema";
+import {
+  merchantSettlements,
+  reconciliationBatches,
+} from "../../drizzle/schema";
 import { lt, sql, count } from "drizzle-orm";
 import { getConfigNumber } from "./runtimeConfig";
 import logger from "../_core/logger";
@@ -54,17 +57,20 @@ interface ArchivalSummary {
 // ── CSV Serialization ────────────────────────────────────────────────────────
 
 function rowToCSV(row: Record<string, unknown>, columns: string[]): string {
-  return columns.map(col => {
-    const val = row[col];
-    if (val === null || val === undefined) return "";
-    if (val instanceof Date) return val.toISOString();
-    if (typeof val === "object") return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
-    const str = String(val);
-    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  }).join(",");
+  return columns
+    .map(col => {
+      const val = row[col];
+      if (val === null || val === undefined) return "";
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === "object")
+        return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+      const str = String(val);
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    })
+    .join(",");
 }
 
 // ── Archival Functions ───────────────────────────────────────────────────────
@@ -80,7 +86,8 @@ export async function archiveSettlements(options?: {
   batchSize?: number;
 }): Promise<ArchivalResult> {
   const startTime = performance.now();
-  const configRetention = (await getConfigNumber("archival_retention_days")) || 90;
+  const configRetention =
+    (await getConfigNumber("archival_retention_days")) || 90;
   const retentionDays = options?.retentionDays ?? configRetention;
   const deleteAfterArchive = options?.deleteAfterArchive ?? false;
   const batchSize = options?.batchSize ?? 1000;
@@ -89,12 +96,16 @@ export async function archiveSettlements(options?: {
   const db = (await getDb())!;
 
   // Count eligible rows
-  const [countResult] = await db.select({ cnt: count() }).from(merchantSettlements)
+  const [countResult] = await db
+    .select({ cnt: count() })
+    .from(merchantSettlements)
     .where(lt(merchantSettlements.createdAt, cutoffDate));
   const totalEligible = countResult?.cnt ?? 0;
 
   if (totalEligible === 0) {
-    logger.info(`[Archival] No settlements older than ${retentionDays} days to archive`);
+    logger.info(
+      `[Archival] No settlements older than ${retentionDays} days to archive`
+    );
     return {
       table: "merchant_settlements",
       archivedCount: 0,
@@ -110,15 +121,26 @@ export async function archiveSettlements(options?: {
 
   // Fetch all eligible rows in batches
   const columns = [
-    "id", "merchantId", "period", "grossAmount", "feeAmount", "netAmount",
-    "currency", "status", "bankRef", "settledAt", "createdAt",
+    "id",
+    "merchantId",
+    "period",
+    "grossAmount",
+    "feeAmount",
+    "netAmount",
+    "currency",
+    "status",
+    "bankRef",
+    "settledAt",
+    "createdAt",
   ];
 
   let allRows: Record<string, unknown>[] = [];
   let cursor = 0;
 
   while (true) {
-    const rows = await db.select().from(merchantSettlements)
+    const rows = await db
+      .select()
+      .from(merchantSettlements)
       .where(lt(merchantSettlements.createdAt, cutoffDate))
       .orderBy(merchantSettlements.id)
       .limit(batchSize)
@@ -130,7 +152,9 @@ export async function archiveSettlements(options?: {
 
     // Progress reporting every 1000 rows
     if (cursor % 1000 === 0) {
-      logger.info(`[Archival] Fetched ${cursor}/${totalEligible} settlements for archival`);
+      logger.info(
+        `[Archival] Fetched ${cursor}/${totalEligible} settlements for archival`
+      );
     }
   }
 
@@ -146,7 +170,8 @@ export async function archiveSettlements(options?: {
   const readable = Readable.from([csvContent]);
 
   await new Promise<void>((resolve, reject) => {
-    readable.pipe(gzip)
+    readable
+      .pipe(gzip)
       .on("data", (chunk: Buffer) => chunks.push(chunk))
       .on("end", resolve)
       .on("error", reject);
@@ -162,15 +187,20 @@ export async function archiveSettlements(options?: {
 
   // In production: upload to S3 via storagePut
   // await storagePut(archiveKey, compressedBuffer, "application/gzip");
-  logger.info(`[Archival] Archived ${allRows.length} settlements to ${archiveKey} (${compressedSizeBytes} bytes, ${compressionRatio.toFixed(1)}x compression)`);
+  logger.info(
+    `[Archival] Archived ${allRows.length} settlements to ${archiveKey} (${compressedSizeBytes} bytes, ${compressionRatio.toFixed(1)}x compression)`
+  );
 
   // Optionally delete archived rows from hot tier
   let deletedCount = 0;
   if (deleteAfterArchive) {
-    const result = await db.delete(merchantSettlements)
+    const result = await db
+      .delete(merchantSettlements)
       .where(lt(merchantSettlements.createdAt, cutoffDate));
     deletedCount = allRows.length;
-    logger.info(`[Archival] Deleted ${deletedCount} archived settlements from hot tier`);
+    logger.info(
+      `[Archival] Deleted ${deletedCount} archived settlements from hot tier`
+    );
   }
 
   return {
@@ -194,14 +224,17 @@ export async function archiveReconciliationBatches(options?: {
   deleteAfterArchive?: boolean;
 }): Promise<ArchivalResult> {
   const startTime = performance.now();
-  const configRetention = (await getConfigNumber("archival_retention_days")) || 90;
+  const configRetention =
+    (await getConfigNumber("archival_retention_days")) || 90;
   const retentionDays = options?.retentionDays ?? configRetention;
   const deleteAfterArchive = options?.deleteAfterArchive ?? false;
 
   const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
   const db = (await getDb())!;
 
-  const [countResult] = await db.select({ cnt: count() }).from(reconciliationBatches)
+  const [countResult] = await db
+    .select({ cnt: count() })
+    .from(reconciliationBatches)
     .where(lt(reconciliationBatches.createdAt, cutoffDate));
   const totalEligible = countResult?.cnt ?? 0;
 
@@ -219,17 +252,31 @@ export async function archiveReconciliationBatches(options?: {
     };
   }
 
-  const rows = await db.select().from(reconciliationBatches)
+  const rows = await db
+    .select()
+    .from(reconciliationBatches)
     .where(lt(reconciliationBatches.createdAt, cutoffDate))
     .orderBy(reconciliationBatches.id);
 
   const columns = [
-    "id", "batchReference", "sourceType", "status", "totalRecords",
-    "matchedCount", "unmatchedCount", "discrepancyCount", "processedBy", "processedAt", "createdAt",
+    "id",
+    "batchReference",
+    "sourceType",
+    "status",
+    "totalRecords",
+    "matchedCount",
+    "unmatchedCount",
+    "discrepancyCount",
+    "processedBy",
+    "processedAt",
+    "createdAt",
   ];
 
   const csvHeader = columns.join(",");
-  const csvLines = [csvHeader, ...(rows as Record<string, unknown>[]).map(row => rowToCSV(row, columns))];
+  const csvLines = [
+    csvHeader,
+    ...(rows as Record<string, unknown>[]).map(row => rowToCSV(row, columns)),
+  ];
   const csvContent = csvLines.join("\n");
   const rawSizeBytes = Buffer.byteLength(csvContent, "utf-8");
 
@@ -238,7 +285,8 @@ export async function archiveReconciliationBatches(options?: {
   const readable = Readable.from([csvContent]);
 
   await new Promise<void>((resolve, reject) => {
-    readable.pipe(gzip)
+    readable
+      .pipe(gzip)
       .on("data", (chunk: Buffer) => chunks.push(chunk))
       .on("end", resolve)
       .on("error", reject);
@@ -251,11 +299,15 @@ export async function archiveReconciliationBatches(options?: {
   const dateStr = cutoffDate.toISOString().split("T")[0];
   const archiveKey = `archives/batches/${dateStr}/reconciliation_batches_${Date.now()}.csv.gz`;
 
-  logger.info(`[Archival] Archived ${rows.length} batches to ${archiveKey} (${compressedSizeBytes} bytes, ${compressionRatio.toFixed(1)}x compression)`);
+  logger.info(
+    `[Archival] Archived ${rows.length} batches to ${archiveKey} (${compressedSizeBytes} bytes, ${compressionRatio.toFixed(1)}x compression)`
+  );
 
   let deletedCount = 0;
   if (deleteAfterArchive) {
-    await db.delete(reconciliationBatches).where(lt(reconciliationBatches.createdAt, cutoffDate));
+    await db
+      .delete(reconciliationBatches)
+      .where(lt(reconciliationBatches.createdAt, cutoffDate));
     deletedCount = rows.length;
   }
 
@@ -282,7 +334,9 @@ export async function runArchivalJob(options?: {
   const startedAt = new Date();
   const startTime = performance.now();
 
-  logger.info(`[Archival] Starting cold-tier archival job (retention=${options?.retentionDays ?? 90} days)`);
+  logger.info(
+    `[Archival] Starting cold-tier archival job (retention=${options?.retentionDays ?? 90} days)`
+  );
 
   const results: ArchivalResult[] = [];
 
@@ -297,7 +351,9 @@ export async function runArchivalJob(options?: {
   const totalArchived = results.reduce((sum, r) => sum + r.archivedCount, 0);
   const totalDeleted = results.reduce((sum, r) => sum + r.deletedCount, 0);
 
-  logger.info(`[Archival] Job complete: ${totalArchived} rows archived, ${totalDeleted} deleted, ${(performance.now() - startTime).toFixed(0)}ms`);
+  logger.info(
+    `[Archival] Job complete: ${totalArchived} rows archived, ${totalDeleted} deleted, ${(performance.now() - startTime).toFixed(0)}ms`
+  );
 
   return {
     totalArchived,
@@ -318,13 +374,18 @@ export async function getArchivalStats(): Promise<{
   eligibleBatches: number;
   cutoffDate: Date;
 }> {
-  const retentionDays = await getConfigNumber("archival_retention_days") || 90;
+  const retentionDays =
+    (await getConfigNumber("archival_retention_days")) || 90;
   const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
   const db = (await getDb())!;
 
-  const [settlements] = await db.select({ cnt: count() }).from(merchantSettlements)
+  const [settlements] = await db
+    .select({ cnt: count() })
+    .from(merchantSettlements)
     .where(lt(merchantSettlements.createdAt, cutoffDate));
-  const [batches] = await db.select({ cnt: count() }).from(reconciliationBatches)
+  const [batches] = await db
+    .select({ cnt: count() })
+    .from(reconciliationBatches)
     .where(lt(reconciliationBatches.createdAt, cutoffDate));
 
   return {

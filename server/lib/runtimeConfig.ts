@@ -27,11 +27,13 @@ import logger from "../_core/logger";
 const DEFAULTS: Record<string, { value: string; description: string }> = {
   tb_batch_size: {
     value: "8190",
-    description: "TigerBeetle max batch size per request (optimal: 8190 for 228K TPS)",
+    description:
+      "TigerBeetle max batch size per request (optimal: 8190 for 228K TPS)",
   },
   settlement_batch_size: {
     value: "500",
-    description: "Number of settlements to process per batch in bulk operations",
+    description:
+      "Number of settlements to process per batch in bulk operations",
   },
   max_concurrent_settlements: {
     value: "4",
@@ -59,7 +61,8 @@ const DEFAULTS: Record<string, { value: string; description: string }> = {
   },
   circuit_breaker_reset_ms: {
     value: "30000",
-    description: "Milliseconds before circuit breaker half-opens after tripping",
+    description:
+      "Milliseconds before circuit breaker half-opens after tripping",
   },
   connection_pool_size: {
     value: "10",
@@ -71,7 +74,8 @@ const DEFAULTS: Record<string, { value: string; description: string }> = {
   },
   batch_flush_interval_ms: {
     value: "100",
-    description: "Milliseconds before partial batch is flushed in write pipeline",
+    description:
+      "Milliseconds before partial batch is flushed in write pipeline",
   },
   progress_report_interval: {
     value: "100",
@@ -124,13 +128,20 @@ export async function getConfig(key: string): Promise<string> {
   // 2. Check database
   try {
     const db = (await getDb())!;
-    const [row] = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+    const [row] = await db
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, key))
+      .limit(1);
     if (row) {
       setCache(key, row.value);
       return row.value;
     }
   } catch (error) {
-    logger.warn(`[RuntimeConfig] DB lookup failed for ${key}, using default:`, error);
+    logger.warn(
+      `[RuntimeConfig] DB lookup failed for ${key}, using default:`,
+      error
+    );
   }
 
   // 3. Return default
@@ -155,19 +166,31 @@ export async function getConfigNumber(key: string): Promise<number> {
 /**
  * Set a runtime configuration value. Updates DB and cache.
  */
-export async function setConfig(key: string, value: string, updatedBy?: string): Promise<void> {
+export async function setConfig(
+  key: string,
+  value: string,
+  updatedBy?: string
+): Promise<void> {
   try {
     const db = (await getDb())!;
-    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+    const [existing] = await db
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, key))
+      .limit(1);
 
     if (existing) {
-      await db.update(systemConfig).set({
-        value,
-        updatedBy: updatedBy ?? "system",
-        updatedAt: new Date(),
-      }).where(eq(systemConfig.key, key));
+      await db
+        .update(systemConfig)
+        .set({
+          value,
+          updatedBy: updatedBy ?? "system",
+          updatedAt: new Date(),
+        })
+        .where(eq(systemConfig.key, key));
     } else {
-      const description = DEFAULTS[key]?.description ?? `Runtime config: ${key}`;
+      const description =
+        DEFAULTS[key]?.description ?? `Runtime config: ${key}`;
       await db.insert(systemConfig).values({
         key,
         value,
@@ -177,7 +200,9 @@ export async function setConfig(key: string, value: string, updatedBy?: string):
     }
 
     setCache(key, value);
-    logger.info(`[RuntimeConfig] Updated ${key} = ${value} (by ${updatedBy ?? "system"})`);
+    logger.info(
+      `[RuntimeConfig] Updated ${key} = ${value} (by ${updatedBy ?? "system"})`
+    );
   } catch (error) {
     logger.error(`[RuntimeConfig] Failed to set ${key}:`, error);
     throw error;
@@ -187,15 +212,17 @@ export async function setConfig(key: string, value: string, updatedBy?: string):
 /**
  * Get all configuration values with their defaults and current values.
  */
-export async function getAllConfig(): Promise<Array<{
-  key: string;
-  value: string;
-  defaultValue: string;
-  description: string;
-  isCustom: boolean;
-  updatedBy: string | null;
-  updatedAt: Date | null;
-}>> {
+export async function getAllConfig(): Promise<
+  Array<{
+    key: string;
+    value: string;
+    defaultValue: string;
+    description: string;
+    isCustom: boolean;
+    updatedBy: string | null;
+    updatedAt: Date | null;
+  }>
+> {
   const results: Array<{
     key: string;
     value: string;
@@ -259,7 +286,10 @@ export async function getAllConfig(): Promise<Array<{
 /**
  * Reset a configuration value to its default.
  */
-export async function resetConfig(key: string, updatedBy?: string): Promise<void> {
+export async function resetConfig(
+  key: string,
+  updatedBy?: string
+): Promise<void> {
   const def = DEFAULTS[key];
   if (!def) throw new Error(`Unknown config key: ${key}`);
   await setConfig(key, def.value, updatedBy ?? "system");
@@ -274,7 +304,11 @@ export async function seedDefaults(): Promise<number> {
   try {
     const db = (await getDb())!;
     for (const [key, def] of Object.entries(DEFAULTS)) {
-      const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+      const [existing] = await db
+        .select()
+        .from(systemConfig)
+        .where(eq(systemConfig.key, key))
+        .limit(1);
       if (!existing) {
         await db.insert(systemConfig).values({
           key,
@@ -286,7 +320,9 @@ export async function seedDefaults(): Promise<number> {
       }
     }
     if (seeded > 0) {
-      logger.info(`[RuntimeConfig] Seeded ${seeded} default configuration values`);
+      logger.info(
+        `[RuntimeConfig] Seeded ${seeded} default configuration values`
+      );
     }
   } catch (error) {
     logger.warn("[RuntimeConfig] Failed to seed defaults:", error);

@@ -28,7 +28,13 @@ import {
   BUCKETS,
 } from "../lakehouse";
 import { getDb } from "../db";
-import { transactions, agents, fraudAlerts, deviceLocations, auditLog } from "../../drizzle/schema";
+import {
+  transactions,
+  agents,
+  fraudAlerts,
+  deviceLocations,
+  auditLog,
+} from "../../drizzle/schema";
 import { writeAuditLog } from "../db";
 import { sql, gte, lte, and, eq, desc } from "drizzle-orm";
 import logger from "../_core/logger";
@@ -36,8 +42,7 @@ import logger from "../_core/logger";
 // ── Python lakehouse-service proxy ────────────────────────────────────────────
 const LAKEHOUSE_SERVICE_URL =
   process.env.LAKEHOUSE_SERVICE_URL ?? "http://localhost:8156";
-const LAKEHOUSE_TOKEN =
-  process.env.LAKEHOUSE_SERVICE_TOKEN ?? "dev-token";
+const LAKEHOUSE_TOKEN = process.env.LAKEHOUSE_SERVICE_TOKEN ?? "dev-token";
 
 async function lakehouseFetch(
   path: string,
@@ -62,8 +67,10 @@ async function lakehouseFetch(
 
 // ── Haversine distance (metres) ───────────────────────────────────────────────
 function haversineMetres(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
 ): number {
   const R = 6_371_000;
   const φ1 = (lat1 * Math.PI) / 180;
@@ -71,8 +78,7 @@ function haversineMetres(
   const Δφ = ((lat2 - lat1) * Math.PI) / 180;
   const Δλ = ((lon2 - lon1) * Math.PI) / 180;
   const a =
-    Math.sin(Δφ / 2) ** 2 +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -85,7 +91,14 @@ function gridCell(lat: number, lon: number, cellDeg: number): string {
 export const lakehouseRouter = router({
   // ── 1. Snapshot: trigger manual transaction snapshot upload ────────────────
   triggerTransactionSnapshot: adminProcedure
-    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }))
+    .input(
+      z.object({
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
@@ -98,23 +111,42 @@ export const lakehouseRouter = router({
         const rows = await db
           .select()
           .from(transactions)
-          .where(and(gte(transactions.createdAt, start), lte(transactions.createdAt, end)))
+          .where(
+            and(
+              gte(transactions.createdAt, start),
+              lte(transactions.createdAt, end)
+            )
+          )
           .orderBy(desc(transactions.createdAt))
           .limit(10_000);
 
         const key = await uploadTransactionSnapshot(date, rows);
-        logger.info({ key, count: rows.length }, "[Lakehouse] Transaction snapshot uploaded");
+        logger.info(
+          { key, count: rows.length },
+          "[Lakehouse] Transaction snapshot uploaded"
+        );
 
         return { date, recordCount: rows.length, key };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── 2. Snapshot: trigger fraud events snapshot ────────────────────────────
   triggerFraudSnapshot: adminProcedure
-    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }))
+    .input(
+      z.object({
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
@@ -127,14 +159,23 @@ export const lakehouseRouter = router({
         const rows = await db
           .select()
           .from(fraudAlerts)
-          .where(and(gte(fraudAlerts.createdAt, start), lte(fraudAlerts.createdAt, end)))
+          .where(
+            and(
+              gte(fraudAlerts.createdAt, start),
+              lte(fraudAlerts.createdAt, end)
+            )
+          )
           .limit(5_000);
 
         const key = await uploadFraudEvents(date, rows);
         return { date, recordCount: rows.length, key };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -142,10 +183,16 @@ export const lakehouseRouter = router({
   listSnapshots: adminProcedure
     .input(
       z.object({
-        bucket: z.enum(["transactions", "settlements", "fraud_events", "agent_metrics"]),
-        datePrefix: z.string().regex(/^\d{4}(-\d{2}(-\d{2})?)?$/).default(
-          new Date().toISOString().slice(0, 7)
-        ),
+        bucket: z.enum([
+          "transactions",
+          "settlements",
+          "fraud_events",
+          "agent_metrics",
+        ]),
+        datePrefix: z
+          .string()
+          .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/)
+          .default(new Date().toISOString().slice(0, 7)),
       })
     )
     .query(async ({ input }) => {
@@ -156,11 +203,18 @@ export const lakehouseRouter = router({
           fraud_events: BUCKETS.FRAUD_EVENTS,
           agent_metrics: BUCKETS.AGENT_METRICS,
         };
-        const keys = await listSnapshots(bucketMap[input.bucket], input.datePrefix);
+        const keys = await listSnapshots(
+          bucketMap[input.bucket],
+          input.datePrefix
+        );
         return { bucket: input.bucket, datePrefix: input.datePrefix, keys };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -168,7 +222,12 @@ export const lakehouseRouter = router({
   getDownloadUrl: adminProcedure
     .input(
       z.object({
-        bucket: z.enum(["transactions", "settlements", "fraud_events", "agent_metrics"]),
+        bucket: z.enum([
+          "transactions",
+          "settlements",
+          "fraud_events",
+          "agent_metrics",
+        ]),
         key: z.string().min(1),
         expiresInSeconds: z.number().int().min(60).max(86400).default(3600),
       })
@@ -186,11 +245,22 @@ export const lakehouseRouter = router({
           input.key,
           input.expiresInSeconds
         );
-        if (!url) throw new TRPCError({ code: "NOT_FOUND", message: "Snapshot not found or MinIO unavailable" });
-        return { url, expiresAt: new Date(Date.now() + input.expiresInSeconds * 1000) };
+        if (!url)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Snapshot not found or MinIO unavailable",
+          });
+        return {
+          url,
+          expiresAt: new Date(Date.now() + input.expiresInSeconds * 1000),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -243,13 +313,16 @@ export const lakehouseRouter = router({
 
         // Try Python lakehouse-service first (has PostGIS / Sedona)
         try {
-          const result = await lakehouseFetch(
+          const result = (await lakehouseFetch(
             `/api/v1/spatial/agent-density?sw_lat=${input.swLat}&sw_lon=${input.swLon}` +
-            `&ne_lat=${input.neLat}&ne_lon=${input.neLon}&cell_deg=${input.cellDeg}`
-          ) as { cells: Array<{ lat: number; lon: number; count: number }> };
+              `&ne_lat=${input.neLat}&ne_lon=${input.neLon}&cell_deg=${input.cellDeg}`
+          )) as { cells: Array<{ lat: number; lon: number; count: number }> };
           return result;
         } catch (err) {
-          logger.warn({ err }, "[Lakehouse] Spatial agent-density service unavailable, using PostgreSQL fallback");
+          logger.warn(
+            { err },
+            "[Lakehouse] Spatial agent-density service unavailable, using PostgreSQL fallback"
+          );
         }
 
         // PostgreSQL fallback: aggregate agents by grid cell
@@ -271,7 +344,10 @@ export const lakehouseRouter = router({
           )
           .limit(5_000);
 
-        const grid: Record<string, { lat: number; lon: number; count: number }> = {};
+        const grid: Record<
+          string,
+          { lat: number; lon: number; count: number }
+        > = {};
         for (const row of agentRows) {
           if (!row.lat || !row.lon) continue;
           const lat = parseFloat(String(row.lat));
@@ -279,8 +355,12 @@ export const lakehouseRouter = router({
           const key = gridCell(lat, lon, input.cellDeg);
           if (!grid[key]) {
             grid[key] = {
-              lat: Math.floor(lat / input.cellDeg) * input.cellDeg + input.cellDeg / 2,
-              lon: Math.floor(lon / input.cellDeg) * input.cellDeg + input.cellDeg / 2,
+              lat:
+                Math.floor(lat / input.cellDeg) * input.cellDeg +
+                input.cellDeg / 2,
+              lon:
+                Math.floor(lon / input.cellDeg) * input.cellDeg +
+                input.cellDeg / 2,
               count: 0,
             };
           }
@@ -290,7 +370,11 @@ export const lakehouseRouter = router({
         return { cells: Object.values(grid), source: "postgresql-fallback" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -317,12 +401,22 @@ export const lakehouseRouter = router({
             ...(input.minAmount ? { min_amount: String(input.minAmount) } : {}),
             ...(input.txType ? { tx_type: input.txType } : {}),
           });
-          const result = await lakehouseFetch(`/api/v1/spatial/transaction-heatmap?${params}`) as {
-            cells: Array<{ lat: number; lon: number; count: number; volume: number }>;
+          const result = (await lakehouseFetch(
+            `/api/v1/spatial/transaction-heatmap?${params}`
+          )) as {
+            cells: Array<{
+              lat: number;
+              lon: number;
+              count: number;
+              volume: number;
+            }>;
           };
           return result;
         } catch (err) {
-          logger.warn({ err }, "[Lakehouse] Spatial transaction-heatmap service unavailable, using PostgreSQL fallback");
+          logger.warn(
+            { err },
+            "[Lakehouse] Spatial transaction-heatmap service unavailable, using PostgreSQL fallback"
+          );
         }
 
         // PostgreSQL fallback: join transactions → agents for lat/lon
@@ -335,17 +429,25 @@ export const lakehouseRouter = router({
             type: transactions.type,
           })
           .from(transactions)
-          .innerJoin(deviceLocations, eq(transactions.agentId, deviceLocations.agentId))
+          .innerJoin(
+            deviceLocations,
+            eq(transactions.agentId, deviceLocations.agentId)
+          )
           .where(
             and(
               gte(transactions.createdAt, since),
               eq(transactions.status, "success"),
-              ...(input.txType ? [eq(transactions.type, input.txType as any)] : []),
+              ...(input.txType
+                ? [eq(transactions.type, input.txType as any)]
+                : [])
             )
           )
           .limit(50_000);
 
-        const grid: Record<string, { lat: number; lon: number; count: number; volume: number }> = {};
+        const grid: Record<
+          string,
+          { lat: number; lon: number; count: number; volume: number }
+        > = {};
         for (const row of rows) {
           if (!row.lat || !row.lon) continue;
           const lat = parseFloat(String(row.lat));
@@ -355,8 +457,12 @@ export const lakehouseRouter = router({
           const key = gridCell(lat, lon, input.cellDeg);
           if (!grid[key]) {
             grid[key] = {
-              lat: Math.floor(lat / input.cellDeg) * input.cellDeg + input.cellDeg / 2,
-              lon: Math.floor(lon / input.cellDeg) * input.cellDeg + input.cellDeg / 2,
+              lat:
+                Math.floor(lat / input.cellDeg) * input.cellDeg +
+                input.cellDeg / 2,
+              lon:
+                Math.floor(lon / input.cellDeg) * input.cellDeg +
+                input.cellDeg / 2,
               count: 0,
               volume: 0,
             };
@@ -368,7 +474,11 @@ export const lakehouseRouter = router({
         return { cells: Object.values(grid), source: "postgresql-fallback" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -395,12 +505,23 @@ export const lakehouseRouter = router({
             radius_m: String(input.radiusMetres),
             limit: String(input.limit),
           });
-          const result = await lakehouseFetch(`/api/v1/spatial/nearest-agents?${params}`) as {
-            agents: Array<{ id: number; name: string; agentCode: string; distanceMetres: number; tier: string }>;
+          const result = (await lakehouseFetch(
+            `/api/v1/spatial/nearest-agents?${params}`
+          )) as {
+            agents: Array<{
+              id: number;
+              name: string;
+              agentCode: string;
+              distanceMetres: number;
+              tier: string;
+            }>;
           };
           return result;
         } catch (err) {
-          logger.warn({ err }, "[Lakehouse] Nearest-agents service unavailable, using haversine fallback");
+          logger.warn(
+            { err },
+            "[Lakehouse] Nearest-agents service unavailable, using haversine fallback"
+          );
         }
 
         // Haversine fallback
@@ -429,8 +550,10 @@ export const lakehouseRouter = router({
             floatBalance: a.floatBalance,
             distanceMetres: Math.round(
               haversineMetres(
-                input.latitude, input.longitude,
-                Number(a.lat), Number(a.lon)
+                input.latitude,
+                input.longitude,
+                Number(a.lat),
+                Number(a.lon)
               )
             ),
           }))
@@ -441,7 +564,11 @@ export const lakehouseRouter = router({
         return { agents: nearby, source: "haversine-fallback" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -457,10 +584,15 @@ export const lakehouseRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        const result = await lakehouseFetch("/api/v1/query", {
+        const result = (await lakehouseFetch("/api/v1/query", {
           method: "POST",
           body: JSON.stringify({ sql: input.sql, limit: input.limit }),
-        }) as { columns: string[]; rows: unknown[][]; rowCount: number; durationMs: number };
+        })) as {
+          columns: string[];
+          rows: unknown[][];
+          rowCount: number;
+          durationMs: number;
+        };
         return result;
       } catch (err) {
         logger.warn({ err }, "[Lakehouse] DataFusion query failed");
@@ -475,7 +607,10 @@ export const lakehouseRouter = router({
   goldDailyAgentSummary: adminProcedure
     .input(
       z.object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
         agentId: z.number().int().optional(),
         limit: z.number().int().min(1).max(500).default(50),
       })
@@ -491,7 +626,9 @@ export const lakehouseRouter = router({
             limit: String(input.limit),
             ...(input.agentId ? { agent_id: String(input.agentId) } : {}),
           });
-          const result = await lakehouseFetch(`/api/v1/gold/daily-agent-summary?${params}`) as {
+          const result = (await lakehouseFetch(
+            `/api/v1/gold/daily-agent-summary?${params}`
+          )) as {
             rows: Array<{
               summaryDate: string;
               agentId: number;
@@ -510,7 +647,10 @@ export const lakehouseRouter = router({
           };
           return { ...result, source: "lakehouse-gold" };
         } catch (err) {
-          logger.warn({ err }, "[Lakehouse] Gold daily-agent-summary unavailable, using PostgreSQL fallback");
+          logger.warn(
+            { err },
+            "[Lakehouse] Gold daily-agent-summary unavailable, using PostgreSQL fallback"
+          );
         }
 
         // PostgreSQL fallback
@@ -539,7 +679,9 @@ export const lakehouseRouter = router({
             and(
               gte(transactions.createdAt, start),
               lte(transactions.createdAt, end),
-              ...(input.agentId ? [eq(transactions.agentId, input.agentId)] : [])
+              ...(input.agentId
+                ? [eq(transactions.agentId, input.agentId)]
+                : [])
             )
           )
           .groupBy(transactions.agentId, agents.agentCode, agents.tier)
@@ -566,7 +708,11 @@ export const lakehouseRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -574,7 +720,10 @@ export const lakehouseRouter = router({
   goldHourlyMetrics: adminProcedure
     .input(
       z.object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
       })
     )
     .query(async ({ input }) => {
@@ -583,14 +732,23 @@ export const lakehouseRouter = router({
 
         // Try Python lakehouse-service Gold layer
         try {
-          const result = await lakehouseFetch(
+          const result = (await lakehouseFetch(
             `/api/v1/gold/hourly-metrics?date=${date}`
-          ) as {
-            hours: Array<{ hour: number; txCount: number; txVolume: number; errorRate: number; fraudRate: number }>;
+          )) as {
+            hours: Array<{
+              hour: number;
+              txCount: number;
+              txVolume: number;
+              errorRate: number;
+              fraudRate: number;
+            }>;
           };
           return { ...result, source: "lakehouse-gold" };
         } catch (err) {
-          logger.warn({ err }, "[Lakehouse] Gold hourly-metrics unavailable, using PostgreSQL fallback");
+          logger.warn(
+            { err },
+            "[Lakehouse] Gold hourly-metrics unavailable, using PostgreSQL fallback"
+          );
         }
 
         // PostgreSQL fallback
@@ -609,7 +767,12 @@ export const lakehouseRouter = router({
             fraudCount: sql<number>`sum(case when ${transactions.fraudScore} >= 0.7 then 1 else 0 end)::int`,
           })
           .from(transactions)
-          .where(and(gte(transactions.createdAt, start), lte(transactions.createdAt, end)))
+          .where(
+            and(
+              gte(transactions.createdAt, start),
+              lte(transactions.createdAt, end)
+            )
+          )
           .groupBy(sql`extract(hour from ${transactions.createdAt})`)
           .orderBy(sql`extract(hour from ${transactions.createdAt})`);
 
@@ -625,7 +788,11 @@ export const lakehouseRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -645,32 +812,61 @@ export const lakehouseRouter = router({
         const targetDate = input.date ?? new Date().toISOString().slice(0, 10);
         const jobId = `etl-${input.pipeline}-${targetDate}-${Date.now()}`;
         try {
-          const body = await lakehouseFetch("/api/v1/etl/trigger", {
+          const body = (await lakehouseFetch("/api/v1/etl/trigger", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pipeline: input.pipeline, date: targetDate, force: input.force, jobId }),
-          }) as { jobId?: string; status?: string };
+            body: JSON.stringify({
+              pipeline: input.pipeline,
+              date: targetDate,
+              force: input.force,
+              jobId,
+            }),
+          })) as { jobId?: string; status?: string };
           await writeAuditLog({
             action: "ETL_TRIGGER",
             resource: "lakehouse",
             resourceId: jobId,
             status: "success",
-            metadata: { pipeline: input.pipeline, date: targetDate, force: input.force, userId: ctx.user.id },
+            metadata: {
+              pipeline: input.pipeline,
+              date: targetDate,
+              force: input.force,
+              userId: ctx.user.id,
+            },
           });
-          return { jobId: body.jobId ?? jobId, status: body.status ?? "queued", source: "lakehouse-service" };
+          return {
+            jobId: body.jobId ?? jobId,
+            status: body.status ?? "queued",
+            source: "lakehouse-service",
+          };
         } catch {
           await writeAuditLog({
             action: "ETL_TRIGGER",
             resource: "lakehouse",
             resourceId: jobId,
             status: "warning",
-            metadata: { pipeline: input.pipeline, date: targetDate, force: input.force, note: "lakehouse-service-unavailable", userId: ctx.user.id },
+            metadata: {
+              pipeline: input.pipeline,
+              date: targetDate,
+              force: input.force,
+              note: "lakehouse-service-unavailable",
+              userId: ctx.user.id,
+            },
           });
-          return { jobId, status: "pending", source: "audit-only", note: "Lakehouse service unavailable; job recorded for manual execution" };
+          return {
+            jobId,
+            status: "pending",
+            source: "audit-only",
+            note: "Lakehouse service unavailable; job recorded for manual execution",
+          };
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -684,8 +880,15 @@ export const lakehouseRouter = router({
           const url = input.jobId
             ? `/api/v1/etl/status?jobId=${encodeURIComponent(input.jobId)}`
             : "/api/v1/etl/status";
-          const result = await lakehouseFetch(url) as {
-            jobs?: Array<{ jobId: string; pipeline: string; status: string; startedAt: string; completedAt?: string; error?: string }>;
+          const result = (await lakehouseFetch(url)) as {
+            jobs?: Array<{
+              jobId: string;
+              pipeline: string;
+              status: string;
+              startedAt: string;
+              completedAt?: string;
+              error?: string;
+            }>;
           };
           return { jobs: result.jobs ?? [], source: "lakehouse-service" };
         } catch {
@@ -698,7 +901,9 @@ export const lakehouseRouter = router({
           return {
             jobs: rows.map((r: any) => ({
               jobId: r.resourceId ?? "",
-              pipeline: (r.metadata as Record<string, unknown>)?.pipeline as string ?? "unknown",
+              pipeline:
+                ((r.metadata as Record<string, unknown>)?.pipeline as string) ??
+                "unknown",
               status: r.status ?? "unknown",
               startedAt: r.createdAt?.toISOString() ?? "",
             })),
@@ -707,7 +912,11 @@ export const lakehouseRouter = router({
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

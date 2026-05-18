@@ -73,9 +73,9 @@ export default function loginScenario() {
     loginDuration.add(Date.now() - start);
 
     const ok = check(res, {
-      "login: status 200 or 401": (r) => r.status === 200 || r.status === 401,
-      "login: has body": (r) => r.body && r.body.length > 0,
-      "login: response time < 500ms": (r) => r.timings.duration < 500,
+      "login: status 200 or 401": r => r.status === 200 || r.status === 401,
+      "login: has body": r => r.body && r.body.length > 0,
+      "login: response time < 500ms": r => r.timings.duration < 500,
     });
     loginErrors.add(!ok);
 
@@ -100,9 +100,9 @@ export default function loginScenario() {
         );
         totalRequests.add(1);
         const refreshOk = check(refreshRes, {
-          "refresh: status 200 or 401": (r) =>
+          "refresh: status 200 or 401": r =>
             r.status === 200 || r.status === 401,
-          "refresh: response time < 300ms": (r) => r.timings.duration < 300,
+          "refresh: response time < 300ms": r => r.timings.duration < 300,
         });
         tokenRefreshErrors.add(!refreshOk);
       });
@@ -116,9 +116,9 @@ export default function loginScenario() {
         });
         totalRequests.add(1);
         check(sessionRes, {
-          "session: status 200 or 401": (r) =>
+          "session: status 200 or 401": r =>
             r.status === 200 || r.status === 401,
-          "session: response time < 200ms": (r) => r.timings.duration < 200,
+          "session: response time < 200ms": r => r.timings.duration < 200,
         });
       });
 
@@ -126,14 +126,12 @@ export default function loginScenario() {
 
       // Logout
       group("auth: logout", () => {
-        const logoutRes = http.post(
-          `${BASE_URL}/api/v1/auth/logout`,
-          null,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const logoutRes = http.post(`${BASE_URL}/api/v1/auth/logout`, null, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         totalRequests.add(1);
         check(logoutRes, {
-          "logout: status 200 or 204": (r) =>
+          "logout: status 200 or 204": r =>
             r.status === 200 || r.status === 204,
         });
       });
@@ -152,8 +150,8 @@ export function tokenRefreshScenario() {
   );
   totalRequests.add(1);
   check(res, {
-    "bg-refresh: responds": (r) => r.status < 500,
-    "bg-refresh: fast": (r) => r.timings.duration < 200,
+    "bg-refresh: responds": r => r.status < 500,
+    "bg-refresh: fast": r => r.timings.duration < 200,
   });
   sleep(5);
 }

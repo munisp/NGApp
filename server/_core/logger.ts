@@ -43,7 +43,16 @@ export const logger = pino({
           version: SERVICE_VERSION,
         },
         redact: {
-          paths: ["password", "secret", "token", "authorization", "cookie", "*.password", "*.secret", "*.token"],
+          paths: [
+            "password",
+            "secret",
+            "token",
+            "authorization",
+            "cookie",
+            "*.password",
+            "*.secret",
+            "*.token",
+          ],
           censor: "[REDACTED]",
         },
       }),
@@ -60,8 +69,13 @@ export function childLogger(requestId: string) {
  * Express middleware: injects X-Request-ID header and attaches a child logger
  * to `req.log` for per-request structured logging with trace correlation.
  */
-export function requestLoggingMiddleware(req: Request, res: Response, next: NextFunction) {
-  const requestId = (req.headers["x-request-id"] as string) ?? crypto.randomUUID();
+export function requestLoggingMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const requestId =
+    (req.headers["x-request-id"] as string) ?? crypto.randomUUID();
   const traceId = (req.headers["x-trace-id"] as string) ?? crypto.randomUUID();
   const startTime = Date.now();
 
@@ -88,11 +102,20 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
     };
 
     if (res.statusCode >= 500) {
-      reqLogger.error(logData, `${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+      reqLogger.error(
+        logData,
+        `${req.method} ${req.path} ${res.statusCode} ${duration}ms`
+      );
     } else if (res.statusCode >= 400) {
-      reqLogger.warn(logData, `${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+      reqLogger.warn(
+        logData,
+        `${req.method} ${req.path} ${res.statusCode} ${duration}ms`
+      );
     } else {
-      reqLogger.info(logData, `${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+      reqLogger.info(
+        logData,
+        `${req.method} ${req.path} ${res.statusCode} ${duration}ms`
+      );
     }
   });
 
@@ -110,20 +133,31 @@ export function auditLog(event: {
   ip?: string;
   metadata?: Record<string, unknown>;
 }) {
-  logger.info({ audit: true, ...event }, `AUDIT: ${event.actor} → ${event.action} on ${event.resource}`);
+  logger.info(
+    { audit: true, ...event },
+    `AUDIT: ${event.actor} → ${event.action} on ${event.resource}`
+  );
 }
 
 /**
  * Log a security event (authentication, authorization failures, suspicious activity).
  */
 export function securityLog(event: {
-  type: "auth_failure" | "auth_success" | "permission_denied" | "rate_limited" | "suspicious";
+  type:
+    | "auth_failure"
+    | "auth_success"
+    | "permission_denied"
+    | "rate_limited"
+    | "suspicious";
   actor?: string;
   ip?: string;
   resource?: string;
   details?: string;
 }) {
-  logger.warn({ security: true, ...event }, `SECURITY: ${event.type} — ${event.details ?? ""}`);
+  logger.warn(
+    { security: true, ...event },
+    `SECURITY: ${event.type} — ${event.details ?? ""}`
+  );
 }
 
 export default logger;

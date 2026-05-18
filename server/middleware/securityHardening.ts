@@ -2,7 +2,7 @@
  * Security Hardening Middleware — 54Link POS Shell
  * Sprint 91: Upgraded — removed @ts-nocheck, added brute-force protection,
  * request fingerprinting, anomaly detection, and DDoS mitigation.
- * 
+ *
  * Implements:
  * 1. Security headers (CSP, HSTS, X-Frame-Options, etc.)
  * 2. CSRF protection
@@ -15,49 +15,62 @@
  * 9. Request fingerprinting & anomaly detection (Sprint 91)
  * 10. DDoS connection throttling (Sprint 91)
  */
-import type { Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
+import type { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 
 // ============================================================
 // 1. SECURITY HEADERS
 // ============================================================
-export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Strict Transport Security
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  
+  res.setHeader(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains; preload"
+  );
+
   // Content Security Policy
-  res.setHeader('Content-Security-Policy', [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://api.stripe.com wss:",
-    "frame-src 'self' https://js.stripe.com",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self'",
-  ].join('; '));
-  
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https: blob:",
+      "connect-src 'self' https://api.stripe.com wss:",
+      "frame-src 'self' https://js.stripe.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+    ].join("; ")
+  );
+
   // Prevent clickjacking
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+
   // Prevent MIME type sniffing
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
   // XSS Protection (legacy browsers)
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+
   // Referrer Policy
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
   // Permissions Policy
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(self)');
-  
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self), payment=(self)"
+  );
+
   // Remove server identification
-  res.removeHeader('X-Powered-By');
-  
+  res.removeHeader("X-Powered-By");
+
   next();
 }
 
@@ -67,42 +80,46 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 const csrfTokens = new Map<string, { token: string; expires: number }>();
 
 export function generateCsrfToken(sessionId: string): string {
-  const token = crypto.randomBytes(32).toString('hex');
-  csrfTokens.set(sessionId, { 
-    token, 
-    expires: Date.now() + 3600000 // 1 hour
+  const token = crypto.randomBytes(32).toString("hex");
+  csrfTokens.set(sessionId, {
+    token,
+    expires: Date.now() + 3600000, // 1 hour
   });
   return token;
 }
 
-export function csrfProtection(req: Request, res: Response, next: NextFunction) {
+export function csrfProtection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Skip for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+
   // Skip for API endpoints that use Bearer token auth
-  if (req.headers.authorization?.startsWith('Bearer ')) return next();
-  
+  if (req.headers.authorization?.startsWith("Bearer ")) return next();
+
   // Skip for webhook endpoints
-  if (req.path.startsWith('/api/stripe/webhook')) return next();
-  if (req.path.startsWith('/api/webhooks/')) return next();
-  
+  if (req.path.startsWith("/api/stripe/webhook")) return next();
+  if (req.path.startsWith("/api/webhooks/")) return next();
+
   // Skip for tRPC (uses session cookies with SameSite)
-  if (req.path.startsWith('/api/trpc')) return next();
-  
-  const csrfToken = req.headers['x-csrf-token'] as string;
+  if (req.path.startsWith("/api/trpc")) return next();
+
+  const csrfToken = req.headers["x-csrf-token"] as string;
   const sessionId = req.cookies?.session_id;
-  
+
   if (!sessionId || !csrfToken) {
     // Don't block — just log for monitoring
     console.warn(`[CSRF] Missing token/session on ${req.method} ${req.path}`);
     return next();
   }
-  
+
   const stored = csrfTokens.get(sessionId);
   if (!stored || stored.token !== csrfToken || stored.expires < Date.now()) {
     console.warn(`[CSRF] Invalid token on ${req.method} ${req.path}`);
   }
-  
+
   // Clean expired tokens periodically
   if (Math.random() < 0.01) {
     const now = Date.now();
@@ -110,7 +127,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
       if (val.expires < now) csrfTokens.delete(key);
     }
   }
-  
+
   next();
 }
 
@@ -130,17 +147,17 @@ const XSS_PATTERNS = [
 ];
 
 export function sanitizeInput(value: string): string {
-  if (typeof value !== 'string') return value;
+  if (typeof value !== "string") return value;
   let sanitized = value;
-  
+
   // HTML entity encode dangerous characters
   sanitized = sanitized
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-  
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+
   return sanitized;
 }
 
@@ -148,18 +165,18 @@ export function xssProtection(req: Request, res: Response, next: NextFunction) {
   // Check query parameters
   if (req.query) {
     for (const [key, value] of Object.entries(req.query)) {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         for (const pattern of XSS_PATTERNS) {
           if (pattern.test(value)) {
             console.warn(`[XSS] Blocked suspicious query param: ${key}`);
-            return res.status(400).json({ error: 'Invalid input detected' });
+            return res.status(400).json({ error: "Invalid input detected" });
           }
           pattern.lastIndex = 0; // Reset regex state
         }
       }
     }
   }
-  
+
   next();
 }
 
@@ -174,7 +191,7 @@ const SQL_INJECTION_PATTERNS = [
 ];
 
 export function detectSqlInjection(value: string): boolean {
-  if (typeof value !== 'string') return false;
+  if (typeof value !== "string") return false;
   // Only flag if multiple patterns match (reduce false positives)
   let matchCount = 0;
   for (const pattern of SQL_INJECTION_PATTERNS) {
@@ -184,22 +201,28 @@ export function detectSqlInjection(value: string): boolean {
   return false;
 }
 
-export function sqlInjectionProtection(req: Request, res: Response, next: NextFunction) {
+export function sqlInjectionProtection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Only check non-tRPC endpoints (tRPC uses parameterized queries via Drizzle)
-  if (req.path.startsWith('/api/trpc')) return next();
-  
+  if (req.path.startsWith("/api/trpc")) return next();
+
   const checkValues = [
     ...Object.values(req.query || {}),
     ...Object.values(req.params || {}),
-  ].filter(v => typeof v === 'string') as string[];
-  
+  ].filter(v => typeof v === "string") as string[];
+
   for (const value of checkValues) {
     if (detectSqlInjection(value)) {
-      console.warn(`[SQLi] Blocked suspicious input on ${req.path}: ${value.slice(0, 50)}`);
-      return res.status(400).json({ error: 'Invalid input detected' });
+      console.warn(
+        `[SQLi] Blocked suspicious input on ${req.path}: ${value.slice(0, 50)}`
+      );
+      return res.status(400).json({ error: "Invalid input detected" });
     }
   }
-  
+
   next();
 }
 
@@ -221,47 +244,60 @@ export interface RateLimitConfig {
 
 export function createRateLimiter(config: RateLimitConfig) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = config.keyGenerator 
-      ? config.keyGenerator(req) 
+    const key = config.keyGenerator
+      ? config.keyGenerator(req)
       : `${req.ip}:${req.path}`;
-    
+
     const now = Date.now();
     const entry = rateLimitStore.get(key);
-    
+
     if (!entry || entry.resetAt < now) {
       rateLimitStore.set(key, { count: 1, resetAt: now + config.windowMs });
       return next();
     }
-    
+
     entry.count++;
-    
+
     if (entry.count > config.maxRequests) {
-      res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000).toString());
-      return res.status(429).json({ 
-        error: 'Too many requests', 
-        retryAfter: Math.ceil((entry.resetAt - now) / 1000) 
+      res.setHeader(
+        "Retry-After",
+        Math.ceil((entry.resetAt - now) / 1000).toString()
+      );
+      return res.status(429).json({
+        error: "Too many requests",
+        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
       });
     }
-    
+
     next();
   };
 }
 
 // Pre-configured rate limiters
-export const authRateLimiter = createRateLimiter({ windowMs: 900000, maxRequests: 10 }); // 10 per 15min
-export const apiRateLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 100 }); // 100 per min
-export const webhookRateLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 500 }); // 500 per min
+export const authRateLimiter = createRateLimiter({
+  windowMs: 900000,
+  maxRequests: 10,
+}); // 10 per 15min
+export const apiRateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 100,
+}); // 100 per min
+export const webhookRateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 500,
+}); // 500 per min
 
 // ============================================================
 // 6. REQUEST SIZE LIMITS
 // ============================================================
-export function requestSizeLimit(maxBytes: number = 10 * 1024 * 1024) { // 10MB default
+export function requestSizeLimit(maxBytes: number = 10 * 1024 * 1024) {
+  // 10MB default
   return (req: Request, res: Response, next: NextFunction) => {
-    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    const contentLength = parseInt(req.headers["content-length"] || "0", 10);
     if (contentLength > maxBytes) {
-      return res.status(413).json({ 
-        error: 'Request entity too large', 
-        maxSize: `${maxBytes / (1024 * 1024)}MB` 
+      return res.status(413).json({
+        error: "Request entity too large",
+        maxSize: `${maxBytes / (1024 * 1024)}MB`,
       });
     }
     next();
@@ -274,20 +310,26 @@ export function requestSizeLimit(maxBytes: number = 10 * 1024 * 1024) { // 10MB 
 export function corsHardening(allowedOrigins: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
-    
+
     if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader("Access-Control-Allow-Origin", origin);
     }
-    
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    
-    if (req.method === 'OPTIONS') {
+
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-CSRF-Token"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Max-Age", "86400");
+
+    if (req.method === "OPTIONS") {
       return res.status(204).end();
     }
-    
+
     next();
   };
 }
@@ -310,12 +352,20 @@ const BRUTE_FORCE_WINDOW = 900_000; // 15 minutes
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION = 1800_000; // 30 minutes
 
-export function bruteForceProtection(req: Request, res: Response, next: NextFunction) {
-  if (!req.path.includes('/login') && !req.path.includes('/auth') && !req.path.includes('/verify')) {
+export function bruteForceProtection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (
+    !req.path.includes("/login") &&
+    !req.path.includes("/auth") &&
+    !req.path.includes("/verify")
+  ) {
     return next();
   }
 
-  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+  const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
   const now = Date.now();
   let entry = bruteForceStore.get(ip);
 
@@ -326,9 +376,9 @@ export function bruteForceProtection(req: Request, res: Response, next: NextFunc
 
   if (entry.locked && entry.lockUntil && now < entry.lockUntil) {
     return res.status(423).json({
-      error: 'Account Locked',
+      error: "Account Locked",
       retryAfter: Math.ceil((entry.lockUntil - now) / 1000),
-      message: 'Too many failed attempts. Account temporarily locked.',
+      message: "Too many failed attempts. Account temporarily locked.",
     });
   }
 
@@ -353,7 +403,9 @@ export function recordFailedAttempt(ip: string) {
   if (entry.attempts >= MAX_FAILED_ATTEMPTS) {
     entry.locked = true;
     entry.lockUntil = now + LOCK_DURATION;
-    console.warn(`[Security] Brute force lock triggered for ${ip} after ${entry.attempts} failed attempts`);
+    console.warn(
+      `[Security] Brute force lock triggered for ${ip} after ${entry.attempts} failed attempts`
+    );
   }
 }
 
@@ -370,10 +422,10 @@ export interface RequestFingerprint {
 
 export function fingerprintRequest(req: Request): RequestFingerprint {
   return {
-    ip: req.ip ?? req.socket.remoteAddress ?? 'unknown',
-    userAgent: req.headers['user-agent'] ?? 'unknown',
-    acceptLanguage: req.headers['accept-language'] ?? 'unknown',
-    acceptEncoding: req.headers['accept-encoding'] ?? 'unknown',
+    ip: req.ip ?? req.socket.remoteAddress ?? "unknown",
+    userAgent: req.headers["user-agent"] ?? "unknown",
+    acceptLanguage: req.headers["accept-language"] ?? "unknown",
+    acceptEncoding: req.headers["accept-encoding"] ?? "unknown",
     timestamp: Date.now(),
   };
 }
@@ -381,12 +433,19 @@ export function fingerprintRequest(req: Request): RequestFingerprint {
 // ============================================================
 // 10. DDoS CONNECTION THROTTLING (Sprint 91)
 // ============================================================
-const connectionStore = new Map<string, { count: number; windowStart: number }>();
+const connectionStore = new Map<
+  string,
+  { count: number; windowStart: number }
+>();
 const DDOS_WINDOW_MS = 10_000; // 10 second window
 const DDOS_MAX_CONNECTIONS = 50; // max 50 new connections per 10s per IP
 
-export function ddosThrottling(req: Request, res: Response, next: NextFunction) {
-  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+export function ddosThrottling(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
   const now = Date.now();
   let entry = connectionStore.get(ip);
 
@@ -397,8 +456,12 @@ export function ddosThrottling(req: Request, res: Response, next: NextFunction) 
 
   entry.count++;
   if (entry.count > DDOS_MAX_CONNECTIONS) {
-    console.warn(`[DDoS] Connection throttle triggered for ${ip} (${entry.count} connections in ${DDOS_WINDOW_MS}ms)`);
-    return res.status(503).json({ error: 'Service temporarily unavailable', retryAfter: 10 });
+    console.warn(
+      `[DDoS] Connection throttle triggered for ${ip} (${entry.count} connections in ${DDOS_WINDOW_MS}ms)`
+    );
+    return res
+      .status(503)
+      .json({ error: "Service temporarily unavailable", retryAfter: 10 });
   }
 
   next();
@@ -408,10 +471,12 @@ export function ddosThrottling(req: Request, res: Response, next: NextFunction) 
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of connectionStore) {
-    if (now - entry.windowStart > DDOS_WINDOW_MS * 3) connectionStore.delete(key);
+    if (now - entry.windowStart > DDOS_WINDOW_MS * 3)
+      connectionStore.delete(key);
   }
   for (const [key, entry] of bruteForceStore) {
-    if (now - entry.firstAttempt > BRUTE_FORCE_WINDOW * 2) bruteForceStore.delete(key);
+    if (now - entry.firstAttempt > BRUTE_FORCE_WINDOW * 2)
+      bruteForceStore.delete(key);
   }
 }, 30_000);
 
@@ -420,7 +485,9 @@ setInterval(() => {
 // ============================================================
 export function applySecurityMiddleware(app: any) {
   if (process.env.NODE_ENV === "development") {
-    console.log("[Security] All security middleware skipped in development (CSP blocks Vite ws:// HMR, DDoS throttle blocks 400+ module requests)");
+    console.log(
+      "[Security] All security middleware skipped in development (CSP blocks Vite ws:// HMR, DDoS throttle blocks 400+ module requests)"
+    );
     return;
   }
   app.use(ddosThrottling);
@@ -430,17 +497,19 @@ export function applySecurityMiddleware(app: any) {
   app.use(csrfProtection);
   app.use(bruteForceProtection);
   app.use(requestSizeLimit());
-  
+
   // Rate limit auth endpoints
-  app.use('/api/oauth', authRateLimiter);
-  app.use('/api/auth', authRateLimiter);
-  
+  app.use("/api/oauth", authRateLimiter);
+  app.use("/api/auth", authRateLimiter);
+
   // Rate limit API endpoints
-  app.use('/api/trpc', apiRateLimiter);
-  
+  app.use("/api/trpc", apiRateLimiter);
+
   // Rate limit webhook endpoints
-  app.use('/api/stripe/webhook', webhookRateLimiter);
-  app.use('/api/webhooks', webhookRateLimiter);
-  
-  console.log('[Security] All security middleware applied (Sprint 91: +brute-force, +fingerprinting, +DDoS throttling)');
+  app.use("/api/stripe/webhook", webhookRateLimiter);
+  app.use("/api/webhooks", webhookRateLimiter);
+
+  console.log(
+    "[Security] All security middleware applied (Sprint 91: +brute-force, +fingerprinting, +DDoS throttling)"
+  );
 }

@@ -2,7 +2,7 @@
 /**
  * Security Audit Fixes — 54Link Agency Banking Platform
  * Sprint 62: Comprehensive security hardening based on deep audit
- * 
+ *
  * Fixes:
  * 1. Math.random() → crypto.randomUUID/randomBytes for security-sensitive contexts
  * 2. Open redirect protection
@@ -44,24 +44,29 @@ export function addAllowedRedirectHost(host: string): void {
 export function isRedirectSafe(url: string, req: Request): boolean {
   // Allow relative URLs
   if (url.startsWith("/") && !url.startsWith("//")) return true;
-  
+
   try {
     const parsed = new URL(url);
     const requestHost = req.headers.host?.split(":")[0]?.toLowerCase() ?? "";
-    
+
     // Allow same-origin
     if (parsed.hostname.toLowerCase() === requestHost) return true;
-    
+
     // Allow explicitly whitelisted hosts
     if (ALLOWED_REDIRECT_HOSTS.has(parsed.hostname.toLowerCase())) return true;
-    
+
     return false;
   } catch {
     return false;
   }
 }
 
-export function safeRedirect(res: Response, url: string, req: Request, fallback = "/"): void {
+export function safeRedirect(
+  res: Response,
+  url: string,
+  req: Request,
+  fallback = "/"
+): void {
   if (isRedirectSafe(url, req)) {
     res.redirect(url);
   } else {
@@ -81,25 +86,31 @@ const CSRF_COOKIE = "__csrf";
 export function generateCsrfToken(sessionId: string): string {
   const timestamp = Date.now().toString(36);
   const payload = `${sessionId}:${timestamp}`;
-  const signature = createHmac("sha256", CSRF_SECRET).update(payload).digest("hex").slice(0, 16);
+  const signature = createHmac("sha256", CSRF_SECRET)
+    .update(payload)
+    .digest("hex")
+    .slice(0, 16);
   return `${payload}:${signature}`;
 }
 
 export function validateCsrfToken(token: string, sessionId: string): boolean {
   if (!token) return false;
-  
+
   const parts = token.split(":");
   if (parts.length !== 3) return false;
-  
+
   const [tokenSessionId, timestamp, signature] = parts;
-  
+
   // Verify session match
   if (tokenSessionId !== sessionId) return false;
-  
+
   // Verify signature
   const payload = `${tokenSessionId}:${timestamp}`;
-  const expectedSig = createHmac("sha256", CSRF_SECRET).update(payload).digest("hex").slice(0, 16);
-  
+  const expectedSig = createHmac("sha256", CSRF_SECRET)
+    .update(payload)
+    .digest("hex")
+    .slice(0, 16);
+
   // Constant-time comparison
   if (signature.length !== expectedSig.length) return false;
   let mismatch = 0;
@@ -107,25 +118,33 @@ export function validateCsrfToken(token: string, sessionId: string): boolean {
     mismatch |= signature.charCodeAt(i) ^ expectedSig.charCodeAt(i);
   }
   if (mismatch !== 0) return false;
-  
+
   // Verify not expired (1 hour)
   const tokenTime = parseInt(timestamp, 36);
   if (Date.now() - tokenTime > 3600000) return false;
-  
+
   return true;
 }
 
-export function csrfProtectionMiddleware(req: Request, res: Response, next: NextFunction) {
+export function csrfProtectionMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Skip for safe methods
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
-  
+
   // Skip for API routes that use Bearer tokens (tRPC, webhooks)
-  if (req.path.startsWith("/api/trpc") || req.path.startsWith("/api/stripe/webhook")) return next();
-  
+  if (
+    req.path.startsWith("/api/trpc") ||
+    req.path.startsWith("/api/stripe/webhook")
+  )
+    return next();
+
   // For state-changing requests, verify CSRF token
   const token = req.headers[CSRF_HEADER.toLowerCase()] as string;
   const sessionId = (req as any).sessionId ?? "anonymous";
-  
+
   if (!validateCsrfToken(token, sessionId)) {
     // Log but don't block in non-production to avoid breaking dev workflow
     if (process.env.NODE_ENV === "production") {
@@ -133,7 +152,7 @@ export function csrfProtectionMiddleware(req: Request, res: Response, next: Next
       // Don't block — tRPC handles its own auth
     }
   }
-  
+
   next();
 }
 
@@ -154,7 +173,10 @@ export function sanitizeString(input: string): string {
 }
 
 /** Enforce maximum string length */
-export function enforceMaxLength(input: string, maxLength: number = 1000): string {
+export function enforceMaxLength(
+  input: string,
+  maxLength: number = 1000
+): string {
   return input.slice(0, maxLength);
 }
 
@@ -181,12 +203,28 @@ export function deepSanitize(obj: unknown, maxStringLength = 10000): unknown {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SENSITIVE_FIELDS = new Set([
-  "password", "secret", "token", "apiKey", "api_key", "authorization",
-  "creditCard", "credit_card", "cardNumber", "card_number", "cvv", "cvc",
-  "ssn", "bvn", "nin", "pin", "otp",
+  "password",
+  "secret",
+  "token",
+  "apiKey",
+  "api_key",
+  "authorization",
+  "creditCard",
+  "credit_card",
+  "cardNumber",
+  "card_number",
+  "cvv",
+  "cvc",
+  "ssn",
+  "bvn",
+  "nin",
+  "pin",
+  "otp",
 ]);
 
-export function maskSensitiveData(obj: Record<string, unknown>): Record<string, unknown> {
+export function maskSensitiveData(
+  obj: Record<string, unknown>
+): Record<string, unknown> {
   const masked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (SENSITIVE_FIELDS.has(key.toLowerCase())) {
@@ -204,11 +242,15 @@ export function maskSensitiveData(obj: Record<string, unknown>): Record<string, 
 // 6. Cookie Hardening Middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function cookieHardeningMiddleware(_req: Request, res: Response, next: NextFunction) {
+export function cookieHardeningMiddleware(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Override default cookie settings for all Set-Cookie headers
   const originalSetHeader = res.setHeader.bind(res);
-  
-  res.setHeader = function(name: string, value: any) {
+
+  res.setHeader = function (name: string, value: any) {
     if (name.toLowerCase() === "set-cookie") {
       const cookies = Array.isArray(value) ? value : [value];
       const hardened = cookies.map((cookie: string) => {
@@ -222,7 +264,7 @@ export function cookieHardeningMiddleware(_req: Request, res: Response, next: Ne
     }
     return originalSetHeader(name, value);
   } as any;
-  
+
   next();
 }
 
@@ -230,11 +272,15 @@ export function cookieHardeningMiddleware(_req: Request, res: Response, next: Ne
 // 7. Response Sanitization
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function responseSecurityMiddleware(_req: Request, res: Response, next: NextFunction) {
+export function responseSecurityMiddleware(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Remove server identification headers
   res.removeHeader("X-Powered-By");
   res.removeHeader("Server");
-  
+
   // Add security headers that helmet might miss
   res.setHeader("X-DNS-Prefetch-Control", "off");
   res.setHeader("X-Download-Options", "noopen");
@@ -242,7 +288,7 @@ export function responseSecurityMiddleware(_req: Request, res: Response, next: N
   res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-  
+
   next();
 }
 
@@ -251,8 +297,8 @@ export function responseSecurityMiddleware(_req: Request, res: Response, next: N
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface SecurityScoreResult {
-  score: number;           // 0-100
-  grade: string;           // A+, A, B, C, D, F
+  score: number; // 0-100
+  grade: string; // A+, A, B, C, D, F
   findings: SecurityFinding[];
   summary: string;
 }
@@ -267,45 +313,164 @@ export interface SecurityFinding {
 export function calculateSecurityScore(): SecurityScoreResult {
   const findings: SecurityFinding[] = [
     // Fixed items
-    { severity: "high", category: "Authentication", description: "All sensitive routes use protectedProcedure with JWT validation", status: "fixed" },
-    { severity: "high", category: "Input Validation", description: "Zod schemas on all tRPC inputs with type enforcement", status: "fixed" },
-    { severity: "high", category: "SQL Injection", description: "Drizzle ORM parameterized queries prevent SQL injection", status: "fixed" },
-    { severity: "high", category: "XSS Prevention", description: "React auto-escaping + CSP headers + input sanitization", status: "fixed" },
-    { severity: "high", category: "CSRF Protection", description: "SameSite cookies + CSRF token middleware", status: "fixed" },
-    { severity: "medium", category: "Security Headers", description: "Helmet + custom headers (HSTS, CSP, X-Frame-Options, CORP, COEP, COOP)", status: "fixed" },
-    { severity: "medium", category: "Rate Limiting", description: "Sliding window rate limiter on all API endpoints", status: "fixed" },
-    { severity: "medium", category: "Cookie Security", description: "HttpOnly, Secure, SameSite=Lax on all cookies", status: "fixed" },
-    { severity: "medium", category: "Open Redirect", description: "Redirect URL validation against whitelist", status: "fixed" },
-    { severity: "medium", category: "Error Handling", description: "Generic error messages in production, no stack traces leaked", status: "fixed" },
-    { severity: "low", category: "Correlation ID", description: "Request tracing with X-Correlation-ID propagation", status: "fixed" },
-    { severity: "low", category: "Structured Logging", description: "JSON structured logging with sensitive data masking", status: "fixed" },
-    { severity: "low", category: "API Versioning", description: "Version headers with deprecation notices", status: "fixed" },
-    { severity: "low", category: "Circuit Breaker", description: "External service circuit breakers prevent cascade failures", status: "fixed" },
-    
+    {
+      severity: "high",
+      category: "Authentication",
+      description:
+        "All sensitive routes use protectedProcedure with JWT validation",
+      status: "fixed",
+    },
+    {
+      severity: "high",
+      category: "Input Validation",
+      description: "Zod schemas on all tRPC inputs with type enforcement",
+      status: "fixed",
+    },
+    {
+      severity: "high",
+      category: "SQL Injection",
+      description: "Drizzle ORM parameterized queries prevent SQL injection",
+      status: "fixed",
+    },
+    {
+      severity: "high",
+      category: "XSS Prevention",
+      description: "React auto-escaping + CSP headers + input sanitization",
+      status: "fixed",
+    },
+    {
+      severity: "high",
+      category: "CSRF Protection",
+      description: "SameSite cookies + CSRF token middleware",
+      status: "fixed",
+    },
+    {
+      severity: "medium",
+      category: "Security Headers",
+      description:
+        "Helmet + custom headers (HSTS, CSP, X-Frame-Options, CORP, COEP, COOP)",
+      status: "fixed",
+    },
+    {
+      severity: "medium",
+      category: "Rate Limiting",
+      description: "Sliding window rate limiter on all API endpoints",
+      status: "fixed",
+    },
+    {
+      severity: "medium",
+      category: "Cookie Security",
+      description: "HttpOnly, Secure, SameSite=Lax on all cookies",
+      status: "fixed",
+    },
+    {
+      severity: "medium",
+      category: "Open Redirect",
+      description: "Redirect URL validation against whitelist",
+      status: "fixed",
+    },
+    {
+      severity: "medium",
+      category: "Error Handling",
+      description:
+        "Generic error messages in production, no stack traces leaked",
+      status: "fixed",
+    },
+    {
+      severity: "low",
+      category: "Correlation ID",
+      description: "Request tracing with X-Correlation-ID propagation",
+      status: "fixed",
+    },
+    {
+      severity: "low",
+      category: "Structured Logging",
+      description: "JSON structured logging with sensitive data masking",
+      status: "fixed",
+    },
+    {
+      severity: "low",
+      category: "API Versioning",
+      description: "Version headers with deprecation notices",
+      status: "fixed",
+    },
+    {
+      severity: "low",
+      category: "Circuit Breaker",
+      description: "External service circuit breakers prevent cascade failures",
+      status: "fixed",
+    },
+
     // Mitigated items
-    { severity: "medium", category: "Math.random()", description: "Non-security-critical uses of Math.random() in mock data generators (acceptable)", status: "mitigated" },
-    { severity: "low", category: "localStorage", description: "Only UI preferences stored in localStorage (no tokens/secrets)", status: "mitigated" },
-    { severity: "low", category: "Public Procedures", description: "Some routes use publicProcedure for read-only dashboard data (by design)", status: "mitigated" },
-    
+    {
+      severity: "medium",
+      category: "Math.random()",
+      description:
+        "Non-security-critical uses of Math.random() in mock data generators (acceptable)",
+      status: "mitigated",
+    },
+    {
+      severity: "low",
+      category: "localStorage",
+      description:
+        "Only UI preferences stored in localStorage (no tokens/secrets)",
+      status: "mitigated",
+    },
+    {
+      severity: "low",
+      category: "Public Procedures",
+      description:
+        "Some routes use publicProcedure for read-only dashboard data (by design)",
+      status: "mitigated",
+    },
+
     // Accepted risks
-    { severity: "info", category: "Temporal", description: "Temporal worker connection refused (external service, graceful skip)", status: "accepted" },
-    { severity: "info", category: "SMS API", description: "Termii SMS 401 (requires valid API key in production)", status: "accepted" },
+    {
+      severity: "info",
+      category: "Temporal",
+      description:
+        "Temporal worker connection refused (external service, graceful skip)",
+      status: "accepted",
+    },
+    {
+      severity: "info",
+      category: "SMS API",
+      description: "Termii SMS 401 (requires valid API key in production)",
+      status: "accepted",
+    },
   ];
-  
+
   // Calculate score
   const weights = { critical: 20, high: 10, medium: 5, low: 2, info: 0 };
-  const maxDeductions = findings.reduce((sum, f) => sum + weights[f.severity], 0);
+  const maxDeductions = findings.reduce(
+    (sum, f) => sum + weights[f.severity],
+    0
+  );
   const actualDeductions = findings
     .filter(f => f.status === "open")
     .reduce((sum, f) => sum + weights[f.severity], 0);
-  
-  const score = Math.max(0, Math.min(100, Math.round(100 - (actualDeductions / maxDeductions) * 100)));
-  
-  const grade = score >= 95 ? "A+" : score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
-  
+
+  const score = Math.max(
+    0,
+    Math.min(100, Math.round(100 - (actualDeductions / maxDeductions) * 100))
+  );
+
+  const grade =
+    score >= 95
+      ? "A+"
+      : score >= 90
+        ? "A"
+        : score >= 80
+          ? "B"
+          : score >= 70
+            ? "C"
+            : score >= 60
+              ? "D"
+              : "F";
+
   const fixedCount = findings.filter(f => f.status === "fixed").length;
   const openCount = findings.filter(f => f.status === "open").length;
-  
+
   return {
     score,
     grade,

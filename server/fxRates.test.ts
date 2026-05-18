@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 
 describe("FX Rates Service", () => {
   describe("Currency Metadata", () => {
-    const CURRENCY_META: Record<string, { name: string; symbol: string; flag: string }> = {
+    const CURRENCY_META: Record<
+      string,
+      { name: string; symbol: string; flag: string }
+    > = {
       NGN: { name: "Nigerian Naira", symbol: "₦", flag: "🇳🇬" },
       USD: { name: "US Dollar", symbol: "$", flag: "🇺🇸" },
       GBP: { name: "British Pound", symbol: "£", flag: "🇬🇧" },
@@ -34,7 +37,20 @@ describe("FX Rates Service", () => {
     });
 
     it("should include all major African currencies", () => {
-      const african = ["NGN", "GHS", "KES", "ZAR", "XOF", "XAF", "TZS", "UGX", "RWF", "ETB", "EGP", "MAD"];
+      const african = [
+        "NGN",
+        "GHS",
+        "KES",
+        "ZAR",
+        "XOF",
+        "XAF",
+        "TZS",
+        "UGX",
+        "RWF",
+        "ETB",
+        "EGP",
+        "MAD",
+      ];
       for (const code of african) {
         expect(CURRENCY_META[code]).toBeDefined();
       }
@@ -59,11 +75,30 @@ describe("FX Rates Service", () => {
 
   describe("Static Fallback Rates", () => {
     const staticRates: Record<string, number> = {
-      USD: 1, NGN: 1600, EUR: 0.92, GBP: 0.79, GHS: 15.2,
-      KES: 129.5, ZAR: 18.1, XOF: 603, XAF: 603, TZS: 2650,
-      UGX: 3750, RWF: 1350, ETB: 57.2, EGP: 48.5, MAD: 10.1,
-      CNY: 7.24, JPY: 154.5, INR: 83.5, AED: 3.67, SAR: 3.75,
-      CAD: 1.37, AUD: 1.54, CHF: 0.88, BRL: 5.05,
+      USD: 1,
+      NGN: 1600,
+      EUR: 0.92,
+      GBP: 0.79,
+      GHS: 15.2,
+      KES: 129.5,
+      ZAR: 18.1,
+      XOF: 603,
+      XAF: 603,
+      TZS: 2650,
+      UGX: 3750,
+      RWF: 1350,
+      ETB: 57.2,
+      EGP: 48.5,
+      MAD: 10.1,
+      CNY: 7.24,
+      JPY: 154.5,
+      INR: 83.5,
+      AED: 3.67,
+      SAR: 3.75,
+      CAD: 1.37,
+      AUD: 1.54,
+      CHF: 0.88,
+      BRL: 5.05,
     };
 
     it("should have USD as base with rate 1", () => {
@@ -201,7 +236,17 @@ describe("FX Rates Service", () => {
     it("should include all required fields in rate response", () => {
       const response = {
         base: "NGN",
-        rates: [{ code: "USD", name: "US Dollar", symbol: "$", flag: "🇺🇸", rate: 0.000625, change24h: 0.5, lastUpdated: new Date().toISOString() }],
+        rates: [
+          {
+            code: "USD",
+            name: "US Dollar",
+            symbol: "$",
+            flag: "🇺🇸",
+            rate: 0.000625,
+            change24h: 0.5,
+            lastUpdated: new Date().toISOString(),
+          },
+        ],
         source: "ECB",
         cachedAt: new Date().toISOString(),
         cacheTtlMs: 900000,
@@ -224,7 +269,10 @@ describe("FX Rates Service", () => {
         source: "ECB",
         timestamp: new Date().toISOString(),
       };
-      expect(response.converted).toBeCloseTo(response.amount * response.rate, 1);
+      expect(response.converted).toBeCloseTo(
+        response.amount * response.rate,
+        1
+      );
       expect(response.rate * response.inverseRate).toBeCloseTo(1, 5);
     });
   });

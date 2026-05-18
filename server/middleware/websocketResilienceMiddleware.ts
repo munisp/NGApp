@@ -2,7 +2,11 @@
 // Adaptive protocol selection, offline queue, reconnection with backoff
 // Designed for unreliable connectivity in rural African environments
 
-export type ConnectionProtocol = "websocket" | "sse" | "long-poll" | "offline-queue";
+export type ConnectionProtocol =
+  | "websocket"
+  | "sse"
+  | "long-poll"
+  | "offline-queue";
 
 export interface BandwidthTier {
   name: string;
@@ -69,11 +73,19 @@ export const BANDWIDTH_TIERS: BandwidthTier[] = [
 ];
 
 export function detectBandwidthTier(bandwidthKbps: number): BandwidthTier {
-  return BANDWIDTH_TIERS.find(t => bandwidthKbps >= t.minKbps && bandwidthKbps <= t.maxKbps) || BANDWIDTH_TIERS[4];
+  return (
+    BANDWIDTH_TIERS.find(
+      t => bandwidthKbps >= t.minKbps && bandwidthKbps <= t.maxKbps
+    ) || BANDWIDTH_TIERS[4]
+  );
 }
 
 // Exponential backoff with jitter for reconnection
-export function calculateBackoff(attempt: number, baseMs: number = 1000, maxMs: number = 60000): number {
+export function calculateBackoff(
+  attempt: number,
+  baseMs: number = 1000,
+  maxMs: number = 60000
+): number {
   const exponential = Math.min(baseMs * Math.pow(2, attempt), maxMs);
   const jitter = Math.random() * exponential * 0.3;
   return Math.floor(exponential + jitter);
@@ -157,7 +169,14 @@ export class OfflineTransactionQueue {
     return items;
   }
 
-  getStats(): { total: number; critical: number; high: number; normal: number; low: number; expired: number } {
+  getStats(): {
+    total: number;
+    critical: number;
+    high: number;
+    normal: number;
+    low: number;
+    expired: number;
+  } {
     const now = Date.now();
     return {
       total: this.queue.length,
@@ -171,7 +190,11 @@ export class OfflineTransactionQueue {
 }
 
 // Connection state machine for protocol fallback
-export type ConnectionState = "connected" | "degraded" | "reconnecting" | "offline";
+export type ConnectionState =
+  | "connected"
+  | "degraded"
+  | "reconnecting"
+  | "offline";
 
 export interface ConnectionContext {
   state: ConnectionState;
@@ -197,7 +220,9 @@ export function createConnectionContext(): ConnectionContext {
   };
 }
 
-export function handleConnectionFailure(ctx: ConnectionContext): ConnectionContext {
+export function handleConnectionFailure(
+  ctx: ConnectionContext
+): ConnectionContext {
   ctx.consecutiveFailures++;
   ctx.reconnectAttempts++;
 
@@ -217,7 +242,9 @@ export function handleConnectionFailure(ctx: ConnectionContext): ConnectionConte
   return ctx;
 }
 
-export function handleConnectionSuccess(ctx: ConnectionContext): ConnectionContext {
+export function handleConnectionSuccess(
+  ctx: ConnectionContext
+): ConnectionContext {
   ctx.state = "connected";
   ctx.consecutiveFailures = 0;
   ctx.reconnectAttempts = 0;
@@ -237,24 +264,39 @@ export function compressPayload(data: string, level: number): string {
   if (level >= 3) {
     try {
       const obj = JSON.parse(compressed);
-      compressed = JSON.stringify(obj, (_, v) => v === null ? undefined : v);
-    } catch { /* not JSON */ }
+      compressed = JSON.stringify(obj, (_, v) => (v === null ? undefined : v));
+    } catch {
+      /* not JSON */
+    }
   }
   return compressed;
 }
 
 // African carrier-specific optimizations
-export const AFRICAN_CARRIER_CONFIGS: Record<string, { avgBandwidthKbps: number; maxPayload: number; ussdFallback: boolean }> = {
-  "MTN_NG": { avgBandwidthKbps: 256, maxPayload: 65536, ussdFallback: true },
-  "Airtel_NG": { avgBandwidthKbps: 192, maxPayload: 32768, ussdFallback: true },
-  "Glo_NG": { avgBandwidthKbps: 128, maxPayload: 16384, ussdFallback: true },
+export const AFRICAN_CARRIER_CONFIGS: Record<
+  string,
+  { avgBandwidthKbps: number; maxPayload: number; ussdFallback: boolean }
+> = {
+  MTN_NG: { avgBandwidthKbps: 256, maxPayload: 65536, ussdFallback: true },
+  Airtel_NG: { avgBandwidthKbps: 192, maxPayload: 32768, ussdFallback: true },
+  Glo_NG: { avgBandwidthKbps: 128, maxPayload: 16384, ussdFallback: true },
   "9Mobile_NG": { avgBandwidthKbps: 96, maxPayload: 16384, ussdFallback: true },
-  "Safaricom_KE": { avgBandwidthKbps: 384, maxPayload: 131072, ussdFallback: true },
-  "MTN_GH": { avgBandwidthKbps: 192, maxPayload: 32768, ussdFallback: true },
-  "Vodafone_GH": { avgBandwidthKbps: 256, maxPayload: 65536, ussdFallback: true },
-  "Orange_SN": { avgBandwidthKbps: 128, maxPayload: 16384, ussdFallback: true },
-  "MTN_ZA": { avgBandwidthKbps: 512, maxPayload: 262144, ussdFallback: false },
-  "Vodacom_ZA": { avgBandwidthKbps: 512, maxPayload: 262144, ussdFallback: false },
+  Safaricom_KE: {
+    avgBandwidthKbps: 384,
+    maxPayload: 131072,
+    ussdFallback: true,
+  },
+  MTN_GH: { avgBandwidthKbps: 192, maxPayload: 32768, ussdFallback: true },
+  Vodafone_GH: { avgBandwidthKbps: 256, maxPayload: 65536, ussdFallback: true },
+  Orange_SN: { avgBandwidthKbps: 128, maxPayload: 16384, ussdFallback: true },
+  MTN_ZA: { avgBandwidthKbps: 512, maxPayload: 262144, ussdFallback: false },
+  Vodacom_ZA: {
+    avgBandwidthKbps: 512,
+    maxPayload: 262144,
+    ussdFallback: false,
+  },
 };
 
-console.log("[websocketResilienceMiddleware] Sprint 77 WebSocket resilience middleware loaded");
+console.log(
+  "[websocketResilienceMiddleware] Sprint 77 WebSocket resilience middleware loaded"
+);

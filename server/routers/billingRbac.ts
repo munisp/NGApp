@@ -1,4 +1,3 @@
-
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
@@ -9,7 +8,11 @@ async function db() {
   if (!d) throw new Error("Database not available");
   return d;
 }
-import { billingRoleAssignments, billingAuditLog, tenantBillingConfig } from "../../drizzle/schema";
+import {
+  billingRoleAssignments,
+  billingAuditLog,
+  tenantBillingConfig,
+} from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -32,21 +35,31 @@ export type BillingPermission = keyof typeof BILLING_PERMISSIONS;
 // Role → Permission mapping (hierarchical)
 export const ROLE_PERMISSIONS: Record<string, BillingPermission[]> = {
   platform_admin: [
-    "view_ledger", "record_split", "run_reconciliation",
-    "manage_billing_config", "view_dashboard", "export_data",
-    "resolve_discrepancy", "manage_tenant_billing",
+    "view_ledger",
+    "record_split",
+    "run_reconciliation",
+    "manage_billing_config",
+    "view_dashboard",
+    "export_data",
+    "resolve_discrepancy",
+    "manage_tenant_billing",
   ],
   billing_admin: [
-    "view_ledger", "record_split", "run_reconciliation",
-    "manage_billing_config", "view_dashboard", "export_data",
+    "view_ledger",
+    "record_split",
+    "run_reconciliation",
+    "manage_billing_config",
+    "view_dashboard",
+    "export_data",
     "resolve_discrepancy",
   ],
   billing_analyst: [
-    "view_ledger", "run_reconciliation", "view_dashboard", "export_data",
+    "view_ledger",
+    "run_reconciliation",
+    "view_dashboard",
+    "export_data",
   ],
-  billing_viewer: [
-    "view_ledger", "view_dashboard",
-  ],
+  billing_viewer: ["view_ledger", "view_dashboard"],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -121,21 +134,30 @@ export async function checkBillingPermission(
   const permifyUrl = process.env.PERMIFY_URL;
   if (permifyUrl) {
     try {
-      const response = await fetch(`${permifyUrl}/v1/tenants/${tenantId}/permissions/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.PERMIFY_API_KEY || ""}` },
-        body: JSON.stringify({
-          entity: { type: "billing_resource", id: `tenant_${tenantId}` },
-          permission,
-          subject: { type: "user", id: String(userId) },
-        }),
-      });
+      const response = await fetch(
+        `${permifyUrl}/v1/tenants/${tenantId}/permissions/check`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.PERMIFY_API_KEY || ""}`,
+          },
+          body: JSON.stringify({
+            entity: { type: "billing_resource", id: `tenant_${tenantId}` },
+            permission,
+            subject: { type: "user", id: String(userId) },
+          }),
+        }
+      );
       if (response.ok) {
         const result = await response.json();
         return result.can === "CHECK_RESULT_ALLOWED";
       }
     } catch (e) {
-      console.warn("[BillingRBAC] Permify check failed, using local only:", (e as Error).message);
+      console.warn(
+        "[BillingRBAC] Permify check failed, using local only:",
+        (e as Error).message
+      );
     }
   }
 
@@ -180,10 +202,16 @@ export async function getUserBillingPermissions(
 
   const allPerms = new Set<BillingPermission>();
   let highestRole = "billing_viewer";
-  const roleHierarchy = ["billing_viewer", "billing_analyst", "billing_admin", "platform_admin"];
+  const roleHierarchy = [
+    "billing_viewer",
+    "billing_analyst",
+    "billing_admin",
+    "platform_admin",
+  ];
 
   for (const assignment of assignments) {
-    if (assignment.expiresAt && new Date(assignment.expiresAt) < new Date()) continue;
+    if (assignment.expiresAt && new Date(assignment.expiresAt) < new Date())
+      continue;
     const roleIdx = roleHierarchy.indexOf(assignment.billingRole);
     if (roleIdx > roleHierarchy.indexOf(highestRole)) {
       highestRole = assignment.billingRole;
@@ -210,31 +238,51 @@ export const billingRbacRouter = router({
         return getUserBillingPermissions(ctx.user.id, input.tenantId);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // Assign a billing role to a user (requires manage_tenant_billing)
   assignRole: protectedProcedure
-    .input(z.object({
-      userId: z.number(),
-      tenantId: z.number(),
-      billingRole: z.enum(["platform_admin", "billing_admin", "billing_analyst", "billing_viewer"]),
-      customPermissions: z.array(z.string()).optional(),
-      expiresAt: z.string().datetime().optional(),
-    }))
+    .input(
+      z.object({
+        userId: z.number(),
+        tenantId: z.number(),
+        billingRole: z.enum([
+          "platform_admin",
+          "billing_admin",
+          "billing_analyst",
+          "billing_viewer",
+        ]),
+        customPermissions: z.array(z.string()).optional(),
+        expiresAt: z.string().datetime().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "manage_tenant_billing"
+        );
 
-        const [assignment] = await (await db()).insert(billingRoleAssignments).values({
-          userId: input.userId,
-          tenantId: input.tenantId,
-          billingRole: input.billingRole,
-          permissions: input.customPermissions || null,
-          grantedBy: ctx.user.id,
-          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-        }).returning();
+        const [assignment] = await (
+          await db()
+        )
+          .insert(billingRoleAssignments)
+          .values({
+            userId: input.userId,
+            tenantId: input.tenantId,
+            billingRole: input.billingRole,
+            permissions: input.customPermissions || null,
+            grantedBy: ctx.user.id,
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          })
+          .returning();
 
         // Audit log
         await (await db()).insert(billingAuditLog).values({
@@ -251,7 +299,11 @@ export const billingRbacRouter = router({
         return { success: true, assignmentId: assignment.id };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -260,7 +312,11 @@ export const billingRbacRouter = router({
     .input(z.object({ assignmentId: z.number(), tenantId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "manage_tenant_billing"
+        );
 
         const dbRev = await db();
         const [existing] = await dbRev
@@ -268,9 +324,14 @@ export const billingRbacRouter = router({
           .from(billingRoleAssignments)
           .where(eq(billingRoleAssignments.id, input.assignmentId));
 
-        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
+        if (!existing)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Assignment not found",
+          });
 
-        await (await db()).update(billingRoleAssignments)
+        await (await db())
+          .update(billingRoleAssignments)
           .set({ isActive: false })
           .where(eq(billingRoleAssignments.id, input.assignmentId));
 
@@ -282,14 +343,21 @@ export const billingRbacRouter = router({
           action: "permission_revoked",
           resourceType: "billing_role_assignment",
           resourceId: String(input.assignmentId),
-          beforeState: { role: existing.billingRole, targetUser: existing.userId },
+          beforeState: {
+            role: existing.billingRole,
+            targetUser: existing.userId,
+          },
           afterState: { isActive: false },
         });
 
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -298,7 +366,11 @@ export const billingRbacRouter = router({
     .input(z.object({ tenantId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+        await requireBillingPermission(
+          ctx.user.id,
+          input.tenantId,
+          "manage_tenant_billing"
+        );
 
         const dbList = await db();
         const assignments = await dbList
@@ -310,7 +382,11 @@ export const billingRbacRouter = router({
         return { assignments, total: assignments.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 

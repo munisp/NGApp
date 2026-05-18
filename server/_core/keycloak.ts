@@ -38,7 +38,9 @@ function getConfig(): KeycloakConfig {
   const url = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
   const realm = process.env.KEYCLOAK_REALM ?? "54link";
   const clientId = process.env.KEYCLOAK_CLIENT_ID ?? "pos-shell";
-  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET ?? "pos-shell-secret-change-in-production";
+  const clientSecret =
+    process.env.KEYCLOAK_CLIENT_SECRET ??
+    "pos-shell-secret-change-in-production";
 
   return { url, realm, clientId, clientSecret };
 }
@@ -178,7 +180,9 @@ export async function exchangeCodeForTokens(params: {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`[Keycloak] Token exchange failed (${res.status}): ${text}`);
+    throw new Error(
+      `[Keycloak] Token exchange failed (${res.status}): ${text}`
+    );
   }
 
   return res.json() as Promise<TokenResponse>;

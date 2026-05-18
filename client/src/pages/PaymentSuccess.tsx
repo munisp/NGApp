@@ -29,7 +29,8 @@ export default function PaymentSuccess() {
         <div>
           <h1 className="text-2xl font-bold">Payment Successful!</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Your payment has been processed successfully. Thank you for your purchase.
+            Your payment has been processed successfully. Thank you for your
+            purchase.
           </p>
         </div>
 
@@ -45,19 +46,24 @@ export default function PaymentSuccess() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Amount</span>
                 <span className="text-sm font-semibold">
-                  ${(session.amountTotal / 100).toFixed(2)} {session.currency?.toUpperCase()}
+                  ${(session.amountTotal / 100).toFixed(2)}{" "}
+                  {session.currency?.toUpperCase()}
                 </span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Session</span>
-              <span className="text-[10px] text-muted-foreground font-mono">{session.id?.slice(0, 24)}...</span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {session.id?.slice(0, 24)}...
+              </span>
             </div>
           </div>
         )}
 
         {isLoading && (
-          <p className="text-xs text-muted-foreground animate-pulse">Loading payment details...</p>
+          <p className="text-xs text-muted-foreground animate-pulse">
+            Loading payment details...
+          </p>
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">

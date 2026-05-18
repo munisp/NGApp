@@ -5,11 +5,17 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Settlement & Reporting E2E", () => {
-  test("should navigate to settlement dashboard and view batches", async ({ page }) => {
+  test("should navigate to settlement dashboard and view batches", async ({
+    page,
+  }) => {
     await page.goto("/");
-    await expect(page.locator("text=54Link POS")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("text=54Link POS")).toBeVisible({
+      timeout: 10_000,
+    });
     // Login via SSO
-    const ssoBtn = page.locator("button", { hasText: /supervisor|admin|sso/i }).first();
+    const ssoBtn = page
+      .locator("button", { hasText: /supervisor|admin|sso/i })
+      .first();
     if (await ssoBtn.isVisible()) {
       await ssoBtn.click();
       await page.waitForTimeout(2000);
@@ -22,7 +28,9 @@ test.describe("Settlement & Reporting E2E", () => {
     expect(pageContent).toBeTruthy();
   });
 
-  test("should navigate to reports and generate transaction report", async ({ page }) => {
+  test("should navigate to reports and generate transaction report", async ({
+    page,
+  }) => {
     await page.goto("/reports");
     await page.waitForTimeout(3000);
     const pageContent = await page.textContent("body");

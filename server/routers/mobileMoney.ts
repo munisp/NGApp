@@ -36,61 +36,112 @@ function calculateFee(amount: number): number {
 
 export const mobileMoneyRouter = router({
   sendMoney: protectedProcedure
-    .input(z.object({
-      senderPhone: z.string().min(11).max(14),
-      recipientPhone: z.string().min(11).max(14),
-      amount: z.number().positive().max(5_000_000),
-      currency: z.string().default("NGN"),
-      narration: z.string().max(256).optional(),
-    }))
+    .input(
+      z.object({
+        senderPhone: z.string().min(11).max(14),
+        recipientPhone: z.string().min(11).max(14),
+        amount: z.number().positive().max(5_000_000),
+        currency: z.string().default("NGN"),
+        narration: z.string().max(256).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (!session)
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Agent session required",
+          });
 
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-          .where(eq(agents.id, session.id)).limit(1);
+        const [agent] = await db
+          .select({ floatBalance: agents.floatBalance })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
         if (!agent || Number(agent.floatBalance) < input.amount)
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient float balance",
+          });
 
         const fee = calculateFee(input.amount);
         const commission = Math.round(fee * 0.3);
         const ref = `MOM-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-        const [tx] = await db.insert(transactions).values({
-          ref, agentId: session.id, type: "Transfer",
-          amount: String(input.amount), fee: String(fee), commission: String(commission),
-          customerPhone: input.recipientPhone, status: "success", channel: "App",
-          currency: input.currency,
-          metadata: { senderPhone: input.senderPhone, narration: input.narration, channel: "mobile_money" },
-        }).returning();
+        const [tx] = await db
+          .insert(transactions)
+          .values({
+            ref,
+            agentId: session.id,
+            type: "Transfer",
+            amount: String(input.amount),
+            fee: String(fee),
+            commission: String(commission),
+            customerPhone: input.recipientPhone,
+            status: "success",
+            channel: "App",
+            currency: input.currency,
+            metadata: {
+              senderPhone: input.senderPhone,
+              narration: input.narration,
+              channel: "mobile_money",
+            },
+          })
+          .returning();
 
-        await db.update(agents).set({
-          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount + fee)}`,
-          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
-        }).where(eq(agents.id, session.id));
+        await db
+          .update(agents)
+          .set({
+            floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount + fee)}`,
+            // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
+          })
+          .where(eq(agents.id, session.id));
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "MOBILE_MONEY_SENT", resource: "mobile_money", resourceId: ref, status: "success",
-          metadata: { amount: input.amount, fee, senderPhone: input.senderPhone, recipientPhone: input.recipientPhone },
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "MOBILE_MONEY_SENT",
+          resource: "mobile_money",
+          resourceId: ref,
+          status: "success",
+          metadata: {
+            amount: input.amount,
+            fee,
+            senderPhone: input.senderPhone,
+            recipientPhone: input.recipientPhone,
+          },
         });
 
-        return { ref, amount: input.amount, fee, commission, status: "success", transactionId: tx.id, timestamp: new Date().toISOString() };
+        return {
+          ref,
+          amount: input.amount,
+          fee,
+          commission,
+          status: "success",
+          transactionId: tx.id,
+          timestamp: new Date().toISOString(),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   withdrawCash: protectedProcedure
-    .input(z.object({
-      phone: z.string().min(11).max(14),
-      amount: z.number().positive().max(500_000),
-    }))
+    .input(
+      z.object({
+        phone: z.string().min(11).max(14),
+        amount: z.number().positive().max(500_000),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
@@ -99,45 +150,80 @@ export const mobileMoneyRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-          .where(eq(agents.id, session.id)).limit(1);
+        const [agent] = await db
+          .select({ floatBalance: agents.floatBalance })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
         if (!agent || Number(agent.floatBalance) < input.amount)
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float to dispense cash" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient float to dispense cash",
+          });
 
         const fee = calculateFee(input.amount);
         const commission = Math.round(fee * 0.4);
         const ref = `MCO-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-        const [tx] = await db.insert(transactions).values({
-          ref, agentId: session.id, type: "Cash Out",
-          amount: String(input.amount), fee: String(fee), commission: String(commission),
-          customerPhone: input.phone, status: "success", channel: "App",
-          metadata: { channel: "mobile_money_cashout" },
-        }).returning();
+        const [tx] = await db
+          .insert(transactions)
+          .values({
+            ref,
+            agentId: session.id,
+            type: "Cash Out",
+            amount: String(input.amount),
+            fee: String(fee),
+            commission: String(commission),
+            customerPhone: input.phone,
+            status: "success",
+            channel: "App",
+            metadata: { channel: "mobile_money_cashout" },
+          })
+          .returning();
 
-        await db.update(agents).set({
-          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
-        }).where(eq(agents.id, session.id));
+        await db
+          .update(agents)
+          .set({
+            floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
+            // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
+          })
+          .where(eq(agents.id, session.id));
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "MOBILE_MONEY_CASHOUT", resource: "mobile_money", resourceId: ref, status: "success",
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "MOBILE_MONEY_CASHOUT",
+          resource: "mobile_money",
+          resourceId: ref,
+          status: "success",
           metadata: { amount: input.amount, fee, phone: input.phone },
         });
 
-        return { ref, amount: input.amount, fee, commission, status: "success", transactionId: tx.id };
+        return {
+          ref,
+          amount: input.amount,
+          fee,
+          commission,
+          status: "success",
+          transactionId: tx.id,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   depositCash: protectedProcedure
-    .input(z.object({
-      phone: z.string().min(11).max(14),
-      amount: z.number().positive().max(5_000_000),
-    }))
+    .input(
+      z.object({
+        phone: z.string().min(11).max(14),
+        amount: z.number().positive().max(5_000_000),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
@@ -149,28 +235,55 @@ export const mobileMoneyRouter = router({
         const commission = Math.round(input.amount * 0.005);
         const ref = `MCI-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-        const [tx] = await db.insert(transactions).values({
-          ref, agentId: session.id, type: "Cash In",
-          amount: String(input.amount), fee: "0", commission: String(commission),
-          customerPhone: input.phone, status: "success", channel: "App",
-          metadata: { channel: "mobile_money_cashin" },
-        }).returning();
+        const [tx] = await db
+          .insert(transactions)
+          .values({
+            ref,
+            agentId: session.id,
+            type: "Cash In",
+            amount: String(input.amount),
+            fee: "0",
+            commission: String(commission),
+            customerPhone: input.phone,
+            status: "success",
+            channel: "App",
+            metadata: { channel: "mobile_money_cashin" },
+          })
+          .returning();
 
-        await db.update(agents).set({
-          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(input.amount)}`,
-          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
-        }).where(eq(agents.id, session.id));
+        await db
+          .update(agents)
+          .set({
+            floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(input.amount)}`,
+            // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
+          })
+          .where(eq(agents.id, session.id));
 
         await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "MOBILE_MONEY_CASHIN", resource: "mobile_money", resourceId: ref, status: "success",
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "MOBILE_MONEY_CASHIN",
+          resource: "mobile_money",
+          resourceId: ref,
+          status: "success",
           metadata: { amount: input.amount, phone: input.phone },
         });
 
-        return { ref, amount: input.amount, fee: 0, commission, status: "success", transactionId: tx.id };
+        return {
+          ref,
+          amount: input.amount,
+          fee: 0,
+          commission,
+          status: "success",
+          transactionId: tx.id,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -184,18 +297,31 @@ export const mobileMoneyRouter = router({
         const db = (await getDb())!;
         if (!db) return { phone: input.phone, balance: 0, currency: "NGN" };
 
-        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-          .where(eq(agents.id, session.id)).limit(1);
+        const [agent] = await db
+          .select({ floatBalance: agents.floatBalance })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
 
-        return { phone: input.phone, agentFloat: Number(agent?.floatBalance ?? 0), currency: "NGN" };
+        return {
+          phone: input.phone,
+          agentFloat: Number(agent?.floatBalance ?? 0),
+          currency: "NGN",
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   getTransactionHistory: protectedProcedure
-    .input(z.object({ phone: z.string().optional(), limit: z.number().default(20) }))
+    .input(
+      z.object({ phone: z.string().optional(), limit: z.number().default(20) })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
@@ -208,15 +334,24 @@ export const mobileMoneyRouter = router({
           eq(transactions.agentId, session.id),
           sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`,
         ];
-        if (input.phone) conditions.push(eq(transactions.customerPhone, input.phone));
+        if (input.phone)
+          conditions.push(eq(transactions.customerPhone, input.phone));
 
-        const items = await db.select().from(transactions)
-          .where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input.limit);
+        const items = await db
+          .select()
+          .from(transactions)
+          .where(and(...conditions))
+          .orderBy(desc(transactions.createdAt))
+          .limit(input.limit);
 
         return { transactions: items, total: items.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -232,19 +367,38 @@ export const mobileMoneyRouter = router({
       const db = (await getDb())!;
       if (!db) return { wallets: [] };
 
-      const [agent] = await db.select({
-        floatBalance: agents.floatBalance, commission: agents.commissionBalance,
-      }).from(agents).where(eq(agents.id, session.id)).limit(1);
+      const [agent] = await db
+        .select({
+          floatBalance: agents.floatBalance,
+          commission: agents.commissionBalance,
+        })
+        .from(agents)
+        .where(eq(agents.id, session.id))
+        .limit(1);
 
-      return { wallets: [{ type: "agent_float", balance: Number(agent?.floatBalance ?? 0), currency: "NGN" }] };
+      return {
+        wallets: [
+          {
+            type: "agent_float",
+            balance: Number(agent?.floatBalance ?? 0),
+            currency: "NGN",
+          },
+        ],
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 
   transactions: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+    .input(
+      z.object({ limit: z.number().default(50), offset: z.number().default(0) })
+    )
     .query(async ({ input, ctx }) => {
       try {
         const session = await getAgentFromCookie(ctx.req);
@@ -253,17 +407,37 @@ export const mobileMoneyRouter = router({
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
 
-        const items = await db.select().from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`))
-          .orderBy(desc(transactions.createdAt)).limit(input.limit).offset(input.offset);
+        const items = await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`
+            )
+          )
+          .orderBy(desc(transactions.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-        const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(transactions)
-          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`));
+        const [{ total }] = await db
+          .select({ total: sql<number>`count(*)::int` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, session.id),
+              sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`
+            )
+          );
 
         return { items, total };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -276,20 +450,33 @@ export const mobileMoneyRouter = router({
       if (!db) return { totalTxns: 0, totalVolume: "0", totalCommission: "0" };
 
       const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const [stats] = await db.select({
-        total: sql<number>`count(*)::int`,
-        volume: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-        commission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-      }).from(transactions).where(and(
-        eq(transactions.agentId, session.id),
-        sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`,
-        gte(transactions.createdAt, oneMonth)
-      ));
+      const [stats] = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          volume: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+          commission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.agentId, session.id),
+            sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`,
+            gte(transactions.createdAt, oneMonth)
+          )
+        );
 
-      return { totalTxns: stats.total, totalVolume: stats.volume, totalCommission: stats.commission };
+      return {
+        totalTxns: stats.total,
+        totalVolume: stats.volume,
+        totalCommission: stats.commission,
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+      });
     }
   }),
 });

@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — OpenAppSec WAF Integration
- * 
+ *
  * Application-level WAF (Web Application Firewall) providing:
  * - OWASP Top 10 protection
  * - ML-based anomaly detection
@@ -106,7 +106,9 @@ function logThreat(event: ThreatEvent) {
   threatLog.push(event);
   if (threatLog.length > MAX_THREAT_LOG) threatLog.shift();
   if (event.severity === "critical" || event.severity === "high") {
-    console.warn(`[WAF] ${event.severity.toUpperCase()} threat: ${event.category} from ${event.ip} on ${event.method} ${event.path}`);
+    console.warn(
+      `[WAF] ${event.severity.toUpperCase()} threat: ${event.category} from ${event.ip} on ${event.method} ${event.path}`
+    );
   }
 }
 
@@ -114,7 +116,12 @@ export function getThreatLog(limit: number = 100): ThreatEvent[] {
   return threatLog.slice(-limit);
 }
 
-export function getThreatStats(): { total: number; blocked: number; byCategory: Record<string, number>; bySeverity: Record<string, number> } {
+export function getThreatStats(): {
+  total: number;
+  blocked: number;
+  byCategory: Record<string, number>;
+  bySeverity: Record<string, number>;
+} {
   const byCategory: Record<string, number> = {};
   const bySeverity: Record<string, number> = {};
   let blocked = 0;
@@ -167,7 +174,8 @@ export function openAppSecWAF(req: Request, res: Response, next: NextFunction) {
   }
 
   // 4. Command injection
-  const bodyStr = typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? "");
+  const bodyStr =
+    typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? "");
   if (matchesAny(fullUrl + bodyStr, COMMAND_INJECTION_PATTERNS)) {
     score += 95;
     detectedCategory = "command_injection";
@@ -186,7 +194,9 @@ export function openAppSecWAF(req: Request, res: Response, next: NextFunction) {
   }
 
   // 7. Geo-blocking (via CF-IPCountry or similar header)
-  const country = req.headers["cf-ipcountry"] as string ?? req.headers["x-country-code"] as string;
+  const country =
+    (req.headers["cf-ipcountry"] as string) ??
+    (req.headers["x-country-code"] as string);
   if (country && GEO_BLOCKED_COUNTRIES.has(country.toUpperCase())) {
     score += 100;
     detectedCategory = "geo_blocked";
@@ -235,11 +245,18 @@ export function openAppSecWAF(req: Request, res: Response, next: NextFunction) {
 }
 
 // ─── API Abuse Detection ─────────────────────────────────────────────────────
-const apiAbuseStore = new Map<string, { endpoints: Map<string, number>; windowStart: number }>();
+const apiAbuseStore = new Map<
+  string,
+  { endpoints: Map<string, number>; windowStart: number }
+>();
 const API_ABUSE_WINDOW = 60_000;
 const API_ABUSE_ENDPOINT_LIMIT = 20; // max 20 unique endpoints per minute (scanner behavior)
 
-export function apiAbuseDetection(req: Request, res: Response, next: NextFunction) {
+export function apiAbuseDetection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ip = getIP(req);
   const now = Date.now();
   let entry = apiAbuseStore.get(ip);

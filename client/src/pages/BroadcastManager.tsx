@@ -12,8 +12,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -36,9 +48,15 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [type, setType] = useState<"info" | "warning" | "critical" | "maintenance" | "feature">("info");
-  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
-  const [target, setTarget] = useState<"all" | "agents" | "admins" | "merchants">("all");
+  const [type, setType] = useState<
+    "info" | "warning" | "critical" | "maintenance" | "feature"
+  >("info");
+  const [priority, setPriority] = useState<
+    "low" | "medium" | "high" | "urgent"
+  >("medium");
+  const [target, setTarget] = useState<
+    "all" | "agents" | "admins" | "merchants"
+  >("all");
   const [pinned, setPinned] = useState(false);
   const [channels, setChannels] = useState<string[]>(["banner", "inbox"]);
 
@@ -46,29 +64,53 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
     onSuccess: () => {
       toast.success("Announcement published");
       setOpen(false);
-      setTitle(""); setContent("");
+      setTitle("");
+      setContent("");
       onCreated();
     },
     onError: (err: any) => toast.error(err.message),
   });
 
   const toggleChannel = (ch: string) => {
-    setChannels((prev) => prev.includes(ch) ? prev.filter((c: any) => c !== ch) : [...prev, ch]);
+    setChannels(prev =>
+      prev.includes(ch) ? prev.filter((c: any) => c !== ch) : [...prev, ch]
+    );
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button>+ Compose Announcement</Button></DialogTrigger>
+      <DialogTrigger asChild>
+        <Button>+ Compose Announcement</Button>
+      </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Compose Announcement</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Compose Announcement</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
-          <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Announcement title" /></div>
-          <div><Label>Content</Label><Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Announcement body..." rows={4} /></div>
+          <div>
+            <Label>Title</Label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Announcement title"
+            />
+          </div>
+          <div>
+            <Label>Content</Label>
+            <Textarea
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder="Announcement body..."
+              rows={4}
+            />
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Type</Label>
               <Select value={type} onValueChange={(v: any) => setType(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="info">Info</SelectItem>
                   <SelectItem value="warning">Warning</SelectItem>
@@ -80,8 +122,13 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
             </div>
             <div>
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={priority}
+                onValueChange={(v: any) => setPriority(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -93,7 +140,9 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
             <div>
               <Label>Target</Label>
               <Select value={target} onValueChange={(v: any) => setTarget(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Users</SelectItem>
                   <SelectItem value="agents">Agents Only</SelectItem>
@@ -107,7 +156,13 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
             <Label className="mb-2 block">Delivery Channels</Label>
             <div className="flex flex-wrap gap-2">
               {["banner", "inbox", "push", "email", "sms"].map((ch: any) => (
-                <Button key={ch} size="sm" variant={channels.includes(ch) ? "default" : "outline"} className="h-7 text-xs capitalize" onClick={() => toggleChannel(ch)}>
+                <Button
+                  key={ch}
+                  size="sm"
+                  variant={channels.includes(ch) ? "default" : "outline"}
+                  className="h-7 text-xs capitalize"
+                  onClick={() => toggleChannel(ch)}
+                >
                   {ch}
                 </Button>
               ))}
@@ -117,8 +172,29 @@ function ComposeDialog({ onCreated }: { onCreated: () => void }) {
             <Switch checked={pinned} onCheckedChange={setPinned} />
             <Label>Pin to top</Label>
           </div>
-          <Button onClick={() => createMutation.mutate({ title, content, type, priority, target, pinned, channels: channels as any })} disabled={!title || !content || channels.length === 0 || createMutation.isPending} className="w-full">
-            {createMutation.isPending ? "Publishing..." : "Publish Announcement"}
+          <Button
+            onClick={() =>
+              createMutation.mutate({
+                title,
+                content,
+                type,
+                priority,
+                target,
+                pinned,
+                channels: channels as any,
+              })
+            }
+            disabled={
+              !title ||
+              !content ||
+              channels.length === 0 ||
+              createMutation.isPending
+            }
+            className="w-full"
+          >
+            {createMutation.isPending
+              ? "Publishing..."
+              : "Publish Announcement"}
           </Button>
         </div>
       </DialogContent>
@@ -132,10 +208,17 @@ export default function BroadcastManager() {
   const { data: stats } = trpc.broadcast.stats.useQuery();
 
   const pinMutation = trpc.broadcast.togglePin.useMutation({
-    onSuccess: () => { utils.broadcast.list.invalidate(); utils.broadcast.stats.invalidate(); },
+    onSuccess: () => {
+      utils.broadcast.list.invalidate();
+      utils.broadcast.stats.invalidate();
+    },
   });
   const deleteMutation = trpc.broadcast.delete.useMutation({
-    onSuccess: () => { utils.broadcast.list.invalidate(); utils.broadcast.stats.invalidate(); toast.success("Announcement deleted"); },
+    onSuccess: () => {
+      utils.broadcast.list.invalidate();
+      utils.broadcast.stats.invalidate();
+      toast.success("Announcement deleted");
+    },
   });
 
   return (
@@ -144,16 +227,49 @@ export default function BroadcastManager() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Broadcast Manager</h1>
-            <p className="text-sm text-muted-foreground mt-1">System-wide announcements for all users</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              System-wide announcements for all users
+            </p>
           </div>
-          <ComposeDialog onCreated={() => { utils.broadcast.list.invalidate(); utils.broadcast.stats.invalidate(); }} />
+          <ComposeDialog
+            onCreated={() => {
+              utils.broadcast.list.invalidate();
+              utils.broadcast.stats.invalidate();
+            }}
+          />
         </div>
 
         <div className="grid grid-cols-4 gap-4">
-          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total</p><p className="text-2xl font-bold mt-1">{stats?.total ?? 0}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Active</p><p className="text-2xl font-bold mt-1 text-emerald-500">{stats?.active ?? 0}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Pinned</p><p className="text-2xl font-bold mt-1 text-amber-500">{stats?.pinned ?? 0}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Unread</p><p className="text-2xl font-bold mt-1 text-blue-500">{listData?.unread ?? 0}</p></CardContent></Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold mt-1">{stats?.total ?? 0}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold mt-1 text-emerald-500">
+                {stats?.active ?? 0}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Pinned</p>
+              <p className="text-2xl font-bold mt-1 text-amber-500">
+                {stats?.pinned ?? 0}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Unread</p>
+              <p className="text-2xl font-bold mt-1 text-blue-500">
+                {listData?.unread ?? 0}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="all">
@@ -166,48 +282,91 @@ export default function BroadcastManager() {
             <TabsTrigger value="feature">Feature</TabsTrigger>
           </TabsList>
 
-          {["all", "info", "warning", "critical", "maintenance", "feature"].map((tab: any) => (
-            <TabsContent key={tab} value={tab} className="space-y-3 mt-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading announcements...</div>
-              ) : (
-                (listData?.announcements ?? [])
-                  .filter((a: any) => tab === "all" || a.type === tab)
-                  .map((a: any) => (
-                    <Card key={a.id} className={a.pinned ? "border-amber-500/30" : ""}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              {a.pinned && <span className="text-amber-400 text-xs">📌</span>}
-                              <span className="font-medium">{a.title}</span>
-                              <Badge variant="outline" className={TYPE_STYLES[a.type]}>{a.type}</Badge>
-                              <Badge variant="outline" className={PRIORITY_STYLES[a.priority]}>{a.priority}</Badge>
-                              <Badge variant="outline" className="text-[10px]">{a.target}</Badge>
+          {["all", "info", "warning", "critical", "maintenance", "feature"].map(
+            (tab: any) => (
+              <TabsContent key={tab} value={tab} className="space-y-3 mt-4">
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading announcements...
+                  </div>
+                ) : (
+                  (listData?.announcements ?? [])
+                    .filter((a: any) => tab === "all" || a.type === tab)
+                    .map((a: any) => (
+                      <Card
+                        key={a.id}
+                        className={a.pinned ? "border-amber-500/30" : ""}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                {a.pinned && (
+                                  <span className="text-amber-400 text-xs">
+                                    📌
+                                  </span>
+                                )}
+                                <span className="font-medium">{a.title}</span>
+                                <Badge
+                                  variant="outline"
+                                  className={TYPE_STYLES[a.type]}
+                                >
+                                  {a.type}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={PRIORITY_STYLES[a.priority]}
+                                >
+                                  {a.priority}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px]"
+                                >
+                                  {a.target}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {a.content}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                                <span>
+                                  Published:{" "}
+                                  {new Date(a.publishedAt).toLocaleDateString()}
+                                </span>
+                                <span>Read: {a.readBy.length}</span>
+                                <span>Dismissed: {a.dismissedBy.length}</span>
+                                <span>Channels: {a.channels.join(", ")}</span>
+                              </div>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{a.content}</p>
-                            <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-                              <span>Published: {new Date(a.publishedAt).toLocaleDateString()}</span>
-                              <span>Read: {a.readBy.length}</span>
-                              <span>Dismissed: {a.dismissedBy.length}</span>
-                              <span>Channels: {a.channels.join(", ")}</span>
+                            <div className="flex items-center gap-1 ml-4">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs"
+                                onClick={() => pinMutation.mutate({ id: a.id })}
+                              >
+                                {a.pinned ? "Unpin" : "Pin"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-red-400"
+                                onClick={() =>
+                                  deleteMutation.mutate({ id: a.id })
+                                }
+                              >
+                                Delete
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 ml-4">
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => pinMutation.mutate({ id: a.id })}>
-                              {a.pinned ? "Unpin" : "Pin"}
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => deleteMutation.mutate({ id: a.id })}>
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-              )}
-            </TabsContent>
-          ))}
+                        </CardContent>
+                      </Card>
+                    ))
+                )}
+              </TabsContent>
+            )
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

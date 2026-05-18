@@ -33,7 +33,7 @@ function normaliseSseFraudAlert(raw: Record<string, unknown>): FraudEvent {
 export function useFraudSocket() {
   const socketRef = useRef<Socket | null>(null);
   const sseRef = useRef<EventSource | null>(null);
-  const addFraudEvent = usePosStore((s) => s.addFraudEvent);
+  const addFraudEvent = usePosStore(s => s.addFraudEvent);
 
   /** Shared handler: add to store + show toast/push notification */
   const handleFraudEvent = (event: FraudEvent) => {
@@ -49,7 +49,7 @@ export function useFraudSocket() {
         }
       } else if ("serviceWorker" in navigator) {
         navigator.serviceWorker.ready
-          .then((reg) => {
+          .then(reg => {
             reg.showNotification(title, {
               body,
               icon: "/favicon.ico",
@@ -72,14 +72,18 @@ export function useFraudSocket() {
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
-    socket.on("connect", () => console.log("[Fraud Socket] Connected:", socket.id));
+    socket.on("connect", () =>
+      console.log("[Fraud Socket] Connected:", socket.id)
+    );
     socket.on("fraud:event", handleFraudEvent);
     socket.on("disconnect", () => console.log("[Fraud Socket] Disconnected"));
 
     // ── Channel 2: SSE (server-side fraud detection engine) ───────────────────
-    const sse = new EventSource("/api/fraud/alerts/stream", { withCredentials: true });
+    const sse = new EventSource("/api/fraud/alerts/stream", {
+      withCredentials: true,
+    });
     sseRef.current = sse;
-    sse.onmessage = (e) => {
+    sse.onmessage = e => {
       try {
         const raw = JSON.parse(e.data) as Record<string, unknown>;
         handleFraudEvent(normaliseSseFraudAlert(raw));
@@ -89,7 +93,9 @@ export function useFraudSocket() {
     };
     sse.onerror = () => {
       // Browser auto-reconnects on error after a short delay
-      console.warn("[Fraud SSE] Connection error — browser will auto-reconnect");
+      console.warn(
+        "[Fraud SSE] Connection error — browser will auto-reconnect"
+      );
     };
 
     return () => {
@@ -105,7 +111,7 @@ export function useFraudSocket() {
 // ─── Chat socket ──────────────────────────────────────────────────────────────
 export function useChatSocket(sessionRef: string | null) {
   const socketRef = useRef<Socket | null>(null);
-  const addChatMessage = usePosStore((s) => s.addChatMessage);
+  const addChatMessage = usePosStore(s => s.addChatMessage);
 
   useEffect(() => {
     if (!sessionRef) return;
@@ -148,8 +154,8 @@ export function useChatSocket(sessionRef: string | null) {
 
 // ─── Terminal heartbeat socket ────────────────────────────────────────────────
 export function useTerminalSocket(agentCode?: string) {
-  const setOnline = usePosStore((s) => s.setOnline);
-  const addFraudEvent = usePosStore((s) => s.addFraudEvent);
+  const setOnline = usePosStore(s => s.setOnline);
+  const addFraudEvent = usePosStore(s => s.addFraudEvent);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -173,63 +179,93 @@ export function useTerminalSocket(agentCode?: string) {
     socket.on("terminal:heartbeat", () => setOnline(true));
 
     // ── Real-time fraud alert notifications to the cashier ────────────────────
-    socket.on("terminal:fraud_alert", (alert: {
-      severity: string;
-      type: string;
-      reason: string;
-      amount: number;
-      timestamp: string;
-    }) => {
-      // Add to fraud feed in store so the admin panel also sees it
-      addFraudEvent({
-        id: `ALERT-${Date.now()}`,
-        type: alert.type.replace(/_/g, " "),
-        severity: alert.severity.toLowerCase() as "high" | "medium" | "low" | "critical",
-        reason: alert.reason,
-        amount: alert.amount,
-        agentCode: agentCode ?? "",
-        customerName: "",
-        timestamp: alert.timestamp,
-        fraudScore: "0.90",
-      });
-      // Show a prominent error toast to the cashier
-      const label = alert.type === "VELOCITY_BREACH"
-        ? "⚠️ Transaction Blocked — Velocity Limit Exceeded"
-        : "🚨 Transaction Blocked — Device Not Enrolled";
-      toast.error(`${label}\n${alert.reason}`, { duration: 10000 });
-    });
+    socket.on(
+      "terminal:fraud_alert",
+      (alert: {
+        severity: string;
+        type: string;
+        reason: string;
+        amount: number;
+        timestamp: string;
+      }) => {
+        // Add to fraud feed in store so the admin panel also sees it
+        addFraudEvent({
+          id: `ALERT-${Date.now()}`,
+          type: alert.type.replace(/_/g, " "),
+          severity: alert.severity.toLowerCase() as
+            | "high"
+            | "medium"
+            | "low"
+            | "critical",
+          reason: alert.reason,
+          amount: alert.amount,
+          agentCode: agentCode ?? "",
+          customerName: "",
+          timestamp: alert.timestamp,
+          fraudScore: "0.90",
+        });
+        // Show a prominent error toast to the cashier
+        const label =
+          alert.type === "VELOCITY_BREACH"
+            ? "⚠️ Transaction Blocked — Velocity Limit Exceeded"
+            : "🚨 Transaction Blocked — Device Not Enrolled";
+        toast.error(`${label}\n${alert.reason}`, { duration: 10000 });
+      }
+    );
 
     // ── Velocity threshold warnings (80% of hourly/daily limit) ─────────────────
-    socket.on("terminal:velocity_warning", (data: {
-      type: "hourly_count" | "daily_volume";
-      used: number;
-      limit: number;
-      pct: number;
-      tier: string;
-      timestamp: string;
-    }) => {
-      // Dispatch DOM event so POSShell can show an amber banner
-      window.dispatchEvent(new CustomEvent("terminal:velocity_warning", { detail: data }));
-      const label = data.type === "hourly_count"
-        ? `⚠️ Hourly Limit Warning — ${data.pct}% used (${data.used}/${data.limit} transactions)`
-        : `⚠️ Daily Volume Warning — ${data.pct}% used (₦${Number(data.used).toLocaleString("en-NG")} of ₦${Number(data.limit).toLocaleString("en-NG")})`;
-      toast.warning(label, { duration: 8000, id: `velocity-warning-${data.type}` });
-    });
+    socket.on(
+      "terminal:velocity_warning",
+      (data: {
+        type: "hourly_count" | "daily_volume";
+        used: number;
+        limit: number;
+        pct: number;
+        tier: string;
+        timestamp: string;
+      }) => {
+        // Dispatch DOM event so POSShell can show an amber banner
+        window.dispatchEvent(
+          new CustomEvent("terminal:velocity_warning", { detail: data })
+        );
+        const label =
+          data.type === "hourly_count"
+            ? `⚠️ Hourly Limit Warning — ${data.pct}% used (${data.used}/${data.limit} transactions)`
+            : `⚠️ Daily Volume Warning — ${data.pct}% used (₦${Number(data.used).toLocaleString("en-NG")} of ₦${Number(data.limit).toLocaleString("en-NG")})`;
+        toast.warning(label, {
+          duration: 8000,
+          id: `velocity-warning-${data.type}`,
+        });
+      }
+    );
 
     // ── Remote kill-switch events (from admin) ─────────────────────────────────
-    socket.on("terminal:kill-switch", (data: { reason: string; disabledBy: string; disabledAt: string }) => {
-      // Persist in localStorage so the overlay survives a page reload
-      localStorage.setItem("pos_terminal_disabled", JSON.stringify(data));
-      // Dispatch custom DOM event so POSShell reacts immediately
-      window.dispatchEvent(new CustomEvent("terminal:kill-switch", { detail: data }));
-      toast.error(`🔴 Terminal Disabled: ${data.reason}`, { duration: 0, id: "kill-switch" });
-    });
-    socket.on("terminal:kill-switch-lift", (data: { enabledBy: string; enabledAt: string }) => {
-      localStorage.removeItem("pos_terminal_disabled");
-      window.dispatchEvent(new CustomEvent("terminal:kill-switch-lift", { detail: data }));
-      toast.dismiss("kill-switch");
-      toast.success("✅ Terminal re-enabled by admin.", { duration: 5000 });
-    });
+    socket.on(
+      "terminal:kill-switch",
+      (data: { reason: string; disabledBy: string; disabledAt: string }) => {
+        // Persist in localStorage so the overlay survives a page reload
+        localStorage.setItem("pos_terminal_disabled", JSON.stringify(data));
+        // Dispatch custom DOM event so POSShell reacts immediately
+        window.dispatchEvent(
+          new CustomEvent("terminal:kill-switch", { detail: data })
+        );
+        toast.error(`🔴 Terminal Disabled: ${data.reason}`, {
+          duration: 0,
+          id: "kill-switch",
+        });
+      }
+    );
+    socket.on(
+      "terminal:kill-switch-lift",
+      (data: { enabledBy: string; enabledAt: string }) => {
+        localStorage.removeItem("pos_terminal_disabled");
+        window.dispatchEvent(
+          new CustomEvent("terminal:kill-switch-lift", { detail: data })
+        );
+        toast.dismiss("kill-switch");
+        toast.success("✅ Terminal re-enabled by admin.", { duration: 5000 });
+      }
+    );
 
     // Browser online/offline events
     const handleOnline = () => setOnline(true);
@@ -264,7 +300,7 @@ export interface BatchProgressEvent {
 }
 
 export function useSettlementProgressSocket(
-  onProgress?: (event: BatchProgressEvent) => void,
+  onProgress?: (event: BatchProgressEvent) => void
 ) {
   const socketRef = useRef<Socket | null>(null);
 

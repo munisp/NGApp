@@ -24,7 +24,9 @@ describe("Sprint 18: Security Hardening", () => {
     });
 
     it("should generate unique tokens", () => {
-      const tokens = new Set(Array.from({ length: 100 }, () => generateSecureCsrfToken()));
+      const tokens = new Set(
+        Array.from({ length: 100 }, () => generateSecureCsrfToken())
+      );
       expect(tokens.size).toBe(100);
     });
   });
@@ -77,7 +79,9 @@ describe("Sprint 18: Security Hardening", () => {
     });
 
     it("should mask nested sensitive data", () => {
-      const result = maskSensitiveData({ user: { token: "abc123", name: "John" } });
+      const result = maskSensitiveData({
+        user: { token: "abc123", name: "John" },
+      });
       expect((result.user as any).token).toContain("*");
       expect((result.user as any).name).toBe("John");
     });

@@ -33,15 +33,14 @@ import {
   agents,
 } from "../../drizzle/schema";
 import { getIO } from "../socketSingleton";
-import {
-  geofencingPlatform,
-  PlatformError,
-} from "../_core/platformClient.js";
+import { geofencingPlatform, PlatformError } from "../_core/platformClient.js";
 
 // ─── Haversine distance (metres) — local fallback ────────────────────────────
 function haversineMetres(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
 ): number {
   const R = 6_371_000;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -71,14 +70,17 @@ const ZONE_TYPES = [
 ] as const;
 
 export const geofencingRouter = router({
-
   // ── Admin: list all zones ──────────────────────────────────────────────────
   // Always returns local DB rows (authoritative for agent assignments).
   // Platform zone data is synced on create/update; local DB is the source of truth.
   listZones: adminProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return db.select().from(geofenceZones).orderBy(desc(geofenceZones.createdAt)).limit(100);
+    return db
+      .select()
+      .from(geofenceZones)
+      .orderBy(desc(geofenceZones.createdAt))
+      .limit(100);
   }),
 
   // ── Admin: create zone (Circle or Polygon) ─────────────────────────────────
@@ -93,7 +95,9 @@ export const geofencingRouter = router({
         longitude: z.number().min(-180).max(180).optional(),
         radiusMetres: z.number().int().min(50).max(100_000).default(500),
         // Polygon geometry (GeoJSON coordinates array)
-        polygonCoordinates: z.array(z.array(z.tuple([z.number(), z.number()]))).optional(),
+        polygonCoordinates: z
+          .array(z.array(z.tuple([z.number(), z.number()])))
+          .optional(),
         // Metadata
         state: z.string().optional(),
         lga: z.string().optional(),
@@ -131,11 +135,17 @@ export const geofencingRouter = router({
             platformPayload.center_lng = input.longitude;
             platformPayload.radius_m = input.radiusMetres;
           }
-          const resp = await geofencingPlatform.createZone(platformPayload, token) as { zone_id?: string };
+          const resp = (await geofencingPlatform.createZone(
+            platformPayload,
+            token
+          )) as { zone_id?: string };
           platformZoneId = resp.zone_id ?? null;
         } catch (err) {
           if (!(err instanceof PlatformError)) throw err;
-          console.warn("[geofencing] platform zone create failed, storing locally:", (err as Error).message);
+          console.warn(
+            "[geofencing] platform zone create failed, storing locally:",
+            (err as Error).message
+          );
         }
 
         // ── Always persist locally (source of truth for agent assignments) ──────
@@ -151,8 +161,12 @@ export const geofencingRouter = router({
             createdBy: ctx.user.name ?? ctx.user.keycloakSub,
             // Store platform zone ID and polygon for reference
             ...(platformZoneId ? { platformZoneId } : {}),
-            ...(isPolygon ? { polygonCoordinates: JSON.stringify(input.polygonCoordinates) } : {}),
-            ...(input.zoneType !== "AGENT_OPERATING_AREA" ? { zoneType: input.zoneType } : {}),
+            ...(isPolygon
+              ? { polygonCoordinates: JSON.stringify(input.polygonCoordinates) }
+              : {}),
+            ...(input.zoneType !== "AGENT_OPERATING_AREA"
+              ? { zoneType: input.zoneType }
+              : {}),
           })
           .returning();
 
@@ -172,7 +186,11 @@ export const geofencingRouter = router({
         return zone;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -187,7 +205,9 @@ export const geofencingRouter = router({
         latitude: z.number().min(-90).max(90).optional(),
         longitude: z.number().min(-180).max(180).optional(),
         radiusMetres: z.number().int().min(50).max(100_000).optional(),
-        polygonCoordinates: z.array(z.array(z.tuple([z.number(), z.number()]))).optional(),
+        polygonCoordinates: z
+          .array(z.array(z.tuple([z.number(), z.number()])))
+          .optional(),
         isActive: z.boolean().optional(),
         alertOnEntry: z.boolean().optional(),
         alertOnExit: z.boolean().optional(),
@@ -199,42 +219,68 @@ export const geofencingRouter = router({
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         // Get existing zone for platform zone ID
-        const [existing] = await db.select().from(geofenceZones).where(eq(geofenceZones.id, input.id)).limit(100);
+        const [existing] = await db
+          .select()
+          .from(geofenceZones)
+          .where(eq(geofenceZones.id, input.id))
+          .limit(100);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
         // Forward to platform if we have a platform zone ID
-        const platformZoneId = (existing as Record<string, unknown>).platformZoneId as string | null;
+        const platformZoneId = (existing as Record<string, unknown>)
+          .platformZoneId as string | null;
         if (platformZoneId) {
           try {
             const token = getToken(ctx);
             const platformPayload: Record<string, unknown> = {};
             if (input.name !== undefined) platformPayload.name = input.name;
-            if (input.description !== undefined) platformPayload.description = input.description;
-            if (input.zoneType !== undefined) platformPayload.zone_type = input.zoneType;
-            if (input.latitude !== undefined) platformPayload.center_lat = input.latitude;
-            if (input.longitude !== undefined) platformPayload.center_lng = input.longitude;
-            if (input.radiusMetres !== undefined) platformPayload.radius_m = input.radiusMetres;
-            if (input.polygonCoordinates !== undefined) platformPayload.polygon_coordinates = input.polygonCoordinates;
-            if (input.isActive !== undefined) platformPayload.is_active = input.isActive;
-            if (input.alertOnEntry !== undefined) platformPayload.alert_on_entry = input.alertOnEntry;
-            if (input.alertOnExit !== undefined) platformPayload.alert_on_exit = input.alertOnExit;
-            await geofencingPlatform.updateZone(platformZoneId, platformPayload, token);
+            if (input.description !== undefined)
+              platformPayload.description = input.description;
+            if (input.zoneType !== undefined)
+              platformPayload.zone_type = input.zoneType;
+            if (input.latitude !== undefined)
+              platformPayload.center_lat = input.latitude;
+            if (input.longitude !== undefined)
+              platformPayload.center_lng = input.longitude;
+            if (input.radiusMetres !== undefined)
+              platformPayload.radius_m = input.radiusMetres;
+            if (input.polygonCoordinates !== undefined)
+              platformPayload.polygon_coordinates = input.polygonCoordinates;
+            if (input.isActive !== undefined)
+              platformPayload.is_active = input.isActive;
+            if (input.alertOnEntry !== undefined)
+              platformPayload.alert_on_entry = input.alertOnEntry;
+            if (input.alertOnExit !== undefined)
+              platformPayload.alert_on_exit = input.alertOnExit;
+            await geofencingPlatform.updateZone(
+              platformZoneId,
+              platformPayload,
+              token
+            );
           } catch (err) {
             if (!(err instanceof PlatformError)) throw err;
-            console.warn("[geofencing] platform zone update failed:", (err as Error).message);
+            console.warn(
+              "[geofencing] platform zone update failed:",
+              (err as Error).message
+            );
           }
         }
 
         // Always update local DB
         const updates: Record<string, unknown> = { updatedAt: new Date() };
         if (input.name !== undefined) updates.name = input.name;
-        if (input.description !== undefined) updates.description = input.description;
-        if (input.latitude !== undefined) updates.latitude = String(input.latitude);
-        if (input.longitude !== undefined) updates.longitude = String(input.longitude);
-        if (input.radiusMetres !== undefined) updates.radiusMetres = input.radiusMetres;
+        if (input.description !== undefined)
+          updates.description = input.description;
+        if (input.latitude !== undefined)
+          updates.latitude = String(input.latitude);
+        if (input.longitude !== undefined)
+          updates.longitude = String(input.longitude);
+        if (input.radiusMetres !== undefined)
+          updates.radiusMetres = input.radiusMetres;
         if (input.isActive !== undefined) updates.isActive = input.isActive;
         if (input.zoneType !== undefined) updates.zoneType = input.zoneType;
-        if (input.polygonCoordinates !== undefined) updates.polygonCoordinates = JSON.stringify(input.polygonCoordinates);
+        if (input.polygonCoordinates !== undefined)
+          updates.polygonCoordinates = JSON.stringify(input.polygonCoordinates);
 
         const [zone] = await db
           .update(geofenceZones)
@@ -244,7 +290,11 @@ export const geofencingRouter = router({
         return zone;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -255,12 +305,18 @@ export const geofencingRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await db.delete(agentGeofenceZones).where(eq(agentGeofenceZones.zoneId, input.id));
+        await db
+          .delete(agentGeofenceZones)
+          .where(eq(agentGeofenceZones.zoneId, input.id));
         await db.delete(geofenceZones).where(eq(geofenceZones.id, input.id));
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -280,7 +336,8 @@ export const geofencingRouter = router({
               eq(agentGeofenceZones.zoneId, input.zoneId)
             )
           );
-        if (existing.length > 0) return { success: true, alreadyAssigned: true };
+        if (existing.length > 0)
+          return { success: true, alreadyAssigned: true };
         await db.insert(agentGeofenceZones).values({
           agentId: input.agentId,
           zoneId: input.zoneId,
@@ -289,7 +346,11 @@ export const geofencingRouter = router({
         return { success: true, alreadyAssigned: false };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -311,7 +372,11 @@ export const geofencingRouter = router({
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -325,12 +390,19 @@ export const geofencingRouter = router({
         const rows = await db
           .select({ zone: geofenceZones })
           .from(agentGeofenceZones)
-          .innerJoin(geofenceZones, eq(agentGeofenceZones.zoneId, geofenceZones.id))
+          .innerJoin(
+            geofenceZones,
+            eq(agentGeofenceZones.zoneId, geofenceZones.id)
+          )
           .where(eq(agentGeofenceZones.agentId, input.agentId));
         return rows.map((r: any) => r.zone);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -357,18 +429,28 @@ export const geofencingRouter = router({
           .limit(1);
 
         // ── Try platform geofencing service first ─────────────────────────────
-        let platformResult: { within_zone?: boolean; zone_name?: string } | null = null;
+        let platformResult: {
+          within_zone?: boolean;
+          zone_name?: string;
+        } | null = null;
         try {
           const token = getToken(ctx);
           const terminalId = agent?.agentCode ?? String(input.deviceId);
-          platformResult = await geofencingPlatform.reportLocation(
+          platformResult = (await geofencingPlatform.reportLocation(
             terminalId,
-            { lat: input.latitude, lng: input.longitude, accuracy: input.accuracy },
+            {
+              lat: input.latitude,
+              lng: input.longitude,
+              accuracy: input.accuracy,
+            },
             token
-          ) as { within_zone?: boolean; zone_name?: string };
+          )) as { within_zone?: boolean; zone_name?: string };
         } catch (err) {
           if (!(err instanceof PlatformError)) throw err;
-          console.warn("[geofencing] platform reportLocation failed, using local haversine:", (err as Error).message);
+          console.warn(
+            "[geofencing] platform reportLocation failed, using local haversine:",
+            (err as Error).message
+          );
         }
 
         // ── Local haversine fallback ──────────────────────────────────────────
@@ -385,7 +467,10 @@ export const geofencingRouter = router({
             ? await db
                 .select({ zone: geofenceZones })
                 .from(agentGeofenceZones)
-                .innerJoin(geofenceZones, eq(agentGeofenceZones.zoneId, geofenceZones.id))
+                .innerJoin(
+                  geofenceZones,
+                  eq(agentGeofenceZones.zoneId, geofenceZones.id)
+                )
                 .where(
                   and(
                     eq(agentGeofenceZones.agentId, resolvedAgentId),
@@ -436,20 +521,26 @@ export const geofencingRouter = router({
 
           const io = getIO();
           if (io && agent?.agentCode) {
-            io.of("/terminal").to(`agent:${agent.agentCode}`).emit("terminal:fraud_alert", {
-              id: alert.id,
-              severity: "high",
-              type: "GEOFENCE_VIOLATION",
-              reason: alert.reason,
-              createdAt: alert.createdAt,
-            });
+            io.of("/terminal")
+              .to(`agent:${agent.agentCode}`)
+              .emit("terminal:fraud_alert", {
+                id: alert.id,
+                severity: "high",
+                type: "GEOFENCE_VIOLATION",
+                reason: alert.reason,
+                createdAt: alert.createdAt,
+              });
           }
         }
 
         return { withinZone, outsideZoneName: outsideZoneName ?? null };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -468,11 +559,24 @@ export const geofencingRouter = router({
         const token = getToken(ctx);
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const [agent] = await db.select().from(agents).where(eq(agents.id, input.agentId)).limit(1);
+        const [agent] = await db
+          .select()
+          .from(agents)
+          .where(eq(agents.id, input.agentId))
+          .limit(1);
         if (agent?.agentCode) {
-          const result = await geofencingPlatform.checkZone(agent.agentCode, token) as {
+          const result = (await geofencingPlatform.checkZone(
+            agent.agentCode,
+            token
+          )) as {
             within_zone?: boolean;
-            zones?: Array<{ zone_id: string; zone_name: string; distance_m: number; radius_m: number; within: boolean }>;
+            zones?: Array<{
+              zone_id: string;
+              zone_name: string;
+              distance_m: number;
+              radius_m: number;
+              within: boolean;
+            }>;
           };
           if (result) {
             return {
@@ -489,7 +593,10 @@ export const geofencingRouter = router({
         }
       } catch (err) {
         if (!(err instanceof PlatformError)) throw err;
-        console.warn("[geofencing] platform checkZone failed, using local haversine:", (err as Error).message);
+        console.warn(
+          "[geofencing] platform checkZone failed, using local haversine:",
+          (err as Error).message
+        );
       }
 
       // Local haversine fallback
@@ -498,7 +605,10 @@ export const geofencingRouter = router({
       const assignedZones = await db
         .select({ zone: geofenceZones })
         .from(agentGeofenceZones)
-        .innerJoin(geofenceZones, eq(agentGeofenceZones.zoneId, geofenceZones.id))
+        .innerJoin(
+          geofenceZones,
+          eq(agentGeofenceZones.zoneId, geofenceZones.id)
+        )
         .where(
           and(
             eq(agentGeofenceZones.agentId, input.agentId),
@@ -550,7 +660,11 @@ export const geofencingRouter = router({
           .limit(input.limit);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -569,7 +683,11 @@ export const geofencingRouter = router({
           .limit(input.limit);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 

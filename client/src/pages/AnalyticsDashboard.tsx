@@ -11,25 +11,47 @@
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import {
-  LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Activity, CheckCircle2, XCircle, Clock, Wifi } from "lucide-react";
+import {
+  RefreshCw,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Wifi,
+} from "lucide-react";
 import { format } from "date-fns";
 
 // ── Colour palette ────────────────────────────────────────────────────────────
 const COLOURS = {
-  sent:    "#22c55e",
-  buffered:"#f59e0b",
-  failed:  "#ef4444",
+  sent: "#22c55e",
+  buffered: "#f59e0b",
+  failed: "#ef4444",
   pending: "#6366f1",
-  synced:  "#22c55e",
+  synced: "#22c55e",
   primary: "#3b82f6",
 };
 
@@ -66,7 +88,9 @@ function StatCard({
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground truncate">{label}</p>
             <p className="text-xl font-bold leading-tight">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+            {sub && (
+              <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+            )}
           </div>
         </div>
       </CardContent>
@@ -83,20 +107,22 @@ export default function AnalyticsDashboard() {
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   // ── tRPC queries ──────────────────────────────────────────────────────────
-  const { data: throughputData, isLoading: loadingThroughput } = trpc.analytics.getMqttThroughput.useQuery(
-    { minutes: mqttMinutes },
-    { refetchInterval: 30_000 }
-  );
+  const { data: throughputData, isLoading: loadingThroughput } =
+    trpc.analytics.getMqttThroughput.useQuery(
+      { minutes: mqttMinutes },
+      { refetchInterval: 30_000 }
+    );
 
-  const { data: erpStats, isLoading: loadingErp } = trpc.analytics.getErpSyncStats.useQuery(
-    { hours: erpHours },
-    { refetchInterval: 30_000 }
-  );
+  const { data: erpStats, isLoading: loadingErp } =
+    trpc.analytics.getErpSyncStats.useQuery(
+      { hours: erpHours },
+      { refetchInterval: 30_000 }
+    );
 
-  const { data: liveStats, isLoading: loadingLive } = trpc.analytics.getLiveStats.useQuery(
-    undefined,
-    { refetchInterval: 15_000 }
-  );
+  const { data: liveStats, isLoading: loadingLive } =
+    trpc.analytics.getLiveStats.useQuery(undefined, {
+      refetchInterval: 15_000,
+    });
 
   const [sentFromMs] = useState(() => Date.now() - mqttMinutes * 60 * 1000);
   const [bufferedFromMs] = useState(() => Date.now() - mqttMinutes * 60 * 1000);
@@ -123,9 +149,16 @@ export default function AnalyticsDashboard() {
   const combinedSeries = (() => {
     const sentMap = new Map<number, number>();
     const bufferedMap = new Map<number, number>();
-    for (const p of sentSeries?.series ?? []) sentMap.set(new Date(p.bucket).getTime(), p.value);
-    for (const p of bufferedSeries?.series ?? []) bufferedMap.set(new Date(p.bucket).getTime(), p.value);
-    const allBuckets = Array.from(new Set([...Array.from(sentMap.keys()), ...Array.from(bufferedMap.keys())]));
+    for (const p of sentSeries?.series ?? [])
+      sentMap.set(new Date(p.bucket).getTime(), p.value);
+    for (const p of bufferedSeries?.series ?? [])
+      bufferedMap.set(new Date(p.bucket).getTime(), p.value);
+    const allBuckets = Array.from(
+      new Set([
+        ...Array.from(sentMap.keys()),
+        ...Array.from(bufferedMap.keys()),
+      ])
+    );
     return allBuckets
       .sort((a: any, b: any) => a - b)
       .map(ts => ({
@@ -148,12 +181,14 @@ export default function AnalyticsDashboard() {
 
   // ── Live stat lookups ─────────────────────────────────────────────────────
   const liveMap = new Map<string, number>();
-  for (const s of (liveStats?.stats ?? [])) liveMap.set(s.metricName, s.totalValue);
+  for (const s of liveStats?.stats ?? [])
+    liveMap.set(s.metricName, s.totalValue);
 
-  const totalSent     = liveMap.get("mqtt.messages.sent")     ?? 0;
+  const totalSent = liveMap.get("mqtt.messages.sent") ?? 0;
   const totalBuffered = liveMap.get("mqtt.messages.buffered") ?? 0;
-  const totalAll      = (liveMap.get("mqtt.messages.total")   ?? 0) || (totalSent + totalBuffered);
-  const avgPerMin     = throughputData?.avgPerMinute ?? 0;
+  const totalAll =
+    (liveMap.get("mqtt.messages.total") ?? 0) || totalSent + totalBuffered;
+  const avgPerMin = throughputData?.avgPerMinute ?? 0;
 
   const loading = loadingThroughput || loadingErp || loadingLive;
 
@@ -175,8 +210,15 @@ export default function AnalyticsDashboard() {
             <Wifi className="w-3 h-3" />
             {loading ? "Refreshing…" : "Live"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refresh}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -203,7 +245,11 @@ export default function AnalyticsDashboard() {
           label="ERP Sync Rate"
           value={`${erpStats?.successRate ?? 0}%`}
           sub={`${erpStats?.synced ?? 0} synced / ${erpStats?.total ?? 0} total`}
-          colour={erpStats && erpStats.successRate >= 90 ? COLOURS.synced : COLOURS.failed}
+          colour={
+            erpStats && erpStats.successRate >= 90
+              ? COLOURS.synced
+              : COLOURS.failed
+          }
         />
         <StatCard
           icon={Clock}
@@ -242,31 +288,72 @@ export default function AnalyticsDashboard() {
         <CardContent>
           {combinedSeries.length === 0 ? (
             <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-              No MQTT data yet. Messages will appear here as events are produced.
+              No MQTT data yet. Messages will appear here as events are
+              produced.
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={combinedSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart
+                data={combinedSeries}
+                margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="gradSent" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLOURS.sent} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={COLOURS.sent} stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor={COLOURS.sent}
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={COLOURS.sent}
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                   <linearGradient id="gradBuffered" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLOURS.buffered} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={COLOURS.buffered} stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor={COLOURS.buffered}
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={COLOURS.buffered}
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip
-                  formatter={(value: number, name: string) => [value, name === "sent" ? "Sent" : "Buffered"]}
+                  formatter={(value: number, name: string) => [
+                    value,
+                    name === "sent" ? "Sent" : "Buffered",
+                  ]}
                   labelFormatter={label => `Time: ${label}`}
                 />
-                <Legend formatter={v => v === "sent" ? "Sent to Fluvio" : "Buffered (offline)"} />
-                <Area type="monotone" dataKey="sent"     stroke={COLOURS.sent}     fill="url(#gradSent)"     strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="buffered" stroke={COLOURS.buffered} fill="url(#gradBuffered)" strokeWidth={2} dot={false} />
+                <Legend
+                  formatter={v =>
+                    v === "sent" ? "Sent to Fluvio" : "Buffered (offline)"
+                  }
+                />
+                <Area
+                  type="monotone"
+                  dataKey="sent"
+                  stroke={COLOURS.sent}
+                  fill="url(#gradSent)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="buffered"
+                  stroke={COLOURS.buffered}
+                  fill="url(#gradBuffered)"
+                  strokeWidth={2}
+                  dot={false}
+                />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -319,7 +406,10 @@ export default function AnalyticsDashboard() {
                       dataKey="value"
                     >
                       {erpPieData.map((_, i) => (
-                        <Cell key={i} fill={PIE_COLOURS[i % PIE_COLOURS.length]} />
+                        <Cell
+                          key={i}
+                          fill={PIE_COLOURS[i % PIE_COLOURS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -327,22 +417,54 @@ export default function AnalyticsDashboard() {
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-2">
                   {[
-                    { label: "Synced",  value: erpStats?.synced  ?? 0, colour: COLOURS.synced,  icon: CheckCircle2 },
-                    { label: "Failed",  value: erpStats?.failed  ?? 0, colour: COLOURS.failed,  icon: XCircle },
-                    { label: "Pending", value: erpStats?.pending ?? 0, colour: COLOURS.pending, icon: Clock },
-                  ].map(({  label, value, colour, icon: Icon  }: any) => (
-                    <div key={label} className="flex items-center gap-2 text-sm">
-                      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: colour }} />
-                      <span className="flex-1 text-muted-foreground">{label}</span>
-                      <span className="font-semibold tabular-nums">{value.toLocaleString()}</span>
+                    {
+                      label: "Synced",
+                      value: erpStats?.synced ?? 0,
+                      colour: COLOURS.synced,
+                      icon: CheckCircle2,
+                    },
+                    {
+                      label: "Failed",
+                      value: erpStats?.failed ?? 0,
+                      colour: COLOURS.failed,
+                      icon: XCircle,
+                    },
+                    {
+                      label: "Pending",
+                      value: erpStats?.pending ?? 0,
+                      colour: COLOURS.pending,
+                      icon: Clock,
+                    },
+                  ].map(({ label, value, colour, icon: Icon }: any) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Icon
+                        className="w-4 h-4 flex-shrink-0"
+                        style={{ color: colour }}
+                      />
+                      <span className="flex-1 text-muted-foreground">
+                        {label}
+                      </span>
+                      <span className="font-semibold tabular-nums">
+                        {value.toLocaleString()}
+                      </span>
                     </div>
                   ))}
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Success rate</span>
+                      <span className="text-muted-foreground">
+                        Success rate
+                      </span>
                       <span
                         className="font-bold text-base"
-                        style={{ color: (erpStats?.successRate ?? 0) >= 90 ? COLOURS.synced : COLOURS.failed }}
+                        style={{
+                          color:
+                            (erpStats?.successRate ?? 0) >= 90
+                              ? COLOURS.synced
+                              : COLOURS.failed,
+                        }}
                       >
                         {erpStats?.successRate ?? 0}%
                       </span>
@@ -385,15 +507,21 @@ function ErpTrendChart({ hours }: { hours: number; refreshKey: number }) {
   const combined = (() => {
     const sm = new Map<number, number>();
     const fm = new Map<number, number>();
-    for (const p of syncedSeries?.series ?? []) sm.set(new Date(p.bucket).getTime(), p.value);
-    for (const p of failedSeries?.series ?? []) fm.set(new Date(p.bucket).getTime(), p.value);
-    const all = Array.from(new Set([...Array.from(sm.keys()), ...Array.from(fm.keys())]));
-    return all.sort((a: any, b: any) => a - b).map(ts => ({
-      ts,
-      label: fmtTime(ts),
-      synced: sm.get(ts) ?? 0,
-      failed: fm.get(ts) ?? 0,
-    }));
+    for (const p of syncedSeries?.series ?? [])
+      sm.set(new Date(p.bucket).getTime(), p.value);
+    for (const p of failedSeries?.series ?? [])
+      fm.set(new Date(p.bucket).getTime(), p.value);
+    const all = Array.from(
+      new Set([...Array.from(sm.keys()), ...Array.from(fm.keys())])
+    );
+    return all
+      .sort((a: any, b: any) => a - b)
+      .map(ts => ({
+        ts,
+        label: fmtTime(ts),
+        synced: sm.get(ts) ?? 0,
+        failed: fm.get(ts) ?? 0,
+      }));
   })();
 
   if (combined.length === 0) {
@@ -406,14 +534,31 @@ function ErpTrendChart({ hours }: { hours: number; refreshKey: number }) {
 
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <LineChart data={combined} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+      <LineChart
+        data={combined}
+        margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="synced" stroke={COLOURS.synced} strokeWidth={2} dot={false} name="Synced" />
-        <Line type="monotone" dataKey="failed" stroke={COLOURS.failed} strokeWidth={2} dot={false} name="Failed" />
+        <Line
+          type="monotone"
+          dataKey="synced"
+          stroke={COLOURS.synced}
+          strokeWidth={2}
+          dot={false}
+          name="Synced"
+        />
+        <Line
+          type="monotone"
+          dataKey="failed"
+          stroke={COLOURS.failed}
+          strokeWidth={2}
+          dot={false}
+          name="Failed"
+        />
       </LineChart>
     </ResponsiveContainer>
   );

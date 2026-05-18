@@ -15,7 +15,9 @@ describe("Observability Module", () => {
   });
 
   it("should create and end spans with correct timing", () => {
-    const span = observability.startSpan("settlement", "processBatch", { batchSize: 100 });
+    const span = observability.startSpan("settlement", "processBatch", {
+      batchSize: 100,
+    });
     expect(span.traceId).toHaveLength(32);
     expect(span.spanId).toHaveLength(16);
     expect(span.operationName).toBe("processBatch");
@@ -32,15 +34,23 @@ describe("Observability Module", () => {
 
   it("should track error spans", () => {
     const span = observability.startSpan("dispute", "resolveDispute");
-    const ended = observability.endSpan(span.spanId, "error", "Database timeout");
+    const ended = observability.endSpan(
+      span.spanId,
+      "error",
+      "Database timeout"
+    );
     expect(ended!.status).toBe("error");
     expect(ended!.attributes["error.message"]).toBe("Database timeout");
   });
 
   it("should add events to spans", () => {
     const span = observability.startSpan("commission", "calculateBatch");
-    observability.addSpanEvent(span.spanId, "batch.chunk.processed", { chunkSize: 50 });
-    observability.addSpanEvent(span.spanId, "batch.chunk.processed", { chunkSize: 50 });
+    observability.addSpanEvent(span.spanId, "batch.chunk.processed", {
+      chunkSize: 50,
+    });
+    observability.addSpanEvent(span.spanId, "batch.chunk.processed", {
+      chunkSize: 50,
+    });
 
     const ended = observability.endSpan(span.spanId);
     expect(ended!.events).toHaveLength(2);
@@ -66,16 +76,18 @@ describe("Observability Module", () => {
 
     const prometheus = observability.exportPrometheusMetrics();
     expect(prometheus).toContain("fiveforlink_settlement_operations_total 1");
-    expect(prometheus).toContain("# TYPE fiveforlink_settlement_operations_total counter");
+    expect(prometheus).toContain(
+      "# TYPE fiveforlink_settlement_operations_total counter"
+    );
   });
 
   it("should provide pre-configured engine tracers", async () => {
     const result = await observability.settlementTracer.withSpan(
       "testOp",
-      async (span) => {
+      async span => {
         expect(span.serviceName).toBe("54link.settlement");
         return 42;
-      },
+      }
     );
     expect(result).toBe(42);
   });
@@ -84,7 +96,7 @@ describe("Observability Module", () => {
     await expect(
       observability.disputeTracer.withSpan("failOp", async () => {
         throw new Error("test error");
-      }),
+      })
     ).rejects.toThrow("test error");
 
     const metrics = observability.getEngineMetrics("dispute");
@@ -118,7 +130,9 @@ describe("Batch Progress Reporter", () => {
 
   it("should start tracking a batch", async () => {
     const events: any[] = [];
-    const tracker = await batchProgress.startBatchProgress("batch-1", 100, (e) => events.push(e));
+    const tracker = await batchProgress.startBatchProgress("batch-1", 100, e =>
+      events.push(e)
+    );
 
     expect(tracker.batchId).toBe("batch-1");
     expect(tracker.total).toBe(100);
@@ -129,7 +143,9 @@ describe("Batch Progress Reporter", () => {
 
   it("should report progress at intervals", async () => {
     const events: any[] = [];
-    const tracker = await batchProgress.startBatchProgress("batch-2", 100, (e) => events.push(e));
+    const tracker = await batchProgress.startBatchProgress("batch-2", 100, e =>
+      events.push(e)
+    );
 
     // The report interval depends on the runtime config mock
     const interval = tracker.reportInterval;
@@ -140,7 +156,9 @@ describe("Batch Progress Reporter", () => {
     }
 
     // Should have start event + at least 1 progress event
-    const progressEvents = events.filter(e => e.type === "batch.progress" || e.type === "batch.completed");
+    const progressEvents = events.filter(
+      e => e.type === "batch.progress" || e.type === "batch.completed"
+    );
     expect(progressEvents.length).toBeGreaterThanOrEqual(1);
 
     // Cleanup
@@ -149,13 +167,15 @@ describe("Batch Progress Reporter", () => {
 
   it("should complete a batch", async () => {
     const events: any[] = [];
-    await batchProgress.startBatchProgress("batch-3", 10, (e) => events.push(e));
+    await batchProgress.startBatchProgress("batch-3", 10, e => events.push(e));
 
     for (let i = 0; i < 10; i++) {
       batchProgress.reportProgress("batch-3", 1);
     }
 
-    const completed = batchProgress.completeBatchProgress("batch-3", { note: "done" });
+    const completed = batchProgress.completeBatchProgress("batch-3", {
+      note: "done",
+    });
     expect(completed).not.toBeNull();
     expect(completed!.type).toBe("batch.completed");
     expect(completed!.metadata?.note).toBe("done");
@@ -163,10 +183,13 @@ describe("Batch Progress Reporter", () => {
 
   it("should fail a batch", async () => {
     const events: any[] = [];
-    await batchProgress.startBatchProgress("batch-4", 100, (e) => events.push(e));
+    await batchProgress.startBatchProgress("batch-4", 100, e => events.push(e));
 
     batchProgress.reportProgress("batch-4", 5);
-    const failed = batchProgress.failBatchProgress("batch-4", "DB connection lost");
+    const failed = batchProgress.failBatchProgress(
+      "batch-4",
+      "DB connection lost"
+    );
 
     expect(failed).not.toBeNull();
     expect(failed!.type).toBe("batch.failed");
@@ -249,7 +272,12 @@ describe("Bulk Insert CSV Escaping", () => {
       // Verify the escaping logic matches expectations
       const val = tc.input;
       let result: string;
-      if (val.includes(",") || val.includes('"') || val.includes("\n") || val.includes("\\")) {
+      if (
+        val.includes(",") ||
+        val.includes('"') ||
+        val.includes("\n") ||
+        val.includes("\\")
+      ) {
         result = `"${val.replace(/"/g, '""')}"`;
       } else {
         result = val;
@@ -275,14 +303,15 @@ describe("Zipf Distribution", () => {
       for (let k = 1; k <= n; k++) sum += 1.0 / Math.pow(k, s);
       let cumulative = 0;
       for (let k = 0; k < n; k++) {
-        cumulative += (1.0 / Math.pow(k + 1, s)) / sum;
+        cumulative += 1.0 / Math.pow(k + 1, s) / sum;
         this.cdf[k] = cumulative;
       }
     }
 
     sample(): number {
       const u = Math.random();
-      let lo = 0, hi = this.n - 1;
+      let lo = 0,
+        hi = this.n - 1;
       while (lo < hi) {
         const mid = (lo + hi) >> 1;
         if (this.cdf[mid] < u) lo = mid + 1;
@@ -356,7 +385,8 @@ describe("Connection Pool Right-Sizing", () => {
   });
 
   it("should calculate minimum warm connections at 25%", () => {
-    const warmConnections = (poolSize: number) => Math.max(2, Math.floor(poolSize / 4));
+    const warmConnections = (poolSize: number) =>
+      Math.max(2, Math.floor(poolSize / 4));
 
     expect(warmConnections(5)).toBe(2);
     expect(warmConnections(9)).toBe(2);

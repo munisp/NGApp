@@ -50,7 +50,9 @@ export interface ObservabilityContext {
  * Publish observability events to all middleware.
  * All calls are fire-and-forget with try/catch.
  */
-export async function emitObservabilityEvent(ctx: ObservabilityContext): Promise<void> {
+export async function emitObservabilityEvent(
+  ctx: ObservabilityContext
+): Promise<void> {
   const topic = `pos.${ctx.path.replace(/\./g, "_")}` as KafkaTopic;
   const payload = {
     path: ctx.path,
@@ -74,7 +76,11 @@ export async function emitObservabilityEvent(ctx: ObservabilityContext): Promise
   try {
     await cacheSet(
       `obs:${ctx.path}:${ctx.userId}:last`,
-      JSON.stringify({ ts: Date.now(), duration: ctx.durationMs, success: ctx.success }),
+      JSON.stringify({
+        ts: Date.now(),
+        duration: ctx.durationMs,
+        success: ctx.success,
+      }),
       600 // 10 min TTL
     );
   } catch {}
@@ -89,9 +95,9 @@ export async function emitObservabilityEvent(ctx: ObservabilityContext): Promise
   // 4. TigerBeetle — immutable audit ledger entry (zero-amount transfer for tracking)
   try {
     await tbCreateTransfer({
-      debitAccountId: "1",   // system observability account
-      creditAccountId: "2",  // audit sink account
-      amount: 0,             // zero-amount = audit-only entry
+      debitAccountId: "1", // system observability account
+      creditAccountId: "2", // audit sink account
+      amount: 0, // zero-amount = audit-only entry
     });
   } catch {}
 }
@@ -100,7 +106,9 @@ export async function emitObservabilityEvent(ctx: ObservabilityContext): Promise
  * Create the observability tRPC middleware.
  * This can be chained onto any procedure base.
  */
-export function createObservabilityMiddleware(t: ReturnType<typeof initTRPC.context<TrpcContext>["create"]>) {
+export function createObservabilityMiddleware(
+  t: ReturnType<(typeof initTRPC.context<TrpcContext>)["create"]>
+) {
   return t.middleware(async ({ ctx, next, path, type }) => {
     const startMs = Date.now();
     const userId = ctx.user ? String(ctx.user.id) : "anonymous";

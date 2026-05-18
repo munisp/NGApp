@@ -35,28 +35,19 @@ export const ROLE_LEVEL: Record<PBACRole, number> = {
  */
 const roleGroupAccess: Record<PBACRole, string[]> = {
   // ── Viewer: read-only dashboards ──
-  viewer: [
-    "core",
-    "help",
-  ],
+  viewer: ["core", "help"],
 
   // ── Auditor: viewer + compliance, audit, reporting ──
   auditor: [
     "core",
     "help",
     "analytics",
-    "production-finalization",  // regulatory reports, compliance training
-    "final-production",         // compliance certs, data retention
+    "production-finalization", // regulatory reports, compliance training
+    "final-production", // compliance certs, data retention
   ],
 
   // ── Agent: operational access ──
-  agent: [
-    "core",
-    "help",
-    "finance",
-    "notifications",
-    "engagement",
-  ],
+  agent: ["core", "help", "finance", "notifications", "engagement"],
 
   // ── Agent Manager: agent + agent management, territory, performance ──
   agent_manager: [
@@ -153,7 +144,7 @@ export function filterNavGroupsByRole<T extends { id: string }>(
   role?: string
 ): T[] {
   const visibleIds = new Set(getVisibleNavGroups(role));
-  return groups.filter((g) => visibleIds.has(g.id));
+  return groups.filter(g => visibleIds.has(g.id));
 }
 
 /**
@@ -230,7 +221,10 @@ const routeMinLevel: Record<string, number> = {
 /**
  * Check if a specific route is accessible to a role.
  */
-export function canAccessRoute(role: string | undefined, path: string): boolean {
+export function canAccessRoute(
+  role: string | undefined,
+  path: string
+): boolean {
   if (!role) return false;
   const mapped = mapLegacyRole(role);
   const userLevel = ROLE_LEVEL[mapped] || 1;

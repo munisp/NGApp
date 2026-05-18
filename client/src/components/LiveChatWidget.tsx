@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * LiveChatWidget — Floating chat support widget (bottom-right corner)
- * 
+ *
  * Features:
  * - Expandable chat bubble with AI assistant
  * - Real-time message exchange via tRPC
@@ -18,9 +18,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  MessageCircle, X, Send, Loader2, Minimize2, Maximize2,
-  AlertTriangle, Star, Bot, User, ChevronDown, Sparkles,
-  ArrowUpRight
+  MessageCircle,
+  X,
+  Send,
+  Loader2,
+  Minimize2,
+  Maximize2,
+  AlertTriangle,
+  Star,
+  Bot,
+  User,
+  ChevronDown,
+  Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -87,7 +97,8 @@ export function LiveChatWidget() {
   const closeSession = trpc.aiChat.closeSession.useMutation();
 
   // Get current page context
-  const currentContext = pageContextMap[location] || location.replace("/", "").replace(/-/g, " ");
+  const currentContext =
+    pageContextMap[location] || location.replace("/", "").replace(/-/g, " ");
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -104,7 +115,9 @@ export function LiveChatWidget() {
 
     if (!sessionId) {
       try {
-        const result = await createSession.mutateAsync({ context: currentContext });
+        const result = await createSession.mutateAsync({
+          context: currentContext,
+        });
         setSessionId(result.session.id);
         setMessages([result.welcomeMessage]);
       } catch {
@@ -114,59 +127,66 @@ export function LiveChatWidget() {
   }, [sessionId, currentContext, createSession]);
 
   // Send message
-  const handleSend = useCallback(async (content?: string) => {
-    const text = content || input.trim();
-    if (!text || !sessionId || isLoading) return;
+  const handleSend = useCallback(
+    async (content?: string) => {
+      const text = content || input.trim();
+      if (!text || !sessionId || isLoading) return;
 
-    setInput("");
-    setIsLoading(true);
+      setInput("");
+      setIsLoading(true);
 
-    // Optimistic add user message
-    const tempUserMsg: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      role: "user",
-      content: text,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, tempUserMsg]);
-
-    try {
-      const result = await sendMessage.mutateAsync({
-        sessionId,
+      // Optimistic add user message
+      const tempUserMsg: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        role: "user",
         content: text,
-        context: currentContext,
-      });
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, tempUserMsg]);
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
+      try {
+        const result = await sendMessage.mutateAsync({
+          sessionId,
+          content: text,
+          context: currentContext,
+        });
+
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+
+        // Replace temp message and add AI response
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== tempUserMsg.id);
+          const updated = [...filtered];
+          if (result.userMessage) updated.push(result.userMessage);
+          if (result.aiMessage) updated.push(result.aiMessage);
+          return updated;
+        });
+
+        // If widget is minimized, increment unread
+        if (isMinimized) {
+          setUnreadCount(prev => prev + 1);
+        }
+      } catch {
+        toast.error("Failed to send message");
+      } finally {
+        setIsLoading(false);
       }
-
-      // Replace temp message and add AI response
-      setMessages(prev => {
-        const filtered = prev.filter(m => m.id !== tempUserMsg.id);
-        const updated = [...filtered];
-        if (result.userMessage) updated.push(result.userMessage);
-        if (result.aiMessage) updated.push(result.aiMessage);
-        return updated;
-      });
-
-      // If widget is minimized, increment unread
-      if (isMinimized) {
-        setUnreadCount(prev => prev + 1);
-      }
-    } catch {
-      toast.error("Failed to send message");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [input, sessionId, isLoading, currentContext, sendMessage, isMinimized]);
+    },
+    [input, sessionId, isLoading, currentContext, sendMessage, isMinimized]
+  );
 
   // ─── ProactiveHelp Integration ──────────────────────────────────────────────
   // Listen for proactive-help-chat events dispatched by ProactiveHelp component
   useEffect(() => {
     const handleProactiveChat = async (e: Event) => {
-      const detail = (e as CustomEvent).detail as { page: string; issue: string; suggestions: string[] };
+      const detail = (e as CustomEvent).detail as {
+        page: string;
+        issue: string;
+        suggestions: string[];
+      };
       if (!detail) return;
 
       // Auto-open the chat widget
@@ -177,13 +197,16 @@ export function LiveChatWidget() {
       // Create session if needed
       if (!sessionId) {
         try {
-          const result = await createSession.mutateAsync({ context: `${currentContext} (Proactive Help)` });
+          const result = await createSession.mutateAsync({
+            context: `${currentContext} (Proactive Help)`,
+          });
           setSessionId(result.session.id);
           setMessages([result.welcomeMessage]);
 
           // Auto-send the contextual message after a brief delay
           setTimeout(() => {
-            const contextMsg = detail.issue || `I need help on the ${detail.page} page`;
+            const contextMsg =
+              detail.issue || `I need help on the ${detail.page} page`;
             handleSend(contextMsg);
           }, 500);
         } catch {
@@ -191,20 +214,25 @@ export function LiveChatWidget() {
         }
       } else {
         // Session exists, just send the contextual message
-        const contextMsg = detail.issue || `I need help on the ${detail.page} page`;
+        const contextMsg =
+          detail.issue || `I need help on the ${detail.page} page`;
         handleSend(contextMsg);
       }
     };
 
     window.addEventListener("proactive-help-chat", handleProactiveChat);
-    return () => window.removeEventListener("proactive-help-chat", handleProactiveChat);
+    return () =>
+      window.removeEventListener("proactive-help-chat", handleProactiveChat);
   }, [sessionId, currentContext, createSession, handleSend]);
 
   // Escalate to human
   const handleEscalate = useCallback(async () => {
     if (!sessionId) return;
     try {
-      const result = await escalate.mutateAsync({ sessionId, reason: "User requested human agent" });
+      const result = await escalate.mutateAsync({
+        sessionId,
+        reason: "User requested human agent",
+      });
       if (result.message) {
         setMessages(prev => [...prev, result.message!]);
       }
@@ -258,13 +286,18 @@ export function LiveChatWidget() {
     return (
       <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
         <button
-          onClick={() => { setIsMinimized(false); setUnreadCount(0); }}
+          onClick={() => {
+            setIsMinimized(false);
+            setUnreadCount(0);
+          }}
           className="h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 px-4 hover:scale-105 transition-transform"
         >
           <MessageCircle className="h-5 w-5" />
           <span className="text-sm font-medium">Chat</span>
           {unreadCount > 0 && (
-            <Badge variant="destructive" className="h-5 text-[10px]">{unreadCount}</Badge>
+            <Badge variant="destructive" className="h-5 text-[10px]">
+              {unreadCount}
+            </Badge>
           )}
         </button>
       </div>
@@ -277,8 +310,12 @@ export function LiveChatWidget() {
       <div className="fixed bottom-6 right-6 z-50 w-[380px] rounded-2xl border border-border bg-background shadow-2xl overflow-hidden">
         <div className="p-6 text-center">
           <Sparkles className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold mb-2">How was your experience?</h3>
-          <p className="text-sm text-muted-foreground mb-4">Rate your chat support experience</p>
+          <h3 className="text-lg font-semibold mb-2">
+            How was your experience?
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Rate your chat support experience
+          </p>
           <div className="flex items-center justify-center gap-2 mb-6">
             {[1, 2, 3, 4, 5].map(star => (
               <button
@@ -287,16 +324,32 @@ export function LiveChatWidget() {
                 className="transition-transform hover:scale-125"
               >
                 <Star
-                  className={cn("h-8 w-8", star <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")}
+                  className={cn(
+                    "h-8 w-8",
+                    star <= rating
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-muted-foreground"
+                  )}
                 />
               </button>
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => { setShowRating(false); handleClose(); }}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowRating(false);
+                handleClose();
+              }}
+            >
               Skip
             </Button>
-            <Button className="flex-1" onClick={handleClose} disabled={rating === 0}>
+            <Button
+              className="flex-1"
+              onClick={handleClose}
+              disabled={rating === 0}
+            >
               Submit & Close
             </Button>
           </div>
@@ -365,15 +418,25 @@ export function LiveChatWidget() {
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground rounded-br-md"
                       : "bg-muted text-foreground rounded-bl-md",
-                    msg.metadata?.type === "escalation" && "border border-amber-500/30 bg-amber-500/5"
+                    msg.metadata?.type === "escalation" &&
+                      "border border-amber-500/30 bg-amber-500/5"
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
-                  <p className={cn(
-                    "text-[10px] mt-1",
-                    msg.role === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
-                  )}>
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  <p className="whitespace-pre-wrap break-words leading-relaxed">
+                    {msg.content}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-[10px] mt-1",
+                      msg.role === "user"
+                        ? "text-primary-foreground/60"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {new Date(msg.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
                 {msg.role === "user" && (
@@ -392,9 +455,18 @@ export function LiveChatWidget() {
                 </div>
                 <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
                   </div>
                 </div>
               </div>
@@ -405,7 +477,9 @@ export function LiveChatWidget() {
         {/* Quick Actions (show only when few messages) */}
         {messages.length <= 2 && !isLoading && (
           <div className="pt-2">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Quick Actions</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+              Quick Actions
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {quickActions.map(action => (
                 <button

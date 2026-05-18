@@ -4,7 +4,13 @@
  * All activities run in the worker process with full access to DB, Redis, and external APIs.
  */
 import { getDb } from "./db";
-import { transactions, agents, tenants, tenantBillingConfig, billingRoleAssignments } from "../drizzle/schema";
+import {
+  transactions,
+  agents,
+  tenants,
+  tenantBillingConfig,
+  billingRoleAssignments,
+} from "../drizzle/schema";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 
 async function getDbInstance() {
@@ -12,7 +18,6 @@ async function getDbInstance() {
   if (!instance) throw new Error("Database not available");
   return instance;
 }
-
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface UnsettledTransaction {
@@ -63,10 +68,7 @@ export async function fetchUnsettledTransactions(input: {
     .select()
     .from(transactions)
     .where(
-      and(
-        eq(transactions.status, "success"),
-        isNull(transactions.deletedAt)
-      )
+      and(eq(transactions.status, "success"), isNull(transactions.deletedAt))
     )
     .limit(10000);
 
@@ -100,7 +102,7 @@ export async function calculateAgentSettlements(
   groups: AgentGroup[]
 ): Promise<AgentSettlement[]> {
   const COMMISSION_RATE = 0.005; // 0.5% commission per transaction
-  return groups.map((g) => {
+  return groups.map(g => {
     const commissionAmount = g.totalAmount * COMMISSION_RATE;
     return {
       agentId: g.agentId,
@@ -284,7 +286,10 @@ export async function validateTenantForBilling(input: {
   tenantName: string;
 }): Promise<{ valid: boolean; tenantName: string }> {
   const _db = await getDbInstance();
-  const [tenant] = await _db.select().from(tenants).where(eq(tenants.id, input.tenantId));
+  const [tenant] = await _db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, input.tenantId));
   if (!tenant) throw new Error(`Tenant ${input.tenantId} not found`);
   return { valid: true, tenantName: tenant.name || input.tenantName };
 }
@@ -297,16 +302,19 @@ export async function createBillingConfig(input: {
   currency: string;
 }): Promise<{ configId: number; billingModel: string }> {
   const _db = await getDbInstance();
-  const [config] = await _db.insert(tenantBillingConfig).values({
-    tenantId: input.tenantId,
-    billingModel: input.billingModel,
-    currency: input.currency || "NGN",
-    provisionedBy: input.provisionedBy,
-    status: "provisioning",
-    revenueShareConfig: input.customConfig?.revenueShareConfig || null,
-    subscriptionConfig: input.customConfig?.subscriptionConfig || null,
-    hybridConfig: input.customConfig?.hybridConfig || null,
-  }).returning();
+  const [config] = await _db
+    .insert(tenantBillingConfig)
+    .values({
+      tenantId: input.tenantId,
+      billingModel: input.billingModel,
+      currency: input.currency || "NGN",
+      provisionedBy: input.provisionedBy,
+      status: "provisioning",
+      revenueShareConfig: input.customConfig?.revenueShareConfig || null,
+      subscriptionConfig: input.customConfig?.subscriptionConfig || null,
+      hybridConfig: input.customConfig?.hybridConfig || null,
+    })
+    .returning();
   return { configId: config.id, billingModel: input.billingModel };
 }
 
@@ -315,12 +323,18 @@ export async function createTigerBeetleAccounts(input: {
 }): Promise<{ accountId: string; accounts: string[] }> {
   const accountId = `TB-${input.tenantId}-${Date.now()}`;
   const _db = await getDbInstance();
-  await _db.update(tenantBillingConfig)
+  await _db
+    .update(tenantBillingConfig)
     .set({ tigerBeetleAccountId: accountId })
     .where(eq(tenantBillingConfig.tenantId, input.tenantId));
   return {
     accountId,
-    accounts: [`${accountId}-revenue`, `${accountId}-commission`, `${accountId}-settlement`, `${accountId}-escrow`],
+    accounts: [
+      `${accountId}-revenue`,
+      `${accountId}-commission`,
+      `${accountId}-settlement`,
+      `${accountId}-escrow`,
+    ],
   };
 }
 
@@ -335,7 +349,8 @@ export async function provisionKafkaTopics(input: {
     `${topicPrefix}.audit`,
   ];
   const _db = await getDbInstance();
-  await _db.update(tenantBillingConfig)
+  await _db
+    .update(tenantBillingConfig)
     .set({ kafkaTopicPrefix: topicPrefix })
     .where(eq(tenantBillingConfig.tenantId, input.tenantId));
   return { topicPrefix, topics };
@@ -360,7 +375,9 @@ export async function configureReconciliation(input: {
   tenantId: number;
   region: string;
 }): Promise<{ schedule: string; threshold: number }> {
-  console.log(`[Temporal Activity] Configuring reconciliation for tenant ${input.tenantId} in ${input.region}`);
+  console.log(
+    `[Temporal Activity] Configuring reconciliation for tenant ${input.tenantId} in ${input.region}`
+  );
   return { schedule: "daily@02:00WAT", threshold: 0.01 };
 }
 
@@ -369,8 +386,13 @@ export async function activateBilling(input: {
   provisionedBy: number;
 }): Promise<{ activated: boolean; activatedAt: string }> {
   const _db = await getDbInstance();
-  await _db.update(tenantBillingConfig)
-    .set({ status: "active", lastModifiedAt: new Date(), lastModifiedBy: input.provisionedBy })
+  await _db
+    .update(tenantBillingConfig)
+    .set({
+      status: "active",
+      lastModifiedAt: new Date(),
+      lastModifiedBy: input.provisionedBy,
+    })
     .where(eq(tenantBillingConfig.tenantId, input.tenantId));
   return { activated: true, activatedAt: new Date().toISOString() };
 }
@@ -380,24 +402,41 @@ export async function rollbackBillingStep(input: {
   step: string;
 }): Promise<void> {
   const _db = await getDbInstance();
-  console.log(`[Temporal Activity] Rolling back step '${input.step}' for tenant ${input.tenantId}`);
+  console.log(
+    `[Temporal Activity] Rolling back step '${input.step}' for tenant ${input.tenantId}`
+  );
   switch (input.step) {
     case "create_billing_config":
-      await _db.delete(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, input.tenantId));
+      await _db
+        .delete(tenantBillingConfig)
+        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
       break;
     case "create_tigerbeetle_accounts":
-      await _db.update(tenantBillingConfig).set({ tigerBeetleAccountId: null }).where(eq(tenantBillingConfig.tenantId, input.tenantId));
+      await _db
+        .update(tenantBillingConfig)
+        .set({ tigerBeetleAccountId: null })
+        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
       break;
     case "provision_kafka_topics":
-      await _db.update(tenantBillingConfig).set({ kafkaTopicPrefix: null }).where(eq(tenantBillingConfig.tenantId, input.tenantId));
+      await _db
+        .update(tenantBillingConfig)
+        .set({ kafkaTopicPrefix: null })
+        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
       break;
     case "assign_billing_roles":
-      await _db.delete(billingRoleAssignments).where(eq(billingRoleAssignments.tenantId, input.tenantId));
+      await _db
+        .delete(billingRoleAssignments)
+        .where(eq(billingRoleAssignments.tenantId, input.tenantId));
       break;
     case "activate_billing":
-      await _db.update(tenantBillingConfig).set({ status: "provisioning" }).where(eq(tenantBillingConfig.tenantId, input.tenantId));
+      await _db
+        .update(tenantBillingConfig)
+        .set({ status: "provisioning" })
+        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
       break;
     default:
-      console.log(`[Temporal Activity] No rollback action for step '${input.step}'`);
+      console.log(
+        `[Temporal Activity] No rollback action for step '${input.step}'`
+      );
   }
 }

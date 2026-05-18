@@ -55,7 +55,9 @@ test.describe("Billing API Endpoints", () => {
   });
 
   test("billing dashboard summary should require auth", async ({ request }) => {
-    const response = await request.get("/api/trpc/liveBillingDashboard.summary");
+    const response = await request.get(
+      "/api/trpc/liveBillingDashboard.summary"
+    );
     expect([401, 400]).toContain(response.status());
   });
 
@@ -71,7 +73,9 @@ test.describe("Billing API Endpoints", () => {
 });
 
 test.describe("Stripe Webhook Endpoint", () => {
-  test("webhook endpoint should exist and reject unsigned requests", async ({ request }) => {
+  test("webhook endpoint should exist and reject unsigned requests", async ({
+    request,
+  }) => {
     const response = await request.post("/api/stripe/webhook", {
       data: JSON.stringify({ type: "test" }),
       headers: { "Content-Type": "application/json" },
@@ -82,7 +86,9 @@ test.describe("Stripe Webhook Endpoint", () => {
 });
 
 test.describe("Monthly Invoice Cron Endpoint", () => {
-  test("cron endpoint should exist and require auth header", async ({ request }) => {
+  test("cron endpoint should exist and require auth header", async ({
+    request,
+  }) => {
     const response = await request.post("/api/scheduled/monthly-invoices", {
       data: JSON.stringify({}),
       headers: { "Content-Type": "application/json" },

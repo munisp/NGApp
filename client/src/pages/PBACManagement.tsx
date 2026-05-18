@@ -7,20 +7,58 @@
  */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
-  Shield, ShieldCheck, ShieldAlert, Users, UserCog, Eye,
-  Crown, Star, Briefcase, User, FileSearch, Monitor,
-  ChevronDown, ChevronRight, Lock, Unlock, Search,
-  Plus, Minus, Clock, History, ArrowDown, AlertTriangle
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Users,
+  UserCog,
+  Eye,
+  Crown,
+  Star,
+  Briefcase,
+  User,
+  FileSearch,
+  Monitor,
+  ChevronDown,
+  ChevronRight,
+  Lock,
+  Unlock,
+  Search,
+  Plus,
+  Minus,
+  Clock,
+  History,
+  ArrowDown,
+  AlertTriangle,
 } from "lucide-react";
 
 const roleIcons: Record<string, React.ReactNode> = {
@@ -51,7 +89,6 @@ const riskColors: Record<string, string> = {
 };
 
 export default function PBACManagement() {
-  
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [assignDialog, setAssignDialog] = useState(false);
   const [assignUserId, setAssignUserId] = useState("");
@@ -59,11 +96,15 @@ export default function PBACManagement() {
   const [permDialog, setPermDialog] = useState<string | null>(null);
   const [permSearch, setPermSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   // Queries
   const rolesQuery = trpc.pbacManagement.listRoles.useQuery();
-  const permissionsQuery = trpc.pbacManagement.listPermissions.useQuery({ riskLevel: "all" });
+  const permissionsQuery = trpc.pbacManagement.listPermissions.useQuery({
+    riskLevel: "all",
+  });
   const usersQuery = trpc.pbacManagement.listUserAssignments.useQuery({
     roleId: selectedRole ?? undefined,
     search: userSearch || undefined,
@@ -92,7 +133,9 @@ export default function PBACManagement() {
 
   const modifyPermsMut = trpc.pbacManagement.modifyPermissions.useMutation({
     onSuccess: () => {
-      toast.success("Permissions updated: Role permissions have been modified.");
+      toast.success(
+        "Permissions updated: Role permissions have been modified."
+      );
       rolesQuery.refetch();
       roleDetail.refetch();
       auditQuery.refetch();
@@ -109,9 +152,10 @@ export default function PBACManagement() {
   });
 
   const toggleCategory = (cat: string) => {
-    setExpandedCategories((prev) => {
+    setExpandedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
       return next;
     });
   };
@@ -131,7 +175,8 @@ export default function PBACManagement() {
             PBAC Role Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage the 7-role hierarchy, assign permissions, and review access controls
+            Manage the 7-role hierarchy, assign permissions, and review access
+            controls
           </p>
         </div>
         <Button onClick={() => setAssignDialog(true)}>
@@ -143,38 +188,57 @@ export default function PBACManagement() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Role Hierarchy</CardTitle>
-          <CardDescription>Click a role to view details and manage permissions</CardDescription>
+          <CardDescription>
+            Click a role to view details and manage permissions
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-1">
             {rolesQuery.data?.map((role: any, idx: number) => (
-              <div key={role.id} className="flex flex-col items-center w-full max-w-md">
+              <div
+                key={role.id}
+                className="flex flex-col items-center w-full max-w-md"
+              >
                 {idx > 0 && role.inheritsFrom && (
                   <ArrowDown className="h-4 w-4 text-muted-foreground my-0.5" />
                 )}
                 <button
-                  onClick={() => setSelectedRole(role.id === selectedRole ? null : role.id)}
+                  onClick={() =>
+                    setSelectedRole(role.id === selectedRole ? null : role.id)
+                  }
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:shadow-md ${
                     selectedRole === role.id
                       ? `${roleColors[role.id] ?? ""} border-2 shadow-md`
                       : "border-border hover:border-primary/30"
                   }`}
                 >
-                  <div className="shrink-0">{roleIcons[role.id] ?? <Shield className="h-5 w-5" />}</div>
+                  <div className="shrink-0">
+                    {roleIcons[role.id] ?? <Shield className="h-5 w-5" />}
+                  </div>
                   <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{role.displayName}</span>
-                      <Badge variant="outline" className="text-xs">Level {role.level}</Badge>
-                      {role.isSystem && <Lock className="h-3 w-3 text-muted-foreground" />}
+                      <span className="font-semibold text-sm">
+                        {role.displayName}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        Level {role.level}
+                      </Badge>
+                      {role.isSystem && (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{role.description}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {role.description}
+                    </p>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="flex items-center gap-1 text-sm">
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="font-semibold">{role.userCount}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{role.permissions.length} perms</span>
+                    <span className="text-xs text-muted-foreground">
+                      {role.permissions.length} perms
+                    </span>
                   </div>
                 </button>
               </div>
@@ -187,8 +251,12 @@ export default function PBACManagement() {
       {selectedRole && (
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="users">Users ({roleDetail.data?.users?.length ?? 0})</TabsTrigger>
-            <TabsTrigger value="permissions">Permissions ({roleDetail.data?.role?.permissions.length ?? 0})</TabsTrigger>
+            <TabsTrigger value="users">
+              Users ({roleDetail.data?.users?.length ?? 0})
+            </TabsTrigger>
+            <TabsTrigger value="permissions">
+              Permissions ({roleDetail.data?.role?.permissions.length ?? 0})
+            </TabsTrigger>
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
           </TabsList>
 
@@ -200,7 +268,7 @@ export default function PBACManagement() {
                 <Input
                   placeholder="Search users..."
                   value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
+                  onChange={e => setUserSearch(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -220,19 +288,29 @@ export default function PBACManagement() {
                 </thead>
                 <tbody>
                   {usersQuery.data?.items.map((user: any) => (
-                    <tr key={user.userId} className="border-t hover:bg-muted/30">
+                    <tr
+                      key={user.userId}
+                      className="border-t hover:bg-muted/30"
+                    >
                       <td className="p-3">
                         <div>
                           <span className="font-medium">{user.userName}</span>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
                         </div>
                       </td>
                       <td className="p-3">
-                        <Badge variant="outline" className={`${roleColors[user.roleId] ?? ""} gap-1`}>
+                        <Badge
+                          variant="outline"
+                          className={`${roleColors[user.roleId] ?? ""} gap-1`}
+                        >
                           {roleIcons[user.roleId]} {user.roleName}
                         </Badge>
                       </td>
-                      <td className="p-3 text-muted-foreground">{user.assignedBy}</td>
+                      <td className="p-3 text-muted-foreground">
+                        {user.assignedBy}
+                      </td>
                       <td className="p-3 text-muted-foreground text-xs">
                         {new Date(user.assignedAt).toLocaleDateString()}
                       </td>
@@ -243,7 +321,9 @@ export default function PBACManagement() {
                             {new Date(user.expiresAt).toLocaleDateString()}
                           </Badge>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Never</span>
+                          <span className="text-xs text-muted-foreground">
+                            Never
+                          </span>
                         )}
                       </td>
                       <td className="p-3 text-right">
@@ -265,7 +345,9 @@ export default function PBACManagement() {
                               variant="ghost"
                               size="sm"
                               className="h-7 text-xs text-red-600 hover:text-red-700"
-                              onClick={() => removeMut.mutate({ userId: user.userId })}
+                              onClick={() =>
+                                removeMut.mutate({ userId: user.userId })
+                              }
                             >
                               <Minus className="h-3 w-3 mr-1" /> Demote
                             </Button>
@@ -274,9 +356,13 @@ export default function PBACManagement() {
                       </td>
                     </tr>
                   ))}
-                  {(!usersQuery.data?.items || usersQuery.data.items.length === 0) && (
+                  {(!usersQuery.data?.items ||
+                    usersQuery.data.items.length === 0) && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      <td
+                        colSpan={6}
+                        className="p-8 text-center text-muted-foreground"
+                      >
                         No users assigned to this role
                       </td>
                     </tr>
@@ -294,85 +380,119 @@ export default function PBACManagement() {
                 <Input
                   placeholder="Search permissions..."
                   value={permSearch}
-                  onChange={(e) => setPermSearch(e.target.value)}
+                  onChange={e => setPermSearch(e.target.value)}
                   className="pl-9"
                 />
               </div>
               {roleDetail.data?.role?.permissions.includes("*") && (
                 <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
-                  <Crown className="h-3 w-3 mr-1" /> Wildcard Access (all permissions)
+                  <Crown className="h-3 w-3 mr-1" /> Wildcard Access (all
+                  permissions)
                 </Badge>
               )}
             </div>
 
-            {permissionsQuery.data?.grouped && Object.entries(permissionsQuery.data.grouped).map(([category, perms]: [string, any]) => {
-              const filteredPerms = permSearch
-                ? perms.filter((p: any) =>
-                    p.id.toLowerCase().includes(permSearch.toLowerCase()) ||
-                    p.description.toLowerCase().includes(permSearch.toLowerCase())
-                  )
-                : perms;
-              if (filteredPerms.length === 0) return null;
+            {permissionsQuery.data?.grouped &&
+              Object.entries(permissionsQuery.data.grouped).map(
+                ([category, perms]: [string, any]) => {
+                  const filteredPerms = permSearch
+                    ? perms.filter(
+                        (p: any) =>
+                          p.id
+                            .toLowerCase()
+                            .includes(permSearch.toLowerCase()) ||
+                          p.description
+                            .toLowerCase()
+                            .includes(permSearch.toLowerCase())
+                      )
+                    : perms;
+                  if (filteredPerms.length === 0) return null;
 
-              const isExpanded = expandedCategories.has(category);
-              const grantedCount = filteredPerms.filter((p: any) => currentRolePerms.has(p.id) || currentRolePerms.has("*")).length;
+                  const isExpanded = expandedCategories.has(category);
+                  const grantedCount = filteredPerms.filter(
+                    (p: any) =>
+                      currentRolePerms.has(p.id) || currentRolePerms.has("*")
+                  ).length;
 
-              return (
-                <Card key={category}>
-                  <button
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
-                    onClick={() => toggleCategory(category)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      <span className="font-semibold text-sm">{category}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {grantedCount}/{filteredPerms.length} granted
-                      </Badge>
-                    </div>
-                  </button>
-                  {isExpanded && (
-                    <CardContent className="pt-0 pb-3">
-                      <div className="space-y-2">
-                        {filteredPerms.map((perm: any) => {
-                          const hasPermission = currentRolePerms.has(perm.id) || currentRolePerms.has("*");
-                          return (
-                            <div key={perm.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/30">
-                              <Checkbox
-                                checked={hasPermission}
-                                disabled={currentRolePerms.has("*")}
-                                onCheckedChange={(checked) => {
-                                  if (currentRolePerms.has("*")) return;
-                                  modifyPermsMut.mutate({
-                                    roleId: selectedRole!,
-                                    addPermissions: checked ? [perm.id] : [],
-                                    removePermissions: !checked ? [perm.id] : [],
-                                  });
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{perm.id}</code>
-                                  <Badge variant="outline" className={`text-xs ${riskColors[perm.riskLevel] ?? ""}`}>
-                                    {perm.riskLevel}
-                                  </Badge>
+                  return (
+                    <Card key={category}>
+                      <button
+                        className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                        onClick={() => toggleCategory(category)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          <span className="font-semibold text-sm">
+                            {category}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {grantedCount}/{filteredPerms.length} granted
+                          </Badge>
+                        </div>
+                      </button>
+                      {isExpanded && (
+                        <CardContent className="pt-0 pb-3">
+                          <div className="space-y-2">
+                            {filteredPerms.map((perm: any) => {
+                              const hasPermission =
+                                currentRolePerms.has(perm.id) ||
+                                currentRolePerms.has("*");
+                              return (
+                                <div
+                                  key={perm.id}
+                                  className="flex items-center gap-3 p-2 rounded hover:bg-muted/30"
+                                >
+                                  <Checkbox
+                                    checked={hasPermission}
+                                    disabled={currentRolePerms.has("*")}
+                                    onCheckedChange={checked => {
+                                      if (currentRolePerms.has("*")) return;
+                                      modifyPermsMut.mutate({
+                                        roleId: selectedRole!,
+                                        addPermissions: checked
+                                          ? [perm.id]
+                                          : [],
+                                        removePermissions: !checked
+                                          ? [perm.id]
+                                          : [],
+                                      });
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                                        {perm.id}
+                                      </code>
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-xs ${riskColors[perm.riskLevel] ?? ""}`}
+                                      >
+                                        {perm.riskLevel}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {perm.description}
+                                    </p>
+                                  </div>
+                                  {hasPermission ? (
+                                    <Unlock className="h-4 w-4 text-green-500 shrink-0" />
+                                  ) : (
+                                    <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  )}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">{perm.description}</p>
-                              </div>
-                              {hasPermission ? (
-                                <Unlock className="h-4 w-4 text-green-500 shrink-0" />
-                              ) : (
-                                <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })}
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                }
+              )}
           </TabsContent>
 
           {/* Audit Log Tab */}
@@ -399,17 +519,27 @@ export default function PBACManagement() {
                       <td className="p-3 font-medium">{entry.performedBy}</td>
                       <td className="p-3 text-muted-foreground">
                         {entry.targetUser && <span>{entry.targetUser}</span>}
-                        {entry.targetRole && <Badge variant="outline" className="text-xs ml-1">{entry.targetRole}</Badge>}
+                        {entry.targetRole && (
+                          <Badge variant="outline" className="text-xs ml-1">
+                            {entry.targetRole}
+                          </Badge>
+                        )}
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground max-w-[300px] truncate">{entry.details}</td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-[300px] truncate">
+                        {entry.details}
+                      </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         {new Date(entry.timestamp).toLocaleString()}
                       </td>
                     </tr>
                   ))}
-                  {(!auditQuery.data?.items || auditQuery.data.items.length === 0) && (
+                  {(!auditQuery.data?.items ||
+                    auditQuery.data.items.length === 0) && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <td
+                        colSpan={5}
+                        className="p-8 text-center text-muted-foreground"
+                      >
                         No audit entries yet
                       </td>
                     </tr>
@@ -426,7 +556,10 @@ export default function PBACManagement() {
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <p className="text-lg font-semibold">Select a role to manage</p>
-            <p className="text-sm text-muted-foreground mt-1">Click on any role in the hierarchy above to view users, permissions, and audit trail</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click on any role in the hierarchy above to view users,
+              permissions, and audit trail
+            </p>
           </CardContent>
         </Card>
       )}
@@ -437,30 +570,37 @@ export default function PBACManagement() {
           <DialogHeader>
             <DialogTitle>Assign Role to User</DialogTitle>
             <DialogDescription>
-              Select a user and role. Users can only be assigned roles below your own level.
+              Select a user and role. Users can only be assigned roles below
+              your own level.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">User ID</label>
+              <label className="text-sm font-medium mb-1.5 block">
+                User ID
+              </label>
               <Input
                 placeholder="Enter user ID..."
                 value={assignUserId}
-                onChange={(e) => setAssignUserId(e.target.value)}
+                onChange={e => setAssignUserId(e.target.value)}
                 type="number"
               />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Role</label>
               <Select value={assignRoleId} onValueChange={setAssignRoleId}>
-                <SelectTrigger><SelectValue placeholder="Select role..." /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
                 <SelectContent>
                   {rolesQuery.data?.map((role: any) => (
                     <SelectItem key={role.id} value={role.id}>
                       <div className="flex items-center gap-2">
                         {roleIcons[role.id]}
                         <span>{role.displayName}</span>
-                        <span className="text-xs text-muted-foreground">(Level {role.level})</span>
+                        <span className="text-xs text-muted-foreground">
+                          (Level {role.level})
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -469,11 +609,16 @@ export default function PBACManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAssignDialog(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={() => {
                 if (!assignUserId || !assignRoleId) return;
-                assignMut.mutate({ userId: parseInt(assignUserId), roleId: assignRoleId });
+                assignMut.mutate({
+                  userId: parseInt(assignUserId),
+                  roleId: assignRoleId,
+                });
               }}
               disabled={!assignUserId || !assignRoleId || assignMut.isPending}
             >

@@ -28,7 +28,11 @@ export const referralsRouter = router({
           .from(agents)
           .where(eq(agents.agentCode, input.agentCode))
           .limit(1);
-        if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        if (!agent)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
 
         // Generate a unique 8-char referral code
         const referralCode = `REF${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
@@ -65,7 +69,11 @@ export const referralsRouter = router({
         return { referralCode: referral.referralCode, existing: false };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -88,13 +96,26 @@ export const referralsRouter = router({
           .where(eq(referrals.referralCode, input.referralCode))
           .limit(1);
 
-        if (!referral) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid referral code" });
+        if (!referral)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Invalid referral code",
+          });
         if (referral.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Referral code already used or expired" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Referral code already used or expired",
+          });
         }
         if (referral.expiresAt && referral.expiresAt < new Date()) {
-          await db.update(referrals).set({ status: "expired" }).where(eq(referrals.referralCode, input.referralCode));
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Referral code has expired" });
+          await db
+            .update(referrals)
+            .set({ status: "expired" })
+            .where(eq(referrals.referralCode, input.referralCode));
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Referral code has expired",
+          });
         }
 
         const [referee] = await db
@@ -102,7 +123,11 @@ export const referralsRouter = router({
           .from(agents)
           .where(eq(agents.agentCode, input.refereeAgentCode))
           .limit(1);
-        if (!referee) throw new TRPCError({ code: "NOT_FOUND", message: "Referee agent not found" });
+        if (!referee)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Referee agent not found",
+          });
 
         // Link the referee to the referral
         await db
@@ -118,7 +143,11 @@ export const referralsRouter = router({
         return { success: true, message: "Referral code applied successfully" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -177,10 +206,18 @@ export const referralsRouter = router({
           .set({ status: "rewarded", rewardedAt: new Date() })
           .where(eq(referrals.referralCode, referral.referralCode));
 
-        return { awarded: true, bonusPoints: referral.bonusPoints, bonusCash: referral.bonusCash };
+        return {
+          awarded: true,
+          bonusPoints: referral.bonusPoints,
+          bonusCash: referral.bonusCash,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -190,7 +227,14 @@ export const referralsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return { total: 0, pending: 0, activated: 0, rewarded: 0, totalEarned: "0" };
+        if (!db)
+          return {
+            total: 0,
+            pending: 0,
+            activated: 0,
+            rewarded: 0,
+            totalEarned: "0",
+          };
 
         const rows = await db
           .select()
@@ -199,17 +243,28 @@ export const referralsRouter = router({
 
         const total = rows.length;
         const pending = rows.filter((r: any) => r.status === "pending").length;
-        const activated = rows.filter((r: any) => r.status === "activated").length;
-        const rewarded = rows.filter((r: any) => r.status === "rewarded").length;
+        const activated = rows.filter(
+          (r: any) => r.status === "activated"
+        ).length;
+        const rewarded = rows.filter(
+          (r: any) => r.status === "rewarded"
+        ).length;
         const totalEarned = rows
           .filter((r: any) => r.status === "rewarded")
-          .reduce((sum: any, r: any) => sum + parseFloat(r.bonusCash as string), 0)
+          .reduce(
+            (sum: any, r: any) => sum + parseFloat(r.bonusCash as string),
+            0
+          )
           .toFixed(2);
 
         return { total, pending, activated, rewarded, totalEarned };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -219,7 +274,9 @@ export const referralsRouter = router({
       z.object({
         page: z.number().default(1),
         limit: z.number().default(20),
-        status: z.enum(["pending", "activated", "rewarded", "expired"]).optional(),
+        status: z
+          .enum(["pending", "activated", "rewarded", "expired"])
+          .optional(),
       })
     )
     .query(async ({ input }) => {
@@ -227,54 +284,90 @@ export const referralsRouter = router({
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
         const offset = (input.page - 1) * input.limit;
-        const where = input.status ? eq(referrals.status, input.status) : undefined;
+        const where = input.status
+          ? eq(referrals.status, input.status)
+          : undefined;
         const [items, [{ c: total }]] = await Promise.all([
-          db.select().from(referrals).where(where).orderBy(desc(referrals.createdAt)).limit(input.limit).offset(offset),
+          db
+            .select()
+            .from(referrals)
+            .where(where)
+            .orderBy(desc(referrals.createdAt))
+            .limit(input.limit)
+            .offset(offset),
           db.select({ c: count() }).from(referrals).where(where),
         ]);
         return { items, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── list (with search support for UI) ──────────────────────────────────────────
   list: protectedProcedure
-    .input(z.object({
-      page: z.number().default(1),
-      limit: z.number().default(20),
-      status: z.enum(["pending", "activated", "rewarded", "expired"]).optional(),
-      search: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+        status: z
+          .enum(["pending", "activated", "rewarded", "expired"])
+          .optional(),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
         const offset = (input.page - 1) * input.limit;
-        const where = input.status ? eq(referrals.status, input.status) : undefined;
+        const where = input.status
+          ? eq(referrals.status, input.status)
+          : undefined;
         const [allItems, [{ c: total }]] = await Promise.all([
-          db.select().from(referrals).where(where).orderBy(desc(referrals.createdAt)).limit(input.limit).offset(offset),
+          db
+            .select()
+            .from(referrals)
+            .where(where)
+            .orderBy(desc(referrals.createdAt))
+            .limit(input.limit)
+            .offset(offset),
           db.select({ c: count() }).from(referrals).where(where),
         ]);
         const items = input.search
-          ? allItems.filter((r: any) =>
-              r.referrerCode.includes(input.search!) ||
-              (r.refereeCode ?? "").includes(input.search!) ||
-              r.referralCode.includes(input.search!)
+          ? allItems.filter(
+              (r: any) =>
+                r.referrerCode.includes(input.search!) ||
+                (r.refereeCode ?? "").includes(input.search!) ||
+                r.referralCode.includes(input.search!)
             )
           : allItems;
         return { items, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── stats ────────────────────────────────────────────────────────────────────
   stats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return { total: 0, activated: 0, rewarded: 0, expired: 0, totalRewardAmount: 0 };
+    if (!db)
+      return {
+        total: 0,
+        activated: 0,
+        rewarded: 0,
+        expired: 0,
+        totalRewardAmount: 0,
+      };
     const rows = await db.select().from(referrals).limit(100);
     const activated = rows.filter((r: any) => r.status === "activated").length;
     const rewarded = rows.filter((r: any) => r.status === "rewarded").length;
@@ -282,7 +375,13 @@ export const referralsRouter = router({
     const totalRewardAmount = rows
       .filter((r: any) => r.status === "rewarded")
       .reduce((sum: any, r: any) => sum + parseFloat(r.bonusCash as string), 0);
-    return { total: rows.length, activated, rewarded, expired, totalRewardAmount };
+    return {
+      total: rows.length,
+      activated,
+      rewarded,
+      expired,
+      totalRewardAmount,
+    };
   }),
 
   // ── markRewarded ──────────────────────────────────────────────────────────────
@@ -300,7 +399,11 @@ export const referralsRouter = router({
         return updated;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 });

@@ -44,9 +44,15 @@ interface BulkInsertResult {
 function escapeCSVValue(val: unknown): string {
   if (val === null || val === undefined) return "\\N";
   if (val instanceof Date) return val.toISOString();
-  if (typeof val === "object") return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+  if (typeof val === "object")
+    return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
   const str = String(val);
-  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\\")) {
+  if (
+    str.includes(",") ||
+    str.includes('"') ||
+    str.includes("\n") ||
+    str.includes("\\")
+  ) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
@@ -59,12 +65,25 @@ function escapeCSVValue(val: unknown): string {
  * ~5x faster than individual INSERTs, works with any PostgreSQL connection.
  * Falls back to this when COPY protocol is not available.
  */
-export async function bulkInsertValues(opts: BulkInsertOptions): Promise<BulkInsertResult> {
+export async function bulkInsertValues(
+  opts: BulkInsertOptions
+): Promise<BulkInsertResult> {
   const startTime = performance.now();
-  const { table, columns, rows, chunkSize = 500, onConflictDoNothing = false } = opts;
+  const {
+    table,
+    columns,
+    rows,
+    chunkSize = 500,
+    onConflictDoNothing = false,
+  } = opts;
 
   if (rows.length === 0) {
-    return { inserted: 0, duration: 0, method: "multi-row-values", rowsPerSecond: 0 };
+    return {
+      inserted: 0,
+      duration: 0,
+      method: "multi-row-values",
+      rowsPerSecond: 0,
+    };
   }
 
   const db = (await getDb())!;
@@ -94,16 +113,25 @@ export async function bulkInsertValues(opts: BulkInsertOptions): Promise<BulkIns
 
     // P2-3: Progress reporting every 100 settlements
     if (totalInserted % (chunkSize * 2) === 0 && totalInserted > 0) {
-      logger.info(`[BulkInsert] Progress: ${totalInserted}/${rows.length} rows inserted into ${table}`);
+      logger.info(
+        `[BulkInsert] Progress: ${totalInserted}/${rows.length} rows inserted into ${table}`
+      );
     }
   }
 
   const duration = performance.now() - startTime;
   const rowsPerSecond = Math.round((totalInserted / duration) * 1000);
 
-  logger.info(`[BulkInsert] Completed: ${totalInserted} rows into ${table} in ${duration.toFixed(1)}ms (${rowsPerSecond} rows/sec, method=multi-row-values)`);
+  logger.info(
+    `[BulkInsert] Completed: ${totalInserted} rows into ${table} in ${duration.toFixed(1)}ms (${rowsPerSecond} rows/sec, method=multi-row-values)`
+  );
 
-  return { inserted: totalInserted, duration, method: "multi-row-values", rowsPerSecond };
+  return {
+    inserted: totalInserted,
+    duration,
+    method: "multi-row-values",
+    rowsPerSecond,
+  };
 }
 
 /**
@@ -114,12 +142,19 @@ export async function bulkInsertValues(opts: BulkInsertOptions): Promise<BulkIns
  * Note: In environments where raw COPY is not available (e.g., connection poolers
  * like PgBouncer in transaction mode), falls back to multi-row VALUES.
  */
-export async function bulkInsertCopy(opts: BulkInsertOptions): Promise<BulkInsertResult> {
+export async function bulkInsertCopy(
+  opts: BulkInsertOptions
+): Promise<BulkInsertResult> {
   const startTime = performance.now();
   const { table, columns, rows } = opts;
 
   if (rows.length === 0) {
-    return { inserted: 0, duration: 0, method: "copy-protocol", rowsPerSecond: 0 };
+    return {
+      inserted: 0,
+      duration: 0,
+      method: "copy-protocol",
+      rowsPerSecond: 0,
+    };
   }
 
   try {
@@ -138,11 +173,16 @@ export async function bulkInsertCopy(opts: BulkInsertOptions): Promise<BulkInser
     const result = await bulkInsertValues(opts);
 
     const duration = performance.now() - startTime;
-    logger.info(`[BulkInsert/COPY] Completed via multi-row VALUES fallback: ${rows.length} rows in ${duration.toFixed(1)}ms`);
+    logger.info(
+      `[BulkInsert/COPY] Completed via multi-row VALUES fallback: ${rows.length} rows in ${duration.toFixed(1)}ms`
+    );
 
     return { ...result, duration };
   } catch (error) {
-    logger.warn(`[BulkInsert/COPY] COPY protocol failed, falling back to multi-row VALUES:`, error);
+    logger.warn(
+      `[BulkInsert/COPY] COPY protocol failed, falling back to multi-row VALUES:`,
+      error
+    );
     return bulkInsertValues(opts);
   }
 }
@@ -153,16 +193,27 @@ export async function bulkInsertCopy(opts: BulkInsertOptions): Promise<BulkInser
  * Bulk insert settlements using the fastest available method.
  * Automatically selects COPY or multi-row VALUES based on environment.
  */
-export async function bulkInsertSettlements(settlements: Array<{
-  merchantId: number;
-  period: string;
-  grossAmount: string;
-  feeAmount: string;
-  netAmount: string;
-  currency?: string;
-  status?: string;
-}>): Promise<BulkInsertResult> {
-  const columns = ["merchant_id", "period", "gross_amount", "fee_amount", "net_amount", "currency", "status", "created_at"];
+export async function bulkInsertSettlements(
+  settlements: Array<{
+    merchantId: number;
+    period: string;
+    grossAmount: string;
+    feeAmount: string;
+    netAmount: string;
+    currency?: string;
+    status?: string;
+  }>
+): Promise<BulkInsertResult> {
+  const columns = [
+    "merchant_id",
+    "period",
+    "gross_amount",
+    "fee_amount",
+    "net_amount",
+    "currency",
+    "status",
+    "created_at",
+  ];
   const rows = settlements.map(s => [
     s.merchantId,
     s.period,
@@ -174,29 +225,52 @@ export async function bulkInsertSettlements(settlements: Array<{
     new Date(),
   ]);
 
-  return bulkInsertValues({ table: "merchant_settlements", columns, rows, chunkSize: 500 });
+  return bulkInsertValues({
+    table: "merchant_settlements",
+    columns,
+    rows,
+    chunkSize: 500,
+  });
 }
 
 /**
  * Bulk insert reconciliation batches.
  */
-export async function bulkInsertReconciliationBatches(batches: Array<{
-  batchReference: string;
-  sourceType: string;
-  status?: string;
-  totalRecords?: number;
-}>): Promise<BulkInsertResult> {
-  const columns = ["batch_reference", "source_type", "status", "total_records", "matched_count", "unmatched_count", "discrepancy_count", "created_at"];
+export async function bulkInsertReconciliationBatches(
+  batches: Array<{
+    batchReference: string;
+    sourceType: string;
+    status?: string;
+    totalRecords?: number;
+  }>
+): Promise<BulkInsertResult> {
+  const columns = [
+    "batch_reference",
+    "source_type",
+    "status",
+    "total_records",
+    "matched_count",
+    "unmatched_count",
+    "discrepancy_count",
+    "created_at",
+  ];
   const rows = batches.map(b => [
     b.batchReference,
     b.sourceType,
     b.status ?? "pending",
     b.totalRecords ?? 0,
-    0, 0, 0,
+    0,
+    0,
+    0,
     new Date(),
   ]);
 
-  return bulkInsertValues({ table: "reconciliation_batches", columns, rows, chunkSize: 500 });
+  return bulkInsertValues({
+    table: "reconciliation_batches",
+    columns,
+    rows,
+    chunkSize: 500,
+  });
 }
 
 // ── Bulk Insert Benchmark ────────────────────────────────────────────────────
@@ -213,20 +287,32 @@ export async function benchmarkBulkInsert(rowCount: number = 1000): Promise<{
   const db = (await getDb())!;
 
   // Create temp table
-  await db.execute(sql`CREATE TEMP TABLE IF NOT EXISTS _bulk_bench (id SERIAL, val TEXT, num INTEGER, ts TIMESTAMP)`);
+  await db.execute(
+    sql`CREATE TEMP TABLE IF NOT EXISTS _bulk_bench (id SERIAL, val TEXT, num INTEGER, ts TIMESTAMP)`
+  );
 
   // Individual INSERTs
   const indStart = performance.now();
   for (let i = 0; i < Math.min(rowCount, 100); i++) {
-    await db.execute(sql`INSERT INTO _bulk_bench (val, num, ts) VALUES (${`val-${i}`}, ${i}, ${new Date()})`);
+    await db.execute(
+      sql`INSERT INTO _bulk_bench (val, num, ts) VALUES (${`val-${i}`}, ${i}, ${new Date()})`
+    );
   }
   const indDuration = performance.now() - indStart;
   const indRps = Math.round((Math.min(rowCount, 100) / indDuration) * 1000);
 
   // Bulk insert
   const columns = ["val", "num", "ts"];
-  const rows = Array.from({ length: rowCount }, (_, i) => [`val-${i}`, i, new Date()]);
-  const bulkResult = await bulkInsertValues({ table: "_bulk_bench", columns, rows });
+  const rows = Array.from({ length: rowCount }, (_, i) => [
+    `val-${i}`,
+    i,
+    new Date(),
+  ]);
+  const bulkResult = await bulkInsertValues({
+    table: "_bulk_bench",
+    columns,
+    rows,
+  });
 
   // Cleanup
   await db.execute(sql`DROP TABLE IF EXISTS _bulk_bench`);

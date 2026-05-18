@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Enhanced CRUD Operations — 54Link Agency Banking Platform
- * 
+ *
  * Provides:
  * 1. Full-text search across agents, customers, transactions
  * 2. Pagination with cursor and offset support
@@ -32,7 +32,10 @@ export interface PaginatedResult<T> {
   };
 }
 
-export function paginate<T>(items: T[], params: PaginationParams): PaginatedResult<T> {
+export function paginate<T>(
+  items: T[],
+  params: PaginationParams
+): PaginatedResult<T> {
   const { page, limit } = params;
   const total = items.length;
   const totalPages = Math.ceil(total / limit);
@@ -61,15 +64,15 @@ export function fullTextSearch<T extends Record<string, unknown>>(
   searchFields: (keyof T)[]
 ): T[] {
   if (!query || query.trim().length === 0) return items;
-  
+
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-  
+
   return items.filter(item => {
     const searchText = searchFields
       .map(field => String(item[field] ?? ""))
       .join(" ")
       .toLowerCase();
-    
+
     return terms.every(term => searchText.includes(term));
   });
 }
@@ -85,18 +88,20 @@ export function sortItems<T extends Record<string, unknown>>(
   return [...items].sort((a, b) => {
     const aVal = a[sortBy];
     const bVal = b[sortBy];
-    
+
     if (aVal == null && bVal == null) return 0;
     if (aVal == null) return sortOrder === "asc" ? -1 : 1;
     if (bVal == null) return sortOrder === "asc" ? 1 : -1;
-    
+
     if (typeof aVal === "number" && typeof bVal === "number") {
       return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     }
-    
+
     const aStr = String(aVal);
     const bStr = String(bVal);
-    return sortOrder === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+    return sortOrder === "asc"
+      ? aStr.localeCompare(bStr)
+      : bStr.localeCompare(aStr);
   });
 }
 
@@ -105,7 +110,16 @@ export function sortItems<T extends Record<string, unknown>>(
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface FilterCondition {
   field: string;
-  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "in" | "between";
+  operator:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "contains"
+    | "in"
+    | "between";
   value: unknown;
 }
 
@@ -116,22 +130,42 @@ export function filterItems<T extends Record<string, unknown>>(
   return items.filter(item => {
     return conditions.every(cond => {
       const fieldVal = item[cond.field];
-      
+
       switch (cond.operator) {
-        case "eq": return fieldVal === cond.value;
-        case "neq": return fieldVal !== cond.value;
-        case "gt": return typeof fieldVal === "number" && fieldVal > (cond.value as number);
-        case "gte": return typeof fieldVal === "number" && fieldVal >= (cond.value as number);
-        case "lt": return typeof fieldVal === "number" && fieldVal < (cond.value as number);
-        case "lte": return typeof fieldVal === "number" && fieldVal <= (cond.value as number);
-        case "contains": return String(fieldVal ?? "").toLowerCase().includes(String(cond.value).toLowerCase());
-        case "in": return Array.isArray(cond.value) && cond.value.includes(fieldVal);
+        case "eq":
+          return fieldVal === cond.value;
+        case "neq":
+          return fieldVal !== cond.value;
+        case "gt":
+          return (
+            typeof fieldVal === "number" && fieldVal > (cond.value as number)
+          );
+        case "gte":
+          return (
+            typeof fieldVal === "number" && fieldVal >= (cond.value as number)
+          );
+        case "lt":
+          return (
+            typeof fieldVal === "number" && fieldVal < (cond.value as number)
+          );
+        case "lte":
+          return (
+            typeof fieldVal === "number" && fieldVal <= (cond.value as number)
+          );
+        case "contains":
+          return String(fieldVal ?? "")
+            .toLowerCase()
+            .includes(String(cond.value).toLowerCase());
+        case "in":
+          return Array.isArray(cond.value) && cond.value.includes(fieldVal);
         case "between": {
-          if (!Array.isArray(cond.value) || cond.value.length !== 2) return true;
+          if (!Array.isArray(cond.value) || cond.value.length !== 2)
+            return true;
           const num = typeof fieldVal === "number" ? fieldVal : 0;
           return num >= cond.value[0] && num <= cond.value[1];
         }
-        default: return true;
+        default:
+          return true;
       }
     });
   });
@@ -152,8 +186,13 @@ export async function bulkOperation<T extends { id: string }>(
   ids: string[],
   operation: (item: T) => Promise<void> | void
 ): Promise<BulkOperationResult> {
-  const result: BulkOperationResult = { total: ids.length, succeeded: 0, failed: 0, errors: [] };
-  
+  const result: BulkOperationResult = {
+    total: ids.length,
+    succeeded: 0,
+    failed: 0,
+    errors: [],
+  };
+
   for (const id of ids) {
     const item = items.find(i => i.id === id);
     if (!item) {
@@ -166,10 +205,13 @@ export async function bulkOperation<T extends { id: string }>(
       result.succeeded++;
     } catch (err) {
       result.failed++;
-      result.errors.push({ id, error: err instanceof Error ? err.message : "Unknown error" });
+      result.errors.push({
+        id,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   }
-  
+
   return result;
 }
 
@@ -182,12 +224,14 @@ export function exportToCsv<T extends Record<string, unknown>>(
 ): string {
   const header = columns.map(c => `"${c.label}"`).join(",");
   const rows = items.map(item =>
-    columns.map(c => {
-      const val = item[c.key];
-      if (val == null) return '""';
-      if (typeof val === "string") return `"${val.replace(/"/g, '""')}"`;
-      return `"${String(val)}"`;
-    }).join(",")
+    columns
+      .map(c => {
+        const val = item[c.key];
+        if (val == null) return '""';
+        if (typeof val === "string") return `"${val.replace(/"/g, '""')}"`;
+        return `"${String(val)}"`;
+      })
+      .join(",")
   );
   return [header, ...rows].join("\n");
 }
@@ -231,18 +275,25 @@ export interface AuditEntry {
 
 const auditTrail: AuditEntry[] = [];
 
-export function recordAudit(entry: Omit<AuditEntry, "id" | "timestamp">): AuditEntry {
+export function recordAudit(
+  entry: Omit<AuditEntry, "id" | "timestamp">
+): AuditEntry {
   const full: AuditEntry = {
     ...entry,
     id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     timestamp: Date.now(),
   };
   auditTrail.push(full);
-  if (auditTrail.length > 100000) auditTrail.splice(0, auditTrail.length - 100000);
+  if (auditTrail.length > 100000)
+    auditTrail.splice(0, auditTrail.length - 100000);
   return full;
 }
 
-export function getAuditTrail(entityType?: string, entityId?: string, limit = 100): AuditEntry[] {
+export function getAuditTrail(
+  entityType?: string,
+  entityId?: string,
+  limit = 100
+): AuditEntry[] {
   let filtered = auditTrail;
   if (entityType) filtered = filtered.filter(e => e.entityType === entityType);
   if (entityId) filtered = filtered.filter(e => e.entityId === entityId);

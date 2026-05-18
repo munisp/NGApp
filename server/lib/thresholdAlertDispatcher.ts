@@ -50,13 +50,16 @@ const cooldowns: CooldownEntry[] = [];
 let nextNotifId = 1;
 
 // ─── Severity Configuration ─────────────────────────────────────────────────
-const SEVERITY_CONFIG: Record<Severity, {
-  emailSubjectPrefix: string;
-  emailPriority: "high" | "normal" | "low";
-  smsPrefix: string;
-  enableSms: boolean;
-  cooldownMultiplier: number;
-}> = {
+const SEVERITY_CONFIG: Record<
+  Severity,
+  {
+    emailSubjectPrefix: string;
+    emailPriority: "high" | "normal" | "low";
+    smsPrefix: string;
+    enableSms: boolean;
+    cooldownMultiplier: number;
+  }
+> = {
   critical: {
     emailSubjectPrefix: "🚨 CRITICAL ALERT",
     emailPriority: "high",
@@ -84,7 +87,7 @@ const SEVERITY_CONFIG: Record<Severity, {
 const QUIET_HOURS = {
   enabled: true,
   start: 22, // 10 PM
-  end: 7,    // 7 AM
+  end: 7, // 7 AM
   timezone: "Africa/Lagos",
   bypassForCritical: true, // critical alerts always go through
 };
@@ -171,20 +174,39 @@ function buildBreachSmsText(event: BreachEvent): string {
 }
 
 // ─── Cooldown Management ────────────────────────────────────────────────────
-function isCooldownActive(ruleId: string, channel: Channel, cooldownMinutes: number, severity: Severity): boolean {
-  const entry = cooldowns.find((c) => c.ruleId === ruleId && c.channel === channel);
+function isCooldownActive(
+  ruleId: string,
+  channel: Channel,
+  cooldownMinutes: number,
+  severity: Severity
+): boolean {
+  const entry = cooldowns.find(
+    c => c.ruleId === ruleId && c.channel === channel
+  );
   if (!entry) return false;
-  const effectiveCooldown = cooldownMinutes * SEVERITY_CONFIG[severity].cooldownMultiplier * 60 * 1000;
+  const effectiveCooldown =
+    cooldownMinutes * SEVERITY_CONFIG[severity].cooldownMultiplier * 60 * 1000;
   return Date.now() - entry.lastSentAt < effectiveCooldown;
 }
 
-function updateCooldown(ruleId: string, channel: Channel, cooldownMinutes: number): void {
-  const existing = cooldowns.find((c) => c.ruleId === ruleId && c.channel === channel);
+function updateCooldown(
+  ruleId: string,
+  channel: Channel,
+  cooldownMinutes: number
+): void {
+  const existing = cooldowns.find(
+    c => c.ruleId === ruleId && c.channel === channel
+  );
   if (existing) {
     existing.lastSentAt = Date.now();
     existing.cooldownMs = cooldownMinutes * 60 * 1000;
   } else {
-    cooldowns.push({ ruleId, channel, lastSentAt: Date.now(), cooldownMs: cooldownMinutes * 60 * 1000 });
+    cooldowns.push({
+      ruleId,
+      channel,
+      lastSentAt: Date.now(),
+      cooldownMs: cooldownMinutes * 60 * 1000,
+    });
   }
 }
 
@@ -212,7 +234,10 @@ async function sendEmailNotification(
   // import { sendEmail } from './emailService';
   // return sendEmail({ to, subject, html, text, priority, tags: ['threshold-alert'] });
   console.log(`[ThresholdDispatcher] EMAIL → ${to}: ${subject}`);
-  return { success: true, messageId: `email_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` };
+  return {
+    success: true,
+    messageId: `email_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  };
 }
 
 async function sendSmsNotification(
@@ -223,7 +248,10 @@ async function sendSmsNotification(
   // import { sendSms } from './smsService';
   // return sendSms({ to, message, provider: 'auto' });
   console.log(`[ThresholdDispatcher] SMS → ${to}: ${message.slice(0, 50)}...`);
-  return { success: true, messageId: `sms_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` };
+  return {
+    success: true,
+    messageId: `sms_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  };
 }
 
 async function sendPushNotification(
@@ -239,7 +267,10 @@ async function sendWebhookNotification(
   _url: string,
   payload: object
 ): Promise<{ success: boolean }> {
-  console.log(`[ThresholdDispatcher] WEBHOOK:`, JSON.stringify(payload).slice(0, 100));
+  console.log(
+    `[ThresholdDispatcher] WEBHOOK:`,
+    JSON.stringify(payload).slice(0, 100)
+  );
   return { success: true };
 }
 
@@ -250,11 +281,21 @@ export async function dispatchThresholdAlert(
 ): Promise<{
   dispatched: NotificationRecord[];
   skipped: NotificationRecord[];
-  summary: { sent: number; failed: number; skippedCooldown: number; skippedQuietHours: number };
+  summary: {
+    sent: number;
+    failed: number;
+    skippedCooldown: number;
+    skippedQuietHours: number;
+  };
 }> {
   const dispatched: NotificationRecord[] = [];
   const skipped: NotificationRecord[] = [];
-  const summary = { sent: 0, failed: 0, skippedCooldown: 0, skippedQuietHours: 0 };
+  const summary = {
+    sent: 0,
+    failed: 0,
+    skippedCooldown: 0,
+    skippedQuietHours: 0,
+  };
 
   const config = SEVERITY_CONFIG[event.severity];
   const emailSubject = `${config.emailSubjectPrefix}: ${event.ruleName}`;
@@ -264,7 +305,9 @@ export async function dispatchThresholdAlert(
 
   for (const channel of event.channels) {
     // Check cooldown
-    if (isCooldownActive(event.ruleId, channel, cooldownMinutes, event.severity)) {
+    if (
+      isCooldownActive(event.ruleId, channel, cooldownMinutes, event.severity)
+    ) {
       const record: NotificationRecord = {
         id: `notif_${nextNotifId++}`,
         eventId: event.eventId,
@@ -302,7 +345,13 @@ export async function dispatchThresholdAlert(
       case "email": {
         for (const recipient of event.recipients) {
           if (!recipient.includes("@")) continue; // skip non-email recipients
-          const result = await sendEmailNotification(recipient, emailSubject, emailHtml, emailText, config.emailPriority);
+          const result = await sendEmailNotification(
+            recipient,
+            emailSubject,
+            emailHtml,
+            emailText,
+            config.emailPriority
+          );
           const record: NotificationRecord = {
             id: `notif_${nextNotifId++}`,
             eventId: event.eventId,
@@ -394,7 +443,10 @@ export async function dispatchThresholdAlert(
           message: event.message,
           timestamp: event.createdAt,
         };
-        const result = await sendWebhookNotification("https://hooks.54link.com/alerts", payload);
+        const result = await sendWebhookNotification(
+          "https://hooks.54link.com/alerts",
+          payload
+        );
         const record: NotificationRecord = {
           id: `notif_${nextNotifId++}`,
           eventId: event.eventId,
@@ -442,16 +494,23 @@ export function getNotificationHistory(options?: {
   limit?: number;
 }): NotificationRecord[] {
   let records = [...notificationHistory];
-  if (options?.ruleId) records = records.filter((r) => r.ruleId === options.ruleId);
-  if (options?.channel) records = records.filter((r) => r.channel === options.channel);
-  if (options?.status) records = records.filter((r) => r.status === options.status);
-  records.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+  if (options?.ruleId)
+    records = records.filter(r => r.ruleId === options.ruleId);
+  if (options?.channel)
+    records = records.filter(r => r.channel === options.channel);
+  if (options?.status)
+    records = records.filter(r => r.status === options.status);
+  records.sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+  );
   return records.slice(0, options?.limit ?? 100);
 }
 
 // ─── Cooldown Status Query ──────────────────────────────────────────────────
-export function getCooldownStatus(): Array<CooldownEntry & { remainingMs: number; isActive: boolean }> {
-  return cooldowns.map((c) => {
+export function getCooldownStatus(): Array<
+  CooldownEntry & { remainingMs: number; isActive: boolean }
+> {
+  return cooldowns.map(c => {
     const elapsed = Date.now() - c.lastSentAt;
     const remaining = Math.max(0, c.cooldownMs - elapsed);
     return { ...c, remainingMs: remaining, isActive: remaining > 0 };
@@ -480,4 +539,10 @@ export {
   SEVERITY_CONFIG,
   QUIET_HOURS,
 };
-export type { BreachEvent, NotificationRecord, CooldownEntry, Severity, Channel };
+export type {
+  BreachEvent,
+  NotificationRecord,
+  CooldownEntry,
+  Severity,
+  Channel,
+};

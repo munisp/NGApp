@@ -5,10 +5,12 @@ import * as path from "path";
 const ROOT = path.resolve(__dirname, "..");
 
 describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboards", () => {
-
   describe("S88-01: Go Service Adapter Framework", () => {
     it("has shared adapter base with retry logic and circuit breaker", () => {
-      const content = fs.readFileSync(path.join(ROOT, "server/adapters/goServiceAdapter.ts"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "server/adapters/goServiceAdapter.ts"),
+        "utf-8"
+      );
       expect(content).toContain("GoServiceAdapter");
       expect(content).toContain("retry");
       expect(content).toContain("circuit");
@@ -55,7 +57,10 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
     });
 
     it("goServiceBridge is wired in routers.ts", () => {
-      const content = fs.readFileSync(path.join(ROOT, "server/routers.ts"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "server/routers.ts"),
+        "utf-8"
+      );
       expect(content).toContain("goServiceBridge");
     });
   });
@@ -106,14 +111,20 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
     });
 
     it("streams live transactions from DB (not mock)", () => {
-      const content = fs.readFileSync(path.join(ROOT, "server/websocket/realtimeStreaming.ts"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "server/websocket/realtimeStreaming.ts"),
+        "utf-8"
+      );
       expect(content).toContain("getDb");
       expect(content).toContain("transactions");
       expect(content).toContain("TransactionEvent");
     });
 
     it("broadcasts Go service health every 30s", () => {
-      const content = fs.readFileSync(path.join(ROOT, "server/websocket/realtimeStreaming.ts"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "server/websocket/realtimeStreaming.ts"),
+        "utf-8"
+      );
       expect(content).toContain("30_000");
       expect(content).toContain("GO_SERVICES");
       expect(content).toContain("workflow-orchestrator");
@@ -123,7 +134,10 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
 
   describe("S88-19: RealTimeDashboard UI Page", () => {
     it("RealTimeDashboard page exists with Socket.IO client", () => {
-      const filePath = path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx");
+      const filePath = path.join(
+        ROOT,
+        "client/src/pages/RealTimeDashboard.tsx"
+      );
       expect(fs.existsSync(filePath)).toBe(true);
       const content = fs.readFileSync(filePath, "utf-8");
       expect(content).toContain("socket.io-client");
@@ -132,26 +146,38 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
     });
 
     it("displays live transaction feed", () => {
-      const content = fs.readFileSync(path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"),
+        "utf-8"
+      );
       expect(content).toContain("Live Transaction");
       expect(content).toContain("transaction:new");
     });
 
     it("displays reconciliation events", () => {
-      const content = fs.readFileSync(path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"),
+        "utf-8"
+      );
       expect(content).toContain("Reconciliation");
       expect(content).toContain("reconciliation:update");
     });
 
     it("displays Go service health monitor", () => {
-      const content = fs.readFileSync(path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "client/src/pages/RealTimeDashboard.tsx"),
+        "utf-8"
+      );
       expect(content).toContain("Service Health");
       expect(content).toContain("service:health");
       expect(content).toContain("workflow-orchestrator");
     });
 
     it("is wired in App.tsx routes", () => {
-      const content = fs.readFileSync(path.join(ROOT, "client/src/App.tsx"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "client/src/App.tsx"),
+        "utf-8"
+      );
       expect(content).toContain("RealTimeDashboard");
       expect(content).toContain("real-time-dashboard");
     });
@@ -171,7 +197,10 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
     });
 
     it("defines proper message types with fields", () => {
-      const content = fs.readFileSync(path.join(ROOT, "proto/go-services.proto"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(ROOT, "proto/go-services.proto"),
+        "utf-8"
+      );
       expect(content).toContain("CreateTransferRequest");
       expect(content).toContain("BalanceResponse");
       expect(content).toContain("PermissionResponse");
@@ -182,16 +211,24 @@ describe("Sprint 88 — Go Service Wiring, Integration Tests, Real-Time Dashboar
   describe("Overall Sprint 88 Metrics", () => {
     it("has 15 Go service adapters", () => {
       const adapterDir = path.join(ROOT, "server/adapters");
-      const files = fs.readdirSync(adapterDir).filter(f => f.endsWith(".ts") && f !== "goServiceAdapter.ts");
+      const files = fs
+        .readdirSync(adapterDir)
+        .filter(f => f.endsWith(".ts") && f !== "goServiceAdapter.ts");
       expect(files.length).toBeGreaterThanOrEqual(14);
     });
 
     it("all critical financial routers use getDb (no mock data)", () => {
       const routerDir = path.join(ROOT, "server/routers");
       const criticalFiles = [
-        "aiCashFlowPredictor.ts", "dynamicQrPayment.ts", "merchantAcquirerGateway.ts",
-        "paymentTokenVault.ts", "intelligentRoutingEngine.ts", "bulkDisbursementEngine.ts",
-        "reconciliationEngine.ts", "currencyHedging.ts", "digitalTwinSimulator.ts"
+        "aiCashFlowPredictor.ts",
+        "dynamicQrPayment.ts",
+        "merchantAcquirerGateway.ts",
+        "paymentTokenVault.ts",
+        "intelligentRoutingEngine.ts",
+        "bulkDisbursementEngine.ts",
+        "reconciliationEngine.ts",
+        "currencyHedging.ts",
+        "digitalTwinSimulator.ts",
       ];
       for (const file of criticalFiles) {
         const content = fs.readFileSync(path.join(routerDir, file), "utf-8");

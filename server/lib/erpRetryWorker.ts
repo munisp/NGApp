@@ -13,13 +13,16 @@ import { erpSyncLog, erpConfig } from "../../drizzle/schema";
 import { eq, and, lte, lt } from "drizzle-orm";
 import { recordMetric } from "./analyticsMetrics";
 
-const BASE_DELAY_MS = 30_000;       // 30 seconds
+const BASE_DELAY_MS = 30_000; // 30 seconds
 const BACKOFF_MULTIPLIER = 2;
 const MAX_DELAY_MS = 4 * 60 * 60 * 1000; // 4 hours
-const JITTER_FACTOR = 0.2;          // ±20%
+const JITTER_FACTOR = 0.2; // ±20%
 
 export function computeNextRetryAt(retryCount: number): Date {
-  const base = Math.min(BASE_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, retryCount), MAX_DELAY_MS);
+  const base = Math.min(
+    BASE_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, retryCount),
+    MAX_DELAY_MS
+  );
   const jitter = base * JITTER_FACTOR * (Math.random() * 2 - 1); // ±20%
   return new Date(Date.now() + base + jitter);
 }
@@ -31,7 +34,7 @@ async function runRetryBatch(): Promise<void> {
   const now = new Date();
 
   // Find failed syncs that are due for retry and haven't exceeded maxRetries
-  let due: typeof erpSyncLog.$inferSelect[];
+  let due: (typeof erpSyncLog.$inferSelect)[];
   try {
     due = await db
       .select()
@@ -39,15 +42,19 @@ async function runRetryBatch(): Promise<void> {
       .where(
         and(
           eq(erpSyncLog.status, "failed"),
-          lte(erpSyncLog.nextRetryAt, now),
+          lte(erpSyncLog.nextRetryAt, now)
           // retryCount < maxRetries — use raw SQL comparison
-        ),
+        )
       )
       .limit(20);
   } catch (queryErr: unknown) {
     // Transient DB connection error — skip this cycle, will retry on next interval
     const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
-    if (msg.includes("Connection terminated") || msg.includes("timeout") || msg.includes("ECONNREFUSED")) {
+    if (
+      msg.includes("Connection terminated") ||
+      msg.includes("timeout") ||
+      msg.includes("ECONNREFUSED")
+    ) {
       return; // Silently skip — DB not ready yet
     }
     throw queryErr;
@@ -67,7 +74,11 @@ async function runRetryBatch(): Promise<void> {
       if (record.retryCount >= record.maxRetries - 1) {
         await db
           .update(erpSyncLog)
-          .set({ status: "failed", errorMessage: "ERP not configured — max retries reached", nextRetryAt: null })
+          .set({
+            status: "failed",
+            errorMessage: "ERP not configured — max retries reached",
+            nextRetryAt: null,
+          })
           .where(eq(erpSyncLog.id, record.id));
       }
     }
@@ -77,7 +88,9 @@ async function runRetryBatch(): Promise<void> {
   for (const record of eligible) {
     try {
       const payload = record.payload ?? {};
-      const webhookUrl = cfg.baseUrl.endsWith("/") ? cfg.baseUrl.slice(0, -1) : cfg.baseUrl;
+      const webhookUrl = cfg.baseUrl.endsWith("/")
+        ? cfg.baseUrl.slice(0, -1)
+        : cfg.baseUrl;
       const res = await fetch(`${webhookUrl}/api/54link/sync`, {
         method: "POST",
         headers: {
@@ -107,8 +120,12 @@ async function runRetryBatch(): Promise<void> {
             errorMessage: null,
           })
           .where(eq(erpSyncLog.id, record.id));
-        await recordMetric("erp.sync.success", 1, { entityType: record.entityType });
-        console.log(`[ERP Retry] ✓ Synced record ${record.id} (attempt ${record.retryCount + 1})`);
+        await recordMetric("erp.sync.success", 1, {
+          entityType: record.entityType,
+        });
+        console.log(
+          `[ERP Retry] ✓ Synced record ${record.id} (attempt ${record.retryCount + 1})`
+        );
       } else {
         const errText = await res.text().catch(() => res.statusText);
         const newRetryCount = record.retryCount + 1;
@@ -122,14 +139,20 @@ async function runRetryBatch(): Promise<void> {
             nextRetryAt: isExhausted ? null : computeNextRetryAt(newRetryCount),
           })
           .where(eq(erpSyncLog.id, record.id));
-        await recordMetric("erp.sync.failure", 1, { entityType: record.entityType });
+        await recordMetric("erp.sync.failure", 1, {
+          entityType: record.entityType,
+        });
         if (isExhausted) {
-          console.warn(`[ERP Retry] ✗ Record ${record.id} exhausted ${record.maxRetries} retries`);
+          console.warn(
+            `[ERP Retry] ✗ Record ${record.id} exhausted ${record.maxRetries} retries`
+          );
           // P1-A: Dead letter notification — alert owner when retries are exhausted
           notifyOwner({
             title: `ERP Sync Dead Letter: ${record.entityType} #${record.entityId}`,
             content: `ERP sync record ${record.id} (${record.entityType} #${record.entityId}) has exhausted all ${record.maxRetries} retry attempts.\n\nLast error: HTTP ${res.status}: ${errText.slice(0, 200)}\n\nAction required: Check ERP connectivity and manually re-queue this record from the ERP Config tab.`,
-          }).catch((e: unknown) => console.error("[ERP Retry] Dead letter notification failed:", e));
+          }).catch((e: unknown) =>
+            console.error("[ERP Retry] Dead letter notification failed:", e)
+          );
         }
       }
     } catch (err: unknown) {
@@ -144,13 +167,17 @@ async function runRetryBatch(): Promise<void> {
           nextRetryAt: isExhausted ? null : computeNextRetryAt(newRetryCount),
         })
         .where(eq(erpSyncLog.id, record.id));
-      await recordMetric("erp.sync.failure", 1, { entityType: record.entityType });
+      await recordMetric("erp.sync.failure", 1, {
+        entityType: record.entityType,
+      });
       if (isExhausted) {
         // P1-A: Dead letter notification — alert owner when retries are exhausted (network error)
         notifyOwner({
           title: `ERP Sync Dead Letter: ${record.entityType} #${record.entityId}`,
           content: `ERP sync record ${record.id} (${record.entityType} #${record.entityId}) has exhausted all ${record.maxRetries} retry attempts.\n\nLast error: ${msg.slice(0, 200)}\n\nAction required: Check ERP connectivity and manually re-queue this record from the ERP Config tab.`,
-        }).catch((e: unknown) => console.error("[ERP Retry] Dead letter notification failed:", e));
+        }).catch((e: unknown) =>
+          console.error("[ERP Retry] Dead letter notification failed:", e)
+        );
       }
     }
   }
@@ -162,10 +189,14 @@ export function startErpRetryWorker(): void {
   if (workerInterval) return;
   console.log("[ERP Retry Worker] Started — polling every 60s");
   workerInterval = setInterval(() => {
-    runRetryBatch().catch(err => console.error("[ERP Retry Worker] Error:", err));
+    runRetryBatch().catch(err =>
+      console.error("[ERP Retry Worker] Error:", err)
+    );
   }, 60_000);
   // Run once immediately on startup
-  runRetryBatch().catch(err => console.error("[ERP Retry Worker] Startup error:", err));
+  runRetryBatch().catch(err =>
+    console.error("[ERP Retry Worker] Startup error:", err)
+  );
 }
 
 export function stopErpRetryWorker(): void {

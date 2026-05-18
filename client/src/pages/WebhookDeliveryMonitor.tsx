@@ -7,15 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Webhook, RotateCcw, AlertOctagon, CheckCircle2, Clock, Send } from "lucide-react";
+import {
+  Webhook,
+  RotateCcw,
+  AlertOctagon,
+  CheckCircle2,
+  Clock,
+  Send,
+} from "lucide-react";
 
 export default function WebhookDeliveryMonitor() {
   const [activeTab, setActiveTab] = useState("all");
 
   const deliveries = trpc.sprint23.webhookDelivery.list.useQuery(
-    activeTab !== "all" && activeTab !== "dead_letter" ? { status: activeTab } : undefined
+    activeTab !== "all" && activeTab !== "dead_letter"
+      ? { status: activeTab }
+      : undefined
   );
-  const deadLetterQueue = trpc.sprint23.webhookDelivery.deadLetterQueue.useQuery();
+  const deadLetterQueue =
+    trpc.sprint23.webhookDelivery.deadLetterQueue.useQuery();
   const utils = trpc.useUtils();
 
   const retryDlq = trpc.sprint23.webhookDelivery.retryDeadLetter.useMutation({
@@ -28,15 +38,21 @@ export default function WebhookDeliveryMonitor() {
 
   const statusIcon = (status: string) => {
     switch (status) {
-      case "success": return <CheckCircle2 className="w-4 h-4 text-green-400" />;
-      case "pending": return <Clock className="w-4 h-4 text-yellow-400" />;
-      case "failed": return <RotateCcw className="w-4 h-4 text-orange-400" />;
-      case "dead_letter": return <AlertOctagon className="w-4 h-4 text-red-400" />;
-      default: return null;
+      case "success":
+        return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+      case "pending":
+        return <Clock className="w-4 h-4 text-yellow-400" />;
+      case "failed":
+        return <RotateCcw className="w-4 h-4 text-orange-400" />;
+      case "dead_letter":
+        return <AlertOctagon className="w-4 h-4 text-red-400" />;
+      default:
+        return null;
     }
   };
 
-  const items = activeTab === "dead_letter" ? deadLetterQueue.data : deliveries.data;
+  const items =
+    activeTab === "dead_letter" ? deadLetterQueue.data : deliveries.data;
 
   return (
     <DashboardLayout>
@@ -58,28 +74,39 @@ export default function WebhookDeliveryMonitor() {
           <Card className="border-green-500/30">
             <CardContent className="pt-4 text-center">
               <CheckCircle2 className="w-6 h-6 mx-auto text-green-400 mb-1" />
-              <p className="text-xl font-bold">{deliveries.data?.filter((d: any) => d.status === "success").length ?? 0}</p>
+              <p className="text-xl font-bold">
+                {deliveries.data?.filter((d: any) => d.status === "success")
+                  .length ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Delivered</p>
             </CardContent>
           </Card>
           <Card className="border-yellow-500/30">
             <CardContent className="pt-4 text-center">
               <Clock className="w-6 h-6 mx-auto text-yellow-400 mb-1" />
-              <p className="text-xl font-bold">{deliveries.data?.filter((d: any) => d.status === "pending").length ?? 0}</p>
+              <p className="text-xl font-bold">
+                {deliveries.data?.filter((d: any) => d.status === "pending")
+                  .length ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Pending</p>
             </CardContent>
           </Card>
           <Card className="border-orange-500/30">
             <CardContent className="pt-4 text-center">
               <RotateCcw className="w-6 h-6 mx-auto text-orange-400 mb-1" />
-              <p className="text-xl font-bold">{deliveries.data?.filter((d: any) => d.status === "failed").length ?? 0}</p>
+              <p className="text-xl font-bold">
+                {deliveries.data?.filter((d: any) => d.status === "failed")
+                  .length ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Retrying</p>
             </CardContent>
           </Card>
           <Card className="border-red-500/30">
             <CardContent className="pt-4 text-center">
               <AlertOctagon className="w-6 h-6 mx-auto text-red-400 mb-1" />
-              <p className="text-xl font-bold">{deadLetterQueue.data?.length ?? 0}</p>
+              <p className="text-xl font-bold">
+                {deadLetterQueue.data?.length ?? 0}
+              </p>
               <p className="text-xs text-muted-foreground">Dead Letter</p>
             </CardContent>
           </Card>
@@ -97,7 +124,7 @@ export default function WebhookDeliveryMonitor() {
           <TabsContent value={activeTab}>
             <Card>
               <CardContent className="pt-4">
-                {(!items || items.length === 0) ? (
+                {!items || items.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Send className="w-12 h-12 mx-auto mb-2 opacity-30" />
                     <p>No webhook deliveries in this category</p>
@@ -113,30 +140,59 @@ export default function WebhookDeliveryMonitor() {
                           <th className="text-center py-2 px-3">Attempts</th>
                           <th className="text-center py-2 px-3">Response</th>
                           <th className="text-right py-2 px-3">Next Retry</th>
-                          {activeTab === "dead_letter" && <th className="text-center py-2 px-3">Actions</th>}
+                          {activeTab === "dead_letter" && (
+                            <th className="text-center py-2 px-3">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
                         {items.map((d: any) => (
-                          <tr key={d.id} className="border-b border-border/50 hover:bg-muted/30">
-                            <td className="py-2 px-3 font-mono text-xs">{d.id}</td>
-                            <td className="py-2 px-3 text-xs truncate max-w-[200px]">{d.url}</td>
+                          <tr
+                            key={d.id}
+                            className="border-b border-border/50 hover:bg-muted/30"
+                          >
+                            <td className="py-2 px-3 font-mono text-xs">
+                              {d.id}
+                            </td>
+                            <td className="py-2 px-3 text-xs truncate max-w-[200px]">
+                              {d.url}
+                            </td>
                             <td className="text-center py-2 px-3">
                               <div className="flex items-center justify-center gap-1">
                                 {statusIcon(d.status)}
-                                <Badge variant={d.status === "success" ? "default" : d.status === "dead_letter" ? "destructive" : "secondary"}>
+                                <Badge
+                                  variant={
+                                    d.status === "success"
+                                      ? "default"
+                                      : d.status === "dead_letter"
+                                        ? "destructive"
+                                        : "secondary"
+                                  }
+                                >
                                   {d.status}
                                 </Badge>
                               </div>
                             </td>
-                            <td className="text-center py-2 px-3">{d.attempts}/{d.maxAttempts}</td>
-                            <td className="text-center py-2 px-3">{d.responseCode ?? "—"}</td>
+                            <td className="text-center py-2 px-3">
+                              {d.attempts}/{d.maxAttempts}
+                            </td>
+                            <td className="text-center py-2 px-3">
+                              {d.responseCode ?? "—"}
+                            </td>
                             <td className="text-right py-2 px-3 text-xs text-muted-foreground">
-                              {d.nextRetryAt ? new Date(d.nextRetryAt).toLocaleTimeString() : "—"}
+                              {d.nextRetryAt
+                                ? new Date(d.nextRetryAt).toLocaleTimeString()
+                                : "—"}
                             </td>
                             {activeTab === "dead_letter" && (
                               <td className="text-center py-2 px-3">
-                                <Button variant="ghost" size="sm" onClick={() => retryDlq.mutate({ deliveryId: d.id })}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    retryDlq.mutate({ deliveryId: d.id })
+                                  }
+                                >
                                   <RotateCcw className="w-4 h-4 mr-1" /> Retry
                                 </Button>
                               </td>

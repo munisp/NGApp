@@ -1,7 +1,6 @@
-
 /**
  * Analytics Query Router — 54Link POS Shell (Sprint 89)
- * 
+ *
  * tRPC router for querying transaction analytics from OpenSearch.
  * Provides aggregated metrics, time-series data, and search capabilities
  * for the TransactionAnalytics dashboard.
@@ -14,7 +13,10 @@ import { desc, count, sql, gte, and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // OpenSearch adapter (connects to opensearch-indexer Python service)
-async function queryOpenSearch(index: string, body: Record<string, any>): Promise<any> {
+async function queryOpenSearch(
+  index: string,
+  body: Record<string, any>
+): Promise<any> {
   const osEndpoint = process.env.OPENSEARCH_ENDPOINT || "http://localhost:9200";
   try {
     const res = await fetch(`${osEndpoint}/${index}/_search`, {
@@ -34,9 +36,11 @@ async function queryOpenSearch(index: string, body: Record<string, any>): Promis
 export const analyticsQueryRouter = router({
   // ── Transaction Volume Metrics ────────────────────────────────────────────────
   getTransactionMetrics: protectedProcedure
-    .input(z.object({
-      days: z.number().min(1).max(365).default(30),
-    }))
+    .input(
+      z.object({
+        days: z.number().min(1).max(365).default(30),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
@@ -72,20 +76,28 @@ export const analyticsQueryRouter = router({
         }
 
         // Fallback to DB
-        const [ledgerCount] = await db.select({ count: count() }).from(platformBillingLedger)
+        const [ledgerCount] = await db
+          .select({ count: count() })
+          .from(platformBillingLedger)
           .where(gte(platformBillingLedger.createdAt, since));
 
-        const recentLedger = await db.select().from(platformBillingLedger)
+        const recentLedger = await db
+          .select()
+          .from(platformBillingLedger)
           .where(gte(platformBillingLedger.createdAt, since))
           .orderBy(desc(platformBillingLedger.createdAt))
           .limit(100);
 
-        const totalVolume = recentLedger.reduce((sum: any, e: any) => sum + parseFloat(e.grossAmount || "0"), 0);
+        const totalVolume = recentLedger.reduce(
+          (sum: any, e: any) => sum + parseFloat(e.grossAmount || "0"),
+          0
+        );
 
         return {
           source: "database" as const,
           totalVolume,
-          avgAmount: ledgerCount.count > 0 ? totalVolume / ledgerCount.count : 0,
+          avgAmount:
+            ledgerCount.count > 0 ? totalVolume / ledgerCount.count : 0,
           byStatus: [] as Array<Record<string, unknown>>,
           timeSeries: [] as Array<Record<string, unknown>>,
           totalCount: ledgerCount.count,
@@ -93,16 +105,22 @@ export const analyticsQueryRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Search Transactions ───────────────────────────────────────────────────────
   searchTransactions: protectedProcedure
-    .input(z.object({
-      query: z.string().min(1).max(200),
-      limit: z.number().min(1).max(100).default(20),
-    }))
+    .input(
+      z.object({
+        query: z.string().min(1).max(200),
+        limit: z.number().min(1).max(100).default(20),
+      })
+    )
     .query(async ({ input }) => {
       try {
         // Try OpenSearch
@@ -111,7 +129,13 @@ export const analyticsQueryRouter = router({
           query: {
             multi_match: {
               query: input.query,
-              fields: ["transactionId", "tenantId", "currency", "status", "invoiceId"],
+              fields: [
+                "transactionId",
+                "tenantId",
+                "currency",
+                "status",
+                "invoiceId",
+              ],
             },
           },
         });
@@ -126,8 +150,12 @@ export const analyticsQueryRouter = router({
 
         // Fallback: search billing ledger by invoice ID
         const db = (await getDb())!;
-        const results = await db.select().from(platformBillingLedger)
-          .where(sql`${platformBillingLedger.transactionRef} LIKE ${"%" + input.query + "%"}`)
+        const results = await db
+          .select()
+          .from(platformBillingLedger)
+          .where(
+            sql`${platformBillingLedger.transactionRef} LIKE ${"%" + input.query + "%"}`
+          )
           .limit(input.limit);
 
         return {
@@ -137,25 +165,34 @@ export const analyticsQueryRouter = router({
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   // ── Pipeline Health (admin only) ──────────────────────────────────────────────
   getPipelineHealth: adminProcedure.query(async () => {
     const fluvioEndpoint = process.env.FLUVIO_ENDPOINT || "localhost:9003";
-    const osEndpoint = process.env.OPENSEARCH_ENDPOINT || "http://localhost:9200";
+    const osEndpoint =
+      process.env.OPENSEARCH_ENDPOINT || "http://localhost:9200";
 
     let fluvioStatus = "unknown";
     let opensearchStatus = "unknown";
 
     try {
-      const osRes = await fetch(`${osEndpoint}/_cluster/health`, { signal: AbortSignal.timeout(3000) });
+      const osRes = await fetch(`${osEndpoint}/_cluster/health`, {
+        signal: AbortSignal.timeout(3000),
+      });
       if (osRes.ok) {
         const health = await osRes.json();
         opensearchStatus = health.status || "unknown";
       }
-    } catch { opensearchStatus = "unavailable"; }
+    } catch {
+      opensearchStatus = "unavailable";
+    }
 
     return {
       fluvio: { endpoint: fluvioEndpoint, status: fluvioStatus },

@@ -24,7 +24,10 @@ export function sanitizeMessage(input: string): string {
   sanitized = sanitized.replace(/<[^>]*>/g, "");
 
   // 2. Escape remaining HTML entities
-  sanitized = sanitized.replace(/[&<>"'`/]/g, (char) => HTML_ENTITIES[char] || char);
+  sanitized = sanitized.replace(
+    /[&<>"'`/]/g,
+    char => HTML_ENTITIES[char] || char
+  );
 
   // 3. Remove null bytes
   sanitized = sanitized.replace(/\0/g, "");
@@ -69,10 +72,10 @@ export function sanitizeFileName(name: string): string {
   if (!name || typeof name !== "string") return "unnamed";
 
   return name
-    .replace(/[^a-zA-Z0-9._-]/g, "_")  // Replace unsafe chars
-    .replace(/\.{2,}/g, ".")             // No path traversal
-    .replace(/^\.+/, "")                 // No hidden files
-    .slice(0, 255);                      // Length limit
+    .replace(/[^a-zA-Z0-9._-]/g, "_") // Replace unsafe chars
+    .replace(/\.{2,}/g, ".") // No path traversal
+    .replace(/^\.+/, "") // No hidden files
+    .slice(0, 255); // Length limit
 }
 
 // ─── Content Security Policy Headers ────────────────────────────────────────
@@ -134,7 +137,10 @@ export function trackChatAbuse(ipAddress: string): {
   }
 
   if (record.blocked) {
-    return { blocked: true, reason: "IP temporarily blocked due to excessive chat activity" };
+    return {
+      blocked: true,
+      reason: "IP temporarily blocked due to excessive chat activity",
+    };
   }
 
   // Reset window if expired
@@ -156,14 +162,23 @@ export function trackChatAbuse(ipAddress: string): {
 
 // ─── Sensitive Data Redaction ───────────────────────────────────────────────
 const SENSITIVE_PATTERNS = [
-  { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[CARD_REDACTED]" },
+  {
+    pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
+    replacement: "[CARD_REDACTED]",
+  },
   { pattern: /\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/g, replacement: "[SSN_REDACTED]" },
-  { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL_REDACTED]" },
+  {
+    pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+    replacement: "[EMAIL_REDACTED]",
+  },
   { pattern: /\b(?:\+?234|0)\d{10}\b/g, replacement: "[PHONE_REDACTED]" },
   { pattern: /\bpin\s*[:=]\s*\d{4,6}\b/gi, replacement: "[PIN_REDACTED]" },
   { pattern: /\bpassword\s*[:=]\s*\S+/gi, replacement: "[PASSWORD_REDACTED]" },
   { pattern: /\bsecret\s*[:=]\s*\S+/gi, replacement: "[SECRET_REDACTED]" },
-  { pattern: /\btoken\s*[:=]\s*[A-Za-z0-9_-]{20,}/gi, replacement: "[TOKEN_REDACTED]" },
+  {
+    pattern: /\btoken\s*[:=]\s*[A-Za-z0-9_-]{20,}/gi,
+    replacement: "[TOKEN_REDACTED]",
+  },
 ];
 
 export function redactSensitiveData(text: string): string {
@@ -190,40 +205,167 @@ export function runChatSecurityChecks(): {
 } {
   const checks: SecurityCheckResult[] = [
     // Input validation
-    { category: "Input Validation", check: "XSS prevention via sanitization", passed: true, severity: "critical", details: "All chat messages pass through sanitizeMessage() before storage and display" },
-    { category: "Input Validation", check: "HTML tag stripping", passed: true, severity: "critical", details: "HTML tags are stripped from all user input" },
-    { category: "Input Validation", check: "Script injection prevention", passed: true, severity: "critical", details: "javascript:, vbscript:, and on* event handlers are removed" },
-    { category: "Input Validation", check: "Null byte removal", passed: true, severity: "high", details: "Null bytes and control characters are stripped" },
-    { category: "Input Validation", check: "Message length limits", passed: true, severity: "medium", details: "Messages capped at 5000 characters" },
+    {
+      category: "Input Validation",
+      check: "XSS prevention via sanitization",
+      passed: true,
+      severity: "critical",
+      details:
+        "All chat messages pass through sanitizeMessage() before storage and display",
+    },
+    {
+      category: "Input Validation",
+      check: "HTML tag stripping",
+      passed: true,
+      severity: "critical",
+      details: "HTML tags are stripped from all user input",
+    },
+    {
+      category: "Input Validation",
+      check: "Script injection prevention",
+      passed: true,
+      severity: "critical",
+      details: "javascript:, vbscript:, and on* event handlers are removed",
+    },
+    {
+      category: "Input Validation",
+      check: "Null byte removal",
+      passed: true,
+      severity: "high",
+      details: "Null bytes and control characters are stripped",
+    },
+    {
+      category: "Input Validation",
+      check: "Message length limits",
+      passed: true,
+      severity: "medium",
+      details: "Messages capped at 5000 characters",
+    },
 
     // Authentication
-    { category: "Authentication", check: "Session token validation", passed: true, severity: "critical", details: "All chat endpoints require valid session tokens" },
-    { category: "Authentication", check: "WebSocket authentication", passed: true, severity: "critical", details: "Socket.IO connections require auth handshake" },
-    { category: "Authentication", check: "CSRF protection", passed: true, severity: "high", details: "SameSite cookie attributes and origin validation" },
+    {
+      category: "Authentication",
+      check: "Session token validation",
+      passed: true,
+      severity: "critical",
+      details: "All chat endpoints require valid session tokens",
+    },
+    {
+      category: "Authentication",
+      check: "WebSocket authentication",
+      passed: true,
+      severity: "critical",
+      details: "Socket.IO connections require auth handshake",
+    },
+    {
+      category: "Authentication",
+      check: "CSRF protection",
+      passed: true,
+      severity: "high",
+      details: "SameSite cookie attributes and origin validation",
+    },
 
     // Rate limiting
-    { category: "Rate Limiting", check: "Per-user message rate limiting", passed: true, severity: "high", details: "20 messages/minute per user with token bucket" },
-    { category: "Rate Limiting", check: "IP-based abuse detection", passed: true, severity: "high", details: "100 messages/5min per IP with auto-blocking" },
-    { category: "Rate Limiting", check: "File upload size limits", passed: true, severity: "medium", details: "5MB max file size with MIME type validation" },
+    {
+      category: "Rate Limiting",
+      check: "Per-user message rate limiting",
+      passed: true,
+      severity: "high",
+      details: "20 messages/minute per user with token bucket",
+    },
+    {
+      category: "Rate Limiting",
+      check: "IP-based abuse detection",
+      passed: true,
+      severity: "high",
+      details: "100 messages/5min per IP with auto-blocking",
+    },
+    {
+      category: "Rate Limiting",
+      check: "File upload size limits",
+      passed: true,
+      severity: "medium",
+      details: "5MB max file size with MIME type validation",
+    },
 
     // Data protection
-    { category: "Data Protection", check: "Sensitive data redaction", passed: true, severity: "critical", details: "Card numbers, SSNs, PINs, passwords auto-redacted in logs" },
-    { category: "Data Protection", check: "URL sanitization", passed: true, severity: "high", details: "Only http/https/mailto URLs allowed" },
-    { category: "Data Protection", check: "File name sanitization", passed: true, severity: "medium", details: "Path traversal and hidden file prevention" },
-    { category: "Data Protection", check: "Audit trail", passed: true, severity: "high", details: "All admin actions logged with IP and user agent" },
+    {
+      category: "Data Protection",
+      check: "Sensitive data redaction",
+      passed: true,
+      severity: "critical",
+      details: "Card numbers, SSNs, PINs, passwords auto-redacted in logs",
+    },
+    {
+      category: "Data Protection",
+      check: "URL sanitization",
+      passed: true,
+      severity: "high",
+      details: "Only http/https/mailto URLs allowed",
+    },
+    {
+      category: "Data Protection",
+      check: "File name sanitization",
+      passed: true,
+      severity: "medium",
+      details: "Path traversal and hidden file prevention",
+    },
+    {
+      category: "Data Protection",
+      check: "Audit trail",
+      passed: true,
+      severity: "high",
+      details: "All admin actions logged with IP and user agent",
+    },
 
     // Headers & transport
-    { category: "Transport Security", check: "CSP headers", passed: true, severity: "high", details: "Content-Security-Policy with strict directives" },
-    { category: "Transport Security", check: "X-Frame-Options", passed: true, severity: "medium", details: "DENY to prevent clickjacking" },
-    { category: "Transport Security", check: "X-Content-Type-Options", passed: true, severity: "medium", details: "nosniff to prevent MIME sniffing" },
-    { category: "Transport Security", check: "Referrer-Policy", passed: true, severity: "low", details: "strict-origin-when-cross-origin" },
+    {
+      category: "Transport Security",
+      check: "CSP headers",
+      passed: true,
+      severity: "high",
+      details: "Content-Security-Policy with strict directives",
+    },
+    {
+      category: "Transport Security",
+      check: "X-Frame-Options",
+      passed: true,
+      severity: "medium",
+      details: "DENY to prevent clickjacking",
+    },
+    {
+      category: "Transport Security",
+      check: "X-Content-Type-Options",
+      passed: true,
+      severity: "medium",
+      details: "nosniff to prevent MIME sniffing",
+    },
+    {
+      category: "Transport Security",
+      check: "Referrer-Policy",
+      passed: true,
+      severity: "low",
+      details: "strict-origin-when-cross-origin",
+    },
 
     // File security
-    { category: "File Security", check: "MIME type whitelist", passed: true, severity: "high", details: "Only safe file types (images, PDFs, docs) allowed" },
-    { category: "File Security", check: "Dangerous extension blocking", passed: true, severity: "critical", details: ".exe, .bat, .sh, .js extensions blocked" },
+    {
+      category: "File Security",
+      check: "MIME type whitelist",
+      passed: true,
+      severity: "high",
+      details: "Only safe file types (images, PDFs, docs) allowed",
+    },
+    {
+      category: "File Security",
+      check: "Dangerous extension blocking",
+      passed: true,
+      severity: "critical",
+      details: ".exe, .bat, .sh, .js extensions blocked",
+    },
   ];
 
-  const passed = checks.filter((c) => c.passed).length;
+  const passed = checks.filter(c => c.passed).length;
   const total = checks.length;
   const score = Math.round((passed / total) * 100);
 

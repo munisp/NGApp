@@ -19,7 +19,10 @@ import {
   removeRecipient,
   listRecipients,
 } from "./lib/weeklyReportEnhancements";
-import type { WeeklyReport, WeeklyReportMetrics } from "./lib/weeklyReportGenerator";
+import type {
+  WeeklyReport,
+  WeeklyReportMetrics,
+} from "./lib/weeklyReportGenerator";
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -183,7 +186,10 @@ describe("Sprint 22: Email Configuration", () => {
   });
 
   it("should update email config", () => {
-    const updated = updateEmailConfig({ enabled: true, includeFullReport: false });
+    const updated = updateEmailConfig({
+      enabled: true,
+      includeFullReport: false,
+    });
     expect(updated.enabled).toBe(true);
     expect(updated.includeFullReport).toBe(false);
   });
@@ -201,11 +207,17 @@ describe("Sprint 22: Email Configuration", () => {
 
 describe("Sprint 22: Recipient Management", () => {
   it("should add a recipient and return updated config", () => {
-    const result = addRecipient("sprint22test@example.com", "Test User", "admin");
+    const result = addRecipient(
+      "sprint22test@example.com",
+      "Test User",
+      "admin"
+    );
     // addRecipient returns EmailDistributionConfig
     expect(result).toBeDefined();
     expect(Array.isArray(result.recipients)).toBe(true);
-    const found = result.recipients.find((r: any) => r.email === "sprint22test@example.com");
+    const found = result.recipients.find(
+      (r: any) => r.email === "sprint22test@example.com"
+    );
     expect(found).toBeDefined();
     expect(found?.name).toBe("Test User");
   });
@@ -213,7 +225,7 @@ describe("Sprint 22: Recipient Management", () => {
   it("should list recipients including newly added", () => {
     const list = listRecipients();
     expect(Array.isArray(list)).toBe(true);
-    const found = list.find((r) => r.email === "sprint22test@example.com");
+    const found = list.find(r => r.email === "sprint22test@example.com");
     expect(found).toBeDefined();
   });
 
@@ -221,7 +233,9 @@ describe("Sprint 22: Recipient Management", () => {
     const result = removeRecipient("sprint22test@example.com");
     // removeRecipient returns EmailDistributionConfig
     expect(result).toBeDefined();
-    const found = result.recipients.find((r: any) => r.email === "sprint22test@example.com");
+    const found = result.recipients.find(
+      (r: any) => r.email === "sprint22test@example.com"
+    );
     expect(found).toBeUndefined();
   });
 
@@ -237,7 +251,7 @@ describe("Sprint 22: Recipient Management", () => {
     addRecipient("dup22@example.com", "First", "admin");
     addRecipient("dup22@example.com", "Second", "manager");
     const list = listRecipients();
-    const matches = list.filter((r) => r.email === "dup22@example.com");
+    const matches = list.filter(r => r.email === "dup22@example.com");
     expect(matches.length).toBe(1);
     // Cleanup
     removeRecipient("dup22@example.com");

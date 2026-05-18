@@ -15,7 +15,9 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should validate valid transaction request", async () => {
-    const { transactionRequestSchema } = await import("./middleware/transactionPipeline");
+    const { transactionRequestSchema } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = transactionRequestSchema.safeParse({
       type: "cash_in",
       amount: 5000,
@@ -26,7 +28,9 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should reject invalid transaction type", async () => {
-    const { transactionRequestSchema } = await import("./middleware/transactionPipeline");
+    const { transactionRequestSchema } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = transactionRequestSchema.safeParse({
       type: "invalid_type",
       amount: 5000,
@@ -37,7 +41,9 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should reject negative amount", async () => {
-    const { transactionRequestSchema } = await import("./middleware/transactionPipeline");
+    const { transactionRequestSchema } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = transactionRequestSchema.safeParse({
       type: "cash_in",
       amount: -100,
@@ -48,7 +54,9 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should reject amount exceeding 50M NGN", async () => {
-    const { transactionRequestSchema } = await import("./middleware/transactionPipeline");
+    const { transactionRequestSchema } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = transactionRequestSchema.safeParse({
       type: "cash_in",
       amount: 60_000_000,
@@ -59,9 +67,16 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should process a valid cash-in transaction", async () => {
-    const { processTransaction } = await import("./middleware/transactionPipeline");
+    const { processTransaction } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = await processTransaction(
-      { type: "cash_in", amount: 5000, currency: "NGN", senderAgentCode: "AGT-001" },
+      {
+        type: "cash_in",
+        amount: 5000,
+        currency: "NGN",
+        senderAgentCode: "AGT-001",
+      },
       1
     );
     expect(result.approved).toBe(true);
@@ -73,27 +88,48 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should calculate correct commission for cash_in (0.5%)", async () => {
-    const { processTransaction } = await import("./middleware/transactionPipeline");
+    const { processTransaction } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = await processTransaction(
-      { type: "cash_in", amount: 10000, currency: "NGN", senderAgentCode: "AGT-001" },
+      {
+        type: "cash_in",
+        amount: 10000,
+        currency: "NGN",
+        senderAgentCode: "AGT-001",
+      },
       1
     );
     expect(result.commission).toBe(50); // 10000 * 0.005
   });
 
   it("should calculate correct fee tier for small amount", async () => {
-    const { processTransaction } = await import("./middleware/transactionPipeline");
+    const { processTransaction } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = await processTransaction(
-      { type: "cash_in", amount: 3000, currency: "NGN", senderAgentCode: "AGT-001" },
+      {
+        type: "cash_in",
+        amount: 3000,
+        currency: "NGN",
+        senderAgentCode: "AGT-001",
+      },
       1
     );
     expect(result.fee).toBe(10); // 0-5000 tier
   });
 
   it("should reject transaction exceeding single limit for standard tier", async () => {
-    const { processTransaction } = await import("./middleware/transactionPipeline");
+    const { processTransaction } = await import(
+      "./middleware/transactionPipeline"
+    );
     const result = await processTransaction(
-      { type: "cash_in", amount: 150_000, currency: "NGN", senderAgentCode: "AGT-001" },
+      {
+        type: "cash_in",
+        amount: 150_000,
+        currency: "NGN",
+        senderAgentCode: "AGT-001",
+      },
       1
     );
     expect(result.approved).toBe(false);
@@ -111,7 +147,9 @@ describe("Transaction Pipeline", () => {
   });
 
   it("should summarize batch results correctly", async () => {
-    const { summarizeResults } = await import("./middleware/transactionPipeline");
+    const { summarizeResults } = await import(
+      "./middleware/transactionPipeline"
+    );
     const results = [
       { approved: true, fee: 10, commission: 50, processingTimeMs: 5 },
       { approved: true, fee: 25, commission: 100, processingTimeMs: 3 },
@@ -182,7 +220,9 @@ describe("Tenant Scope Middleware", () => {
   });
 
   it("should export assignUserToTenant function", async () => {
-    const { assignUserToTenant, getUserTenantId } = await import("./middleware/tenantScope");
+    const { assignUserToTenant, getUserTenantId } = await import(
+      "./middleware/tenantScope"
+    );
     assignUserToTenant("user-123", "tenant-abc");
     expect(getUserTenantId("user-123")).toBe("tenant-abc");
   });
@@ -222,7 +262,9 @@ describe("Security Hardening", () => {
   });
 
   it("should track failed login attempts", async () => {
-    const { recordFailedLogin, clearFailedLogins } = await import("./lib/securityHardening");
+    const { recordFailedLogin, clearFailedLogins } = await import(
+      "./lib/securityHardening"
+    );
     const userId = `test-lockout-${Date.now()}`;
     const result = recordFailedLogin(userId);
     expect(result.locked).toBe(false);

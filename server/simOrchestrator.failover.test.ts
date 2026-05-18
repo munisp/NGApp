@@ -75,9 +75,10 @@ describe("SIM Failover Logic", () => {
       const reason = "high_latency";
       const latencyMs = 4200;
       const lossX10 = 0;
-      const label = reason === "high_latency"
-        ? `latency ${latencyMs}ms > 3000ms`
-        : `packet loss ${(lossX10 / 10).toFixed(1)}% > 20%`;
+      const label =
+        reason === "high_latency"
+          ? `latency ${latencyMs}ms > 3000ms`
+          : `packet loss ${(lossX10 / 10).toFixed(1)}% > 20%`;
       expect(label).toBe("latency 4200ms > 3000ms");
     });
 
@@ -85,9 +86,10 @@ describe("SIM Failover Logic", () => {
       const reason = "high_packet_loss";
       const latencyMs = 0;
       const lossX10 = 250;
-      const label = reason === "high_latency"
-        ? `latency ${latencyMs}ms > 3000ms`
-        : `packet loss ${(lossX10 / 10).toFixed(1)}% > 20%`;
+      const label =
+        reason === "high_latency"
+          ? `latency ${latencyMs}ms > 3000ms`
+          : `packet loss ${(lossX10 / 10).toFixed(1)}% > 20%`;
       expect(label).toBe("packet loss 25.0% > 20%");
     });
 
@@ -133,8 +135,8 @@ describe("SIM Failover Logic", () => {
       const mapped = {
         ...row,
         fromSlotName: slotNames[row.fromSlot] ?? `Slot${row.fromSlot}`,
-        toSlotName:   slotNames[row.toSlot]   ?? `Slot${row.toSlot}`,
-        lossPercent:  row.lossX10 / 10,
+        toSlotName: slotNames[row.toSlot] ?? `Slot${row.toSlot}`,
+        lossPercent: row.lossX10 / 10,
       };
       expect(mapped.lossPercent).toBe(25.0);
       expect(mapped.fromSlotName).toBe("Phys1");
@@ -147,8 +149,8 @@ describe("SIM Failover Logic", () => {
       const mapped = {
         ...row,
         fromSlotName: slotNames[row.fromSlot] ?? `Slot${row.fromSlot}`,
-        toSlotName:   slotNames[row.toSlot]   ?? `Slot${row.toSlot}`,
-        lossPercent:  row.lossX10 / 10,
+        toSlotName: slotNames[row.toSlot] ?? `Slot${row.toSlot}`,
+        lossPercent: row.lossX10 / 10,
       };
       expect(mapped.lossPercent).toBe(0);
       expect(mapped.fromSlotName).toBe("Phys2");
@@ -158,8 +160,8 @@ describe("SIM Failover Logic", () => {
 
   describe("GPS coordinate conversion", () => {
     it("converts latE6/lonE6 to decimal degrees", () => {
-      const latE6 = 6537000;  // 6.537°N (Lagos area)
-      const lonE6 = 3378000;  // 3.378°E
+      const latE6 = 6537000; // 6.537°N (Lagos area)
+      const lonE6 = 3378000; // 3.378°E
       const lat = latE6 / 1_000_000;
       const lon = lonE6 / 1_000_000;
       expect(lat).toBeCloseTo(6.537, 3);
@@ -167,9 +169,9 @@ describe("SIM Failover Logic", () => {
     });
 
     it("converts RSSI to dBm (ASU to dBm formula)", () => {
-      const rssi = 20;  // ASU value
+      const rssi = 20; // ASU value
       const rssiDbm = -113 + rssi * 2;
-      expect(rssiDbm).toBe(-73);  // -113 + 40 = -73 dBm
+      expect(rssiDbm).toBe(-73); // -113 + 40 = -73 dBm
     });
 
     it("returns null for RSSI=99 (unknown/not detectable)", () => {

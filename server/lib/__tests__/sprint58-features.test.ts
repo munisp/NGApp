@@ -50,13 +50,14 @@ describe("Batch Progress Reporter", () => {
   });
 
   it("should start tracking a batch and report progress", async () => {
-    const { startBatchProgress, reportProgress, completeBatchProgress } = await import("../batchProgressReporter");
-    
+    const { startBatchProgress, reportProgress, completeBatchProgress } =
+      await import("../batchProgressReporter");
+
     const progressEvents: any[] = [];
-    const tracker = await startBatchProgress("test-s58-001", 100, (event) => {
+    const tracker = await startBatchProgress("test-s58-001", 100, event => {
       progressEvents.push(event);
     });
-    
+
     expect(tracker.batchId).toBe("test-s58-001");
     expect(tracker.total).toBe(100);
     expect(progressEvents.length).toBeGreaterThanOrEqual(1);
@@ -75,8 +76,10 @@ describe("Batch Progress Reporter", () => {
   });
 
   it("should report failure", async () => {
-    const { startBatchProgress, failBatchProgress } = await import("../batchProgressReporter");
-    
+    const { startBatchProgress, failBatchProgress } = await import(
+      "../batchProgressReporter"
+    );
+
     await startBatchProgress("test-s58-fail", 100);
     const failEvent = failBatchProgress("test-s58-fail", "Simulated error");
     expect(failEvent).toBeDefined();
@@ -99,12 +102,16 @@ describe("Archival Admin Router", () => {
 
   it("should have triggerArchival procedure", async () => {
     const mod = await import("../../routers/archivalAdmin");
-    expect(mod.archivalAdminRouter._def.procedures.triggerArchival).toBeDefined();
+    expect(
+      mod.archivalAdminRouter._def.procedures.triggerArchival
+    ).toBeDefined();
   });
 
   it("should have updateSchedule procedure", async () => {
     const mod = await import("../../routers/archivalAdmin");
-    expect(mod.archivalAdminRouter._def.procedures.updateSchedule).toBeDefined();
+    expect(
+      mod.archivalAdminRouter._def.procedures.updateSchedule
+    ).toBeDefined();
   });
 
   it("should have getHistory procedure", async () => {
@@ -128,17 +135,23 @@ describe("Load Test Metrics Router", () => {
 
   it("should have getRunDetails procedure", async () => {
     const mod = await import("../../routers/loadTestMetrics");
-    expect(mod.loadTestMetricsRouter._def.procedures.getRunDetails).toBeDefined();
+    expect(
+      mod.loadTestMetricsRouter._def.procedures.getRunDetails
+    ).toBeDefined();
   });
 
   it("should have getEngineMetrics procedure", async () => {
     const mod = await import("../../routers/loadTestMetrics");
-    expect(mod.loadTestMetricsRouter._def.procedures.getEngineMetrics).toBeDefined();
+    expect(
+      mod.loadTestMetricsRouter._def.procedures.getEngineMetrics
+    ).toBeDefined();
   });
 
   it("should have getPrometheusMetrics procedure", async () => {
     const mod = await import("../../routers/loadTestMetrics");
-    expect(mod.loadTestMetricsRouter._def.procedures.getPrometheusMetrics).toBeDefined();
+    expect(
+      mod.loadTestMetricsRouter._def.procedures.getPrometheusMetrics
+    ).toBeDefined();
   });
 
   it("should have recordRun procedure", async () => {
@@ -210,35 +223,40 @@ describe("Observability Module", () => {
   });
 
   it("should start and end spans correctly", async () => {
-    const { startSpan, endSpan, getAllEngineMetrics, resetMetrics } = await import("../observability");
-    
+    const { startSpan, endSpan, getAllEngineMetrics, resetMetrics } =
+      await import("../observability");
+
     // Reset to get clean state
     resetMetrics();
-    
+
     // startSpan returns a SpanContext object, not a string
     const span = startSpan("test_engine_s58", "test_operation");
     expect(span).toBeDefined();
     expect(span.spanId).toBeDefined();
     expect(typeof span.spanId).toBe("string");
     expect(span.operationName).toBe("test_operation");
-    
+
     const endedSpan = endSpan(span.spanId, "ok");
     expect(endedSpan).toBeDefined();
     expect(endedSpan!.status).toBe("ok");
-    
+
     // Check metrics were recorded
     const metrics = getAllEngineMetrics();
     expect(metrics["test_engine_s58"]).toBeDefined();
-    expect(metrics["test_engine_s58"].totalOperations).toBeGreaterThanOrEqual(1);
+    expect(metrics["test_engine_s58"].totalOperations).toBeGreaterThanOrEqual(
+      1
+    );
   });
 
   it("should export Prometheus-format metrics after recording spans", async () => {
-    const { startSpan, endSpan, exportPrometheusMetrics } = await import("../observability");
-    
+    const { startSpan, endSpan, exportPrometheusMetrics } = await import(
+      "../observability"
+    );
+
     // Record a span so there are metrics to export
     const span = startSpan("prom_test_engine", "prom_test_op");
     endSpan(span.spanId, "ok");
-    
+
     const output = exportPrometheusMetrics();
     expect(typeof output).toBe("string");
     expect(output).toContain("operations_total");

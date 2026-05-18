@@ -53,7 +53,10 @@ async function fetchFluvioStats(): Promise<{
 // Well-known 54Link Kafka topics
 const KNOWN_TOPICS = [
   { name: "pos.transactions.created", description: "POS transaction events" },
-  { name: "pos.transactions.settled", description: "Settlement completion events" },
+  {
+    name: "pos.transactions.settled",
+    description: "Settlement completion events",
+  },
   { name: "pos.fraud.alerts", description: "Fraud detection alerts" },
   { name: "pos.float.alerts", description: "Float low-balance alerts" },
   { name: "pos.kyc.events", description: "KYC status change events" },
@@ -63,7 +66,10 @@ const KNOWN_TOPICS = [
   { name: "pos.audit.log", description: "Audit log stream" },
   { name: "pos.push.notifications", description: "Push notification queue" },
   { name: "pos.sms.receipts", description: "SMS receipt queue" },
-  { name: "pos.webhooks.outbound", description: "Outbound webhook delivery queue" },
+  {
+    name: "pos.webhooks.outbound",
+    description: "Outbound webhook delivery queue",
+  },
 ];
 
 // Well-known consumer groups
@@ -84,7 +90,11 @@ export const kafkaConsumerRouter = router({
   consumerGroups: protectedProcedure.query(async () => {
     const stats = await fetchFluvioStats();
     if (stats) {
-      return { groups: stats.consumers, source: "live" as const, broker: KAFKA_BROKER };
+      return {
+        groups: stats.consumers,
+        source: "live" as const,
+        broker: KAFKA_BROKER,
+      };
     }
     // Return static metadata when Kafka/Fluvio is offline
     const groups = KNOWN_GROUPS.flatMap(g =>
@@ -120,12 +130,16 @@ export const kafkaConsumerRouter = router({
 
   /** Get DLQ (dead-letter queue) messages from PostgreSQL */
   dlqMessages: protectedProcedure
-    .input(z.object({
-      topic: z.string().optional(),
-      status: z.enum(["pending", "retrying", "failed", "resolved"]).optional(),
-      limit: z.number().min(1).max(100).default(20),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        topic: z.string().optional(),
+        status: z
+          .enum(["pending", "retrying", "failed", "resolved"])
+          .optional(),
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
@@ -133,11 +147,16 @@ export const kafkaConsumerRouter = router({
         const conditions = [];
         if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
         if (input.status) conditions.push(eq(dlqMessages.status, input.status));
-        const where = conditions.length > 0
-          ? (conditions.length === 1 ? conditions[0] : and(...conditions))
-          : undefined;
+        const where =
+          conditions.length > 0
+            ? conditions.length === 1
+              ? conditions[0]
+              : and(...conditions)
+            : undefined;
         const [messages, [{ total }]] = await Promise.all([
-          db.select().from(dlqMessages)
+          db
+            .select()
+            .from(dlqMessages)
             .where(where)
             .orderBy(desc(dlqMessages.createdAt))
             .limit(input.limit)
@@ -147,36 +166,48 @@ export const kafkaConsumerRouter = router({
         return { messages, total: Number(total) };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Drain DLQ — requeue pending/failed messages */
   drainDlq: protectedProcedure
-    .input(z.object({
-      topic: z.string().optional(),
-      limit: z.number().min(1).max(100).default(10),
-    }))
+    .input(
+      z.object({
+        topic: z.string().optional(),
+        limit: z.number().min(1).max(100).default(10),
+      })
+    )
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
         if (!db) return { requeued: 0 };
         const conditions = [eq(dlqMessages.status, "pending")];
         if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
-        const pending = await db.select({ id: dlqMessages.id })
+        const pending = await db
+          .select({ id: dlqMessages.id })
           .from(dlqMessages)
           .where(and(...conditions))
           .limit(input.limit);
         // Mark as retrying
         for (const msg of pending) {
-          await db.update(dlqMessages)
+          await db
+            .update(dlqMessages)
             .set({ status: "retrying" })
             .where(eq(dlqMessages.id, msg.id));
         }
         return { requeued: pending.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
@@ -188,12 +219,15 @@ export const kafkaConsumerRouter = router({
         const db = (await getDb())!;
         if (!db) return { purged: 0 };
         const cutoff = new Date(Date.now() - input.olderThanDays * 86400_000);
-        const toDelete = await db.select({ id: dlqMessages.id })
+        const toDelete = await db
+          .select({ id: dlqMessages.id })
           .from(dlqMessages)
-          .where(and(
-            eq(dlqMessages.status, "resolved"),
-            lt(dlqMessages.createdAt, cutoff),
-          ))
+          .where(
+            and(
+              eq(dlqMessages.status, "resolved"),
+              lt(dlqMessages.createdAt, cutoff)
+            )
+          )
           .limit(500);
         for (const msg of toDelete) {
           await db.delete(dlqMessages).where(eq(dlqMessages.id, msg.id));
@@ -201,25 +235,29 @@ export const kafkaConsumerRouter = router({
         return { purged: toDelete.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
       }
     }),
 
   /** Summary: total lag, DLQ count, broker health */
   summary: protectedProcedure.query(async () => {
-    const [stats, db] = await Promise.all([
-      fetchFluvioStats(),
-      getDb(),
-    ]);
+    const [stats, db] = await Promise.all([fetchFluvioStats(), getDb()]);
     let dlqCount = 0;
     if (db) {
-      const [row] = await db.select({ total: count() })
+      const [row] = await db
+        .select({ total: count() })
         .from(dlqMessages)
         .where(eq(dlqMessages.status, "pending"));
       dlqCount = Number(row?.total ?? 0);
     }
-    const totalLag = stats?.consumers.reduce((acc: any, c: any) => acc + c.lag, 0) ?? 0;
-    const activeConsumers = stats?.consumers.filter(c => c.status === "active").length ?? 0;
+    const totalLag =
+      stats?.consumers.reduce((acc: any, c: any) => acc + c.lag, 0) ?? 0;
+    const activeConsumers =
+      stats?.consumers.filter(c => c.status === "active").length ?? 0;
     return {
       brokerOnline: stats !== null,
       broker: KAFKA_BROKER,

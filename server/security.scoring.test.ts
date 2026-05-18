@@ -103,7 +103,9 @@ describe("Input Validation (15 pts)", () => {
   });
 
   it("[5pts] tRPC input validation (zod) is used", () => {
-    const routerFiles = fs.readdirSync("server/routers").filter(f => f.endsWith(".ts") && !f.includes("test"));
+    const routerFiles = fs
+      .readdirSync("server/routers")
+      .filter(f => f.endsWith(".ts") && !f.includes("test"));
     let inputCount = 0;
     for (const f of routerFiles) {
       const content = readFile(`server/routers/${f}`);
@@ -127,7 +129,9 @@ describe("Input Validation (15 pts)", () => {
 describe("Data Protection (15 pts)", () => {
   it("[5pts] No hardcoded secrets in source", () => {
     const envTs = readFile("server/_core/env.ts");
-    const noHardcoded = !envTs.match(/password\s*[:=]\s*["'][a-zA-Z0-9]{8,}["']/i);
+    const noHardcoded = !envTs.match(
+      /password\s*[:=]\s*["'][a-zA-Z0-9]{8,}["']/i
+    );
     score(noHardcoded ? 5 : 0, 5);
     expect(noHardcoded).toBe(true);
   });
@@ -152,7 +156,8 @@ describe("Data Protection (15 pts)", () => {
 describe("Infrastructure Security (15 pts)", () => {
   it("[5pts] Dockerfile runs as non-root", () => {
     const dockerfile = readFile("Dockerfile");
-    const has = dockerfile.includes("USER") && !dockerfile.includes("USER root");
+    const has =
+      dockerfile.includes("USER") && !dockerfile.includes("USER root");
     score(has ? 5 : 0, 5);
     expect(has).toBe(true);
   });
@@ -190,7 +195,8 @@ describe("Monitoring & Logging (15 pts)", () => {
 
   it("[5pts] Request ID tracing is configured", () => {
     const indexTs = readFile("server/_core/index.ts");
-    const has = indexTs.includes("X-Request-ID") || indexTs.includes("x-request-id");
+    const has =
+      indexTs.includes("X-Request-ID") || indexTs.includes("x-request-id");
     score(has ? 5 : 0, 5);
     expect(has).toBe(true);
   });
@@ -202,10 +208,18 @@ describe("Monitoring & Logging (15 pts)", () => {
 describe("Security Score Summary", () => {
   it("calculates final security score", () => {
     const pct = Math.round((totalPoints / maxPoints) * 100);
-    console.log(`\n═══════════════════════════════════════════════════════════════`);
-    console.log(`  SECURITY VULNERABILITY SCORE: ${totalPoints}/${maxPoints} (${pct}%)`);
-    console.log(`  Rating: ${pct >= 85 ? "✅ PRODUCTION READY" : pct >= 70 ? "⚠️ ACCEPTABLE" : "❌ NEEDS REMEDIATION"}`);
-    console.log(`═══════════════════════════════════════════════════════════════\n`);
+    console.log(
+      `\n═══════════════════════════════════════════════════════════════`
+    );
+    console.log(
+      `  SECURITY VULNERABILITY SCORE: ${totalPoints}/${maxPoints} (${pct}%)`
+    );
+    console.log(
+      `  Rating: ${pct >= 85 ? "✅ PRODUCTION READY" : pct >= 70 ? "⚠️ ACCEPTABLE" : "❌ NEEDS REMEDIATION"}`
+    );
+    console.log(
+      `═══════════════════════════════════════════════════════════════\n`
+    );
     expect(pct).toBeGreaterThanOrEqual(85);
   });
 });

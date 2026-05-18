@@ -19,12 +19,17 @@ import type { Request, Response, NextFunction } from "express";
  * The expected signature header is `X-Webhook-Signature` (hex-encoded).
  * TigerBeetle uses the same convention; Termii uses `X-Termii-Signature`.
  */
-export function verifyWebhookHmac(secretEnvKey: string, headerName = "x-webhook-signature") {
+export function verifyWebhookHmac(
+  secretEnvKey: string,
+  headerName = "x-webhook-signature"
+) {
   return (req: Request, res: Response, next: NextFunction) => {
     const secret = process.env[secretEnvKey];
     if (!secret) {
       // If no secret is configured, skip verification (dev/test mode)
-      console.warn(`[WebhookHmac] ${secretEnvKey} not set — skipping signature check`);
+      console.warn(
+        `[WebhookHmac] ${secretEnvKey} not set — skipping signature check`
+      );
       return next();
     }
 
@@ -37,26 +42,30 @@ export function verifyWebhookHmac(secretEnvKey: string, headerName = "x-webhook-
     // Raw body must be captured before JSON parsing — use express.raw() upstream
     const rawBody: Buffer | undefined = (req as any).rawBody;
     if (!rawBody) {
-      res.status(400).json({ error: "Raw body not available — ensure express.raw() is applied before this route" });
+      res.status(400).json({
+        error:
+          "Raw body not available — ensure express.raw() is applied before this route",
+      });
       return;
     }
 
-    const expected = createHmac("sha256", secret)
-      .update(rawBody)
-      .digest("hex");
+    const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
 
     // Constant-time comparison to prevent timing attacks
     let valid = false;
     try {
       const sigBuf = Buffer.from(signature.replace(/^sha256=/, ""), "hex");
       const expBuf = Buffer.from(expected, "hex");
-      valid = sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf);
+      valid =
+        sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf);
     } catch {
       valid = false;
     }
 
     if (!valid) {
-      console.warn(`[WebhookHmac] Signature mismatch for ${req.path} (env=${secretEnvKey})`);
+      console.warn(
+        `[WebhookHmac] Signature mismatch for ${req.path} (env=${secretEnvKey})`
+      );
       res.status(401).json({ error: "Invalid webhook signature" });
       return;
     }
@@ -72,7 +81,11 @@ export function verifyWebhookHmac(secretEnvKey: string, headerName = "x-webhook-
  * Example:
  *   app.use("/webhooks", captureRawBody, express.json());
  */
-export function captureRawBody(req: Request, _res: Response, next: NextFunction) {
+export function captureRawBody(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
   const chunks: Buffer[] = [];
   req.on("data", (chunk: Buffer) => chunks.push(chunk));
   req.on("end", () => {

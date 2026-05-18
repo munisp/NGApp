@@ -252,7 +252,9 @@ describe("Binary integrity manifest format", () => {
     const placeholder = "";
     expect(placeholder).toBe("");
     // In production, empty placeholders should be replaced before building
-    expect(placeholder.length === 0 || /^[0-9a-f]{64}$/.test(placeholder)).toBe(true);
+    expect(placeholder.length === 0 || /^[0-9a-f]{64}$/.test(placeholder)).toBe(
+      true
+    );
   });
 });
 
@@ -271,7 +273,10 @@ interface SmsInput {
 
 function buildSmsMessage(input: SmsInput): string {
   const amountStr = `₦${input.amount.toLocaleString()}`;
-  const timeStr = input.timestamp.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = input.timestamp.toLocaleTimeString("en-NG", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const customer = input.customerName ? ` for ${input.customerName}` : "";
   return (
     `54Link POS: ${input.type}${customer} of ${amountStr} processed at ${timeStr}. ` +
@@ -284,9 +289,15 @@ interface AgentLike {
   floatLocked?: boolean | null;
 }
 
-function checkFloatLock(agent: AgentLike): { blocked: boolean; reason?: string } {
+function checkFloatLock(agent: AgentLike): {
+  blocked: boolean;
+  reason?: string;
+} {
   if (agent.floatLocked) {
-    return { blocked: true, reason: "Agent float is locked — contact your supervisor" };
+    return {
+      blocked: true,
+      reason: "Agent float is locked — contact your supervisor",
+    };
   }
   return { blocked: false };
 }
@@ -333,7 +344,10 @@ function checkHourlyCount(
 ): { allowed: boolean; reason?: string } {
   const max = limits.maxTxPerHour ?? 20;
   if (count >= max) {
-    return { allowed: false, reason: `Hourly count (${count}) reached limit of ${max}/hr` };
+    return {
+      allowed: false,
+      reason: `Hourly count (${count}) reached limit of ${max}/hr`,
+    };
   }
   return { allowed: true };
 }
@@ -367,7 +381,10 @@ function checkDeviceToken(
 ): { valid: boolean; reason?: string } {
   if (!enforcementEnabled) return { valid: true };
   if (!token || token.trim() === "") {
-    return { valid: false, reason: "Device enrollment token required but not provided" };
+    return {
+      valid: false,
+      reason: "Device enrollment token required but not provided",
+    };
   }
   return { valid: true };
 }

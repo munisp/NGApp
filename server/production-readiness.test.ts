@@ -23,10 +23,12 @@ describe("Performance Tuning", () => {
     });
 
     it("should evict LRU entries when full", async () => {
-      const { LRUQueryCache } = await import("./lib/performanceTuning").then(m => {
-        // Access the class through the cache instance
-        return { LRUQueryCache: m.queryCache.constructor };
-      });
+      const { LRUQueryCache } = await import("./lib/performanceTuning").then(
+        m => {
+          // Access the class through the cache instance
+          return { LRUQueryCache: m.queryCache.constructor };
+        }
+      );
       // Use the existing cache and test eviction behavior
       const { queryCache } = await import("./lib/performanceTuning");
       const stats = queryCache.getStats();
@@ -128,9 +130,15 @@ describe("Performance Tuning", () => {
     it("should define indexes for hot query paths", async () => {
       const { DB_OPTIMIZATION } = await import("./lib/performanceTuning");
       expect(DB_OPTIMIZATION.indexes.length).toBeGreaterThanOrEqual(5);
-      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("disputes"))).toBe(true);
-      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("commission"))).toBe(true);
-      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("settlement"))).toBe(true);
+      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("disputes"))).toBe(
+        true
+      );
+      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("commission"))).toBe(
+        true
+      );
+      expect(DB_OPTIMIZATION.indexes.some(i => i.includes("settlement"))).toBe(
+        true
+      );
     });
   });
 });
@@ -147,7 +155,9 @@ describe("High Availability", () => {
     it("should execute successfully in closed state", async () => {
       const { circuitBreakers } = await import("./lib/highAvailability");
       circuitBreakers.database.reset();
-      const result = await circuitBreakers.database.execute(async () => "success");
+      const result = await circuitBreakers.database.execute(
+        async () => "success"
+      );
       expect(result).toBe("success");
     });
 
@@ -156,7 +166,9 @@ describe("High Availability", () => {
       circuitBreakers.kafka.reset();
       for (let i = 0; i < 5; i++) {
         try {
-          await circuitBreakers.kafka.execute(async () => { throw new Error("fail"); });
+          await circuitBreakers.kafka.execute(async () => {
+            throw new Error("fail");
+          });
         } catch {}
       }
       const state = circuitBreakers.kafka.getState();
@@ -205,7 +217,10 @@ describe("High Availability", () => {
         if (attempt < 3) throw new Error("transient");
         return "recovered";
       });
-      const result = await retryWithBackoff(fn, "test-retry", { maxRetries: 3, baseDelayMs: 10 });
+      const result = await retryWithBackoff(fn, "test-retry", {
+        maxRetries: 3,
+        baseDelayMs: 10,
+      });
       expect(result).toBe("recovered");
       expect(fn).toHaveBeenCalledTimes(3);
     });
@@ -279,7 +294,9 @@ describe("High Availability", () => {
 
   describe("Request Timeout Middleware", () => {
     it("should create middleware function", async () => {
-      const { requestTimeoutMiddleware } = await import("./lib/highAvailability");
+      const { requestTimeoutMiddleware } = await import(
+        "./lib/highAvailability"
+      );
       const middleware = requestTimeoutMiddleware(5000);
       expect(typeof middleware).toBe("function");
     });
@@ -295,8 +312,12 @@ describe("Core Engine DB Verification", () => {
     expect(content).toContain("getDb");
     expect(content).toContain("disputes");
     expect(content).not.toContain("Array.from");
-    const codeLines1 = content.split('\n').filter((l: string) => !l.trim().startsWith('*') && !l.trim().startsWith('//'));
-    expect(codeLines1.join('\n')).not.toContain("Math.random()");
+    const codeLines1 = content
+      .split("\n")
+      .filter(
+        (l: string) => !l.trim().startsWith("*") && !l.trim().startsWith("//")
+      );
+    expect(codeLines1.join("\n")).not.toContain("Math.random()");
   });
 
   it("disputeAnalytics should have zero Math.random", async () => {
@@ -304,8 +325,12 @@ describe("Core Engine DB Verification", () => {
       fs.readFileSync("server/routers/disputeAnalytics.ts", "utf-8")
     );
     expect(content).toContain("getDb");
-    const codeLines1 = content.split('\n').filter((l: string) => !l.trim().startsWith('*') && !l.trim().startsWith('//'));
-    expect(codeLines1.join('\n')).not.toContain("Math.random()");
+    const codeLines1 = content
+      .split("\n")
+      .filter(
+        (l: string) => !l.trim().startsWith("*") && !l.trim().startsWith("//")
+      );
+    expect(codeLines1.join("\n")).not.toContain("Math.random()");
   });
 
   it("commissionEngine should use DB persistence", async () => {

@@ -35,7 +35,10 @@ const routers = [
   { name: "financialNlEngine", router: financialNlEngineRouter },
   { name: "partnerRevenueSharing", router: partnerRevenueSharingRouter },
   { name: "agentGamification", router: agentGamificationRouter },
-  { name: "bulkTransactionProcessing", router: bulkTransactionProcessingRouter },
+  {
+    name: "bulkTransactionProcessing",
+    router: bulkTransactionProcessingRouter,
+  },
   { name: "customer360View", router: customer360ViewRouter },
   { name: "webhookManagement", router: webhookManagementRouter },
   { name: "platformFeatureFlags", router: platformFeatureFlagsRouter },

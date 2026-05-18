@@ -54,7 +54,7 @@ const sprint42Pages = [
 ];
 
 describe("Sprint 42: Router Files", () => {
-  sprint42Routers.forEach((name) => {
+  sprint42Routers.forEach(name => {
     it(`router ${name}.ts exists and exports a router`, () => {
       const filePath = path.join(ROUTER_DIR, `${name}.ts`);
       expect(fs.existsSync(filePath)).toBe(true);
@@ -66,7 +66,7 @@ describe("Sprint 42: Router Files", () => {
 });
 
 describe("Sprint 42: Page Files", () => {
-  sprint42Pages.forEach((name) => {
+  sprint42Pages.forEach(name => {
     it(`page ${name}.tsx exists and exports a component`, () => {
       const filePath = path.join(PAGE_DIR, `${name}.tsx`);
       expect(fs.existsSync(filePath)).toBe(true);
@@ -82,7 +82,7 @@ describe("Sprint 42: Router Registration", () => {
       path.join(__dirname, "routers.ts"),
       "utf-8"
     );
-    sprint42Routers.forEach((name) => {
+    sprint42Routers.forEach(name => {
       expect(routersFile).toContain(`${name}:`);
     });
   });
@@ -116,7 +116,7 @@ describe("Sprint 42: Route Registration", () => {
       "/bulk-transaction-processor",
       "/system-config-manager",
     ];
-    routes.forEach((route) => {
+    routes.forEach(route => {
       expect(appFile).toContain(`path="${route}"`);
     });
   });

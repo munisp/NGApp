@@ -1,7 +1,7 @@
 // @ts-nocheck — Sprint 69
 /**
  * useRealtimeNotifications — Client-side hook for real-time notification WebSocket
- * 
+ *
  * Features:
  * - Auto-connect to /notifications namespace
  * - JWT authentication
@@ -53,10 +53,17 @@ interface UseRealtimeNotificationsOptions {
 }
 
 const DEFAULT_CHANNELS: NotificationChannel[] = [
-  "transaction", "fraud", "rate_alert", "kyc", "settlement", "system"
+  "transaction",
+  "fraud",
+  "rate_alert",
+  "kyc",
+  "settlement",
+  "system",
 ];
 
-export function useRealtimeNotifications(options: UseRealtimeNotificationsOptions = {}) {
+export function useRealtimeNotifications(
+  options: UseRealtimeNotificationsOptions = {}
+) {
   const {
     channels = DEFAULT_CHANNELS,
     maxNotifications = 100,
@@ -64,7 +71,9 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
     autoConnect = true,
   } = options;
 
-  const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
+  const [notifications, setNotifications] = useState<RealtimeNotification[]>(
+    []
+  );
   const [unreadCount, setUnreadCount] = useState(0);
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     connected: false,
@@ -112,7 +121,7 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
       socket.emit("notification:subscribe", channels);
     });
 
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", reason => {
       setConnectionState(prev => ({
         ...prev,
         connected: false,
@@ -123,7 +132,7 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
       }
     });
 
-    socket.on("reconnect_attempt", (attempt) => {
+    socket.on("reconnect_attempt", attempt => {
       reconnectAttemptsRef.current = attempt;
       setConnectionState(prev => ({
         ...prev,
@@ -132,14 +141,17 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
     });
 
     // Heartbeat
-    socket.on("notification:heartbeat", (data: { timestamp: string; activeUsers: number }) => {
-      setConnectionState(prev => ({
-        ...prev,
-        lastHeartbeat: data.timestamp,
-        activeUsers: data.activeUsers,
-      }));
-      socket.emit("notification:pong");
-    });
+    socket.on(
+      "notification:heartbeat",
+      (data: { timestamp: string; activeUsers: number }) => {
+        setConnectionState(prev => ({
+          ...prev,
+          lastHeartbeat: data.timestamp,
+          activeUsers: data.activeUsers,
+        }));
+        socket.emit("notification:pong");
+      }
+    );
 
     // New notification
     socket.on("notification:new", (notification: RealtimeNotification) => {
@@ -152,11 +164,20 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
       // Show toast for warnings and critical
       if (showToasts) {
         if (notification.severity === "critical") {
-          toast.error(notification.title, { description: notification.body, duration: 8000 });
+          toast.error(notification.title, {
+            description: notification.body,
+            duration: 8000,
+          });
         } else if (notification.severity === "warning") {
-          toast.warning(notification.title, { description: notification.body, duration: 5000 });
+          toast.warning(notification.title, {
+            description: notification.body,
+            duration: 5000,
+          });
         } else {
-          toast.info(notification.title, { description: notification.body, duration: 3000 });
+          toast.info(notification.title, {
+            description: notification.body,
+            duration: 3000,
+          });
         }
       }
     });
@@ -170,14 +191,19 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
       setUnreadCount(prev => prev + 1);
 
       if (showToasts) {
-        toast(notification.title, { description: notification.body, duration: 5000 });
+        toast(notification.title, {
+          description: notification.body,
+          duration: 5000,
+        });
       }
     });
 
     // Mark as read sync from other tabs
     socket.on("notification:markedRead", (data: { ids: string[] }) => {
       setNotifications(prev =>
-        prev.map(n => data.ids.includes(n.id) ? { ...n, read: true } as any : n)
+        prev.map(n =>
+          data.ids.includes(n.id) ? ({ ...n, read: true } as any) : n
+        )
       );
     });
 
@@ -241,7 +267,9 @@ export function ConnectionStatusBadge({ state }: { state: ConnectionState }) {
         </span>
         Live
         {state.activeUsers > 0 && (
-          <span className="text-muted-foreground ml-1">({state.activeUsers} online)</span>
+          <span className="text-muted-foreground ml-1">
+            ({state.activeUsers} online)
+          </span>
         )}
       </div>
     );

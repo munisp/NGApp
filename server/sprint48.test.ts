@@ -28,13 +28,18 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
     it("DEFAULT_SPLITS percentages should sum to 100 for each tx type", async () => {
       const { DEFAULT_SPLITS } = await import("./lib/commissionCascade");
       for (const [txType, splits] of Object.entries(DEFAULT_SPLITS)) {
-        const total = Object.values(splits).reduce((sum, pct) => sum + (pct as number), 0);
+        const total = Object.values(splits).reduce(
+          (sum, pct) => sum + (pct as number),
+          0
+        );
         expect(total).toBe(100);
       }
     });
 
     it("should handle cascade execution gracefully when DB is unavailable", async () => {
-      const { executeCommissionCascade } = await import("./lib/commissionCascade");
+      const { executeCommissionCascade } = await import(
+        "./lib/commissionCascade"
+      );
       let result;
       try {
         result = await executeCommissionCascade({
@@ -48,7 +53,11 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
         });
       } catch (err) {
         // DB connection error is expected — cascade should handle gracefully
-        result = { success: false, cascadeEntries: [], error: (err as Error).message };
+        result = {
+          success: false,
+          cascadeEntries: [],
+          error: (err as Error).message,
+        };
       }
       // Should return a result object (success or graceful failure)
       expect(result).toBeDefined();
@@ -64,15 +73,15 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
       const splits = Object.entries(splitConfig).map(([role, pct]) => ({
         role,
         pct: pct as number,
-        amount: Math.round(totalCommission * (pct as number) / 100),
+        amount: Math.round((totalCommission * (pct as number)) / 100),
       }));
-      
+
       expect(splits.find(s => s.role === "agent")?.amount).toBe(600);
       expect(splits.find(s => s.role === "master_agent")?.amount).toBe(150);
       expect(splits.find(s => s.role === "super_agent")?.amount).toBe(100);
       expect(splits.find(s => s.role === "sub_agent")?.amount).toBe(100);
       expect(splits.find(s => s.role === "platform")?.amount).toBe(50);
-      
+
       const totalDistributed = splits.reduce((sum, s) => sum + s.amount, 0);
       expect(totalDistributed).toBe(totalCommission);
     });
@@ -87,9 +96,13 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
       // Check that the table has the hierarchy columns
       const columnNames = Object.keys(agentsTable);
       // parentAgentId should be defined in the schema
-      const hasHierarchy = columnNames.some(c => 
-        c.includes("parent") || c.includes("hierarchy") || c.includes("Parent")
-      ) || (agentsTable as any).parentAgentId !== undefined;
+      const hasHierarchy =
+        columnNames.some(
+          c =>
+            c.includes("parent") ||
+            c.includes("hierarchy") ||
+            c.includes("Parent")
+        ) || (agentsTable as any).parentAgentId !== undefined;
       expect(hasHierarchy || true).toBe(true); // Schema exists
     });
 
@@ -124,13 +137,17 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
 
     it("should have splits procedure", async () => {
       const mod = await import("./routers/commissionEngine");
-      const procedures = Object.keys(mod.commissionEngineRouter._def.procedures || {});
+      const procedures = Object.keys(
+        mod.commissionEngineRouter._def.procedures || {}
+      );
       expect(procedures.length).toBeGreaterThan(0);
     });
 
     it("should have at least 10 procedures", async () => {
       const mod = await import("./routers/commissionEngine");
-      const procedures = Object.keys(mod.commissionEngineRouter._def.procedures || {});
+      const procedures = Object.keys(
+        mod.commissionEngineRouter._def.procedures || {}
+      );
       expect(procedures.length).toBeGreaterThanOrEqual(10);
     });
   });
@@ -144,19 +161,25 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
 
     it("should have list procedure", async () => {
       const mod = await import("./routers/agentHierarchy");
-      const procedures = Object.keys(mod.agentHierarchyRouter._def.procedures || {});
+      const procedures = Object.keys(
+        mod.agentHierarchyRouter._def.procedures || {}
+      );
       expect(procedures).toContain("list");
     });
 
     it("should have reassign procedure", async () => {
       const mod = await import("./routers/agentHierarchy");
-      const procedures = Object.keys(mod.agentHierarchyRouter._def.procedures || {});
+      const procedures = Object.keys(
+        mod.agentHierarchyRouter._def.procedures || {}
+      );
       expect(procedures).toContain("reassignParent");
     });
 
     it("should have at least 5 procedures", async () => {
       const mod = await import("./routers/agentHierarchy");
-      const procedures = Object.keys(mod.agentHierarchyRouter._def.procedures || {});
+      const procedures = Object.keys(
+        mod.agentHierarchyRouter._def.procedures || {}
+      );
       expect(procedures.length).toBeGreaterThanOrEqual(5);
     });
   });
@@ -164,24 +187,50 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
   // ── 5. Business Rules ─────────────────────────────────────────────────────
   describe("Commission Business Rules", () => {
     it("split percentages must always sum to 100%", () => {
-      const defaultSplits = { super_agent: 10, master_agent: 15, agent: 60, sub_agent: 10, platform: 5 };
-      const total = Object.values(defaultSplits).reduce((sum, pct) => sum + pct, 0);
+      const defaultSplits = {
+        super_agent: 10,
+        master_agent: 15,
+        agent: 60,
+        sub_agent: 10,
+        platform: 5,
+      };
+      const total = Object.values(defaultSplits).reduce(
+        (sum, pct) => sum + pct,
+        0
+      );
       expect(total).toBe(100);
     });
 
     it("agent must receive the largest share (>=50%)", () => {
-      const defaultSplits = { super_agent: 10, master_agent: 15, agent: 60, sub_agent: 10, platform: 5 };
+      const defaultSplits = {
+        super_agent: 10,
+        master_agent: 15,
+        agent: 60,
+        sub_agent: 10,
+        platform: 5,
+      };
       expect(defaultSplits.agent).toBeGreaterThanOrEqual(50);
     });
 
     it("platform fee must not exceed 10%", () => {
-      const defaultSplits = { super_agent: 10, master_agent: 15, agent: 60, sub_agent: 10, platform: 5 };
+      const defaultSplits = {
+        super_agent: 10,
+        master_agent: 15,
+        agent: 60,
+        sub_agent: 10,
+        platform: 5,
+      };
       expect(defaultSplits.platform).toBeLessThanOrEqual(10);
     });
 
     it("hierarchy roles must be ordered: super > master > agent > sub", () => {
       const roles = ["super_agent", "master_agent", "agent", "sub_agent"];
-      const hierarchy = { super_agent: 4, master_agent: 3, agent: 2, sub_agent: 1 };
+      const hierarchy = {
+        super_agent: 4,
+        master_agent: 3,
+        agent: 2,
+        sub_agent: 1,
+      };
       for (let i = 0; i < roles.length - 1; i++) {
         expect(hierarchy[roles[i] as keyof typeof hierarchy]).toBeGreaterThan(
           hierarchy[roles[i + 1] as keyof typeof hierarchy]
@@ -196,8 +245,17 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
 
     it("cascade should not exceed total commission", () => {
       const totalCommission = 1000;
-      const splits = { super_agent: 100, master_agent: 150, agent: 600, sub_agent: 100, platform: 50 };
-      const totalDistributed = Object.values(splits).reduce((sum, v) => sum + v, 0);
+      const splits = {
+        super_agent: 100,
+        master_agent: 150,
+        agent: 600,
+        sub_agent: 100,
+        platform: 50,
+      };
+      const totalDistributed = Object.values(splits).reduce(
+        (sum, v) => sum + v,
+        0
+      );
       expect(totalDistributed).toBeLessThanOrEqual(totalCommission);
     });
   });
@@ -206,13 +264,19 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
   describe("PWA Commission Offline Support", () => {
     it("service worker should exist", async () => {
       const fs = await import("fs");
-      const swPath = require("path").resolve(__dirname, "../client/public/sw.js");
+      const swPath = require("path").resolve(
+        __dirname,
+        "../client/public/sw.js"
+      );
       expect(fs.existsSync(swPath)).toBe(true);
     });
 
     it("service worker should cache commission endpoints", async () => {
       const fs = await import("fs");
-      const swPath = require("path").resolve(__dirname, "../client/public/sw.js");
+      const swPath = require("path").resolve(
+        __dirname,
+        "../client/public/sw.js"
+      );
       const content = fs.readFileSync(swPath, "utf-8");
       expect(content).toContain("commission-cascade-v1");
       expect(content).toContain("commissionEngine.tiers");
@@ -223,7 +287,10 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
 
     it("manifest.json should exist with POS configuration", async () => {
       const fs = await import("fs");
-      const manifestPath = require("path").resolve(__dirname, "../client/public/manifest.json");
+      const manifestPath = require("path").resolve(
+        __dirname,
+        "../client/public/manifest.json"
+      );
       expect(fs.existsSync(manifestPath)).toBe(true);
       const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
       expect(manifest.name).toContain("54Link");
@@ -235,7 +302,10 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
   describe("Integration — transactions.create uses cascade", () => {
     it("transactions router should import commissionCascade", async () => {
       const fs = await import("fs");
-      const txPath = require("path").resolve(__dirname, "./routers/transactions.ts");
+      const txPath = require("path").resolve(
+        __dirname,
+        "./routers/transactions.ts"
+      );
       const content = fs.readFileSync(txPath, "utf-8");
       expect(content).toContain("executeCommissionCascade");
       expect(content).toContain("commissionCascade");
@@ -243,7 +313,10 @@ describe("Sprint 48 — Commission Cascade & Hierarchy", () => {
 
     it("transactions router should pass required cascade params", async () => {
       const fs = await import("fs");
-      const txPath = require("path").resolve(__dirname, "./routers/transactions.ts");
+      const txPath = require("path").resolve(
+        __dirname,
+        "./routers/transactions.ts"
+      );
       const content = fs.readFileSync(txPath, "utf-8");
       expect(content).toContain("transactionId");
       expect(content).toContain("transactionRef");

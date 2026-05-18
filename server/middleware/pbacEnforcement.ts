@@ -1,6 +1,6 @@
 /**
  * Sprint 91 — Policy-Based Access Control (PBAC) Enforcement
- * 
+ *
  * Integrates with Permify for fine-grained authorization:
  * - Resource-level permissions (read, write, delete, admin)
  * - Tenant isolation (multi-tenant data boundaries)
@@ -11,15 +11,37 @@
  */
 
 export type Permission =
-  | "read" | "write" | "delete" | "admin"
-  | "manage_users" | "manage_tenants" | "manage_billing"
-  | "view_analytics" | "export_data" | "manage_integrations"
-  | "process_transactions" | "void_transactions" | "refund_transactions"
-  | "manage_inventory" | "manage_products" | "manage_discounts"
-  | "view_audit_log" | "manage_devices" | "manage_kyc"
-  | "biometric_enroll" | "biometric_verify" | "biometric_admin";
+  | "read"
+  | "write"
+  | "delete"
+  | "admin"
+  | "manage_users"
+  | "manage_tenants"
+  | "manage_billing"
+  | "view_analytics"
+  | "export_data"
+  | "manage_integrations"
+  | "process_transactions"
+  | "void_transactions"
+  | "refund_transactions"
+  | "manage_inventory"
+  | "manage_products"
+  | "manage_discounts"
+  | "view_audit_log"
+  | "manage_devices"
+  | "manage_kyc"
+  | "biometric_enroll"
+  | "biometric_verify"
+  | "biometric_admin";
 
-export type Role = "super_admin" | "admin" | "manager" | "operator" | "viewer" | "merchant" | "agent";
+export type Role =
+  | "super_admin"
+  | "admin"
+  | "manager"
+  | "operator"
+  | "viewer"
+  | "merchant"
+  | "agent";
 
 export interface PBACContext {
   userId: number;
@@ -52,53 +74,90 @@ const ROLE_HIERARCHY: Record<Role, number> = {
 // ─── Permission Matrix ───────────────────────────────────────────────────────
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   super_admin: [
-    "read", "write", "delete", "admin",
-    "manage_users", "manage_tenants", "manage_billing",
-    "view_analytics", "export_data", "manage_integrations",
-    "process_transactions", "void_transactions", "refund_transactions",
-    "manage_inventory", "manage_products", "manage_discounts",
-    "view_audit_log", "manage_devices", "manage_kyc",
-    "biometric_enroll", "biometric_verify", "biometric_admin",
+    "read",
+    "write",
+    "delete",
+    "admin",
+    "manage_users",
+    "manage_tenants",
+    "manage_billing",
+    "view_analytics",
+    "export_data",
+    "manage_integrations",
+    "process_transactions",
+    "void_transactions",
+    "refund_transactions",
+    "manage_inventory",
+    "manage_products",
+    "manage_discounts",
+    "view_audit_log",
+    "manage_devices",
+    "manage_kyc",
+    "biometric_enroll",
+    "biometric_verify",
+    "biometric_admin",
   ],
   admin: [
-    "read", "write", "delete", "admin",
-    "manage_users", "manage_billing",
-    "view_analytics", "export_data", "manage_integrations",
-    "process_transactions", "void_transactions", "refund_transactions",
-    "manage_inventory", "manage_products", "manage_discounts",
-    "view_audit_log", "manage_devices", "manage_kyc",
-    "biometric_enroll", "biometric_verify", "biometric_admin",
+    "read",
+    "write",
+    "delete",
+    "admin",
+    "manage_users",
+    "manage_billing",
+    "view_analytics",
+    "export_data",
+    "manage_integrations",
+    "process_transactions",
+    "void_transactions",
+    "refund_transactions",
+    "manage_inventory",
+    "manage_products",
+    "manage_discounts",
+    "view_audit_log",
+    "manage_devices",
+    "manage_kyc",
+    "biometric_enroll",
+    "biometric_verify",
+    "biometric_admin",
   ],
   manager: [
-    "read", "write",
-    "view_analytics", "export_data",
-    "process_transactions", "void_transactions", "refund_transactions",
-    "manage_inventory", "manage_products", "manage_discounts",
-    "view_audit_log", "manage_devices",
-    "biometric_enroll", "biometric_verify",
+    "read",
+    "write",
+    "view_analytics",
+    "export_data",
+    "process_transactions",
+    "void_transactions",
+    "refund_transactions",
+    "manage_inventory",
+    "manage_products",
+    "manage_discounts",
+    "view_audit_log",
+    "manage_devices",
+    "biometric_enroll",
+    "biometric_verify",
   ],
   operator: [
-    "read", "write",
-    "process_transactions", "void_transactions",
-    "manage_inventory", "manage_products",
+    "read",
+    "write",
+    "process_transactions",
+    "void_transactions",
+    "manage_inventory",
+    "manage_products",
     "biometric_verify",
   ],
   merchant: [
-    "read", "write",
-    "process_transactions",
-    "manage_inventory", "manage_products", "manage_discounts",
-    "view_analytics",
-    "biometric_enroll", "biometric_verify",
-  ],
-  agent: [
     "read",
+    "write",
     "process_transactions",
+    "manage_inventory",
+    "manage_products",
+    "manage_discounts",
+    "view_analytics",
+    "biometric_enroll",
     "biometric_verify",
   ],
-  viewer: [
-    "read",
-    "view_analytics",
-  ],
+  agent: ["read", "process_transactions", "biometric_verify"],
+  viewer: ["read", "view_analytics"],
 };
 
 // ─── Permission Cache ────────────────────────────────────────────────────────
@@ -110,7 +169,11 @@ interface CacheEntry {
 const permissionCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 300_000; // 5 minutes
 
-function getCacheKey(ctx: PBACContext, permission: Permission, resource?: string): string {
+function getCacheKey(
+  ctx: PBACContext,
+  permission: Permission,
+  resource?: string
+): string {
   return `${ctx.userId}:${ctx.role}:${ctx.tenantId ?? "global"}:${permission}:${resource ?? "*"}`;
 }
 
@@ -127,27 +190,40 @@ const PERMIFY_HOST = process.env.PERMIFY_HOST ?? "localhost";
 const PERMIFY_PORT = process.env.PERMIFY_PORT ?? "3476";
 const PERMIFY_ENABLED = process.env.PERMIFY_ENABLED === "true";
 
-async function checkPermify(ctx: PBACContext, permission: Permission, resource?: string): Promise<AuthorizationDecision | null> {
+async function checkPermify(
+  ctx: PBACContext,
+  permission: Permission,
+  resource?: string
+): Promise<AuthorizationDecision | null> {
   if (!PERMIFY_ENABLED) return null;
 
   try {
-    const response = await fetch(`http://${PERMIFY_HOST}:${PERMIFY_PORT}/v1/tenants/${ctx.tenantId ?? "default"}/permissions/check`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        metadata: { snap_token: "", schema_version: "", depth: 20 },
-        entity: { type: resource ?? "system", id: ctx.tenantId?.toString() ?? "1" },
-        permission: permission,
-        subject: { type: "user", id: ctx.userId.toString(), relation: "" },
-      }),
-      signal: AbortSignal.timeout(3000),
-    });
+    const response = await fetch(
+      `http://${PERMIFY_HOST}:${PERMIFY_PORT}/v1/tenants/${ctx.tenantId ?? "default"}/permissions/check`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          metadata: { snap_token: "", schema_version: "", depth: 20 },
+          entity: {
+            type: resource ?? "system",
+            id: ctx.tenantId?.toString() ?? "1",
+          },
+          permission: permission,
+          subject: { type: "user", id: ctx.userId.toString(), relation: "" },
+        }),
+        signal: AbortSignal.timeout(3000),
+      }
+    );
 
     if (response.ok) {
-      const data = await response.json() as any;
+      const data = (await response.json()) as any;
       return {
         allowed: data.can === "CHECK_RESULT_ALLOWED",
-        reason: data.can === "CHECK_RESULT_ALLOWED" ? "Permify granted" : "Permify denied",
+        reason:
+          data.can === "CHECK_RESULT_ALLOWED"
+            ? "Permify granted"
+            : "Permify denied",
         policy: "permify_remote",
         cached: false,
         evaluationTimeMs: 0,
@@ -178,7 +254,10 @@ export async function authorize(
   const permifyResult = await checkPermify(ctx, permission, resource);
   if (permifyResult) {
     permifyResult.evaluationTimeMs = Date.now() - start;
-    permissionCache.set(cacheKey, { decision: permifyResult, expiresAt: Date.now() + CACHE_TTL_MS });
+    permissionCache.set(cacheKey, {
+      decision: permifyResult,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
     return permifyResult;
   }
 
@@ -188,14 +267,19 @@ export async function authorize(
 
   const decision: AuthorizationDecision = {
     allowed,
-    reason: allowed ? `Role ${ctx.role} has ${permission}` : `Role ${ctx.role} lacks ${permission}`,
+    reason: allowed
+      ? `Role ${ctx.role} has ${permission}`
+      : `Role ${ctx.role} lacks ${permission}`,
     policy: "local_rbac",
     cached: false,
     evaluationTimeMs: Date.now() - start,
   };
 
   // Cache the decision
-  permissionCache.set(cacheKey, { decision, expiresAt: Date.now() + CACHE_TTL_MS });
+  permissionCache.set(cacheKey, {
+    decision,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
 
   return decision;
 }
@@ -226,7 +310,10 @@ export function requirePermission(permission: Permission, resource?: string) {
 }
 
 // ─── Tenant Isolation ────────────────────────────────────────────────────────
-export function enforceTenantIsolation(userTenantId: number | undefined, resourceTenantId: number): boolean {
+export function enforceTenantIsolation(
+  userTenantId: number | undefined,
+  resourceTenantId: number
+): boolean {
   if (!userTenantId) return false; // No tenant = no access to tenant resources
   return userTenantId === resourceTenantId;
 }

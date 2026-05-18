@@ -38,7 +38,9 @@ describe("S93: alertNotificationsRouter", () => {
   it("should have required procedures", async () => {
     const mod = await import("./routers/alertNotifications");
     const router = mod.alertNotificationsRouter;
-    const procedures = Object.keys(router._def.procedures || router._def.record || {});
+    const procedures = Object.keys(
+      router._def.procedures || router._def.record || {}
+    );
     expect(procedures).toContain("listPreferences");
     expect(procedures).toContain("getPreference");
     expect(procedures).toContain("updatePreference");
@@ -56,7 +58,9 @@ describe("S93: roleNavConfig", () => {
   });
 
   it("should filter nav groups for operator role", async () => {
-    const { filterNavGroupsByRole } = await import("../client/src/lib/roleNavConfig");
+    const { filterNavGroupsByRole } = await import(
+      "../client/src/lib/roleNavConfig"
+    );
     const mockGroups = [
       {
         label: "Admin",
@@ -85,14 +89,18 @@ describe("S93: roleNavConfig", () => {
   });
 
   it("should return display name for each role", async () => {
-    const { getRoleDisplayName } = await import("../client/src/lib/roleNavConfig");
+    const { getRoleDisplayName } = await import(
+      "../client/src/lib/roleNavConfig"
+    );
     expect(getRoleDisplayName("admin")).toBeTruthy();
     expect(typeof getRoleDisplayName("admin")).toBe("string");
     expect(getRoleDisplayName("user")).toBeTruthy();
   });
 
   it("should return badge color for each role", async () => {
-    const { getRoleBadgeColor } = await import("../client/src/lib/roleNavConfig");
+    const { getRoleBadgeColor } = await import(
+      "../client/src/lib/roleNavConfig"
+    );
     expect(getRoleBadgeColor("admin")).toBeTruthy();
     expect(typeof getRoleBadgeColor("admin")).toBe("string");
   });
@@ -108,7 +116,9 @@ describe("S93: networkQualityHeatmapRouter", () => {
   it("should have required procedures", async () => {
     const mod = await import("./routers/networkQualityHeatmap");
     const router = mod.networkQualityHeatmapRouter;
-    const procedures = Object.keys(router._def.procedures || router._def.record || {});
+    const procedures = Object.keys(
+      router._def.procedures || router._def.record || {}
+    );
     expect(procedures).toContain("getRegionMetrics");
     expect(procedures).toContain("getSummary");
     expect(procedures).toContain("getEvents");

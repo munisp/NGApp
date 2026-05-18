@@ -1,10 +1,10 @@
 // @ts-nocheck — Sprint 69
 /**
  * Tenant Scope Middleware — Production-Grade Tenant Data Isolation
- * 
+ *
  * Ensures all data queries are scoped by tenantId. Tenants cannot see
  * each other's data. Admin users bypass tenant scoping.
- * 
+ *
  * Usage in tRPC:
  *   tenantProcedure = protectedProcedure.use(tenantScopeMiddleware)
  */
@@ -18,13 +18,16 @@ export interface TenantScopedContext extends TrpcContext {
 }
 
 // ── In-memory tenant registry (production: query DB) ─────────────────────────
-const tenantRegistry = new Map<string, {
-  id: string;
-  name: string;
-  status: "active" | "suspended" | "onboarding";
-  plan: "starter" | "professional" | "enterprise";
-  createdAt: number;
-}>();
+const tenantRegistry = new Map<
+  string,
+  {
+    id: string;
+    name: string;
+    status: "active" | "suspended" | "onboarding";
+    plan: "starter" | "professional" | "enterprise";
+    createdAt: number;
+  }
+>();
 
 // Seed some default tenants
 tenantRegistry.set("tenant-default", {
@@ -42,7 +45,9 @@ tenantRegistry.set("tenant-demo", {
   createdAt: Date.now(),
 });
 
-export function getTenantRegistry() { return tenantRegistry; }
+export function getTenantRegistry() {
+  return tenantRegistry;
+}
 
 // ── User-to-tenant mapping (production: query DB join) ───────────────────────
 const userTenantMap = new Map<string, string>();
@@ -56,9 +61,18 @@ export function getUserTenantId(userId: string): string | undefined {
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-export function tenantScopeMiddleware({ ctx, next }: { ctx: TrpcContext; next: (opts: { ctx: TenantScopedContext }) => Promise<any> }) {
+export function tenantScopeMiddleware({
+  ctx,
+  next,
+}: {
+  ctx: TrpcContext;
+  next: (opts: { ctx: TenantScopedContext }) => Promise<any>;
+}) {
   if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
   }
 
   // Admin users bypass tenant scoping (they see all data)
@@ -82,7 +96,10 @@ export function tenantScopeMiddleware({ ctx, next }: { ctx: TrpcContext; next: (
   }
 
   if (tenant.status === "suspended") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Tenant account is suspended" });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Tenant account is suspended",
+    });
   }
 
   const isTenantAdmin = (ctx.user as any).role === "tenant_admin";
@@ -117,9 +134,15 @@ export function assertTenantOwnership(
   entityName = "Record"
 ): void {
   if (!record) {
-    throw new TRPCError({ code: "NOT_FOUND", message: `${entityName} not found` });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `${entityName} not found`,
+    });
   }
   if (tenantId !== "all" && record.tenantId && record.tenantId !== tenantId) {
-    throw new TRPCError({ code: "FORBIDDEN", message: `Access denied to ${entityName}` });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Access denied to ${entityName}`,
+    });
   }
 }

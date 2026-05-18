@@ -15,7 +15,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Haversine helper (inlined for unit testing) ───────────────────────────────
-function haversineMetres(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineMetres(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const R = 6_371_000;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -138,13 +143,21 @@ describe("Transaction heatmap aggregation", () => {
   }
 
   function buildHeatmap(rows: TxRow[], cellDeg: number) {
-    const grid: Record<string, { lat: number; lon: number; count: number; volume: number }> = {};
+    const grid: Record<
+      string,
+      { lat: number; lon: number; count: number; volume: number }
+    > = {};
     for (const row of rows) {
       if (!row.lat || !row.lon) continue;
       const key = gridCell(row.lat, row.lon, cellDeg);
       const [latStr, lonStr] = key.split(",");
       if (!grid[key]) {
-        grid[key] = { lat: parseFloat(latStr), lon: parseFloat(lonStr), count: 0, volume: 0 };
+        grid[key] = {
+          lat: parseFloat(latStr),
+          lon: parseFloat(lonStr),
+          count: 0,
+          volume: 0,
+        };
       }
       grid[key].count++;
       grid[key].volume += parseFloat(row.amount);
@@ -206,39 +219,75 @@ describe("Nearby agent haversine filter", () => {
     limit: number
   ) {
     return agents
-      .filter((a) => a.lat != null && a.lon != null)
-      .map((a) => ({
+      .filter(a => a.lat != null && a.lon != null)
+      .map(a => ({
         ...a,
-        distanceMetres: Math.round(haversineMetres(lat, lon, Number(a.lat), Number(a.lon))),
+        distanceMetres: Math.round(
+          haversineMetres(lat, lon, Number(a.lat), Number(a.lon))
+        ),
       }))
-      .filter((a) => a.distanceMetres <= radiusMetres)
+      .filter(a => a.distanceMetres <= radiusMetres)
       .sort((a, b) => a.distanceMetres - b.distanceMetres)
       .slice(0, limit);
   }
 
   const AGENTS: AgentRow[] = [
-    { id: 1, name: "Agent A", agentCode: "AGT001", tier: "Gold", floatBalance: "500000", lat: 6.5244, lon: 3.3792 },
-    { id: 2, name: "Agent B", agentCode: "AGT002", tier: "Silver", floatBalance: "200000", lat: 6.5250, lon: 3.3800 },
-    { id: 3, name: "Agent C", agentCode: "AGT003", tier: "Bronze", floatBalance: "100000", lat: 9.0579, lon: 7.4951 },
-    { id: 4, name: "Agent D", agentCode: "AGT004", tier: "Bronze", floatBalance: "50000", lat: null, lon: null },
+    {
+      id: 1,
+      name: "Agent A",
+      agentCode: "AGT001",
+      tier: "Gold",
+      floatBalance: "500000",
+      lat: 6.5244,
+      lon: 3.3792,
+    },
+    {
+      id: 2,
+      name: "Agent B",
+      agentCode: "AGT002",
+      tier: "Silver",
+      floatBalance: "200000",
+      lat: 6.525,
+      lon: 3.38,
+    },
+    {
+      id: 3,
+      name: "Agent C",
+      agentCode: "AGT003",
+      tier: "Bronze",
+      floatBalance: "100000",
+      lat: 9.0579,
+      lon: 7.4951,
+    },
+    {
+      id: 4,
+      name: "Agent D",
+      agentCode: "AGT004",
+      tier: "Bronze",
+      floatBalance: "50000",
+      lat: null,
+      lon: null,
+    },
   ];
 
   it("finds agents within 1km of Lagos centre", () => {
     const nearby = findNearby(AGENTS, 6.5244, 3.3792, 1_000, 10);
-    expect(nearby.map((a) => a.agentCode)).toContain("AGT001");
-    expect(nearby.map((a) => a.agentCode)).toContain("AGT002");
-    expect(nearby.map((a) => a.agentCode)).not.toContain("AGT003");
+    expect(nearby.map(a => a.agentCode)).toContain("AGT001");
+    expect(nearby.map(a => a.agentCode)).toContain("AGT002");
+    expect(nearby.map(a => a.agentCode)).not.toContain("AGT003");
   });
 
   it("excludes agents with null coordinates", () => {
     const nearby = findNearby(AGENTS, 6.5244, 3.3792, 100_000, 10);
-    expect(nearby.map((a) => a.agentCode)).not.toContain("AGT004");
+    expect(nearby.map(a => a.agentCode)).not.toContain("AGT004");
   });
 
   it("sorts by distance ascending", () => {
     const nearby = findNearby(AGENTS, 6.5244, 3.3792, 1_000, 10);
     for (let i = 1; i < nearby.length; i++) {
-      expect(nearby[i].distanceMetres).toBeGreaterThanOrEqual(nearby[i - 1].distanceMetres);
+      expect(nearby[i].distanceMetres).toBeGreaterThanOrEqual(
+        nearby[i - 1].distanceMetres
+      );
     }
   });
 
@@ -266,18 +315,35 @@ describe("Gold-layer daily summary aggregation", () => {
   }
 
   function buildDailySummary(rows: TxRow[]) {
-    const map = new Map<number, {
-      agentId: number; agentCode: string; agentTier: string;
-      txCount: number; txVolume: number; txFees: number; txCommission: number;
-      successCount: number; failedCount: number; fraudCount: number;
-    }>();
+    const map = new Map<
+      number,
+      {
+        agentId: number;
+        agentCode: string;
+        agentTier: string;
+        txCount: number;
+        txVolume: number;
+        txFees: number;
+        txCommission: number;
+        successCount: number;
+        failedCount: number;
+        fraudCount: number;
+      }
+    >();
 
     for (const row of rows) {
       if (!map.has(row.agentId)) {
         map.set(row.agentId, {
-          agentId: row.agentId, agentCode: row.agentCode, agentTier: row.agentTier,
-          txCount: 0, txVolume: 0, txFees: 0, txCommission: 0,
-          successCount: 0, failedCount: 0, fraudCount: 0,
+          agentId: row.agentId,
+          agentCode: row.agentCode,
+          agentTier: row.agentTier,
+          txCount: 0,
+          txVolume: 0,
+          txFees: 0,
+          txCommission: 0,
+          successCount: 0,
+          failedCount: 0,
+          fraudCount: 0,
         });
       }
       const entry = map.get(row.agentId)!;
@@ -290,7 +356,7 @@ describe("Gold-layer daily summary aggregation", () => {
       if (parseFloat(row.fraudScore ?? "0") >= 0.7) entry.fraudCount++;
     }
 
-    return Array.from(map.values()).map((e) => ({
+    return Array.from(map.values()).map(e => ({
       ...e,
       successRate: e.txCount ? e.successCount / e.txCount : 0,
     }));
@@ -298,14 +364,41 @@ describe("Gold-layer daily summary aggregation", () => {
 
   it("aggregates transactions per agent correctly", () => {
     const rows: TxRow[] = [
-      { agentId: 1, agentCode: "AGT001", agentTier: "Gold", amount: "5000", fee: "50", commission: "25", status: "success", fraudScore: "0.1" },
-      { agentId: 1, agentCode: "AGT001", agentTier: "Gold", amount: "3000", fee: "30", commission: "15", status: "failed", fraudScore: "0.8" },
-      { agentId: 2, agentCode: "AGT002", agentTier: "Silver", amount: "2000", fee: "20", commission: "10", status: "success", fraudScore: "0.2" },
+      {
+        agentId: 1,
+        agentCode: "AGT001",
+        agentTier: "Gold",
+        amount: "5000",
+        fee: "50",
+        commission: "25",
+        status: "success",
+        fraudScore: "0.1",
+      },
+      {
+        agentId: 1,
+        agentCode: "AGT001",
+        agentTier: "Gold",
+        amount: "3000",
+        fee: "30",
+        commission: "15",
+        status: "failed",
+        fraudScore: "0.8",
+      },
+      {
+        agentId: 2,
+        agentCode: "AGT002",
+        agentTier: "Silver",
+        amount: "2000",
+        fee: "20",
+        commission: "10",
+        status: "success",
+        fraudScore: "0.2",
+      },
     ];
     const summary = buildDailySummary(rows);
     expect(summary).toHaveLength(2);
 
-    const agt1 = summary.find((s) => s.agentCode === "AGT001")!;
+    const agt1 = summary.find(s => s.agentCode === "AGT001")!;
     expect(agt1.txCount).toBe(2);
     expect(agt1.txVolume).toBe(8000);
     expect(agt1.successRate).toBe(0.5);
@@ -314,8 +407,26 @@ describe("Gold-layer daily summary aggregation", () => {
 
   it("calculates success rate as 1.0 when all transactions succeed", () => {
     const rows: TxRow[] = [
-      { agentId: 1, agentCode: "AGT001", agentTier: "Gold", amount: "5000", fee: "50", commission: "25", status: "success", fraudScore: "0.1" },
-      { agentId: 1, agentCode: "AGT001", agentTier: "Gold", amount: "3000", fee: "30", commission: "15", status: "success", fraudScore: "0.2" },
+      {
+        agentId: 1,
+        agentCode: "AGT001",
+        agentTier: "Gold",
+        amount: "5000",
+        fee: "50",
+        commission: "25",
+        status: "success",
+        fraudScore: "0.1",
+      },
+      {
+        agentId: 1,
+        agentCode: "AGT001",
+        agentTier: "Gold",
+        amount: "3000",
+        fee: "30",
+        commission: "15",
+        status: "success",
+        fraudScore: "0.2",
+      },
     ];
     const summary = buildDailySummary(rows);
     expect(summary[0].successRate).toBe(1.0);
@@ -330,16 +441,30 @@ describe("DataFusion SQL validation", () => {
   function validateSql(sql: string): { valid: boolean; error?: string } {
     const trimmed = sql.trim().toUpperCase();
     if (!trimmed) return { valid: false, error: "Empty query" };
-    if (!trimmed.startsWith("SELECT")) return { valid: false, error: "Only SELECT queries are allowed" };
-    const dangerous = ["DROP", "DELETE", "INSERT", "UPDATE", "TRUNCATE", "ALTER", "CREATE", "GRANT", "REVOKE"];
+    if (!trimmed.startsWith("SELECT"))
+      return { valid: false, error: "Only SELECT queries are allowed" };
+    const dangerous = [
+      "DROP",
+      "DELETE",
+      "INSERT",
+      "UPDATE",
+      "TRUNCATE",
+      "ALTER",
+      "CREATE",
+      "GRANT",
+      "REVOKE",
+    ];
     for (const kw of dangerous) {
-      if (trimmed.includes(kw)) return { valid: false, error: `Dangerous keyword detected: ${kw}` };
+      if (trimmed.includes(kw))
+        return { valid: false, error: `Dangerous keyword detected: ${kw}` };
     }
     return { valid: true };
   }
 
   it("accepts valid SELECT queries", () => {
-    expect(validateSql("SELECT * FROM 54link.silver.transactions LIMIT 100").valid).toBe(true);
+    expect(
+      validateSql("SELECT * FROM 54link.silver.transactions LIMIT 100").valid
+    ).toBe(true);
   });
 
   it("rejects empty queries", () => {
@@ -361,7 +486,9 @@ describe("DataFusion SQL validation", () => {
   });
 
   it("rejects INSERT statements", () => {
-    expect(validateSql("INSERT INTO transactions VALUES (1)").valid).toBe(false);
+    expect(validateSql("INSERT INTO transactions VALUES (1)").valid).toBe(
+      false
+    );
   });
 
   it("accepts complex analytical queries", () => {
