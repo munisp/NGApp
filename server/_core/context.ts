@@ -6,11 +6,22 @@
  * resolve the user record from the database by keycloakSub.
  *
  * Public procedures receive user=null; protectedProcedure throws UNAUTHORIZED.
+ *
+ * PRODUCTION: No dev fallback users are created. JWT_SECRET must be set.
+ * DEVELOPMENT: A mock admin user is created when DB is unavailable (opt-in via
+ *   DEV_AUTH_BYPASS=true, defaults to false even in development).
  */
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { verifySessionJwt, KC_SESSION_COOKIE } from "./keycloakAuth";
 import { getUserByKeycloakSub } from "../db";
+
+const isDev = process.env.NODE_ENV === "development";
+const devBypassEnabled = isDev && process.env.DEV_AUTH_BYPASS === "true";
+
+if (!isDev && (!process.env.JWT_SECRET || process.env.JWT_SECRET === "pos54link-secret-change-in-production")) {
+  console.error("[SECURITY] FATAL: JWT_SECRET is not set or is using the default value. Set a strong secret in production.");
+}
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -27,10 +38,6 @@ function parseCookies(cookieHeader: string): Map<string, string> {
   return map;
 }
 
-/**
- * DEV-ONLY: Returns a mock admin user when the database is unavailable.
- * This allows the admin dashboard UI to render without a live DB connection.
- */
 function createDevFallbackUser(session: { sub: string; name: string; email: string; role: string }): User {
   return {
     id: 1,
@@ -57,31 +64,24 @@ export async function createContext(
     if (sessionToken) {
       const session = await verifySessionJwt(sessionToken);
       if (session?.sub) {
-        // Try DB lookup first — wrap in its own try-catch so DB errors
-        // don't prevent the dev fallback from activating
         let dbUser: User | undefined;
         try {
           dbUser = await getUserByKeycloakSub(session.sub);
         } catch (dbErr) {
-          // DB connection error (ECONNREFUSED, timeout, etc.)
-          // In dev mode we'll fall through to the mock user below
-          if (process.env.NODE_ENV === "development") {
+          if (devBypassEnabled) {
             console.warn("[context] DB lookup failed, using dev fallback user");
           }
         }
 
         if (dbUser) {
           user = dbUser;
-        } else if (process.env.NODE_ENV === "development") {
-          // DEV fallback: DB unavailable or user not seeded — use session data
+        } else if (devBypassEnabled) {
           user = createDevFallbackUser(session);
         }
       }
     }
 
-    // DEV PREVIEW MODE: When no session cookie exists in development,
-    // create a mock admin user so dashboard pages can be previewed
-    if (!user && process.env.NODE_ENV === "development") {
+    if (!user && devBypassEnabled) {
       user = createDevFallbackUser({
         sub: "dev-preview-user",
         name: "Dev Admin",
@@ -90,7 +90,6 @@ export async function createContext(
       });
     }
   } catch {
-    // JWT verification failed or other auth error — public procedures get user=null
     user = null;
   }
 
