@@ -6,7 +6,6 @@
 //! Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 
 use actix_web::dev::Service;
-use std::time::Duration;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -368,7 +367,7 @@ async fn main() -> std::io::Result<()> {
             .route("/readyz", web::get().to(readyz))
             .route("/livez", web::get().to(livez))
             .route("/metrics", web::get().to(prom_metrics))
-    }).bind(format!("0.0.0.0:{}", port))?.shutdown_timeout(Duration::from_secs(30)).run().await
+    }).bind(format!("0.0.0.0:{}", port))?.shutdown_timeout(30).run().await
 }
 
 
