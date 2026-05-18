@@ -75,7 +75,7 @@ const createEndpoint = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createEndpoint: record not found" });
         return { success: true, id: input.id, message: "createEndpoint completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(webhookEndpoints).values(input.data as any || {}).returning();
+      const [row] = await db.insert(webhookEndpoints).values(input.data || {}).returning();
       return { success: true, ...row, message: "createEndpoint completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -90,7 +90,7 @@ const updateEndpoint = protectedProcedure
       const [existing] = await db.select().from(webhookEndpoints).where(eq(webhookEndpoints.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "updateEndpoint: record not found" });
       if (input.data) {
-        const [updated] = await db.update(webhookEndpoints).set(input.data as any).where(eq(webhookEndpoints.id, input.id)).returning();
+        const [updated] = await db.update(webhookEndpoints).set(input.data).where(eq(webhookEndpoints.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };

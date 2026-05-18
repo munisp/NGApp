@@ -77,7 +77,7 @@ const acknowledgeAlert = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "acknowledgeAlert: record not found" });
         return { success: true, id: input.id, message: "acknowledgeAlert completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(platform_health_checks).values(input.data as any || {}).returning();
+      const [row] = await db.insert(platform_health_checks).values(input.data || {}).returning();
       return { success: true, ...row, message: "acknowledgeAlert completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

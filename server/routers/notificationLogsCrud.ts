@@ -11,8 +11,8 @@ export const notification_logsRouter = router({
     try {
       const db = (await getDb())!;
       const conditions: any[] = [];
-      if (input.status) conditions.push(eq(notification_logs.status as any, input.status));
-      if (input.channelId) conditions.push(eq(notification_logs.channelId as any, input.channelId));
+      if (input.status) conditions.push(eq(notification_logs.status, input.status));
+      if (input.channelId) conditions.push(eq(notification_logs.channelId, input.channelId));
       const rows = await db.select().from(notification_logs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(notification_logs.id)).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(notification_logs).where(conditions.length ? and(...conditions) : undefined).limit(100);
       return { items: rows, total };

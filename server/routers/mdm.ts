@@ -59,7 +59,7 @@ export const mdmRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await requireDb();
-        const whereClause = input.status !== "all" ? eq(devices.status, input.status as any) : undefined;
+        const whereClause = input.status !== "all" ? eq(devices.status, input.status) : undefined;
         const rows = await db
           .select({
             device: devices,
@@ -308,7 +308,7 @@ export const mdmRouter = router({
             osVersion: input.osVersion,
             appVersion: input.appVersion,
             firmwareVersion: input.firmwareVersion,
-            ipAddress: (ctx.req as any)?.ip ?? input.ipAddress,
+            ipAddress: (ctx.req)?.ip ?? input.ipAddress,
             status: "online",
             lastSeenAt: new Date(),
             ...telemetryFields,
@@ -319,7 +319,7 @@ export const mdmRouter = router({
             osVersion: input.osVersion ?? device.osVersion,
             appVersion: input.appVersion ?? device.appVersion,
             firmwareVersion: input.firmwareVersion ?? device.firmwareVersion,
-            ipAddress: (ctx.req as any)?.ip ?? input.ipAddress ?? device.ipAddress,
+            ipAddress: (ctx.req)?.ip ?? input.ipAddress ?? device.ipAddress,
             lastSeenAt: new Date(),
             updatedAt: new Date(),
             ...telemetryFields,

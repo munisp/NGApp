@@ -8,7 +8,7 @@ import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
-  apiVersion: "2025-04-30.basil" as any,
+  apiVersion: "2025-04-30.basil",
 });
 
 interface InvoiceLineItem {
@@ -82,7 +82,7 @@ export const billingInvoiceRouter = router({
 
         const [config] = await db.select().from(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, input.tenantId)).limit(100);
         if (config?.billingModel === "subscription" || config?.billingModel === "hybrid") {
-          const subConfig = config.subscriptionConfig as any;
+          const subConfig = config.subscriptionConfig;
           if (subConfig?.perAgentFee) {
             lineItems.push({ description: "Monthly agent subscription", quantity: subConfig.agentCount || 10, unitPrice: subConfig.perAgentFee, total: (subConfig.agentCount || 10) * subConfig.perAgentFee, category: "subscription" });
           }
@@ -251,7 +251,7 @@ export const billingInvoiceRouter = router({
       description: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const origin = (ctx as any).req?.headers?.origin || "http://localhost:3000";
+      const origin = (ctx).req?.headers?.origin || "http://localhost:3000";
       try {
         const session = await stripe.checkout.sessions.create({
           mode: "payment",

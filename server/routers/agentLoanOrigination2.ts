@@ -62,7 +62,7 @@ const submitApplication = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "submitApplication: record not found" });
         return { success: true, id: input.id, message: "submitApplication completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "submitApplication completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -79,7 +79,7 @@ const approveApplication = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "approveApplication: record not found" });
         return { success: true, id: input.id, message: "approveApplication completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "approveApplication completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -96,7 +96,7 @@ const rejectApplication = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "rejectApplication: record not found" });
         return { success: true, id: input.id, message: "rejectApplication completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "rejectApplication completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

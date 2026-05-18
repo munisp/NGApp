@@ -75,7 +75,7 @@ const setConfig = protectedProcedure
       const [existing] = await db.select().from(simOrchestratorConfig).where(eq(simOrchestratorConfig.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "setConfig: record not found" });
       if (input.data) {
-        const [updated] = await db.update(simOrchestratorConfig).set(input.data as any).where(eq(simOrchestratorConfig.id, input.id)).returning();
+        const [updated] = await db.update(simOrchestratorConfig).set(input.data).where(eq(simOrchestratorConfig.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -92,7 +92,7 @@ const toggleFeatureFlag = protectedProcedure
       const [existing] = await db.select().from(simOrchestratorConfig).where(eq(simOrchestratorConfig.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "toggleFeatureFlag: record not found" });
       if (input.data) {
-        const [updated] = await db.update(simOrchestratorConfig).set(input.data as any).where(eq(simOrchestratorConfig.id, input.id)).returning();
+        const [updated] = await db.update(simOrchestratorConfig).set(input.data).where(eq(simOrchestratorConfig.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };

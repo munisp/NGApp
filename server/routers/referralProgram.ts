@@ -10,7 +10,7 @@ export const referralProgramRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(referrals.status, input.status as any));
+      if (input?.status) conditions.push(eq(referrals.status, input.status));
       const rows = await db.select().from(referrals).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(referrals.createdAt)).limit(input?.limit ?? 50);
       return { referrals: rows, total: rows.length };
     } catch (error) {
@@ -22,7 +22,7 @@ export const referralProgramRouter = router({
     try {
       const db = (await getDb())!;
       const code = input.referralCode.toUpperCase();
-      const [ref] = await db.insert(referrals).values({ referrerAgentId: input.referrerAgentId, referrerCode: "AGT-" + input.referrerAgentId, referralCode: code, status: "pending" as any, bonusPoints: 0, bonusCash: "0" }).returning();
+      const [ref] = await db.insert(referrals).values({ referrerAgentId: input.referrerAgentId, referrerCode: "AGT-" + input.referrerAgentId, referralCode: code, status: "pending", bonusPoints: 0, bonusCash: "0" }).returning();
       await db.insert(auditLog).values({ action: "referral_created", resource: "referrals", resourceId: String(ref.id), status: "success", metadata: { referrerAgentId: input.referrerAgentId, code } });
       return { id: ref.id, referralCode: code, status: "pending" };
     } catch (error) {
@@ -33,7 +33,7 @@ export const referralProgramRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(referrals).limit(100);
-    const [active] = await db.select({ value: count() }).from(referrals).where(eq(referrals.status, "active" as any)).limit(100);
+    const [active] = await db.select({ value: count() }).from(referrals).where(eq(referrals.status, "active")).limit(100);
     const [totalCash] = await db.select({ value: sum(referrals.bonusCash) }).from(referrals).limit(100);
     return { totalReferrals: Number(total.value), activeReferrals: Number(active.value), totalBonusCash: Number(totalCash.value ?? 0) };
   }),

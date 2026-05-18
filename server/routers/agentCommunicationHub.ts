@@ -10,7 +10,7 @@ export const agentCommunicationHubRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(chatSessions.status, input.status as any));
+      if (input?.status) conditions.push(eq(chatSessions.status, input.status));
       const rows = await db.select().from(chatSessions).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50);
       return { sessions: rows, total: rows.length };
     } catch (error) {
@@ -21,7 +21,7 @@ export const agentCommunicationHubRouter = router({
   sendMessage: protectedProcedure.input(z.object({ sessionId: z.number(), content: z.string().min(1).max(2000), senderType: z.enum(["agent", "support", "system"]).default("agent") })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [msg] = await db.insert(chatMessages).values({ sessionId: input.sessionId, content: input.content, senderType: input.senderType as any }).returning();
+      const [msg] = await db.insert(chatMessages).values({ sessionId: input.sessionId, content: input.content, senderType: input.senderType }).returning();
       await db.insert(auditLog).values({ action: "message_sent", resource: "chat_messages", resourceId: String(msg.id), status: "success", metadata: { sessionId: input.sessionId } });
       return { id: msg.id, sessionId: input.sessionId, status: "sent" };
     } catch (error) {

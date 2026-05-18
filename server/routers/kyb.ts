@@ -139,7 +139,7 @@ export const kybRouter = router({
           agentCode: "system",
           action: "kyb_verification_started",
           resource: "kyb_verification",
-          resourceId: (result as any).id || "unknown",
+          resourceId: (result).id || "unknown",
           status: "success",
           metadata: { business_name: input.business_name, business_type: input.business_type },
         });

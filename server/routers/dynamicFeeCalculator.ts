@@ -45,7 +45,7 @@ export const dynamicFeeCalculatorRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB not available");
       await db.insert(systemConfig).values({ key: "fee_rule_" + input.transactionType, value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
-      await db.insert(auditLog).values({ action: "fee_rule_created", resource: "fee_rules", resourceId: input.transactionType, status: "success", metadata: input as any });
+      await db.insert(auditLog).values({ action: "fee_rule_created", resource: "fee_rules", resourceId: input.transactionType, status: "success", metadata: input });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -42,7 +42,7 @@ export const agentSuspensionLogRouter = router({
       const [{ total: warningCount }] = await db.select({ total: count() }).from(agentSuspensionLog).where(and(eq(agentSuspensionLog.agentId, input.agentId), eq(agentSuspensionLog.action, "warn"))).limit(100);
       // Auto-escalate to suspension if too many warnings
       const action = warningCount >= MAX_WARNINGS_BEFORE_AUTO_SUSPEND - 1 ? "suspend" : "warn";
-      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action, reason: action === "suspend" ? `AUTO-ESCALATED: ${input.reason} (${warningCount + 1} warnings)` : input.reason, performedBy: input.performedBy } as any).returning();
+      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action, reason: action === "suspend" ? `AUTO-ESCALATED: ${input.reason} (${warningCount + 1} warnings)` : input.reason, performedBy: input.performedBy }).returning();
       return { ...row, autoEscalated: action === "suspend", warningCount: warningCount + 1, message: action === "suspend" ? `Agent auto-suspended after ${warningCount + 1} warnings` : `Warning ${warningCount + 1}/${MAX_WARNINGS_BEFORE_AUTO_SUSPEND} issued` };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -55,7 +55,7 @@ export const agentSuspensionLogRouter = router({
       // Check if already suspended
       const [lastAction] = await db.select().from(agentSuspensionLog).where(eq(agentSuspensionLog.agentId, input.agentId)).orderBy(desc(agentSuspensionLog.id)).limit(1);
       if (lastAction?.action === "suspend") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Agent is already suspended" });
-      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action: "suspend", reason: input.reason, performedBy: input.performedBy } as any).returning();
+      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action: "suspend", reason: input.reason, performedBy: input.performedBy }).returning();
       return { ...row, message: "Agent suspended successfully" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -67,7 +67,7 @@ export const agentSuspensionLogRouter = router({
       const db = (await getDb())!;
       const [lastAction] = await db.select().from(agentSuspensionLog).where(eq(agentSuspensionLog.agentId, input.agentId)).orderBy(desc(agentSuspensionLog.id)).limit(1);
       if (!lastAction || lastAction.action !== "suspend") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Agent is not currently suspended" });
-      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action: "reactivate", reason: input.reason, performedBy: input.performedBy } as any).returning();
+      const [row] = await db.insert(agentSuspensionLog).values({ agentId: input.agentId, action: "reactivate", reason: input.reason, performedBy: input.performedBy }).returning();
       return { ...row, message: "Agent reinstated successfully" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

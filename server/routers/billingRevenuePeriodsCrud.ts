@@ -49,7 +49,7 @@ export const billingRevenuePeriodsRouter = router({
       const fees = Number(period.totalFees);
       if (fees > gross) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Total fees exceed gross volume — reconcile before closing" });
       const netProfit = fees - Number(period.totalAgentCommissions) - Number(period.totalSwitchFees) - Number(period.totalAggregatorFees);
-      await db.update(billingRevenuePeriods).set({ netPlatformProfit: netProfit.toFixed(2) } as any).where(eq(billingRevenuePeriods.id, input.id));
+      await db.update(billingRevenuePeriods).set({ netPlatformProfit: netProfit.toFixed(2) }).where(eq(billingRevenuePeriods.id, input.id));
       return { success: true, netProfit: netProfit.toFixed(2), message: "Period closed with revenue recognized" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

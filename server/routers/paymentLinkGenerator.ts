@@ -10,7 +10,7 @@ export const paymentLinkGeneratorRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(shareableLinks.status, input.status as any));
+      if (input?.status) conditions.push(eq(shareableLinks.status, input.status));
       const rows = await db.select().from(shareableLinks).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(shareableLinks.createdAt)).limit(input?.limit ?? 50);
       return { links: rows, total: rows.length };
     } catch (error) {
@@ -22,7 +22,7 @@ export const paymentLinkGeneratorRouter = router({
     try {
       const db = (await getDb())!;
       const slug = "PAY-" + crypto.randomUUID().slice(0, 12).toUpperCase();
-      const [link] = await db.insert(shareableLinks).values({ slug, type: "payment" as any, status: "active" as any, agentId: input.agentId, amount: input.amount ? String(input.amount) : null, description: input.description, currency: "NGN" }).returning();
+      const [link] = await db.insert(shareableLinks).values({ slug, type: "payment", status: "active", agentId: input.agentId, amount: input.amount ? String(input.amount) : null, description: input.description, currency: "NGN" }).returning();
       await db.insert(auditLog).values({ action: "payment_link_created", resource: "shareable_links", resourceId: String(link.id), status: "success", metadata: { slug, agentId: input.agentId } });
       return { id: link.id, slug, url: `/pay/${slug}`, status: "active" };
     } catch (error) {
@@ -33,7 +33,7 @@ export const paymentLinkGeneratorRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(shareableLinks).limit(100);
-    const [active] = await db.select({ value: count() }).from(shareableLinks).where(eq(shareableLinks.status, "active" as any)).limit(100);
+    const [active] = await db.select({ value: count() }).from(shareableLinks).where(eq(shareableLinks.status, "active")).limit(100);
     const [clicks] = await db.select({ value: sum(shareableLinks.clickCount) }).from(shareableLinks).limit(100);
     return { totalLinks: Number(total.value), activeLinks: Number(active.value), totalClicks: Number(clicks.value ?? 0) };
   }),

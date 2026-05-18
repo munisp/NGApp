@@ -23,7 +23,7 @@ export const customer360Router = router({
   listCustomers: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = input?.status ? await db.select().from(customers).where(eq(customers.status, input.status as any)).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50) : await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50);
+      const rows = input?.status ? await db.select().from(customers).where(eq(customers.status, input.status)).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50) : await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50);
       return { customers: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

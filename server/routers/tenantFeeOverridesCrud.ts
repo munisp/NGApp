@@ -45,7 +45,7 @@ export const tenantFeeOverridesRouter = router({
       // Check for duplicate override
       const [existing] = await db.select().from(tenantFeeOverrides).where(and(eq(tenantFeeOverrides.tenantId, input.tenantId), eq(tenantFeeOverrides.txType, input.txType), eq(tenantFeeOverrides.isActive, true))).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: `Active fee override already exists for ${input.txType}. Deactivate it first.` });
-      const [row] = await db.insert(tenantFeeOverrides).values(input as any).returning();
+      const [row] = await db.insert(tenantFeeOverrides).values(input).returning();
       return { ...row, message: "Fee override created" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

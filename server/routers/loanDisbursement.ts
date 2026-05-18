@@ -9,7 +9,7 @@ export const loanDisbursementRouter = router({
   listDisbursements: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = input?.status ? await db.select().from(creditApplications).where(eq(creditApplications.status, input.status as any)).orderBy(desc(creditApplications.createdAt)).limit(input?.limit ?? 50) : await db.select().from(creditApplications).orderBy(desc(creditApplications.createdAt)).limit(input?.limit ?? 50);
+      const rows = input?.status ? await db.select().from(creditApplications).where(eq(creditApplications.status, input.status)).orderBy(desc(creditApplications.createdAt)).limit(input?.limit ?? 50) : await db.select().from(creditApplications).orderBy(desc(creditApplications.createdAt)).limit(input?.limit ?? 50);
       return { disbursements: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -65,7 +65,7 @@ export const businessRulesRouter = router({
       const { ruleId, ...updates } = input;
       const merged = { ...existing, ...updates, updatedAt: new Date().toISOString() };
       await db.update(systemConfig).set({ value: JSON.stringify(merged), updatedAt: new Date() }).where(eq(systemConfig.key, "biz_rule_" + ruleId));
-      await db.insert(auditLog).values({ action: "business_rule_updated", resource: "business_rules", resourceId: ruleId, status: "success", metadata: updates as any });
+      await db.insert(auditLog).values({ action: "business_rule_updated", resource: "business_rules", resourceId: ruleId, status: "success", metadata: updates });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

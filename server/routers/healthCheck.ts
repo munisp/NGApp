@@ -13,7 +13,7 @@ export const healthCheckRouter = router({
     try {
       const db = await getDb();
       if (db) {
-        await db.execute({ sql: "SELECT 1" } as any);
+        await db.execute({ sql: "SELECT 1" });
         checks.database = { status: "healthy", latencyMs: Date.now() - dbStart };
       } else {
         checks.database = { status: "unavailable", error: "No DB connection" };

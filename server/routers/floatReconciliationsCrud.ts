@@ -52,7 +52,7 @@ export const floatReconciliationsRouter = router({
       // Auto-resolve small discrepancies
       const autoResolved = Math.abs(discrepancy) < AUTO_RESOLVE_THRESHOLD;
       const status = autoResolved ? "resolved" : variancePercent > VARIANCE_THRESHOLD_PERCENT ? "escalated" : "pending";
-      const [row] = await db.insert(floatReconciliations).values({ agentId: input.agentId, date: new Date(), expectedBalance: input.expectedBalance, actualBalance: input.actualBalance, discrepancy: discrepancy.toFixed(2), status, notes: autoResolved ? `Auto-resolved: discrepancy ₦${Math.abs(discrepancy).toFixed(2)} below threshold` : input.notes || null } as any).returning();
+      const [row] = await db.insert(floatReconciliations).values({ agentId: input.agentId, date: new Date(), expectedBalance: input.expectedBalance, actualBalance: input.actualBalance, discrepancy: discrepancy.toFixed(2), status, notes: autoResolved ? `Auto-resolved: discrepancy ₦${Math.abs(discrepancy).toFixed(2)} below threshold` : input.notes || null }).returning();
       return { ...row, autoResolved, variancePercent: Math.round(variancePercent * 100) / 100, severity: variancePercent > VARIANCE_THRESHOLD_PERCENT ? "critical" : "normal" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -65,7 +65,7 @@ export const floatReconciliationsRouter = router({
       const [existing] = await db.select().from(floatReconciliations).where(eq(floatReconciliations.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Reconciliation not found" });
       if (existing.status === "resolved") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Already resolved" });
-      const [row] = await db.update(floatReconciliations).set({ status: "resolved", resolvedBy: input.resolvedBy, resolvedAt: new Date(), notes: input.notes } as any).where(eq(floatReconciliations.id, input.id)).returning();
+      const [row] = await db.update(floatReconciliations).set({ status: "resolved", resolvedBy: input.resolvedBy, resolvedAt: new Date(), notes: input.notes }).where(eq(floatReconciliations.id, input.id)).returning();
       return { ...row, message: "Reconciliation resolved" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

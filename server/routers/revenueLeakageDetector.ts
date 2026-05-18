@@ -73,7 +73,7 @@ const runScan = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runScan: record not found" });
         return { success: true, id: input.id, message: "runScan completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(billingRevenuePeriods).values(input.data as any || {}).returning();
+      const [row] = await db.insert(billingRevenuePeriods).values(input.data || {}).returning();
       return { success: true, ...row, message: "runScan completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -90,7 +90,7 @@ const resolveDiscrepancy = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "resolveDiscrepancy: record not found" });
         return { success: true, id: input.id, message: "resolveDiscrepancy completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(billingRevenuePeriods).values(input.data as any || {}).returning();
+      const [row] = await db.insert(billingRevenuePeriods).values(input.data || {}).returning();
       return { success: true, ...row, message: "resolveDiscrepancy completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

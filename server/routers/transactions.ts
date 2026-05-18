@@ -127,7 +127,7 @@ async function checkVelocityLimits(
     const limitRows = await db
       .select()
       .from(velocityLimits)
-      .where(eq(velocityLimits.tier, tier as any))
+      .where(eq(velocityLimits.tier, tier))
       .limit(1);
     const limits = limitRows[0];
     if (!limits) return { allowed: true };
@@ -468,7 +468,7 @@ export const transactionsRouter = router({
               const ruleRows = await db
                 .select({ value: commissionRules.value })
                 .from(commissionRules)
-                .where(and(eq(commissionRules.txType, input.type as any), eq(commissionRules.isActive, true)))
+                .where(and(eq(commissionRules.txType, input.type), eq(commissionRules.isActive, true)))
                 .limit(1);
               if (ruleRows.length > 0) {
                 commissionRate = Number(ruleRows[0].value);
@@ -535,7 +535,7 @@ export const transactionsRouter = router({
         const tx = await createTransaction({
           ref,
           agentId: agent.id,
-          type: input.type as any,
+          type: input.type,
           amount: String(input.amount),
           fee: String(fee),
           commission: String(commission),
@@ -544,7 +544,7 @@ export const transactionsRouter = router({
           customerAccount: input.customerAccount ?? null,
           destinationBank: input.destinationBank ?? null,
           destinationAccount: input.destinationAccount ?? null,
-          channel: (input.channel ?? "Cash") as any,
+          channel: (input.channel ?? "Cash"),
           status: "success",
           fraudScore: "0.00",
           deviceToken: input.deviceToken ?? null,
@@ -557,7 +557,7 @@ export const transactionsRouter = router({
           await updateAgentFloat(agent.id, input.amount);
           // Sync credit to platform float service (fail-open)
           try {
-            const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+            const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
             if (token) {
               await floatPlatform.settle({
                 agent_id: String(agent.id),
@@ -574,7 +574,7 @@ export const transactionsRouter = router({
           await updateAgentFloat(agent.id, -input.amount);
           // Sync debit to platform float service (fail-open)
           try {
-            const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+            const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
             if (token) {
               await floatPlatform.utilize({
                 agent_id: String(agent.id),
@@ -602,7 +602,7 @@ export const transactionsRouter = router({
             totalCommission: commission,
             originAgentId: agent.id,
             originAgentCode: agent.agentCode,
-            tenantId: (agent as any).tenantId ?? undefined,
+            tenantId: (agent).tenantId ?? undefined,
           });
           if (!cascadeResult.success) {
             console.warn(`[CommissionCascade] Fallback for ${ref}: ${cascadeResult.error}`);
@@ -697,7 +697,7 @@ export const transactionsRouter = router({
             agentId: agent.id,
             status: "committed",
             channel: input.channel ?? "Cash",
-            customerId: (input as any).customerId ?? undefined,
+            customerId: (input).customerId ?? undefined,
           })
         ).catch((e: unknown) => console.error("[Fluvio] Transaction event failed:", e));
 
@@ -710,8 +710,8 @@ export const transactionsRouter = router({
               amount: input.amount,
               type: input.type,
               customerName: input.customerName ?? null,
-              latitude: (input as any).latitude ?? null,
-              longitude: (input as any).longitude ?? null,
+              latitude: (input).latitude ?? null,
+              longitude: (input).longitude ?? null,
               timestamp: new Date(),
             };
             const result = await detectFraud(fraudCtx);
@@ -1156,7 +1156,7 @@ export const transactionsRouter = router({
 
         const conditions: ReturnType<typeof eq>[] = [];
         if (input.severity !== "ALL") {
-          conditions.push(eq(fraudAlerts.severity, input.severity.toLowerCase() as any));
+          conditions.push(eq(fraudAlerts.severity, input.severity.toLowerCase()));
         }
         if (input.type && input.type !== "ALL") {
           conditions.push(eq(fraudAlerts.type, input.type));
@@ -1188,8 +1188,8 @@ export const transactionsRouter = router({
           db.select({ count: sql<number>`count(*)` })
             .from(fraudAlerts)
             .where(and(
-              eq(fraudAlerts.severity, "high" as any),
-              eq(fraudAlerts.status, "open" as any),
+              eq(fraudAlerts.severity, "high"),
+              eq(fraudAlerts.status, "open"),
             )),
         ]);
 
@@ -1223,7 +1223,7 @@ export const transactionsRouter = router({
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
         await db.update(fraudAlerts)
           .set({
-            status: "resolved" as any,
+            status: "resolved",
             assignedTo: agent.agentCode,
             resolvedAt: new Date(),
             updatedAt: new Date(),
@@ -1263,8 +1263,8 @@ export const transactionsRouter = router({
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
         const conditions: ReturnType<typeof eq>[] = [];
-        if (input.severity !== "ALL") conditions.push(eq(fraudAlerts.severity, input.severity as any));
-        if (input.type) conditions.push(eq(fraudAlerts.type, input.type as any));
+        if (input.severity !== "ALL") conditions.push(eq(fraudAlerts.severity, input.severity));
+        if (input.type) conditions.push(eq(fraudAlerts.type, input.type));
         if (input.fromDate) conditions.push(gte(fraudAlerts.createdAt, new Date(input.fromDate)));
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -1449,7 +1449,7 @@ export const transactionsRouter = router({
       const tierRow = await db
         .select()
         .from(velocityLimits)
-        .where(eq(velocityLimits.tier, agent.tier as any))
+        .where(eq(velocityLimits.tier, agent.tier))
         .limit(1);
       const limits = tierRow[0] ?? { maxTxPerHour: 20, maxSingleTxAmount: 50000, maxDailyVolume: 500000 };
 
@@ -1698,7 +1698,7 @@ export const transactionsRouter = router({
       if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
       // Try platform float service first
       try {
-        const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+        const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
         if (token) {
           const result = await floatPlatform.getBalance(String(agent.id), token) as { balance?: number; available_balance?: number; currency?: string };
           return {
@@ -1737,7 +1737,7 @@ export const transactionsRouter = router({
         if (!agent) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
         // Try platform float service first
         try {
-          const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+          const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
           if (token) {
             const result = await floatPlatform.getTransactions(String(agent.id), input.limit, token) as unknown[];
             return { source: "platform" as const, transactions: result };
@@ -1773,7 +1773,7 @@ export const transactionsRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       try {
-        const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+        const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
         if (token) {
           try {
             const result = await analyticsPlatform.transactionSummary(

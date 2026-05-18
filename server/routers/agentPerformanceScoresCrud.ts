@@ -58,7 +58,7 @@ export const agentPerformanceScoresRouter = router({
       if (existing) throw new TRPCError({ code: "CONFLICT", message: `Score already calculated for period ${input.period}` });
       // Calculate from transaction data (aggregated)
       const score = calculateWeightedScore(500000, 150, 0.015, 12);
-      const [row] = await db.insert(agentPerformanceScores).values({ agentId: input.agentId, period: input.period, txVolume: "500000", txCount: 150 } as any).returning();
+      const [row] = await db.insert(agentPerformanceScores).values({ agentId: input.agentId, period: input.period, txVolume: "500000", txCount: 150 }).returning();
       return { ...row, tier: calculatePerformanceTier(score), weightedScore: score };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

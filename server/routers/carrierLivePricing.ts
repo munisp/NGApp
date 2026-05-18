@@ -36,7 +36,7 @@ export const carrierLivePricingRouter = router({
       const existing = rows.length > 0 ? JSON.parse(String(rows[0].value ?? "{}")) : {};
       const updated = { ...existing, ...rateUpdates, updatedAt: new Date().toISOString() };
       await db.insert(systemConfig).values({ key: "carrier_rate_" + carrierId, value: JSON.stringify(updated) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(updated), updatedAt: new Date() } });
-      await db.insert(auditLog).values({ action: "carrier_rate_updated", resource: "carrier_pricing", resourceId: carrierId, status: "success", metadata: rateUpdates as any });
+      await db.insert(auditLog).values({ action: "carrier_rate_updated", resource: "carrier_pricing", resourceId: carrierId, status: "success", metadata: rateUpdates });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

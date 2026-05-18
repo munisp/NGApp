@@ -66,10 +66,10 @@ export const tenantBrandingRouter = router({
       if (input.fontFamily && !ALLOWED_FONTS.includes(input.fontFamily)) throw new TRPCError({ code: "BAD_REQUEST", message: `Font not available. Choose from: ${ALLOWED_FONTS.join(", ")}` });
       const [existing] = await db.select().from(tenantBranding).where(eq(tenantBranding.tenantId, input.tenantId)).limit(100);
       if (existing) {
-        const [row] = await db.update(tenantBranding).set(input as any).where(eq(tenantBranding.tenantId, input.tenantId)).returning();
+        const [row] = await db.update(tenantBranding).set(input).where(eq(tenantBranding.tenantId, input.tenantId)).returning();
         return { ...row, message: "Branding updated" };
       }
-      const [row] = await db.insert(tenantBranding).values(input as any).returning();
+      const [row] = await db.insert(tenantBranding).values(input).returning();
       return { ...row, message: "Branding created" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

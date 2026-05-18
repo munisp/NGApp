@@ -48,7 +48,7 @@ export const geoFencesRouter = router({
     try {
       const db = (await getDb())!;
       if (!isValidPolygon(input.coordinates)) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid polygon — need at least 3 points with valid lat/lng" });
-      const [row] = await db.insert(geoFences).values({ name: input.name, coordinates: JSON.stringify(input.coordinates), radius: input.radius, isActive: input.isActive } as any).returning();
+      const [row] = await db.insert(geoFences).values({ name: input.name, coordinates: JSON.stringify(input.coordinates), radius: input.radius, isActive: input.isActive }).returning();
       return { ...row, vertexCount: input.coordinates.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -58,7 +58,7 @@ export const geoFencesRouter = router({
   checkPoint: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number() })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const fences = await db.select().from(geoFences).where(eq(geoFences.isActive as any, true)).limit(100);
+      const fences = await db.select().from(geoFences).where(eq(geoFences.isActive, true)).limit(100);
       const matches = fences.filter((f: any) => { try { const coords = JSON.parse(f.coordinates); return isPointInPolygon([input.lng, input.lat], coords); } catch { return false; } });
       return { point: { lat: input.lat, lng: input.lng }, matchingFences: matches.map((f: any) => ({ id: f.id, name: f.name })), isInsideAnyFence: matches.length > 0 };
     } catch (error) {

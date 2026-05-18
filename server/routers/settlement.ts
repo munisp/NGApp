@@ -182,7 +182,7 @@ export const settlementRouter = router({
     .query(async ({ ctx, input }) => {
       // Try platform first
       try {
-        const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+        const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
         if (token) {
           const result = await settlementPlatform.getHistory(
             { limit: input.limit, offset: input.offset },
@@ -235,7 +235,7 @@ export const settlementRouter = router({
   getOutstanding: agentAdminProcedure.query(async ({ ctx }) => {
     // Try platform first
     try {
-      const token = (ctx.req as any)?.cookies?.["kc_access_token"] ?? "";
+      const token = (ctx.req)?.cookies?.["kc_access_token"] ?? "";
       if (token) {
         const result = await settlementPlatform.getOutstanding(token) as { outstanding?: unknown[] };
         if (result?.outstanding) {

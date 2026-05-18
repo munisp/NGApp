@@ -23,7 +23,7 @@ export const complianceFilingRouter = router({
         const conditions = [];
         if (input.filingType) conditions.push(eq(complianceFilings.filingType, input.filingType));
         if (input.regulator) conditions.push(eq(complianceFilings.regulator, input.regulator));
-        if (input.status) conditions.push(eq(complianceFilings.status, input.status as any));
+        if (input.status) conditions.push(eq(complianceFilings.status, input.status));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(complianceFilings).where(where).orderBy(desc(complianceFilings.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);

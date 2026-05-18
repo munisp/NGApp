@@ -429,7 +429,7 @@ export const simOrchestratorRouter = router({
 
         // Publish to Kafka (non-blocking, fail-open)
         publishEvent(
-          "pos.fraud.alert_raised" as any,
+          "pos.fraud.alert_raised",
           input.terminalId,
           {
             eventType: "sim.failover",

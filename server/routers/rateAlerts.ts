@@ -10,7 +10,7 @@ export const rateAlertsRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(rateAlerts.status, input.status as any));
+      if (input?.status) conditions.push(eq(rateAlerts.status, input.status));
       const rows = await db.select().from(rateAlerts).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(rateAlerts.createdAt)).limit(input?.limit ?? 50);
       return { alerts: rows, total: rows.length };
     } catch (error) {
@@ -21,7 +21,7 @@ export const rateAlertsRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(rateAlerts).limit(100);
-    const [active] = await db.select({ value: count() }).from(rateAlerts).where(eq(rateAlerts.status, "active" as any)).limit(100);
+    const [active] = await db.select({ value: count() }).from(rateAlerts).where(eq(rateAlerts.status, "active")).limit(100);
     return { totalAlerts: Number(total.value), activeAlerts: Number(active.value) };
   }),
 });

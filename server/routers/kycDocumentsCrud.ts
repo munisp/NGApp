@@ -57,7 +57,7 @@ export const kycDocumentsRouter = router({
       if (input.docType === "BVN" && input.docNumber && !/^[0-9]{11}$/.test(input.docNumber)) throw new TRPCError({ code: "BAD_REQUEST", message: "BVN must be exactly 11 digits" });
       // NIN must be 11 digits
       if (input.docType === "NIN" && input.docNumber && !/^[0-9]{11}$/.test(input.docNumber)) throw new TRPCError({ code: "BAD_REQUEST", message: "NIN must be exactly 11 digits" });
-      const [row] = await db.insert(kycDocuments).values({ agentId: input.agentId, docType: input.docType, docNumber: input.docNumber || null, docUrl: input.docUrl, status: "pending" } as any).returning();
+      const [row] = await db.insert(kycDocuments).values({ agentId: input.agentId, docType: input.docType, docNumber: input.docNumber || null, docUrl: input.docUrl, status: "pending" }).returning();
       return { ...row, message: "Document submitted for verification" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -70,7 +70,7 @@ export const kycDocumentsRouter = router({
       const [doc] = await db.select().from(kycDocuments).where(eq(kycDocuments.id, input.id)).limit(100);
       if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
       if (doc.status !== "pending") throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Cannot verify a document with status: ${doc.status}` });
-      const [row] = await db.update(kycDocuments).set({ status: "verified", verifiedBy: input.verifiedBy, verifiedAt: new Date() } as any).where(eq(kycDocuments.id, input.id)).returning();
+      const [row] = await db.update(kycDocuments).set({ status: "verified", verifiedBy: input.verifiedBy, verifiedAt: new Date() }).where(eq(kycDocuments.id, input.id)).returning();
       return { ...row, message: "Document verified" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -83,7 +83,7 @@ export const kycDocumentsRouter = router({
       const [doc] = await db.select().from(kycDocuments).where(eq(kycDocuments.id, input.id)).limit(100);
       if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
       if (doc.status !== "pending") throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Cannot reject a document with status: ${doc.status}` });
-      const [row] = await db.update(kycDocuments).set({ status: "rejected", verifiedBy: input.verifiedBy, verifiedAt: new Date(), rejectionReason: input.rejectionReason } as any).where(eq(kycDocuments.id, input.id)).returning();
+      const [row] = await db.update(kycDocuments).set({ status: "rejected", verifiedBy: input.verifiedBy, verifiedAt: new Date(), rejectionReason: input.rejectionReason }).where(eq(kycDocuments.id, input.id)).returning();
       return { ...row, message: "Document rejected" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

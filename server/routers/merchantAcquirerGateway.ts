@@ -10,7 +10,7 @@ export const merchantAcquirerGatewayRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(merchants.status, input.status as any));
+      if (input?.status) conditions.push(eq(merchants.status, input.status));
       const rows = await db.select().from(merchants).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50);
       return { merchants: rows, total: rows.length };
     } catch (error) {

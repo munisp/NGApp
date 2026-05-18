@@ -45,7 +45,7 @@ export const trainingEnrollmentsRouter = router({
       // Check for duplicate enrollment
       const [existing] = await db.select().from(trainingEnrollments).where(and(eq(trainingEnrollments.agentId, input.agentId), eq(trainingEnrollments.courseId, input.courseId), eq(trainingEnrollments.status, "enrolled"))).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Agent is already enrolled in this course" });
-      const [row] = await db.insert(trainingEnrollments).values({ agentId: input.agentId, courseId: input.courseId, status: "enrolled", progress: 0 } as any).returning();
+      const [row] = await db.insert(trainingEnrollments).values({ agentId: input.agentId, courseId: input.courseId, status: "enrolled", progress: 0 }).returning();
       return { ...row, courseName: course.title, message: "Enrolled successfully" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -76,7 +76,7 @@ export const trainingEnrollmentsRouter = router({
       const [course] = await db.select().from(trainingCourses).where(eq(trainingCourses.id, enrollment.courseId)).limit(100);
       const passingScore = course?.passingScore || 70;
       const passed = input.score >= passingScore;
-      const [row] = await db.update(trainingEnrollments).set({ score: input.score, status: passed ? "completed" : "failed", completedAt: new Date() } as any).where(eq(trainingEnrollments.id, input.id)).returning();
+      const [row] = await db.update(trainingEnrollments).set({ score: input.score, status: passed ? "completed" : "failed", completedAt: new Date() }).where(eq(trainingEnrollments.id, input.id)).returning();
       return { ...row, passed, passingScore, message: passed ? `Passed with ${input.score}%!` : `Failed (${input.score}% < ${passingScore}% required)` };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

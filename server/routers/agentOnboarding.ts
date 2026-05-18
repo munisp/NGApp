@@ -477,8 +477,8 @@ export const agentOnboardingRouter = router({
         };
         const update = stepFields[input.stepNumber];
         if (!update) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid step number" });
-        if (input.notes) (update as any).notes = input.notes;
-        (update as any).updatedAt = new Date();
+        if (input.notes) (update).notes = input.notes;
+        (update).updatedAt = new Date();
         const [updated] = await db
           .update(agentOnboardingProgress)
           .set(update)

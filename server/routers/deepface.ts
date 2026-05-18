@@ -53,7 +53,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace verification service unavailable",
           });
         }
@@ -86,7 +86,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace ensemble verification service unavailable",
           });
         }
@@ -117,7 +117,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace analysis service unavailable",
           });
         }
@@ -146,7 +146,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace detection service unavailable",
           });
         }
@@ -175,7 +175,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace embedding extraction service unavailable",
           });
         }
@@ -202,7 +202,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace anti-spoofing service unavailable",
           });
         }
@@ -233,7 +233,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace enrollment service unavailable",
           });
         }
@@ -264,7 +264,7 @@ export const deepfaceRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "DeepFace gallery search service unavailable",
           });
         }

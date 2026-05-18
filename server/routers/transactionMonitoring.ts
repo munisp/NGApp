@@ -10,8 +10,8 @@ export const transactionMonitoringRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(transactions.status, input.status as any));
-      if (input?.type) conditions.push(eq(transactions.type, input.type as any));
+      if (input?.status) conditions.push(eq(transactions.status, input.status));
+      if (input?.type) conditions.push(eq(transactions.type, input.type));
       if (input?.agentId) conditions.push(eq(transactions.agentId, input.agentId));
       if (input?.startDate) conditions.push(gte(transactions.createdAt, new Date(input.startDate)));
       if (input?.endDate) conditions.push(lte(transactions.createdAt, new Date(input.endDate)));

@@ -10,7 +10,7 @@ export const transactionReversalManagerRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(reversalRequests.status, input.status as any));
+      if (input?.status) conditions.push(eq(reversalRequests.status, input.status));
       const rows = await db.select().from(reversalRequests).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(reversalRequests.createdAt)).limit(input?.limit ?? 50);
       return { reversals: rows, total: rows.length };
     } catch (error) {
@@ -21,7 +21,7 @@ export const transactionReversalManagerRouter = router({
   create: protectedProcedure.input(z.object({ transactionId: z.string(), agentId: z.number(), reason: z.string().min(3), amount: z.number().positive() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [rev] = await db.insert(reversalRequests).values({ transactionId: input.transactionId, agentId: input.agentId, reason: input.reason, amount: String(input.amount), currency: "NGN", status: "pending" as any }).returning();
+      const [rev] = await db.insert(reversalRequests).values({ transactionId: input.transactionId, agentId: input.agentId, reason: input.reason, amount: String(input.amount), currency: "NGN", status: "pending" }).returning();
       await db.insert(auditLog).values({ action: "reversal_requested", resource: "reversal_requests", resourceId: String(rev.id), status: "success", metadata: { transactionId: input.transactionId, amount: input.amount } });
       return { id: rev.id, status: "pending" };
     } catch (error) {
@@ -32,7 +32,7 @@ export const transactionReversalManagerRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(reversalRequests).limit(100);
-    const [pending] = await db.select({ value: count() }).from(reversalRequests).where(eq(reversalRequests.status, "pending" as any)).limit(100);
+    const [pending] = await db.select({ value: count() }).from(reversalRequests).where(eq(reversalRequests.status, "pending")).limit(100);
     const [totalAmt] = await db.select({ value: sum(reversalRequests.amount) }).from(reversalRequests).limit(100);
     return { totalReversals: Number(total.value), pendingReversals: Number(pending.value), totalAmount: Number(totalAmt.value ?? 0) };
   }),

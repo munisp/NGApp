@@ -10,7 +10,7 @@ export const crossBorderRemittanceHubRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [eq(transactions.type, "Transfer")];
-      if (input?.status) conditions.push(eq(transactions.status, input.status as any));
+      if (input?.status) conditions.push(eq(transactions.status, input.status));
       const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
       return { remittances: rows, total: rows.length };
     } catch (error) {

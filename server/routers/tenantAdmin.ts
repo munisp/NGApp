@@ -58,7 +58,7 @@ export const tenantAdminRouter = router({
       const setObj: any = { ...updates, updatedAt: new Date() };
       Object.keys(setObj).forEach(k => { if (setObj[k] === undefined) delete setObj[k]; });
       const [updated] = await db.update(tenants).set(setObj).where(eq(tenants.id, tenantId)).returning();
-      await db.insert(auditLog).values({ action: "tenant_updated", resource: "tenants", resourceId: String(tenantId), status: "success", metadata: updates as any });
+      await db.insert(auditLog).values({ action: "tenant_updated", resource: "tenants", resourceId: String(tenantId), status: "success", metadata: updates });
       return { success: true, tenant: updated };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

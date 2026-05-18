@@ -10,7 +10,7 @@ export const fraudCaseManagementRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(fraudAlerts.status, input.status as any));
+      if (input?.status) conditions.push(eq(fraudAlerts.status, input.status));
       const rows = await db.select().from(fraudAlerts).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(fraudAlerts.createdAt)).limit(input?.limit ?? 50);
       return { cases: rows, total: rows.length };
     } catch (error) {
@@ -21,7 +21,7 @@ export const fraudCaseManagementRouter = router({
   updateStatus: protectedProcedure.input(z.object({ caseId: z.number(), status: z.enum(["investigating", "escalated", "dismissed", "resolved"]) })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [updated] = await db.update(fraudAlerts).set({ status: input.status as any }).where(eq(fraudAlerts.id, input.caseId)).returning();
+      const [updated] = await db.update(fraudAlerts).set({ status: input.status }).where(eq(fraudAlerts.id, input.caseId)).returning();
       await db.insert(auditLog).values({ action: "fraud_case_updated", resource: "fraud_alerts", resourceId: String(input.caseId), status: "success", metadata: { newStatus: input.status } });
       return { id: updated?.id ?? input.caseId, status: input.status };
     } catch (error) {
@@ -32,7 +32,7 @@ export const fraudCaseManagementRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(fraudAlerts).limit(100);
-    const [open] = await db.select({ value: count() }).from(fraudAlerts).where(eq(fraudAlerts.status, "open" as any)).limit(100);
+    const [open] = await db.select({ value: count() }).from(fraudAlerts).where(eq(fraudAlerts.status, "open")).limit(100);
     return { totalCases: Number(total.value), openCases: Number(open.value) };
   }),
 });

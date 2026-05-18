@@ -13,7 +13,7 @@ export const emailDeliveryLogRouter = router({
   list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const conditions = input.status ? [eq(emailDeliveryLog.status as any, input.status)] : [];
+      const conditions = input.status ? [eq(emailDeliveryLog.status, input.status)] : [];
       const rows = await db.select().from(emailDeliveryLog).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(emailDeliveryLog.id)).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(emailDeliveryLog).where(conditions.length ? and(...conditions) : undefined).limit(100);
       return { items: rows, total };
@@ -45,9 +45,9 @@ export const emailDeliveryLogRouter = router({
       const db = (await getDb())!;
       const [record] = await db.select().from(emailDeliveryLog).where(eq(emailDeliveryLog.id, input.id)).limit(100);
       if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Email log not found" });
-      const retryCount = (record as any).retryCount || 0;
+      const retryCount = (record).retryCount || 0;
       if (retryCount >= MAX_RETRIES) throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Maximum retries (${MAX_RETRIES}) exceeded` });
-      await db.update(emailDeliveryLog).set({ status: "queued", retryCount: retryCount + 1, nextRetryAt: new Date(Date.now() + RETRY_DELAYS[retryCount] * 1000) } as any).where(eq(emailDeliveryLog.id, input.id));
+      await db.update(emailDeliveryLog).set({ status: "queued", retryCount: retryCount + 1, nextRetryAt: new Date(Date.now() + RETRY_DELAYS[retryCount] * 1000) }).where(eq(emailDeliveryLog.id, input.id));
       return { success: true, retryCount: retryCount + 1, nextRetryIn: RETRY_DELAYS[retryCount] + "s" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

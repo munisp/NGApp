@@ -346,7 +346,7 @@ export const kycRouter = router({
         await db
           .update(kycSessions)
           .set({
-            status: newStatus as any,
+            status: newStatus,
             livenessPassed: result?.passed ?? false,
             livenessScore: result?.score?.toString() ?? null,
             livenessRaw: result?.raw ?? null,
@@ -421,8 +421,8 @@ export const kycRouter = router({
         await db
           .update(kycSessions)
           .set({
-            status: finalStatus as any,
-            docType: input.docType as any,
+            status: finalStatus,
+            docType: input.docType,
             docExtractedName: ocr?.extractedName ?? null,
             docExtractedDob: ocr?.extractedDob ?? null,
             docExtractedIdNumber: ocr?.extractedIdNumber ?? null,

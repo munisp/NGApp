@@ -35,9 +35,9 @@ export const analyticsDashboardsRouter = router({
   create: protectedProcedure.input(z.object({ name: z.string().min(3), description: z.string().optional(), isPublic: z.boolean().default(false) })).mutation(async ({ input, ctx }) => {
     try {
       const db = (await getDb())!;
-      const [existing] = await db.select().from(analyticsDashboards).where(eq(analyticsDashboards.name as any, input.name)).limit(100);
+      const [existing] = await db.select().from(analyticsDashboards).where(eq(analyticsDashboards.name, input.name)).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Dashboard with this name already exists" });
-      const [row] = await db.insert(analyticsDashboards).values({ ...input, createdBy: ctx.user?.id } as any).returning();
+      const [row] = await db.insert(analyticsDashboards).values({ ...input, createdBy: ctx.user?.id }).returning();
       return row;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

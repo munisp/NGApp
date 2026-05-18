@@ -78,7 +78,7 @@ export const slaMonitoringRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.slaId) conditions.push(eq(sla_breaches.slaId, input.slaId));
-        if (input.severity) conditions.push(eq(sla_breaches.severity, input.severity as any));
+        if (input.severity) conditions.push(eq(sla_breaches.severity, input.severity));
         if (input.resolved !== undefined) conditions.push(input.resolved ? sql`${sla_breaches.resolvedAt} IS NOT NULL` : sql`${sla_breaches.resolvedAt} IS NULL`);
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(sla_breaches).where(where).orderBy(desc(sla_breaches.createdAt))

@@ -86,8 +86,8 @@ export const analyticsQueryRouter = router({
           source: "database" as const,
           totalVolume,
           avgAmount: ledgerCount.count > 0 ? totalVolume / ledgerCount.count : 0,
-          byStatus: [] as any[],
-          timeSeries: [] as any[],
+          byStatus: [] as Array<Record<string, unknown>>,
+          timeSeries: [] as Array<Record<string, unknown>>,
           totalCount: ledgerCount.count,
           recentEntries: recentLedger.slice(0, 20),
         };

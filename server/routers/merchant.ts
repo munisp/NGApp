@@ -120,7 +120,7 @@ export const merchantRouter = router({
         if (input.settlementBankCode !== undefined) updateData.settlementBankCode = input.settlementBankCode;
         if (input.settlementBankName !== undefined) updateData.settlementBankName = input.settlementBankName;
 
-        await db.update(merchants).set(updateData as any).where(eq(merchants.id, merchant.id));
+        await db.update(merchants).set(updateData).where(eq(merchants.id, merchant.id));
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -273,7 +273,7 @@ export const merchantRouter = router({
             status: "open",
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as any)
+          })
           .returning({ id: disputes.id });
 
         return {

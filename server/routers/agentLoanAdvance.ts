@@ -10,7 +10,7 @@ export const agentLoanAdvanceRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(agentLoans.status, input.status as any));
+      if (input?.status) conditions.push(eq(agentLoans.status, input.status));
       const rows = await db.select().from(agentLoans).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(agentLoans.createdAt)).limit(input?.limit ?? 50);
       return { loans: rows, total: rows.length };
     } catch (error) {

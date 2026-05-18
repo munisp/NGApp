@@ -90,7 +90,7 @@ const submitFeedback = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "submitFeedback: record not found" });
         return { success: true, id: input.id, message: "submitFeedback completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(tenantFeeOverrides).values(input.data as any || {}).returning();
+      const [row] = await db.insert(tenantFeeOverrides).values(input.data || {}).returning();
       return { success: true, ...row, message: "submitFeedback completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

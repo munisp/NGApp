@@ -75,7 +75,7 @@ const runReconciliation = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runReconciliation: record not found" });
         return { success: true, id: input.id, message: "runReconciliation completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(floatReconciliations).values(input.data as any || {}).returning();
+      const [row] = await db.insert(floatReconciliations).values(input.data || {}).returning();
       return { success: true, ...row, message: "runReconciliation completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -92,7 +92,7 @@ const resolveDiscrepancy = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "resolveDiscrepancy: record not found" });
         return { success: true, id: input.id, message: "resolveDiscrepancy completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(floatReconciliations).values(input.data as any || {}).returning();
+      const [row] = await db.insert(floatReconciliations).values(input.data || {}).returning();
       return { success: true, ...row, message: "resolveDiscrepancy completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -107,7 +107,7 @@ const updateMatchRules = protectedProcedure
       const [existing] = await db.select().from(floatReconciliations).where(eq(floatReconciliations.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "updateMatchRules: record not found" });
       if (input.data) {
-        const [updated] = await db.update(floatReconciliations).set(input.data as any).where(eq(floatReconciliations.id, input.id)).returning();
+        const [updated] = await db.update(floatReconciliations).set(input.data).where(eq(floatReconciliations.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };

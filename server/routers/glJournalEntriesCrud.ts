@@ -35,7 +35,7 @@ export const gl_journal_entriesRouter = router({
       const amount = parseFloat(input.amount);
       if (amount <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Amount must be positive" });
       if (input.debitAccountId === input.creditAccountId) throw new TRPCError({ code: "BAD_REQUEST", message: "Debit and credit accounts must be different" });
-      const [row] = await db.insert(gl_journal_entries).values({ ...input, status: "posted", postedAt: new Date() } as any).returning();
+      const [row] = await db.insert(gl_journal_entries).values({ ...input, status: "posted", postedAt: new Date() }).returning();
       return { ...row, message: "Double-entry journal posted" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -47,10 +47,10 @@ export const gl_journal_entriesRouter = router({
       const db = (await getDb())!;
       const [original] = await db.select().from(gl_journal_entries).where(eq(gl_journal_entries.id, input.id)).limit(100);
       if (!original) throw new TRPCError({ code: "NOT_FOUND", message: "Journal entry not found" });
-      if ((original as any).status === "reversed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Entry already reversed" });
+      if ((original).status === "reversed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Entry already reversed" });
       // Create reversal entry (swap debit/credit)
-      const [reversal] = await db.insert(gl_journal_entries).values({ debitAccountId: (original as any).creditAccountId, creditAccountId: (original as any).debitAccountId, amount: (original as any).amount, description: `REVERSAL: ${input.reason} (original #${input.id})`, reference: `REV-${input.id}`, status: "posted", postedAt: new Date() } as any).returning();
-      await db.update(gl_journal_entries).set({ status: "reversed" } as any).where(eq(gl_journal_entries.id, input.id));
+      const [reversal] = await db.insert(gl_journal_entries).values({ debitAccountId: (original).creditAccountId, creditAccountId: (original).debitAccountId, amount: (original).amount, description: `REVERSAL: ${input.reason} (original #${input.id})`, reference: `REV-${input.id}`, status: "posted", postedAt: new Date() }).returning();
+      await db.update(gl_journal_entries).set({ status: "reversed" }).where(eq(gl_journal_entries.id, input.id));
       return { original: input.id, reversal: reversal.id, message: "Journal entry reversed with contra entry" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

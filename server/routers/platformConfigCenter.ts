@@ -73,7 +73,7 @@ const toggleFlag = protectedProcedure
       const [existing] = await db.select().from(platform_incidents).where(eq(platform_incidents.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "toggleFlag: record not found" });
       if (input.data) {
-        const [updated] = await db.update(platform_incidents).set(input.data as any).where(eq(platform_incidents.id, input.id)).returning();
+        const [updated] = await db.update(platform_incidents).set(input.data).where(eq(platform_incidents.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -90,7 +90,7 @@ const updateParam = protectedProcedure
       const [existing] = await db.select().from(platform_incidents).where(eq(platform_incidents.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "updateParam: record not found" });
       if (input.data) {
-        const [updated] = await db.update(platform_incidents).set(input.data as any).where(eq(platform_incidents.id, input.id)).returning();
+        const [updated] = await db.update(platform_incidents).set(input.data).where(eq(platform_incidents.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -109,7 +109,7 @@ const createAbTest = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createAbTest: record not found" });
         return { success: true, id: input.id, message: "createAbTest completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(platform_incidents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(platform_incidents).values(input.data || {}).returning();
       return { success: true, ...row, message: "createAbTest completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

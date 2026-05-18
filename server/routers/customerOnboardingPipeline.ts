@@ -35,7 +35,7 @@ export const customerOnboardingPipelineRouter = router({
         const userId = input.userId || ctx.user.id;
         const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
         const currentStage = user ? "live" : "registration";
-        const stageIndex = STAGES.indexOf(currentStage as any);
+        const stageIndex = STAGES.indexOf(currentStage);
         return {
           userId,
           currentStage,
@@ -59,8 +59,8 @@ export const customerOnboardingPipelineRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
-        const fromIdx = STAGES.indexOf(input.fromStage as any);
-        const toIdx = STAGES.indexOf(input.toStage as any);
+        const fromIdx = STAGES.indexOf(input.fromStage);
+        const toIdx = STAGES.indexOf(input.toStage);
         if (fromIdx < 0 || toIdx < 0) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid stage name" });
         }

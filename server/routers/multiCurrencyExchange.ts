@@ -88,7 +88,7 @@ const setSpread = protectedProcedure
       const [existing] = await db.select().from(agentPushSubscriptions).where(eq(agentPushSubscriptions.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "setSpread: record not found" });
       if (input.data) {
-        const [updated] = await db.update(agentPushSubscriptions).set(input.data as any).where(eq(agentPushSubscriptions.id, input.id)).returning();
+        const [updated] = await db.update(agentPushSubscriptions).set(input.data).where(eq(agentPushSubscriptions.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };

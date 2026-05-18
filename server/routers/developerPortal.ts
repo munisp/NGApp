@@ -113,13 +113,13 @@ export const developerPortalRouter = router({
             name: input.name,
             description: input.description,
             userId: ctx.user.id,
-            tenantId: (ctx.user as any).tenantId ?? null,
+            tenantId: (ctx.user).tenantId ?? null,
             status: "active",
             scopes: input.scopes as string[],
             rateLimit: input.rateLimit,
             expiresAt: expiresAt ?? undefined,
             createdAt: new Date(),
-          } as any)
+          })
           .returning({ id: apiKeys.id, keyPrefix: apiKeys.keyPrefix, createdAt: apiKeys.createdAt });
 
         return {
@@ -197,7 +197,7 @@ export const developerPortalRouter = router({
 
         await db
           .update(apiKeys)
-          .set({ status: "revoked", revokedAt: new Date() } as any)
+          .set({ status: "revoked", revokedAt: new Date() })
           .where(eq(apiKeys.id, input.keyId));
 
         return { success: true, message: "API key revoked successfully" };
@@ -232,7 +232,7 @@ export const developerPortalRouter = router({
         // Revoke old key
         await db
           .update(apiKeys)
-          .set({ status: "revoked", revokedAt: new Date() } as any)
+          .set({ status: "revoked", revokedAt: new Date() })
           .where(eq(apiKeys.id, input.keyId));
 
         // Create new key with same settings
@@ -250,7 +250,7 @@ export const developerPortalRouter = router({
             rateLimit: oldKey.rateLimit,
             expiresAt: oldKey.expiresAt,
             createdAt: new Date(),
-          } as any)
+          })
           .returning({ id: apiKeys.id });
 
         return {
@@ -306,7 +306,7 @@ export const developerPortalRouter = router({
 
         // Update lastUsedAt (fire-and-forget)
         db.update(apiKeys)
-          .set({ lastUsedAt: new Date() } as any)
+          .set({ lastUsedAt: new Date() })
           .where(eq(apiKeys.id, key.id))
           .catch((e: unknown) => console.error("[DevPortal] lastUsedAt update failed:", e));
 

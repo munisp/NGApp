@@ -10,7 +10,7 @@ export const bulkRoleImportRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.role) conditions.push(eq(users.role, input.role as any));
+      if (input?.role) conditions.push(eq(users.role, input.role));
       const rows = await db.select({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(users.createdAt)).limit(input?.limit ?? 50);
       return { users: rows, total: rows.length };
     } catch (error) {

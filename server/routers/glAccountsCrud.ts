@@ -13,8 +13,8 @@ export const gl_accountsRouter = router({
   list: protectedProcedure.input(z.object({ accountType: z.string().optional(), limit: z.number().default(50), offset: z.number().default(0) })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const conditions = input.accountType ? [eq(gl_accounts.accountType as any, input.accountType)] : [];
-      const rows = await db.select().from(gl_accounts).where(conditions.length ? and(...conditions) : undefined).orderBy(gl_accounts.accountCode as any).limit(input.limit).offset(input.offset);
+      const conditions = input.accountType ? [eq(gl_accounts.accountType, input.accountType)] : [];
+      const rows = await db.select().from(gl_accounts).where(conditions.length ? and(...conditions) : undefined).orderBy(gl_accounts.accountCode).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(gl_accounts).where(conditions.length ? and(...conditions) : undefined).limit(100);
       return { items: rows.map((r: any) => ({ ...r, normalBalance: NORMAL_BALANCE[r.accountType] || "debit" })), total };
     } catch (error) {
@@ -27,7 +27,7 @@ export const gl_accountsRouter = router({
       const db = (await getDb())!;
       const [row] = await db.select().from(gl_accounts).where(eq(gl_accounts.id, input.id)).limit(100);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "GL account not found" });
-      return { ...row, normalBalance: NORMAL_BALANCE[(row as any).accountType] || "debit" };
+      return { ...row, normalBalance: NORMAL_BALANCE[(row).accountType] || "debit" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
@@ -36,9 +36,9 @@ export const gl_accountsRouter = router({
   create: protectedProcedure.input(z.object({ accountCode: z.string().min(4), accountName: z.string().min(3), accountType: z.enum(["asset", "liability", "equity", "revenue", "expense"]), parentId: z.number().optional(), description: z.string().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [existing] = await db.select().from(gl_accounts).where(eq(gl_accounts.accountCode as any, input.accountCode)).limit(100);
+      const [existing] = await db.select().from(gl_accounts).where(eq(gl_accounts.accountCode, input.accountCode)).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: `Account code ${input.accountCode} already exists` });
-      const [row] = await db.insert(gl_accounts).values(input as any).returning();
+      const [row] = await db.insert(gl_accounts).values(input).returning();
       return { ...row, normalBalance: NORMAL_BALANCE[input.accountType] };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

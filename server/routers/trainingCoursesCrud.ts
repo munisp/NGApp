@@ -40,7 +40,7 @@ export const trainingCoursesRouter = router({
       const db = (await getDb())!;
       const [existing] = await db.select().from(trainingCourses).where(eq(trainingCourses.title, input.title)).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Course with this title already exists" });
-      const [row] = await db.insert(trainingCourses).values({ ...input, createdBy: ctx.user?.id, isActive: true, version: 1 } as any).returning();
+      const [row] = await db.insert(trainingCourses).values({ ...input, createdBy: ctx.user?.id, isActive: true, version: 1 }).returning();
       return { ...row, message: input.isMandatory ? "Mandatory course created — all agents must complete" : "Course created" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -50,7 +50,7 @@ export const trainingCoursesRouter = router({
   deactivate: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      await db.update(trainingCourses).set({ isActive: false } as any).where(eq(trainingCourses.id, input.id));
+      await db.update(trainingCourses).set({ isActive: false }).where(eq(trainingCourses.id, input.id));
       return { success: true, message: "Course deactivated" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -46,7 +46,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Liveness service unavailable",
           });
         }
@@ -79,7 +79,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Liveness service unavailable",
           });
         }
@@ -112,7 +112,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Face matching service unavailable",
           });
         }
@@ -142,7 +142,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Face detection service unavailable",
           });
         }
@@ -174,7 +174,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Deepfake detection service unavailable",
           });
         }
@@ -211,7 +211,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Biometric verification service unavailable",
           });
         }
@@ -264,7 +264,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Quality assessment service unavailable",
           });
         }
@@ -292,7 +292,7 @@ export const biometricAuthRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "SERVICE_UNAVAILABLE" as any,
+            code: "INTERNAL_SERVER_ERROR",
             message: "Anti-spoofing service unavailable",
           });
         }

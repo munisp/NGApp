@@ -30,7 +30,7 @@ export const carrierCostRouter = router({
       if (!db) throw new Error("DB not available");
       const { carrierId, ...costs } = input;
       await db.insert(systemConfig).values({ key: "carrier_cost_" + carrierId, value: JSON.stringify({ ...costs, updatedAt: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ ...costs, updatedAt: new Date().toISOString() }), updatedAt: new Date() } });
-      await db.insert(auditLog).values({ action: "carrier_cost_updated", resource: "carrier_costs", resourceId: carrierId, status: "success", metadata: costs as any });
+      await db.insert(auditLog).values({ action: "carrier_cost_updated", resource: "carrier_costs", resourceId: carrierId, status: "success", metadata: costs });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

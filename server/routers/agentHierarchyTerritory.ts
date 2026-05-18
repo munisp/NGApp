@@ -73,7 +73,7 @@ const assignTerritory = protectedProcedure
       const [existing] = await db.select().from(agents).where(eq(agents.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "assignTerritory: record not found" });
       if (input.data) {
-        const [updated] = await db.update(agents).set(input.data as any).where(eq(agents.id, input.id)).returning();
+        const [updated] = await db.update(agents).set(input.data).where(eq(agents.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -90,7 +90,7 @@ const setCommissionCascade = protectedProcedure
       const [existing] = await db.select().from(agents).where(eq(agents.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "setCommissionCascade: record not found" });
       if (input.data) {
-        const [updated] = await db.update(agents).set(input.data as any).where(eq(agents.id, input.id)).returning();
+        const [updated] = await db.update(agents).set(input.data).where(eq(agents.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -109,7 +109,7 @@ const createTerritory = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createTerritory: record not found" });
         return { success: true, id: input.id, message: "createTerritory completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "createTerritory completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

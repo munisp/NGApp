@@ -422,7 +422,7 @@ export const commissionEngineRouter = router({
         // [Dapr] Check calculation cache
         const cacheKey = `sim:${input.transactionType}:${input.amount}:${input.agentRole}`;
         const cached = await daprGetCommissionState(cacheKey);
-        if (cached) return cached as any;
+        if (cached) return cached;
 
         const db = await getDb();
         let tiers: any[] = [];
@@ -483,7 +483,7 @@ export const commissionEngineRouter = router({
         if (!db) return { payouts: [], total: 0 };
 
         const conditions = [];
-        if (input?.status) conditions.push(eq(commissionPayouts.status, input.status as any));
+        if (input?.status) conditions.push(eq(commissionPayouts.status, input.status));
         if (input?.agentCode) conditions.push(eq(commissionPayouts.agentCode, input.agentCode));
         if (input?.from) conditions.push(gte(commissionPayouts.createdAt, new Date(input.from)));
         if (input?.to) conditions.push(lte(commissionPayouts.createdAt, new Date(input.to)));
@@ -591,8 +591,8 @@ export const commissionEngineRouter = router({
     const allTiers = await db.select({ rate: commissionTiers.rate }).from(commissionTiers).where(eq(commissionTiers.isActive, true)).limit(100);
     const avgRate = allTiers.length > 0 ? allTiers.reduce((sum: any, t: any) => sum + parseFloat(t.rate as string), 0) / allTiers.length / 100 : 0;
 
-    const paidRows = await db.select({ amount: commissionPayouts.amount }).from(commissionPayouts).where(eq(commissionPayouts.status, "completed" as any)).limit(100);
-    const pendingRows = await db.select({ amount: commissionPayouts.amount }).from(commissionPayouts).where(eq(commissionPayouts.status, "pending" as any)).limit(100);
+    const paidRows = await db.select({ amount: commissionPayouts.amount }).from(commissionPayouts).where(eq(commissionPayouts.status, "completed")).limit(100);
+    const pendingRows = await db.select({ amount: commissionPayouts.amount }).from(commissionPayouts).where(eq(commissionPayouts.status, "pending")).limit(100);
 
     const totalPaid = paidRows.reduce((sum: any, r: any) => sum + parseFloat(r.amount as string), 0);
     const totalPending = pendingRows.reduce((sum: any, r: any) => sum + parseFloat(r.amount as string), 0);

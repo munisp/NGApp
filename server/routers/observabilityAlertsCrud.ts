@@ -42,7 +42,7 @@ export const observabilityAlertsRouter = router({
       // Deduplication: check for same alert within window
       const [recent] = await db.select().from(observabilityAlerts).where(and(eq(observabilityAlerts.alertName, input.alertName), eq(observabilityAlerts.service, input.service), eq(observabilityAlerts.status, "firing"), sql`created_at > NOW() - INTERVAL '5 minutes'`)).limit(100);
       if (recent) return { ...recent, deduplicated: true, message: "Alert deduplicated — existing alert still firing" };
-      const [row] = await db.insert(observabilityAlerts).values(input as any).returning();
+      const [row] = await db.insert(observabilityAlerts).values(input).returning();
       const escalationLevel = input.severity === "critical" ? 2 : input.severity === "warning" ? 1 : 0;
       return { ...row, deduplicated: false, escalateTo: ESCALATION_CHAIN[escalationLevel] };
     } catch (error) {

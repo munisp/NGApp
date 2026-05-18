@@ -45,7 +45,7 @@ export async function recordBillingAudit(params: {
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     userName: ctx.userName,
-    action: action as any,
+    action: action,
     resourceType,
     resourceId: resourceId || null,
     beforeState: beforeState || null,
@@ -146,7 +146,7 @@ export const billingAuditRouter = router({
         await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
         const conditions = [eq(billingAuditLog.tenantId, input.tenantId)];
-        if (input.action) conditions.push(eq(billingAuditLog.action, input.action as any));
+        if (input.action) conditions.push(eq(billingAuditLog.action, input.action));
         if (input.userId) conditions.push(eq(billingAuditLog.userId, input.userId));
         if (input.resourceType) conditions.push(eq(billingAuditLog.resourceType, input.resourceType));
         if (input.startDate) conditions.push(gte(billingAuditLog.createdAt, new Date(input.startDate)));

@@ -10,7 +10,7 @@ export const agentInventoryMgmtRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(inventoryItems.status, input.status as any));
+      if (input?.status) conditions.push(eq(inventoryItems.status, input.status));
       const rows = await db.select().from(inventoryItems).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(inventoryItems.createdAt)).limit(input?.limit ?? 50);
       return { inventory: rows, total: rows.length };
     } catch (error) {
@@ -21,7 +21,7 @@ export const agentInventoryMgmtRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(inventoryItems).limit(100);
-    const [inStock] = await db.select({ value: count() }).from(inventoryItems).where(eq(inventoryItems.status, "in_stock" as any)).limit(100);
+    const [inStock] = await db.select({ value: count() }).from(inventoryItems).where(eq(inventoryItems.status, "in_stock")).limit(100);
     return { totalItems: Number(total.value), inStockItems: Number(inStock.value) };
   }),
 });

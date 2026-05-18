@@ -203,7 +203,7 @@ export const analyticsRouter = router({
         // Split into two parameterized queries to avoid scanner false positive
         const fraudCountResult = await db.execute(sql`SELECT COUNT(*) AS cnt FROM fraud_alerts WHERE "createdAt" >= ${since}`);
         const txCountResult = await db.execute(sql`SELECT COUNT(*) AS cnt FROM transactions WHERE "createdAt" >= ${since}`);
-        const fraudStats = { rows: [{ fraud_count: (fraudCountResult.rows[0] as any)?.cnt ?? '0', tx_count: (txCountResult.rows[0] as any)?.cnt ?? '0' }] };
+        const fraudStats = { rows: [{ fraud_count: (fraudCountResult.rows[0] as Record<string, unknown>)?.cnt ?? '0', tx_count: (txCountResult.rows[0] as Record<string, unknown>)?.cnt ?? '0' }] };
         const sarStats = await db.execute(sql`SELECT COUNT(*) AS sar_count FROM transactions WHERE "createdAt" >= ${since} AND CAST(amount AS NUMERIC) >= 5000000 AND status = 'completed'`);
 
         const r = txSla.rows[0] as Record<string, string>;

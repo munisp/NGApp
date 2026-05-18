@@ -19,8 +19,8 @@ export const realtime_tx_alertsRouter = router({
     try {
       const db = (await getDb())!;
       const conditions: any[] = [];
-      if (input.severity) conditions.push(eq(realtime_tx_alerts.severity as any, input.severity));
-      if (input.status) conditions.push(eq(realtime_tx_alerts.status as any, input.status));
+      if (input.severity) conditions.push(eq(realtime_tx_alerts.severity, input.severity));
+      if (input.status) conditions.push(eq(realtime_tx_alerts.status, input.status));
       const rows = await db.select().from(realtime_tx_alerts).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(realtime_tx_alerts.id)).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(realtime_tx_alerts).where(conditions.length ? and(...conditions) : undefined).limit(100);
       return { items: rows, total };
@@ -50,7 +50,7 @@ export const realtime_tx_alertsRouter = router({
       if (triggers.length === 0) return { agentId: input.agentId, riskLevel: "low", triggers: [], action: "allow" };
       const severity = triggers.includes("large_amount") ? "critical" : "warning";
       const action = severity === "critical" ? "block" : "flag";
-      const [alert] = await db.insert(realtime_tx_alerts).values({ agentId: input.agentId, severity, triggers: JSON.stringify(triggers), action, amount: input.amount.toString(), txType: input.txType, status: "active" } as any).returning();
+      const [alert] = await db.insert(realtime_tx_alerts).values({ agentId: input.agentId, severity, triggers: JSON.stringify(triggers), action, amount: input.amount.toString(), txType: input.txType, status: "active" }).returning();
       return { ...alert, riskLevel: severity === "critical" ? "high" : "medium", triggers, action };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -61,7 +61,7 @@ export const realtime_tx_alertsRouter = router({
   dismiss: protectedProcedure.input(z.object({ id: z.number(), reason: z.string().min(5) })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      await db.update(realtime_tx_alerts).set({ status: "dismissed", dismissReason: input.reason, dismissedAt: new Date() } as any).where(eq(realtime_tx_alerts.id, input.id));
+      await db.update(realtime_tx_alerts).set({ status: "dismissed", dismissReason: input.reason, dismissedAt: new Date() }).where(eq(realtime_tx_alerts.id, input.id));
       return { success: true, message: "Alert dismissed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

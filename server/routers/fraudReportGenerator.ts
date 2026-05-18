@@ -10,7 +10,7 @@ export const fraudReportGeneratorRouter = router({
     try {
       const db = (await getDb())!;
       const [totalAlerts] = await db.select({ value: count() }).from(fraudAlerts).limit(100);
-      const [openAlerts] = await db.select({ value: count() }).from(fraudAlerts).where(eq(fraudAlerts.status, "open" as any)).limit(100);
+      const [openAlerts] = await db.select({ value: count() }).from(fraudAlerts).where(eq(fraudAlerts.status, "open")).limit(100);
       const [totalScores] = await db.select({ value: count() }).from(fraudMlScores).limit(100);
       return { period: input.period, totalAlerts: Number(totalAlerts.value), openAlerts: Number(openAlerts.value), totalMlScores: Number(totalScores.value) };
     } catch (error) {

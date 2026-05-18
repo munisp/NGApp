@@ -25,7 +25,7 @@ export const apiVersioningRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB not available");
       await db.insert(systemConfig).values({ key: "api_version", value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
-      await db.insert(auditLog).values({ action: "api_version_updated", resource: "api_versioning", resourceId: input.apiVersion, status: "success", metadata: input as any });
+      await db.insert(auditLog).values({ action: "api_version_updated", resource: "api_versioning", resourceId: input.apiVersion, status: "success", metadata: input });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

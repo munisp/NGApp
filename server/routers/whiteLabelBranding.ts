@@ -30,7 +30,7 @@ export const whiteLabelBrandingRouter = router({
       if (!db) throw new Error("DB not available");
       const { tenantId, ...branding } = input;
       await db.insert(systemConfig).values({ key: "branding_" + tenantId, value: JSON.stringify({ ...branding, updatedAt: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ ...branding, updatedAt: new Date().toISOString() }), updatedAt: new Date() } });
-      await db.insert(auditLog).values({ action: "branding_updated", resource: "tenants", resourceId: String(tenantId), status: "success", metadata: branding as any });
+      await db.insert(auditLog).values({ action: "branding_updated", resource: "tenants", resourceId: String(tenantId), status: "success", metadata: branding });
       return { success: true };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

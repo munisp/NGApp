@@ -9,7 +9,7 @@ export const floatManagementRouter = router({
   list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), agentId: z.number().optional() }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const conditions = [eq(transactions.type, "Cash In" as any)];
+      const conditions = [eq(transactions.type, "Cash In")];
       if (input?.agentId) conditions.push(eq(transactions.agentId, input.agentId));
       const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
       const [total] = await db.select({ value: count() }).from(transactions).where(and(...conditions)).limit(100);
@@ -18,7 +18,7 @@ export const floatManagementRouter = router({
         agentId: transactions.agentId,
         totalFloat: sum(transactions.amount),
         txCount: count(),
-      }).from(transactions).where(eq(transactions.type, "Cash In" as any)).groupBy(transactions.agentId).limit(50);
+      }).from(transactions).where(eq(transactions.type, "Cash In")).groupBy(transactions.agentId).limit(50);
 
       return { floatTransactions: rows, total: Number(total.value), agentBalances };
     } catch (error) {

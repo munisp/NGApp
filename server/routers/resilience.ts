@@ -576,8 +576,8 @@ export const resilienceRouter = router({
           nextRetryAt: new Date(),
           errorMessage: null,
         })
-        .where(eq(erpSyncLog.status, "failed" as any));
-      return { requeued: (result as any).rowCount ?? 0 };
+        .where(eq(erpSyncLog.status, "failed"));
+      return { requeued: (result).rowCount ?? 0 };
     }),
 
   // ── Connectivity log: record a probe result ───────────────────────────────

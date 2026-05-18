@@ -90,7 +90,7 @@ const submitQuiz = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "submitQuiz: record not found" });
         return { success: true, id: input.id, message: "submitQuiz completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "submitQuiz completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -107,7 +107,7 @@ const createCourse = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createCourse: record not found" });
         return { success: true, id: input.id, message: "createCourse completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(agents).values(input.data as any || {}).returning();
+      const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "createCourse completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

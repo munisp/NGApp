@@ -42,7 +42,7 @@ const addAccount = protectedProcedure
     try {
       const db = (await getDb())!;
       if (!/^[0-9]{10}$/.test(input.accountNumber)) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid NUBAN — must be 10 digits" });
-      const [row] = await db.insert(agentBankAccounts).values(input as any).returning();
+      const [row] = await db.insert(agentBankAccounts).values(input).returning();
       return { ...row, message: "Bank account added" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -85,7 +85,7 @@ export const bankAccountManagementRouter = router({
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        const [row] = await db.insert(agentBankAccounts).values(input as any).returning();
+        const [row] = await db.insert(agentBankAccounts).values(input).returning();
         return { ...row, success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -109,7 +109,7 @@ export const bankAccountManagementRouter = router({
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        await db.update(agentBankAccounts).set({ verified: true } as any).where(eq(agentBankAccounts.id, input.id));
+        await db.update(agentBankAccounts).set({ verified: true }).where(eq(agentBankAccounts.id, input.id));
         return { success: true, message: "Account verified" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

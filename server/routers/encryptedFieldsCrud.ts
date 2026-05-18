@@ -15,12 +15,12 @@ function encrypt(text: string): { encrypted: string; iv: string; tag: string } {
   const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, KEY, iv);
   let encrypted = cipher.update(text, "utf8", "hex");
   encrypted += cipher.final("hex");
-  return { encrypted, iv: iv.toString("hex"), tag: (cipher as any).getAuthTag().toString("hex") };
+  return { encrypted, iv: iv.toString("hex"), tag: (cipher).getAuthTag().toString("hex") };
 }
 
 function decrypt(encrypted: string, iv: string, tag: string): string {
   const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, KEY, Buffer.from(iv, "hex"));
-  (decipher as any).setAuthTag(Buffer.from(tag, "hex"));
+  (decipher).setAuthTag(Buffer.from(tag, "hex"));
   let decrypted = decipher.update(encrypted, "hex", "utf8");
   decrypted += decipher.final("utf8");
   return decrypted;
@@ -43,7 +43,7 @@ export const encryptedFieldsRouter = router({
     try {
       const db = (await getDb())!;
       const { encrypted, iv, tag } = encrypt(input.plaintext);
-      const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag } as any).returning();
+      const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag }).returning();
       return { id: row.id, fieldName: input.fieldName, message: "Field encrypted with AES-256-GCM" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -56,8 +56,8 @@ export const encryptedFieldsRouter = router({
       const [row] = await db.select().from(encryptedFields).where(eq(encryptedFields.id, input.id)).limit(100);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Encrypted field not found" });
       try {
-        const decrypted = decrypt((row as any).encryptedValue, (row as any).iv, (row as any).authTag);
-        return { id: row.id, fieldName: (row as any).fieldName, value: decrypted, accessedBy: ctx.user?.id };
+        const decrypted = decrypt((row).encryptedValue, (row).iv, (row).authTag);
+        return { id: row.id, fieldName: (row).fieldName, value: decrypted, accessedBy: ctx.user?.id };
       } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Decryption failed — key may have been rotated" }); }
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -60,7 +60,7 @@ const setThreshold = protectedProcedure
       const [existing] = await db.select().from(velocityLimits).where(eq(velocityLimits.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "setThreshold: record not found" });
       if (input.data) {
-        const [updated] = await db.update(velocityLimits).set(input.data as any).where(eq(velocityLimits.id, input.id)).returning();
+        const [updated] = await db.update(velocityLimits).set(input.data).where(eq(velocityLimits.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -77,7 +77,7 @@ const resetCircuitBreaker = protectedProcedure
       const [existing] = await db.select().from(velocityLimits).where(eq(velocityLimits.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "resetCircuitBreaker: record not found" });
       if (input.data) {
-        const [updated] = await db.update(velocityLimits).set(input.data as any).where(eq(velocityLimits.id, input.id)).returning();
+        const [updated] = await db.update(velocityLimits).set(input.data).where(eq(velocityLimits.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };

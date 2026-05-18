@@ -92,7 +92,7 @@ const cancelBatch = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "cancelBatch: record not found" });
         return { success: true, id: input.id, message: "cancelBatch completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(transactions).values(input.data as any || {}).returning();
+      const [row] = await db.insert(transactions).values(input.data || {}).returning();
       return { success: true, ...row, message: "cancelBatch completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

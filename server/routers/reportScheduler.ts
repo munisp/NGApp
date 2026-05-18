@@ -60,7 +60,7 @@ const createSchedule = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createSchedule: record not found" });
         return { success: true, id: input.id, message: "createSchedule completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data as any || {}).returning();
+      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
       return { success: true, ...row, message: "createSchedule completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -75,7 +75,7 @@ const updateSchedule = protectedProcedure
       const [existing] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "updateSchedule: record not found" });
       if (input.data) {
-        const [updated] = await db.update(pnlReports).set(input.data as any).where(eq(pnlReports.id, input.id)).returning();
+        const [updated] = await db.update(pnlReports).set(input.data).where(eq(pnlReports.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -108,7 +108,7 @@ const runNow = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runNow: record not found" });
         return { success: true, id: input.id, message: "runNow completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data as any || {}).returning();
+      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
       return { success: true, ...row, message: "runNow completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -123,7 +123,7 @@ const toggleSchedule = protectedProcedure
       const [existing] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id)).limit(100);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "toggleSchedule: record not found" });
       if (input.data) {
-        const [updated] = await db.update(pnlReports).set(input.data as any).where(eq(pnlReports.id, input.id)).returning();
+        const [updated] = await db.update(pnlReports).set(input.data).where(eq(pnlReports.id, input.id)).returning();
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -142,7 +142,7 @@ const triggerNow = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "triggerNow: record not found" });
         return { success: true, id: input.id, message: "triggerNow completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data as any || {}).returning();
+      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
       return { success: true, ...row, message: "triggerNow completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

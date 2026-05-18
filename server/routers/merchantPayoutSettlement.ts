@@ -19,7 +19,7 @@ export const merchantPayoutSettlementRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.merchantId) conditions.push(eq(merchantPayouts.merchantId, input.merchantId));
-        if (input.status) conditions.push(eq(merchantPayouts.status, input.status as any));
+        if (input.status) conditions.push(eq(merchantPayouts.status, input.status));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(merchantPayouts).where(where).orderBy(desc(merchantPayouts.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);

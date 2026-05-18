@@ -18,7 +18,7 @@ export const multiTenancyRouter = router({
       const db = await getDb();
       if (!db) return { tenants: [], total: 0 };
       const conditions: any[] = [];
-      if (input?.status) conditions.push(eq(tenants.status, input.status as any));
+      if (input?.status) conditions.push(eq(tenants.status, input.status));
       const where = conditions.length > 0 ? and(...conditions) : undefined;
       const rows = await db.select().from(tenants).where(where).orderBy(desc(tenants.createdAt)).limit(input?.limit ?? 20);
       return { tenants: rows, total: rows.length };

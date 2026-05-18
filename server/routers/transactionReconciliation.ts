@@ -10,7 +10,7 @@ export const transactionReconciliationRouter = router({
     try {
       const db = (await getDb())!;
       const conditions = [];
-      if (input?.status) conditions.push(eq(settlementReconciliation.status, input.status as any));
+      if (input?.status) conditions.push(eq(settlementReconciliation.status, input.status));
       const rows = await db.select().from(settlementReconciliation).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(settlementReconciliation.createdAt)).limit(input?.limit ?? 50);
       return { reconciliations: rows, total: rows.length };
     } catch (error) {
