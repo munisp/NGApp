@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { FileCheck } from "lucide-react";

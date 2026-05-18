@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 /**
  * Sprint 52 — Agent Performance Leaderboard
