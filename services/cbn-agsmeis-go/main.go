@@ -22,6 +22,8 @@ import (
 	"bytes"
 	"strings"
 
+	"net"
+
 )
 
 var serviceName = "cbn-agsmeis-go"
@@ -438,6 +440,41 @@ func traceMiddleware(next http.Handler) http.Handler {
 		log.Printf("[%s] %s %s trace=%s", serviceName, r.Method, r.URL.Path, traceID)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// --- Redis Caching Layer ---
+var redisAddr string
+
+func init() {
+	redisAddr = os.Getenv("REDIS_URL")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+}
+
+func cacheGet(key string) (string, bool) {
+	conn, err := net.DialTimeout("tcp", redisAddr, 2*time.Second)
+	if err != nil { return "", false }
+	defer conn.Close()
+	fmt.Fprintf(conn, "*2\r\n$3\r\nGET\r\n$%d\r\n%s\r\n", len(key), key)
+	buf := make([]byte, 4096)
+	n, err := conn.Read(buf)
+	if err != nil || n < 3 { return "", false }
+	resp := string(buf[:n])
+	if resp[0] == '$' && resp[1] != '-' {
+		// Parse bulk string response
+		parts := strings.SplitN(resp, "\r\n", 3)
+		if len(parts) >= 3 { return parts[1], true }
+	}
+	return "", false
+}
+
+func cacheSet(key, value string, ttlSeconds int) {
+	conn, err := net.DialTimeout("tcp", redisAddr, 2*time.Second)
+	if err != nil { return }
+	defer conn.Close()
+	fmt.Fprintf(conn, "*4\r\n$3\r\nSET\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$2\r\nEX\r\n$%d\r\n%d\r\n",
+		len(key), key, len(value), value, len(fmt.Sprintf("%d", ttlSeconds)), ttlSeconds)
 }
 
 func main() {

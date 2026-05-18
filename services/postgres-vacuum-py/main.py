@@ -28,6 +28,35 @@ handler.setFormatter(JsonFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger("postgres-vacuum-py")
 
+# --- Redis Caching Layer ---
+import socket as _socket
+
+_REDIS_URL = os.environ.get("REDIS_URL", "localhost:6379")
+
+def cache_get(key):
+    try:
+        host, port = _REDIS_URL.rsplit(":", 1)
+        s = _socket.create_connection((host, int(port)), timeout=2)
+        s.sendall(f"*2\r\n$3\r\nGET\r\n${len(key)}\r\n{key}\r\n".encode())
+        data = s.recv(4096).decode()
+        s.close()
+        if data.startswith("$-1"): return None
+        parts = data.split("\r\n", 2)
+        return parts[1] if len(parts) >= 3 else None
+    except Exception:
+        return None
+
+def cache_set(key, value, ttl=300):
+    try:
+        host, port = _REDIS_URL.rsplit(":", 1)
+        s = _socket.create_connection((host, int(port)), timeout=2)
+        cmd = f"*4\r\n$3\r\nSET\r\n${len(key)}\r\n{key}\r\n${len(str(value))}\r\n{value}\r\n$2\r\nEX\r\n${len(str(ttl))}\r\n{ttl}\r\n"
+        s.sendall(cmd.encode())
+        s.recv(256)
+        s.close()
+    except Exception:
+        pass
+
 # --- Configuration ---
 DB_URL = os.environ.get("DATABASE_URL", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
