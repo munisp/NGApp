@@ -1062,7 +1062,7 @@ export const erpConfig = pgTable("erp_config", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (t) => ({
-  ec_tenantId_idx: index("ec_tenantId_idx").on(t.tenantId),
+  ec_erpType_idx2: index("ec_erpType_idx2").on(t.erpType),
   ec_erpType_idx: index("ec_erpType_idx").on(t.erpType),
 }));
 
@@ -1094,8 +1094,7 @@ export const mqttBridgeConfig = pgTable("mqtt_bridge_config", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (t) => ({
-  mbc_tenantId_idx: index("mbc_tenantId_idx").on(t.tenantId),
-  mbc_isActive_idx: index("mbc_isActive_idx").on(t.isActive),
+  mbc_enabled_idx: index("mbc_enabled_idx").on(t.enabled),
 }));
 
 export type MqttBridgeConfig = typeof mqttBridgeConfig.$inferSelect;
@@ -1127,7 +1126,7 @@ export const webhookSecrets = pgTable("webhook_secrets", {
   lastRotatedAt: timestamp("lastRotatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (t) => ({
-  ws_tenantId_idx: index("ws_tenantId_idx").on(t.tenantId),
+  ws_isActive_idx: index("ws_isActive_idx").on(t.isActive),
 }));
 
 export type WebhookSecret = typeof webhookSecrets.$inferSelect;
@@ -2706,7 +2705,7 @@ export const encryptedFields = pgTable("encrypted_fields", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
-  ef_entityType_idx: index("ef_entityType_idx").on(t.entityType),
+  ef_tableName_idx: index("ef_tableName_idx").on(t.tableName),
   ef_fieldName_idx: index("ef_fieldName_idx").on(t.fieldName),
 }));
 
@@ -2723,9 +2722,8 @@ export const dataConsentRecords = pgTable("data_consent_records", {
   version: integer("version").default(1),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
-  dcr_userId_idx: index("dcr_userId_idx").on(t.userId),
+  dcr_entityId_idx: index("dcr_entityId_idx").on(t.entityId),
   dcr_consentType_idx: index("dcr_consentType_idx").on(t.consentType),
-  dcr_status_idx: index("dcr_status_idx").on(t.status),
 }));
 
 
@@ -2743,7 +2741,7 @@ export const realtime_tx_alerts = pgTable("realtime_tx_alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
   rta_transactionId_idx: index("rta_transactionId_idx").on(t.transactionId),
-  rta_agentId_idx: index("rta_agentId_idx").on(t.agentId),
+  rta_alertType_idx: index("rta_alertType_idx").on(t.alertType),
   rta_severity_idx: index("rta_severity_idx").on(t.severity),
 }));
 
@@ -2830,8 +2828,8 @@ export const gl_journal_entries = pgTable("gl_journal_entries", {
   postedAt: timestamp("posted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
-  glje_accountId_idx: index("glje_accountId_idx").on(t.accountId),
-  glje_entryType_idx: index("glje_entryType_idx").on(t.entryType),
+  glje_debitAccountId_idx: index("glje_debitAccountId_idx").on(t.debitAccountId),
+  glje_creditAccountId_idx: index("glje_creditAccountId_idx").on(t.creditAccountId),
   glje_status_idx: index("glje_status_idx").on(t.status),
 }));
 

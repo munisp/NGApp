@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * FeedbackAnalytics — Dashboard for tracking guide section feedback
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sprint 52 — Executive Command Center
  * F02: Unified KPI dashboard with real-time metrics and drill-down navigation

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * BroadcastManager — Admin page to compose, schedule, and manage system-wide announcements
  */

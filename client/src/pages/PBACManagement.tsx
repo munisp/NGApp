@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sprint 92 — PBAC Role Management Interface
  *

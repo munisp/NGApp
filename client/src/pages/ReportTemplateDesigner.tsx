@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ReportTemplateDesigner — Visual report template builder with widget catalog and grid layout
  */

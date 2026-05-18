@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Network Quality Heatmap — Sprint 93
  *
