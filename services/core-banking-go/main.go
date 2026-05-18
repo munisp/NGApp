@@ -18,7 +18,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "core-banking-go"
 
 // Inter-service URLs
 var glEngineURL = func() string { v := os.Getenv("GL_ENGINE_URL"); if v == "" { return "http://localhost:8136" }; return v }()

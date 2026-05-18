@@ -17,7 +17,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "payments-hub-go"
 
 // Inter-service URLs
 var amlScreenURL = func() string { v := os.Getenv("AML_ENGINE_URL"); if v == "" { return "http://localhost:8120" }; return v }()

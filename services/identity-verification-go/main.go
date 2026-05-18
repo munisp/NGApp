@@ -24,7 +24,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "identity-verification-go"
 
 var startTime = time.Now()
 

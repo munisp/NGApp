@@ -21,7 +21,10 @@ import (
 	_ "github.com/lib/pq"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "gl-engine-go"
 
 // ─── MIDDLEWARE CLIENTS ─────────────────────────────────────────────────────
 

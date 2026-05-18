@@ -18,7 +18,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "trade-finance-go"
 
 // Inter-service URLs
 var sanctionsURL = func() string { v := os.Getenv("SANCTIONS_URL"); if v == "" { return "http://localhost:8127" }; return v }()

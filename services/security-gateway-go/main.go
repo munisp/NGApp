@@ -19,9 +19,11 @@ import (
 	"sync"
 	"time"
 	"net"
+	"strings"
 
 )
 
+var serviceName = "security-gateway-go"
 var startTime = time.Now()
 
 // ─── Domain Types ───────────────────────────────────────────────────────────

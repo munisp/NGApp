@@ -25,6 +25,8 @@ import (
 
 )
 
+var serviceName = "account-opening-go"
+
 // Inter-service URLs
 var kycServiceURL = func() string { v := os.Getenv("KYC_SERVICE_URL"); if v == "" { return "http://localhost:8201" }; return v }()
 var coreServiceURL = func() string { v := os.Getenv("CORE_BANKING_URL"); if v == "" { return "http://localhost:8100" }; return v }()

@@ -21,7 +21,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "loan-origination-go"
 
 // Inter-service URLs
 var creditScoringURL = func() string { v := os.Getenv("CREDIT_SCORING_URL"); if v == "" { return "http://localhost:8203" }; return v }()

@@ -23,7 +23,10 @@ import (
 	"time"
 	"net"
 
+	"strings"
 )
+
+var serviceName = "liveness-orchestrator-go"
 
 // Inference engine URL (liveness-inference-py)
 var inferenceURL = getEnv("INFERENCE_URL", "http://localhost:8230")

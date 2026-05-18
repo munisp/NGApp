@@ -21,6 +21,8 @@ import (
 
 )
 
+var serviceName = "kpi-engine-go"
+
 var (
 	db        *sql.DB
 	startTime = time.Now()
