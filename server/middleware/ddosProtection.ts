@@ -285,6 +285,10 @@ export function getIPReputation(ip: string): IPRecord | null {
 
 // ── Aggregate DDoS Middleware ────────────────────────────────────────
 export function applyDDoSProtection(app: any) {
+  if (process.env.NODE_ENV === "development") {
+    console.log("[DDoS] Skipped in development mode (Vite needs 400+ concurrent module requests)");
+    return;
+  }
   app.use(bodyBombProtection(2 * 1024 * 1024)); // 2MB max
   app.use(connectionThrottle);
   app.use(adaptiveRateLimit);

@@ -1054,4 +1054,6 @@ function DashboardLayoutContent({
   );
 }
 
+export { DashboardLayout };
+
 // NotificationBellWidget replaced by NotificationCenter component

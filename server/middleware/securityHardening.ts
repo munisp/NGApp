@@ -419,6 +419,11 @@ setInterval(() => {
 // COMBINED SECURITY MIDDLEWARE
 // ============================================================
 export function applySecurityMiddleware(app: any) {
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Security] Middleware minimized in development (Vite dev server needs 400+ concurrent module requests)");
+    app.use(securityHeaders);
+    return;
+  }
   app.use(ddosThrottling);
   app.use(securityHeaders);
   app.use(xssProtection);
