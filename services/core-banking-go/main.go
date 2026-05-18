@@ -2,6 +2,8 @@
 package main
 
 import (
+"sync"
+"bytes"
 "context"
 "os/signal"
 "syscall"
@@ -15,6 +17,11 @@ import (
 	"os"
 	"time"
 )
+
+// Inter-service URLs
+var glEngineURL = func() string { v := os.Getenv("GL_ENGINE_URL"); if v == "" { return "http://localhost:8136" }; return v }()
+var interestURL = func() string { v := os.Getenv("INTEREST_ENGINE_URL"); if v == "" { return "http://localhost:8137" }; return v }()
+
 
 
 
@@ -184,8 +191,105 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
+type circuitBreaker struct {
+    failures    int
+    lastFailure time.Time
+    threshold   int
+    resetAfter  time.Duration
+    mu          sync.Mutex
+}
+
+func (cb *circuitBreaker) allow() bool {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    if cb.failures >= cb.threshold {
+        if time.Since(cb.lastFailure) > cb.resetAfter {
+            cb.failures = cb.threshold / 2 // half-open
+            return true
+        }
+        return false
+    }
+    return true
+}
+
+func (cb *circuitBreaker) recordSuccess() {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    if cb.failures > 0 { cb.failures-- }
+}
+
+func (cb *circuitBreaker) recordFailure() {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    cb.failures++
+    cb.lastFailure = time.Now()
+}
+
+var _cb = &circuitBreaker{threshold: 5, resetAfter: 30 * time.Second}
+
+func callService(method, url string, body interface{}) (map[string]interface{}, error) {
+    if !_cb.allow() {
+        return nil, fmt.Errorf("circuit breaker open for %s", url)
+    }
+    
+    client := &http.Client{Timeout: 15 * time.Second}
+    var lastErr error
+    
+    for attempt := 0; attempt < 3; attempt++ {
+        if attempt > 0 {
+            time.Sleep(time.Duration(1<<uint(attempt)) * 100 * time.Millisecond)
+        }
+        
+        var req *http.Request
+        if body != nil {
+            jsonData, _ := json.Marshal(body)
+            req, _ = http.NewRequest(method, url, bytes.NewBuffer(jsonData))
+        } else {
+            req, _ = http.NewRequest(method, url, nil)
+        }
+        req.Header.Set("Content-Type", "application/json")
+        
+        resp, err := client.Do(req)
+        if err != nil {
+            lastErr = err
+            _cb.recordFailure()
+            log.Printf("[inter-service] %s %s attempt %d failed: %v", method, url, attempt+1, err)
+            continue
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode >= 500 {
+            lastErr = fmt.Errorf("upstream %s returned %d", url, resp.StatusCode)
+            _cb.recordFailure()
+            continue
+        }
+        
+        var result map[string]interface{}
+        json.NewDecoder(resp.Body).Decode(&result)
+        _cb.recordSuccess()
+        return result, nil
+    }
+    return nil, fmt.Errorf("all retries exhausted for %s: %w", url, lastErr)
+}
+
+func callGLPosting(debitGL string, creditGL string, amount float64, narration string) (map[string]interface{}, error) {
+    return callService("POST", glEngineURL+"/v1/post", map[string]interface{}{
+        "debit_gl": debitGL, "credit_gl": creditGL,
+        "amount": amount, "narration": narration, "currency": "NGN",
+    })
+}
+
+func callInterestCalculation(accountID string, principal float64, rate float64, days int) (map[string]interface{}, error) {
+    return callService("POST", interestURL+"/v1/calculate", map[string]interface{}{
+        "account_id": accountID, "principal": principal,
+        "rate": rate, "days": days,
+    })
+}
+
 func main() {
 	port := os.Getenv("PORT")
+
 	if port == "" { port = "8080" }
 	mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)

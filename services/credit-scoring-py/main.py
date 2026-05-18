@@ -30,6 +30,7 @@ logger = logging.getLogger("credit-scoring-py")
 
 # --- Configuration ---
 DB_URL = os.environ.get("DATABASE_URL", "")
+CREDIT_BUREAU_URL = os.environ.get("CREDIT_BUREAU_URL", "http://localhost:8150")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 PORT = int(os.environ.get("PORT", "8080"))
 START_TIME = time.time()
@@ -163,6 +164,68 @@ def affordability_check(monthly_income, monthly_expenses, proposed_emi):
 
 
 # --- HTTP Handler ---
+
+# --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
+import urllib.request
+import urllib.error
+
+class CircuitBreaker:
+    def __init__(self, threshold=5, reset_after=30):
+        self._failures = 0
+        self._last_failure = 0
+        self._threshold = threshold
+        self._reset_after = reset_after
+    
+    def allow(self):
+        if self._failures >= self._threshold:
+            if time.time() - self._last_failure > self._reset_after:
+                self._failures = self._threshold // 2
+                return True
+            return False
+        return True
+    
+    def record_success(self):
+        if self._failures > 0:
+            self._failures -= 1
+    
+    def record_failure(self):
+        self._failures += 1
+        self._last_failure = time.time()
+
+_circuit_breaker = CircuitBreaker()
+
+def call_service(method, url, body=None, retries=3, timeout=15):
+    """Call another microservice with retries and circuit breaker."""
+    if not _circuit_breaker.allow():
+        raise Exception(f"Circuit breaker open for {url}")
+    
+    last_err = None
+    for attempt in range(retries):
+        try:
+            if attempt > 0:
+                time.sleep(0.1 * (2 ** attempt))
+            
+            data = json.dumps(body).encode() if body else None
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("Content-Type", "application/json")
+            
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                result = json.loads(resp.read().decode())
+                _circuit_breaker.record_success()
+                return result
+        except Exception as e:
+            last_err = e
+            _circuit_breaker.record_failure()
+            logger.warning(f"[inter-service] {method} {url} attempt {attempt+1} failed: {e}")
+    
+    raise Exception(f"All {retries} retries exhausted for {url}: {last_err}")
+
+def call_credit_bureau(bvn, consent_token):
+    """Call credit-bureau-rs for credit history."""
+    return call_service("POST", f"{CREDIT_BUREAU_URL}/v1/inquiry", {
+        "bvn": bvn, "consent_token": consent_token,
+    })
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logger.info(f"{self.command} {self.path} {args[0] if args else ''}")

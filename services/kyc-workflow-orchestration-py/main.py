@@ -30,6 +30,9 @@ logger = logging.getLogger("kyc-workflow-orchestration-py")
 
 # --- Configuration ---
 DB_URL = os.environ.get("DATABASE_URL", "")
+SANCTIONS_URL = os.environ.get("SANCTIONS_URL", "http://localhost:8127")
+DOCUMENT_URL = os.environ.get("DOCUMENT_INTEL_URL", "http://localhost:8210")
+LIVENESS_URL = os.environ.get("LIVENESS_URL", "http://localhost:8230")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 PORT = int(os.environ.get("PORT", "9435"))
 START_TIME = time.time()
@@ -181,6 +184,80 @@ def compute_risk_assessment(workflow):
 
 
 # --- HTTP Handler ---
+
+# --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
+import urllib.request
+import urllib.error
+
+class CircuitBreaker:
+    def __init__(self, threshold=5, reset_after=30):
+        self._failures = 0
+        self._last_failure = 0
+        self._threshold = threshold
+        self._reset_after = reset_after
+    
+    def allow(self):
+        if self._failures >= self._threshold:
+            if time.time() - self._last_failure > self._reset_after:
+                self._failures = self._threshold // 2
+                return True
+            return False
+        return True
+    
+    def record_success(self):
+        if self._failures > 0:
+            self._failures -= 1
+    
+    def record_failure(self):
+        self._failures += 1
+        self._last_failure = time.time()
+
+_circuit_breaker = CircuitBreaker()
+
+def call_service(method, url, body=None, retries=3, timeout=15):
+    """Call another microservice with retries and circuit breaker."""
+    if not _circuit_breaker.allow():
+        raise Exception(f"Circuit breaker open for {url}")
+    
+    last_err = None
+    for attempt in range(retries):
+        try:
+            if attempt > 0:
+                time.sleep(0.1 * (2 ** attempt))
+            
+            data = json.dumps(body).encode() if body else None
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("Content-Type", "application/json")
+            
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                result = json.loads(resp.read().decode())
+                _circuit_breaker.record_success()
+                return result
+        except Exception as e:
+            last_err = e
+            _circuit_breaker.record_failure()
+            logger.warning(f"[inter-service] {method} {url} attempt {attempt+1} failed: {e}")
+    
+    raise Exception(f"All {retries} retries exhausted for {url}: {last_err}")
+
+def call_liveness_check(image_data, session_id):
+    """Call liveness-inference-py for passive liveness."""
+    return call_service("POST", f"{LIVENESS_URL}/v1/liveness/check", {
+        "image": image_data, "session_id": session_id,
+    })
+
+def call_document_verify(doc_type, image_data):
+    """Call document-intelligence-py for OCR + verification."""
+    return call_service("POST", f"{DOCUMENT_URL}/v1/extract", {
+        "doc_type": doc_type, "image": image_data,
+    })
+
+def call_sanctions_check(name, dob, nationality):
+    """Call sanctions-screening-rs for PEP/sanctions."""
+    return call_service("POST", f"{SANCTIONS_URL}/v1/screen", {
+        "entity_name": name, "dob": dob, "nationality": nationality,
+    })
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logger.info(f"{self.command} {self.path} {args[0] if args else ''}")
