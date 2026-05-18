@@ -95,7 +95,7 @@ async fn list_records(req: actix_web::HttpRequest, state: web::Data<AppState>, q
     let total = records.len();
     let start = (page - 1) * limit;
     let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
-    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": if state.db_url.is_some() { "database" } else { "in-memory" }}))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {

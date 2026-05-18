@@ -498,6 +498,10 @@ func getTLSConfig() (bool, string, string) {
 	return true, cert, key
 }
 
+var sanctionsURL = func() string { v := os.Getenv("SANCTIONS_URL"); if v == "" { return "http://localhost:8121" }; return v }()
+
+var txnMonitorURL = func() string { v := os.Getenv("TXN_MONITOR_URL"); if v == "" { return "http://localhost:8122" }; return v }()
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9308" }

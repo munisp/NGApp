@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"database/sql"
@@ -39,7 +40,30 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": dbSourceTag()})
+	if db == nil {
+		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "in-memory"})
+		return
+	}
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 { page = 1 }
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 { limit = 50 }
+	offset := (page - 1) * limit
+	rows, err := db.Query("SELECT id, type, status, data, created_at FROM service_records WHERE service=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3", "account-statement-go", limit, offset)
+	if err != nil {
+		jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	items := []interface{}{}
+	for rows.Next() {
+		var id, typ, status, data, ts string
+		if err := rows.Scan(&id, &typ, &status, &data, &ts); err != nil { continue }
+		items = append(items, map[string]interface{}{"id": id, "type": typ, "status": status, "data": data, "createdAt": ts})
+	}
+	var total int
+	db.QueryRow("SELECT COUNT(*) FROM service_records WHERE service=$1", "account-statement-go").Scan(&total)
+	jsonResp(w, 200, map[string]interface{}{"items": items, "total": total, "page": page, "limit": limit, "source": "database"})
 }
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
@@ -354,6 +378,8 @@ func dbSourceTag() string {
     if os.Getenv("DATABASE_URL") != "" { return "database" }
     return "in-memory"
 }
+
+var coreBankingURL = func() string { v := os.Getenv("CORE_BANKING_URL"); if v == "" { return "http://localhost:8100" }; return v }()
 
 func main() {
 	port := os.Getenv("PORT")

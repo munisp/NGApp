@@ -750,5 +750,5 @@ async fn main() -> std::io::Result<()> {
             .route("/readyz", web::get().to(readyz))
             .route("/livez", web::get().to(livez))
             .route("/metrics", web::get().to(prom_metrics))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+    }).bind(format!("0.0.0.0:{}", port))?.shutdown_timeout(Duration::from_secs(30)).run().await
 }
