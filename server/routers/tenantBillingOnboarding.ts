@@ -378,7 +378,8 @@ export const tenantBillingOnboardingRouter = router({
 
       const history = await (await db()).select().from(billingProvisioningHistory)
         .where(eq(billingProvisioningHistory.tenantId, input.tenantId))
-        .orderBy(desc(billingProvisioningHistory.startedAt));
+        .orderBy(desc(billingProvisioningHistory.startedAt))
+        .limit(200);
 
       return { history, total: history.length };
     }),

@@ -8,7 +8,7 @@ export const publishReadinessCheckerRouter = router({
   dashboard: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { overallScore: 0, checks: 0, passing: 0, failing: 0, lastCheck: null };
-    const ffRows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'ff_%'`);
+    const ffRows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'ff_%'`).limit(500);
     const enabledFlags = ffRows.filter(r => { try { return JSON.parse(String(r.value ?? "{}")).enabled === true; } catch { return false; } }).length;
     return { overallScore: 97, checks: 15, passing: 14, failing: 1, lastCheck: new Date().toISOString(), totalFeatureFlags: ffRows.length, enabledFlags };
   }),
