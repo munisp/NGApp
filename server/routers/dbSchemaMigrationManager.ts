@@ -3,13 +3,19 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count, and } from "drizzle-orm";
 import { systemConfig, auditLog } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 export const dbSchemaMigrationManagerRouter = router({
   listPipelines: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
-    const db = (await getDb())!;
-    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_migration_registry")).limit(1);
-    const pipelines = registry ? JSON.parse(String(registry.value)) : [];
-    return { pipelines: pipelines.slice(0, input?.limit ?? 50), total: pipelines.length };
+    try {
+      const db = (await getDb())!;
+      const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_migration_registry")).limit(1);
+      const pipelines = registry ? JSON.parse(String(registry.value)) : [];
+      return { pipelines: pipelines.slice(0, input?.limit ?? 50), total: pipelines.length };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
@@ -17,14 +23,19 @@ export const dbSchemaMigrationManagerRouter = router({
     return config ? JSON.parse(String(config.value)) : { enabled: true, schedule: "0 * * * *", retryPolicy: { maxRetries: 3, backoffMs: 5000 } };
   }),
   trigger: protectedProcedure.input(z.object({ pipelineId: z.string().min(1).max(128).optional(), force: z.boolean().default(false) })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    const runId = crypto.randomUUID();
-    await db.insert(auditLog).values({ action: "db_migration_triggered", resource: "db_migration", resourceId: runId, status: "success", metadata: { pipelineId: input.pipelineId, force: input.force } });
-    return { runId, status: "running", startedAt: new Date().toISOString() };
+    try {
+      const db = (await getDb())!;
+      const runId = crypto.randomUUID();
+      await db.insert(auditLog).values({ action: "db_migration_triggered", resource: "db_migration", resourceId: runId, status: "success", metadata: { pipelineId: input.pipelineId, force: input.force } });
+      return { runId, status: "running", startedAt: new Date().toISOString() };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "db_migration_triggered"));
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "db_migration_triggered")).limit(100);
     return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
   }),
 });

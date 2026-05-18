@@ -31,19 +31,24 @@ export const crossBorderRemittanceRouter = router({
       amount: z.number().positive().max(50_000_000),
     }))
     .query(async ({ input }) => {
-      const corridor = CORRIDORS.find(c => c.from === input.fromCurrency && c.to === input.toCurrency);
-      if (!corridor) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor not available" });
-      if (!corridor.active) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor temporarily suspended" });
+      try {
+        const corridor = CORRIDORS.find(c => c.from === input.fromCurrency && c.to === input.toCurrency);
+        if (!corridor) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor not available" });
+        if (!corridor.active) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor temporarily suspended" });
 
-      const fee = Math.max(500, Math.round(input.amount * 0.02));
-      const convertedAmount = (input.amount - fee) * corridor.rate;
+        const fee = Math.max(500, Math.round(input.amount * 0.02));
+        const convertedAmount = (input.amount - fee) * corridor.rate;
 
-      return {
-        fromAmount: input.amount, fromCurrency: input.fromCurrency,
-        toAmount: Math.round(convertedAmount * 100) / 100, toCurrency: input.toCurrency,
-        rate: corridor.rate, fee, corridorName: corridor.name,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-      };
+        return {
+          fromAmount: input.amount, fromCurrency: input.fromCurrency,
+          toAmount: Math.round(convertedAmount * 100) / 100, toCurrency: input.toCurrency,
+          rate: corridor.rate, fee, corridorName: corridor.name,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   sendRemittance: protectedProcedure
@@ -57,50 +62,55 @@ export const crossBorderRemittanceRouter = router({
       purpose: z.string().max(256).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const corridor = CORRIDORS.find(c => c.from === "NGN" && c.to === input.toCurrency);
-      if (!corridor) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor not available" });
+        const corridor = CORRIDORS.find(c => c.from === "NGN" && c.to === input.toCurrency);
+        if (!corridor) throw new TRPCError({ code: "BAD_REQUEST", message: "Corridor not available" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-        .where(eq(agents.id, session.id)).limit(1);
-      if (!agent || Number(agent.floatBalance) < input.amount)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
+          .where(eq(agents.id, session.id)).limit(1);
+        if (!agent || Number(agent.floatBalance) < input.amount)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
 
-      const fee = Math.max(500, Math.round(input.amount * 0.02));
-      const commission = Math.round(fee * 0.2);
-      const convertedAmount = (input.amount - fee) * corridor.rate;
-      const ref = `REM-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
+        const fee = Math.max(500, Math.round(input.amount * 0.02));
+        const commission = Math.round(fee * 0.2);
+        const convertedAmount = (input.amount - fee) * corridor.rate;
+        const ref = `REM-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-      const [tx] = await db.insert(transactions).values({
-        ref, agentId: session.id, type: "Transfer",
-        amount: String(input.amount), fee: String(fee), commission: String(commission),
-        customerName: input.recipientName, customerPhone: input.recipientPhone,
-        destinationAccount: input.recipientAccount ?? null, currency: "NGN",
-        status: "success", channel: "App",
-        metadata: {
-          remittanceType: "cross_border", toCurrency: input.toCurrency,
-          convertedAmount, rate: corridor.rate, purpose: input.purpose,
-          recipientBankCode: input.recipientBankCode,
-        },
-      }).returning();
+        const [tx] = await db.insert(transactions).values({
+          ref, agentId: session.id, type: "Transfer",
+          amount: String(input.amount), fee: String(fee), commission: String(commission),
+          customerName: input.recipientName, customerPhone: input.recipientPhone,
+          destinationAccount: input.recipientAccount ?? null, currency: "NGN",
+          status: "success", channel: "App",
+          metadata: {
+            remittanceType: "cross_border", toCurrency: input.toCurrency,
+            convertedAmount, rate: corridor.rate, purpose: input.purpose,
+            recipientBankCode: input.recipientBankCode,
+          },
+        }).returning();
 
-      await db.update(agents).set({
-        floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
-      }).where(eq(agents.id, session.id));
+        await db.update(agents).set({
+          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
+          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+        }).where(eq(agents.id, session.id));
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "CROSS_BORDER_REMITTANCE_SENT", resource: "remittance", resourceId: ref, status: "success",
-        metadata: { amount: input.amount, toCurrency: input.toCurrency, convertedAmount, recipient: input.recipientName },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "CROSS_BORDER_REMITTANCE_SENT", resource: "remittance", resourceId: ref, status: "success",
+          metadata: { amount: input.amount, toCurrency: input.toCurrency, convertedAmount, recipient: input.recipientName },
+        });
 
-      return { ref, amount: input.amount, fee, commission, convertedAmount, toCurrency: input.toCurrency, rate: corridor.rate, status: "success", transactionId: tx.id };
+        return { ref, amount: input.amount, fee, commission, convertedAmount, toCurrency: input.toCurrency, rate: corridor.rate, status: "success", transactionId: tx.id };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   listCorridors: protectedProcedure.query(async () => {
@@ -110,16 +120,21 @@ export const crossBorderRemittanceRouter = router({
   getHistory: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
     .query(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) return { items: [] };
+        const db = (await getDb())!;
+        if (!db) return { items: [] };
 
-      const items = await db.select().from(transactions)
-        .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'remittanceType' = 'cross_border'`))
-        .orderBy(desc(transactions.createdAt)).limit(input.limit);
+        const items = await db.select().from(transactions)
+          .where(and(eq(transactions.agentId, session.id), sql`${transactions.metadata}->>'remittanceType' = 'cross_border'`))
+          .orderBy(desc(transactions.createdAt)).limit(input.limit);
 
-      return { items };
+        return { items };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

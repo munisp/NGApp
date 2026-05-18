@@ -9,70 +9,105 @@ import { TRPCError } from "@trpc/server";
 const getNotifications = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const getStats = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional(), dateFrom: z.string().optional(), dateTo: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    const recent = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(5);
-    return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    try {
+      const db = (await getDb())!;
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      const recent = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(5);
+      return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const markRead = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const configureChannels = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const getChannelConfig = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const testNotification = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const getDeliveryLog = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(notificationDispatchLog).orderBy(desc(notificationDispatchLog.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(notificationDispatchLog).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 
 export const paymentNotificationSystemRouter = router({

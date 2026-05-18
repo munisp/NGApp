@@ -9,6 +9,7 @@ import { webhookEndpoints, webhookDeliveries } from "../../drizzle/schema";
 import { eq, desc, and, count, gte } from "drizzle-orm";
 import crypto from "crypto";
 import { retryPendingDeliveries } from "../lib/webhookDelivery";
+import { TRPCError } from "@trpc/server";
 
 const mgmtProcedure = protectedProcedure;
 
@@ -17,7 +18,7 @@ export const webhooksRouter = router({
   list: mgmtProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return [];
-    return db.select().from(webhookEndpoints).orderBy(desc(webhookEndpoints.createdAt));
+    return db.select().from(webhookEndpoints).orderBy(desc(webhookEndpoints.createdAt)).limit(100);
   }),
 
   // ── Create a new webhook endpoint ────────────────────────────────────────
@@ -30,21 +31,26 @@ export const webhooksRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const secret = crypto.randomBytes(32).toString("hex");
-      const [endpoint] = await db
-        .insert(webhookEndpoints)
-        .values({
-          name: input.name,
-          url: input.url,
-          secret,
-          events: input.events,
-          isActive: true,
-          createdBy: ctx.user.id,
-        })
-        .returning();
-      return { ...endpoint, secret }; // Return secret only on creation
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const secret = crypto.randomBytes(32).toString("hex");
+        const [endpoint] = await db
+          .insert(webhookEndpoints)
+          .values({
+            name: input.name,
+            url: input.url,
+            secret,
+            events: input.events,
+            isActive: true,
+            createdBy: ctx.user.id,
+          })
+          .returning();
+        return { ...endpoint, secret }; // Return secret only on creation
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Update a webhook endpoint ─────────────────────────────────────────────
@@ -59,39 +65,54 @@ export const webhooksRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const { id, ...data } = input;
-      const [updated] = await db
-        .update(webhookEndpoints)
-        .set({ ...data, updatedAt: new Date() })
-        .where(eq(webhookEndpoints.id, id))
-        .returning();
-      return updated;
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const { id, ...data } = input;
+        const [updated] = await db
+          .update(webhookEndpoints)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(webhookEndpoints.id, id))
+          .returning();
+        return updated;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Rotate webhook secret ─────────────────────────────────────────────────
   rotateSecret: mgmtProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const newSecret = crypto.randomBytes(32).toString("hex");
-      await db
-        .update(webhookEndpoints)
-        .set({ secret: newSecret, updatedAt: new Date() })
-        .where(eq(webhookEndpoints.id, input.id));
-      return { secret: newSecret };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const newSecret = crypto.randomBytes(32).toString("hex");
+        await db
+          .update(webhookEndpoints)
+          .set({ secret: newSecret, updatedAt: new Date() })
+          .where(eq(webhookEndpoints.id, input.id));
+        return { secret: newSecret };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Delete a webhook endpoint ─────────────────────────────────────────────
   delete: mgmtProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── List delivery history for an endpoint ────────────────────────────────
@@ -104,23 +125,28 @@ export const webhooksRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const offset = (input.page - 1) * input.limit;
-      const [items, [{ c: total }]] = await Promise.all([
-        db
-          .select()
-          .from(webhookDeliveries)
-          .where(eq(webhookDeliveries.endpointId, input.endpointId))
-          .orderBy(desc(webhookDeliveries.createdAt))
-          .limit(input.limit)
-          .offset(offset),
-        db
-          .select({ c: count() })
-          .from(webhookDeliveries)
-          .where(eq(webhookDeliveries.endpointId, input.endpointId)),
-      ]);
-      return { items, total: Number(total) };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const offset = (input.page - 1) * input.limit;
+        const [items, [{ c: total }]] = await Promise.all([
+          db
+            .select()
+            .from(webhookDeliveries)
+            .where(eq(webhookDeliveries.endpointId, input.endpointId))
+            .orderBy(desc(webhookDeliveries.createdAt))
+            .limit(input.limit)
+            .offset(offset),
+          db
+            .select({ c: count() })
+            .from(webhookDeliveries)
+            .where(eq(webhookDeliveries.endpointId, input.endpointId)),
+        ]);
+        return { items, total: Number(total) };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Delivery stats for all endpoints ─────────────────────────────────────
@@ -149,61 +175,71 @@ export const webhooksRouter = router({
   retryDelivery: mgmtProcedure
     .input(z.object({ deliveryId: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      await db
-        .update(webhookDeliveries)
-        .set({
-          status: "retrying",
-          nextRetryAt: new Date(),
-          attemptCount: 0,
-        })
-        .where(eq(webhookDeliveries.id, input.deliveryId));
-      const retried = await retryPendingDeliveries();
-      return { retried };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        await db
+          .update(webhookDeliveries)
+          .set({
+            status: "retrying",
+            nextRetryAt: new Date(),
+            attemptCount: 0,
+          })
+          .where(eq(webhookDeliveries.id, input.deliveryId));
+        const retried = await retryPendingDeliveries();
+        return { retried };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Test a webhook endpoint with a ping ──────────────────────────────────
   ping: mgmtProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const [endpoint] = await db
-        .select()
-        .from(webhookEndpoints)
-        .where(eq(webhookEndpoints.id, input.id))
-        .limit(1);
-      if (!endpoint) throw new Error("Endpoint not found");
-
-      const body = JSON.stringify({
-        event: "ping",
-        timestamp: new Date().toISOString(),
-        data: { message: "54Link webhook ping test" },
-      });
-      const signature = `sha256=${crypto
-        .createHmac("sha256", endpoint.secret)
-        .update(body)
-        .digest("hex")}`;
-
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10_000);
-        const response = await fetch(endpoint.url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-54Link-Signature": signature,
-            "X-54Link-Event": "ping",
-            "User-Agent": "54Link-Webhook/1.0",
-          },
-          body,
-          signal: controller.signal,
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const [endpoint] = await db
+          .select()
+          .from(webhookEndpoints)
+          .where(eq(webhookEndpoints.id, input.id))
+          .limit(1);
+        if (!endpoint) throw new Error("Endpoint not found");
+
+        const body = JSON.stringify({
+          event: "ping",
+          timestamp: new Date().toISOString(),
+          data: { message: "54Link webhook ping test" },
         });
-        clearTimeout(timeout);
-        return { success: response.ok, statusCode: response.status };
-      } catch (err) {
-        return { success: false, error: err instanceof Error ? err.message : String(err) };
+        const signature = `sha256=${crypto
+          .createHmac("sha256", endpoint.secret)
+          .update(body)
+          .digest("hex")}`;
+
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10_000);
+          const response = await fetch(endpoint.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-54Link-Signature": signature,
+              "X-54Link-Event": "ping",
+              "User-Agent": "54Link-Webhook/1.0",
+            },
+            body,
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          return { success: response.ok, statusCode: response.status };
+        } catch (err) {
+          return { success: false, error: err instanceof Error ? err.message : String(err) };
+        }
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
     }),
 });

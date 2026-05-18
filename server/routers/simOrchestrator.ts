@@ -59,45 +59,50 @@ export const simOrchestratorRouter = router({
   ingestProbe: protectedProcedure
     .input(ProbePayloadSchema)
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const config = await db
-        .select()
-        .from(simOrchestratorConfig)
-        .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
-        .limit(1);
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const config = await db
+          .select()
+          .from(simOrchestratorConfig)
+          .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
+          .limit(1);
 
-      const expectedKey = config[0]?.apiKey ?? "54link-sim-orchestrator-default-key";
-      if (input.apiKey !== expectedKey) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid SIM orchestrator API key" });
+        const expectedKey = config[0]?.apiKey ?? "54link-sim-orchestrator-default-key";
+        if (input.apiKey !== expectedKey) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid SIM orchestrator API key" });
+        }
+
+        if (config[0] && !config[0].enabled) {
+          return { accepted: false, reason: "Terminal orchestrator disabled" };
+        }
+
+        const probedAt = new Date(input.timestampUtc * 1000);
+
+        const rows = input.readings.map((r: any) => ({
+          agentCode:      input.agentCode,
+          terminalId:     input.terminalId,
+          slot:           r.slot,
+          carrier:        r.carrier,
+          mccMnc:         r.mccMnc,
+          rssi:           r.rssi,
+          regStatus:      r.regStatus,
+          latencyMs:      r.latencyMs,
+          packetLossX10:  r.packetLossX10,
+          score:          r.score,
+          selected:       r.selected,
+          latE6:          input.latE6 ?? null,
+          lonE6:          input.lonE6 ?? null,
+          fwVersion:      input.fwVersion ?? null,
+          probedAt,
+        }));
+
+        await db.insert(simProbeLog).values(rows);
+        return { accepted: true, ingested: rows.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      if (config[0] && !config[0].enabled) {
-        return { accepted: false, reason: "Terminal orchestrator disabled" };
-      }
-
-      const probedAt = new Date(input.timestampUtc * 1000);
-
-      const rows = input.readings.map((r: any) => ({
-        agentCode:      input.agentCode,
-        terminalId:     input.terminalId,
-        slot:           r.slot,
-        carrier:        r.carrier,
-        mccMnc:         r.mccMnc,
-        rssi:           r.rssi,
-        regStatus:      r.regStatus,
-        latencyMs:      r.latencyMs,
-        packetLossX10:  r.packetLossX10,
-        score:          r.score,
-        selected:       r.selected,
-        latE6:          input.latE6 ?? null,
-        lonE6:          input.lonE6 ?? null,
-        fwVersion:      input.fwVersion ?? null,
-        probedAt,
-      }));
-
-      await db.insert(simProbeLog).values(rows);
-      return { accepted: true, ingested: rows.length };
     }),
 
   /**
@@ -109,31 +114,36 @@ export const simOrchestratorRouter = router({
       apiKey:     z.string().max(128),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const config = await db
-        .select()
-        .from(simOrchestratorConfig)
-        .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
-        .limit(1);
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const config = await db
+          .select()
+          .from(simOrchestratorConfig)
+          .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
+          .limit(1);
 
-      if (!config[0]) {
+        if (!config[0]) {
+          return {
+            probeIntervalMs: 30000,
+            relayEndpoint: "https://api.54link.io/api/trpc/simOrchestrator.ingestProbe",
+            enabled: true,
+          };
+        }
+
+        if (input.apiKey !== config[0].apiKey) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+        }
+
         return {
-          probeIntervalMs: 30000,
-          relayEndpoint: "https://api.54link.io/api/trpc/simOrchestrator.ingestProbe",
-          enabled: true,
+          probeIntervalMs: config[0].probeIntervalMs,
+          relayEndpoint:   config[0].relayEndpoint,
+          enabled:         config[0].enabled,
         };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      if (input.apiKey !== config[0].apiKey) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
-      }
-
-      return {
-        probeIntervalMs: config[0].probeIntervalMs,
-        relayEndpoint:   config[0].relayEndpoint,
-        enabled:         config[0].enabled,
-      };
     }),
 
   /**
@@ -146,24 +156,29 @@ export const simOrchestratorRouter = router({
       slot:      SimSlotSchema.optional(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
 
-      const conditions: ReturnType<typeof eq>[] = [
-        eq(simProbeLog.agentCode, input.agentCode),
-        gte(simProbeLog.probedAt, since),
-      ];
-      if (input.slot) {
-        conditions.push(eq(simProbeLog.slot, input.slot));
+        const conditions: ReturnType<typeof eq>[] = [
+          eq(simProbeLog.agentCode, input.agentCode),
+          gte(simProbeLog.probedAt, since),
+        ];
+        if (input.slot) {
+          conditions.push(eq(simProbeLog.slot, input.slot));
+        }
+
+        return db
+          .select()
+          .from(simProbeLog)
+          .where(and(...conditions))
+          .orderBy(desc(simProbeLog.probedAt))
+          .limit(500);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return db
-        .select()
-        .from(simProbeLog)
-        .where(and(...conditions))
-        .orderBy(desc(simProbeLog.probedAt))
-        .limit(500);
     }),
 
   /**
@@ -175,28 +190,33 @@ export const simOrchestratorRouter = router({
       hours:     z.number().int().min(1).max(168).default(24),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
 
-      return db
-        .select({
-          slot:          simProbeLog.slot,
-          carrier:       simProbeLog.carrier,
-          avgScore:      sql<number>`ROUND(AVG(${simProbeLog.score}), 1)`,
-          avgRssi:       sql<number>`ROUND(AVG(${simProbeLog.rssi}), 1)`,
-          avgLatencyMs:  sql<number>`ROUND(AVG(${simProbeLog.latencyMs}), 0)`,
-          selectedCount: sql<number>`SUM(CASE WHEN ${simProbeLog.selected} THEN 1 ELSE 0 END)`,
-          totalCount:    sql<number>`COUNT(*)`,
-          registeredPct: sql<number>`ROUND(100.0 * SUM(CASE WHEN ${simProbeLog.regStatus} IN (1, 5) THEN 1 ELSE 0 END) / COUNT(*), 1)`,
-        })
-        .from(simProbeLog)
-        .where(and(
-          eq(simProbeLog.agentCode, input.agentCode),
-          gte(simProbeLog.probedAt, since),
-        ))
-        .groupBy(simProbeLog.slot, simProbeLog.carrier)
-        .orderBy(desc(sql`AVG(${simProbeLog.score})`));
+        return db
+          .select({
+            slot:          simProbeLog.slot,
+            carrier:       simProbeLog.carrier,
+            avgScore:      sql<number>`ROUND(AVG(${simProbeLog.score}), 1)`,
+            avgRssi:       sql<number>`ROUND(AVG(${simProbeLog.rssi}), 1)`,
+            avgLatencyMs:  sql<number>`ROUND(AVG(${simProbeLog.latencyMs}), 0)`,
+            selectedCount: sql<number>`SUM(CASE WHEN ${simProbeLog.selected} THEN 1 ELSE 0 END)`,
+            totalCount:    sql<number>`COUNT(*)`,
+            registeredPct: sql<number>`ROUND(100.0 * SUM(CASE WHEN ${simProbeLog.regStatus} IN (1, 5) THEN 1 ELSE 0 END) / COUNT(*), 1)`,
+          })
+          .from(simProbeLog)
+          .where(and(
+            eq(simProbeLog.agentCode, input.agentCode),
+            gte(simProbeLog.probedAt, since),
+          ))
+          .groupBy(simProbeLog.slot, simProbeLog.carrier)
+          .orderBy(desc(sql`AVG(${simProbeLog.score})`));
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -205,24 +225,29 @@ export const simOrchestratorRouter = router({
   getLatestReadings: protectedProcedure
     .input(z.object({ agentCode: z.string().max(32) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const latestResult = await db
-        .select({ maxProbedAt: sql<Date>`MAX(${simProbeLog.probedAt})` })
-        .from(simProbeLog)
-        .where(eq(simProbeLog.agentCode, input.agentCode));
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const latestResult = await db
+          .select({ maxProbedAt: sql<Date>`MAX(${simProbeLog.probedAt})` })
+          .from(simProbeLog)
+          .where(eq(simProbeLog.agentCode, input.agentCode));
 
-      const maxProbedAt = latestResult[0]?.maxProbedAt;
-      if (!maxProbedAt) return [];
+        const maxProbedAt = latestResult[0]?.maxProbedAt;
+        if (!maxProbedAt) return [];
 
-      return db
-        .select()
-        .from(simProbeLog)
-        .where(and(
-          eq(simProbeLog.agentCode, input.agentCode),
-          eq(simProbeLog.probedAt, maxProbedAt),
-        ))
-        .orderBy(simProbeLog.slot);
+        return db
+          .select()
+          .from(simProbeLog)
+          .where(and(
+            eq(simProbeLog.agentCode, input.agentCode),
+            eq(simProbeLog.probedAt, maxProbedAt),
+          ))
+          .orderBy(simProbeLog.slot);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -239,31 +264,36 @@ export const simOrchestratorRouter = router({
       enabled:         z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
-      }
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      await db
-        .insert(simOrchestratorConfig)
-        .values({
-          terminalId:      input.terminalId,
-          probeIntervalMs: input.probeIntervalMs,
-          relayEndpoint:   input.relayEndpoint,
-          apiKey:          input.apiKey,
-          enabled:         input.enabled,
-        })
-        .onConflictDoUpdate({
-          target: simOrchestratorConfig.terminalId,
-          set: {
+      try {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
+        }
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await db
+          .insert(simOrchestratorConfig)
+          .values({
+            terminalId:      input.terminalId,
             probeIntervalMs: input.probeIntervalMs,
             relayEndpoint:   input.relayEndpoint,
             apiKey:          input.apiKey,
             enabled:         input.enabled,
-            updatedAt:       new Date(),
-          },
-        });
-      return { success: true };
+          })
+          .onConflictDoUpdate({
+            target: simOrchestratorConfig.terminalId,
+            set: {
+              probeIntervalMs: input.probeIntervalMs,
+              relayEndpoint:   input.relayEndpoint,
+              apiKey:          input.apiKey,
+              enabled:         input.enabled,
+              updatedAt:       new Date(),
+            },
+          });
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -275,40 +305,45 @@ export const simOrchestratorRouter = router({
       hours: z.number().int().min(1).max(720).default(168), // default 7 days
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const since = new Date(Date.now() - input.hours * 60 * 60 * 1000);
 
-      const rows = await db
-        .select({
-          id:         simProbeLog.id,
-          agentCode:  simProbeLog.agentCode,
-          terminalId: simProbeLog.terminalId,
-          slot:       simProbeLog.slot,
-          carrier:    simProbeLog.carrier,
-          rssi:       simProbeLog.rssi,
-          latencyMs:  simProbeLog.latencyMs,
-          score:      simProbeLog.score,
-          selected:   simProbeLog.selected,
-          latE6:      simProbeLog.latE6,
-          lonE6:      simProbeLog.lonE6,
-          probedAt:   simProbeLog.probedAt,
-        })
-        .from(simProbeLog)
-        .where(and(
-          gte(simProbeLog.probedAt, since),
-          sql`${simProbeLog.latE6} IS NOT NULL AND ${simProbeLog.latE6} != 0`,
-        ))
-        .orderBy(desc(simProbeLog.probedAt))
-        .limit(2000);
+        const rows = await db
+          .select({
+            id:         simProbeLog.id,
+            agentCode:  simProbeLog.agentCode,
+            terminalId: simProbeLog.terminalId,
+            slot:       simProbeLog.slot,
+            carrier:    simProbeLog.carrier,
+            rssi:       simProbeLog.rssi,
+            latencyMs:  simProbeLog.latencyMs,
+            score:      simProbeLog.score,
+            selected:   simProbeLog.selected,
+            latE6:      simProbeLog.latE6,
+            lonE6:      simProbeLog.lonE6,
+            probedAt:   simProbeLog.probedAt,
+          })
+          .from(simProbeLog)
+          .where(and(
+            gte(simProbeLog.probedAt, since),
+            sql`${simProbeLog.latE6} IS NOT NULL AND ${simProbeLog.latE6} != 0`,
+          ))
+          .orderBy(desc(simProbeLog.probedAt))
+          .limit(2000);
 
-      // Convert latE6/lonE6 to decimal degrees
-      return rows.map((r: any) => ({
-        ...r,
-        lat: (r.latE6 ?? 0) / 1_000_000,
-        lon: (r.lonE6 ?? 0) / 1_000_000,
-        rssiDbm: r.rssi === 99 ? null : -113 + r.rssi * 2,
-      }));
+        // Convert latE6/lonE6 to decimal degrees
+        return rows.map((r: any) => ({
+          ...r,
+          lat: (r.latE6 ?? 0) / 1_000_000,
+          lon: (r.lonE6 ?? 0) / 1_000_000,
+          rssiDbm: r.rssi === 99 ? null : -113 + r.rssi * 2,
+        }));
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -316,15 +351,20 @@ export const simOrchestratorRouter = router({
    */
   listConfigs: protectedProcedure
     .query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
+      try {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
+        }
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        return db
+          .select()
+          .from(simOrchestratorConfig)
+          .orderBy(simOrchestratorConfig.terminalId);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      return db
-        .select()
-        .from(simOrchestratorConfig)
-        .orderBy(simOrchestratorConfig.terminalId);
     }),
 
   /**
@@ -344,78 +384,83 @@ export const simOrchestratorRouter = router({
       apiKey:     z.string().max(128),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Validate API key against terminal config
-      const [cfg] = await db
-        .select({ apiKey: simOrchestratorConfig.apiKey })
-        .from(simOrchestratorConfig)
-        .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
-        .limit(1);
+        // Validate API key against terminal config
+        const [cfg] = await db
+          .select({ apiKey: simOrchestratorConfig.apiKey })
+          .from(simOrchestratorConfig)
+          .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
+          .limit(1);
 
-      const defaultKey = "54link-sim-orchestrator-default-key";
-      const expectedKey = cfg?.apiKey ?? defaultKey;
-      if (input.apiKey !== expectedKey) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
-      }
+        const defaultKey = "54link-sim-orchestrator-default-key";
+        const expectedKey = cfg?.apiKey ?? defaultKey;
+        if (input.apiKey !== expectedKey) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+        }
 
-      const slotNames = ["Phys1", "Phys2", "ESim1", "ESim2"];
-      const fromName = slotNames[input.fromSlot] ?? `Slot${input.fromSlot}`;
-      const toName   = slotNames[input.toSlot]   ?? `Slot${input.toSlot}`;
+        const slotNames = ["Phys1", "Phys2", "ESim1", "ESim2"];
+        const fromName = slotNames[input.fromSlot] ?? `Slot${input.fromSlot}`;
+        const toName   = slotNames[input.toSlot]   ?? `Slot${input.toSlot}`;
 
-      // Insert failover log
-      await db.insert(simFailoverLog).values({
-        terminalId: input.terminalId,
-        agentCode:  input.agentCode,
-        fromSlot:   input.fromSlot,
-        toSlot:     input.toSlot,
-        reason:     input.reason,
-        latencyMs:  input.latencyMs,
-        lossX10:    input.lossX10,
-        txRef:      input.txRef ?? null,
-        switchedAt: new Date(),
-      });
-
-      // Send admin notification (non-blocking)
-      const reasonLabel = input.reason === "high_latency"
-        ? `latency ${input.latencyMs}ms > 3000ms`
-        : `packet loss ${(input.lossX10 / 10).toFixed(1)}% > 20%`;
-      notifyOwner({
-        title: `⚠️ SIM Failover: ${input.terminalId}`,
-        content: `Terminal ${input.terminalId} (agent ${input.agentCode}) switched from ${fromName} to ${toName}. Reason: ${reasonLabel}${input.txRef ? `. TX: ${input.txRef}` : ""}.`,
-      }).catch(() => { /* non-critical */ });
-
-      // Publish to Kafka (non-blocking, fail-open)
-      publishEvent(
-        "pos.fraud.alert_raised" as any,
-        input.terminalId,
-        {
-          eventType: "sim.failover",
+        // Insert failover log
+        await db.insert(simFailoverLog).values({
           terminalId: input.terminalId,
-          agentCode: input.agentCode,
-          fromSlot: input.fromSlot,
-          toSlot: input.toSlot,
-          reason: input.reason,
-          latencyMs: input.latencyMs,
-          lossX10: input.lossX10,
-          txRef: input.txRef,
-        },
-        { agentCode: input.agentCode }
-      ).catch(() => { /* non-critical */ });
+          agentCode:  input.agentCode,
+          fromSlot:   input.fromSlot,
+          toSlot:     input.toSlot,
+          reason:     input.reason,
+          latencyMs:  input.latencyMs,
+          lossX10:    input.lossX10,
+          txRef:      input.txRef ?? null,
+          switchedAt: new Date(),
+        });
 
-      // ── VAPID push notification to agent (fire-and-forget) ──────────────────
-      import("../push.js").then(({ notifySimFailover }) =>
-        notifySimFailover({
-          agentCode: input.agentCode,
-          fromSlot: input.fromSlot,
-          toSlot: input.toSlot,
-          reason: reasonLabel,
-          transactionRef: input.txRef,
-        })
-      ).catch(() => { /* non-critical */ });
+        // Send admin notification (non-blocking)
+        const reasonLabel = input.reason === "high_latency"
+          ? `latency ${input.latencyMs}ms > 3000ms`
+          : `packet loss ${(input.lossX10 / 10).toFixed(1)}% > 20%`;
+        notifyOwner({
+          title: `⚠️ SIM Failover: ${input.terminalId}`,
+          content: `Terminal ${input.terminalId} (agent ${input.agentCode}) switched from ${fromName} to ${toName}. Reason: ${reasonLabel}${input.txRef ? `. TX: ${input.txRef}` : ""}.`,
+        }).catch(() => { /* non-critical */ });
 
-      return { ok: true, terminalId: input.terminalId, fromSlot: fromName, toSlot: toName };
+        // Publish to Kafka (non-blocking, fail-open)
+        publishEvent(
+          "pos.fraud.alert_raised" as any,
+          input.terminalId,
+          {
+            eventType: "sim.failover",
+            terminalId: input.terminalId,
+            agentCode: input.agentCode,
+            fromSlot: input.fromSlot,
+            toSlot: input.toSlot,
+            reason: input.reason,
+            latencyMs: input.latencyMs,
+            lossX10: input.lossX10,
+            txRef: input.txRef,
+          },
+          { agentCode: input.agentCode }
+        ).catch(() => { /* non-critical */ });
+
+        // ── VAPID push notification to agent (fire-and-forget) ──────────────────
+        import("../push.js").then(({ notifySimFailover }) =>
+          notifySimFailover({
+            agentCode: input.agentCode,
+            fromSlot: input.fromSlot,
+            toSlot: input.toSlot,
+            reason: reasonLabel,
+            transactionRef: input.txRef,
+          })
+        ).catch(() => { /* non-critical */ });
+
+        return { ok: true, terminalId: input.terminalId, fromSlot: fromName, toSlot: toName };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -427,29 +472,34 @@ export const simOrchestratorRouter = router({
       limit:      z.number().int().min(1).max(500).default(100),
     }))
     .query(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
+      try {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin or supervisor required" });
+        }
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const conditions = input.terminalId
+          ? [eq(simFailoverLog.terminalId, input.terminalId)]
+          : [];
+
+        const rows = await db
+          .select()
+          .from(simFailoverLog)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(simFailoverLog.switchedAt))
+          .limit(input.limit);
+
+        const slotNames = ["Phys1", "Phys2", "ESim1", "ESim2"];
+        return rows.map(r => ({
+          ...r,
+          fromSlotName: slotNames[r.fromSlot] ?? `Slot${r.fromSlot}`,
+          toSlotName:   slotNames[r.toSlot]   ?? `Slot${r.toSlot}`,
+          lossPercent:  r.lossX10 / 10,
+        }));
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-
-      const conditions = input.terminalId
-        ? [eq(simFailoverLog.terminalId, input.terminalId)]
-        : [];
-
-      const rows = await db
-        .select()
-        .from(simFailoverLog)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .orderBy(desc(simFailoverLog.switchedAt))
-        .limit(input.limit);
-
-      const slotNames = ["Phys1", "Phys2", "ESim1", "ESim2"];
-      return rows.map(r => ({
-        ...r,
-        fromSlotName: slotNames[r.fromSlot] ?? `Slot${r.fromSlot}`,
-        toSlotName:   slotNames[r.toSlot]   ?? `Slot${r.toSlot}`,
-        lossPercent:  r.lossX10 / 10,
-      }));
     }),
 });

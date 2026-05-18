@@ -33,8 +33,8 @@ let scheduleState = DEFAULT_SCHEDULES.map((s, i) => ({
 export const automatedSettlementSchedulerRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [batchCount] = await db.select({ cnt: count() }).from(reconciliationBatches);
-    const [vol] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.grossAmount}::numeric),0)` }).from(merchantSettlements);
+    const [batchCount] = await db.select({ cnt: count() }).from(reconciliationBatches).limit(100);
+    const [vol] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.grossAmount}::numeric),0)` }).from(merchantSettlements).limit(100);
     const active = scheduleState.filter(s => s.status === "active").length;
     const paused = scheduleState.filter(s => s.status === "paused").length;
     return {
@@ -48,38 +48,53 @@ export const automatedSettlementSchedulerRouter = router({
 
   createSchedule: protectedProcedure.input(z.object({ name: z.string(), cronExpression: z.string(), type: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const ns = { id: `SCH-${Date.now()}`, ...input, status: "active" as const, lastRun: 0, nextRun: Date.now() + 3600000, successRate: 100, avgDuration: 0, totalRuns: 0, totalSettled: 0, failedRuns: 0 };
-      scheduleState.push(ns);
-      try { await publishSettlementEvent({ eventType: "settlement.schedule.created", batchId: ns.id, data: { name: input.name, createdBy: ctx.user?.id } }); }
-      catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
-      return { id: ns.id, ...input, status: "active", createdAt: Date.now() };
+      try {
+        const ns = { id: `SCH-${Date.now()}`, ...input, status: "active" as const, lastRun: 0, nextRun: Date.now() + 3600000, successRate: 100, avgDuration: 0, totalRuns: 0, totalSettled: 0, failedRuns: 0 };
+        scheduleState.push(ns);
+        try { await publishSettlementEvent({ eventType: "settlement.schedule.created", batchId: ns.id, data: { name: input.name, createdBy: ctx.user?.id } }); }
+        catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
+        return { id: ns.id, ...input, status: "active", createdAt: Date.now() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   toggleSchedule: protectedProcedure.input(z.object({ scheduleId: z.string(), action: z.enum(["pause", "resume"]) }))
     .mutation(async ({ input, ctx }) => {
-      const s = scheduleState.find(s => s.id === input.scheduleId);
-      if (!s) throw new TRPCError({ code: "NOT_FOUND", message: "Schedule not found" });
-      s.status = input.action === "pause" ? "paused" : "active";
-      try { await publishSettlementEvent({ eventType: `settlement.schedule.${input.action}d`, batchId: input.scheduleId, data: { by: ctx.user?.id } }); }
-      catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
-      return { success: true, scheduleId: input.scheduleId, newStatus: s.status };
+      try {
+        const s = scheduleState.find(s => s.id === input.scheduleId);
+        if (!s) throw new TRPCError({ code: "NOT_FOUND", message: "Schedule not found" });
+        s.status = input.action === "pause" ? "paused" : "active";
+        try { await publishSettlementEvent({ eventType: `settlement.schedule.${input.action}d`, batchId: input.scheduleId, data: { by: ctx.user?.id } }); }
+        catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
+        return { success: true, scheduleId: input.scheduleId, newStatus: s.status };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   triggerManual: protectedProcedure.input(z.object({ scheduleId: z.string() })).mutation(async ({ input, ctx }) => {
-    const db = (await getDb())!;
-    const s = scheduleState.find(s => s.id === input.scheduleId);
-    if (!s) throw new TRPCError({ code: "NOT_FOUND", message: "Schedule not found" });
-    const batchRef = `MANUAL-${input.scheduleId}-${Date.now()}`;
-    await db.insert(reconciliationBatches).values({
-      batchReference: batchRef, sourceType: `manual_${s.type}`, status: "processing",
-      totalRecords: 0, matchedCount: 0, unmatchedCount: 0, discrepancyCount: 0,
-      processedBy: ctx.user?.id ?? null, processedAt: new Date(),
-    });
-    s.lastRun = Date.now(); s.totalRuns += 1;
     try {
-      await publishSettlementEvent({ eventType: "settlement.schedule.manual_trigger", batchId: batchRef, data: { scheduleId: input.scheduleId, triggeredBy: ctx.user?.id } });
-      await tbRecordSettlementTransfer({ batchId: batchRef, amount: 0, currency: "NGN", type: "manual_trigger" });
-    } catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
-    return { executionId: batchRef, scheduleId: input.scheduleId, status: "running", startedAt: Date.now() };
+      const db = (await getDb())!;
+      const s = scheduleState.find(s => s.id === input.scheduleId);
+      if (!s) throw new TRPCError({ code: "NOT_FOUND", message: "Schedule not found" });
+      const batchRef = `MANUAL-${input.scheduleId}-${Date.now()}`;
+      await db.insert(reconciliationBatches).values({
+        batchReference: batchRef, sourceType: `manual_${s.type}`, status: "processing",
+        totalRecords: 0, matchedCount: 0, unmatchedCount: 0, discrepancyCount: 0,
+        processedBy: ctx.user?.id ?? null, processedAt: new Date(),
+      });
+      s.lastRun = Date.now(); s.totalRuns += 1;
+      try {
+        await publishSettlementEvent({ eventType: "settlement.schedule.manual_trigger", batchId: batchRef, data: { scheduleId: input.scheduleId, triggeredBy: ctx.user?.id } });
+        await tbRecordSettlementTransfer({ batchId: batchRef, amount: 0, currency: "NGN", type: "manual_trigger" });
+      } catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
+      return { executionId: batchRef, scheduleId: input.scheduleId, status: "running", startedAt: Date.now() };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

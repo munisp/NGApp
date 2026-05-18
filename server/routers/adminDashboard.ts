@@ -17,8 +17,8 @@ export const adminDashboardRouter = router({
   // ── System Stats ──────────────────────────────────────────────────────────────
   getSystemStats: adminProcedure.query(async () => {
     const db = (await getDb())!;
-    const [userCount] = await db.select({ count: count() }).from(users);
-    const [adminCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "admin"));
+    const [userCount] = await db.select({ count: count() }).from(users).limit(100);
+    const [adminCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "admin")).limit(100);
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
     const [recentUsers] = await db.select({ count: count() }).from(users)
@@ -47,22 +47,9 @@ export const adminDashboardRouter = router({
       role: z.enum(["admin", "user"]).optional(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      let query = db.select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        createdAt: users.createdAt,
-        lastSignedIn: users.lastSignedIn,
-        stripeCustomerId: users.stripeCustomerId,
-        stripePlanId: users.stripePlanId,
-        tenantId: users.tenantId,
-        mfaEnabled: users.mfaEnabled,
-      }).from(users).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
-
-      if (input.role) {
-        query = db.select({
+      try {
+        const db = (await getDb())!;
+        let query = db.select({
           id: users.id,
           name: users.name,
           email: users.email,
@@ -73,13 +60,31 @@ export const adminDashboardRouter = router({
           stripePlanId: users.stripePlanId,
           tenantId: users.tenantId,
           mfaEnabled: users.mfaEnabled,
-        }).from(users).where(eq(users.role, input.role)).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
+        }).from(users).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
+
+        if (input.role) {
+          query = db.select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            role: users.role,
+            createdAt: users.createdAt,
+            lastSignedIn: users.lastSignedIn,
+            stripeCustomerId: users.stripeCustomerId,
+            stripePlanId: users.stripePlanId,
+            tenantId: users.tenantId,
+            mfaEnabled: users.mfaEnabled,
+          }).from(users).where(eq(users.role, input.role)).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
+        }
+
+        const result = await query;
+        const [total] = await db.select({ count: count() }).from(users).limit(100);
+
+        return { users: result, total: total.count };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const result = await query;
-      const [total] = await db.select({ count: count() }).from(users);
-
-      return { users: result, total: total.count };
     }),
 
   // ── User Management: Update User Role ─────────────────────────────────────────
@@ -89,18 +94,23 @@ export const adminDashboardRouter = router({
       role: z.enum(["admin", "user"]),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
+      try {
+        const db = (await getDb())!;
 
-      // Prevent self-demotion
-      if (input.userId === ctx.user.id && input.role !== "admin") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot demote yourself" });
+        // Prevent self-demotion
+        if (input.userId === ctx.user.id && input.role !== "admin") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot demote yourself" });
+        }
+
+        await db.update(users)
+          .set({ role: input.role, updatedAt: new Date() })
+          .where(eq(users.id, input.userId));
+
+        return { success: true, userId: input.userId, newRole: input.role };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await db.update(users)
-        .set({ role: input.role, updatedAt: new Date() })
-        .where(eq(users.id, input.userId));
-
-      return { success: true, userId: input.userId, newRole: input.role };
     }),
 
   // ── Audit Log ─────────────────────────────────────────────────────────────────
@@ -110,21 +120,26 @@ export const adminDashboardRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const logs = await db.select().from(billingAuditLog)
-        .orderBy(desc(billingAuditLog.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+      try {
+        const db = (await getDb())!;
+        const logs = await db.select().from(billingAuditLog)
+          .orderBy(desc(billingAuditLog.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-      const [total] = await db.select({ count: count() }).from(billingAuditLog);
+        const [total] = await db.select({ count: count() }).from(billingAuditLog).limit(100);
 
-      return { logs, total: total.count };
+        return { logs, total: total.count };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Billing Ledger Summary ────────────────────────────────────────────────────
   getBillingLedgerSummary: adminProcedure.query(async () => {
     const db = (await getDb())!;
-    const [ledgerCount] = await db.select({ count: count() }).from(platformBillingLedger);
+    const [ledgerCount] = await db.select({ count: count() }).from(platformBillingLedger).limit(100);
 
     const recentEntries = await db.select().from(platformBillingLedger)
       .orderBy(desc(platformBillingLedger.createdAt))

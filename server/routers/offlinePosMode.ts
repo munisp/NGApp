@@ -24,38 +24,43 @@ const OFFLINE_DEFAULTS = {
 
 export const offlinePosModeRouter = router({
   getConfig: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+    try {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-    const db = (await getDb())!;
-    if (!db) return { config: OFFLINE_DEFAULTS, tier: "Bronze", floatBalance: 0 };
+      const db = (await getDb())!;
+      if (!db) return { config: OFFLINE_DEFAULTS, tier: "Bronze", floatBalance: 0 };
 
-    const configRows = await db
-      .select({ value: platformSettings.value })
-      .from(platformSettings)
-      .where(eq(platformSettings.key, `offline_config_${(session.tier ?? "bronze").toLowerCase()}`))
-      .limit(1);
+      const configRows = await db
+        .select({ value: platformSettings.value })
+        .from(platformSettings)
+        .where(eq(platformSettings.key, `offline_config_${(session.tier ?? "bronze").toLowerCase()}`))
+        .limit(1);
 
-    const agentRows = await db
-      .select({ tier: agents.tier, floatBalance: agents.floatBalance })
-      .from(agents)
-      .where(eq(agents.id, session.id))
-      .limit(1);
+      const agentRows = await db
+        .select({ tier: agents.tier, floatBalance: agents.floatBalance })
+        .from(agents)
+        .where(eq(agents.id, session.id))
+        .limit(1);
 
-    const tier = agentRows[0]?.tier ?? "Bronze";
-    const floatBalance = Number(agentRows[0]?.floatBalance ?? 0);
+      const tier = agentRows[0]?.tier ?? "Bronze";
+      const floatBalance = Number(agentRows[0]?.floatBalance ?? 0);
 
-    let config = { ...OFFLINE_DEFAULTS };
-    if (configRows[0]?.value) {
-      try { config = { ...config, ...JSON.parse(String(configRows[0].value)) }; } catch {}
+      let config = { ...OFFLINE_DEFAULTS };
+      if (configRows[0]?.value) {
+        try { config = { ...config, ...JSON.parse(String(configRows[0].value)) }; } catch {}
+      }
+
+      const tierMultipliers: Record<string, number> = { Bronze: 1, Silver: 1.5, Gold: 2, Platinum: 3 };
+      const multiplier = tierMultipliers[tier] ?? 1;
+      config.maxOfflineAmount = Math.round(config.maxOfflineAmount * multiplier);
+      config.maxQueueSize = Math.round(config.maxQueueSize * multiplier);
+
+      return { config, tier, floatBalance };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
-
-    const tierMultipliers: Record<string, number> = { Bronze: 1, Silver: 1.5, Gold: 2, Platinum: 3 };
-    const multiplier = tierMultipliers[tier] ?? 1;
-    config.maxOfflineAmount = Math.round(config.maxOfflineAmount * multiplier);
-    config.maxQueueSize = Math.round(config.maxQueueSize * multiplier);
-
-    return { config, tier, floatBalance };
   }),
 
   startSession: protectedProcedure
@@ -64,30 +69,35 @@ export const offlinePosModeRouter = router({
       estimatedDurationMinutes: z.number().min(1).max(1440).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      const agentRows = await db
-        .select({ floatBalance: agents.floatBalance, tier: agents.tier })
-        .from(agents)
-        .where(eq(agents.id, session.id))
-        .limit(1);
+        const agentRows = await db
+          .select({ floatBalance: agents.floatBalance, tier: agents.tier })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
 
-      if (!agentRows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        if (!agentRows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
 
-      const floatSnapshot = Number(agentRows[0].floatBalance);
-      const sessionId = `OFS-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+        const floatSnapshot = Number(agentRows[0].floatBalance);
+        const sessionId = `OFS-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "OFFLINE_SESSION_STARTED", resource: "offline_session", resourceId: sessionId, status: "success",
-        metadata: { reason: input.reason, floatSnapshot, tier: agentRows[0].tier, estimatedDuration: input.estimatedDurationMinutes },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "OFFLINE_SESSION_STARTED", resource: "offline_session", resourceId: sessionId, status: "success",
+          metadata: { reason: input.reason, floatSnapshot, tier: agentRows[0].tier, estimatedDuration: input.estimatedDurationMinutes },
+        });
 
-      return { sessionId, floatSnapshot, startedAt: new Date().toISOString(), config: OFFLINE_DEFAULTS };
+        return { sessionId, floatSnapshot, startedAt: new Date().toISOString(), config: OFFLINE_DEFAULTS };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   endSession: protectedProcedure
@@ -97,16 +107,21 @@ export const offlinePosModeRouter = router({
       totalAmountProcessed: z.number().min(0),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "OFFLINE_SESSION_ENDED", resource: "offline_session", resourceId: input.sessionId, status: "success",
-        metadata: { transactionsProcessed: input.transactionsProcessed, totalAmountProcessed: input.totalAmountProcessed },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "OFFLINE_SESSION_ENDED", resource: "offline_session", resourceId: input.sessionId, status: "success",
+          metadata: { transactionsProcessed: input.transactionsProcessed, totalAmountProcessed: input.totalAmountProcessed },
+        });
 
-      return { sessionId: input.sessionId, endedAt: new Date().toISOString(), syncRequired: input.transactionsProcessed > 0 };
+        return { sessionId: input.sessionId, endedAt: new Date().toISOString(), syncRequired: input.transactionsProcessed > 0 };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   updateConfig: protectedProcedure
@@ -119,26 +134,31 @@ export const offlinePosModeRouter = router({
       requirePinForOffline: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const key = `offline_config_${input.tier.toLowerCase()}`;
-      const { tier, ...configValues } = input;
+        const key = `offline_config_${input.tier.toLowerCase()}`;
+        const { tier, ...configValues } = input;
 
-      await db.insert(platformSettings)
-        .values({ key, value: JSON.stringify(configValues) })
-        .onConflictDoUpdate({ target: platformSettings.key, set: { value: JSON.stringify(configValues) } });
+        await db.insert(platformSettings)
+          .values({ key, value: JSON.stringify(configValues) })
+          .onConflictDoUpdate({ target: platformSettings.key, set: { value: JSON.stringify(configValues) } });
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "OFFLINE_CONFIG_UPDATED", resource: "offline_config", status: "success",
-        metadata: { tier, ...configValues },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "OFFLINE_CONFIG_UPDATED", resource: "offline_config", status: "success",
+          metadata: { tier, ...configValues },
+        });
 
-      return { success: true, tier, config: configValues };
+        return { success: true, tier, config: configValues };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getStats: protectedProcedure.query(async () => {

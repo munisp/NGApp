@@ -27,66 +27,76 @@ export const splitPaymentsRouter = router({
       narration: z.string().max(256).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const splitTotal = input.splits.reduce((sum, s) => sum + s.amount, 0);
-      if (Math.abs(splitTotal - input.totalAmount) > 0.01)
-        throw new TRPCError({ code: "BAD_REQUEST", message: `Split amounts (${splitTotal}) must equal total (${input.totalAmount})` });
+        const splitTotal = input.splits.reduce((sum, s) => sum + s.amount, 0);
+        if (Math.abs(splitTotal - input.totalAmount) > 0.01)
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Split amounts (${splitTotal}) must equal total (${input.totalAmount})` });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-        .where(eq(agents.id, session.id)).limit(1);
-      if (!agent || Number(agent.floatBalance) < input.totalAmount)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
+          .where(eq(agents.id, session.id)).limit(1);
+        if (!agent || Number(agent.floatBalance) < input.totalAmount)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
 
-      const groupRef = `SPL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-      const results = [];
+        const groupRef = `SPL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+        const results = [];
 
-      for (let i = 0; i < input.splits.length; i++) {
-        const split = input.splits[i];
-        const ref = `${groupRef}-${i + 1}`;
+        for (let i = 0; i < input.splits.length; i++) {
+          const split = input.splits[i];
+          const ref = `${groupRef}-${i + 1}`;
 
-        const [tx] = await db.insert(transactions).values({
-          ref, agentId: session.id, type: "Transfer",
-          amount: String(split.amount), status: "success", channel: "App",
-          customerPhone: split.recipientPhone ?? null, customerName: split.recipientName ?? null,
-          metadata: { splitGroupRef: groupRef, splitIndex: i, splitMethod: split.method, narration: input.narration },
-        }).returning();
+          const [tx] = await db.insert(transactions).values({
+            ref, agentId: session.id, type: "Transfer",
+            amount: String(split.amount), status: "success", channel: "App",
+            customerPhone: split.recipientPhone ?? null, customerName: split.recipientName ?? null,
+            metadata: { splitGroupRef: groupRef, splitIndex: i, splitMethod: split.method, narration: input.narration },
+          }).returning();
 
-        results.push({ ref, amount: split.amount, method: split.method, transactionId: tx.id });
+          results.push({ ref, amount: split.amount, method: split.method, transactionId: tx.id });
+        }
+
+        await db.update(agents).set({
+          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.totalAmount)}`,
+        }).where(eq(agents.id, session.id));
+
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "SPLIT_PAYMENT_CREATED", resource: "split_payment", resourceId: groupRef, status: "success",
+          metadata: { totalAmount: input.totalAmount, splitCount: input.splits.length },
+        });
+
+        return { groupRef, totalAmount: input.totalAmount, splits: results, status: "completed" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await db.update(agents).set({
-        floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.totalAmount)}`,
-      }).where(eq(agents.id, session.id));
-
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "SPLIT_PAYMENT_CREATED", resource: "split_payment", resourceId: groupRef, status: "success",
-        metadata: { totalAmount: input.totalAmount, splitCount: input.splits.length },
-      });
-
-      return { groupRef, totalAmount: input.totalAmount, splits: results, status: "completed" };
     }),
 
   getHistory: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
     .query(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) return { splits: [] };
+        const db = (await getDb())!;
+        if (!db) return { splits: [] };
 
-      const rows = await db.execute(
-        sql`SELECT resource_id, metadata, "createdAt" FROM audit_log
-            WHERE action = 'SPLIT_PAYMENT_CREATED' AND "agentId" = ${session.id}
-            ORDER BY "createdAt" DESC LIMIT ${input.limit}`
-      );
+        const rows = await db.execute(
+          sql`SELECT resource_id, metadata, "createdAt" FROM audit_log
+              WHERE action = 'SPLIT_PAYMENT_CREATED' AND "agentId" = ${session.id}
+              ORDER BY "createdAt" DESC LIMIT ${input.limit}`
+        );
 
-      return { splits: rows.rows ?? [] };
+        return { splits: rows.rows ?? [] };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

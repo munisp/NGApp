@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { auditLog, systemConfig } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 export const systemHealthDashboardRouter = router({
   dashboard: protectedProcedure.query(async () => {
@@ -15,17 +16,27 @@ export const systemHealthDashboardRouter = router({
     return { overallHealth: degraded === 0 ? "healthy" : "degraded", services: services.length, healthyServices: healthy, degradedServices: degraded, downServices: services.length - healthy - degraded };
   }),
   listServices: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(50) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { services: [], total: 0 };
-    const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'service_health_%'`).limit(input?.limit ?? 50);
-    let services = rows.map(r => ({ id: r.key.replace("service_health_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
-    if (input?.status) services = services.filter((s: any) => s.status === input.status);
-    return { services, total: services.length };
+    try {
+      const db = await getDb();
+      if (!db) return { services: [], total: 0 };
+      const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'service_health_%'`).limit(input?.limit ?? 50);
+      let services = rows.map(r => ({ id: r.key.replace("service_health_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
+      if (input?.status) services = services.filter((s: any) => s.status === input.status);
+      return { services, total: services.length };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   updateServiceHealth: protectedProcedure.input(z.object({ serviceId: z.string(), status: z.enum(["healthy", "degraded", "down"]), latencyMs: z.number().optional(), errorRate: z.number().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(systemConfig).values({ key: "service_health_" + input.serviceId, value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }), updatedAt: new Date() } });
-    return { success: true };
+    try {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+      await db.insert(systemConfig).values({ key: "service_health_" + input.serviceId, value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify({ status: input.status, latencyMs: input.latencyMs, errorRate: input.errorRate, lastCheck: new Date().toISOString() }), updatedAt: new Date() } });
+      return { success: true };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

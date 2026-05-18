@@ -10,6 +10,7 @@ import { mqttBridgeConfig } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { ENV } from "../_core/env";
 import { fluvioProduce, type FluvioEvent } from "../lib/fluvioClient";
+import { TRPCError } from "@trpc/server";
 
 const TopicMappingSchema = z.object({
   mqttTopic: z.string().min(1),
@@ -73,22 +74,27 @@ export const mqttBridgeRouter = router({
       enabled: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("DB unavailable");
-      const existing = await db.select({ id: mqttBridgeConfig.id }).from(mqttBridgeConfig).limit(1);
-      const now = new Date();
-      if (existing.length === 0) {
-        const [row] = await db.insert(mqttBridgeConfig).values({
-          ...input,
-          updatedAt: now,
-        }).returning();
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("DB unavailable");
+        const existing = await db.select({ id: mqttBridgeConfig.id }).from(mqttBridgeConfig).limit(1);
+        const now = new Date();
+        if (existing.length === 0) {
+          const [row] = await db.insert(mqttBridgeConfig).values({
+            ...input,
+            updatedAt: now,
+          }).returning();
+          return row;
+        }
+        const [row] = await db.update(mqttBridgeConfig)
+          .set({ ...input, updatedAt: now })
+          .where(eq(mqttBridgeConfig.id, existing[0].id))
+          .returning();
         return row;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      const [row] = await db.update(mqttBridgeConfig)
-        .set({ ...input, updatedAt: now })
-        .where(eq(mqttBridgeConfig.id, existing[0].id))
-        .returning();
-      return row;
     }),
 
   // ── Test MQTT broker TCP reachability ────────────────────────────────────────
@@ -167,38 +173,43 @@ export const mqttBridgeRouter = router({
       payload: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const start = Date.now();
-      const testPayload = input.payload ?? {
-        type: "MQTT_BRIDGE_TEST",
-        ref: `TEST-${Date.now()}`,
-        agentCode: ctx.user?.keycloakSub ? `AGT-${ctx.user.keycloakSub.slice(0, 8)}` : "AGT-TEST",
-        amount: 0,
-        currency: "NGN",
-        timestamp: new Date().toISOString(),
-        source: "mqtt-bridge-test-harness",
-      };
-
       try {
-        const event: FluvioEvent = { topic: input.topic, payload: testPayload };
-        await fluvioProduce(event);
-        const latencyMs = Date.now() - start;
-        return {
-          success: true,
-          latencyMs,
-          topic: input.topic,
-          payload: testPayload,
-          message: `Test event published to '${input.topic}' in ${latencyMs}ms`,
+        const start = Date.now();
+        const testPayload = input.payload ?? {
+          type: "MQTT_BRIDGE_TEST",
+          ref: `TEST-${Date.now()}`,
+          agentCode: ctx.user?.keycloakSub ? `AGT-${ctx.user.keycloakSub.slice(0, 8)}` : "AGT-TEST",
+          amount: 0,
+          currency: "NGN",
+          timestamp: new Date().toISOString(),
+          source: "mqtt-bridge-test-harness",
         };
-      } catch (err: unknown) {
-        const latencyMs = Date.now() - start;
-        const errMsg = err instanceof Error ? err.message : "Unknown error";
-        return {
-          success: false,
-          latencyMs,
-          topic: input.topic,
-          payload: testPayload,
-          message: `Publish failed: ${errMsg}`,
-        };
+
+        try {
+          const event: FluvioEvent = { topic: input.topic, payload: testPayload };
+          await fluvioProduce(event);
+          const latencyMs = Date.now() - start;
+          return {
+            success: true,
+            latencyMs,
+            topic: input.topic,
+            payload: testPayload,
+            message: `Test event published to '${input.topic}' in ${latencyMs}ms`,
+          };
+        } catch (err: unknown) {
+          const latencyMs = Date.now() - start;
+          const errMsg = err instanceof Error ? err.message : "Unknown error";
+          return {
+            success: false,
+            latencyMs,
+            topic: input.topic,
+            payload: testPayload,
+            message: `Publish failed: ${errMsg}`,
+          };
+        }
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
     }),
 

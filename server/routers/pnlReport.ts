@@ -9,41 +9,61 @@ import { TRPCError } from "@trpc/server";
 const list = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const lim = input.limit ?? 10;
-    const offset = ((input.page ?? 1) - 1) * lim;
-    const rows = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(lim).offset(offset);
-    const [{ total }] = await db.select({ total: count() }).from(pnlReports);
-    return { items: rows, total, page: input.page ?? 1, limit: lim };
+    try {
+      const db = (await getDb())!;
+      const lim = input.limit ?? 10;
+      const offset = ((input.page ?? 1) - 1) * lim;
+      const rows = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(lim).offset(offset);
+      const [{ total }] = await db.select({ total: count() }).from(pnlReports).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: lim };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const getByPeriod = protectedProcedure
   .input(z.object({ id: z.number().optional(), page: z.number().optional(), limit: z.number().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    if (input.id) {
-      const [row] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id));
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "getByPeriod: record not found" });
-      return row;
+    try {
+      const db = (await getDb())!;
+      if (input.id) {
+        const [row] = await db.select().from(pnlReports).where(eq(pnlReports.id, input.id)).limit(100);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "getByPeriod: record not found" });
+        return row;
+      }
+      const rows = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(input.limit ?? 10).offset(((input.page ?? 1) - 1) * (input.limit ?? 10));
+      const [{ total }] = await db.select({ total: count() }).from(pnlReports).limit(100);
+      return { items: rows, total, page: input.page ?? 1, limit: input.limit ?? 10 };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
-    const rows = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(input.limit ?? 10).offset(((input.page ?? 1) - 1) * (input.limit ?? 10));
-    const [{ total }] = await db.select({ total: count() }).from(pnlReports);
-    return { items: rows, total, page: input.page ?? 1, limit: input.limit ?? 10 };
   });
 const getSummary = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional(), dateFrom: z.string().optional(), dateTo: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const [{ total }] = await db.select({ total: count() }).from(pnlReports);
-    const recent = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(5);
-    return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    try {
+      const db = (await getDb())!;
+      const [{ total }] = await db.select({ total: count() }).from(pnlReports).limit(100);
+      const recent = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(5);
+      return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 const getStats = protectedProcedure
   .input(z.object({ page: z.number().optional(), limit: z.number().optional(), search: z.string().optional(), dateFrom: z.string().optional(), dateTo: z.string().optional() }))
   .query(async ({ input }) => {
-    const db = (await getDb())!;
-    const [{ total }] = await db.select({ total: count() }).from(pnlReports);
-    const recent = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(5);
-    return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    try {
+      const db = (await getDb())!;
+      const [{ total }] = await db.select({ total: count() }).from(pnlReports).limit(100);
+      const recent = await db.select().from(pnlReports).orderBy(desc(pnlReports.id)).limit(5);
+      return { totalRecords: total, recentItems: recent, summary: { active: total, lastUpdated: new Date().toISOString() } };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   });
 
 export const pnlReportRouter = router({

@@ -37,158 +37,106 @@ export const floatTopUpRouter = router({
       notes: z.string().max(256).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Check for existing pending request
-      const existing = await db
-        .select()
-        .from(floatTopUpRequests)
-        .where(eq(floatTopUpRequests.agentId, session.id))
-        .orderBy(desc(floatTopUpRequests.createdAt))
-        .limit(1);
-      if (existing[0] && existing[0].status === "pending") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "You already have a pending top-up request. Please wait for approval.",
-        });
-      }
-
-      // Phase 48: determine if supervisor approval is required
-      const requiresSupervisor = input.amount > SUPERVISOR_APPROVAL_THRESHOLD;
-
-      const result = await db
-        .insert(floatTopUpRequests)
-        .values({
-          agentId: session.id,
-          requestedAmount: String(input.amount),
-          status: "pending",
-          notes: input.notes ?? null,
-          supervisorApprovalRequired: requiresSupervisor,
-        })
-        .returning();
-
-      await writeAuditLog({
-        agentId: session.id,
-        agentCode: session.agentCode,
-        action: "FLOAT_TOPUP_REQUESTED",
-        resource: "float_topup",
-        resourceId: String(result[0].id),
-        status: "success",
-        metadata: { amount: input.amount, requiresSupervisor },
-      });
-
-      // Notify supervisor(s) assigned to this agent if threshold exceeded
-      if (requiresSupervisor) {
-        try {
-          const { notifyOwner } = await import("../_core/notification");
-          await notifyOwner({
-            title: `Large Float Top-Up Requires Supervisor Approval — ₦${input.amount.toLocaleString()}`,
-            content: `Agent ${session.agentCode} (${session.name}) has requested a float top-up of ₦${input.amount.toLocaleString()} (above ₦${SUPERVISOR_APPROVAL_THRESHOLD.toLocaleString()} threshold). Please review in the Supervisor Dashboard → Pending Float Approvals.`,
+        // Check for existing pending request
+        const existing = await db
+          .select()
+          .from(floatTopUpRequests)
+          .where(eq(floatTopUpRequests.agentId, session.id))
+          .orderBy(desc(floatTopUpRequests.createdAt))
+          .limit(1);
+        if (existing[0] && existing[0].status === "pending") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You already have a pending top-up request. Please wait for approval.",
           });
-        } catch {
-          // Non-critical
         }
+
+        // Phase 48: determine if supervisor approval is required
+        const requiresSupervisor = input.amount > SUPERVISOR_APPROVAL_THRESHOLD;
+
+        const result = await db
+          .insert(floatTopUpRequests)
+          .values({
+            agentId: session.id,
+            requestedAmount: String(input.amount),
+            status: "pending",
+            notes: input.notes ?? null,
+            supervisorApprovalRequired: requiresSupervisor,
+          })
+          .returning();
+
+        await writeAuditLog({
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "FLOAT_TOPUP_REQUESTED",
+          resource: "float_topup",
+          resourceId: String(result[0].id),
+          status: "success",
+          metadata: { amount: input.amount, requiresSupervisor },
+        });
+
+        // Notify supervisor(s) assigned to this agent if threshold exceeded
+        if (requiresSupervisor) {
+          try {
+            const { notifyOwner } = await import("../_core/notification");
+            await notifyOwner({
+              title: `Large Float Top-Up Requires Supervisor Approval — ₦${input.amount.toLocaleString()}`,
+              content: `Agent ${session.agentCode} (${session.name}) has requested a float top-up of ₦${input.amount.toLocaleString()} (above ₦${SUPERVISOR_APPROVAL_THRESHOLD.toLocaleString()} threshold). Please review in the Supervisor Dashboard → Pending Float Approvals.`,
+            });
+          } catch {
+            // Non-critical
+          }
+        }
+
+        floatTopupRequestsTotal.labels("submitted").inc();
+
+        return {
+          success: true,
+          requestId: result[0].id,
+          requiresSupervisorApproval: requiresSupervisor,
+          message: requiresSupervisor
+            ? `Top-up request submitted. Supervisor approval required for amounts above ₦${SUPERVISOR_APPROVAL_THRESHOLD.toLocaleString()}.`
+            : "Top-up request submitted. Awaiting admin approval.",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      floatTopupRequestsTotal.labels("submitted").inc();
-
-      return {
-        success: true,
-        requestId: result[0].id,
-        requiresSupervisorApproval: requiresSupervisor,
-        message: requiresSupervisor
-          ? `Top-up request submitted. Supervisor approval required for amounts above ₦${SUPERVISOR_APPROVAL_THRESHOLD.toLocaleString()}.`
-          : "Top-up request submitted. Awaiting admin approval.",
-      };
     }),
 
   // ── List agent's own requests ─────────────────────────────────────────────
   myRequests: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
-    const db = (await getDb())!;
-    if (!db) return [];
-    const rows = await db
-      .select()
-      .from(floatTopUpRequests)
-      .where(eq(floatTopUpRequests.agentId, session.id))
-      .orderBy(desc(floatTopUpRequests.createdAt))
-      .limit(20);
-    return rows.map((r: any) => ({
-      ...r,
-      requestedAmount: Number(r.requestedAmount),
-    }));
+    try {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      const db = (await getDb())!;
+      if (!db) return [];
+      const rows = await db
+        .select()
+        .from(floatTopUpRequests)
+        .where(eq(floatTopUpRequests.agentId, session.id))
+        .orderBy(desc(floatTopUpRequests.createdAt))
+        .limit(20);
+      return rows.map((r: any) => ({
+        ...r,
+        requestedAmount: Number(r.requestedAmount),
+      }));
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   // ── Supervisor: list pending large top-ups for assigned agents ────────────
   supervisorPendingTopUps: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
-    if (session.role !== "supervisor" && session.role !== "admin") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Supervisor or admin privileges required" });
-    }
-
-    const db = (await getDb())!;
-    if (!db) return [];
-
-    // For supervisors: only show top-ups for their assigned agents
-    // For admins: show all supervisor-required top-ups
-    let agentIds: number[] = [];
-    if (session.role === "supervisor") {
-      const assignments = await db
-        .select({ agentId: supervisorAgents.agentId })
-        .from(supervisorAgents)
-        .where(eq(supervisorAgents.supervisorUserId, session.id));
-      agentIds = assignments.map((a: any) => a.agentId);
-      if (agentIds.length === 0) return [];
-    }
-
-    const rows = await db
-      .select({
-        id: floatTopUpRequests.id,
-        agentId: floatTopUpRequests.agentId,
-        requestedAmount: floatTopUpRequests.requestedAmount,
-        status: floatTopUpRequests.status,
-        supervisorApprovalRequired: floatTopUpRequests.supervisorApprovalRequired,
-        supervisorApprovedBy: floatTopUpRequests.supervisorApprovedBy,
-        supervisorApprovedAt: floatTopUpRequests.supervisorApprovedAt,
-        notes: floatTopUpRequests.notes,
-        createdAt: floatTopUpRequests.createdAt,
-        agentCode: agents.agentCode,
-        agentName: agents.name,
-        agentFloat: agents.floatBalance,
-        agentTier: agents.tier,
-      })
-      .from(floatTopUpRequests)
-      .leftJoin(agents, eq(floatTopUpRequests.agentId, agents.id))
-      .where(
-        and(
-          eq(floatTopUpRequests.supervisorApprovalRequired, true),
-          eq(floatTopUpRequests.status, "pending")
-        )
-      )
-      .orderBy(desc(floatTopUpRequests.createdAt));
-
-    // Filter by assigned agents for supervisors
-    const filtered = session.role === "supervisor"
-      ? rows.filter((r: any) => r.agentId !== null && agentIds.includes(r.agentId))
-      : rows;
-
-    return filtered.map((r: any) => ({
-      ...r,
-      requestedAmount: Number(r.requestedAmount),
-      agentFloat: Number(r.agentFloat ?? 0),
-    }));
-  }),
-
-  // ── Supervisor: approve a large top-up ───────────────────────────────────
-  supervisorApproveTopUp: protectedProcedure
-    .input(z.object({ requestId: z.number().int().positive(), notes: z.string().optional() }))
-    .mutation(async ({ input, ctx }) => {
+    try {
       const session = await getAgentFromCookie(ctx.req);
       if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
       if (session.role !== "supervisor" && session.role !== "admin") {
@@ -196,63 +144,135 @@ export const floatTopUpRouter = router({
       }
 
       const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      if (!db) return [];
+
+      // For supervisors: only show top-ups for their assigned agents
+      // For admins: show all supervisor-required top-ups
+      let agentIds: number[] = [];
+      if (session.role === "supervisor") {
+        const assignments = await db
+          .select({ agentId: supervisorAgents.agentId })
+          .from(supervisorAgents)
+          .where(eq(supervisorAgents.supervisorUserId, session.id));
+        agentIds = assignments.map((a: any) => a.agentId);
+        if (agentIds.length === 0) return [];
+      }
 
       const rows = await db
-        .select()
-        .from(floatTopUpRequests)
-        .where(eq(floatTopUpRequests.id, input.requestId))
-        .limit(1);
-      const req = rows[0];
-      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
-      if (req.status !== "pending") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: `Request already ${req.status}` });
-      }
-
-      // Verify supervisor is assigned to this agent (skip for admin)
-      if (session.role === "supervisor") {
-        const assignment = await db
-          .select()
-          .from(supervisorAgents)
-          .where(
-            and(
-              eq(supervisorAgents.supervisorUserId, session.id),
-              eq(supervisorAgents.agentId, req.agentId)
-            )
-          )
-          .limit(1);
-        if (!assignment[0]) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You are not assigned as supervisor for this agent",
-          });
-        }
-      }
-
-      await db
-        .update(floatTopUpRequests)
-        .set({
-          supervisorApprovedBy: session.agentCode,
-          supervisorApprovedAt: new Date(),
-          notes: input.notes ? `${req.notes ?? ""}\nSupervisor note: ${input.notes}`.trim() : req.notes,
-          updatedAt: new Date(),
+        .select({
+          id: floatTopUpRequests.id,
+          agentId: floatTopUpRequests.agentId,
+          requestedAmount: floatTopUpRequests.requestedAmount,
+          status: floatTopUpRequests.status,
+          supervisorApprovalRequired: floatTopUpRequests.supervisorApprovalRequired,
+          supervisorApprovedBy: floatTopUpRequests.supervisorApprovedBy,
+          supervisorApprovedAt: floatTopUpRequests.supervisorApprovedAt,
+          notes: floatTopUpRequests.notes,
+          createdAt: floatTopUpRequests.createdAt,
+          agentCode: agents.agentCode,
+          agentName: agents.name,
+          agentFloat: agents.floatBalance,
+          agentTier: agents.tier,
         })
-        .where(eq(floatTopUpRequests.id, input.requestId));
+        .from(floatTopUpRequests)
+        .leftJoin(agents, eq(floatTopUpRequests.agentId, agents.id))
+        .where(
+          and(
+            eq(floatTopUpRequests.supervisorApprovalRequired, true),
+            eq(floatTopUpRequests.status, "pending")
+          )
+        )
+        .orderBy(desc(floatTopUpRequests.createdAt));
 
-      await writeAuditLog({
-        agentId: session.id,
-        agentCode: session.agentCode,
-        action: "FLOAT_TOPUP_SUPERVISOR_APPROVED",
-        resource: "float_topup",
-        resourceId: String(input.requestId),
-        status: "success",
-        metadata: {
-          amount: Number(req.requestedAmount),
-          targetAgentId: req.agentId,
-          notes: input.notes,
-        },
-      });
+      // Filter by assigned agents for supervisors
+      const filtered = session.role === "supervisor"
+        ? rows.filter((r: any) => r.agentId !== null && agentIds.includes(r.agentId))
+        : rows;
 
-      return { success: true, message: "Supervisor approval recorded. Admin can now credit the float." };
+      return filtered.map((r: any) => ({
+        ...r,
+        requestedAmount: Number(r.requestedAmount),
+        agentFloat: Number(r.agentFloat ?? 0),
+      }));
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
+  }),
+
+  // ── Supervisor: approve a large top-up ───────────────────────────────────
+  supervisorApproveTopUp: protectedProcedure
+    .input(z.object({ requestId: z.number().int().positive(), notes: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+        if (session.role !== "supervisor" && session.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Supervisor or admin privileges required" });
+        }
+
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const rows = await db
+          .select()
+          .from(floatTopUpRequests)
+          .where(eq(floatTopUpRequests.id, input.requestId))
+          .limit(1);
+        const req = rows[0];
+        if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+        if (req.status !== "pending") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Request already ${req.status}` });
+        }
+
+        // Verify supervisor is assigned to this agent (skip for admin)
+        if (session.role === "supervisor") {
+          const assignment = await db
+            .select()
+            .from(supervisorAgents)
+            .where(
+              and(
+                eq(supervisorAgents.supervisorUserId, session.id),
+                eq(supervisorAgents.agentId, req.agentId)
+              )
+            )
+            .limit(1);
+          if (!assignment[0]) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You are not assigned as supervisor for this agent",
+            });
+          }
+        }
+
+        await db
+          .update(floatTopUpRequests)
+          .set({
+            supervisorApprovedBy: session.agentCode,
+            supervisorApprovedAt: new Date(),
+            notes: input.notes ? `${req.notes ?? ""}\nSupervisor note: ${input.notes}`.trim() : req.notes,
+            updatedAt: new Date(),
+          })
+          .where(eq(floatTopUpRequests.id, input.requestId));
+
+        await writeAuditLog({
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: "FLOAT_TOPUP_SUPERVISOR_APPROVED",
+          resource: "float_topup",
+          resourceId: String(input.requestId),
+          status: "success",
+          metadata: {
+            amount: Number(req.requestedAmount),
+            targetAgentId: req.agentId,
+            notes: input.notes,
+          },
+        });
+
+        return { success: true, message: "Supervisor approval recorded. Admin can now credit the float." };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

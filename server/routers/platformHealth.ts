@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 interface ServiceHealth {
   name: string;
@@ -85,9 +86,14 @@ export const platformHealthRouter = router({
   checkService: publicProcedure
     .input(z.object({ serviceName: z.string() }))
     .query(async ({ input }) => {
-      const svc = SERVICE_REGISTRY.find((s) => s.name === input.serviceName);
-      if (!svc) return { error: `Service '${input.serviceName}' not found in registry` };
-      return checkService(svc);
+      try {
+        const svc = SERVICE_REGISTRY.find((s) => s.name === input.serviceName);
+        if (!svc) return { error: `Service '${input.serviceName}' not found in registry` };
+        return checkService(svc);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   serviceRegistry: publicProcedure.query(() => {

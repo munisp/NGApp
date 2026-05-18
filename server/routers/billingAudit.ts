@@ -11,6 +11,7 @@ async function db() {
 import { billingAuditLog, tenantBillingConfig } from "../../drizzle/schema";
 import { eq, and, desc, gte, lte, sql, like } from "drizzle-orm";
 import { requireBillingPermission } from "./billingRbac";
+import { TRPCError } from "@trpc/server";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Audit Middleware — auto-logs all billing mutations
@@ -141,70 +142,80 @@ export const billingAuditRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
-      const conditions = [eq(billingAuditLog.tenantId, input.tenantId)];
-      if (input.action) conditions.push(eq(billingAuditLog.action, input.action as any));
-      if (input.userId) conditions.push(eq(billingAuditLog.userId, input.userId));
-      if (input.resourceType) conditions.push(eq(billingAuditLog.resourceType, input.resourceType));
-      if (input.startDate) conditions.push(gte(billingAuditLog.createdAt, new Date(input.startDate)));
-      if (input.endDate) conditions.push(lte(billingAuditLog.createdAt, new Date(input.endDate)));
+        const conditions = [eq(billingAuditLog.tenantId, input.tenantId)];
+        if (input.action) conditions.push(eq(billingAuditLog.action, input.action as any));
+        if (input.userId) conditions.push(eq(billingAuditLog.userId, input.userId));
+        if (input.resourceType) conditions.push(eq(billingAuditLog.resourceType, input.resourceType));
+        if (input.startDate) conditions.push(gte(billingAuditLog.createdAt, new Date(input.startDate)));
+        if (input.endDate) conditions.push(lte(billingAuditLog.createdAt, new Date(input.endDate)));
 
-      const logs = await db
-        .select()
-        .from(billingAuditLog)
-        .where(and(...conditions))
-        .orderBy(desc(billingAuditLog.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+        const logs = await db
+          .select()
+          .from(billingAuditLog)
+          .where(and(...conditions))
+          .orderBy(desc(billingAuditLog.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-      const [{ count }] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(billingAuditLog)
-        .where(and(...conditions));
+        const [{ count }] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(billingAuditLog)
+          .where(and(...conditions));
 
-      return { logs, total: Number(count), limit: input.limit, offset: input.offset };
+        return { logs, total: Number(count), limit: input.limit, offset: input.offset };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Get audit summary stats for a tenant
   getSummary: protectedProcedure
     .input(z.object({ tenantId: z.number(), days: z.number().default(30) }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "view_dashboard");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "view_dashboard");
 
-      const since = new Date(Date.now() - input.days * 86400000);
-      const conditions = [
-        eq(billingAuditLog.tenantId, input.tenantId),
-        gte(billingAuditLog.createdAt, since),
-      ];
+        const since = new Date(Date.now() - input.days * 86400000);
+        const conditions = [
+          eq(billingAuditLog.tenantId, input.tenantId),
+          gte(billingAuditLog.createdAt, since),
+        ];
 
-      const [{ total }] = await db
-        .select({ total: sql<number>`count(*)` })
-        .from(billingAuditLog)
-        .where(and(...conditions));
+        const [{ total }] = await db
+          .select({ total: sql<number>`count(*)` })
+          .from(billingAuditLog)
+          .where(and(...conditions));
 
-      const actionCounts = await db
-        .select({
-          action: billingAuditLog.action,
-          count: sql<number>`count(*)`,
-        })
-        .from(billingAuditLog)
-        .where(and(...conditions))
-        .groupBy(billingAuditLog.action);
+        const actionCounts = await db
+          .select({
+            action: billingAuditLog.action,
+            count: sql<number>`count(*)`,
+          })
+          .from(billingAuditLog)
+          .where(and(...conditions))
+          .groupBy(billingAuditLog.action);
 
-      const recentChanges = await db
-        .select()
-        .from(billingAuditLog)
-        .where(and(...conditions))
-        .orderBy(desc(billingAuditLog.createdAt))
-        .limit(10);
+        const recentChanges = await db
+          .select()
+          .from(billingAuditLog)
+          .where(and(...conditions))
+          .orderBy(desc(billingAuditLog.createdAt))
+          .limit(10);
 
-      return {
-        totalEvents: Number(total),
-        byAction: actionCounts.map(a => ({ action: a.action, count: Number(a.count) })),
-        recentChanges,
-        periodDays: input.days,
-      };
+        return {
+          totalEvents: Number(total),
+          byAction: actionCounts.map(a => ({ action: a.action, count: Number(a.count) })),
+          recentChanges,
+          periodDays: input.days,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Get audit trail for a specific resource
@@ -215,19 +226,24 @@ export const billingAuditRouter = router({
       resourceId: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
-      const history = await db
-        .select()
-        .from(billingAuditLog)
-        .where(and(
-          eq(billingAuditLog.tenantId, input.tenantId),
-          eq(billingAuditLog.resourceType, input.resourceType),
-          eq(billingAuditLog.resourceId, input.resourceId),
-        ))
-        .orderBy(desc(billingAuditLog.createdAt));
+        const history = await db
+          .select()
+          .from(billingAuditLog)
+          .where(and(
+            eq(billingAuditLog.tenantId, input.tenantId),
+            eq(billingAuditLog.resourceType, input.resourceType),
+            eq(billingAuditLog.resourceId, input.resourceId),
+          ))
+          .orderBy(desc(billingAuditLog.createdAt));
 
-      return { history, total: history.length };
+        return { history, total: history.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Export audit logs as CSV (requires export_data permission)
@@ -238,32 +254,37 @@ export const billingAuditRouter = router({
       endDate: z.string().datetime(),
     }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "export_data");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "export_data");
 
-      const logs = await db
-        .select()
-        .from(billingAuditLog)
-        .where(and(
-          eq(billingAuditLog.tenantId, input.tenantId),
-          gte(billingAuditLog.createdAt, new Date(input.startDate)),
-          lte(billingAuditLog.createdAt, new Date(input.endDate)),
-        ))
-        .orderBy(desc(billingAuditLog.createdAt));
+        const logs = await db
+          .select()
+          .from(billingAuditLog)
+          .where(and(
+            eq(billingAuditLog.tenantId, input.tenantId),
+            gte(billingAuditLog.createdAt, new Date(input.startDate)),
+            lte(billingAuditLog.createdAt, new Date(input.endDate)),
+          ))
+          .orderBy(desc(billingAuditLog.createdAt));
 
-      // Generate CSV
-      const header = "id,tenant_id,user_id,user_name,action,resource_type,resource_id,created_at\n";
-      const rows = logs.map(l =>
-        `${l.id},${l.tenantId},${l.userId},"${l.userName}",${l.action},${l.resourceType},${l.resourceId || ""},${l.createdAt}`
-      ).join("\n");
+        // Generate CSV
+        const header = "id,tenant_id,user_id,user_name,action,resource_type,resource_id,created_at\n";
+        const rows = logs.map(l =>
+          `${l.id},${l.tenantId},${l.userId},"${l.userName}",${l.action},${l.resourceType},${l.resourceId || ""},${l.createdAt}`
+        ).join("\n");
 
-      // Record the export in audit log
-      await recordBillingAudit({
-        ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
-        action: "export_generated",
-        resourceType: "billing_audit_log",
-        metadata: { startDate: input.startDate, endDate: input.endDate, rowCount: logs.length },
-      });
+        // Record the export in audit log
+        await recordBillingAudit({
+          ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
+          action: "export_generated",
+          resourceType: "billing_audit_log",
+          metadata: { startDate: input.startDate, endDate: input.endDate, rowCount: logs.length },
+        });
 
-      return { csv: header + rows, rowCount: logs.length };
+        return { csv: header + rows, rowCount: logs.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

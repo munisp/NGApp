@@ -30,113 +30,138 @@ export const agentTrainingGamificationRouter = router({
   getCourses: protectedProcedure
     .input(z.object({ category: z.string().optional() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { courses: [] };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { courses: [] };
 
-      const conditions = [];
-      if (input.category) conditions.push(eq(trainingCourses.category, input.category));
+        const conditions = [];
+        if (input.category) conditions.push(eq(trainingCourses.category, input.category));
 
-      const courses = conditions.length > 0
-        ? await db.select().from(trainingCourses).where(and(...conditions)).orderBy(trainingCourses.title)
-        : await db.select().from(trainingCourses).orderBy(trainingCourses.title);
+        const courses = conditions.length > 0
+          ? await db.select().from(trainingCourses).where(and(...conditions)).orderBy(trainingCourses.title)
+          : await db.select().from(trainingCourses).orderBy(trainingCourses.title).limit(100);
 
-      return { courses };
+        return { courses };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getMyProgress: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+    try {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-    const db = (await getDb())!;
-    if (!db) return { enrollments: [], totalXP: 0, level: 1, badges: [] };
+      const db = (await getDb())!;
+      if (!db) return { enrollments: [], totalXP: 0, level: 1, badges: [] };
 
-    const enrollments = await db.select().from(trainingEnrollments)
-      .where(eq(trainingEnrollments.agentId, session.id))
-      .orderBy(desc(trainingEnrollments.createdAt));
+      const enrollments = await db.select().from(trainingEnrollments)
+        .where(eq(trainingEnrollments.agentId, session.id))
+        .orderBy(desc(trainingEnrollments.createdAt));
 
-    const completedCount = enrollments.filter(e => e.status === "completed").length;
-    const totalXP = completedCount * 100;
-    const level = Math.floor(totalXP / 500) + 1;
+      const completedCount = enrollments.filter(e => e.status === "completed").length;
+      const totalXP = completedCount * 100;
+      const level = Math.floor(totalXP / 500) + 1;
 
-    return { enrollments, totalXP, level, badges: BADGES.filter(b => totalXP >= b.xp) };
+      return { enrollments, totalXP, level, badges: BADGES.filter(b => totalXP >= b.xp) };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   enrollInCourse: protectedProcedure
     .input(z.object({ courseId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [course] = await db.select().from(trainingCourses)
-        .where(eq(trainingCourses.id, input.courseId)).limit(1);
-      if (!course) throw new TRPCError({ code: "NOT_FOUND", message: "Course not found" });
+        const [course] = await db.select().from(trainingCourses)
+          .where(eq(trainingCourses.id, input.courseId)).limit(1);
+        if (!course) throw new TRPCError({ code: "NOT_FOUND", message: "Course not found" });
 
-      const existing = await db.select().from(trainingEnrollments)
-        .where(and(eq(trainingEnrollments.agentId, session.id), eq(trainingEnrollments.courseId, input.courseId))).limit(1);
-      if (existing[0]) throw new TRPCError({ code: "CONFLICT", message: "Already enrolled" });
+        const existing = await db.select().from(trainingEnrollments)
+          .where(and(eq(trainingEnrollments.agentId, session.id), eq(trainingEnrollments.courseId, input.courseId))).limit(1);
+        if (existing[0]) throw new TRPCError({ code: "CONFLICT", message: "Already enrolled" });
 
-      const [enrollment] = await db.insert(trainingEnrollments).values({
-        agentId: session.id, courseId: input.courseId, status: "enrolled", progress: 0,
-      }).returning();
+        const [enrollment] = await db.insert(trainingEnrollments).values({
+          agentId: session.id, courseId: input.courseId, status: "enrolled", progress: 0,
+        }).returning();
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "TRAINING_ENROLLED", resource: "training", resourceId: String(enrollment.id), status: "success",
-        metadata: { courseId: input.courseId, courseTitle: course.title },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "TRAINING_ENROLLED", resource: "training", resourceId: String(enrollment.id), status: "success",
+          metadata: { courseId: input.courseId, courseTitle: course.title },
+        });
 
-      return enrollment;
+        return enrollment;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   updateProgress: protectedProcedure
     .input(z.object({ enrollmentId: z.number(), progress: z.number().min(0).max(100) }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const status = input.progress >= 100 ? "completed" : "in_progress";
-      const updateData: Record<string, unknown> = { progress: input.progress, status };
-      if (status === "completed") updateData.completedAt = new Date();
+        const status = input.progress >= 100 ? "completed" : "in_progress";
+        const updateData: Record<string, unknown> = { progress: input.progress, status };
+        if (status === "completed") updateData.completedAt = new Date();
 
-      await db.update(trainingEnrollments).set(updateData)
-        .where(and(eq(trainingEnrollments.id, input.enrollmentId), eq(trainingEnrollments.agentId, session.id)));
+        await db.update(trainingEnrollments).set(updateData)
+          .where(and(eq(trainingEnrollments.id, input.enrollmentId), eq(trainingEnrollments.agentId, session.id)));
 
-      if (status === "completed") {
-        await db.update(agents).set({
-          loyaltyPoints: sql`COALESCE(${agents.loyaltyPoints}, 0) + 100`,
-        }).where(eq(agents.id, session.id));
+        if (status === "completed") {
+          await db.update(agents).set({
+            loyaltyPoints: sql`COALESCE(${agents.loyaltyPoints}, 0) + 100`,
+          }).where(eq(agents.id, session.id));
 
-        await writeAuditLog({
-          agentId: session.id, agentCode: session.agentCode,
-          action: "TRAINING_COMPLETED", resource: "training", resourceId: String(input.enrollmentId), status: "success",
-        });
+          await writeAuditLog({
+            agentId: session.id, agentCode: session.agentCode,
+            action: "TRAINING_COMPLETED", resource: "training", resourceId: String(input.enrollmentId), status: "success",
+          });
+        }
+
+        return { enrollmentId: input.enrollmentId, progress: input.progress, status };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return { enrollmentId: input.enrollmentId, progress: input.progress, status };
     }),
 
   getLeaderboard: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { leaderboard: [] };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { leaderboard: [] };
 
-      const rows = await db.execute(
-        sql`SELECT a.id, a."agentCode", a."agentName",
-            count(te.id) FILTER (WHERE te.status = 'completed') as completed_courses,
-            count(te.id) FILTER (WHERE te.status = 'completed') * 100 as xp
-            FROM agents a LEFT JOIN training_enrollments te ON te."agentId" = a.id
-            GROUP BY a.id, a."agentCode", a."agentName"
-            ORDER BY xp DESC LIMIT ${input.limit}`
-      );
+        const rows = await db.execute(
+          sql`SELECT a.id, a."agentCode", a."agentName",
+              count(te.id) FILTER (WHERE te.status = 'completed') as completed_courses,
+              count(te.id) FILTER (WHERE te.status = 'completed') * 100 as xp
+              FROM agents a LEFT JOIN training_enrollments te ON te."agentId" = a.id
+              GROUP BY a.id, a."agentCode", a."agentName"
+              ORDER BY xp DESC LIMIT ${input.limit}`
+        );
 
-      return { leaderboard: rows.rows ?? [] };
+        return { leaderboard: rows.rows ?? [] };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getBadges: protectedProcedure.query(async () => {

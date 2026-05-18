@@ -63,76 +63,81 @@ export const settlementRouter = router({
    * [Fluvio] Streams settlement events via Rust sidecar.
    */
   runNow: agentAdminProcedure.mutation(async ({ ctx }) => {
-    const batchId = `SETTLE-${crypto.randomUUID().toUpperCase()}`;
-
-    // [Redis] Acquire distributed lock
-    const lockAcquired = await acquireSettlementLock(batchId);
-    if (!lockAcquired) {
-      throw new TRPCError({ code: "CONFLICT", message: "Settlement already in progress" });
-    }
-
-    // [Kafka] Publish batch started event
-    await publishSettlementEvent({
-      eventType: "settlement.batch.started",
-      batchId,
-      metadata: { triggeredBy: ctx.agent.agentCode },
-    });
-    // [Fluvio] Stream batch start
-    await streamSettlementEvent({ eventType: "batch.started", batchId });
-
     try {
-      const result = await runDailySettlement();
+      const batchId = `SETTLE-${crypto.randomUUID().toUpperCase()}`;
 
-      // [PostgreSQL] Write to audit log
-      const db = (await getDb())!;
-      if (db) {
-        await db.insert(auditLog).values({
-          agentCode: ctx.agent.agentCode,
-          action: "settlement.runNow",
-          resource: "settlement",
-          ipAddress: (ctx.req.headers["x-forwarded-for"] as string) ?? "127.0.0.1",
-          status: result.errors.length === 0 ? "success" : "warning",
-          metadata: {
-            batchId,
-            agentCount: result.agentCount,
-            smsSent: result.smsSent,
-            errors: result.errors,
-          },
-        });
+      // [Redis] Acquire distributed lock
+      const lockAcquired = await acquireSettlementLock(batchId);
+      if (!lockAcquired) {
+        throw new TRPCError({ code: "CONFLICT", message: "Settlement already in progress" });
       }
 
-      // [Kafka] Publish batch completed event
+      // [Kafka] Publish batch started event
       await publishSettlementEvent({
-        eventType: "settlement.batch.completed",
+        eventType: "settlement.batch.started",
         batchId,
-        metadata: { agentCount: result.agentCount, smsSent: result.smsSent },
+        metadata: { triggeredBy: ctx.agent.agentCode },
       });
-      // [Fluvio] Stream batch complete
-      await streamSettlementEvent({ eventType: "batch.completed", batchId });
-      // [Redis] Cache batch status
-      await cacheSettlementBatchStatus(batchId, { status: "completed", ...result });
-      // [Dapr] Publish settlement notification
-      await daprPublishSettlementNotification({
-        batchId,
-        agentCode: ctx.agent.agentCode,
-        amount: 0,
-        status: "completed",
-      });
-      // [Lakehouse] Trigger settlement snapshot
-      await triggerSettlementSnapshot();
+      // [Fluvio] Stream batch start
+      await streamSettlementEvent({ eventType: "batch.started", batchId });
 
-      return { ...result, batchId };
-    } catch (err) {
-      // [Kafka] Publish batch failed event
-      await publishSettlementEvent({
-        eventType: "settlement.batch.failed",
-        batchId,
-        metadata: { error: (err as Error).message },
-      });
-      throw err;
-    } finally {
-      // [Redis] Release lock
-      await releaseSettlementLock(batchId);
+      try {
+        const result = await runDailySettlement();
+
+        // [PostgreSQL] Write to audit log
+        const db = (await getDb())!;
+        if (db) {
+          await db.insert(auditLog).values({
+            agentCode: ctx.agent.agentCode,
+            action: "settlement.runNow",
+            resource: "settlement",
+            ipAddress: (ctx.req.headers["x-forwarded-for"] as string) ?? "127.0.0.1",
+            status: result.errors.length === 0 ? "success" : "warning",
+            metadata: {
+              batchId,
+              agentCount: result.agentCount,
+              smsSent: result.smsSent,
+              errors: result.errors,
+            },
+          });
+        }
+
+        // [Kafka] Publish batch completed event
+        await publishSettlementEvent({
+          eventType: "settlement.batch.completed",
+          batchId,
+          metadata: { agentCount: result.agentCount, smsSent: result.smsSent },
+        });
+        // [Fluvio] Stream batch complete
+        await streamSettlementEvent({ eventType: "batch.completed", batchId });
+        // [Redis] Cache batch status
+        await cacheSettlementBatchStatus(batchId, { status: "completed", ...result });
+        // [Dapr] Publish settlement notification
+        await daprPublishSettlementNotification({
+          batchId,
+          agentCode: ctx.agent.agentCode,
+          amount: 0,
+          status: "completed",
+        });
+        // [Lakehouse] Trigger settlement snapshot
+        await triggerSettlementSnapshot();
+
+        return { ...result, batchId };
+      } catch (err) {
+        // [Kafka] Publish batch failed event
+        await publishSettlementEvent({
+          eventType: "settlement.batch.failed",
+          batchId,
+          metadata: { error: (err as Error).message },
+        });
+        throw err;
+      } finally {
+        // [Redis] Release lock
+        await releaseSettlementLock(batchId);
+      }
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
 
@@ -292,22 +297,32 @@ export const settlementRouter = router({
   initiateIlpTransfer: agentAdminProcedure
     .input(z.object({ batchId: z.string(), payeeFsp: z.string(), amount: z.number(), currency: z.string().default("NGN") }))
     .mutation(async ({ input }) => {
-      const result = await initiateIlpSettlementTransfer({
-        batchId: input.batchId,
-        payerFsp: "54link-fsp",
-        payeeFsp: input.payeeFsp,
-        amount: input.amount,
-        currency: input.currency,
-      });
-      return { success: !!result, transfer: result };
+      try {
+        const result = await initiateIlpSettlementTransfer({
+          batchId: input.batchId,
+          payerFsp: "54link-fsp",
+          payeeFsp: input.payeeFsp,
+          amount: input.amount,
+          currency: input.currency,
+        });
+        return { success: !!result, transfer: result };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /** [Lakehouse] Trigger settlement snapshot */
   triggerSnapshot: agentAdminProcedure
     .input(z.object({ date: z.string().optional() }))
     .mutation(async ({ input }) => {
-      const ok = await triggerSettlementSnapshot(input.date);
-      return { success: ok };
+      try {
+        const ok = await triggerSettlementSnapshot(input.date);
+        return { success: ok };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /** [APISIX] Get rate limit configuration */

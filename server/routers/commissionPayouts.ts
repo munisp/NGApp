@@ -27,34 +27,39 @@ export const commissionPayoutsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const offset = (input.page - 1) * input.limit;
-      const conditions = [];
-      if (input.status) conditions.push(eq(commissionPayouts.status, input.status));
-      if (input.agentCode) conditions.push(eq(commissionPayouts.agentCode, input.agentCode));
-      if (input.from) conditions.push(gte(commissionPayouts.createdAt, new Date(input.from)));
-      if (input.to) conditions.push(lte(commissionPayouts.createdAt, new Date(input.to)));
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const offset = (input.page - 1) * input.limit;
+        const conditions = [];
+        if (input.status) conditions.push(eq(commissionPayouts.status, input.status));
+        if (input.agentCode) conditions.push(eq(commissionPayouts.agentCode, input.agentCode));
+        if (input.from) conditions.push(gte(commissionPayouts.createdAt, new Date(input.from)));
+        if (input.to) conditions.push(lte(commissionPayouts.createdAt, new Date(input.to)));
 
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const [items, [{ c: total }]] = await Promise.all([
-        db
-          .select()
-          .from(commissionPayouts)
-          .where(where)
-          .orderBy(desc(commissionPayouts.createdAt))
-          .limit(input.limit)
-          .offset(offset),
-        db.select({ c: count() }).from(commissionPayouts).where(where),
-      ]);
-      return { items, total: Number(total) };
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const [items, [{ c: total }]] = await Promise.all([
+          db
+            .select()
+            .from(commissionPayouts)
+            .where(where)
+            .orderBy(desc(commissionPayouts.createdAt))
+            .limit(input.limit)
+            .offset(offset),
+          db.select({ c: count() }).from(commissionPayouts).where(where),
+        ]);
+        return { items, total: Number(total) };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Get payout summary stats ──────────────────────────────────────────────
   stats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return { pending: 0, approved: 0, completed: 0, totalPaid: "0" };
-    const rows = await db.select().from(commissionPayouts);
+    const rows = await db.select().from(commissionPayouts).limit(100);
     const pending = rows.filter((r: any) => r.status === "pending").length;
     const approved = rows.filter((r: any) => r.status === "approved").length;
     const completed = rows.filter((r: any) => r.status === "completed").length;
@@ -77,166 +82,186 @@ export const commissionPayoutsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Verify agent and check commission balance
-      const [agent] = await db
-        .select()
-        .from(agents)
-        .where(eq(agents.agentCode, input.agentCode))
-        .limit(1);
-      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        // Verify agent and check commission balance
+        const [agent] = await db
+          .select()
+          .from(agents)
+          .where(eq(agents.agentCode, input.agentCode))
+          .limit(1);
+        if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
 
-      const balance = parseFloat(agent.commissionBalance as string);
-      if (balance < input.amount) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Insufficient commission balance. Available: ₦${balance.toFixed(2)}`,
-        });
-      }
-      if (input.amount < 500) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Minimum payout is ₦500" });
-      }
+        const balance = parseFloat(agent.commissionBalance as string);
+        if (balance < input.amount) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient commission balance. Available: ₦${balance.toFixed(2)}`,
+          });
+        }
+        if (input.amount < 500) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Minimum payout is ₦500" });
+        }
 
-      const [payout] = await db
-        .insert(commissionPayouts)
-        .values({
+        const [payout] = await db
+          .insert(commissionPayouts)
+          .values({
+            agentId: agent.id,
+            agentCode: input.agentCode,
+            amount: String(input.amount),
+            bankCode: input.bankCode,
+            accountNumber: input.accountNumber,
+            accountName: input.accountName,
+            requestedBy: ctx.user.id,
+            status: "pending",
+          })
+          .returning();
+
+        await writeAuditLog({
           agentId: agent.id,
           agentCode: input.agentCode,
-          amount: String(input.amount),
-          bankCode: input.bankCode,
-          accountNumber: input.accountNumber,
-          accountName: input.accountName,
-          requestedBy: ctx.user.id,
-          status: "pending",
-        })
-        .returning();
+          action: "commission_payout_requested",
+          resource: "commission_payout",
+          resourceId: String(payout.id),
+          status: "success",
+        });
 
-      await writeAuditLog({
-        agentId: agent.id,
-        agentCode: input.agentCode,
-        action: "commission_payout_requested",
-        resource: "commission_payout",
-        resourceId: String(payout.id),
-        status: "success",
-      });
-
-      return payout;
+        return payout;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Approve a payout (supervisor/admin) ──────────────────────────────────
   approve: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [payout] = await db
-        .select()
-        .from(commissionPayouts)
-        .where(eq(commissionPayouts.id, input.id))
-        .limit(1);
-      if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
-      if (payout.status !== "pending") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Payout is not in pending state" });
+        const [payout] = await db
+          .select()
+          .from(commissionPayouts)
+          .where(eq(commissionPayouts.id, input.id))
+          .limit(1);
+        if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
+        if (payout.status !== "pending") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payout is not in pending state" });
+        }
+
+        const [updated] = await db
+          .update(commissionPayouts)
+          .set({ status: "approved", approvedBy: ctx.user.id, updatedAt: new Date() })
+          .where(eq(commissionPayouts.id, input.id))
+          .returning();
+
+        await dispatchWebhookEvent("commission.payout.approved", {
+          payoutId: updated.id,
+          agentCode: updated.agentCode,
+          amount: updated.amount,
+        });
+
+        return updated;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const [updated] = await db
-        .update(commissionPayouts)
-        .set({ status: "approved", approvedBy: ctx.user.id, updatedAt: new Date() })
-        .where(eq(commissionPayouts.id, input.id))
-        .returning();
-
-      await dispatchWebhookEvent("commission.payout.approved", {
-        payoutId: updated.id,
-        agentCode: updated.agentCode,
-        amount: updated.amount,
-      });
-
-      return updated;
     }),
 
   // ── Reject a payout ───────────────────────────────────────────────────────
   reject: protectedProcedure
     .input(z.object({ id: z.number(), reason: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [updated] = await db
-        .update(commissionPayouts)
-        .set({
-          status: "rejected",
-          rejectedBy: ctx.user.id,
-          rejectionReason: input.reason,
-          updatedAt: new Date(),
-        })
-        .where(eq(commissionPayouts.id, input.id))
-        .returning();
+        const [updated] = await db
+          .update(commissionPayouts)
+          .set({
+            status: "rejected",
+            rejectedBy: ctx.user.id,
+            rejectionReason: input.reason,
+            updatedAt: new Date(),
+          })
+          .where(eq(commissionPayouts.id, input.id))
+          .returning();
 
-      return updated;
+        return updated;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Process a payout (deduct from agent balance + mark completed) ────────
   process: protectedProcedure
     .input(z.object({ id: z.number(), nubanRef: z.string().optional() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [payout] = await db
-        .select()
-        .from(commissionPayouts)
-        .where(eq(commissionPayouts.id, input.id))
-        .limit(1);
-      if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
-      if (payout.status !== "approved") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Payout must be approved first" });
-      }
+        const [payout] = await db
+          .select()
+          .from(commissionPayouts)
+          .where(eq(commissionPayouts.id, input.id))
+          .limit(1);
+        if (!payout) throw new TRPCError({ code: "NOT_FOUND" });
+        if (payout.status !== "approved") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payout must be approved first" });
+        }
 
-      // Deduct from agent commission balance
-      await db
-        .update(agents)
-        .set({
-          commissionBalance: sql`${agents.commissionBalance} - ${payout.amount}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(agents.id, payout.agentId));
+        // Deduct from agent commission balance
+        await db
+          .update(agents)
+          .set({
+            commissionBalance: sql`${agents.commissionBalance} - ${payout.amount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(agents.id, payout.agentId));
 
-      const [updated] = await db
-        .update(commissionPayouts)
-        .set({
-          status: "completed",
-          nubanRef: input.nubanRef,
-          processedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(commissionPayouts.id, input.id))
-        .returning();
+        const [updated] = await db
+          .update(commissionPayouts)
+          .set({
+            status: "completed",
+            nubanRef: input.nubanRef,
+            processedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(commissionPayouts.id, input.id))
+          .returning();
 
-      await dispatchWebhookEvent("commission.payout.completed", {
-        payoutId: updated.id,
-        agentCode: updated.agentCode,
-        amount: updated.amount,
-        nubanRef: updated.nubanRef,
-      });
-
-      // Send email notification
-      const [agent] = await db
-        .select({ email: agents.email, name: agents.name })
-        .from(agents)
-        .where(eq(agents.id, payout.agentId))
-        .limit(1);
-      if (agent?.email) {
-        const { subject, html, text } = buildAlertEmail({
-          title: "Commission Payout Processed",
-          message: `Your commission payout of ₦${parseFloat(payout.amount as string).toLocaleString("en-NG", { minimumFractionDigits: 2 })} has been processed successfully.${input.nubanRef ? ` Reference: ${input.nubanRef}` : ""}`,
-          severity: "low",
+        await dispatchWebhookEvent("commission.payout.completed", {
+          payoutId: updated.id,
+          agentCode: updated.agentCode,
+          amount: updated.amount,
+          nubanRef: updated.nubanRef,
         });
-        enqueueEmail({ to: agent.email, subject, html, text });
-      }
 
-      return updated;
+        // Send email notification
+        const [agent] = await db
+          .select({ email: agents.email, name: agents.name })
+          .from(agents)
+          .where(eq(agents.id, payout.agentId))
+          .limit(1);
+        if (agent?.email) {
+          const { subject, html, text } = buildAlertEmail({
+            title: "Commission Payout Processed",
+            message: `Your commission payout of ₦${parseFloat(payout.amount as string).toLocaleString("en-NG", { minimumFractionDigits: 2 })} has been processed successfully.${input.nubanRef ? ` Reference: ${input.nubanRef}` : ""}`,
+            severity: "low",
+          });
+          enqueueEmail({ to: agent.email, subject, html, text });
+        }
+
+        return updated;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

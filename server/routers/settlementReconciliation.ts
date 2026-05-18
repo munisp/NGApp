@@ -29,21 +29,26 @@ export const settlementReconciliationRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const offset = (input.page - 1) * input.limit;
-      const where = input.status ? eq(settlementReconciliation.status, input.status) : undefined;
-      const [items, [{ c: total }]] = await Promise.all([
-        db
-          .select()
-          .from(settlementReconciliation)
-          .where(where)
-          .orderBy(desc(settlementReconciliation.createdAt))
-          .limit(input.limit)
-          .offset(offset),
-        db.select({ c: count() }).from(settlementReconciliation).where(where),
-      ]);
-      return { items, total: Number(total) };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const offset = (input.page - 1) * input.limit;
+        const where = input.status ? eq(settlementReconciliation.status, input.status) : undefined;
+        const [items, [{ c: total }]] = await Promise.all([
+          db
+            .select()
+            .from(settlementReconciliation)
+            .where(where)
+            .orderBy(desc(settlementReconciliation.createdAt))
+            .limit(input.limit)
+            .offset(offset),
+          db.select({ c: count() }).from(settlementReconciliation).where(where),
+        ]);
+        return { items, total: Number(total) };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Run reconciliation for a settlement date ──────────────────────────────
@@ -54,89 +59,94 @@ export const settlementReconciliationRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const dayStart = new Date(`${input.settlementDate}T00:00:00Z`);
-      const dayEnd = new Date(`${input.settlementDate}T23:59:59Z`);
+        const dayStart = new Date(`${input.settlementDate}T00:00:00Z`);
+        const dayEnd = new Date(`${input.settlementDate}T23:59:59Z`);
 
-      // Get all merchant settlements for this date period
-      const settlementsForDate = await db
-        .select()
-        .from(merchantSettlements)
-        .where(eq(merchantSettlements.period, input.settlementDate));
-
-      const results = [];
-      for (const settlement of settlementsForDate) {
-        // Sum completed transactions for this merchant on this date
-        const txResult = await db
-          .select({ total: sql<string>`COALESCE(SUM("amount"), 0)`, txCount: count() })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, settlement.merchantId),
-              gte(transactions.createdAt, dayStart),
-              lte(transactions.createdAt, dayEnd),
-              eq(transactions.status, "success")
-            )
-          );
-
-        const txTotal = parseFloat(txResult[0]?.total ?? "0");
-        const settlementAmount = parseFloat(settlement.netAmount as string);
-        const discrepancy = Math.abs(txTotal - settlementAmount);
-        const variancePct = settlementAmount > 0 ? (discrepancy / settlementAmount) * 100 : 0;
-        const status = variancePct < 0.01 ? "matched" : "discrepancy";
-
-        // Upsert reconciliation record
-        const [existing] = await db
+        // Get all merchant settlements for this date period
+        const settlementsForDate = await db
           .select()
-          .from(settlementReconciliation)
-          .where(
-            and(
-              eq(settlementReconciliation.settlementDate, input.settlementDate),
-              eq(settlementReconciliation.agentCode, String(settlement.merchantId))
+          .from(merchantSettlements)
+          .where(eq(merchantSettlements.period, input.settlementDate));
+
+        const results = [];
+        for (const settlement of settlementsForDate) {
+          // Sum completed transactions for this merchant on this date
+          const txResult = await db
+            .select({ total: sql<string>`COALESCE(SUM("amount"), 0)`, txCount: count() })
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.agentId, settlement.merchantId),
+                gte(transactions.createdAt, dayStart),
+                lte(transactions.createdAt, dayEnd),
+                eq(transactions.status, "success")
+              )
+            );
+
+          const txTotal = parseFloat(txResult[0]?.total ?? "0");
+          const settlementAmount = parseFloat(settlement.netAmount as string);
+          const discrepancy = Math.abs(txTotal - settlementAmount);
+          const variancePct = settlementAmount > 0 ? (discrepancy / settlementAmount) * 100 : 0;
+          const status = variancePct < 0.01 ? "matched" : "discrepancy";
+
+          // Upsert reconciliation record
+          const [existing] = await db
+            .select()
+            .from(settlementReconciliation)
+            .where(
+              and(
+                eq(settlementReconciliation.settlementDate, input.settlementDate),
+                eq(settlementReconciliation.agentCode, String(settlement.merchantId))
+              )
             )
-          )
-          .limit(1);
+            .limit(1);
 
-        let record;
-        if (existing) {
-          [record] = await db
-            .update(settlementReconciliation)
-            .set({
-              expectedAmount: String(txTotal),
-              actualAmount: String(settlementAmount),
-              discrepancy: String(discrepancy),
-              status,
-            })
-            .where(eq(settlementReconciliation.id, existing.id))
-            .returning();
-        } else {
-          [record] = await db
-            .insert(settlementReconciliation)
-            .values({
-              settlementDate: input.settlementDate,
-              agentCode: String(settlement.merchantId),
-              expectedAmount: String(txTotal),
-              actualAmount: String(settlementAmount),
-              discrepancy: String(discrepancy),
-              status,
-            })
-            .returning();
+          let record;
+          if (existing) {
+            [record] = await db
+              .update(settlementReconciliation)
+              .set({
+                expectedAmount: String(txTotal),
+                actualAmount: String(settlementAmount),
+                discrepancy: String(discrepancy),
+                status,
+              })
+              .where(eq(settlementReconciliation.id, existing.id))
+              .returning();
+          } else {
+            [record] = await db
+              .insert(settlementReconciliation)
+              .values({
+                settlementDate: input.settlementDate,
+                agentCode: String(settlement.merchantId),
+                expectedAmount: String(txTotal),
+                actualAmount: String(settlementAmount),
+                discrepancy: String(discrepancy),
+                status,
+              })
+              .returning();
+          }
+          results.push(record);
         }
-        results.push(record);
+
+        await writeAuditLog({
+          action: "settlement_reconciliation_run",
+          resource: "settlement_reconciliation",
+          resourceId: input.settlementDate,
+          status: "success",
+          metadata: { recordsProcessed: results.length, date: input.settlementDate },
+        });
+
+
+        return { processed: results.length, records: results };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await writeAuditLog({
-        action: "settlement_reconciliation_run",
-        resource: "settlement_reconciliation",
-        resourceId: input.settlementDate,
-        status: "success",
-        metadata: { recordsProcessed: results.length, date: input.settlementDate },
-      });
-
-
-      return { processed: results.length, records: results };
     }),
 
   // ── Resolve a discrepancy ─────────────────────────────────────────────────
@@ -148,38 +158,43 @@ export const settlementReconciliationRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [record] = await db
-        .select()
-        .from(settlementReconciliation)
-        .where(eq(settlementReconciliation.id, input.id))
-        .limit(1);
-      if (!record) throw new TRPCError({ code: "NOT_FOUND" });
-      if (record.status !== "discrepancy") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Only discrepancy records can be resolved" });
+        const [record] = await db
+          .select()
+          .from(settlementReconciliation)
+          .where(eq(settlementReconciliation.id, input.id))
+          .limit(1);
+        if (!record) throw new TRPCError({ code: "NOT_FOUND" });
+        if (record.status !== "discrepancy") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Only discrepancy records can be resolved" });
+        }
+
+        const [updated] = await db
+          .update(settlementReconciliation)
+          .set({
+            status: "resolved",
+            resolutionNote: input.resolution,
+            resolvedBy: ctx.user.id,
+            resolvedAt: new Date(),
+          })
+          .where(eq(settlementReconciliation.id, input.id))
+          .returning();
+
+        return updated;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const [updated] = await db
-        .update(settlementReconciliation)
-        .set({
-          status: "resolved",
-          resolutionNote: input.resolution,
-          resolvedBy: ctx.user.id,
-          resolvedAt: new Date(),
-        })
-        .where(eq(settlementReconciliation.id, input.id))
-        .returning();
-
-      return updated;
     }),
 
   // ── Summary stats ─────────────────────────────────────────────────────────
   stats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return { total: 0, matched: 0, discrepancy: 0, resolved: 0, pending: 0 };
-    const rows = await db.select().from(settlementReconciliation);
+    const rows = await db.select().from(settlementReconciliation).limit(100);
     return {
       total: rows.length,
       matched: rows.filter((r: any) => r.status === "matched").length,

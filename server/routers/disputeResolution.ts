@@ -15,13 +15,13 @@ import logger from "../_core/logger";
 export const disputeResolutionRouter = router({
   dashboard: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ cnt: count() }).from(disputes);
-    const [open] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "open"));
-    const [resolved] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "resolved"));
-    const [escalated] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "escalated"));
-    const [totalAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${disputes.amount}::numeric),0)` }).from(disputes);
-    const byStatus = await db.select({ status: disputes.status, cnt: count() }).from(disputes).groupBy(disputes.status);
-    const byType = await db.select({ type: disputes.type, cnt: count() }).from(disputes).groupBy(disputes.type);
+    const [total] = await db.select({ cnt: count() }).from(disputes).limit(100);
+    const [open] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "open")).limit(100);
+    const [resolved] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "resolved")).limit(100);
+    const [escalated] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "escalated")).limit(100);
+    const [totalAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${disputes.amount}::numeric),0)` }).from(disputes).limit(100);
+    const byStatus = await db.select({ status: disputes.status, cnt: count() }).from(disputes).groupBy(disputes.status).limit(100);
+    const byType = await db.select({ type: disputes.type, cnt: count() }).from(disputes).groupBy(disputes.type).limit(100);
     const recent = await db.select().from(disputes).orderBy(desc(disputes.createdAt)).limit(10);
     let breachCount = 0;
     try { const [b] = await db.select({ cnt: count() }).from(sla_breaches); breachCount = b?.cnt ?? 0; } catch {}
@@ -42,40 +42,55 @@ export const disputeResolutionRouter = router({
 
   getDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), type: z.string().optional(), limit: z.number().default(20) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      let rows;
-      if (input.status) rows = await db.select().from(disputes).where(eq(disputes.status, input.status)).orderBy(desc(disputes.createdAt)).limit(input.limit);
-      else if (input.type) rows = await db.select().from(disputes).where(eq(disputes.type, input.type ?? "")).orderBy(desc(disputes.createdAt)).limit(input.limit);
-      else rows = await db.select().from(disputes).orderBy(desc(disputes.createdAt)).limit(input.limit);
-      const [t] = await db.select({ cnt: count() }).from(disputes);
-      return { disputes: rows, total: t?.cnt ?? 0 };
+      try {
+        const db = (await getDb())!;
+        let rows;
+        if (input.status) rows = await db.select().from(disputes).where(eq(disputes.status, input.status)).orderBy(desc(disputes.createdAt)).limit(input.limit);
+        else if (input.type) rows = await db.select().from(disputes).where(eq(disputes.type, input.type ?? "")).orderBy(desc(disputes.createdAt)).limit(input.limit);
+        else rows = await db.select().from(disputes).orderBy(desc(disputes.createdAt)).limit(input.limit);
+        const [t] = await db.select({ cnt: count() }).from(disputes).limit(100);
+        return { disputes: rows, total: t?.cnt ?? 0 };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   createDispute: protectedProcedure.input(z.object({ transactionId: z.string(), type: z.string(), reason: z.string(), amount: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!; const ref = `DSP-${Date.now()}`;
-      const [d] = await db.insert(disputes).values({
-        ref, transactionId: parseInt(input.transactionId.replace(/\D/g, "")) || null,
-        type: input.type, reason: input.reason, amount: String(input.amount),
-        status: "open", priority: "medium", description: input.reason, createdBy: ctx.user?.name ?? "system",
-      }).returning();
-      try { await publishDisputeEvent({ eventType: "dispute.created", disputeId: d.id, data: { ref, type: input.type } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
-      return { id: d.id, ref: d.ref, status: d.status };
+      try {
+        const db = (await getDb())!; const ref = `DSP-${Date.now()}`;
+        const [d] = await db.insert(disputes).values({
+          ref, transactionId: parseInt(input.transactionId.replace(/\D/g, "")) || null,
+          type: input.type, reason: input.reason, amount: String(input.amount),
+          status: "open", priority: "medium", description: input.reason, createdBy: ctx.user?.name ?? "system",
+        }).returning();
+        try { await publishDisputeEvent({ eventType: "dispute.created", disputeId: d.id, data: { ref, type: input.type } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
+        return { id: d.id, ref: d.ref, status: d.status };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   updateStatus: protectedProcedure.input(z.object({ disputeId: z.number(), status: z.string(), resolution: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      const updates: any = { status: input.status, updatedAt: new Date() };
-      if (input.resolution) { updates.resolution = input.resolution; updates.resolvedAt = new Date(); updates.resolvedBy = ctx.user?.name ?? "admin"; }
-      const [u] = await db.update(disputes).set(updates).where(eq(disputes.id, input.disputeId)).returning();
-      if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
-      await db.insert(disputeMessages).values({
-        disputeId: input.disputeId, authorName: ctx.user?.name ?? "System", authorRole: "admin",
-        message: `Status changed to ${input.status}`, content: `Status changed to ${input.status}`,
-        senderType: "admin", senderName: ctx.user?.name ?? "System",
-      });
-      try { await publishDisputeEvent({ eventType: "dispute.status_changed", disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        const updates: any = { status: input.status, updatedAt: new Date() };
+        if (input.resolution) { updates.resolution = input.resolution; updates.resolvedAt = new Date(); updates.resolvedBy = ctx.user?.name ?? "admin"; }
+        const [u] = await db.update(disputes).set(updates).where(eq(disputes.id, input.disputeId)).returning();
+        if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
+        await db.insert(disputeMessages).values({
+          disputeId: input.disputeId, authorName: ctx.user?.name ?? "System", authorRole: "admin",
+          message: `Status changed to ${input.status}`, content: `Status changed to ${input.status}`,
+          senderType: "admin", senderName: ctx.user?.name ?? "System",
+        });
+        try { await publishDisputeEvent({ eventType: "dispute.status_changed", disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

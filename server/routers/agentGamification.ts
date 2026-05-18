@@ -29,38 +29,43 @@ export const agentGamificationRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return { totalBadges: BADGE_DEFINITIONS.length, activePlayers: 0, topScore: 0, avgEngagement: "0%" };
-    const [stats] = await db.select({ activePlayers: count(), topScore: sum(agentAchievements.xpEarned) }).from(agentAchievements);
+    const [stats] = await db.select({ activePlayers: count(), topScore: sum(agentAchievements.xpEarned) }).from(agentAchievements).limit(100);
     return { totalBadges: BADGE_DEFINITIONS.length, activePlayers: stats.activePlayers || 0, topScore: Number(stats.topScore || 0), avgEngagement: "78%" };
   }),
 
   getLeaderboard: protectedProcedure
     .input(z.object({ period: z.enum(["daily", "weekly", "monthly", "all_time"]).default("monthly"), limit: z.number().default(20) }).optional())
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { leaderboard: [], period: input?.period || "monthly", updatedAt: new Date().toISOString() };
-      const periodDays = { daily: 1, weekly: 7, monthly: 30, all_time: 3650 };
-      const since = new Date(Date.now() - periodDays[input?.period || "monthly"] * 86400000);
-      const data = await db.select({
-        agentId: agentAchievements.agentId,
-        totalXp: sum(agentAchievements.xpEarned),
-        achievementCount: count(),
-      }).from(agentAchievements)
-        .where(gte(agentAchievements.earnedAt, since))
-        .groupBy(agentAchievements.agentId)
-        .orderBy(desc(sum(agentAchievements.xpEarned)))
-        .limit(input?.limit || 20);
-      const leaderboard = data.map((d, i) => ({
-        rank: i + 1,
-        agentId: `AGT-${String(d.agentId).padStart(4, "0")}`,
-        name: `Agent ${d.agentId}`,
-        score: Number(d.totalXp || 0),
-        transactions: d.achievementCount,
-        volume: Number(d.totalXp || 0) * 1000,
-        badges: [],
-        tier: i < 2 ? "diamond" : i < 5 ? "platinum" : i < 10 ? "gold" : "silver",
-        streak: Math.max(1, 30 - i),
-      }));
-      return { leaderboard, period: input?.period || "monthly", updatedAt: new Date().toISOString() };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { leaderboard: [], period: input?.period || "monthly", updatedAt: new Date().toISOString() };
+        const periodDays = { daily: 1, weekly: 7, monthly: 30, all_time: 3650 };
+        const since = new Date(Date.now() - periodDays[input?.period || "monthly"] * 86400000);
+        const data = await db.select({
+          agentId: agentAchievements.agentId,
+          totalXp: sum(agentAchievements.xpEarned),
+          achievementCount: count(),
+        }).from(agentAchievements)
+          .where(gte(agentAchievements.earnedAt, since))
+          .groupBy(agentAchievements.agentId)
+          .orderBy(desc(sum(agentAchievements.xpEarned)))
+          .limit(input?.limit || 20);
+        const leaderboard = data.map((d, i) => ({
+          rank: i + 1,
+          agentId: `AGT-${String(d.agentId).padStart(4, "0")}`,
+          name: `Agent ${d.agentId}`,
+          score: Number(d.totalXp || 0),
+          transactions: d.achievementCount,
+          volume: Number(d.totalXp || 0) * 1000,
+          badges: [],
+          tier: i < 2 ? "diamond" : i < 5 ? "platinum" : i < 10 ? "gold" : "silver",
+          streak: Math.max(1, 30 - i),
+        }));
+        return { leaderboard, period: input?.period || "monthly", updatedAt: new Date().toISOString() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getBadges: protectedProcedure.query(() => BADGE_DEFINITIONS),
@@ -68,22 +73,27 @@ export const agentGamificationRouter = router({
   getAgentProfile: protectedProcedure
     .input(z.object({ agentId: z.string() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const agentIdNum = parseInt(input.agentId.replace("AGT-", ""), 10) || 0;
-      if (!db) return { agentId: input.agentId, totalScore: 0, currentTier: "bronze", badges: [], streak: 0, nextMilestone: null };
-      const [xpStats] = await db.select({ totalXp: sum(agentAchievements.xpEarned) }).from(agentAchievements).where(eq(agentAchievements.agentId, agentIdNum));
-      const badges = await db.select().from(agentBadges).where(eq(agentBadges.agentId, agentIdNum));
-      const totalScore = Number(xpStats?.totalXp || 0);
-      const level = LEVEL_THRESHOLDS.findIndex(t => totalScore < t);
-      const tierMap = ["bronze", "bronze", "silver", "silver", "gold", "gold", "platinum", "platinum", "diamond", "diamond"];
-      return {
-        agentId: input.agentId,
-        totalScore,
-        currentTier: tierMap[level === -1 ? 9 : level] || "bronze",
-        badges: badges.map(b => ({ ...b, ...BADGE_DEFINITIONS.find(d => d.id === b.badgeId) })),
-        streak: 15,
-        nextMilestone: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)) ? { badge: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)), progress: 67 } : null,
-      };
+      try {
+        const db = (await getDb())!;
+        const agentIdNum = parseInt(input.agentId.replace("AGT-", ""), 10) || 0;
+        if (!db) return { agentId: input.agentId, totalScore: 0, currentTier: "bronze", badges: [], streak: 0, nextMilestone: null };
+        const [xpStats] = await db.select({ totalXp: sum(agentAchievements.xpEarned) }).from(agentAchievements).where(eq(agentAchievements.agentId, agentIdNum)).limit(100);
+        const badges = await db.select().from(agentBadges).where(eq(agentBadges.agentId, agentIdNum)).limit(100);
+        const totalScore = Number(xpStats?.totalXp || 0);
+        const level = LEVEL_THRESHOLDS.findIndex(t => totalScore < t);
+        const tierMap = ["bronze", "bronze", "silver", "silver", "gold", "gold", "platinum", "platinum", "diamond", "diamond"];
+        return {
+          agentId: input.agentId,
+          totalScore,
+          currentTier: tierMap[level === -1 ? 9 : level] || "bronze",
+          badges: badges.map(b => ({ ...b, ...BADGE_DEFINITIONS.find(d => d.id === b.badgeId) })),
+          streak: 15,
+          nextMilestone: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)) ? { badge: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)), progress: 67 } : null,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getAchievements: protectedProcedure.query(async () => {
@@ -97,31 +107,41 @@ export const agentGamificationRouter = router({
   awardAchievement: protectedProcedure
     .input(z.object({ agentId: z.number(), achievementType: z.string(), description: z.string(), xp: z.number().default(10) }))
     .mutation(async ({  input  }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const [achievement] = await db.insert(agentAchievements).values({
-        agentId: input.agentId, achievementType: input.achievementType, description: input.description, xpEarned: input.xp, earnedAt: new Date(),
-      }).returning();
-      return { achievement };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const [achievement] = await db.insert(agentAchievements).values({
+          agentId: input.agentId, achievementType: input.achievementType, description: input.description, xpEarned: input.xp, earnedAt: new Date(),
+        }).returning();
+        return { achievement };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Award badge
   awardBadge: protectedProcedure
     .input(z.object({ agentId: z.number(), badgeId: z.string() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const definition = BADGE_DEFINITIONS.find(d => d.id === input.badgeId);
-      if (!definition) throw new Error("Badge not found");
-      const [existing] = await db.select().from(agentBadges).where(and(eq(agentBadges.agentId, input.agentId), eq(agentBadges.badgeId, input.badgeId)));
-      if (existing) throw new Error("Badge already earned");
-      const [badge] = await db.insert(agentBadges).values({
-        agentId: input.agentId, badgeId: input.badgeId, badgeName: definition.name, earnedAt: new Date(),
-      }).returning();
-      await db.insert(agentAchievements).values({
-        agentId: input.agentId, achievementType: "badge_earned", description: `Earned badge: ${definition.name}`, xpEarned: definition.xp, earnedAt: new Date(),
-      });
-      return { badge, xpAwarded: definition.xp };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const definition = BADGE_DEFINITIONS.find(d => d.id === input.badgeId);
+        if (!definition) throw new Error("Badge not found");
+        const [existing] = await db.select().from(agentBadges).where(and(eq(agentBadges.agentId, input.agentId), eq(agentBadges.badgeId, input.badgeId))).limit(100);
+        if (existing) throw new Error("Badge already earned");
+        const [badge] = await db.insert(agentBadges).values({
+          agentId: input.agentId, badgeId: input.badgeId, badgeName: definition.name, earnedAt: new Date(),
+        }).returning();
+        await db.insert(agentAchievements).values({
+          agentId: input.agentId, achievementType: "badge_earned", description: `Earned badge: ${definition.name}`, xpEarned: definition.xp, earnedAt: new Date(),
+        });
+        return { badge, xpAwarded: definition.xp };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   badgeDefinitions: protectedProcedure.query(() => BADGE_DEFINITIONS),

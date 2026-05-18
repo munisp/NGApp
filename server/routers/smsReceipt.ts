@@ -80,63 +80,68 @@ export const smsReceiptRouter = router({
       recipientPhone: z.string().min(10).max(15),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Fetch the transaction
-      const result = await db
-        .select()
-        .from(transactions)
-        .where(eq(transactions.ref, input.transactionRef))
-        .limit(1);
-      const tx = result[0];
-      if (!tx || tx.agentId !== session.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
-      }
+        // Fetch the transaction
+        const result = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.ref, input.transactionRef))
+          .limit(1);
+        const tx = result[0];
+        if (!tx || tx.agentId !== session.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+        }
 
-      // Build and send SMS
-      const message = buildReceiptSMS({
-        ref: tx.ref,
-        type: tx.type,
-        amount: Number(tx.amount),
-        fee: Number(tx.fee ?? 0),
-        agentCode: session.agentCode,
-        agentName: session.name,
-        customerName: tx.customerName,
-      });
-
-      const smsResult = await sendTermiiSMS(input.recipientPhone, message);
-
-      // Mark smsSent in DB
-      if (smsResult.success) {
-        await db.update(transactions).set({ smsSent: true }).where(eq(transactions.id, tx.id));
-      }
-
-      await writeAuditLog({
-        agentId: session.id,
-        agentCode: session.agentCode,
-        action: smsResult.success ? "SMS_RECEIPT_SENT" : "SMS_RECEIPT_FAILED",
-        resource: "transaction",
-        resourceId: tx.ref,
-        status: smsResult.success ? "success" : "failure",
-        metadata: {
-          phone: input.recipientPhone,
-          messageId: smsResult.messageId,
-          error: smsResult.error,
-        },
-      });
-
-      if (!smsResult.success) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `SMS delivery failed: ${smsResult.error}`,
+        // Build and send SMS
+        const message = buildReceiptSMS({
+          ref: tx.ref,
+          type: tx.type,
+          amount: Number(tx.amount),
+          fee: Number(tx.fee ?? 0),
+          agentCode: session.agentCode,
+          agentName: session.name,
+          customerName: tx.customerName,
         });
-      }
 
-      return { success: true, messageId: smsResult.messageId };
+        const smsResult = await sendTermiiSMS(input.recipientPhone, message);
+
+        // Mark smsSent in DB
+        if (smsResult.success) {
+          await db.update(transactions).set({ smsSent: true }).where(eq(transactions.id, tx.id));
+        }
+
+        await writeAuditLog({
+          agentId: session.id,
+          agentCode: session.agentCode,
+          action: smsResult.success ? "SMS_RECEIPT_SENT" : "SMS_RECEIPT_FAILED",
+          resource: "transaction",
+          resourceId: tx.ref,
+          status: smsResult.success ? "success" : "failure",
+          metadata: {
+            phone: input.recipientPhone,
+            messageId: smsResult.messageId,
+            error: smsResult.error,
+          },
+        });
+
+        if (!smsResult.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `SMS delivery failed: ${smsResult.error}`,
+          });
+        }
+
+        return { success: true, messageId: smsResult.messageId };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Auto-send receipt on transaction create (called internally) ───────────
@@ -152,28 +157,33 @@ export const smsReceiptRouter = router({
       customerName: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const message = buildReceiptSMS({
-        ref: input.transactionRef,
-        type: input.type,
-        amount: input.amount,
-        fee: input.fee,
-        agentCode: input.agentCode,
-        agentName: input.agentName,
-        customerName: input.customerName,
-      });
+        const message = buildReceiptSMS({
+          ref: input.transactionRef,
+          type: input.type,
+          amount: input.amount,
+          fee: input.fee,
+          agentCode: input.agentCode,
+          agentName: input.agentName,
+          customerName: input.customerName,
+        });
 
-      const smsResult = await sendTermiiSMS(input.phone, message);
+        const smsResult = await sendTermiiSMS(input.phone, message);
 
-      // Update smsSent flag
-      const db = (await getDb())!;
-      if (db && smsResult.success) {
-        await db.update(transactions).set({ smsSent: true }).where(eq(transactions.ref, input.transactionRef));
+        // Update smsSent flag
+        const db = (await getDb())!;
+        if (db && smsResult.success) {
+          await db.update(transactions).set({ smsSent: true }).where(eq(transactions.ref, input.transactionRef));
+        }
+
+        return { success: smsResult.success, messageId: smsResult.messageId };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return { success: smsResult.success, messageId: smsResult.messageId };
     }),
 
   // ── Send USSD code via SMS (for offline transaction receipts) ──────────────────────
@@ -186,23 +196,28 @@ export const smsReceiptRouter = router({
       agentCode:      z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const lines = [
-        `54Link USSD Receipt`,
-        `Dial: ${input.ussdCode}`,
-      ];
-      if (input.transactionRef) lines.push(`Ref: ${input.transactionRef}`);
-      if (input.amount != null) {
-        lines.push(`Amount: NGN ${input.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
+        const lines = [
+          `54Link USSD Receipt`,
+          `Dial: ${input.ussdCode}`,
+        ];
+        if (input.transactionRef) lines.push(`Ref: ${input.transactionRef}`);
+        if (input.amount != null) {
+          lines.push(`Amount: NGN ${input.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
+        }
+        if (input.agentCode) lines.push(`Agent: ${input.agentCode}`);
+        lines.push(`Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`);
+        lines.push(`Powered by 54Link Agency Banking`);
+
+        const message = lines.join("\n");
+        const smsResult = await sendTermiiSMS(input.recipientPhone, message);
+        return { success: smsResult.success, messageId: smsResult.messageId, error: smsResult.error };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      if (input.agentCode) lines.push(`Agent: ${input.agentCode}`);
-      lines.push(`Time: ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}`);
-      lines.push(`Powered by 54Link Agency Banking`);
-
-      const message = lines.join("\n");
-      const smsResult = await sendTermiiSMS(input.recipientPhone, message);
-      return { success: smsResult.success, messageId: smsResult.messageId, error: smsResult.error };
     }),
 });

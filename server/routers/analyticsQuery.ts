@@ -11,6 +11,7 @@ import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { platformBillingLedger, billingAuditLog } from "../../drizzle/schema";
 import { desc, count, sql, gte, and, eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 // OpenSearch adapter (connects to opensearch-indexer Python service)
 async function queryOpenSearch(index: string, body: Record<string, any>): Promise<any> {
@@ -37,58 +38,63 @@ export const analyticsQueryRouter = router({
       days: z.number().min(1).max(365).default(30),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      const since = new Date(Date.now() - input.days * 86400000);
+      try {
+        const db = (await getDb())!;
+        const since = new Date(Date.now() - input.days * 86400000);
 
-      // Try OpenSearch first
-      const osResult = await queryOpenSearch("transactions", {
-        size: 0,
-        query: { range: { timestamp: { gte: since.toISOString() } } },
-        aggs: {
-          total_volume: { sum: { field: "amount" } },
-          avg_amount: { avg: { field: "amount" } },
-          by_status: { terms: { field: "status.keyword" } },
-          by_day: {
-            date_histogram: { field: "timestamp", calendar_interval: "day" },
-            aggs: { daily_volume: { sum: { field: "amount" } } },
+        // Try OpenSearch first
+        const osResult = await queryOpenSearch("transactions", {
+          size: 0,
+          query: { range: { timestamp: { gte: since.toISOString() } } },
+          aggs: {
+            total_volume: { sum: { field: "amount" } },
+            avg_amount: { avg: { field: "amount" } },
+            by_status: { terms: { field: "status.keyword" } },
+            by_day: {
+              date_histogram: { field: "timestamp", calendar_interval: "day" },
+              aggs: { daily_volume: { sum: { field: "amount" } } },
+            },
           },
-        },
-      });
+        });
 
-      if (osResult?.aggregations) {
+        if (osResult?.aggregations) {
+          return {
+            source: "opensearch" as const,
+            totalVolume: osResult.aggregations.total_volume.value,
+            avgAmount: osResult.aggregations.avg_amount.value,
+            byStatus: osResult.aggregations.by_status.buckets,
+            timeSeries: osResult.aggregations.by_day.buckets.map((b: any) => ({
+              date: b.key_as_string,
+              volume: b.daily_volume.value,
+              count: b.doc_count,
+            })),
+          };
+        }
+
+        // Fallback to DB
+        const [ledgerCount] = await db.select({ count: count() }).from(platformBillingLedger)
+          .where(gte(platformBillingLedger.createdAt, since));
+
+        const recentLedger = await db.select().from(platformBillingLedger)
+          .where(gte(platformBillingLedger.createdAt, since))
+          .orderBy(desc(platformBillingLedger.createdAt))
+          .limit(100);
+
+        const totalVolume = recentLedger.reduce((sum: any, e: any) => sum + parseFloat(e.grossAmount || "0"), 0);
+
         return {
-          source: "opensearch" as const,
-          totalVolume: osResult.aggregations.total_volume.value,
-          avgAmount: osResult.aggregations.avg_amount.value,
-          byStatus: osResult.aggregations.by_status.buckets,
-          timeSeries: osResult.aggregations.by_day.buckets.map((b: any) => ({
-            date: b.key_as_string,
-            volume: b.daily_volume.value,
-            count: b.doc_count,
-          })),
+          source: "database" as const,
+          totalVolume,
+          avgAmount: ledgerCount.count > 0 ? totalVolume / ledgerCount.count : 0,
+          byStatus: [] as any[],
+          timeSeries: [] as any[],
+          totalCount: ledgerCount.count,
+          recentEntries: recentLedger.slice(0, 20),
         };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      // Fallback to DB
-      const [ledgerCount] = await db.select({ count: count() }).from(platformBillingLedger)
-        .where(gte(platformBillingLedger.createdAt, since));
-
-      const recentLedger = await db.select().from(platformBillingLedger)
-        .where(gte(platformBillingLedger.createdAt, since))
-        .orderBy(desc(platformBillingLedger.createdAt))
-        .limit(100);
-
-      const totalVolume = recentLedger.reduce((sum: any, e: any) => sum + parseFloat(e.grossAmount || "0"), 0);
-
-      return {
-        source: "database" as const,
-        totalVolume,
-        avgAmount: ledgerCount.count > 0 ? totalVolume / ledgerCount.count : 0,
-        byStatus: [] as any[],
-        timeSeries: [] as any[],
-        totalCount: ledgerCount.count,
-        recentEntries: recentLedger.slice(0, 20),
-      };
     }),
 
   // ── Search Transactions ───────────────────────────────────────────────────────
@@ -98,36 +104,41 @@ export const analyticsQueryRouter = router({
       limit: z.number().min(1).max(100).default(20),
     }))
     .query(async ({ input }) => {
-      // Try OpenSearch
-      const osResult = await queryOpenSearch("transactions", {
-        size: input.limit,
-        query: {
-          multi_match: {
-            query: input.query,
-            fields: ["transactionId", "tenantId", "currency", "status", "invoiceId"],
+      try {
+        // Try OpenSearch
+        const osResult = await queryOpenSearch("transactions", {
+          size: input.limit,
+          query: {
+            multi_match: {
+              query: input.query,
+              fields: ["transactionId", "tenantId", "currency", "status", "invoiceId"],
+            },
           },
-        },
-      });
+        });
 
-      if (osResult?.hits?.hits) {
+        if (osResult?.hits?.hits) {
+          return {
+            source: "opensearch" as const,
+            results: osResult.hits.hits.map((h: any) => h._source),
+            total: osResult.hits.total.value,
+          };
+        }
+
+        // Fallback: search billing ledger by invoice ID
+        const db = (await getDb())!;
+        const results = await db.select().from(platformBillingLedger)
+          .where(sql`${platformBillingLedger.invoiceId} LIKE ${"%" + input.query + "%"}`)
+          .limit(input.limit);
+
         return {
-          source: "opensearch" as const,
-          results: osResult.hits.hits.map((h: any) => h._source),
-          total: osResult.hits.total.value,
+          source: "database" as const,
+          results,
+          total: results.length,
         };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      // Fallback: search billing ledger by invoice ID
-      const db = (await getDb())!;
-      const results = await db.select().from(platformBillingLedger)
-        .where(sql`${platformBillingLedger.invoiceId} LIKE ${"%" + input.query + "%"}`)
-        .limit(input.limit);
-
-      return {
-        source: "database" as const,
-        results,
-        total: results.length,
-      };
     }),
 
   // ── Pipeline Health (admin only) ──────────────────────────────────────────────

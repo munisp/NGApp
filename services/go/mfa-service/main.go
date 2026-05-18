@@ -22,9 +22,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	"golang.org/x/time/rate"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace""golang.org/x/time/rate"
 )
 
 const (
@@ -48,7 +46,7 @@ func initTracer() func(context.Context) error {
 		return func(context.Context) error { return nil }
 	}
 	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
+		"https://opentelemetry.io/schemas/1.24.0",
 		semconv.ServiceName(serviceName),
 		semconv.ServiceVersion(serviceVersion),
 		attribute.String("deployment.environment", os.Getenv("ENVIRONMENT")),

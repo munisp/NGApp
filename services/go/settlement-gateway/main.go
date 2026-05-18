@@ -28,24 +28,24 @@ PermifyAddr     string
 }
 
 type SettlementRequest struct {
-TransactionID   string  `json:"transaction_id"`
-SourceAccountID string  `json:"source_account_id"`
-DestAccountID   string  `json:"dest_account_id"`
-Amount          float64 `json:"amount"`
-Currency        string  `json:"currency"`
-SettlementType  string  `json:"settlement_type"`
-TenantID        int     `json:"tenant_id"`
-Region          string  `json:"region"`
+TransactionID   string string `json:"transaction_id"`
+SourceAccountID string string `json:"source_account_id"`
+DestAccountID   string string `json:"dest_account_id"`
+Amount          float64 string `json:"amount"`
+Currency        string string `json:"currency"`
+SettlementType  string string `json:"settlement_type"`
+TenantID        int string `json:"tenant_id"`
+Region          string string `json:"region"`
 }
 
 type SettlementResult struct {
-TransactionID  string    `json:"transaction_id"`
-Status         string    `json:"status"`
-TigerBeetleRef string    `json:"tigerbeetle_ref"`
+TransactionID  string string `json:"transaction_id"`
+Status         string string `json:"status"`
+TigerBeetleRef string string `json:"tigerbeetle_ref"`
 MojaLoopRef    string    `json:"mojaloop_ref,omitempty"`
-SettledAt      time.Time `json:"settled_at"`
-NetAmount      float64   `json:"net_amount"`
-Fees           float64   `json:"fees"`
+SettledAt      time.Time string `json:"settled_at"`
+NetAmount      float64 string `json:"net_amount"`
+Fees           float64 string `json:"fees"`
 }
 
 type Gateway struct {
@@ -54,9 +54,9 @@ mu          sync.RWMutex
 settlements map[string]*SettlementResult
 metrics     struct {
 c.Mutex
-int64   `json:"total"`
-t64   `json:"success"`
-t64   `json:"failed"`
+int64 string `json:"total"`
+t64 string `json:"success"`
+t64 string `json:"failed"`
 `json:"volume"`
 }
 }

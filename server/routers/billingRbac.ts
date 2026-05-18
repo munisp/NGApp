@@ -203,7 +203,12 @@ export const billingRbacRouter = router({
   getMyPermissions: protectedProcedure
     .input(z.object({ tenantId: z.number() }))
     .query(async ({ ctx, input }) => {
-      return getUserBillingPermissions(ctx.user.id, input.tenantId);
+      try {
+        return getUserBillingPermissions(ctx.user.id, input.tenantId);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Assign a billing role to a user (requires manage_tenant_billing)
@@ -216,77 +221,92 @@ export const billingRbacRouter = router({
       expiresAt: z.string().datetime().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-      const [assignment] = await (await db()).insert(billingRoleAssignments).values({
-        userId: input.userId,
-        tenantId: input.tenantId,
-        billingRole: input.billingRole,
-        permissions: input.customPermissions || null,
-        grantedBy: ctx.user.id,
-        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-      }).returning();
+        const [assignment] = await (await db()).insert(billingRoleAssignments).values({
+          userId: input.userId,
+          tenantId: input.tenantId,
+          billingRole: input.billingRole,
+          permissions: input.customPermissions || null,
+          grantedBy: ctx.user.id,
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        }).returning();
 
-      // Audit log
-      await (await db()).insert(billingAuditLog).values({
-        tenantId: input.tenantId,
-        userId: ctx.user.id,
-        userName: ctx.user.name || "unknown",
-        action: "permission_granted",
-        resourceType: "billing_role_assignment",
-        resourceId: String(assignment.id),
-        afterState: { role: input.billingRole, targetUser: input.userId },
-        metadata: { customPermissions: input.customPermissions },
-      });
+        // Audit log
+        await (await db()).insert(billingAuditLog).values({
+          tenantId: input.tenantId,
+          userId: ctx.user.id,
+          userName: ctx.user.name || "unknown",
+          action: "permission_granted",
+          resourceType: "billing_role_assignment",
+          resourceId: String(assignment.id),
+          afterState: { role: input.billingRole, targetUser: input.userId },
+          metadata: { customPermissions: input.customPermissions },
+        });
 
-      return { success: true, assignmentId: assignment.id };
+        return { success: true, assignmentId: assignment.id };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Revoke a billing role (requires manage_tenant_billing)
   revokeRole: protectedProcedure
     .input(z.object({ assignmentId: z.number(), tenantId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-      const [existing] = await db
-        .select()
-        .from(billingRoleAssignments)
-        .where(eq(billingRoleAssignments.id, input.assignmentId));
+        const [existing] = await db
+          .select()
+          .from(billingRoleAssignments)
+          .where(eq(billingRoleAssignments.id, input.assignmentId));
 
-      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
 
-      await (await db()).update(billingRoleAssignments)
-        .set({ isActive: false })
-        .where(eq(billingRoleAssignments.id, input.assignmentId));
+        await (await db()).update(billingRoleAssignments)
+          .set({ isActive: false })
+          .where(eq(billingRoleAssignments.id, input.assignmentId));
 
-      // Audit log
-      await (await db()).insert(billingAuditLog).values({
-        tenantId: input.tenantId,
-        userId: ctx.user.id,
-        userName: ctx.user.name || "unknown",
-        action: "permission_revoked",
-        resourceType: "billing_role_assignment",
-        resourceId: String(input.assignmentId),
-        beforeState: { role: existing.billingRole, targetUser: existing.userId },
-        afterState: { isActive: false },
-      });
+        // Audit log
+        await (await db()).insert(billingAuditLog).values({
+          tenantId: input.tenantId,
+          userId: ctx.user.id,
+          userName: ctx.user.name || "unknown",
+          action: "permission_revoked",
+          resourceType: "billing_role_assignment",
+          resourceId: String(input.assignmentId),
+          beforeState: { role: existing.billingRole, targetUser: existing.userId },
+          afterState: { isActive: false },
+        });
 
-      return { success: true };
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // List all role assignments for a tenant (requires manage_tenant_billing)
   listAssignments: protectedProcedure
     .input(z.object({ tenantId: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-      const assignments = await db
-        .select()
-        .from(billingRoleAssignments)
-        .where(eq(billingRoleAssignments.tenantId, input.tenantId))
-        .orderBy(desc(billingRoleAssignments.grantedAt));
+        const assignments = await db
+          .select()
+          .from(billingRoleAssignments)
+          .where(eq(billingRoleAssignments.tenantId, input.tenantId))
+          .orderBy(desc(billingRoleAssignments.grantedAt));
 
-      return { assignments, total: assignments.length };
+        return { assignments, total: assignments.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Get Permify schema definition (for admin reference)

@@ -15,11 +15,11 @@ import logger from "../_core/logger";
 export const commissionClawbackRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ cnt: count() }).from(commissionClawbacks);
-    const [pending] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "pending"));
-    const [applied] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "applied"));
-    const [failed] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "failed"));
-    const [totalAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionClawbacks.clawbackAmount}::numeric),0)` }).from(commissionClawbacks);
+    const [total] = await db.select({ cnt: count() }).from(commissionClawbacks).limit(100);
+    const [pending] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "pending")).limit(100);
+    const [applied] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "applied")).limit(100);
+    const [failed] = await db.select({ cnt: count() }).from(commissionClawbacks).where(eq(commissionClawbacks.status, "failed")).limit(100);
+    const [totalAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionClawbacks.clawbackAmount}::numeric),0)` }).from(commissionClawbacks).limit(100);
     return {
       total: total?.cnt ?? 0, pending: pending?.cnt ?? 0, approved: applied?.cnt ?? 0,
       applied: applied?.cnt ?? 0, disputed: failed?.cnt ?? 0,
@@ -31,18 +31,28 @@ export const commissionClawbackRouter = router({
     page: z.number().optional(), status: z.string().optional(),
     limit: z.number().min(1).max(100).optional(),
   })).query(async ({ input }) => {
+    try {
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
     const db = (await getDb())!; const limit = input?.limit ?? 50; const offset = ((input?.page ?? 1) - 1) * limit;
     const where = input?.status ? eq(commissionClawbacks.status, input.status) : undefined;
     const rows = where
       ? await db.select().from(commissionClawbacks).where(where).orderBy(desc(commissionClawbacks.createdAt)).limit(limit).offset(offset)
       : await db.select().from(commissionClawbacks).orderBy(desc(commissionClawbacks.createdAt)).limit(limit).offset(offset);
-    const [totalRow] = await db.select({ cnt: count() }).from(commissionClawbacks);
+    const [totalRow] = await db.select({ cnt: count() }).from(commissionClawbacks).limit(100);
     return { items: rows, total: totalRow?.cnt ?? 0 };
   }),
 
   initiate: protectedProcedure.input(z.object({
     agentId: z.number(), amount: z.number(), reason: z.string(), transactionId: z.number().optional(),
   })).mutation(async ({ input, ctx }) => {
+    try {
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
     const db = (await getDb())!;
     const [clawback] = await db.insert(commissionClawbacks).values({
       reversalRequestId: input.transactionId ?? 0, agentId: input.agentId,
@@ -61,26 +71,36 @@ export const commissionClawbackRouter = router({
   }),
 
   approve: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-    const db = (await getDb())!;
-    const [updated] = await db.update(commissionClawbacks).set({ status: "applied", appliedAt: new Date() }).where(eq(commissionClawbacks.id, input.id)).returning();
-    if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
-    await db.insert(commissionAuditTrail).values({
-      action: "clawback_approved", entityType: "clawback", entityId: String(input.id),
-      performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ appliedAt: new Date().toISOString() }),
-    });
-    try { await publishCommissionEvent({ eventType: "commission.clawback.applied", data: { clawbackId: input.id } }); }
-    catch (e) { logger.warn("[CommissionClawback] Middleware event failed:", e); }
-    return { success: true, message: "Clawback approved and applied" };
+    try {
+      const db = (await getDb())!;
+      const [updated] = await db.update(commissionClawbacks).set({ status: "applied", appliedAt: new Date() }).where(eq(commissionClawbacks.id, input.id)).returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
+      await db.insert(commissionAuditTrail).values({
+        action: "clawback_approved", entityType: "clawback", entityId: String(input.id),
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ appliedAt: new Date().toISOString() }),
+      });
+      try { await publishCommissionEvent({ eventType: "commission.clawback.applied", data: { clawbackId: input.id } }); }
+      catch (e) { logger.warn("[CommissionClawback] Middleware event failed:", e); }
+      return { success: true, message: "Clawback approved and applied" };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   dispute: protectedProcedure.input(z.object({ id: z.number(), reason: z.string() })).mutation(async ({ input, ctx }) => {
-    const db = (await getDb())!;
-    const [updated] = await db.update(commissionClawbacks).set({ status: "failed" }).where(eq(commissionClawbacks.id, input.id)).returning();
-    if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
-    await db.insert(commissionAuditTrail).values({
-      action: "clawback_disputed", entityType: "clawback", entityId: String(input.id),
-      performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason }),
-    });
-    return { success: true, message: "Dispute filed" };
+    try {
+      const db = (await getDb())!;
+      const [updated] = await db.update(commissionClawbacks).set({ status: "failed" }).where(eq(commissionClawbacks.id, input.id)).returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
+      await db.insert(commissionAuditTrail).values({
+        action: "clawback_disputed", entityType: "clawback", entityId: String(input.id),
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason }),
+      });
+      return { success: true, message: "Dispute filed" };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

@@ -3,12 +3,18 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { analyticsMetrics, auditLog, systemConfig } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 export const platformMetricsExporterRouter = router({
   listMetrics: protectedProcedure.input(z.object({ limit: z.number().default(100) }).optional()).query(async ({ input }) => {
-    const db = (await getDb())!;
-    const rows = await db.select().from(analyticsMetrics).orderBy(desc(analyticsMetrics.createdAt)).limit(input?.limit ?? 100);
-    return { metrics: rows, total: rows.length };
+    try {
+      const db = (await getDb())!;
+      const rows = await db.select().from(analyticsMetrics).orderBy(desc(analyticsMetrics.createdAt)).limit(input?.limit ?? 100);
+      return { metrics: rows, total: rows.length };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   getExportConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
@@ -16,14 +22,19 @@ export const platformMetricsExporterRouter = router({
     return config ? JSON.parse(String(config.value)) : { format: "prometheus", endpoint: "/metrics", interval: 15, enabled: true };
   }),
   exportMetrics: protectedProcedure.input(z.object({ format: z.enum(["prometheus", "json", "openmetrics"]).default("prometheus") })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    const rows = await db.select().from(analyticsMetrics).limit(100);
-    await db.insert(auditLog).values({ action: "metrics_exported", resource: "metrics_exporter", resourceId: "export-" + crypto.randomUUID(), status: "success", metadata: { format: input.format, metricCount: rows.length } });
-    return { success: true, format: input.format, metricCount: rows.length, exportedAt: new Date().toISOString() };
+    try {
+      const db = (await getDb())!;
+      const rows = await db.select().from(analyticsMetrics).limit(100);
+      await db.insert(auditLog).values({ action: "metrics_exported", resource: "metrics_exporter", resourceId: "export-" + crypto.randomUUID(), status: "success", metadata: { format: input.format, metricCount: rows.length } });
+      return { success: true, format: input.format, metricCount: rows.length, exportedAt: new Date().toISOString() };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(analyticsMetrics);
+    const [total] = await db.select({ value: count() }).from(analyticsMetrics).limit(100);
     return { totalMetrics: Number(total.value), lastUpdated: new Date().toISOString() };
   }),
 });

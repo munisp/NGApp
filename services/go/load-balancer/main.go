@@ -10,6 +10,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"log/slog"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv"go.opentelemetry.io/otel/attribute"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // Intelligent load balancer
@@ -138,7 +143,7 @@ func initTracer(serviceName, serviceVersion string) func(context.Context) error 
 		return func(context.Context) error { return nil }
 	}
 	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
+		"https://opentelemetry.io/schemas/1.24.0",
 		semconv.ServiceName(serviceName),
 		semconv.ServiceVersion(serviceVersion),
 		attribute.String("deployment.environment", os.Getenv("ENVIRONMENT")),

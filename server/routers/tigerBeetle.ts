@@ -106,22 +106,27 @@ export const tigerBeetleRouter = router({
   agentBalance: protectedProcedure
     .input(z.object({ agentCode: z.string() }))
     .query(async ({ input }) => {
-      const balance = await tbGetAgentBalance(input.agentCode);
-      if (!balance) {
-        // Fall back to PostgreSQL float balance
-        const db = (await getDb())!;
-        if (!db) return { balanceNGN: 0, balanceKobo: 0, source: "unavailable" as const };
-        const [agent] = await db.select({ floatBalance: agents.floatBalance })
-          .from(agents)
-          .where(eq(agents.agentCode, input.agentCode))
-          .limit(1);
-        return {
-          balanceNGN: agent ? Number(agent.floatBalance) : 0,
-          balanceKobo: agent ? Number(agent.floatBalance) * 100 : 0,
-          source: "postgres" as const,
-        };
+      try {
+        const balance = await tbGetAgentBalance(input.agentCode);
+        if (!balance) {
+          // Fall back to PostgreSQL float balance
+          const db = (await getDb())!;
+          if (!db) return { balanceNGN: 0, balanceKobo: 0, source: "unavailable" as const };
+          const [agent] = await db.select({ floatBalance: agents.floatBalance })
+            .from(agents)
+            .where(eq(agents.agentCode, input.agentCode))
+            .limit(1);
+          return {
+            balanceNGN: agent ? Number(agent.floatBalance) : 0,
+            balanceKobo: agent ? Number(agent.floatBalance) * 100 : 0,
+            source: "postgres" as const,
+          };
+        }
+        return { ...balance, source: "tigerbeetle" as const };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return { ...balance, source: "tigerbeetle" as const };
     }),
 
   /** Get transfer history from sidecar */
@@ -194,8 +199,13 @@ export const tigerBeetleRouter = router({
   ensureAccount: protectedProcedure
     .input(z.object({ agentCode: z.string() }))
     .mutation(async ({ input }) => {
-      const created = await tbEnsureAgentAccount(input.agentCode);
-      return { created, agentCode: input.agentCode };
+      try {
+        const created = await tbEnsureAgentAccount(input.agentCode);
+        return { created, agentCode: input.agentCode };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /** Ledger summary: total accounts, total volume, pending transfers */

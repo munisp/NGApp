@@ -14,6 +14,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dlqMessages } from "../../drizzle/schema";
 import { desc, eq, count, sql, and, lt } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 const KAFKA_BROKER = process.env.KAFKA_BROKER ?? "kafka:9092";
 const FLUVIO_URL = process.env.FLUVIO_ENDPOINT ?? "http://fluvio-sc:9003";
@@ -126,23 +127,28 @@ export const kafkaConsumerRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { messages: [], total: 0 };
-      const conditions = [];
-      if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
-      if (input.status) conditions.push(eq(dlqMessages.status, input.status));
-      const where = conditions.length > 0
-        ? (conditions.length === 1 ? conditions[0] : and(...conditions))
-        : undefined;
-      const [messages, [{ total }]] = await Promise.all([
-        db.select().from(dlqMessages)
-          .where(where)
-          .orderBy(desc(dlqMessages.createdAt))
-          .limit(input.limit)
-          .offset(input.offset),
-        db.select({ total: count() }).from(dlqMessages).where(where),
-      ]);
-      return { messages, total: Number(total) };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { messages: [], total: 0 };
+        const conditions = [];
+        if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
+        if (input.status) conditions.push(eq(dlqMessages.status, input.status));
+        const where = conditions.length > 0
+          ? (conditions.length === 1 ? conditions[0] : and(...conditions))
+          : undefined;
+        const [messages, [{ total }]] = await Promise.all([
+          db.select().from(dlqMessages)
+            .where(where)
+            .orderBy(desc(dlqMessages.createdAt))
+            .limit(input.limit)
+            .offset(input.offset),
+          db.select({ total: count() }).from(dlqMessages).where(where),
+        ]);
+        return { messages, total: Number(total) };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /** Drain DLQ — requeue pending/failed messages */
@@ -152,41 +158,51 @@ export const kafkaConsumerRouter = router({
       limit: z.number().min(1).max(100).default(10),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { requeued: 0 };
-      const conditions = [eq(dlqMessages.status, "pending")];
-      if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
-      const pending = await db.select({ id: dlqMessages.id })
-        .from(dlqMessages)
-        .where(and(...conditions))
-        .limit(input.limit);
-      // Mark as retrying
-      for (const msg of pending) {
-        await db.update(dlqMessages)
-          .set({ status: "retrying" })
-          .where(eq(dlqMessages.id, msg.id));
+      try {
+        const db = (await getDb())!;
+        if (!db) return { requeued: 0 };
+        const conditions = [eq(dlqMessages.status, "pending")];
+        if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
+        const pending = await db.select({ id: dlqMessages.id })
+          .from(dlqMessages)
+          .where(and(...conditions))
+          .limit(input.limit);
+        // Mark as retrying
+        for (const msg of pending) {
+          await db.update(dlqMessages)
+            .set({ status: "retrying" })
+            .where(eq(dlqMessages.id, msg.id));
+        }
+        return { requeued: pending.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return { requeued: pending.length };
     }),
 
   /** Purge resolved DLQ messages older than N days */
   purgeDlq: protectedProcedure
     .input(z.object({ olderThanDays: z.number().min(1).max(365).default(30) }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { purged: 0 };
-      const cutoff = new Date(Date.now() - input.olderThanDays * 86400_000);
-      const toDelete = await db.select({ id: dlqMessages.id })
-        .from(dlqMessages)
-        .where(and(
-          eq(dlqMessages.status, "resolved"),
-          lt(dlqMessages.createdAt, cutoff),
-        ))
-        .limit(500);
-      for (const msg of toDelete) {
-        await db.delete(dlqMessages).where(eq(dlqMessages.id, msg.id));
+      try {
+        const db = (await getDb())!;
+        if (!db) return { purged: 0 };
+        const cutoff = new Date(Date.now() - input.olderThanDays * 86400_000);
+        const toDelete = await db.select({ id: dlqMessages.id })
+          .from(dlqMessages)
+          .where(and(
+            eq(dlqMessages.status, "resolved"),
+            lt(dlqMessages.createdAt, cutoff),
+          ))
+          .limit(500);
+        for (const msg of toDelete) {
+          await db.delete(dlqMessages).where(eq(dlqMessages.id, msg.id));
+        }
+        return { purged: toDelete.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return { purged: toDelete.length };
     }),
 
   /** Summary: total lag, DLQ count, broker health */

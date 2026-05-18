@@ -77,90 +77,100 @@ export const developerPortalRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Limit: max 10 active keys per user
-      const existingKeys = await db
-        .select({ id: apiKeys.id })
-        .from(apiKeys)
-        .where(
-          and(
-            eq(apiKeys.userId, ctx.user.id),
-            eq(apiKeys.status, "active"),
-            isNull(apiKeys.revokedAt)
-          )
-        );
+        // Limit: max 10 active keys per user
+        const existingKeys = await db
+          .select({ id: apiKeys.id })
+          .from(apiKeys)
+          .where(
+            and(
+              eq(apiKeys.userId, ctx.user.id),
+              eq(apiKeys.status, "active"),
+              isNull(apiKeys.revokedAt)
+            )
+          );
 
-      if (existingKeys.length >= 10) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Maximum of 10 active API keys allowed. Revoke an existing key first.",
-        });
-      }
+        if (existingKeys.length >= 10) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Maximum of 10 active API keys allowed. Revoke an existing key first.",
+          });
+        }
 
-      const { raw, hash, prefix } = generateApiKey();
-      const expiresAt = input.expiresInDays
-        ? new Date(Date.now() + input.expiresInDays * 86_400_000)
-        : null;
+        const { raw, hash, prefix } = generateApiKey();
+        const expiresAt = input.expiresInDays
+          ? new Date(Date.now() + input.expiresInDays * 86_400_000)
+          : null;
 
-      const inserted = await db
-        .insert(apiKeys)
-        .values({
-          keyHash: hash,
-          keyPrefix: prefix,
+        const inserted = await db
+          .insert(apiKeys)
+          .values({
+            keyHash: hash,
+            keyPrefix: prefix,
+            name: input.name,
+            description: input.description,
+            userId: ctx.user.id,
+            tenantId: (ctx.user as any).tenantId ?? null,
+            status: "active",
+            scopes: input.scopes as string[],
+            rateLimit: input.rateLimit,
+            expiresAt: expiresAt ?? undefined,
+            createdAt: new Date(),
+          } as any)
+          .returning({ id: apiKeys.id, keyPrefix: apiKeys.keyPrefix, createdAt: apiKeys.createdAt });
+
+        return {
+          success: true,
+          id: inserted[0].id,
+          keyPrefix: inserted[0].keyPrefix,
+          rawKey: raw, // ⚠️ Shown ONCE — store it securely
           name: input.name,
-          description: input.description,
-          userId: ctx.user.id,
-          tenantId: (ctx.user as any).tenantId ?? null,
-          status: "active",
-          scopes: input.scopes as string[],
+          scopes: input.scopes,
           rateLimit: input.rateLimit,
-          expiresAt: expiresAt ?? undefined,
-          createdAt: new Date(),
-        } as any)
-        .returning({ id: apiKeys.id, keyPrefix: apiKeys.keyPrefix, createdAt: apiKeys.createdAt });
-
-      return {
-        success: true,
-        id: inserted[0].id,
-        keyPrefix: inserted[0].keyPrefix,
-        rawKey: raw, // ⚠️ Shown ONCE — store it securely
-        name: input.name,
-        scopes: input.scopes,
-        rateLimit: input.rateLimit,
-        expiresAt: expiresAt?.toISOString() ?? null,
-        createdAt: inserted[0].createdAt,
-        warning: "This is the only time your API key will be shown. Copy it now.",
-      };
+          expiresAt: expiresAt?.toISOString() ?? null,
+          createdAt: inserted[0].createdAt,
+          warning: "This is the only time your API key will be shown. Copy it now.",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
    * List all API keys for the authenticated user (without raw key values).
    */
   listKeys: protectedProcedure.query(async ({ ctx }) => {
-    const db = (await getDb())!;
-    if (!db) return { keys: [] };
+    try {
+      const db = (await getDb())!;
+      if (!db) return { keys: [] };
 
-    const rows = await db
-      .select({
-        id: apiKeys.id,
-        keyPrefix: apiKeys.keyPrefix,
-        name: apiKeys.name,
-        description: apiKeys.description,
-        status: apiKeys.status,
-        scopes: apiKeys.scopes,
-        rateLimit: apiKeys.rateLimit,
-        lastUsedAt: apiKeys.lastUsedAt,
-        expiresAt: apiKeys.expiresAt,
-        createdAt: apiKeys.createdAt,
-        revokedAt: apiKeys.revokedAt,
-      })
-      .from(apiKeys)
-      .where(eq(apiKeys.userId, ctx.user.id))
-      .orderBy(desc(apiKeys.createdAt));
+      const rows = await db
+        .select({
+          id: apiKeys.id,
+          keyPrefix: apiKeys.keyPrefix,
+          name: apiKeys.name,
+          description: apiKeys.description,
+          status: apiKeys.status,
+          scopes: apiKeys.scopes,
+          rateLimit: apiKeys.rateLimit,
+          lastUsedAt: apiKeys.lastUsedAt,
+          expiresAt: apiKeys.expiresAt,
+          createdAt: apiKeys.createdAt,
+          revokedAt: apiKeys.revokedAt,
+        })
+        .from(apiKeys)
+        .where(eq(apiKeys.userId, ctx.user.id))
+        .orderBy(desc(apiKeys.createdAt));
 
-    return { keys: rows };
+      return { keys: rows };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   /**
@@ -169,27 +179,32 @@ export const developerPortalRouter = router({
   revokeKey: protectedProcedure
     .input(z.object({ keyId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Verify ownership
-      const [key] = await db
-        .select({ id: apiKeys.id, userId: apiKeys.userId })
-        .from(apiKeys)
-        .where(eq(apiKeys.id, input.keyId))
-        .limit(1);
+        // Verify ownership
+        const [key] = await db
+          .select({ id: apiKeys.id, userId: apiKeys.userId })
+          .from(apiKeys)
+          .where(eq(apiKeys.id, input.keyId))
+          .limit(1);
 
-      if (!key) throw new TRPCError({ code: "NOT_FOUND", message: "API key not found" });
-      if (key.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You do not own this API key" });
+        if (!key) throw new TRPCError({ code: "NOT_FOUND", message: "API key not found" });
+        if (key.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "You do not own this API key" });
+        }
+
+        await db
+          .update(apiKeys)
+          .set({ status: "revoked", revokedAt: new Date() } as any)
+          .where(eq(apiKeys.id, input.keyId));
+
+        return { success: true, message: "API key revoked successfully" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await db
-        .update(apiKeys)
-        .set({ status: "revoked", revokedAt: new Date() } as any)
-        .where(eq(apiKeys.id, input.keyId));
-
-      return { success: true, message: "API key revoked successfully" };
     }),
 
   /**
@@ -199,51 +214,56 @@ export const developerPortalRouter = router({
   rotateKey: protectedProcedure
     .input(z.object({ keyId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Verify ownership
-      const [oldKey] = await db
-        .select()
-        .from(apiKeys)
-        .where(and(eq(apiKeys.id, input.keyId), eq(apiKeys.userId, ctx.user.id)))
-        .limit(1);
+        // Verify ownership
+        const [oldKey] = await db
+          .select()
+          .from(apiKeys)
+          .where(and(eq(apiKeys.id, input.keyId), eq(apiKeys.userId, ctx.user.id)))
+          .limit(1);
 
-      if (!oldKey) throw new TRPCError({ code: "NOT_FOUND", message: "API key not found or not owned by you" });
+        if (!oldKey) throw new TRPCError({ code: "NOT_FOUND", message: "API key not found or not owned by you" });
 
-      const { raw, hash, prefix } = generateApiKey();
+        const { raw, hash, prefix } = generateApiKey();
 
-      // Revoke old key
-      await db
-        .update(apiKeys)
-        .set({ status: "revoked", revokedAt: new Date() } as any)
-        .where(eq(apiKeys.id, input.keyId));
+        // Revoke old key
+        await db
+          .update(apiKeys)
+          .set({ status: "revoked", revokedAt: new Date() } as any)
+          .where(eq(apiKeys.id, input.keyId));
 
-      // Create new key with same settings
-      const inserted = await db
-        .insert(apiKeys)
-        .values({
-          keyHash: hash,
-          keyPrefix: prefix,
-          name: oldKey.name + " (rotated)",
-          description: oldKey.description,
-          userId: ctx.user.id,
-          tenantId: oldKey.tenantId,
-          status: "active",
-          scopes: oldKey.scopes,
-          rateLimit: oldKey.rateLimit,
-          expiresAt: oldKey.expiresAt,
-          createdAt: new Date(),
-        } as any)
-        .returning({ id: apiKeys.id });
+        // Create new key with same settings
+        const inserted = await db
+          .insert(apiKeys)
+          .values({
+            keyHash: hash,
+            keyPrefix: prefix,
+            name: oldKey.name + " (rotated)",
+            description: oldKey.description,
+            userId: ctx.user.id,
+            tenantId: oldKey.tenantId,
+            status: "active",
+            scopes: oldKey.scopes,
+            rateLimit: oldKey.rateLimit,
+            expiresAt: oldKey.expiresAt,
+            createdAt: new Date(),
+          } as any)
+          .returning({ id: apiKeys.id });
 
-      return {
-        success: true,
-        newKeyId: inserted[0].id,
-        newKeyPrefix: prefix,
-        rawKey: raw, // ⚠️ Shown ONCE
-        warning: "Old key has been revoked. This is the only time your new API key will be shown.",
-      };
+        return {
+          success: true,
+          newKeyId: inserted[0].id,
+          newKeyPrefix: prefix,
+          rawKey: raw, // ⚠️ Shown ONCE
+          warning: "Old key has been revoked. This is the only time your new API key will be shown.",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -253,66 +273,76 @@ export const developerPortalRouter = router({
   validateKey: protectedProcedure
     .input(z.object({ rawKey: z.string().min(1) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      const hash = hashApiKey(input.rawKey);
+        const hash = hashApiKey(input.rawKey);
 
-      const [key] = await db
-        .select({
-          id: apiKeys.id,
-          keyPrefix: apiKeys.keyPrefix,
-          name: apiKeys.name,
-          userId: apiKeys.userId,
-          tenantId: apiKeys.tenantId,
-          status: apiKeys.status,
-          scopes: apiKeys.scopes,
-          rateLimit: apiKeys.rateLimit,
-          expiresAt: apiKeys.expiresAt,
-          revokedAt: apiKeys.revokedAt,
-        })
-        .from(apiKeys)
-        .where(eq(apiKeys.keyHash, hash))
-        .limit(1);
+        const [key] = await db
+          .select({
+            id: apiKeys.id,
+            keyPrefix: apiKeys.keyPrefix,
+            name: apiKeys.name,
+            userId: apiKeys.userId,
+            tenantId: apiKeys.tenantId,
+            status: apiKeys.status,
+            scopes: apiKeys.scopes,
+            rateLimit: apiKeys.rateLimit,
+            expiresAt: apiKeys.expiresAt,
+            revokedAt: apiKeys.revokedAt,
+          })
+          .from(apiKeys)
+          .where(eq(apiKeys.keyHash, hash))
+          .limit(1);
 
-      if (!key) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
-      if (key.status !== "active" || key.revokedAt) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "API key has been revoked" });
+        if (!key) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+        if (key.status !== "active" || key.revokedAt) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "API key has been revoked" });
+        }
+        if (key.expiresAt && key.expiresAt < new Date()) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "API key has expired" });
+        }
+
+        // Update lastUsedAt (fire-and-forget)
+        db.update(apiKeys)
+          .set({ lastUsedAt: new Date() } as any)
+          .where(eq(apiKeys.id, key.id))
+          .catch((e: unknown) => console.error("[DevPortal] lastUsedAt update failed:", e));
+
+        return {
+          valid: true,
+          keyId: key.id,
+          keyPrefix: key.keyPrefix,
+          userId: key.userId,
+          tenantId: key.tenantId,
+          scopes: key.scopes,
+          rateLimit: key.rateLimit,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      if (key.expiresAt && key.expiresAt < new Date()) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "API key has expired" });
-      }
-
-      // Update lastUsedAt (fire-and-forget)
-      db.update(apiKeys)
-        .set({ lastUsedAt: new Date() } as any)
-        .where(eq(apiKeys.id, key.id))
-        .catch((e: unknown) => console.error("[DevPortal] lastUsedAt update failed:", e));
-
-      return {
-        valid: true,
-        keyId: key.id,
-        keyPrefix: key.keyPrefix,
-        userId: key.userId,
-        tenantId: key.tenantId,
-        scopes: key.scopes,
-        rateLimit: key.rateLimit,
-      };
     }),
 
   // ── webhookSecrets CRUD ──────────────────────────────────────────────────
   listWebhookSecrets: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-    const db = (await getDb())!;
-    if (!db) return [];
-    return db.select({
-      id: webhookSecrets.id,
-      integrationName: webhookSecrets.integrationName,
-      algorithm: webhookSecrets.algorithm,
-      isActive: webhookSecrets.isActive,
-      lastRotatedAt: webhookSecrets.lastRotatedAt,
-      createdAt: webhookSecrets.createdAt,
-    }).from(webhookSecrets).orderBy(desc(webhookSecrets.createdAt));
+    try {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = (await getDb())!;
+      if (!db) return [];
+      return db.select({
+        id: webhookSecrets.id,
+        integrationName: webhookSecrets.integrationName,
+        algorithm: webhookSecrets.algorithm,
+        isActive: webhookSecrets.isActive,
+        lastRotatedAt: webhookSecrets.lastRotatedAt,
+        createdAt: webhookSecrets.createdAt,
+      }).from(webhookSecrets).orderBy(desc(webhookSecrets.createdAt)).limit(100);
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   createWebhookSecret: protectedProcedure
@@ -321,53 +351,73 @@ export const developerPortalRouter = router({
       algorithm: z.enum(["sha256", "sha512"]).default("sha256"),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const secret = crypto.randomBytes(32).toString("hex");
-      const [row] = await db.insert(webhookSecrets).values({
-        integrationName: input.integrationName,
-        secret,
-        algorithm: input.algorithm,
-        isActive: true,
-        lastRotatedAt: new Date(),
-      }).returning();
-      return { ...row, secret };
+      try {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const secret = crypto.randomBytes(32).toString("hex");
+        const [row] = await db.insert(webhookSecrets).values({
+          integrationName: input.integrationName,
+          secret,
+          algorithm: input.algorithm,
+          isActive: true,
+          lastRotatedAt: new Date(),
+        }).returning();
+        return { ...row, secret };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   rotateWebhookSecret: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const newSecret = crypto.randomBytes(32).toString("hex");
-      const [row] = await db.update(webhookSecrets)
-        .set({ secret: newSecret, lastRotatedAt: new Date() })
-        .where(eq(webhookSecrets.id, input.id))
-        .returning();
-      if (!row) throw new TRPCError({ code: "NOT_FOUND" });
-      return { ...row, secret: newSecret };
+      try {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const newSecret = crypto.randomBytes(32).toString("hex");
+        const [row] = await db.update(webhookSecrets)
+          .set({ secret: newSecret, lastRotatedAt: new Date() })
+          .where(eq(webhookSecrets.id, input.id))
+          .returning();
+        if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+        return { ...row, secret: newSecret };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   toggleWebhookSecret: protectedProcedure
     .input(z.object({ id: z.number(), isActive: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.update(webhookSecrets).set({ isActive: input.isActive }).where(eq(webhookSecrets.id, input.id));
-      return { success: true };
+      try {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.update(webhookSecrets).set({ isActive: input.isActive }).where(eq(webhookSecrets.id, input.id));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   deleteWebhookSecret: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(webhookSecrets).where(eq(webhookSecrets.id, input.id));
-      return { success: true };
+      try {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.delete(webhookSecrets).where(eq(webhookSecrets.id, input.id));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── apiKeyUsage CRUD ──────────────────────────────────────────────────────
@@ -379,28 +429,38 @@ export const developerPortalRouter = router({
       since: z.date().optional(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return [];
-      const conditions: ReturnType<typeof eq>[] = [eq(apiKeyUsage.apiKeyId, input.apiKeyId)];
-      if (input.since) conditions.push(gte(apiKeyUsage.createdAt, input.since));
-      return db.select().from(apiKeyUsage)
-        .where(and(...conditions))
-        .orderBy(desc(apiKeyUsage.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+      try {
+        const db = (await getDb())!;
+        if (!db) return [];
+        const conditions: ReturnType<typeof eq>[] = [eq(apiKeyUsage.apiKeyId, input.apiKeyId)];
+        if (input.since) conditions.push(gte(apiKeyUsage.createdAt, input.since));
+        return db.select().from(apiKeyUsage)
+          .where(and(...conditions))
+          .orderBy(desc(apiKeyUsage.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   getApiKeyUsageSummary: protectedProcedure
     .input(z.object({ apiKeyId: z.number() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { total: 0, errors: 0, avgResponseMs: 0 };
-      const [row] = await db.select({
-        total: count(),
-        errors: sql<number>`COUNT(*) FILTER (WHERE ${apiKeyUsage.statusCode} >= 400)`,
-        avgResponseMs: sql<number>`AVG(${apiKeyUsage.responseMs})`,
-      }).from(apiKeyUsage).where(eq(apiKeyUsage.apiKeyId, input.apiKeyId));
-      return row ?? { total: 0, errors: 0, avgResponseMs: 0 };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { total: 0, errors: 0, avgResponseMs: 0 };
+        const [row] = await db.select({
+          total: count(),
+          errors: sql<number>`COUNT(*) FILTER (WHERE ${apiKeyUsage.statusCode} >= 400)`,
+          avgResponseMs: sql<number>`AVG(${apiKeyUsage.responseMs})`,
+        }).from(apiKeyUsage).where(eq(apiKeyUsage.apiKeyId, input.apiKeyId));
+        return row ?? { total: 0, errors: 0, avgResponseMs: 0 };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   recordApiKeyUsage: protectedProcedure
@@ -413,10 +473,15 @@ export const developerPortalRouter = router({
       ipAddress: z.string().max(45).optional(),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { success: false };
-      await db.insert(apiKeyUsage).values(input);
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { success: false };
+        await db.insert(apiKeyUsage).values(input);
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**

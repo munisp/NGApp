@@ -22,6 +22,7 @@ import { getDb } from "../db";
 import { and, count, desc, eq, gte, isNull, lt, or } from "drizzle-orm";
 import { agentPushSubscriptions, connectivityLog, dlqMessages, erpSyncLog, mqttBridgeConfig } from "../../drizzle/schema";
 import webpush from "web-push";
+import { TRPCError } from "@trpc/server";
 
 // Configure VAPID keys for Web Push
 // SECURITY: Guard against empty VAPID keys (test/dev environments may not have them set)
@@ -69,13 +70,18 @@ export const resilienceRouter = router({
   detectCarrier: protectedProcedure
     .input(z.object({ phone: z.string() }))
     .query(async ({ input }) => {
-      const result = await safeFetch<{
-        name: string;
-        code: string;
-        ussd: string;
-        color: string;
-      }>(`${RESILIENCE_URL}/carrier/${encodeURIComponent(input.phone)}`);
-      return result ?? { name: "Unknown", code: "unknown", ussd: "", color: "#888888" };
+      try {
+        const result = await safeFetch<{
+          name: string;
+          code: string;
+          ussd: string;
+          color: string;
+        }>(`${RESILIENCE_URL}/carrier/${encodeURIComponent(input.phone)}`);
+        return result ?? { name: "Unknown", code: "unknown", ussd: "", color: "#888888" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Rust: USSD encode ─────────────────────────────────────────────────────
@@ -90,29 +96,34 @@ export const resilienceRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const result = await safeFetch<{
-        ussd_string: string;
-        instructions: string;
-        carrier_hint: string | null;
-      }>(
-        `${OFFLINE_URL}/ussd/encode`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tx_type: input.txType,
-            amount: input.amount,
-            destination_account: input.destinationAccount,
-            destination_bank: input.destinationBank,
-            customer_phone: input.customerPhone,
-          }),
-        }
-      );
-      return result ?? {
-        ussd_string: `*966*${Math.round(input.amount)}#`,
-        instructions: `Dial *966*${Math.round(input.amount)}# to pay via USSD.`,
-        carrier_hint: null,
-      };
+      try {
+        const result = await safeFetch<{
+          ussd_string: string;
+          instructions: string;
+          carrier_hint: string | null;
+        }>(
+          `${OFFLINE_URL}/ussd/encode`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tx_type: input.txType,
+              amount: input.amount,
+              destination_account: input.destinationAccount,
+              destination_bank: input.destinationBank,
+              customer_phone: input.customerPhone,
+            }),
+          }
+        );
+        return result ?? {
+          ussd_string: `*966*${Math.round(input.amount)}#`,
+          instructions: `Dial *966*${Math.round(input.amount)}# to pay via USSD.`,
+          carrier_hint: null,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Rust: offline queue count ─────────────────────────────────────────────
@@ -136,99 +147,119 @@ export const resilienceRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const result = await safeFetch<{ id: string; queued_at: string }>(
-        `${OFFLINE_URL}/queue/enqueue`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tx_type: input.txType,
-            amount: input.amount,
-            customer_name: input.customerName,
-            customer_phone: input.customerPhone,
-            destination_bank: input.destinationBank,
-            destination_account: input.destinationAccount,
-            channel: input.channel,
-            payload_json: input.payloadJson,
-          }),
-        }
-      );
-      return result ?? { id: "unknown", queued_at: new Date().toISOString() };
+      try {
+        const result = await safeFetch<{ id: string; queued_at: string }>(
+          `${OFFLINE_URL}/queue/enqueue`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tx_type: input.txType,
+              amount: input.amount,
+              customer_name: input.customerName,
+              customer_phone: input.customerPhone,
+              destination_bank: input.destinationBank,
+              destination_account: input.destinationAccount,
+              channel: input.channel,
+              payload_json: input.payloadJson,
+            }),
+          }
+        );
+        return result ?? { id: "unknown", queued_at: new Date().toISOString() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Rust: dequeue (pop) one item from the offline queue ───────────────────
   dequeueOffline: protectedProcedure
     .input(z.object({ id: z.string().optional() }))
     .mutation(async ({ input }) => {
-      // If a specific id is provided, dequeue that item; otherwise list pending
-      // and dequeue the oldest one
-      if (input.id) {
-        const result = await safeFetch<{ success: boolean }>(
-          `${OFFLINE_URL}/queue/dequeue/${input.id}`,
-          { method: "POST" }
-        );
-        return { item: null, dequeued: result?.success ?? false };
+      try {
+        // If a specific id is provided, dequeue that item; otherwise list pending
+        // and dequeue the oldest one
+        if (input.id) {
+          const result = await safeFetch<{ success: boolean }>(
+            `${OFFLINE_URL}/queue/dequeue/${input.id}`,
+            { method: "POST" }
+          );
+          return { item: null, dequeued: result?.success ?? false };
+        }
+        // Pop the oldest pending item: list → take first → dequeue it
+        const pending = await safeFetch<Array<{
+          id: string; tx_type: string; amount: number;
+          customer_name?: string; customer_phone?: string;
+          destination_bank?: string; destination_account?: string;
+          channel?: string; payload_json?: string;
+        }>>(`${OFFLINE_URL}/queue/pending`);
+        if (!pending || pending.length === 0) return { item: null, dequeued: false };
+        const oldest = pending[0];
+        await safeFetch(`${OFFLINE_URL}/queue/dequeue/${oldest.id}`, { method: "POST" });
+        return { item: oldest, dequeued: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      // Pop the oldest pending item: list → take first → dequeue it
-      const pending = await safeFetch<Array<{
-        id: string; tx_type: string; amount: number;
-        customer_name?: string; customer_phone?: string;
-        destination_bank?: string; destination_account?: string;
-        channel?: string; payload_json?: string;
-      }>>(`${OFFLINE_URL}/queue/pending`);
-      if (!pending || pending.length === 0) return { item: null, dequeued: false };
-      const oldest = pending[0];
-      await safeFetch(`${OFFLINE_URL}/queue/dequeue/${oldest.id}`, { method: "POST" });
-      return { item: oldest, dequeued: true };
     }),
 
   // ── Python: bulk per-agent success rates ────────────────────────────────────────────
   agentSuccessRates: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(90).default(7) }))
     .query(async ({ input }) => {
-      const result = await safeFetch<{
-        agents: Array<{
-          agent_code: string;
-          agent_name: string;
-          agent_status: string;
-          success_rate_pct: number | null;
-          tier: string | null;
-          total_transactions: number;
-          success_count: number;
-          failed_count: number;
-          volume_ngn: number;
-          total_commission_ngn: number;
-        }>;
-        period_days: number;
-        computed_at: string;
-      }>(`${ANALYTICS_URL}/stats/all-agents?days=${input.days}`);
-      return result ?? { agents: [], period_days: input.days, computed_at: new Date().toISOString() };
+      try {
+        const result = await safeFetch<{
+          agents: Array<{
+            agent_code: string;
+            agent_name: string;
+            agent_status: string;
+            success_rate_pct: number | null;
+            tier: string | null;
+            total_transactions: number;
+            success_count: number;
+            failed_count: number;
+            volume_ngn: number;
+            total_commission_ngn: number;
+          }>;
+          period_days: number;
+          computed_at: string;
+        }>(`${ANALYTICS_URL}/stats/all-agents?days=${input.days}`);
+        return result ?? { agents: [], period_days: input.days, computed_at: new Date().toISOString() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Python: 7-day success rate ────────────────────────────────────────────
   successRate: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(90).default(7) }))
     .query(async ({ input }) => {
-      const result = await safeFetch<{
-        success_rate_pct: number;
-        tier: string;
-        total_transactions: number;
-        success_count: number;
-        failed_count: number;
-        reversed_count: number;
-        daily_series: Array<{ day: string; success_count: number; total_count: number; rate: number }>;
-        computed_at: string;
-      }>(`${ANALYTICS_URL}/stats/success-rate?days=${input.days}`);
-      return result ?? {
-        success_rate_pct: 0,
-        tier: "Unknown",
-        total_transactions: 0,
-        success_count: 0,
-        failed_count: 0,
-        reversed_count: 0,
-        daily_series: [],
-        computed_at: new Date().toISOString(),
-      };
+      try {
+        const result = await safeFetch<{
+          success_rate_pct: number;
+          tier: string;
+          total_transactions: number;
+          success_count: number;
+          failed_count: number;
+          reversed_count: number;
+          daily_series: Array<{ day: string; success_count: number; total_count: number; rate: number }>;
+          computed_at: string;
+        }>(`${ANALYTICS_URL}/stats/success-rate?days=${input.days}`);
+        return result ?? {
+          success_rate_pct: 0,
+          tier: "Unknown",
+          total_transactions: 0,
+          success_count: 0,
+          failed_count: 0,
+          reversed_count: 0,
+          daily_series: [],
+          computed_at: new Date().toISOString(),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Aggregated system status: Fluvio + Redis + ERP + email + MQTT + Go agent ──
@@ -352,15 +383,20 @@ export const resilienceRouter = router({
   discardOfflineItem: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const result = await safeFetch<{ success: boolean }>(
-        `${OFFLINE_URL}/queue/discard/${input.id}`,
-        { method: "DELETE" }
-      );
-      // Fallback: try dequeue if discard endpoint doesn't exist
-      if (!result) {
-        await safeFetch(`${OFFLINE_URL}/queue/dequeue/${input.id}`, { method: "POST" });
+      try {
+        const result = await safeFetch<{ success: boolean }>(
+          `${OFFLINE_URL}/queue/discard/${input.id}`,
+          { method: "DELETE" }
+        );
+        // Fallback: try dequeue if discard endpoint doesn't exist
+        if (!result) {
+          await safeFetch(`${OFFLINE_URL}/queue/dequeue/${input.id}`, { method: "POST" });
+        }
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return { success: true };
     }),
 
   // ── Web Push: save push subscription for an agent ───────────────────────
@@ -373,28 +409,33 @@ export const resilienceRouter = router({
       userAgent:  z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { ok: false };
-      await db
-        .insert(agentPushSubscriptions)
-        .values({
-          agentCode: input.agentCode,
-          endpoint:  input.endpoint,
-          p256dhKey: input.p256dhKey,
-          authKey:   input.authKey,
-          userAgent: input.userAgent,
-        })
-        .onConflictDoUpdate({
-          target: agentPushSubscriptions.endpoint,
-          set: {
+      try {
+        const db = (await getDb())!;
+        if (!db) return { ok: false };
+        await db
+          .insert(agentPushSubscriptions)
+          .values({
             agentCode: input.agentCode,
+            endpoint:  input.endpoint,
             p256dhKey: input.p256dhKey,
             authKey:   input.authKey,
             userAgent: input.userAgent,
-            updatedAt: new Date(),
-          },
-        });
-      return { ok: true };
+          })
+          .onConflictDoUpdate({
+            target: agentPushSubscriptions.endpoint,
+            set: {
+              agentCode: input.agentCode,
+              p256dhKey: input.p256dhKey,
+              authKey:   input.authKey,
+              userAgent: input.userAgent,
+              updatedAt: new Date(),
+            },
+          });
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Web Push: notify agent of pending offline items ───────────────────────
@@ -404,53 +445,58 @@ export const resilienceRouter = router({
       pendingCount: z.number().int().min(1),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { sent: 0, failed: 0 };
-      const subs = await db
-        .select()
-        .from(agentPushSubscriptions)
-        .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
+      try {
+        const db = (await getDb())!;
+        if (!db) return { sent: 0, failed: 0 };
+        const subs = await db
+          .select()
+          .from(agentPushSubscriptions)
+          .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
 
-      if (subs.length === 0) return { sent: 0, failed: 0 };
+        if (subs.length === 0) return { sent: 0, failed: 0 };
 
-      const payload = JSON.stringify({
-        title: "54Link — Offline Sync Pending",
-        body: `You have ${input.pendingCount} offline transaction${input.pendingCount > 1 ? "s" : ""} waiting to sync. Open the app to complete them.`,
-        tag:  "offline-sync-pending",
-        url:  "/pos?screen=offline-resilience",
-        icon: "/favicon.ico",
-      });
+        const payload = JSON.stringify({
+          title: "54Link — Offline Sync Pending",
+          body: `You have ${input.pendingCount} offline transaction${input.pendingCount > 1 ? "s" : ""} waiting to sync. Open the app to complete them.`,
+          tag:  "offline-sync-pending",
+          url:  "/pos?screen=offline-resilience",
+          icon: "/favicon.ico",
+        });
 
-      let sent = 0;
-      let failed = 0;
-      const staleEndpoints: string[] = [];
+        let sent = 0;
+        let failed = 0;
+        const staleEndpoints: string[] = [];
 
-      await Promise.allSettled(
-        subs.map(async (sub: typeof agentPushSubscriptions.$inferSelect) => {
-          try {
-            await webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dhKey, auth: sub.authKey } },
-              payload,
-              { TTL: 3600 },
-            );
-            sent++;
-          } catch (err: unknown) {
-            const status = (err as { statusCode?: number }).statusCode;
-            if (status === 410 || status === 404) staleEndpoints.push(sub.endpoint);
-            failed++;
-          }
-        })
-      );
-
-      if (staleEndpoints.length > 0) {
         await Promise.allSettled(
-          staleEndpoints.map((ep: any) =>
-            db.delete(agentPushSubscriptions).where(eq(agentPushSubscriptions.endpoint, ep))
-          )
+          subs.map(async (sub: typeof agentPushSubscriptions.$inferSelect) => {
+            try {
+              await webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dhKey, auth: sub.authKey } },
+                payload,
+                { TTL: 3600 },
+              );
+              sent++;
+            } catch (err: unknown) {
+              const status = (err as { statusCode?: number }).statusCode;
+              if (status === 410 || status === 404) staleEndpoints.push(sub.endpoint);
+              failed++;
+            }
+          })
         );
-      }
 
-      return { sent, failed };
+        if (staleEndpoints.length > 0) {
+          await Promise.allSettled(
+            staleEndpoints.map((ep: any) =>
+              db.delete(agentPushSubscriptions).where(eq(agentPushSubscriptions.endpoint, ep))
+            )
+          );
+        }
+
+        return { sent, failed };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── POS Printer: print USSD fallback receipt via Rust ESC/POS sidecar ─────────
@@ -465,45 +511,55 @@ export const resilienceRouter = router({
       ref:          z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const printerUrl = ENV.posPrinterUrl;
-      const receiptPayload = {
-        receipt_type: "ussd_fallback",
-        agent_code:   input.agentCode,
-        tx_type:      input.txType,
-        amount:       input.amount,
-        ussd_string:  input.ussdString,
-        instructions: input.instructions,
-        customer_name: input.customerName ?? "Customer",
-        ref:          input.ref ?? `USSD-${Date.now()}`,
-        printed_at:   new Date().toISOString(),
-      };
-      const result = await safeFetch<{ job_id: string; status: string }>(
-        `${printerUrl}/print/receipt`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(receiptPayload),
-        }
-      );
-      // Graceful fallback: if printer is offline, return success with a note
-      return result ?? { job_id: "offline", status: "queued_for_print" };
+      try {
+        const printerUrl = ENV.posPrinterUrl;
+        const receiptPayload = {
+          receipt_type: "ussd_fallback",
+          agent_code:   input.agentCode,
+          tx_type:      input.txType,
+          amount:       input.amount,
+          ussd_string:  input.ussdString,
+          instructions: input.instructions,
+          customer_name: input.customerName ?? "Customer",
+          ref:          input.ref ?? `USSD-${Date.now()}`,
+          printed_at:   new Date().toISOString(),
+        };
+        const result = await safeFetch<{ job_id: string; status: string }>(
+          `${printerUrl}/print/receipt`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(receiptPayload),
+          }
+        );
+        // Graceful fallback: if printer is offline, return success with a note
+        return result ?? { job_id: "offline", status: "queued_for_print" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Python: by-type breakdown ─────────────────────────────────────────────
   statsByType: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(90).default(7) }))
     .query(async ({ input }) => {
-      const result = await safeFetch<{
-        breakdown: Array<{
-          type: string;
-          success_count: number;
-          failed_count: number;
-          total_count: number;
-          total_volume_ngn: number;
-          success_rate_pct: number;
-        }>;
-      }>(`${ANALYTICS_URL}/stats/by-type?days=${input.days}`);
-      return result ?? { breakdown: [] };
+      try {
+        const result = await safeFetch<{
+          breakdown: Array<{
+            type: string;
+            success_count: number;
+            failed_count: number;
+            total_count: number;
+            total_volume_ngn: number;
+            success_rate_pct: number;
+          }>;
+        }>(`${ANALYTICS_URL}/stats/by-type?days=${input.days}`);
+        return result ?? { breakdown: [] };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── ERP: retry all dead-letter / failed items ─────────────────────────────
@@ -532,15 +588,20 @@ export const resilienceRouter = router({
       latencyMs: z.number().nullable(),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { logged: false };
-      await db.insert(connectivityLog).values({
-        agentCode:  input.agentCode,
-        quality:    input.quality,
-        latencyMs:  input.latencyMs ?? undefined,
-        recordedAt: new Date(),
-      });
-      return { logged: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { logged: false };
+        await db.insert(connectivityLog).values({
+          agentCode:  input.agentCode,
+          quality:    input.quality,
+          latencyMs:  input.latencyMs ?? undefined,
+          recordedAt: new Date(),
+        });
+        return { logged: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Connectivity log: fetch last N hours of history ───────────────────────
@@ -550,129 +611,139 @@ export const resilienceRouter = router({
       hours:     z.number().int().min(1).max(168).default(24),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { rows: [], uptimePct: 100, avgLatencyMs: 0 };
-      const since = new Date(Date.now() - input.hours * 3_600_000);
-      const rows = await db
-        .select()
-        .from(connectivityLog)
-        .where(
-          and(
-            eq(connectivityLog.agentCode, input.agentCode),
-            gte(connectivityLog.recordedAt, since)
+      try {
+        const db = (await getDb())!;
+        if (!db) return { rows: [], uptimePct: 100, avgLatencyMs: 0 };
+        const since = new Date(Date.now() - input.hours * 3_600_000);
+        const rows = await db
+          .select()
+          .from(connectivityLog)
+          .where(
+            and(
+              eq(connectivityLog.agentCode, input.agentCode),
+              gte(connectivityLog.recordedAt, since)
+            )
           )
-        )
-        .orderBy(connectivityLog.recordedAt)
-        .limit(500);
+          .orderBy(connectivityLog.recordedAt)
+          .limit(500);
 
-      const total = rows.length;
-      const online = rows.filter(r => r.quality !== "Offline").length;
-      const uptimePct = total > 0 ? Math.round((online / total) * 100) : 100;
-      const latencyRows = rows.filter(r => r.latencyMs !== null);
-      const avgLatencyMs = latencyRows.length > 0
-        ? Math.round(latencyRows.reduce((s: any, r: any) => s + (r.latencyMs ?? 0), 0) / latencyRows.length)
-        : 0;
+        const total = rows.length;
+        const online = rows.filter(r => r.quality !== "Offline").length;
+        const uptimePct = total > 0 ? Math.round((online / total) * 100) : 100;
+        const latencyRows = rows.filter(r => r.latencyMs !== null);
+        const avgLatencyMs = latencyRows.length > 0
+          ? Math.round(latencyRows.reduce((s: any, r: any) => s + (r.latencyMs ?? 0), 0) / latencyRows.length)
+          : 0;
 
-      return { rows, uptimePct, avgLatencyMs };
+        return { rows, uptimePct, avgLatencyMs };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Connectivity alert: VAPID push + owner notification when uptime < 80% ──
   alertOnPoorConnectivity: protectedProcedure
     .input(z.object({ agentCode: z.string() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { alerted: false, reason: "db_unavailable" as const };
-
-      const since = new Date(Date.now() - 3_600_000);
-      const rows = await db
-        .select()
-        .from(connectivityLog)
-        .where(
-          and(
-            eq(connectivityLog.agentCode, input.agentCode),
-            gte(connectivityLog.recordedAt, since)
-          )
-        )
-        .limit(200);
-
-      if (rows.length < 3) {
-        return { alerted: false, reason: "insufficient_data" as const, probes: rows.length };
-      }
-
-      const online = rows.filter(r => r.quality !== "Offline").length;
-      const uptimePct = Math.round((online / rows.length) * 100);
-
-      if (uptimePct >= 80) {
-        return { alerted: false, reason: "uptime_ok" as const, uptimePct };
-      }
-
-      // ── Alert throttling: skip if ALL subscriptions were alerted within the last 30 min ──
-      const throttleWindow = new Date(Date.now() - 30 * 60_000);
-      const allSubs = await db
-        .select()
-        .from(agentPushSubscriptions)
-        .where(eq(agentPushSubscriptions.agentCode, input.agentCode))
-        .limit(50);
-      if (allSubs.length > 0) {
-        const eligibleSubs = allSubs.filter(
-          s => !s.lastAlertedAt || s.lastAlertedAt < throttleWindow
-        );
-        if (eligibleSubs.length === 0) {
-          console.log(`[alertOnPoorConnectivity] Agent ${input.agentCode}: throttled — all subs alerted within 30 min`);
-          return { alerted: false, reason: "throttled" as const, uptimePct };
-        }
-      }
-
-      const alertTitle = `[54Link POS] Poor connectivity — Agent ${input.agentCode}`;
-      const alertContent =
-        `Agent ${input.agentCode} has had ${uptimePct}% uptime in the last hour ` +
-        `(${online}/${rows.length} probes online). Immediate attention may be required.`;
-
-      const ownerNotified = await notifyOwner({ title: alertTitle, content: alertContent }).catch(() => false);
-
-      let pushCount = 0;
       try {
-        const subs = await db
+        const db = (await getDb())!;
+        if (!db) return { alerted: false, reason: "db_unavailable" as const };
+
+        const since = new Date(Date.now() - 3_600_000);
+        const rows = await db
+          .select()
+          .from(connectivityLog)
+          .where(
+            and(
+              eq(connectivityLog.agentCode, input.agentCode),
+              gte(connectivityLog.recordedAt, since)
+            )
+          )
+          .limit(200);
+
+        if (rows.length < 3) {
+          return { alerted: false, reason: "insufficient_data" as const, probes: rows.length };
+        }
+
+        const online = rows.filter(r => r.quality !== "Offline").length;
+        const uptimePct = Math.round((online / rows.length) * 100);
+
+        if (uptimePct >= 80) {
+          return { alerted: false, reason: "uptime_ok" as const, uptimePct };
+        }
+
+        // ── Alert throttling: skip if ALL subscriptions were alerted within the last 30 min ──
+        const throttleWindow = new Date(Date.now() - 30 * 60_000);
+        const allSubs = await db
           .select()
           .from(agentPushSubscriptions)
           .where(eq(agentPushSubscriptions.agentCode, input.agentCode))
           .limit(50);
-
-        const payload = JSON.stringify({
-          title: `Poor Connectivity (${uptimePct}% uptime)`,
-          body: `Agent ${input.agentCode}: only ${uptimePct}% uptime in the last hour.`,
-          tag: `connectivity-alert-${input.agentCode}`,
-          data: { agentCode: input.agentCode, uptimePct },
-        });
-
-        const results = await Promise.allSettled(
-          subs.map(sub =>
-            webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dhKey, auth: sub.authKey } },
-              payload,
-              { TTL: 3600 }
-            )
-          )
-        );
-        pushCount = results.filter(r => r.status === "fulfilled").length;
-        // Update lastAlertedAt for all subscriptions to enforce throttle window
-        if (pushCount > 0) {
-          const now = new Date();
-          await db
-            .update(agentPushSubscriptions)
-            .set({ lastAlertedAt: now, updatedAt: now })
-            .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
+        if (allSubs.length > 0) {
+          const eligibleSubs = allSubs.filter(
+            s => !s.lastAlertedAt || s.lastAlertedAt < throttleWindow
+          );
+          if (eligibleSubs.length === 0) {
+            console.log(`[alertOnPoorConnectivity] Agent ${input.agentCode}: throttled — all subs alerted within 30 min`);
+            return { alerted: false, reason: "throttled" as const, uptimePct };
+          }
         }
-      } catch (err) {
-        console.warn("[alertOnPoorConnectivity] VAPID push error:", err);
+
+        const alertTitle = `[54Link POS] Poor connectivity — Agent ${input.agentCode}`;
+        const alertContent =
+          `Agent ${input.agentCode} has had ${uptimePct}% uptime in the last hour ` +
+          `(${online}/${rows.length} probes online). Immediate attention may be required.`;
+
+        const ownerNotified = await notifyOwner({ title: alertTitle, content: alertContent }).catch(() => false);
+
+        let pushCount = 0;
+        try {
+          const subs = await db
+            .select()
+            .from(agentPushSubscriptions)
+            .where(eq(agentPushSubscriptions.agentCode, input.agentCode))
+            .limit(50);
+
+          const payload = JSON.stringify({
+            title: `Poor Connectivity (${uptimePct}% uptime)`,
+            body: `Agent ${input.agentCode}: only ${uptimePct}% uptime in the last hour.`,
+            tag: `connectivity-alert-${input.agentCode}`,
+            data: { agentCode: input.agentCode, uptimePct },
+          });
+
+          const results = await Promise.allSettled(
+            subs.map(sub =>
+              webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dhKey, auth: sub.authKey } },
+                payload,
+                { TTL: 3600 }
+              )
+            )
+          );
+          pushCount = results.filter(r => r.status === "fulfilled").length;
+          // Update lastAlertedAt for all subscriptions to enforce throttle window
+          if (pushCount > 0) {
+            const now = new Date();
+            await db
+              .update(agentPushSubscriptions)
+              .set({ lastAlertedAt: now, updatedAt: now })
+              .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
+          }
+        } catch (err) {
+          console.warn("[alertOnPoorConnectivity] VAPID push error:", err);
+        }
+
+        console.log(
+          `[alertOnPoorConnectivity] Agent ${input.agentCode}: ${uptimePct}% uptime — ` +
+          `ownerNotified=${ownerNotified}, pushCount=${pushCount}`
+        );
+
+        return { alerted: true, uptimePct, ownerNotified, pushCount };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      console.log(
-        `[alertOnPoorConnectivity] Agent ${input.agentCode}: ${uptimePct}% uptime — ` +
-        `ownerNotified=${ownerNotified}, pushCount=${pushCount}`
-      );
-
-      return { alerted: true, uptimePct, ownerNotified, pushCount };
     }),
 
   // ── Dead Letter Queue (DLQ) CRUD ─────────────────────────────────────────────────────
@@ -684,17 +755,22 @@ export const resilienceRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const conditions = [];
-      if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
-      if (input.status) conditions.push(eq(dlqMessages.status, input.status));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const [items, [{ total }]] = await Promise.all([
-        db.select().from(dlqMessages).where(where).orderBy(desc(dlqMessages.createdAt)).limit(input.limit).offset(input.offset),
-        db.select({ total: count() }).from(dlqMessages).where(where),
-      ]);
-      return { items, total };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const conditions = [];
+        if (input.topic) conditions.push(eq(dlqMessages.topic, input.topic));
+        if (input.status) conditions.push(eq(dlqMessages.status, input.status));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const [items, [{ total }]] = await Promise.all([
+          db.select().from(dlqMessages).where(where).orderBy(desc(dlqMessages.createdAt)).limit(input.limit).offset(input.offset),
+          db.select({ total: count() }).from(dlqMessages).where(where),
+        ]);
+        return { items, total };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   createDlqMessage: protectedProcedure
@@ -706,63 +782,83 @@ export const resilienceRouter = router({
       payload: z.string().default("{}"),
     }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return null;
-      const [row] = await db.insert(dlqMessages).values({
-        topic: input.topic,
-        partition: input.partition,
-        offset: input.offset,
-        errorMessage: input.errorMessage,
-        payload: input.payload,
-        status: "pending_retry",
-      }).returning();
-      return row;
+      try {
+        const db = (await getDb())!;
+        if (!db) return null;
+        const [row] = await db.insert(dlqMessages).values({
+          topic: input.topic,
+          partition: input.partition,
+          offset: input.offset,
+          errorMessage: input.errorMessage,
+          payload: input.payload,
+          status: "pending_retry",
+        }).returning();
+        return row;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   resolveDlqMessage: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("DB unavailable");
-      await db.update(dlqMessages)
-        .set({ status: "resolved", resolvedAt: new Date() })
-        .where(eq(dlqMessages.id, input.id));
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("DB unavailable");
+        await db.update(dlqMessages)
+          .set({ status: "resolved", resolvedAt: new Date() })
+          .where(eq(dlqMessages.id, input.id));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   retryDlqMessage: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("DB unavailable");
-      const [existing] = await db.select({ retryCount: dlqMessages.retryCount }).from(dlqMessages).where(eq(dlqMessages.id, input.id)).limit(1);
-      if (!existing) throw new Error("DLQ message not found");
-      const [row] = await db.update(dlqMessages)
-        .set({ status: "pending_retry", retryCount: (existing.retryCount ?? 0) + 1 })
-        .where(eq(dlqMessages.id, input.id))
-        .returning();
-      return row;
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("DB unavailable");
+        const [existing] = await db.select({ retryCount: dlqMessages.retryCount }).from(dlqMessages).where(eq(dlqMessages.id, input.id)).limit(1);
+        if (!existing) throw new Error("DLQ message not found");
+        const [row] = await db.update(dlqMessages)
+          .set({ status: "pending_retry", retryCount: (existing.retryCount ?? 0) + 1 })
+          .where(eq(dlqMessages.id, input.id))
+          .returning();
+        return row;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── List push subscriptions for the dashboard panel (shows lastAlertedAt) ────────────────────────
   getPushSubscriptions: protectedProcedure
     .input(z.object({ agentCode: z.string().min(1).max(32) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { subscriptions: [] };
-      const subs = await db
-        .select()
-        .from(agentPushSubscriptions)
-        .where(eq(agentPushSubscriptions.agentCode, input.agentCode))
-        .orderBy(agentPushSubscriptions.createdAt);
-      return {
-        subscriptions: subs.map(s => ({
-          id: s.id,
-          endpoint: s.endpoint,
-          createdAt: s.createdAt,
-          lastAlertedAt: s.lastAlertedAt ?? null,
-        })),
-      };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { subscriptions: [] };
+        const subs = await db
+          .select()
+          .from(agentPushSubscriptions)
+          .where(eq(agentPushSubscriptions.agentCode, input.agentCode))
+          .orderBy(agentPushSubscriptions.createdAt);
+        return {
+          subscriptions: subs.map(s => ({
+            id: s.id,
+            endpoint: s.endpoint,
+            createdAt: s.createdAt,
+            lastAlertedAt: s.lastAlertedAt ?? null,
+          })),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Sprint 73: Adaptive Network & Graceful Degradation ─────────────────────

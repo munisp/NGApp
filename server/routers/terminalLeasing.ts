@@ -24,86 +24,101 @@ export const terminalLeasingRouter = router({
       includeInsurance: z.boolean().default(false),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const leaseId = `LSE-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-      const startDate = new Date();
-      const endDate = new Date(); endDate.setMonth(endDate.getMonth() + input.durationMonths);
+        const leaseId = `LSE-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+        const startDate = new Date();
+        const endDate = new Date(); endDate.setMonth(endDate.getMonth() + input.durationMonths);
 
-      const lease = {
-        id: leaseId, ...input, status: "active",
-        startDate: startDate.toISOString(), endDate: endDate.toISOString(),
-        totalCost: input.monthlyRate * input.durationMonths + input.depositAmount,
-        insuranceMonthly: input.includeInsurance ? Math.round(input.monthlyRate * 0.1) : 0,
-        paymentsReceived: 0, createdAt: new Date().toISOString(),
-      };
+        const lease = {
+          id: leaseId, ...input, status: "active",
+          startDate: startDate.toISOString(), endDate: endDate.toISOString(),
+          totalCost: input.monthlyRate * input.durationMonths + input.depositAmount,
+          insuranceMonthly: input.includeInsurance ? Math.round(input.monthlyRate * 0.1) : 0,
+          paymentsReceived: 0, createdAt: new Date().toISOString(),
+        };
 
-      const key = `terminal_lease_${leaseId}`;
-      await db.insert(platformSettings).values({ key, value: JSON.stringify(lease) });
+        const key = `terminal_lease_${leaseId}`;
+        await db.insert(platformSettings).values({ key, value: JSON.stringify(lease) });
 
-      await db.update(posTerminals).set({ agentId: input.agentId, status: "active", updatedAt: new Date() })
-        .where(eq(posTerminals.id, input.terminalId));
+        await db.update(posTerminals).set({ agentId: input.agentId, status: "active", updatedAt: new Date() })
+          .where(eq(posTerminals.id, input.terminalId));
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "TERMINAL_LEASE_CREATED", resource: "terminal_lease", resourceId: leaseId, status: "success",
-        metadata: { terminalId: input.terminalId, monthlyRate: input.monthlyRate, duration: input.durationMonths },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "TERMINAL_LEASE_CREATED", resource: "terminal_lease", resourceId: leaseId, status: "success",
+          metadata: { terminalId: input.terminalId, monthlyRate: input.monthlyRate, duration: input.durationMonths },
+        });
 
-      return lease;
+        return lease;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   listLeases: protectedProcedure
     .input(z.object({ status: z.string().optional() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { leases: [] };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { leases: [] };
 
-      const rows = await db.execute(
-        sql`SELECT key, value FROM platform_settings WHERE key LIKE 'terminal_lease_%' ORDER BY key DESC`
-      );
+        const rows = await db.execute(
+          sql`SELECT key, value FROM platform_settings WHERE key LIKE 'terminal_lease_%' ORDER BY key DESC`
+        );
 
-      let leases = (rows.rows ?? []).map((r: Record<string, unknown>) => {
-        try { return JSON.parse(String(r.value)); } catch { return null; }
-      }).filter(Boolean);
+        let leases = (rows.rows ?? []).map((r: Record<string, unknown>) => {
+          try { return JSON.parse(String(r.value)); } catch { return null; }
+        }).filter(Boolean);
 
-      if (input.status) leases = leases.filter((l: Record<string, unknown>) => l.status === input.status);
+        if (input.status) leases = leases.filter((l: Record<string, unknown>) => l.status === input.status);
 
-      return { leases };
+        return { leases };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   terminateLease: protectedProcedure
     .input(z.object({ leaseId: z.string(), reason: z.string().max(256) }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const key = `terminal_lease_${input.leaseId}`;
-      const [existing] = await db.select({ value: platformSettings.value })
-        .from(platformSettings).where(eq(platformSettings.key, key)).limit(1);
+        const key = `terminal_lease_${input.leaseId}`;
+        const [existing] = await db.select({ value: platformSettings.value })
+          .from(platformSettings).where(eq(platformSettings.key, key)).limit(1);
 
-      if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const lease = JSON.parse(String(existing.value));
-      lease.status = "terminated";
-      lease.terminatedAt = new Date().toISOString();
-      lease.terminationReason = input.reason;
+        const lease = JSON.parse(String(existing.value));
+        lease.status = "terminated";
+        lease.terminatedAt = new Date().toISOString();
+        lease.terminationReason = input.reason;
 
-      await db.update(platformSettings).set({ value: JSON.stringify(lease) }).where(eq(platformSettings.key, key));
+        await db.update(platformSettings).set({ value: JSON.stringify(lease) }).where(eq(platformSettings.key, key));
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "TERMINAL_LEASE_TERMINATED", resource: "terminal_lease", resourceId: input.leaseId, status: "success",
-        metadata: { reason: input.reason },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "TERMINAL_LEASE_TERMINATED", resource: "terminal_lease", resourceId: input.leaseId, status: "success",
+          metadata: { reason: input.reason },
+        });
 
-      return { leaseId: input.leaseId, status: "terminated" };
+        return { leaseId: input.leaseId, status: "terminated" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

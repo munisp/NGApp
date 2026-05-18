@@ -14,6 +14,7 @@ import { tbCreateTransfer } from "../tbClient";
 import { fluvioProduce } from "../fluvio";
 import { permifyCheck } from "../_core/permify";
 import logger from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 export const txDisputeArbitrationRouter = router({
   listDisputes: protectedProcedure
@@ -40,7 +41,7 @@ export const txDisputeArbitrationRouter = router({
         .limit(limit)
         .offset((page - 1) * limit);
 
-      const [total] = await db.select({ cnt: count() }).from(disputes).where(where);
+      const [total] = await db.select({ cnt: count() }).from(disputes).where(where).limit(100);
 
       const disputeList = rows.map(r => ({
         id: `DSP-${String(r.id).padStart(6, "0")}`,
@@ -194,12 +195,12 @@ export const txDisputeArbitrationRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
 
-    const [total] = await db.select({ cnt: count() }).from(disputes);
+    const [total] = await db.select({ cnt: count() }).from(disputes).limit(100);
     const [open] = await db.select({ cnt: count() }).from(disputes).where(
       sql`${disputes.status} IN ('open', 'new', 'investigating', 'awaiting_response', 'arbitration')`
     );
-    const [resolved] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "resolved"));
-    const [escalated] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "escalated"));
+    const [resolved] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "resolved")).limit(100);
+    const [escalated] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.status, "escalated")).limit(100);
 
     const totalCount = total?.cnt ?? 0;
     const resolvedCount = resolved?.cnt ?? 0;

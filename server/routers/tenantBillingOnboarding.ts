@@ -19,6 +19,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { requireBillingPermission } from "./billingRbac";
 import { recordBillingAudit } from "./billingAudit";
 import { Client, Connection } from "@temporalio/client";
+import { TRPCError } from "@trpc/server";
 
 // Temporal client singleton for billing provisioning
 let temporalClient: Client | null = null;
@@ -122,7 +123,7 @@ async function executeBillingProvisioning(params: {
 
       switch (step) {
         case "validate_tenant": {
-          const [tenant] = await (await db()).select().from(tenants).where(eq(tenants.id, tenantId));
+          const [tenant] = await (await db()).select().from(tenants).where(eq(tenants.id, tenantId)).limit(100);
           if (!tenant) throw new Error(`Tenant ${tenantId} not found`);
           details = { tenantName: tenant.name, tenantSlug: tenant.slug, status: tenant.status };
           break;
@@ -225,7 +226,7 @@ async function executeBillingProvisioning(params: {
   }
 
   const allCompleted = stepResults.every(s => s.status === "completed");
-  const [config] = await (await db()).select().from(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, tenantId));
+  const [config] = await (await db()).select().from(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, tenantId)).limit(100);
 
   return { success: allCompleted, steps: stepResults, configId: config?.id || 0 };
 }
@@ -256,71 +257,81 @@ export const tenantBillingOnboardingRouter = router({
       customConfig: z.any().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Check if tenant already has billing configured
-      const [existing] = await (await db()).select().from(tenantBillingConfig)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+      try {
+        // Check if tenant already has billing configured
+        const [existing] = await (await db()).select().from(tenantBillingConfig)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
       
-      if (existing) {
-        return { success: false, error: "Billing already provisioned for this tenant", configId: existing.id };
-      }
+        if (existing) {
+          return { success: false, error: "Billing already provisioned for this tenant", configId: existing.id };
+        }
 
-      // Try Temporal workflow first, fall back to local execution
-      const client = await getTemporalClient();
-      let result: any;
-      let temporalWorkflowId: string | null = null;
+        // Try Temporal workflow first, fall back to local execution
+        const client = await getTemporalClient();
+        let result: any;
+        let temporalWorkflowId: string | null = null;
 
-      if (client) {
-        // Start Temporal workflow for durable execution with rollback
-        temporalWorkflowId = `billing-provision-${input.tenantId}-${Date.now()}`;
-        const handle = await client.workflow.start("BillingProvisioningWorkflow", {
-          taskQueue: process.env.TEMPORAL_TASK_QUEUE || "settlement-queue",
-          workflowId: temporalWorkflowId,
-          args: [{
+        if (client) {
+          // Start Temporal workflow for durable execution with rollback
+          temporalWorkflowId = `billing-provision-${input.tenantId}-${Date.now()}`;
+          const handle = await client.workflow.start("BillingProvisioningWorkflow", {
+            taskQueue: process.env.TEMPORAL_TASK_QUEUE || "settlement-queue",
+            workflowId: temporalWorkflowId,
+            args: [{
+              tenantId: input.tenantId,
+              tenantName: "",
+              billingModel: input.billingModel,
+              customConfig: input.customConfig,
+              provisionedBy: ctx.user.id,
+              region: "WAT",
+              currency: input.customConfig?.currency || "NGN",
+            }],
+          });
+          result = await handle.result();
+        } else {
+          // Fallback: local execution without Temporal durability
+          result = await executeBillingProvisioning({
             tenantId: input.tenantId,
-            tenantName: "",
             billingModel: input.billingModel,
             customConfig: input.customConfig,
             provisionedBy: ctx.user.id,
-            region: "WAT",
-            currency: input.customConfig?.currency || "NGN",
-          }],
+            temporalWorkflowId: null,
+          });
+        }
+
+        // Record audit event
+        await recordBillingAudit({
+          ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
+          action: "tenant_billing_provisioned",
+          resourceType: "tenant_billing_config",
+          resourceId: String(result.configId),
+          afterState: { billingModel: input.billingModel, steps: result.steps.length },
+          metadata: { customConfig: input.customConfig, temporalWorkflowId: null },
         });
-        result = await handle.result();
-      } else {
-        // Fallback: local execution without Temporal durability
-        result = await executeBillingProvisioning({
-          tenantId: input.tenantId,
-          billingModel: input.billingModel,
-          customConfig: input.customConfig,
-          provisionedBy: ctx.user.id,
-          temporalWorkflowId: null,
-        });
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      // Record audit event
-      await recordBillingAudit({
-        ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
-        action: "tenant_billing_provisioned",
-        resourceType: "tenant_billing_config",
-        resourceId: String(result.configId),
-        afterState: { billingModel: input.billingModel, steps: result.steps.length },
-        metadata: { customConfig: input.customConfig, temporalWorkflowId: null },
-      });
-
-      return result;
     }),
 
   // Get billing config for a tenant
   getConfig: protectedProcedure
     .input(z.object({ tenantId: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
-      const [config] = await (await db()).select().from(tenantBillingConfig)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+        const [config] = await (await db()).select().from(tenantBillingConfig)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
 
-      if (!config) return { config: null, provisioned: false };
-      return { config, provisioned: true };
+        if (!config) return { config: null, provisioned: false };
+        return { config, provisioned: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Update billing config (requires manage_billing_config)
@@ -335,104 +346,124 @@ export const tenantBillingOnboardingRouter = router({
       contractEndDate: z.string().datetime().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_billing_config");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_billing_config");
 
-      const [existing] = await (await db()).select().from(tenantBillingConfig)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+        const [existing] = await (await db()).select().from(tenantBillingConfig)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
 
-      if (!existing) {
-        return { success: false, error: "No billing config found. Provision billing first." };
+        if (!existing) {
+          return { success: false, error: "No billing config found. Provision billing first." };
+        }
+
+        const updates: any = { lastModifiedAt: new Date(), lastModifiedBy: ctx.user.id };
+        if (input.billingModel) updates.billingModel = input.billingModel;
+        if (input.revenueShareConfig) updates.revenueShareConfig = input.revenueShareConfig;
+        if (input.subscriptionConfig) updates.subscriptionConfig = input.subscriptionConfig;
+        if (input.hybridConfig) updates.hybridConfig = input.hybridConfig;
+        if (input.autoRenew !== undefined) updates.autoRenew = input.autoRenew;
+        if (input.contractEndDate) updates.contractEndDate = new Date(input.contractEndDate);
+
+        await (await db()).update(tenantBillingConfig)
+          .set(updates)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+
+        // Audit the change
+        await recordBillingAudit({
+          ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
+          action: input.billingModel && input.billingModel !== existing.billingModel
+            ? "billing_model_changed" : "config_updated",
+          resourceType: "tenant_billing_config",
+          resourceId: String(existing.id),
+          beforeState: existing,
+          afterState: updates,
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const updates: any = { lastModifiedAt: new Date(), lastModifiedBy: ctx.user.id };
-      if (input.billingModel) updates.billingModel = input.billingModel;
-      if (input.revenueShareConfig) updates.revenueShareConfig = input.revenueShareConfig;
-      if (input.subscriptionConfig) updates.subscriptionConfig = input.subscriptionConfig;
-      if (input.hybridConfig) updates.hybridConfig = input.hybridConfig;
-      if (input.autoRenew !== undefined) updates.autoRenew = input.autoRenew;
-      if (input.contractEndDate) updates.contractEndDate = new Date(input.contractEndDate);
-
-      await (await db()).update(tenantBillingConfig)
-        .set(updates)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
-
-      // Audit the change
-      await recordBillingAudit({
-        ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
-        action: input.billingModel && input.billingModel !== existing.billingModel
-          ? "billing_model_changed" : "config_updated",
-        resourceType: "tenant_billing_config",
-        resourceId: String(existing.id),
-        beforeState: existing,
-        afterState: updates,
-      });
-
-      return { success: true };
     }),
 
   // Get provisioning history for a tenant
   getProvisioningHistory: protectedProcedure
     .input(z.object({ tenantId: z.number() }))
     .query(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
-      const history = await (await db()).select().from(billingProvisioningHistory)
-        .where(eq(billingProvisioningHistory.tenantId, input.tenantId))
-        .orderBy(desc(billingProvisioningHistory.startedAt))
-        .limit(200);
+        const history = await (await db()).select().from(billingProvisioningHistory)
+          .where(eq(billingProvisioningHistory.tenantId, input.tenantId))
+          .orderBy(desc(billingProvisioningHistory.startedAt))
+          .limit(200);
 
-      return { history, total: history.length };
+        return { history, total: history.length };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Re-provision a failed step (retry)
   retryStep: protectedProcedure
     .input(z.object({ tenantId: z.number(), step: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-      // Re-run the full provisioning (idempotent steps will skip)
-      const [config] = await (await db()).select().from(tenantBillingConfig)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+        // Re-run the full provisioning (idempotent steps will skip)
+        const [config] = await (await db()).select().from(tenantBillingConfig)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
 
-      if (!config) {
-        return { success: false, error: "No billing config found" };
+        if (!config) {
+          return { success: false, error: "No billing config found" };
+        }
+
+        // Mark the failed step as retrying
+        await (await db()).update(billingProvisioningHistory)
+          .set({ status: "retrying" })
+          .where(and(
+            eq(billingProvisioningHistory.tenantId, input.tenantId),
+            eq(billingProvisioningHistory.step, input.step),
+          ));
+
+        return { success: true, message: `Step '${input.step}' queued for retry` };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      // Mark the failed step as retrying
-      await (await db()).update(billingProvisioningHistory)
-        .set({ status: "retrying" })
-        .where(and(
-          eq(billingProvisioningHistory.tenantId, input.tenantId),
-          eq(billingProvisioningHistory.step, input.step),
-        ));
-
-      return { success: true, message: `Step '${input.step}' queued for retry` };
     }),
 
   // Deactivate billing for a tenant
   deactivateBilling: protectedProcedure
     .input(z.object({ tenantId: z.number(), reason: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
+      try {
+        await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-      const [existing] = await (await db()).select().from(tenantBillingConfig)
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+        const [existing] = await (await db()).select().from(tenantBillingConfig)
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
 
-      if (!existing) return { success: false, error: "No billing config found" };
+        if (!existing) return { success: false, error: "No billing config found" };
 
-      await (await db()).update(tenantBillingConfig)
-        .set({ status: "inactive", lastModifiedAt: new Date(), lastModifiedBy: ctx.user.id })
-        .where(eq(tenantBillingConfig.tenantId, input.tenantId));
+        await (await db()).update(tenantBillingConfig)
+          .set({ status: "inactive", lastModifiedAt: new Date(), lastModifiedBy: ctx.user.id })
+          .where(eq(tenantBillingConfig.tenantId, input.tenantId));
 
-      await recordBillingAudit({
-        ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
-        action: "config_deleted",
-        resourceType: "tenant_billing_config",
-        resourceId: String(existing.id),
-        beforeState: { status: existing.status },
-        afterState: { status: "inactive", reason: input.reason },
-      });
+        await recordBillingAudit({
+          ctx: { userId: ctx.user.id, userName: ctx.user.name || "unknown", tenantId: input.tenantId },
+          action: "config_deleted",
+          resourceType: "tenant_billing_config",
+          resourceId: String(existing.id),
+          beforeState: { status: existing.status },
+          afterState: { status: "inactive", reason: input.reason },
+        });
 
-      return { success: true };
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

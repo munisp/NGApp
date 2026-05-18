@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { desc, eq, and, count } from "drizzle-orm";
 import { auditLog } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 const ussdTranslations: Record<string, Record<string, string>> = {
   en: { welcome: "Welcome to POS Agent", select_option: "Select an option", balance: "Check Balance", transfer: "Transfer Funds", withdraw: "Withdraw", deposit: "Deposit", exit: "Exit" },
@@ -14,12 +15,17 @@ const ussdTranslations: Record<string, Record<string, string>> = {
 
 export const ussdLocalizationRouter = router({
   list: protectedProcedure.input(z.object({ locale: z.string().optional() }).optional()).query(async ({ input }) => {
-    const db = (await getDb())!;
-    const locale = input?.locale;
-    if (locale && ussdTranslations[locale]) {
-      return { translations: [{ locale, keys: ussdTranslations[locale] }], total: 1, supportedLocales: Object.keys(ussdTranslations) };
+    try {
+      const db = (await getDb())!;
+      const locale = input?.locale;
+      if (locale && ussdTranslations[locale]) {
+        return { translations: [{ locale, keys: ussdTranslations[locale] }], total: 1, supportedLocales: Object.keys(ussdTranslations) };
+      }
+      const all = Object.entries(ussdTranslations).map(([loc, keys]) => ({ locale: loc, keys, keyCount: Object.keys(keys).length }));
+      return { translations: all, total: all.length, supportedLocales: Object.keys(ussdTranslations) };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
-    const all = Object.entries(ussdTranslations).map(([loc, keys]) => ({ locale: loc, keys, keyCount: Object.keys(keys).length }));
-    return { translations: all, total: all.length, supportedLocales: Object.keys(ussdTranslations) };
   }),
 });

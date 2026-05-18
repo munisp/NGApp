@@ -49,40 +49,45 @@ export const merchantRouter = router({
    * Get the authenticated merchant's profile.
    */
   getProfile: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantFromRequest(ctx.req);
-    if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+    try {
+      const merchant = await getMerchantFromRequest(ctx.req);
+      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-    const db = (await getDb())!;
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-    const rows = await db
-      .select()
-      .from(merchants)
-      .where(and(eq(merchants.id, merchant.id), isNull(merchants.deletedAt)))
-      .limit(1);
+      const rows = await db
+        .select()
+        .from(merchants)
+        .where(and(eq(merchants.id, merchant.id), isNull(merchants.deletedAt)))
+        .limit(1);
 
-    if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+      if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
 
-    const m = rows[0];
-    return {
-      id: m.id,
-      merchantCode: m.merchantCode,
-      businessName: m.businessName,
-      ownerName: m.ownerName,
-      email: m.email,
-      phone: m.phone,
-      address: m.address,
-      category: m.category,
-      status: m.status,
-      rcNumber: m.rcNumber,
-      tinNumber: m.tinNumber,
-      settlementAccountNumber: m.settlementAccountNumber,
-      settlementBankName: m.settlementBankName,
-      walletBalance: Number(m.walletBalance),
-      totalVolume: Number(m.totalVolume),
-      totalTransactions: m.totalTransactions,
-      createdAt: m.createdAt,
-    };
+      const m = rows[0];
+      return {
+        id: m.id,
+        merchantCode: m.merchantCode,
+        businessName: m.businessName,
+        ownerName: m.ownerName,
+        email: m.email,
+        phone: m.phone,
+        address: m.address,
+        category: m.category,
+        status: m.status,
+        rcNumber: m.rcNumber,
+        tinNumber: m.tinNumber,
+        settlementAccountNumber: m.settlementAccountNumber,
+        settlementBankName: m.settlementBankName,
+        walletBalance: Number(m.walletBalance),
+        totalVolume: Number(m.totalVolume),
+        totalTransactions: m.totalTransactions,
+        createdAt: m.createdAt,
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   /**
@@ -100,22 +105,27 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantFromRequest(ctx.req);
-      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+      try {
+        const merchant = await getMerchantFromRequest(ctx.req);
+        if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      const updateData: Record<string, unknown> = { updatedAt: new Date() };
-      if (input.email !== undefined) updateData.email = input.email;
-      if (input.phone !== undefined) updateData.phone = input.phone;
-      if (input.address !== undefined) updateData.address = input.address;
-      if (input.settlementAccountNumber !== undefined) updateData.settlementAccountNumber = input.settlementAccountNumber;
-      if (input.settlementBankCode !== undefined) updateData.settlementBankCode = input.settlementBankCode;
-      if (input.settlementBankName !== undefined) updateData.settlementBankName = input.settlementBankName;
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
+        if (input.email !== undefined) updateData.email = input.email;
+        if (input.phone !== undefined) updateData.phone = input.phone;
+        if (input.address !== undefined) updateData.address = input.address;
+        if (input.settlementAccountNumber !== undefined) updateData.settlementAccountNumber = input.settlementAccountNumber;
+        if (input.settlementBankCode !== undefined) updateData.settlementBankCode = input.settlementBankCode;
+        if (input.settlementBankName !== undefined) updateData.settlementBankName = input.settlementBankName;
 
-      await db.update(merchants).set(updateData as any).where(eq(merchants.id, merchant.id));
-      return { success: true };
+        await db.update(merchants).set(updateData as any).where(eq(merchants.id, merchant.id));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -129,49 +139,54 @@ export const merchantRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const merchant = await getMerchantFromRequest(ctx.req);
-      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+      try {
+        const merchant = await getMerchantFromRequest(ctx.req);
+        if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-      const db = (await getDb())!;
-      if (!db) return { transactions: [], total: 0 };
+        const db = (await getDb())!;
+        if (!db) return { transactions: [], total: 0 };
 
-      // Transactions are linked to merchants via the preferredAgentId relationship.
-      // Get the merchant's preferredAgentId first, then query transactions.
-      const [merchantProfile] = await db
-        .select({ preferredAgentId: merchants.preferredAgentId })
-        .from(merchants)
-        .where(eq(merchants.id, merchant.id))
-        .limit(1);
+        // Transactions are linked to merchants via the preferredAgentId relationship.
+        // Get the merchant's preferredAgentId first, then query transactions.
+        const [merchantProfile] = await db
+          .select({ preferredAgentId: merchants.preferredAgentId })
+          .from(merchants)
+          .where(eq(merchants.id, merchant.id))
+          .limit(1);
 
-      if (!merchantProfile?.preferredAgentId) {
-        return { transactions: [], total: 0 };
+        if (!merchantProfile?.preferredAgentId) {
+          return { transactions: [], total: 0 };
+        }
+
+        const rows = await db
+          .select({
+            id: transactions.id,
+            ref: transactions.ref,
+            type: transactions.type,
+            amount: transactions.amount,
+            fee: transactions.fee,
+            status: transactions.status,
+            customerPhone: transactions.customerPhone,
+            createdAt: transactions.createdAt,
+          })
+          .from(transactions)
+          .where(eq(transactions.agentId, merchantProfile.preferredAgentId))
+          .orderBy(desc(transactions.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        return {
+          transactions: rows.map((t: any) => ({
+            ...t,
+            amount: Number(t.amount),
+            fee: Number(t.fee),
+          })),
+          total: rows.length,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const rows = await db
-        .select({
-          id: transactions.id,
-          ref: transactions.ref,
-          type: transactions.type,
-          amount: transactions.amount,
-          fee: transactions.fee,
-          status: transactions.status,
-          customerPhone: transactions.customerPhone,
-          createdAt: transactions.createdAt,
-        })
-        .from(transactions)
-        .where(eq(transactions.agentId, merchantProfile.preferredAgentId))
-        .orderBy(desc(transactions.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      return {
-        transactions: rows.map((t: any) => ({
-          ...t,
-          amount: Number(t.amount),
-          fee: Number(t.fee),
-        })),
-        total: rows.length,
-      };
     }),
 
   /**
@@ -185,28 +200,33 @@ export const merchantRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const merchant = await getMerchantFromRequest(ctx.req);
-      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+      try {
+        const merchant = await getMerchantFromRequest(ctx.req);
+        if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-      const db = (await getDb())!;
-      if (!db) return { settlements: [] };
+        const db = (await getDb())!;
+        if (!db) return { settlements: [] };
 
-      const rows = await db
-        .select()
-        .from(merchantSettlements)
-        .where(eq(merchantSettlements.merchantId, merchant.id))
-        .orderBy(desc(merchantSettlements.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+        const rows = await db
+          .select()
+          .from(merchantSettlements)
+          .where(eq(merchantSettlements.merchantId, merchant.id))
+          .orderBy(desc(merchantSettlements.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
 
-      return {
-        settlements: rows.map((s: any) => ({
-          ...s,
-          grossAmount: Number(s.grossAmount),
-          feeAmount: Number(s.feeAmount),
-          netAmount: Number(s.netAmount),
-        })),
-      };
+        return {
+          settlements: rows.map((s: any) => ({
+            ...s,
+            grossAmount: Number(s.grossAmount),
+            feeAmount: Number(s.feeAmount),
+            netAmount: Number(s.netAmount),
+          })),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   /**
@@ -221,112 +241,122 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantFromRequest(ctx.req);
-      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+      try {
+        const merchant = await getMerchantFromRequest(ctx.req);
+        if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Verify transaction exists
-      const txRows = await db
-        .select({ id: transactions.id, amount: transactions.amount, status: transactions.status })
-        .from(transactions)
-        .where(eq(transactions.ref, input.transactionRef))
-        .limit(1);
+        // Verify transaction exists
+        const txRows = await db
+          .select({ id: transactions.id, amount: transactions.amount, status: transactions.status })
+          .from(transactions)
+          .where(eq(transactions.ref, input.transactionRef))
+          .limit(1);
 
-      if (!txRows[0]) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+        if (!txRows[0]) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+        }
+
+        const tx = txRows[0];
+
+        // Create dispute record
+        const inserted = await db
+          .insert(disputes)
+          .values({
+            transactionId: tx.id,
+            raisedBy: "merchant",
+            raisedByRef: merchant.merchantCode,
+            reason: input.reason,
+            amount: input.amount ? String(input.amount) : tx.amount,
+            status: "open",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any)
+          .returning({ id: disputes.id });
+
+        return {
+          success: true,
+          disputeId: inserted[0]?.id,
+          message: "Dispute raised successfully. Our team will review within 3 business days.",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const tx = txRows[0];
-
-      // Create dispute record
-      const inserted = await db
-        .insert(disputes)
-        .values({
-          transactionId: tx.id,
-          raisedBy: "merchant",
-          raisedByRef: merchant.merchantCode,
-          reason: input.reason,
-          amount: input.amount ? String(input.amount) : tx.amount,
-          status: "open",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as any)
-        .returning({ id: disputes.id });
-
-      return {
-        success: true,
-        disputeId: inserted[0]?.id,
-        message: "Dispute raised successfully. Our team will review within 3 business days.",
-      };
     }),
 
   /**
    * Dashboard summary: total volume, transaction count, wallet balance, recent activity.
    */
   getDashboard: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantFromRequest(ctx.req);
-    if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
+    try {
+      const merchant = await getMerchantFromRequest(ctx.req);
+      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Merchant session required" });
 
-    const db = (await getDb())!;
-    if (!db) {
+      const db = (await getDb())!;
+      if (!db) {
+        return {
+          walletBalance: 0,
+          totalVolume: 0,
+          totalTransactions: 0,
+          pendingSettlements: 0,
+          recentTransactions: [],
+        };
+      }
+
+      const [profile] = await db
+        .select({
+          walletBalance: merchants.walletBalance,
+          totalVolume: merchants.totalVolume,
+          totalTransactions: merchants.totalTransactions,
+          preferredAgentId: merchants.preferredAgentId,
+        })
+        .from(merchants)
+        .where(eq(merchants.id, merchant.id))
+        .limit(1);
+
+      const recentTxs = await db
+        .select({
+          id: transactions.id,
+          ref: transactions.ref,
+          type: transactions.type,
+          amount: transactions.amount,
+          status: transactions.status,
+          createdAt: transactions.createdAt,
+        })
+        .from(transactions)
+        .where(eq(transactions.agentId, profile?.preferredAgentId ?? 0))
+        .orderBy(desc(transactions.createdAt))
+        .limit(5);
+
+      const pendingSettlements = await db
+        .select({ id: merchantSettlements.id, netAmount: merchantSettlements.netAmount })
+        .from(merchantSettlements)
+        .where(
+          and(
+            eq(merchantSettlements.merchantId, merchant.id),
+            eq(merchantSettlements.status, "pending"),
+          )
+        );
+
+      const pendingTotal = pendingSettlements.reduce((sum: any, s: any) => sum + Number(s.netAmount), 0);
+
       return {
-        walletBalance: 0,
-        totalVolume: 0,
-        totalTransactions: 0,
-        pendingSettlements: 0,
-        recentTransactions: [],
+        walletBalance: Number(profile?.walletBalance ?? 0),
+        totalVolume: Number(profile?.totalVolume ?? 0),
+        totalTransactions: profile?.totalTransactions ?? 0,
+        pendingSettlements: pendingTotal,
+        recentTransactions: recentTxs.map((t: any) => ({
+          ...t,
+          amount: Number(t.amount),
+        })),
       };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
-
-    const [profile] = await db
-      .select({
-        walletBalance: merchants.walletBalance,
-        totalVolume: merchants.totalVolume,
-        totalTransactions: merchants.totalTransactions,
-        preferredAgentId: merchants.preferredAgentId,
-      })
-      .from(merchants)
-      .where(eq(merchants.id, merchant.id))
-      .limit(1);
-
-    const recentTxs = await db
-      .select({
-        id: transactions.id,
-        ref: transactions.ref,
-        type: transactions.type,
-        amount: transactions.amount,
-        status: transactions.status,
-        createdAt: transactions.createdAt,
-      })
-      .from(transactions)
-      .where(eq(transactions.agentId, profile?.preferredAgentId ?? 0))
-      .orderBy(desc(transactions.createdAt))
-      .limit(5);
-
-    const pendingSettlements = await db
-      .select({ id: merchantSettlements.id, netAmount: merchantSettlements.netAmount })
-      .from(merchantSettlements)
-      .where(
-        and(
-          eq(merchantSettlements.merchantId, merchant.id),
-          eq(merchantSettlements.status, "pending"),
-        )
-      );
-
-    const pendingTotal = pendingSettlements.reduce((sum: any, s: any) => sum + Number(s.netAmount), 0);
-
-    return {
-      walletBalance: Number(profile?.walletBalance ?? 0),
-      totalVolume: Number(profile?.totalVolume ?? 0),
-      totalTransactions: profile?.totalTransactions ?? 0,
-      pendingSettlements: pendingTotal,
-      recentTransactions: recentTxs.map((t: any) => ({
-        ...t,
-        amount: Number(t.amount),
-      })),
-    };
   }),
 
   /**
@@ -350,50 +380,55 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      // Check for duplicate email
-      const existing = await db
-        .select({ id: merchants.id })
-        .from(merchants)
-        .where(and(eq(merchants.email, input.email), isNull(merchants.deletedAt)))
-        .limit(1);
-      if (existing.length > 0) {
-        throw new TRPCError({ code: "CONFLICT", message: "A merchant account with this email already exists" });
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        // Check for duplicate email
+        const existing = await db
+          .select({ id: merchants.id })
+          .from(merchants)
+          .where(and(eq(merchants.email, input.email), isNull(merchants.deletedAt)))
+          .limit(1);
+        if (existing.length > 0) {
+          throw new TRPCError({ code: "CONFLICT", message: "A merchant account with this email already exists" });
+        }
+        // Generate unique merchant code: MC + 8 random hex chars
+        const merchantCode = `MC${crypto.randomBytes(10).toString("hex").slice(0, 10).toUpperCase()}`;
+        const [merchant] = await db
+          .insert(merchants)
+          .values({
+            merchantCode,
+            businessName: input.businessName,
+            ownerName: input.ownerName,
+            email: input.email,
+            phone: input.phone,
+            address: input.address,
+            category: input.category,
+            status: "pending",
+            rcNumber: input.rcNumber ?? null,
+            tinNumber: input.tinNumber ?? null,
+            settlementAccountNumber: input.settlementAccountNumber,
+            settlementBankCode: input.settlementBankCode,
+            settlementBankName: input.settlementBankName,
+            walletBalance: "0.00",
+            totalVolume: "0.00",
+            totalTransactions: 0,
+          })
+          .returning({
+            id: merchants.id,
+            merchantCode: merchants.merchantCode,
+            businessName: merchants.businessName,
+            status: merchants.status,
+          });
+        return {
+          success: true,
+          merchantCode: merchant.merchantCode,
+          message: "Registration submitted successfully. Your account is pending review and will be activated within 1-3 business days.",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      // Generate unique merchant code: MC + 8 random hex chars
-      const merchantCode = `MC${crypto.randomBytes(10).toString("hex").slice(0, 10).toUpperCase()}`;
-      const [merchant] = await db
-        .insert(merchants)
-        .values({
-          merchantCode,
-          businessName: input.businessName,
-          ownerName: input.ownerName,
-          email: input.email,
-          phone: input.phone,
-          address: input.address,
-          category: input.category,
-          status: "pending",
-          rcNumber: input.rcNumber ?? null,
-          tinNumber: input.tinNumber ?? null,
-          settlementAccountNumber: input.settlementAccountNumber,
-          settlementBankCode: input.settlementBankCode,
-          settlementBankName: input.settlementBankName,
-          walletBalance: "0.00",
-          totalVolume: "0.00",
-          totalTransactions: 0,
-        })
-        .returning({
-          id: merchants.id,
-          merchantCode: merchants.merchantCode,
-          businessName: merchants.businessName,
-          status: merchants.status,
-        });
-      return {
-        success: true,
-        merchantCode: merchant.merchantCode,
-        message: "Registration submitted successfully. Your account is pending review and will be activated within 1-3 business days.",
-      };
     }),
 
   /**
@@ -402,19 +437,24 @@ export const merchantRouter = router({
   checkRegistrationStatus: protectedProcedure
     .input(z.object({ email: z.string().email() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const [merchant] = await db
-        .select({
-          merchantCode: merchants.merchantCode,
-          businessName: merchants.businessName,
-          status: merchants.status,
-          createdAt: merchants.createdAt,
-        })
-        .from(merchants)
-        .where(and(eq(merchants.email, input.email), isNull(merchants.deletedAt)))
-        .limit(1);
-      if (!merchant) return { found: false as const };
-      return { found: true as const, ...merchant };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [merchant] = await db
+          .select({
+            merchantCode: merchants.merchantCode,
+            businessName: merchants.businessName,
+            status: merchants.status,
+            createdAt: merchants.createdAt,
+          })
+          .from(merchants)
+          .where(and(eq(merchants.email, input.email), isNull(merchants.deletedAt)))
+          .limit(1);
+        if (!merchant) return { found: false as const };
+        return { found: true as const, ...merchant };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

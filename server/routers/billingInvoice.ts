@@ -50,89 +50,124 @@ export const billingInvoiceRouter = router({
       taxRate: z.number().default(7.5),
     }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      try {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      const ledgerEntries = await db
-        .select({
-          totalGrossFees: sql<number>`COALESCE(SUM(${platformBillingLedger.grossFee}), 0)`,
-          totalPlatformShare: sql<number>`COALESCE(SUM(${platformBillingLedger.platformShare}), 0)`,
-          totalClientShare: sql<number>`COALESCE(SUM(${platformBillingLedger.clientShare}), 0)`,
-          totalSwitchFee: sql<number>`COALESCE(SUM(${platformBillingLedger.switchFee}), 0)`,
-          totalAgentCommission: sql<number>`COALESCE(SUM(${platformBillingLedger.agentCommission}), 0)`,
-          transactionCount: sql<number>`COUNT(*)`,
-        })
-        .from(platformBillingLedger)
-        .where(and(
-          eq(platformBillingLedger.tenantId, input.tenantId),
-          eq(platformBillingLedger.clientId, input.clientId),
-          gte(platformBillingLedger.createdAt, new Date(input.periodStart)),
-          lte(platformBillingLedger.createdAt, new Date(input.periodEnd)),
-        ));
+        const ledgerEntries = await db
+          .select({
+            totalGrossFees: sql<number>`COALESCE(SUM(${platformBillingLedger.grossFee}), 0)`,
+            totalPlatformShare: sql<number>`COALESCE(SUM(${platformBillingLedger.platformShare}), 0)`,
+            totalClientShare: sql<number>`COALESCE(SUM(${platformBillingLedger.clientShare}), 0)`,
+            totalSwitchFee: sql<number>`COALESCE(SUM(${platformBillingLedger.switchFee}), 0)`,
+            totalAgentCommission: sql<number>`COALESCE(SUM(${platformBillingLedger.agentCommission}), 0)`,
+            transactionCount: sql<number>`COUNT(*)`,
+          })
+          .from(platformBillingLedger)
+          .where(and(
+            eq(platformBillingLedger.tenantId, input.tenantId),
+            eq(platformBillingLedger.clientId, input.clientId),
+            gte(platformBillingLedger.createdAt, new Date(input.periodStart)),
+            lte(platformBillingLedger.createdAt, new Date(input.periodEnd)),
+          ));
 
-      const stats = ledgerEntries[0] || { totalGrossFees: 0, totalPlatformShare: 0, totalClientShare: 0, totalSwitchFee: 0, totalAgentCommission: 0, transactionCount: 0 };
+        const stats = ledgerEntries[0] || { totalGrossFees: 0, totalPlatformShare: 0, totalClientShare: 0, totalSwitchFee: 0, totalAgentCommission: 0, transactionCount: 0 };
 
-      const lineItems: InvoiceLineItem[] = [
-        { description: `Transaction processing fees (${stats.transactionCount} transactions)`, quantity: Number(stats.transactionCount), unitPrice: Number(stats.totalGrossFees) / Math.max(Number(stats.transactionCount), 1), total: Number(stats.totalGrossFees), category: "transaction_fee" },
-        { description: "Platform revenue share", quantity: 1, unitPrice: Number(stats.totalPlatformShare), total: Number(stats.totalPlatformShare), category: "transaction_fee" },
-        { description: "Switch/network fees", quantity: 1, unitPrice: Number(stats.totalSwitchFee), total: Number(stats.totalSwitchFee), category: "transaction_fee" },
-        { description: "Agent commissions", quantity: 1, unitPrice: Number(stats.totalAgentCommission), total: Number(stats.totalAgentCommission), category: "transaction_fee" },
-      ];
+        const lineItems: InvoiceLineItem[] = [
+          { description: `Transaction processing fees (${stats.transactionCount} transactions)`, quantity: Number(stats.transactionCount), unitPrice: Number(stats.totalGrossFees) / Math.max(Number(stats.transactionCount), 1), total: Number(stats.totalGrossFees), category: "transaction_fee" },
+          { description: "Platform revenue share", quantity: 1, unitPrice: Number(stats.totalPlatformShare), total: Number(stats.totalPlatformShare), category: "transaction_fee" },
+          { description: "Switch/network fees", quantity: 1, unitPrice: Number(stats.totalSwitchFee), total: Number(stats.totalSwitchFee), category: "transaction_fee" },
+          { description: "Agent commissions", quantity: 1, unitPrice: Number(stats.totalAgentCommission), total: Number(stats.totalAgentCommission), category: "transaction_fee" },
+        ];
 
-      const [config] = await db.select().from(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, input.tenantId));
-      if (config?.billingModel === "subscription" || config?.billingModel === "hybrid") {
-        const subConfig = config.subscriptionConfig as any;
-        if (subConfig?.perAgentFee) {
-          lineItems.push({ description: "Monthly agent subscription", quantity: subConfig.agentCount || 10, unitPrice: subConfig.perAgentFee, total: (subConfig.agentCount || 10) * subConfig.perAgentFee, category: "subscription" });
+        const [config] = await db.select().from(tenantBillingConfig).where(eq(tenantBillingConfig.tenantId, input.tenantId)).limit(100);
+        if (config?.billingModel === "subscription" || config?.billingModel === "hybrid") {
+          const subConfig = config.subscriptionConfig as any;
+          if (subConfig?.perAgentFee) {
+            lineItems.push({ description: "Monthly agent subscription", quantity: subConfig.agentCount || 10, unitPrice: subConfig.perAgentFee, total: (subConfig.agentCount || 10) * subConfig.perAgentFee, category: "subscription" });
+          }
         }
+
+        const subtotal = lineItems.reduce((sum: any, item: any) => sum + item.total, 0);
+        const taxAmount = subtotal * (input.taxRate / 100);
+        const total = subtotal + taxAmount;
+        const invoiceNumber = `INV-${input.tenantId}-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${crypto.randomUUID().toUpperCase()}`;
+
+        const invoice: Invoice = {
+          id: `inv_${Date.now()}`,
+          tenantId: input.tenantId, clientId: input.clientId, invoiceNumber,
+          periodStart: input.periodStart, periodEnd: input.periodEnd,
+          issueDate: new Date().toISOString(),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: "draft", currency: input.currency, subtotal, taxRate: input.taxRate, taxAmount, total, lineItems,
+          notes: "Payment due within 30 days. Late payments subject to 2% monthly interest.",
+          paymentTerms: "Net 30",
+        };
+        return invoice;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      const subtotal = lineItems.reduce((sum: any, item: any) => sum + item.total, 0);
-      const taxAmount = subtotal * (input.taxRate / 100);
-      const total = subtotal + taxAmount;
-      const invoiceNumber = `INV-${input.tenantId}-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${crypto.randomUUID().toUpperCase()}`;
-
-      const invoice: Invoice = {
-        id: `inv_${Date.now()}`,
-        tenantId: input.tenantId, clientId: input.clientId, invoiceNumber,
-        periodStart: input.periodStart, periodEnd: input.periodEnd,
-        issueDate: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: "draft", currency: input.currency, subtotal, taxRate: input.taxRate, taxAmount, total, lineItems,
-        notes: "Payment due within 30 days. Late payments subject to 2% monthly interest.",
-        paymentTerms: "Net 30",
-      };
-      return invoice;
     }),
 
   listInvoices: protectedProcedure
     .input(z.object({ tenantId: z.number(), status: z.string().optional(), limit: z.number().default(20) }))
     .query(async ({ input }) => { return { invoices: [], total: 0, limit: input.limit }; }),
+      try {
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
 
   getInvoice: protectedProcedure
     .input(z.object({ invoiceId: z.string() }))
     .query(async ({ input }) => { return { invoice: null, found: false }; }),
+      try {
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
 
   markPaid: protectedProcedure
     .input(z.object({ invoiceId: z.string(), paymentRef: z.string(), paidAt: z.string().optional() }))
     .mutation(async ({ input }) => { return { success: true, invoiceId: input.invoiceId, status: "paid", paymentRef: input.paymentRef }; }),
+      try {
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
 
   generateCreditNote: protectedProcedure
     .input(z.object({ invoiceId: z.string(), amount: z.number(), reason: z.string() }))
     .mutation(async ({ input }) => {
-      return { creditNoteNumber: `CN-${crypto.randomUUID().toUpperCase()}`, invoiceId: input.invoiceId, amount: input.amount, reason: input.reason, status: "issued" };
+      try {
+        return { creditNoteNumber: `CN-${crypto.randomUUID().toUpperCase()}`, invoiceId: input.invoiceId, amount: input.amount, reason: input.reason, status: "issued" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   exportInvoices: protectedProcedure
     .input(z.object({ tenantId: z.number(), startDate: z.string(), endDate: z.string(), format: z.enum(["csv", "xlsx"]).default("csv") }))
     .mutation(async ({ input }) => { return { downloadUrl: `/api/billing/export/${input.tenantId}/${input.format}`, expiresAt: new Date(Date.now() + 3600000).toISOString() }; }),
+      try {
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
 
   convertCurrency: protectedProcedure
     .input(z.object({ amount: z.number(), from: z.string().default("NGN"), to: z.string() }))
     .query(async ({ input }) => {
-      const rates: Record<string, number> = { USD: 0.00065, EUR: 0.00060, GBP: 0.00052, GHS: 0.0078, KES: 0.084, ZAR: 0.012 };
-      const rate = rates[input.to] || 1;
-      return { originalAmount: input.amount, convertedAmount: input.amount * rate, rate, from: input.from, to: input.to, timestamp: new Date().toISOString() };
+      try {
+        const rates: Record<string, number> = { USD: 0.00065, EUR: 0.00060, GBP: 0.00052, GHS: 0.0078, KES: 0.084, ZAR: 0.012 };
+        const rate = rates[input.to] || 1;
+        return { originalAmount: input.amount, convertedAmount: input.amount * rate, rate, from: input.from, to: input.to, timestamp: new Date().toISOString() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Sprint 82: Stripe Invoice Integration

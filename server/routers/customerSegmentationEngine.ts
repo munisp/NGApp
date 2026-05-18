@@ -3,18 +3,19 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { customers, agents, transactions, auditLog } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 export const customerSegmentationEngineRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { totalSegments: 0, totalCustomers: 0, avgSegmentSize: 0 };
-    const [custCount] = await db.select({ value: count() }).from(customers);
+    const [custCount] = await db.select({ value: count() }).from(customers).limit(100);
     return { totalSegments: 5, totalCustomers: Number(custCount.value), avgSegmentSize: Math.round(Number(custCount.value) / 5) };
   }),
   listSegments: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { segments: [] };
-    const [custCount] = await db.select({ value: count() }).from(customers);
+    const [custCount] = await db.select({ value: count() }).from(customers).limit(100);
     const total = Number(custCount.value);
     return { segments: [
       { id: "high_value", name: "High Value", description: "Top 10% by transaction volume", size: Math.round(total * 0.1), criteria: "tx_volume > 90th percentile" },
@@ -25,9 +26,14 @@ export const customerSegmentationEngineRouter = router({
     ] };
   }),
   getSegmentDetails: protectedProcedure.input(z.object({ segmentId: z.string() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return null;
-    const rows = await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(20);
-    return { segmentId: input.segmentId, customers: rows, total: rows.length };
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const rows = await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(20);
+      return { segmentId: input.segmentId, customers: rows, total: rows.length };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

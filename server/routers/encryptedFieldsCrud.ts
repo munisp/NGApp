@@ -28,30 +28,50 @@ function decrypt(encrypted: string, iv: string, tag: string): string {
 
 export const encryptedFieldsRouter = router({
   list: protectedProcedure.input(z.object({ limit: z.number().default(20), offset: z.number().default(0) })).query(async ({ input }) => {
-    const db = (await getDb())!;
-    const rows = await db.select().from(encryptedFields).orderBy(desc(encryptedFields.id)).limit(input.limit).offset(input.offset);
-    const [{ total }] = await db.select({ total: count() }).from(encryptedFields);
-    // Return metadata only, not decrypted values
-    return { items: rows.map((r: any) => ({ id: r.id, fieldName: r.fieldName, entityType: r.entityType, entityId: r.entityId, createdAt: r.createdAt, isEncrypted: true })), total };
+    try {
+      const db = (await getDb())!;
+      const rows = await db.select().from(encryptedFields).orderBy(desc(encryptedFields.id)).limit(input.limit).offset(input.offset);
+      const [{ total }] = await db.select({ total: count() }).from(encryptedFields).limit(100);
+      // Return metadata only, not decrypted values
+      return { items: rows.map((r: any) => ({ id: r.id, fieldName: r.fieldName, entityType: r.entityType, entityId: r.entityId, createdAt: r.createdAt, isEncrypted: true })), total };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   store: protectedProcedure.input(z.object({ fieldName: z.string(), entityType: z.string(), entityId: z.number(), plaintext: z.string() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    const { encrypted, iv, tag } = encrypt(input.plaintext);
-    const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag } as any).returning();
-    return { id: row.id, fieldName: input.fieldName, message: "Field encrypted with AES-256-GCM" };
+    try {
+      const db = (await getDb())!;
+      const { encrypted, iv, tag } = encrypt(input.plaintext);
+      const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag } as any).returning();
+      return { id: row.id, fieldName: input.fieldName, message: "Field encrypted with AES-256-GCM" };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   retrieve: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
-    const db = (await getDb())!;
-    const [row] = await db.select().from(encryptedFields).where(eq(encryptedFields.id, input.id));
-    if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Encrypted field not found" });
     try {
-      const decrypted = decrypt((row as any).encryptedValue, (row as any).iv, (row as any).authTag);
-      return { id: row.id, fieldName: (row as any).fieldName, value: decrypted, accessedBy: ctx.user?.id };
-    } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Decryption failed — key may have been rotated" }); }
+      const db = (await getDb())!;
+      const [row] = await db.select().from(encryptedFields).where(eq(encryptedFields.id, input.id)).limit(100);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Encrypted field not found" });
+      try {
+        const decrypted = decrypt((row as any).encryptedValue, (row as any).iv, (row as any).authTag);
+        return { id: row.id, fieldName: (row as any).fieldName, value: decrypted, accessedBy: ctx.user?.id };
+      } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Decryption failed — key may have been rotated" }); }
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    await db.delete(encryptedFields).where(eq(encryptedFields.id, input.id));
-    return { success: true };
+    try {
+      const db = (await getDb())!;
+      await db.delete(encryptedFields).where(eq(encryptedFields.id, input.id));
+      return { success: true };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

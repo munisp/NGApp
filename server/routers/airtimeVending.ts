@@ -50,42 +50,47 @@ export const airtimeVendingRouter = router({
       provider: z.enum(["MTN", "AIRTEL", "GLO", "9MOBILE"]).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      const provider = input.provider ?? detectProvider(input.phone);
-      if (!provider) throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot detect provider for this number" });
+        const provider = input.provider ?? detectProvider(input.phone);
+        if (!provider) throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot detect provider for this number" });
 
-      const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-        .where(eq(agents.id, session.id)).limit(1);
-      if (!agent || Number(agent.floatBalance) < input.amount)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
+          .where(eq(agents.id, session.id)).limit(1);
+        if (!agent || Number(agent.floatBalance) < input.amount)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
 
-      const commission = Math.round(input.amount * 0.04);
-      const ref = `AIR-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
+        const commission = Math.round(input.amount * 0.04);
+        const ref = `AIR-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-      const [tx] = await db.insert(transactions).values({
-        ref, agentId: session.id, type: "Airtime",
-        amount: String(input.amount), fee: "0", commission: String(commission),
-        customerPhone: input.phone, status: "success", channel: "App",
-        metadata: { provider, vendType: "airtime" },
-      }).returning();
+        const [tx] = await db.insert(transactions).values({
+          ref, agentId: session.id, type: "Airtime",
+          amount: String(input.amount), fee: "0", commission: String(commission),
+          customerPhone: input.phone, status: "success", channel: "App",
+          metadata: { provider, vendType: "airtime" },
+        }).returning();
 
-      await db.update(agents).set({
-        floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
-      }).where(eq(agents.id, session.id));
+        await db.update(agents).set({
+          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
+          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+        }).where(eq(agents.id, session.id));
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "AIRTIME_VENDED", resource: "airtime", resourceId: ref, status: "success",
-        metadata: { provider, amount: input.amount, phone: input.phone, commission },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "AIRTIME_VENDED", resource: "airtime", resourceId: ref, status: "success",
+          metadata: { provider, amount: input.amount, phone: input.phone, commission },
+        });
 
-      return { ref, provider, amount: input.amount, phone: input.phone, commission, status: "success", transactionId: tx.id };
+        return { ref, provider, amount: input.amount, phone: input.phone, commission, status: "success", transactionId: tx.id };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   vendData: protectedProcedure
@@ -94,68 +99,83 @@ export const airtimeVendingRouter = router({
       bundleId: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
 
-      const bundle = DATA_BUNDLES.find(b => b.id === input.bundleId);
-      if (!bundle) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid bundle ID" });
+        const bundle = DATA_BUNDLES.find(b => b.id === input.bundleId);
+        if (!bundle) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid bundle ID" });
 
-      const db = (await getDb())!;
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
-        .where(eq(agents.id, session.id)).limit(1);
-      if (!agent || Number(agent.floatBalance) < bundle.price)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
+        const [agent] = await db.select({ floatBalance: agents.floatBalance }).from(agents)
+          .where(eq(agents.id, session.id)).limit(1);
+        if (!agent || Number(agent.floatBalance) < bundle.price)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient float balance" });
 
-      const commission = Math.round(bundle.price * 0.03);
-      const ref = `DAT-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
+        const commission = Math.round(bundle.price * 0.03);
+        const ref = `DAT-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
 
-      const [tx] = await db.insert(transactions).values({
-        ref, agentId: session.id, type: "Airtime",
-        amount: String(bundle.price), fee: "0", commission: String(commission),
-        customerPhone: input.phone, status: "success", channel: "App",
-        metadata: { provider: bundle.provider, vendType: "data", bundleId: bundle.id, size: bundle.size, validity: bundle.validity },
-      }).returning();
+        const [tx] = await db.insert(transactions).values({
+          ref, agentId: session.id, type: "Airtime",
+          amount: String(bundle.price), fee: "0", commission: String(commission),
+          customerPhone: input.phone, status: "success", channel: "App",
+          metadata: { provider: bundle.provider, vendType: "data", bundleId: bundle.id, size: bundle.size, validity: bundle.validity },
+        }).returning();
 
-      await db.update(agents).set({
-        floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(bundle.price)}`,
-        commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
-      }).where(eq(agents.id, session.id));
+        await db.update(agents).set({
+          floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(bundle.price)}`,
+          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+        }).where(eq(agents.id, session.id));
 
-      await writeAuditLog({
-        agentId: session.id, agentCode: session.agentCode,
-        action: "DATA_VENDED", resource: "data_bundle", resourceId: ref, status: "success",
-        metadata: { provider: bundle.provider, bundleId: bundle.id, amount: bundle.price, phone: input.phone },
-      });
+        await writeAuditLog({
+          agentId: session.id, agentCode: session.agentCode,
+          action: "DATA_VENDED", resource: "data_bundle", resourceId: ref, status: "success",
+          metadata: { provider: bundle.provider, bundleId: bundle.id, amount: bundle.price, phone: input.phone },
+        });
 
-      return { ref, provider: bundle.provider, bundle: bundle.size, validity: bundle.validity, amount: bundle.price, commission, status: "success", transactionId: tx.id };
+        return { ref, provider: bundle.provider, bundle: bundle.size, validity: bundle.validity, amount: bundle.price, commission, status: "success", transactionId: tx.id };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   list: protectedProcedure
     .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
     .query(async ({ input, ctx }) => {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
 
-      const items = await db.select().from(transactions)
-        .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")))
-        .orderBy(desc(transactions.createdAt)).limit(input.limit).offset(input.offset);
+        const items = await db.select().from(transactions)
+          .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")))
+          .orderBy(desc(transactions.createdAt)).limit(input.limit).offset(input.offset);
 
-      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(transactions)
-        .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")));
+        const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(transactions)
+          .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")));
 
-      return { items, total, limit: input.limit, offset: input.offset };
+        return { items, total, limit: input.limit, offset: input.offset };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   dataBundles: protectedProcedure
     .input(z.object({ provider: z.enum(["MTN", "AIRTEL", "GLO", "9MOBILE"]).optional() }))
     .query(async ({ input }) => {
-      if (input.provider) return { bundles: DATA_BUNDLES.filter(b => b.provider === input.provider) };
-      return { bundles: DATA_BUNDLES };
+      try {
+        if (input.provider) return { bundles: DATA_BUNDLES.filter(b => b.provider === input.provider) };
+        return { bundles: DATA_BUNDLES };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   providers: protectedProcedure.query(async () => {
@@ -165,60 +185,80 @@ export const airtimeVendingRouter = router({
   detectProvider: protectedProcedure
     .input(z.object({ phone: z.string() }))
     .query(async ({ input }) => {
-      const provider = detectProvider(input.phone);
-      return { phone: input.phone, provider, detected: !!provider };
+      try {
+        const provider = detectProvider(input.phone);
+        return { phone: input.phone, provider, detected: !!provider };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   history: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
     .query(async ({ input, ctx }) => {
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+        const db = (await getDb())!;
+        if (!db) return { items: [] };
+
+        const items = await db.select().from(transactions)
+          .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")))
+          .orderBy(desc(transactions.createdAt)).limit(input.limit);
+
+        return { items };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
+    }),
+
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
       const session = await getAgentFromCookie(ctx.req);
       if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const db = (await getDb())!;
-      if (!db) return { items: [] };
+      if (!db) return { totalVended: 0, totalAmount: "0", totalCommission: "0", byProvider: {} };
 
-      const items = await db.select().from(transactions)
-        .where(and(eq(transactions.agentId, session.id), eq(transactions.type, "Airtime")))
-        .orderBy(desc(transactions.createdAt)).limit(input.limit);
+      const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const [stats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
+        totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
+      }).from(transactions).where(and(
+        eq(transactions.agentId, session.id), eq(transactions.type, "Airtime"),
+        gte(transactions.createdAt, oneMonth)
+      ));
 
-      return { items };
-    }),
-
-  getStats: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-    const db = (await getDb())!;
-    if (!db) return { totalVended: 0, totalAmount: "0", totalCommission: "0", byProvider: {} };
-
-    const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [stats] = await db.select({
-      total: sql<number>`count(*)::int`,
-      totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-      totalCommission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-    }).from(transactions).where(and(
-      eq(transactions.agentId, session.id), eq(transactions.type, "Airtime"),
-      gte(transactions.createdAt, oneMonth)
-    ));
-
-    return { totalVended: stats.total, totalAmount: stats.totalAmount, totalCommission: stats.totalCommission };
+      return { totalVended: stats.total, totalAmount: stats.totalAmount, totalCommission: stats.totalCommission };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 
   analytics: protectedProcedure.query(async ({ ctx }) => {
-    const session = await getAgentFromCookie(ctx.req);
-    if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+    try {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-    const db = (await getDb())!;
-    if (!db) return { daily: [], byProvider: [] };
+      const db = (await getDb())!;
+      if (!db) return { daily: [], byProvider: [] };
 
-    const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const daily = await db.execute(
-      sql`SELECT DATE("createdAt") as date, count(*) as count, sum(CAST(amount AS numeric)) as total
-          FROM transactions WHERE "agentId" = ${session.id} AND type = 'Airtime'
-          AND "createdAt" > ${oneWeek} GROUP BY DATE("createdAt") ORDER BY date`
-    );
+      const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const daily = await db.execute(
+        sql`SELECT DATE("createdAt") as date, count(*) as count, sum(CAST(amount AS numeric)) as total
+            FROM transactions WHERE "agentId" = ${session.id} AND type = 'Airtime'
+            AND "createdAt" > ${oneWeek} GROUP BY DATE("createdAt") ORDER BY date`
+      );
 
-    return { daily: daily.rows ?? [] };
+      return { daily: daily.rows ?? [] };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

@@ -14,21 +14,22 @@ import { tbCreateTransfer } from "../tbClient";
 import { fluvioProduce } from "../fluvio";
 import { permifyCheck } from "../_core/permify";
 import logger from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 export const settlementNettingEngineRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ cnt: count() }).from(merchantSettlements);
-    const [settled] = await db.select({ cnt: count() }).from(merchantSettlements).where(eq(merchantSettlements.status, "settled"));
-    const [pending] = await db.select({ cnt: count() }).from(merchantSettlements).where(eq(merchantSettlements.status, "pending"));
-    const [grossAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.grossAmount}::numeric),0)` }).from(merchantSettlements);
-    const [netAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.netAmount}::numeric),0)` }).from(merchantSettlements);
-    const [feeAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.feeAmount}::numeric),0)` }).from(merchantSettlements);
+    const [total] = await db.select({ cnt: count() }).from(merchantSettlements).limit(100);
+    const [settled] = await db.select({ cnt: count() }).from(merchantSettlements).where(eq(merchantSettlements.status, "settled")).limit(100);
+    const [pending] = await db.select({ cnt: count() }).from(merchantSettlements).where(eq(merchantSettlements.status, "pending")).limit(100);
+    const [grossAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.grossAmount}::numeric),0)` }).from(merchantSettlements).limit(100);
+    const [netAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.netAmount}::numeric),0)` }).from(merchantSettlements).limit(100);
+    const [feeAgg] = await db.select({ t: sql<string>`COALESCE(SUM(${merchantSettlements.feeAmount}::numeric),0)` }).from(merchantSettlements).limit(100);
     const totalGross = Number(grossAgg?.t ?? 0);
     const totalNet = Number(netAgg?.t ?? 0);
     const totalSavings = totalGross - totalNet;
     // Count distinct banks from bankRef column
-    const [banks] = await db.select({ cnt: sql<number>`COUNT(DISTINCT ${merchantSettlements.bankRef})` }).from(merchantSettlements);
+    const [banks] = await db.select({ cnt: sql<number>`COUNT(DISTINCT ${merchantSettlements.bankRef})` }).from(merchantSettlements).limit(100);
     const bankCount = Number(banks?.cnt ?? 0);
     return {
       totalSessions: total?.cnt ?? 0, totalGross, totalNet, totalSavings,
@@ -43,7 +44,7 @@ export const settlementNettingEngineRouter = router({
       const db = (await getDb())!;
       const page = input?.page ?? 1; const limit = input?.limit ?? 20;
       const rows = await db.select().from(merchantSettlements).orderBy(desc(merchantSettlements.createdAt)).limit(limit).offset((page - 1) * limit);
-      const [t] = await db.select({ cnt: count() }).from(merchantSettlements);
+      const [t] = await db.select({ cnt: count() }).from(merchantSettlements).limit(100);
       const sessions = rows.map(r => ({
         id: `NET-${r.id}`, type: "bilateral", parties: [`Merchant-${r.merchantId}`],
         grossAmount: Number(r.grossAmount), netAmount: Number(r.netAmount),

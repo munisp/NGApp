@@ -21,17 +21,22 @@ export const dynamicFeeEngineRouter = router({
       active: z.boolean().optional(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const conditions = [];
-      if (input.txType) conditions.push(eq(feeRules.txType, input.txType));
-      if (input.channel) conditions.push(eq(feeRules.channel, input.channel));
-      if (input.active !== undefined) conditions.push(eq(feeRules.active, input.active));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const items = await db.select().from(feeRules).where(where)
-        .orderBy(desc(feeRules.createdAt)).limit(input.limit).offset((input.page - 1) * input.limit);
-      const [{ total }] = await db.select({ total: count() }).from(feeRules).where(where);
-      return { items, total };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const conditions = [];
+        if (input.txType) conditions.push(eq(feeRules.txType, input.txType));
+        if (input.channel) conditions.push(eq(feeRules.channel, input.channel));
+        if (input.active !== undefined) conditions.push(eq(feeRules.active, input.active));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const items = await db.select().from(feeRules).where(where)
+          .orderBy(desc(feeRules.createdAt)).limit(input.limit).offset((input.page - 1) * input.limit);
+        const [{ total }] = await db.select({ total: count() }).from(feeRules).where(where).limit(100);
+        return { items, total };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Create fee rule
@@ -55,31 +60,36 @@ export const dynamicFeeEngineRouter = router({
       effectiveTo: z.string().optional(),
     }))
     .mutation(async ({  input, ctx  }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const [rule] = await db.insert(feeRules).values({
-        name: input.name,
-        txType: input.txType,
-        channel: input.channel,
-        feeType: input.feeType,
-        flatAmount: input.flatAmount ? String(input.flatAmount) : null,
-        percentageRate: input.percentageRate ? String(input.percentageRate) : null,
-        minFee: input.minFee ? String(input.minFee) : null,
-        maxFee: input.maxFee ? String(input.maxFee) : null,
-        tiers: input.tiers ? JSON.stringify(input.tiers) : null,
-        effectiveFrom: new Date(input.effectiveFrom),
-        effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
-        active: true,
-        createdBy: ctx.user?.id,
-      }).returning();
-      // Audit trail
-      await db.insert(feeAuditTrail).values({
-        feeRuleId: rule.id,
-        action: "created",
-        changedBy: ctx.user?.id,
-        newValues: JSON.stringify(input),
-      });
-      return { rule };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const [rule] = await db.insert(feeRules).values({
+          name: input.name,
+          txType: input.txType,
+          channel: input.channel,
+          feeType: input.feeType,
+          flatAmount: input.flatAmount ? String(input.flatAmount) : null,
+          percentageRate: input.percentageRate ? String(input.percentageRate) : null,
+          minFee: input.minFee ? String(input.minFee) : null,
+          maxFee: input.maxFee ? String(input.maxFee) : null,
+          tiers: input.tiers ? JSON.stringify(input.tiers) : null,
+          effectiveFrom: new Date(input.effectiveFrom),
+          effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
+          active: true,
+          createdBy: ctx.user?.id,
+        }).returning();
+        // Audit trail
+        await db.insert(feeAuditTrail).values({
+          feeRuleId: rule.id,
+          action: "created",
+          changedBy: ctx.user?.id,
+          newValues: JSON.stringify(input),
+        });
+        return { rule };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Update fee rule
@@ -94,25 +104,30 @@ export const dynamicFeeEngineRouter = router({
       active: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const [oldRule] = await db.select().from(feeRules).where(eq(feeRules.id, input.ruleId));
-      const updates: any = { updatedAt: new Date() };
-      if (input.name !== undefined) updates.name = input.name;
-      if (input.flatAmount !== undefined) updates.flatAmount = String(input.flatAmount);
-      if (input.percentageRate !== undefined) updates.percentageRate = String(input.percentageRate);
-      if (input.minFee !== undefined) updates.minFee = String(input.minFee);
-      if (input.maxFee !== undefined) updates.maxFee = String(input.maxFee);
-      if (input.active !== undefined) updates.active = input.active;
-      await db.update(feeRules).set(updates).where(eq(feeRules.id, input.ruleId));
-      await db.insert(feeAuditTrail).values({
-        feeRuleId: input.ruleId,
-        action: "updated",
-        changedBy: ctx.user?.id,
-        previousValues: JSON.stringify(oldRule),
-        newValues: JSON.stringify(updates),
-      });
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const [oldRule] = await db.select().from(feeRules).where(eq(feeRules.id, input.ruleId)).limit(100);
+        const updates: any = { updatedAt: new Date() };
+        if (input.name !== undefined) updates.name = input.name;
+        if (input.flatAmount !== undefined) updates.flatAmount = String(input.flatAmount);
+        if (input.percentageRate !== undefined) updates.percentageRate = String(input.percentageRate);
+        if (input.minFee !== undefined) updates.minFee = String(input.minFee);
+        if (input.maxFee !== undefined) updates.maxFee = String(input.maxFee);
+        if (input.active !== undefined) updates.active = input.active;
+        await db.update(feeRules).set(updates).where(eq(feeRules.id, input.ruleId));
+        await db.insert(feeAuditTrail).values({
+          feeRuleId: input.ruleId,
+          action: "updated",
+          changedBy: ctx.user?.id,
+          previousValues: JSON.stringify(oldRule),
+          newValues: JSON.stringify(updates),
+        });
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Calculate fee for a transaction
@@ -123,47 +138,52 @@ export const dynamicFeeEngineRouter = router({
       amount: z.number(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { fee: 0, breakdown: {} };
-      const now = new Date();
-      const [rule] = await db.select().from(feeRules)
-        .where(and(
-          eq(feeRules.txType, input.txType),
-          eq(feeRules.channel, input.channel),
-          eq(feeRules.active, true),
-        )).limit(1);
-      if (!rule) return { fee: 0, breakdown: { message: "No matching fee rule" } };
-      let fee = 0;
-      const breakdown: any = { ruleId: rule.id, ruleName: rule.name, feeType: rule.feeType };
-      switch (rule.feeType) {
-        case "flat":
-          fee = parseFloat(String(rule.flatAmount || "0"));
-          break;
-        case "percentage":
-          fee = input.amount * parseFloat(String(rule.percentageRate || "0")) / 100;
-          break;
-        case "capped_percentage":
-          fee = input.amount * parseFloat(String(rule.percentageRate || "0")) / 100;
-          const minFee = parseFloat(String(rule.minFee || "0"));
-          const maxFee = parseFloat(String(rule.maxFee || "999999999"));
-          fee = Math.max(minFee, Math.min(fee, maxFee));
-          breakdown.capped = true;
-          break;
-        case "tiered":
-          if (rule.tiers) {
-            const tiers = JSON.parse(String(rule.tiers));
-            for (const tier of tiers) {
-              if (input.amount >= tier.minAmount && input.amount <= tier.maxAmount) {
-                fee = tier.feeType === "flat" ? tier.fee : input.amount * tier.fee / 100;
-                breakdown.matchedTier = tier;
-                break;
+      try {
+        const db = (await getDb())!;
+        if (!db) return { fee: 0, breakdown: {} };
+        const now = new Date();
+        const [rule] = await db.select().from(feeRules)
+          .where(and(
+            eq(feeRules.txType, input.txType),
+            eq(feeRules.channel, input.channel),
+            eq(feeRules.active, true),
+          )).limit(1);
+        if (!rule) return { fee: 0, breakdown: { message: "No matching fee rule" } };
+        let fee = 0;
+        const breakdown: any = { ruleId: rule.id, ruleName: rule.name, feeType: rule.feeType };
+        switch (rule.feeType) {
+          case "flat":
+            fee = parseFloat(String(rule.flatAmount || "0"));
+            break;
+          case "percentage":
+            fee = input.amount * parseFloat(String(rule.percentageRate || "0")) / 100;
+            break;
+          case "capped_percentage":
+            fee = input.amount * parseFloat(String(rule.percentageRate || "0")) / 100;
+            const minFee = parseFloat(String(rule.minFee || "0"));
+            const maxFee = parseFloat(String(rule.maxFee || "999999999"));
+            fee = Math.max(minFee, Math.min(fee, maxFee));
+            breakdown.capped = true;
+            break;
+          case "tiered":
+            if (rule.tiers) {
+              const tiers = JSON.parse(String(rule.tiers));
+              for (const tier of tiers) {
+                if (input.amount >= tier.minAmount && input.amount <= tier.maxAmount) {
+                  fee = tier.feeType === "flat" ? tier.fee : input.amount * tier.fee / 100;
+                  breakdown.matchedTier = tier;
+                  break;
+                }
               }
             }
-          }
-          break;
+            break;
+        }
+        breakdown.calculatedFee = fee;
+        return { fee: Math.round(fee * 100) / 100, breakdown };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      breakdown.calculatedFee = fee;
-      return { fee: Math.round(fee * 100) / 100, breakdown };
     }),
 
   // Fee audit trail
@@ -174,16 +194,21 @@ export const dynamicFeeEngineRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const conditions = [];
-      if (input.ruleId) conditions.push(eq(feeAuditTrail.feeRuleId, input.ruleId));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const items = await db.select().from(feeAuditTrail).where(where)
-        .orderBy(desc(feeAuditTrail.createdAt))
-        .limit(input.limit).offset((input.page - 1) * input.limit);
-      const [{ total }] = await db.select({ total: count() }).from(feeAuditTrail).where(where);
-      return { items, total };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const conditions = [];
+        if (input.ruleId) conditions.push(eq(feeAuditTrail.feeRuleId, input.ruleId));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const items = await db.select().from(feeAuditTrail).where(where)
+          .orderBy(desc(feeAuditTrail.createdAt))
+          .limit(input.limit).offset((input.page - 1) * input.limit);
+        const [{ total }] = await db.select({ total: count() }).from(feeAuditTrail).where(where).limit(100);
+        return { items, total };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Fee simulation — test fee rules against sample amounts
@@ -194,34 +219,39 @@ export const dynamicFeeEngineRouter = router({
       amounts: z.array(z.number()),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { results: [] };
-      const [rule] = await db.select().from(feeRules)
-        .where(and(eq(feeRules.txType, input.txType), eq(feeRules.channel, input.channel), eq(feeRules.active, true))).limit(1);
-      if (!rule) return { results: input.amounts.map(a => ({ amount: a, fee: 0, noRule: true })) };
-      const results = input.amounts.map(amount => {
-        let fee = 0;
-        switch (rule.feeType) {
-          case "flat": fee = parseFloat(String(rule.flatAmount || "0")); break;
-          case "percentage": fee = amount * parseFloat(String(rule.percentageRate || "0")) / 100; break;
-          case "capped_percentage":
-            fee = amount * parseFloat(String(rule.percentageRate || "0")) / 100;
-            fee = Math.max(parseFloat(String(rule.minFee || "0")), Math.min(fee, parseFloat(String(rule.maxFee || "999999999"))));
-            break;
-          case "tiered":
-            if (rule.tiers) {
-              const tiers = JSON.parse(String(rule.tiers));
-              for (const tier of tiers) {
-                if (amount >= tier.minAmount && amount <= tier.maxAmount) {
-                  fee = tier.feeType === "flat" ? tier.fee : amount * tier.fee / 100;
-                  break;
+      try {
+        const db = (await getDb())!;
+        if (!db) return { results: [] };
+        const [rule] = await db.select().from(feeRules)
+          .where(and(eq(feeRules.txType, input.txType), eq(feeRules.channel, input.channel), eq(feeRules.active, true))).limit(1);
+        if (!rule) return { results: input.amounts.map(a => ({ amount: a, fee: 0, noRule: true })) };
+        const results = input.amounts.map(amount => {
+          let fee = 0;
+          switch (rule.feeType) {
+            case "flat": fee = parseFloat(String(rule.flatAmount || "0")); break;
+            case "percentage": fee = amount * parseFloat(String(rule.percentageRate || "0")) / 100; break;
+            case "capped_percentage":
+              fee = amount * parseFloat(String(rule.percentageRate || "0")) / 100;
+              fee = Math.max(parseFloat(String(rule.minFee || "0")), Math.min(fee, parseFloat(String(rule.maxFee || "999999999"))));
+              break;
+            case "tiered":
+              if (rule.tiers) {
+                const tiers = JSON.parse(String(rule.tiers));
+                for (const tier of tiers) {
+                  if (amount >= tier.minAmount && amount <= tier.maxAmount) {
+                    fee = tier.feeType === "flat" ? tier.fee : amount * tier.fee / 100;
+                    break;
+                  }
                 }
               }
-            }
-            break;
-        }
-        return { amount, fee: Math.round(fee * 100) / 100 };
-      });
-      return { results, rule: { id: rule.id, name: rule.name, feeType: rule.feeType } };
+              break;
+          }
+          return { amount, fee: Math.round(fee * 100) / 100 };
+        });
+        return { results, rule: { id: rule.id, name: rule.name, feeType: rule.feeType } };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

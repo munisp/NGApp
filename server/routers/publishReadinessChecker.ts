@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { auditLog, systemConfig } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 export const publishReadinessCheckerRouter = router({
   dashboard: protectedProcedure.query(async () => {

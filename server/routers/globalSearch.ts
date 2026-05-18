@@ -14,6 +14,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { agents, transactions, customers, disputes } from "../../drizzle/schema";
 import { ilike, or, sql, desc, count } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 const SearchInputSchema = z.object({
   query: z.string().min(2).max(200),

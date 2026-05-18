@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "net/http"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func initTracer(serviceName, serviceVersion string) func(context.Context) error 
 		return func(context.Context) error { return nil }
 	}
 	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
+		"https://opentelemetry.io/schemas/1.24.0",
 		semconv.ServiceName(serviceName),
 		semconv.ServiceVersion(serviceVersion),
 		attribute.String("deployment.environment", os.Getenv("ENVIRONMENT")),

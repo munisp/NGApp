@@ -41,23 +41,28 @@ export const deepfaceRouter = router({
       antiSpoofing: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceVerify(
-        input.image1Base64,
-        input.image2Base64,
-        input.modelName,
-        input.detectorBackend,
-        input.distanceMetric,
-        input.antiSpoofing,
-      );
+      try {
+        const result = await deepfaceVerify(
+          input.image1Base64,
+          input.image2Base64,
+          input.modelName,
+          input.detectorBackend,
+          input.distanceMetric,
+          input.antiSpoofing,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace verification service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace verification service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Multi-Model Ensemble Verification ──────────────────────────────────
@@ -70,22 +75,27 @@ export const deepfaceRouter = router({
       antiSpoofing: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceEnsembleVerify(
-        input.image1Base64,
-        input.image2Base64,
-        input.models as string[],
-        input.consensusThreshold,
-        input.antiSpoofing,
-      );
+      try {
+        const result = await deepfaceEnsembleVerify(
+          input.image1Base64,
+          input.image2Base64,
+          input.models as string[],
+          input.consensusThreshold,
+          input.antiSpoofing,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace ensemble verification service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace ensemble verification service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Facial Attribute Analysis ──────────────────────────────────────────
@@ -97,21 +107,26 @@ export const deepfaceRouter = router({
       antiSpoofing: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceAnalyze(
-        input.imageBase64,
-        input.actions as string[],
-        input.detectorBackend,
-        input.antiSpoofing,
-      );
+      try {
+        const result = await deepfaceAnalyze(
+          input.imageBase64,
+          input.actions as string[],
+          input.detectorBackend,
+          input.antiSpoofing,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace analysis service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace analysis service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Face Detection ────────────────────────────────────────────────────
@@ -122,20 +137,25 @@ export const deepfaceRouter = router({
       antiSpoofing: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceDetectFaces(
-        input.imageBase64,
-        input.detectorBackend,
-        input.antiSpoofing,
-      );
+      try {
+        const result = await deepfaceDetectFaces(
+          input.imageBase64,
+          input.detectorBackend,
+          input.antiSpoofing,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace detection service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace detection service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Embedding Extraction ──────────────────────────────────────────────
@@ -146,20 +166,25 @@ export const deepfaceRouter = router({
       detectorBackend: z.enum(DEEPFACE_DETECTORS).default("retinaface"),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceExtractEmbedding(
-        input.imageBase64,
-        input.modelName,
-        input.detectorBackend,
-      );
+      try {
+        const result = await deepfaceExtractEmbedding(
+          input.imageBase64,
+          input.modelName,
+          input.detectorBackend,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace embedding extraction service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace embedding extraction service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Anti-Spoofing Detection ───────────────────────────────────────────
@@ -169,19 +194,24 @@ export const deepfaceRouter = router({
       detectorBackend: z.enum(DEEPFACE_DETECTORS).default("retinaface"),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceAntiSpoof(
-        input.imageBase64,
-        input.detectorBackend,
-      );
+      try {
+        const result = await deepfaceAntiSpoof(
+          input.imageBase64,
+          input.detectorBackend,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace anti-spoofing service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace anti-spoofing service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Gallery Enrollment (1:N) ──────────────────────────────────────────
@@ -193,21 +223,26 @@ export const deepfaceRouter = router({
       metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceEnroll(
-        input.imageBase64,
-        input.identity,
-        input.modelName,
-        input.metadata,
-      );
+      try {
+        const result = await deepfaceEnroll(
+          input.imageBase64,
+          input.identity,
+          input.modelName,
+          input.metadata,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace enrollment service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace enrollment service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Gallery Search (1:N Recognition) ──────────────────────────────────
@@ -219,21 +254,26 @@ export const deepfaceRouter = router({
       threshold: z.number().min(0).max(1).optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await deepfaceSearch(
-        input.imageBase64,
-        input.modelName,
-        input.topK,
-        input.threshold,
-      );
+      try {
+        const result = await deepfaceSearch(
+          input.imageBase64,
+          input.modelName,
+          input.topK,
+          input.threshold,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE" as any,
-          message: "DeepFace gallery search service unavailable",
-        });
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE" as any,
+            message: "DeepFace gallery search service unavailable",
+          });
+        }
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      return result;
     }),
 
   // ── Supported Models & Detectors ──────────────────────────────────────

@@ -114,14 +114,19 @@ export const cbnReportingRouter = router({
       institutionName: z.string().default("54Link Agency Banking Platform"),
     }))
     .mutation(async ({ input }) => {
-      const svc = await callCbnService("/api/v1/cbn-reports/monthly-activity", "POST", {
-        year: input.year, month: input.month,
-        institution_code: input.institutionCode, institution_name: input.institutionName,
-      });
-      if (svc) return svc;
-      const result = await generateMonthlyReportFromDb(input.year, input.month, input.institutionCode);
-      if (!result) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate report" });
-      return result;
+      try {
+        const svc = await callCbnService("/api/v1/cbn-reports/monthly-activity", "POST", {
+          year: input.year, month: input.month,
+          institution_code: input.institutionCode, institution_name: input.institutionName,
+        });
+        if (svc) return svc;
+        const result = await generateMonthlyReportFromDb(input.year, input.month, input.institutionCode);
+        if (!result) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate report" });
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Generate Quarterly Fraud Report ───────────────────────────────────────
@@ -132,13 +137,18 @@ export const cbnReportingRouter = router({
       institutionCode: z.string().default("54LINK001"),
     }))
     .mutation(async ({ input }) => {
-      const svc = await callCbnService("/api/v1/cbn-reports/quarterly-fraud", "POST", {
-        year: input.year, quarter: input.quarter, institution_code: input.institutionCode,
-      });
-      if (svc) return svc;
-      const result = await generateQuarterlyFraudReportFromDb(input.year, input.quarter, input.institutionCode);
-      if (!result) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate report" });
-      return result;
+      try {
+        const svc = await callCbnService("/api/v1/cbn-reports/quarterly-fraud", "POST", {
+          year: input.year, quarter: input.quarter, institution_code: input.institutionCode,
+        });
+        if (svc) return svc;
+        const result = await generateQuarterlyFraudReportFromDb(input.year, input.quarter, input.institutionCode);
+        if (!result) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate report" });
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── File SAR ──────────────────────────────────────────────────────────────
@@ -152,22 +162,27 @@ export const cbnReportingRouter = router({
       customerDetails: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
-      const svc = await callCbnService("/api/v1/cbn-reports/sar", "POST", {
-        agent_id: input.agentId, transaction_ids: input.transactionIds,
-        total_amount: input.totalAmount, reason: input.reason,
-        description: input.description, customer_details: input.customerDetails ?? {},
-      });
-      if (svc) return svc;
-      return {
-        sarRef: `SAR-${Date.now()}-${input.agentId}`,
-        agentId: input.agentId,
-        transactionIds: input.transactionIds,
-        totalAmount: input.totalAmount,
-        reason: input.reason,
-        status: "filed_locally",
-        filedAt: new Date().toISOString(),
-        nfiuRef: null,
-      };
+      try {
+        const svc = await callCbnService("/api/v1/cbn-reports/sar", "POST", {
+          agent_id: input.agentId, transaction_ids: input.transactionIds,
+          total_amount: input.totalAmount, reason: input.reason,
+          description: input.description, customer_details: input.customerDetails ?? {},
+        });
+        if (svc) return svc;
+        return {
+          sarRef: `SAR-${Date.now()}-${input.agentId}`,
+          agentId: input.agentId,
+          transactionIds: input.transactionIds,
+          totalAmount: input.totalAmount,
+          reason: input.reason,
+          status: "filed_locally",
+          filedAt: new Date().toISOString(),
+          nfiuRef: null,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Get pending submissions ────────────────────────────────────────────────
@@ -180,8 +195,13 @@ export const cbnReportingRouter = router({
   markSubmitted: protectedProcedure
     .input(z.object({ reportId: z.string(), cbnReference: z.string().min(5) }))
     .mutation(async ({ input }) => {
-      const svc = await callCbnService(`/api/v1/cbn-reports/${input.reportId}/submit?cbn_reference=${encodeURIComponent(input.cbnReference)}`, "POST");
-      return svc ?? { success: true, reportId: input.reportId, cbnReference: input.cbnReference, submittedAt: new Date().toISOString() };
+      try {
+        const svc = await callCbnService(`/api/v1/cbn-reports/${input.reportId}/submit?cbn_reference=${encodeURIComponent(input.cbnReference)}`, "POST");
+        return svc ?? { success: true, reportId: input.reportId, cbnReference: input.cbnReference, submittedAt: new Date().toISOString() };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Health check ──────────────────────────────────────────────────────────
@@ -194,34 +214,39 @@ export const cbnReportingRouter = router({
   complianceDashboard: protectedProcedure
     .input(z.object({ year: z.number().int().min(2020).max(2100).default(() => new Date().getFullYear()) }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { year: input.year, monthlyStats: [], totalSars: 0, pendingSubmissions: 0 };
-      const yearStart = new Date(input.year, 0, 1);
-      const yearEnd = new Date(input.year, 11, 31, 23, 59, 59);
-      const monthlyStats = await db.execute(sql`
-        SELECT EXTRACT(MONTH FROM "createdAt") AS month, COUNT(*) AS tx_count,
-          COALESCE(SUM(CAST(amount AS NUMERIC)) FILTER (WHERE status = 'completed'), 0) AS volume,
-          COUNT(*) FILTER (WHERE status = 'completed') AS successful
-        FROM transactions WHERE "createdAt" BETWEEN ${yearStart} AND ${yearEnd}
-        GROUP BY month ORDER BY month
-      `);
-      const sarCount = await db.execute(sql`
-        SELECT COUNT(*) AS sar_count FROM transactions
-        WHERE "createdAt" BETWEEN ${yearStart} AND ${yearEnd}
-          AND CAST(amount AS NUMERIC) >= 5000000 AND status = 'completed'
-      `);
-      const sarRow = sarCount.rows[0] as Record<string, string>;
-      return {
-        year: input.year,
-        monthlyStats: (monthlyStats.rows as Array<Record<string, string>>).map(r => ({
-          month: parseInt(r.month, 10),
-          txCount: parseInt(r.tx_count, 10),
-          volume: parseFloat(r.volume),
-          successful: parseInt(r.successful, 10),
-        })),
-        totalSars: parseInt(sarRow.sar_count ?? "0", 10),
-        pendingSubmissions: 0,
-        nextReportDue: new Date(input.year, new Date().getMonth() + 1, 10).toISOString(),
-      };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { year: input.year, monthlyStats: [], totalSars: 0, pendingSubmissions: 0 };
+        const yearStart = new Date(input.year, 0, 1);
+        const yearEnd = new Date(input.year, 11, 31, 23, 59, 59);
+        const monthlyStats = await db.execute(sql`
+          SELECT EXTRACT(MONTH FROM "createdAt") AS month, COUNT(*) AS tx_count,
+            COALESCE(SUM(CAST(amount AS NUMERIC)) FILTER (WHERE status = 'completed'), 0) AS volume,
+            COUNT(*) FILTER (WHERE status = 'completed') AS successful
+          FROM transactions WHERE "createdAt" BETWEEN ${yearStart} AND ${yearEnd}
+          GROUP BY month ORDER BY month
+        `);
+        const sarCount = await db.execute(sql`
+          SELECT COUNT(*) AS sar_count FROM transactions
+          WHERE "createdAt" BETWEEN ${yearStart} AND ${yearEnd}
+            AND CAST(amount AS NUMERIC) >= 5000000 AND status = 'completed'
+        `);
+        const sarRow = sarCount.rows[0] as Record<string, string>;
+        return {
+          year: input.year,
+          monthlyStats: (monthlyStats.rows as Array<Record<string, string>>).map(r => ({
+            month: parseInt(r.month, 10),
+            txCount: parseInt(r.tx_count, 10),
+            volume: parseFloat(r.volume),
+            successful: parseInt(r.successful, 10),
+          })),
+          totalSars: parseInt(sarRow.sar_count ?? "0", 10),
+          pendingSubmissions: 0,
+          nextReportDue: new Date(input.year, new Date().getMonth() + 1, 10).toISOString(),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });

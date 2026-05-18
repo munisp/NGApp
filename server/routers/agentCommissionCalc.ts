@@ -15,12 +15,12 @@ import logger from "../_core/logger";
 export const agentCommissionCalcRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [totalPay] = await db.select({ cnt: count() }).from(commissionPayouts);
-    const [pendAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionPayouts.amount}::numeric),0)` }).from(commissionPayouts).where(eq(commissionPayouts.status, "pending"));
-    const [paidAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionPayouts.amount}::numeric),0)` }).from(commissionPayouts).where(eq(commissionPayouts.status, "approved"));
-    const [tierCount] = await db.select({ cnt: count() }).from(commissionTiers);
-    const [ruleCount] = await db.select({ cnt: count() }).from(commissionRules);
-    const [avgRow] = await db.select({ avg: sql<string>`COALESCE(AVG(${commissionTiers.rate}::numeric),0)` }).from(commissionTiers);
+    const [totalPay] = await db.select({ cnt: count() }).from(commissionPayouts).limit(100);
+    const [pendAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionPayouts.amount}::numeric),0)` }).from(commissionPayouts).where(eq(commissionPayouts.status, "pending")).limit(100);
+    const [paidAmt] = await db.select({ t: sql<string>`COALESCE(SUM(${commissionPayouts.amount}::numeric),0)` }).from(commissionPayouts).where(eq(commissionPayouts.status, "approved")).limit(100);
+    const [tierCount] = await db.select({ cnt: count() }).from(commissionTiers).limit(100);
+    const [ruleCount] = await db.select({ cnt: count() }).from(commissionRules).limit(100);
+    const [avgRow] = await db.select({ avg: sql<string>`COALESCE(AVG(${commissionTiers.rate}::numeric),0)` }).from(commissionTiers).limit(100);
     return {
       totalCommissions: Number(paidAmt?.t ?? 0) + Number(pendAmt?.t ?? 0),
       pendingPayouts: Number(pendAmt?.t ?? 0), paidThisMonth: Number(paidAmt?.t ?? 0),
@@ -32,15 +32,20 @@ export const agentCommissionCalcRouter = router({
 
   listTiers: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const tiers = await db.select().from(commissionTiers).orderBy(commissionTiers.id);
+    const tiers = await db.select().from(commissionTiers).orderBy(commissionTiers.id).limit(100);
     return { tiers };
   }),
 
   calculateCommission: protectedProcedure.input(z.object({
     agentId: z.string(), volume: z.number(), transactionCount: z.number(),
   })).mutation(async ({ input }) => {
+    try {
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
     const db = (await getDb())!;
-    const tiers = await db.select().from(commissionTiers).orderBy(commissionTiers.id);
+    const tiers = await db.select().from(commissionTiers).orderBy(commissionTiers.id).limit(100);
     const tier = tiers.find(t => input.volume >= Number(t.minVolume) && input.volume <= Number(t.maxVolume)) || tiers[0];
     if (!tier) throw new TRPCError({ code: "NOT_FOUND", message: "No matching commission tier" });
     const rate = Number(tier.rate); const flatFee = Number(tier.flatFee); const bonusRate = Number(tier.bonusRate ?? 0);
@@ -64,26 +69,36 @@ export const agentCommissionCalcRouter = router({
   listPayouts: protectedProcedure.input(z.object({
     status: z.string().optional(), limit: z.number().min(1).max(100).optional(), offset: z.number().min(0).optional(),
   }).optional()).query(async ({ input }) => {
+    try {
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
     const db = (await getDb())!; const limit = input?.limit ?? 50; const offset = input?.offset ?? 0;
     const where = input?.status ? eq(commissionPayouts.status, input.status) : undefined;
     const rows = where
       ? await db.select().from(commissionPayouts).where(where).orderBy(desc(commissionPayouts.createdAt)).limit(limit).offset(offset)
       : await db.select().from(commissionPayouts).orderBy(desc(commissionPayouts.createdAt)).limit(limit).offset(offset);
-    const [totalRow] = await db.select({ cnt: count() }).from(commissionPayouts);
+    const [totalRow] = await db.select({ cnt: count() }).from(commissionPayouts).limit(100);
     return { payouts: rows, total: totalRow?.cnt ?? 0 };
   }),
 
   approvePayout: protectedProcedure.input(z.object({ payoutId: z.string() })).mutation(async ({ input, ctx }) => {
-    const db = (await getDb())!;
-    const payoutIdNum = parseInt(input.payoutId.replace(/\D/g, "")) || 0;
-    const [updated] = await db.update(commissionPayouts).set({ status: "approved" }).where(eq(commissionPayouts.id, payoutIdNum)).returning();
-    if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Payout not found" });
-    await db.insert(commissionAuditTrail).values({
-      action: "payout_approved", entityType: "payout", entityId: input.payoutId,
-      performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ approvedAt: new Date().toISOString() }),
-    });
-    try { await publishCommissionEvent({ eventType: "commission.payout.approved", data: { payoutId: input.payoutId } }); }
-    catch (e) { logger.warn("[AgentCommCalc] Middleware event failed:", e); }
-    return { success: true, payoutId: input.payoutId, approvedAt: Date.now() };
+    try {
+      const db = (await getDb())!;
+      const payoutIdNum = parseInt(input.payoutId.replace(/\D/g, "")) || 0;
+      const [updated] = await db.update(commissionPayouts).set({ status: "approved" }).where(eq(commissionPayouts.id, payoutIdNum)).returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Payout not found" });
+      await db.insert(commissionAuditTrail).values({
+        action: "payout_approved", entityType: "payout", entityId: input.payoutId,
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ approvedAt: new Date().toISOString() }),
+      });
+      try { await publishCommissionEvent({ eventType: "commission.payout.approved", data: { payoutId: input.payoutId } }); }
+      catch (e) { logger.warn("[AgentCommCalc] Middleware event failed:", e); }
+      return { success: true, payoutId: input.payoutId, approvedAt: Date.now() };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }),
 });

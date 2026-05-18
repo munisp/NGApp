@@ -1,14 +1,16 @@
 module github.com/remittance-platform/tigerbeetle-core
 
-go 1.21
-
-require github.com/gorilla/mux v1.8.0
+go 1.24
 
 require (
-	go.opentelemetry.io/otel v1.26.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0
-	go.opentelemetry.io/otel/sdk v1.26.0
-	go.opentelemetry.io/otel/semconv v1.26.0
-	go.opentelemetry.io/otel/trace v1.26.0
-	golang.org/x/time v0.5.0
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.0
+	github.com/lib/pq v1.12.3
+	github.com/redis/go-redis/v9 v9.19.0
+)
+
+require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 )

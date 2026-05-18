@@ -118,32 +118,37 @@ export const kybRouter = router({
       beneficial_owners: z.array(beneficialOwnerSchema).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Forward to Go KYB Engine
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verify`,
-        "POST",
-        input,
-        30000,
-      );
+      try {
+        // Forward to Go KYB Engine
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verify`,
+          "POST",
+          input,
+          30000,
+        );
 
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Engine unavailable — please retry",
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Engine unavailable — please retry",
+          });
+        }
+
+        await writeAuditLog({
+          agentId: 0,
+          agentCode: "system",
+          action: "kyb_verification_started",
+          resource: "kyb_verification",
+          resourceId: (result as any).id || "unknown",
+          status: "success",
+          metadata: { business_name: input.business_name, business_type: input.business_type },
         });
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await writeAuditLog({
-        agentId: 0,
-        agentCode: "system",
-        action: "kyb_verification_started",
-        resource: "kyb_verification",
-        resourceId: (result as any).id || "unknown",
-        status: "success",
-        metadata: { business_name: input.business_name, business_type: input.business_type },
-      });
-
-      return result;
     }),
 
   // ── Get Verification Status ────────────────────────────────────────────────
@@ -151,13 +156,18 @@ export const kybRouter = router({
   getVerification: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.id}`,
-      );
-      if (!result) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Verification not found" });
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.id}`,
+        );
+        if (!result) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Verification not found" });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── List Verifications (Admin) ─────────────────────────────────────────────
@@ -168,13 +178,18 @@ export const kybRouter = router({
       limit: z.number().int().min(1).max(200).default(50),
     }))
     .query(async ({ input }) => {
-      const params = new URLSearchParams();
-      if (input.status) params.set("status", input.status);
-      params.set("limit", String(input.limit));
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications?${params}`,
-      );
-      return result || { items: [], total: 0 };
+      try {
+        const params = new URLSearchParams();
+        if (input.status) params.set("status", input.status);
+        params.set("limit", String(input.limit));
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications?${params}`,
+        );
+        return result || { items: [], total: 0 };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Upload Business Document ───────────────────────────────────────────────
@@ -192,22 +207,27 @@ export const kybRouter = router({
       doc_number: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/documents`,
-        "POST",
-        {
-          doc_type: input.doc_type,
-          doc_url: input.doc_url,
-          doc_number: input.doc_number,
-        },
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Engine unavailable for document upload",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/documents`,
+          "POST",
+          {
+            doc_type: input.doc_type,
+            doc_url: input.doc_url,
+            doc_number: input.doc_number,
+          },
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Engine unavailable for document upload",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Screen UBOs (PEP + Sanctions) ──────────────────────────────────────────
@@ -215,18 +235,23 @@ export const kybRouter = router({
   screenUBOs: adminProcedure
     .input(z.object({ verification_id: z.string() }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/screen-ubos`,
-        "POST",
-        {},
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Engine unavailable for UBO screening",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/screen-ubos`,
+          "POST",
+          {},
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Engine unavailable for UBO screening",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Risk Assessment (ML-based via Go→Rust) ─────────────────────────────────
@@ -234,18 +259,23 @@ export const kybRouter = router({
   assessRisk: adminProcedure
     .input(z.object({ verification_id: z.string() }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/assess-risk`,
-        "POST",
-        {},
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB risk assessment unavailable",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/assess-risk`,
+          "POST",
+          {},
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB risk assessment unavailable",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Approve Verification ───────────────────────────────────────────────────
@@ -256,28 +286,33 @@ export const kybRouter = router({
       actor_id: z.string().default("admin"),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/approve`,
-        "POST",
-        { actor_id: input.actor_id },
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Engine unavailable for approval",
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/approve`,
+          "POST",
+          { actor_id: input.actor_id },
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Engine unavailable for approval",
+          });
+        }
+
+        await writeAuditLog({
+          agentId: 0,
+          agentCode: "system",
+          action: "kyb_verification_approved",
+          resource: "kyb_verification",
+          resourceId: input.verification_id,
+          status: "success",
         });
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await writeAuditLog({
-        agentId: 0,
-        agentCode: "system",
-        action: "kyb_verification_approved",
-        resource: "kyb_verification",
-        resourceId: input.verification_id,
-        status: "success",
-      });
-
-      return result;
     }),
 
   // ── Reject Verification ────────────────────────────────────────────────────
@@ -289,29 +324,34 @@ export const kybRouter = router({
       reason: z.string().min(5),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/reject`,
-        "POST",
-        { actor_id: input.actor_id, reason: input.reason },
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Engine unavailable for rejection",
+      try {
+        const result = await serviceCall(
+          `${KYB_ENGINE_URL}/kyb/verifications/${input.verification_id}/reject`,
+          "POST",
+          { actor_id: input.actor_id, reason: input.reason },
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Engine unavailable for rejection",
+          });
+        }
+
+        await writeAuditLog({
+          agentId: 0,
+          agentCode: "system",
+          action: "kyb_verification_rejected",
+          resource: "kyb_verification",
+          resourceId: input.verification_id,
+          status: "success",
+          metadata: { reason: input.reason },
         });
+
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await writeAuditLog({
-        agentId: 0,
-        agentCode: "system",
-        action: "kyb_verification_rejected",
-        resource: "kyb_verification",
-        resourceId: input.verification_id,
-        status: "success",
-        metadata: { reason: input.reason },
-      });
-
-      return result;
     }),
 
   // ── Direct PEP Screening (Rust Engine) ─────────────────────────────────────
@@ -326,18 +366,23 @@ export const kybRouter = router({
       nin: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_RISK_ENGINE_URL}/screen/pep`,
-        "POST",
-        input,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Risk Engine unavailable for PEP screening",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_RISK_ENGINE_URL}/screen/pep`,
+          "POST",
+          input,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Risk Engine unavailable for PEP screening",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Direct Sanctions Screening (Rust Engine) ───────────────────────────────
@@ -351,18 +396,23 @@ export const kybRouter = router({
       registration_number: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_RISK_ENGINE_URL}/screen/sanctions`,
-        "POST",
-        input,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Risk Engine unavailable for sanctions screening",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_RISK_ENGINE_URL}/screen/sanctions`,
+          "POST",
+          input,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Risk Engine unavailable for sanctions screening",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── AML/CFT Screening (Rust Engine) ────────────────────────────────────────
@@ -377,18 +427,23 @@ export const kybRouter = router({
       counterparties: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_RISK_ENGINE_URL}/screen/aml`,
-        "POST",
-        input,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Risk Engine unavailable for AML screening",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_RISK_ENGINE_URL}/screen/aml`,
+          "POST",
+          input,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Risk Engine unavailable for AML screening",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── ML Fraud Detection (Python Analytics) ──────────────────────────────────
@@ -408,19 +463,24 @@ export const kybRouter = router({
       document_count: z.number().int().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ANALYTICS_URL}/fraud/detect`,
-        "POST",
-        input,
-        30000,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Analytics unavailable for fraud detection",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ANALYTICS_URL}/fraud/detect`,
+          "POST",
+          input,
+          30000,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Analytics unavailable for fraud detection",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Compliance Report (Python Analytics) ───────────────────────────────────
@@ -433,19 +493,24 @@ export const kybRouter = router({
       include_details: z.boolean().default(true),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ANALYTICS_URL}/compliance/report`,
-        "POST",
-        input,
-        60000,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Analytics unavailable for compliance report",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ANALYTICS_URL}/compliance/report`,
+          "POST",
+          input,
+          60000,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Analytics unavailable for compliance report",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Analytics Dashboard (Python Analytics) ─────────────────────────────────
@@ -475,19 +540,24 @@ export const kybRouter = router({
       include_pii: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const result = await serviceCall(
-        `${KYB_ANALYTICS_URL}/etl/lakehouse`,
-        "POST",
-        input,
-        120000,
-      );
-      if (!result) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message: "KYB Analytics unavailable for Lakehouse ETL",
-        });
+      try {
+        const result = await serviceCall(
+          `${KYB_ANALYTICS_URL}/etl/lakehouse`,
+          "POST",
+          input,
+          120000,
+        );
+        if (!result) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "KYB Analytics unavailable for Lakehouse ETL",
+          });
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-      return result;
     }),
 
   // ── Service Health Check ───────────────────────────────────────────────────

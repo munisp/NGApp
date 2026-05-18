@@ -3,6 +3,7 @@
  * Provides OpenAPI/Swagger spec for all tRPC endpoints and microservices.
  */
 import { publicProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 
 const API_SPEC = {
   openapi: "3.1.0",

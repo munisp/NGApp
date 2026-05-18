@@ -22,109 +22,139 @@ export const realtimeTxMonitorRouter = router({
       minAmount: z.number().optional(),
     }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const conditions = [];
-      if (input.channel) conditions.push(eq(transactions.channel, input.channel as any));
-      if (input.status) conditions.push(eq(transactions.status, input.status as any));
-      if (input.minAmount) conditions.push(gte(transactions.amount, String(input.minAmount)));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const items = await db.select().from(transactions).where(where).orderBy(desc(transactions.createdAt)).limit(input.limit);
-      const [{ total }] = await db.select({ total: count() }).from(transactions).where(where);
-      return { items, total };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const conditions = [];
+        if (input.channel) conditions.push(eq(transactions.channel, input.channel as any));
+        if (input.status) conditions.push(eq(transactions.status, input.status as any));
+        if (input.minAmount) conditions.push(gte(transactions.amount, String(input.minAmount)));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const items = await db.select().from(transactions).where(where).orderBy(desc(transactions.createdAt)).limit(input.limit);
+        const [{ total }] = await db.select({ total: count() }).from(transactions).where(where).limit(100);
+        return { items, total };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Transaction volume metrics (TPS, hourly, daily)
   volumeMetrics: protectedProcedure
     .input(z.object({ period: z.enum(["1h", "6h", "24h", "7d"]).default("24h") }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { tps: 0, hourly: [], daily: [], totalVolume: "0", totalCount: 0, avgAmount: "0" };
-      const periodMap = { "1h": 1, "6h": 6, "24h": 24, "7d": 168 };
-      const hours = periodMap[input.period];
-      const since = new Date(Date.now() - hours * 3600000);
-      const [stats] = await db.select({
-        totalCount: count(),
-        totalVolume: sum(transactions.amount),
-        avgAmount: avg(transactions.amount),
-      }).from(transactions).where(gte(transactions.createdAt, since));
-      const tps = (stats.totalCount || 0) / (hours * 3600);
-      return {
-        tps: Math.round(tps * 100) / 100,
-        totalVolume: stats.totalVolume || "0",
-        totalCount: stats.totalCount || 0,
-        avgAmount: stats.avgAmount || "0",
-        hourly: [],
-        daily: [],
-      };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { tps: 0, hourly: [], daily: [], totalVolume: "0", totalCount: 0, avgAmount: "0" };
+        const periodMap = { "1h": 1, "6h": 6, "24h": 24, "7d": 168 };
+        const hours = periodMap[input.period];
+        const since = new Date(Date.now() - hours * 3600000);
+        const [stats] = await db.select({
+          totalCount: count(),
+          totalVolume: sum(transactions.amount),
+          avgAmount: avg(transactions.amount),
+        }).from(transactions).where(gte(transactions.createdAt, since));
+        const tps = (stats.totalCount || 0) / (hours * 3600);
+        return {
+          tps: Math.round(tps * 100) / 100,
+          totalVolume: stats.totalVolume || "0",
+          totalCount: stats.totalCount || 0,
+          avgAmount: stats.avgAmount || "0",
+          hourly: [],
+          daily: [],
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Amount heatmap — distribution by type and channel
   amountHeatmap: protectedProcedure
     .input(z.object({ period: z.enum(["24h", "7d", "30d"]).default("7d") }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { heatmap: [] };
-      const periodHours = { "24h": 24, "7d": 168, "30d": 720 };
-      const since = new Date(Date.now() - periodHours[input.period] * 3600000);
-      const data = await db.select({
-        type: transactions.type,
-        channel: transactions.channel,
-        totalAmount: sum(transactions.amount),
-        txCount: count(),
-      }).from(transactions)
-        .where(gte(transactions.createdAt, since))
-        .groupBy(transactions.type, transactions.channel);
-      return { heatmap: data };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { heatmap: [] };
+        const periodHours = { "24h": 24, "7d": 168, "30d": 720 };
+        const since = new Date(Date.now() - periodHours[input.period] * 3600000);
+        const data = await db.select({
+          type: transactions.type,
+          channel: transactions.channel,
+          totalAmount: sum(transactions.amount),
+          txCount: count(),
+        }).from(transactions)
+          .where(gte(transactions.createdAt, since))
+          .groupBy(transactions.type, transactions.channel);
+        return { heatmap: data };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Velocity alerts — detect unusual transaction patterns
   velocityAlerts: protectedProcedure
     .input(z.object({ page: z.number().default(1), limit: z.number().default(20), resolved: z.boolean().optional() }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { items: [], total: 0 };
-      const conditions = [];
-      if (input.resolved !== undefined) conditions.push(eq(txMonitoringAlerts.resolved, input.resolved));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const items = await db.select().from(txMonitoringAlerts).where(where)
-        .orderBy(desc(txMonitoringAlerts.createdAt))
-        .limit(input.limit).offset((input.page - 1) * input.limit);
-      const [{ total }] = await db.select({ total: count() }).from(txMonitoringAlerts).where(where);
-      return { items, total };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { items: [], total: 0 };
+        const conditions = [];
+        if (input.resolved !== undefined) conditions.push(eq(txMonitoringAlerts.resolved, input.resolved));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const items = await db.select().from(txMonitoringAlerts).where(where)
+          .orderBy(desc(txMonitoringAlerts.createdAt))
+          .limit(input.limit).offset((input.page - 1) * input.limit);
+        const [{ total }] = await db.select({ total: count() }).from(txMonitoringAlerts).where(where).limit(100);
+        return { items, total };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Resolve a velocity alert
   resolveAlert: protectedProcedure
     .input(z.object({ alertId: z.number(), resolution: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      await db.update(txMonitoringAlerts).set({
-        resolved: true,
-        resolvedBy: ctx.user?.id,
-        resolvedAt: new Date(),
-      }).where(eq(txMonitoringAlerts.id, input.alertId));
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        await db.update(txMonitoringAlerts).set({
+          resolved: true,
+          resolvedBy: ctx.user?.id,
+          resolvedAt: new Date(),
+        }).where(eq(txMonitoringAlerts.id, input.alertId));
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Geographic distribution of transactions
   geoDistribution: protectedProcedure
     .input(z.object({ period: z.enum(["24h", "7d", "30d"]).default("7d") }))
     .query(async ({ input }) => {
-      const db = (await getDb())!;
-      if (!db) return { regions: [] };
-      const periodHours = { "24h": 24, "7d": 168, "30d": 720 };
-      const since = new Date(Date.now() - periodHours[input.period] * 3600000);
-      const data = await db.select({
-        location: agents.location,
-        txCount: count(),
-        totalAmount: sum(transactions.amount),
-      }).from(transactions)
-        .innerJoin(agents, eq(transactions.agentId, agents.id))
-        .where(gte(transactions.createdAt, since))
-        .groupBy(agents.location);
-      return { regions: data };
+      try {
+        const db = (await getDb())!;
+        if (!db) return { regions: [] };
+        const periodHours = { "24h": 24, "7d": 168, "30d": 720 };
+        const since = new Date(Date.now() - periodHours[input.period] * 3600000);
+        const data = await db.select({
+          location: agents.location,
+          txCount: count(),
+          totalAmount: sum(transactions.amount),
+        }).from(transactions)
+          .innerJoin(agents, eq(transactions.agentId, agents.id))
+          .where(gte(transactions.createdAt, since))
+          .groupBy(agents.location);
+        return { regions: data };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // Dashboard summary KPIs

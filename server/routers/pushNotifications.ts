@@ -9,6 +9,7 @@ import { getDb } from "../db";
 import { agentPushSubscriptions } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { sendPushToAgent } from "../push";
+import { TRPCError } from "@trpc/server";
 
 // ── Zod schema for PushSubscription object ────────────────────────────────────
 const PushSubscriptionSchema = z.object({
@@ -41,45 +42,50 @@ export const pushNotificationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
 
-      // Upsert: if the same endpoint already exists, update keys
-      const existing = await db
-        .select()
-        .from(agentPushSubscriptions)
-        .where(
-          and(
-            eq(agentPushSubscriptions.agentCode, input.agentCode),
-            eq(agentPushSubscriptions.endpoint, input.subscription.endpoint)
+        // Upsert: if the same endpoint already exists, update keys
+        const existing = await db
+          .select()
+          .from(agentPushSubscriptions)
+          .where(
+            and(
+              eq(agentPushSubscriptions.agentCode, input.agentCode),
+              eq(agentPushSubscriptions.endpoint, input.subscription.endpoint)
+            )
           )
-        )
-        .limit(1);
+          .limit(1);
 
-      if (existing.length > 0) {
-        await db
-          .update(agentPushSubscriptions)
-          .set({
-            p256dhKey: input.subscription.keys.p256dh,
-            authKey: input.subscription.keys.auth,
-            userAgent: input.userAgent ?? null,
-            updatedAt: new Date(),
-          })
-          .where(eq(agentPushSubscriptions.id, existing[0].id));
-        return { success: true, action: "updated" as const };
+        if (existing.length > 0) {
+          await db
+            .update(agentPushSubscriptions)
+            .set({
+              p256dhKey: input.subscription.keys.p256dh,
+              authKey: input.subscription.keys.auth,
+              userAgent: input.userAgent ?? null,
+              updatedAt: new Date(),
+            })
+            .where(eq(agentPushSubscriptions.id, existing[0].id));
+          return { success: true, action: "updated" as const };
+        }
+
+        await db.insert(agentPushSubscriptions).values({
+          agentCode: input.agentCode,
+          endpoint: input.subscription.endpoint,
+          p256dhKey: input.subscription.keys.p256dh,
+          authKey: input.subscription.keys.auth,
+          userAgent: input.userAgent ?? null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        return { success: true, action: "created" as const };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-
-      await db.insert(agentPushSubscriptions).values({
-        agentCode: input.agentCode,
-        endpoint: input.subscription.endpoint,
-        p256dhKey: input.subscription.keys.p256dh,
-        authKey: input.subscription.keys.auth,
-        userAgent: input.userAgent ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      return { success: true, action: "created" as const };
     }),
 
   // ── Unsubscribe: remove a push subscription ───────────────────────────────
@@ -91,35 +97,45 @@ export const pushNotificationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      await db
-        .delete(agentPushSubscriptions)
-        .where(
-          and(
-            eq(agentPushSubscriptions.agentCode, input.agentCode),
-            eq(agentPushSubscriptions.endpoint, input.endpoint)
-          )
-        );
-      return { success: true };
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        await db
+          .delete(agentPushSubscriptions)
+          .where(
+            and(
+              eq(agentPushSubscriptions.agentCode, input.agentCode),
+              eq(agentPushSubscriptions.endpoint, input.endpoint)
+            )
+          );
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── List subscriptions for an agent ──────────────────────────────────────
   listSubscriptions: protectedProcedure
     .input(z.object({ agentCode: z.string().max(32) }))
     .query(async ({ ctx, input }) => {
-      const db = (await getDb())!;
-      if (!db) throw new Error("Database unavailable");
-      const subs = await db
-        .select({
-          id: agentPushSubscriptions.id,
-          endpoint: agentPushSubscriptions.endpoint,
-          userAgent: agentPushSubscriptions.userAgent,
-          createdAt: agentPushSubscriptions.createdAt,
-        })
-        .from(agentPushSubscriptions)
-        .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
-      return subs;
+      try {
+        const db = (await getDb())!;
+        if (!db) throw new Error("Database unavailable");
+        const subs = await db
+          .select({
+            id: agentPushSubscriptions.id,
+            endpoint: agentPushSubscriptions.endpoint,
+            userAgent: agentPushSubscriptions.userAgent,
+            createdAt: agentPushSubscriptions.createdAt,
+          })
+          .from(agentPushSubscriptions)
+          .where(eq(agentPushSubscriptions.agentCode, input.agentCode));
+        return subs;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 
   // ── Test push: send a test notification to the current user ──────────────
@@ -131,14 +147,19 @@ export const pushNotificationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const sent = await sendPushToAgent(input.agentCode, {
-        title: "54Link POS — Test Notification",
-        body: input.message ?? "Push notifications are working correctly.",
-        icon: "/icons/icon-192x192.png",
-        badge: "/icons/badge-72x72.png",
-        tag: "test-notification",
-        data: { type: "test", timestamp: Date.now() },
-      });
-      return { success: true, sent };
+      try {
+        const sent = await sendPushToAgent(input.agentCode, {
+          title: "54Link POS — Test Notification",
+          body: input.message ?? "Push notifications are working correctly.",
+          icon: "/icons/icon-192x192.png",
+          badge: "/icons/badge-72x72.png",
+          tag: "test-notification",
+          data: { type: "test", timestamp: Date.now() },
+        });
+        return { success: true, sent };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      }
     }),
 });
