@@ -420,8 +420,7 @@ setInterval(() => {
 // ============================================================
 export function applySecurityMiddleware(app: any) {
   if (process.env.NODE_ENV === "development") {
-    console.log("[Security] Middleware minimized in development (Vite dev server needs 400+ concurrent module requests)");
-    app.use(securityHeaders);
+    console.log("[Security] All security middleware skipped in development (CSP blocks Vite ws:// HMR, DDoS throttle blocks 400+ module requests)");
     return;
   }
   app.use(ddosThrottling);
