@@ -13,7 +13,7 @@ export const regulatorySandboxRouter = router({
   createExperiment: protectedProcedure.input(z.object({ name: z.string().min(3).max(128), regulationType: z.string().min(1), parameters: z.record(z.string(), z.string()).optional(), durationDays: z.number().int().min(1).max(365).default(90) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const experimentId = "SAND-" + crypto.randomUUID().slice(0, 12).toUpperCase();
-    const [check] = await db.insert(complianceChecks).values({ checkType: "sandbox_experiment", entityType: "experiment", entityId: 0, status: "pending", result: { name: input.name, regulationType: input.regulationType, parameters: input.parameters ?? {}, durationDays: input.durationDays, experimentId } }).returning();
+    const [check] = await db.insert(complianceChecks).values({ checkType: "sandbox_experiment", ruleCode: input.regulationType, result: "pending" }).returning();
     await db.insert(auditLog).values({ action: "sandbox_experiment_created", resource: "regulatory_sandbox", resourceId: experimentId, status: "success", metadata: { name: input.name, regulationType: input.regulationType, durationDays: input.durationDays } });
     return { experimentId, checkId: check.id, name: input.name, status: "active", expiresAt: new Date(Date.now() + input.durationDays * 86400000).toISOString() };
   }),
