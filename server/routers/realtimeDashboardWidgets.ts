@@ -1,45 +1,36 @@
-// Sprint 95: Production implementation — realtimeDashboardWidgets
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { agents, transactions, disputes, merchants, auditLog } from "../../drizzle/schema";
 
 export const realtimeDashboardWidgetsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: realtime dashboard widgets
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "realtimeDashboardWidgets" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "realtimeDashboardWidgets", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "realtimeDashboardWidgets", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getAgentWidget: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(agents);
+    const [active] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, true));
+    return { type: "agents", total: Number(total.value), active: Number(active.value), lastUpdated: new Date().toISOString() };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "realtimeDashboardWidgets", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "realtimeDashboardWidgets", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "realtimeDashboardWidgets" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getTransactionWidget: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(transactions);
+    const [volume] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    const [today] = await db.select({ value: count() }).from(transactions).where(sql`${transactions.createdAt} >= CURRENT_DATE`);
+    return { type: "transactions", total: Number(total.value), volume: Number(volume.value ?? 0), today: Number(today.value), lastUpdated: new Date().toISOString() };
+  }),
+  getDisputeWidget: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [open] = await db.select({ value: count() }).from(disputes).where(eq(disputes.status, "open"));
+    const [resolved] = await db.select({ value: count() }).from(disputes).where(eq(disputes.status, "resolved"));
+    return { type: "disputes", open: Number(open.value), resolved: Number(resolved.value), lastUpdated: new Date().toISOString() };
+  }),
+  getMerchantWidget: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(merchants);
+    const [active] = await db.select({ value: count() }).from(merchants).where(eq(merchants.status, "active"));
+    return { type: "merchants", total: Number(total.value), active: Number(active.value), lastUpdated: new Date().toISOString() };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    return { widgets: ["agents", "transactions", "disputes", "merchants"], lastUpdated: new Date().toISOString() };
+  }),
 });

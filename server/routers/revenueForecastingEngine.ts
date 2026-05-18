@@ -1,40 +1,26 @@
-// Sprint 95: Production implementation — revenueForecastingEngine
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum, gte } from "drizzle-orm";
+import { transactions, feeAuditTrail, auditLog } from "../../drizzle/schema";
 
 export const revenueForecastingEngineRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: revenue forecasting engine
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "revenueForecastingEngine" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "revenueForecastingEngine", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "revenueForecastingEngine", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getForecast: protectedProcedure.input(z.object({ months: z.number().default(6) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select({ month: sql<string>`TO_CHAR(${transactions.createdAt}, 'YYYY-MM')`, volume: sum(transactions.amount), cnt: count() }).from(transactions).where(eq(transactions.status, "success")).groupBy(sql`TO_CHAR(${transactions.createdAt}, 'YYYY-MM')`).orderBy(sql`TO_CHAR(${transactions.createdAt}, 'YYYY-MM')`).limit(12);
+    const historical = rows.map(r => ({ month: r.month, volume: Number(r.volume ?? 0), count: Number(r.cnt) }));
+    const avgGrowth = historical.length > 1 ? (Number(historical[historical.length - 1]?.volume ?? 0) - Number(historical[0]?.volume ?? 0)) / historical.length : 0;
+    return { historical, forecastMonths: input?.months ?? 6, projectedGrowthRate: avgGrowth > 0 ? 0.05 : 0, confidence: 0.75 };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "revenueForecastingEngine", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "revenueForecastingEngine", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "revenueForecastingEngine" };
-    }),
+  getScenarios: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [currentVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(eq(transactions.status, "success"));
+    const base = Number(currentVolume.value ?? 0);
+    return { scenarios: [{ name: "pessimistic", growthRate: -0.05, projectedVolume: base * 0.95 }, { name: "base", growthRate: 0.05, projectedVolume: base * 1.05 }, { name: "optimistic", growthRate: 0.15, projectedVolume: base * 1.15 }] };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    return { totalHistoricalVolume: Number(total.value ?? 0), lastUpdated: new Date().toISOString() };
+  }),
 });

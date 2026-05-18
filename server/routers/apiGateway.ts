@@ -1,50 +1,36 @@
-// Sprint 95: Production implementation — apiGateway
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { apiKeys, apiKeyUsage, rateLimitRules, auditLog } from "../../drizzle/schema";
 
 export const apiGatewayRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: api gateway
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "apiGateway" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "apiGateway", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "apiGateway", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listRoutes: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "api_route")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { routes: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, timestamp: r.createdAt, metadata: r.metadata })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "apiGateway", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "apiGateway", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "apiGateway" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  listApiKeys: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getRateLimits: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(rateLimitRules).orderBy(desc(rateLimitRules.createdAt)).limit(50);
+    return { rules: rows, total: rows.length };
+  }),
+  createRateLimit: protectedProcedure.input(z.object({ endpoint: z.string(), maxRequests: z.number(), windowSeconds: z.number(), action: z.string().default("reject") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [rule] = await db.insert(rateLimitRules).values({ endpoint: input.endpoint, maxRequests: input.maxRequests, windowSeconds: input.windowSeconds, action: input.action }).returning();
+    await db.insert(auditLog).values({ action: "rate_limit_created", resource: "rate_limit_rules", resourceId: String(rule.id), status: "success", metadata: { endpoint: input.endpoint } });
+    return rule;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalKeys] = await db.select({ value: count() }).from(apiKeys);
+    const [totalRules] = await db.select({ value: count() }).from(rateLimitRules);
+    return { totalApiKeys: Number(totalKeys.value), totalRateLimitRules: Number(totalRules.value), lastUpdated: new Date().toISOString() };
+  }),
+  deleteRateLimit: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.delete(rateLimitRules).where(eq(rateLimitRules.id, input.id));
+    await db.insert(auditLog).values({ action: "rate_limit_deleted", resource: "rate_limit_rules", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
 });

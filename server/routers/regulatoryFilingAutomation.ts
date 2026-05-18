@@ -1,40 +1,29 @@
-// Sprint 95: Production implementation — regulatoryFilingAutomation
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { regulatoryFilings, auditLog } from "../../drizzle/schema";
 
 export const regulatoryFilingAutomationRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: regulatory filing automation
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "regulatoryFilingAutomation" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "regulatoryFilingAutomation", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "regulatoryFilingAutomation", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listFilings: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(regulatoryFilings).where(eq(regulatoryFilings.status, input.status)).orderBy(desc(regulatoryFilings.createdAt)).limit(input?.limit ?? 50) : await db.select().from(regulatoryFilings).orderBy(desc(regulatoryFilings.createdAt)).limit(input?.limit ?? 50);
+    return { filings: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "regulatoryFilingAutomation", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "regulatoryFilingAutomation", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "regulatoryFilingAutomation" };
-    }),
+  getFiling: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [filing] = await db.select().from(regulatoryFilings).where(eq(regulatoryFilings.id, input.id)).limit(1);
+    return filing ?? null;
+  }),
+  submitFiling: protectedProcedure.input(z.object({ type: z.string(), period: z.string(), data: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [filing] = await db.insert(regulatoryFilings).values({ type: input.type, period: input.period, status: "submitted", data: input.data ?? {} }).returning();
+    await db.insert(auditLog).values({ action: "regulatory_filing_submitted", resource: "regulatory_filings", resourceId: String(filing.id), status: "success", metadata: { type: input.type, period: input.period } });
+    return filing;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(regulatoryFilings);
+    return { totalFilings: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

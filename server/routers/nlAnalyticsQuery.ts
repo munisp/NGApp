@@ -1,40 +1,37 @@
-// Sprint 95: Production implementation — nlAnalyticsQuery
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { analyticsMetrics } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { transactions, agents, merchants, auditLog } from "../../drizzle/schema";
 
 export const nlAnalyticsQueryRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: nl analytics query
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "nlAnalyticsQuery" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "nlAnalyticsQuery", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "nlAnalyticsQuery", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  query: protectedProcedure.input(z.object({ question: z.string(), context: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const q = input.question.toLowerCase();
+    let result: Record<string, unknown> = {};
+    if (q.includes("agent") && (q.includes("count") || q.includes("how many"))) {
+      const [cnt] = await db.select({ value: count() }).from(agents);
+      result = { answer: `There are ${cnt.value} agents in the system.`, data: { agentCount: Number(cnt.value) } };
+    } else if (q.includes("transaction") && (q.includes("volume") || q.includes("total"))) {
+      const [vol] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+      result = { answer: `Total transaction volume is ${vol.value ?? 0}.`, data: { volume: Number(vol.value ?? 0) } };
+    } else if (q.includes("merchant") && (q.includes("count") || q.includes("how many"))) {
+      const [cnt] = await db.select({ value: count() }).from(merchants);
+      result = { answer: `There are ${cnt.value} merchants.`, data: { merchantCount: Number(cnt.value) } };
+    } else {
+      result = { answer: "Query processed. Please try asking about agents, transactions, or merchants.", data: {} };
+    }
+    await db.insert(auditLog).values({ action: "nl_query", resource: "nl_analytics", resourceId: "query-" + crypto.randomUUID(), status: "success", metadata: { question: input.question } });
+    return result;
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "nlAnalyticsQuery", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "nlAnalyticsQuery", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "nlAnalyticsQuery" };
-    }),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "nl_query")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { queries: rows.map(r => ({ id: r.id, question: (r.metadata as any)?.question, timestamp: r.createdAt })), total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "nl_query"));
+    return { totalQueries: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

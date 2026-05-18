@@ -1,45 +1,32 @@
-// Sprint 95: Production implementation — slaManagement
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { slaDefinitions, slaBreaches, auditLog } from "../../drizzle/schema";
 
 export const slaManagementRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: sla management
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "slaManagement" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "slaManagement", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "slaManagement", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listSlas: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(slaDefinitions).orderBy(desc(slaDefinitions.createdAt)).limit(input?.limit ?? 50);
+    return { slas: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "slaManagement", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "slaManagement", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "slaManagement" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getSla: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [sla] = await db.select().from(slaDefinitions).where(eq(slaDefinitions.id, input.id)).limit(1);
+    if (!sla) return null;
+    const breaches = await db.select().from(slaBreaches).where(eq(slaBreaches.slaId, input.id)).orderBy(desc(slaBreaches.createdAt)).limit(20);
+    return { ...sla, breaches };
+  }),
+  createSla: protectedProcedure.input(z.object({ name: z.string(), metric: z.string(), threshold: z.number(), unit: z.string().default("minutes") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [sla] = await db.insert(slaDefinitions).values({ name: input.name, metric: input.metric, threshold: input.threshold, unit: input.unit }).returning();
+    await db.insert(auditLog).values({ action: "sla_created", resource: "sla_definitions", resourceId: String(sla.id), status: "success", metadata: { name: input.name, metric: input.metric } });
+    return sla;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalSlas] = await db.select({ value: count() }).from(slaDefinitions);
+    const [totalBreaches] = await db.select({ value: count() }).from(slaBreaches);
+    return { totalSlas: Number(totalSlas.value), totalBreaches: Number(totalBreaches.value) };
+  }),
 });

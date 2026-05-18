@@ -1,50 +1,44 @@
-// Sprint 95: Production implementation — dragDropReportBuilder
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { biReportDefinitions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { biReportDefinitions, auditLog } from "../../drizzle/schema";
 
 export const dragDropReportBuilderRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: drag drop report builder
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "dragDropReportBuilder" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "dragDropReportBuilder", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "dragDropReportBuilder", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listReports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(biReportDefinitions).orderBy(desc(biReportDefinitions.createdAt)).limit(input?.limit ?? 20);
+    return { reports: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "dragDropReportBuilder", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "dragDropReportBuilder", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "dragDropReportBuilder" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  saveReport: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getReport: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [report] = await db.select().from(biReportDefinitions).where(eq(biReportDefinitions.id, input.id)).limit(1);
+    return report ?? null;
+  }),
+  createReport: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), config: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [report] = await db.insert(biReportDefinitions).values({ name: input.name, description: input.description, config: input.config ?? {} }).returning();
+    await db.insert(auditLog).values({ action: "report_created", resource: "bi_report_definitions", resourceId: String(report.id), status: "success", metadata: { name: input.name } });
+    return report;
+  }),
+  updateReport: protectedProcedure.input(z.object({ id: z.number(), name: z.string().optional(), config: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const updates: Record<string, unknown> = {};
+    if (input.name) updates.name = input.name;
+    if (input.config) updates.config = input.config;
+    await db.update(biReportDefinitions).set(updates).where(eq(biReportDefinitions.id, input.id));
+    await db.insert(auditLog).values({ action: "report_updated", resource: "bi_report_definitions", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
+  deleteReport: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.delete(biReportDefinitions).where(eq(biReportDefinitions.id, input.id));
+    await db.insert(auditLog).values({ action: "report_deleted", resource: "bi_report_definitions", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(biReportDefinitions);
+    return { totalReports: Number(total.value) };
+  }),
 });

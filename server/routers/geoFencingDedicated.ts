@@ -1,40 +1,39 @@
-// Sprint 95: Production implementation — geoFencingDedicated
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { geofenceZones, agentGeofenceZones, deviceLocations, auditLog } from "../../drizzle/schema";
 
 export const geoFencingDedicatedRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: geo fencing dedicated
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "geoFencingDedicated" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "geoFencingDedicated", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "geoFencingDedicated", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listZones: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(geofenceZones).orderBy(desc(geofenceZones.createdAt)).limit(input?.limit ?? 50);
+    return { zones: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "geoFencingDedicated", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "geoFencingDedicated", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "geoFencingDedicated" };
-    }),
+  getZone: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [zone] = await db.select().from(geofenceZones).where(eq(geofenceZones.id, input.id)).limit(1);
+    if (!zone) return null;
+    const agents = await db.select().from(agentGeofenceZones).where(eq(agentGeofenceZones.zoneId, input.id));
+    return { ...zone, agentCount: agents.length };
+  }),
+  createZone: protectedProcedure.input(z.object({ name: z.string(), latitude: z.number(), longitude: z.number(), radiusMeters: z.number(), type: z.string().default("operational") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [zone] = await db.insert(geofenceZones).values({ name: input.name, latitude: String(input.latitude), longitude: String(input.longitude), radiusMeters: input.radiusMeters, type: input.type }).returning();
+    await db.insert(auditLog).values({ action: "geofence_zone_created", resource: "geofence_zones", resourceId: String(zone.id), status: "success", metadata: { name: input.name } });
+    return zone;
+  }),
+  deleteZone: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.delete(agentGeofenceZones).where(eq(agentGeofenceZones.zoneId, input.id));
+    await db.delete(geofenceZones).where(eq(geofenceZones.id, input.id));
+    await db.insert(auditLog).values({ action: "geofence_zone_deleted", resource: "geofence_zones", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalZones] = await db.select({ value: count() }).from(geofenceZones);
+    const [totalAssignments] = await db.select({ value: count() }).from(agentGeofenceZones);
+    return { totalZones: Number(totalZones.value), totalAssignments: Number(totalAssignments.value) };
+  }),
 });

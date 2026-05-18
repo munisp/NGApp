@@ -1,40 +1,45 @@
-// Sprint 95: Production implementation — agentOnboardingWizard
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, and, sql, count, gte } from "drizzle-orm";
+import { agents, kycSessions, floatTopUpRequests, posTerminals, trainingEnrollments, auditLog } from "../../drizzle/schema";
 
 export const agentOnboardingWizardRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: agent onboarding wizard
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "agentOnboardingWizard" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "agentOnboardingWizard", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "agentOnboardingWizard", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getProgress: protectedProcedure.input(z.object({ agentId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [agent] = await db.select().from(agents).where(eq(agents.id, input.agentId)).limit(1);
+    if (!agent) return { step: 0, steps: [], completedSteps: 0, totalSteps: 5 };
+    const [kyc] = await db.select({ cnt: count() }).from(kycSessions).where(and(eq(kycSessions.agentId, input.agentId), eq(kycSessions.status, "completed")));
+    const [floatReq] = await db.select({ cnt: count() }).from(floatTopUpRequests).where(eq(floatTopUpRequests.agentId, input.agentId));
+    const [terminal] = await db.select({ cnt: count() }).from(posTerminals).where(eq(posTerminals.agentId, input.agentId));
+    const [training] = await db.select({ cnt: count() }).from(trainingEnrollments).where(eq(trainingEnrollments.agentId, input.agentId));
+    const steps = [
+      { name: "Profile", completed: !!agent.businessName, order: 1 },
+      { name: "KYC Verification", completed: Number(kyc.cnt) > 0, order: 2 },
+      { name: "Float Setup", completed: Number(floatReq.cnt) > 0, order: 3 },
+      { name: "Terminal Assignment", completed: Number(terminal.cnt) > 0, order: 4 },
+      { name: "Training", completed: Number(training.cnt) > 0, order: 5 },
+    ];
+    const completedSteps = steps.filter(s => s.completed).length;
+    const currentStep = steps.find(s => !s.completed)?.order ?? 5;
+    return { step: currentStep, steps, completedSteps, totalSteps: 5, agentName: agent.businessName, status: completedSteps === 5 ? "completed" : "in_progress" };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "agentOnboardingWizard", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "agentOnboardingWizard", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "agentOnboardingWizard" };
-    }),
+  listPendingAgents: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(agents).where(eq(agents.isActive, false)).orderBy(desc(agents.createdAt)).limit(input?.limit ?? 50);
+    return { agents: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(agents);
+    const [active] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, true));
+    const [pending] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, false));
+    return { totalAgents: Number(total.value), activeAgents: Number(active.value), pendingOnboarding: Number(pending.value), completionRate: Number(total.value) > 0 ? Math.round(Number(active.value) / Number(total.value) * 100) : 0 };
+  }),
+  approveAgent: protectedProcedure.input(z.object({ agentId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(agents).set({ isActive: true }).where(eq(agents.id, input.agentId));
+    await db.insert(auditLog).values({ action: "agent_onboarding_approved", resource: "agents", resourceId: String(input.agentId), status: "success", metadata: {} });
+    return { success: true, agentId: input.agentId };
+  }),
 });

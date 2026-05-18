@@ -1,70 +1,23 @@
-// Sprint 95: Production implementation — loadTestMetrics
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { loadTestRuns, auditLog } from "../../drizzle/schema";
 
 export const loadTestMetricsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: load test metrics
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "loadTestMetrics" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "loadTestMetrics", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "loadTestMetrics", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listRuns: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.createdAt)).limit(input?.limit ?? 20);
+    return { runs: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "loadTestMetrics", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "loadTestMetrics", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "loadTestMetrics" };
-    }),
-  compareRuns: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getActiveTest: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getEngineMetrics: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getRunDetails: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  listRuns: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  runLoadTest: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getRun: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [run] = await db.select().from(loadTestRuns).where(eq(loadTestRuns.id, input.id)).limit(1);
+    return run ?? null;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(loadTestRuns);
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

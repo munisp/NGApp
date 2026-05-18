@@ -1,40 +1,27 @@
-// Sprint 95: Production implementation — regulatoryReportingEngine
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { biReportDefinitions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { regulatoryFilings, transactions, auditLog } from "../../drizzle/schema";
 
 export const regulatoryReportingEngineRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: regulatory reporting engine
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "regulatoryReportingEngine" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "regulatoryReportingEngine", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "regulatoryReportingEngine", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  generateReport: protectedProcedure.input(z.object({ reportType: z.enum(["cbn_returns", "nibss_report", "aml_report", "ctr_report"]), period: z.string(), format: z.enum(["pdf", "xlsx", "csv"]).default("xlsx") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const reportId = "reg-rpt-" + crypto.randomUUID();
+    const [txCount] = await db.select({ value: count() }).from(transactions);
+    const [txVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    const [filing] = await db.insert(regulatoryFilings).values({ type: input.reportType, period: input.period, status: "generated", data: { transactionCount: Number(txCount.value), transactionVolume: Number(txVolume.value ?? 0), format: input.format } }).returning();
+    await db.insert(auditLog).values({ action: "regulatory_report_generated", resource: "regulatory_filings", resourceId: String(filing.id), status: "success", metadata: { reportType: input.reportType, period: input.period } });
+    return { reportId: filing.id, reportType: input.reportType, period: input.period, status: "generated" };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "regulatoryReportingEngine", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "regulatoryReportingEngine", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "regulatoryReportingEngine" };
-    }),
+  listReports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(regulatoryFilings).orderBy(desc(regulatoryFilings.createdAt)).limit(input?.limit ?? 20);
+    return { reports: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(regulatoryFilings);
+    return { totalReports: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

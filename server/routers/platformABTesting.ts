@@ -1,40 +1,41 @@
-// Sprint 95: Production implementation — platformABTesting
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { abTestExperiments, abTestVariants, auditLog } from "../../drizzle/schema";
 
 export const platformABTestingRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: platform a b testing
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "platformABTesting" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "platformABTesting", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "platformABTesting", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listExperiments: protectedProcedure.input(z.object({ limit: z.number().default(20), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(abTestExperiments).where(eq(abTestExperiments.status, input.status)).orderBy(desc(abTestExperiments.createdAt)).limit(input?.limit ?? 20) : await db.select().from(abTestExperiments).orderBy(desc(abTestExperiments.createdAt)).limit(input?.limit ?? 20);
+    return { experiments: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "platformABTesting", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "platformABTesting", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "platformABTesting" };
-    }),
+  getExperiment: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [exp] = await db.select().from(abTestExperiments).where(eq(abTestExperiments.id, input.id)).limit(1);
+    if (!exp) return null;
+    const variants = await db.select().from(abTestVariants).where(eq(abTestVariants.experimentId, input.id));
+    return { ...exp, variants };
+  }),
+  createExperiment: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), variants: z.array(z.object({ name: z.string(), weight: z.number() })).min(2) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [exp] = await db.insert(abTestExperiments).values({ name: input.name, description: input.description, status: "draft" }).returning();
+    for (const v of input.variants) {
+      await db.insert(abTestVariants).values({ experimentId: exp.id, name: v.name, weight: v.weight });
+    }
+    await db.insert(auditLog).values({ action: "ab_test_created", resource: "ab_test_experiments", resourceId: String(exp.id), status: "success", metadata: { name: input.name, variantCount: input.variants.length } });
+    return exp;
+  }),
+  startExperiment: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(abTestExperiments).set({ status: "active" }).where(eq(abTestExperiments.id, input.id));
+    await db.insert(auditLog).values({ action: "ab_test_started", resource: "ab_test_experiments", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(abTestExperiments);
+    const [active] = await db.select({ value: count() }).from(abTestExperiments).where(eq(abTestExperiments.status, "active"));
+    return { totalExperiments: Number(total.value), activeExperiments: Number(active.value) };
+  }),
 });

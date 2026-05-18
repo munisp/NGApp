@@ -1,45 +1,29 @@
-// Sprint 95: Production implementation — automatedTestingFramework
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { loadTestRuns, auditLog } from "../../drizzle/schema";
 
 export const automatedTestingFrameworkRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: automated testing framework
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "automatedTestingFramework" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "automatedTestingFramework", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "automatedTestingFramework", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listTestRuns: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.createdAt)).limit(input?.limit ?? 50);
+    return { testRuns: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "automatedTestingFramework", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "automatedTestingFramework", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "automatedTestingFramework" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getTestRun: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [run] = await db.select().from(loadTestRuns).where(eq(loadTestRuns.id, input.id)).limit(1);
+    return run ?? null;
+  }),
+  createTestRun: protectedProcedure.input(z.object({ name: z.string(), testType: z.string(), config: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [run] = await db.insert(loadTestRuns).values({ name: input.name, status: "running", config: input.config ?? {} }).returning();
+    await db.insert(auditLog).values({ action: "test_run_started", resource: "load_test_runs", resourceId: String(run.id), status: "success", metadata: { name: input.name, testType: input.testType } });
+    return run;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(loadTestRuns);
+    return { totalTestRuns: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

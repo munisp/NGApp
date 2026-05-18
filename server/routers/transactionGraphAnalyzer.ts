@@ -1,50 +1,31 @@
-// Sprint 95: Production implementation — transactionGraphAnalyzer
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { transactions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { transactions, agents, auditLog } from "../../drizzle/schema";
 
 export const transactionGraphAnalyzerRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: transaction graph analyzer
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "transactionGraphAnalyzer" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "transactionGraphAnalyzer", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "transactionGraphAnalyzer", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getGraph: protectedProcedure.input(z.object({ agentId: z.number().optional(), limit: z.number().default(100) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.agentId ? await db.select().from(transactions).where(eq(transactions.agentId, input.agentId)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 100) : await db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 100);
+    const nodes = new Map<number, { id: number; type: string }>();
+    const edges: Array<{ from: number; to: number; amount: string }> = [];
+    for (const tx of rows) {
+      if (tx.agentId) nodes.set(tx.agentId, { id: tx.agentId, type: "agent" });
+      if (tx.customerId) nodes.set(tx.customerId + 100000, { id: tx.customerId, type: "customer" });
+      if (tx.agentId && tx.customerId) edges.push({ from: tx.agentId, to: tx.customerId + 100000, amount: tx.amount });
+    }
+    return { nodes: Array.from(nodes.values()), edges, totalTransactions: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "transactionGraphAnalyzer", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "transactionGraphAnalyzer", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "transactionGraphAnalyzer" };
-    }),
-  analyzeTransaction: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  listClusters: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getCluster: protectedProcedure.input(z.object({ agentId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [txCount] = await db.select({ value: count() }).from(transactions).where(eq(transactions.agentId, input.agentId));
+    const [volume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(eq(transactions.agentId, input.agentId));
+    return { agentId: input.agentId, transactionCount: Number(txCount.value), volume: Number(volume.value ?? 0) };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(transactions);
+    return { totalTransactions: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

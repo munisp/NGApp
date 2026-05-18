@@ -1,50 +1,32 @@
-// Sprint 95: Production implementation — openTelemetry
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const openTelemetryRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: open telemetry
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "openTelemetry" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "openTelemetry", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "openTelemetry", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getConfig: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "otel_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { endpoint: "http://localhost:4317", samplingRate: 0.1, exporterType: "otlp", serviceName: "agency-banking" };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "openTelemetry", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "openTelemetry", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "openTelemetry" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  serviceHealth: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  listTraces: protectedProcedure.input(z.object({ limit: z.number().default(50), service: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "otel_trace")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { traces: rows.map(r => ({ traceId: r.resourceId, service: r.action, status: r.status, timestamp: r.createdAt })), total: rows.length };
+  }),
+  updateConfig: protectedProcedure.input(z.object({ samplingRate: z.number().min(0).max(1).optional(), endpoint: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "otel_config")).limit(1);
+    const current = existing ? JSON.parse(String(existing.value)) : {};
+    const updated = { ...current, ...input };
+    await db.insert(systemConfig).values({ key: "otel_config", value: JSON.stringify(updated) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(updated), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "otel_config_updated", resource: "otel_config", resourceId: "config", status: "success", metadata: input });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "otel_trace"));
+    return { totalTraces: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

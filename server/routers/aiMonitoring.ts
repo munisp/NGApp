@@ -1,75 +1,30 @@
-// Sprint 95: Production implementation — aiMonitoring
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, and, sql, count, gte } from "drizzle-orm";
+import { auditLog, analyticsMetrics } from "../../drizzle/schema";
 
 export const aiMonitoringRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: ai monitoring
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "aiMonitoring" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "aiMonitoring", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "aiMonitoring", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getModelMetrics: protectedProcedure.input(z.object({ model: z.string().optional(), hours: z.number().default(24) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const since = sql`NOW() - INTERVAL '${sql.raw(String(input?.hours ?? 24))} hours'`;
+    const rows = await db.select().from(analyticsMetrics).where(gte(analyticsMetrics.createdAt, since)).orderBy(desc(analyticsMetrics.createdAt)).limit(100);
+    return { metrics: rows, total: rows.length, period: `${input?.hours ?? 24}h` };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "aiMonitoring", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "aiMonitoring", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "aiMonitoring" };
-    }),
-  acknowledgeAlert: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  alerts: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  driftAnalysis: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  liveFraudFeed: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  serviceHealth: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  throughputTimeSeries: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getInferenceLog: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "ai_inference")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { logs: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalInferences] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "ai_inference"));
+    const [totalMetrics] = await db.select({ value: count() }).from(analyticsMetrics);
+    return { totalInferences: Number(totalInferences.value), totalMetrics: Number(totalMetrics.value), lastUpdated: new Date().toISOString() };
+  }),
+  logInference: protectedProcedure.input(z.object({ model: z.string(), input: z.string(), latencyMs: z.number(), tokensUsed: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "ai_inference", resource: "ai_inference", resourceId: "inf-" + crypto.randomUUID(), status: "success", metadata: { model: input.model, latencyMs: input.latencyMs, tokensUsed: input.tokensUsed } });
+    return { success: true, loggedAt: new Date().toISOString() };
+  }),
 });

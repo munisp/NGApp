@@ -1,40 +1,29 @@
-// Sprint 95: Production implementation — esgCarbonTracker
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { auditLog, transactions } from "../../drizzle/schema";
 
 export const esgCarbonTrackerRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: esg carbon tracker
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "esgCarbonTracker" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "esgCarbonTracker", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "esgCarbonTracker", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getFootprint: protectedProcedure.input(z.object({ period: z.enum(["daily", "weekly", "monthly", "yearly"]).default("monthly") }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [txCount] = await db.select({ value: count() }).from(transactions);
+    const estimatedCO2 = Number(txCount.value) * 0.0035;
+    return { totalTransactions: Number(txCount.value), estimatedCO2Kg: Math.round(estimatedCO2 * 100) / 100, period: input?.period ?? "monthly", offsetCredits: 0 };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "esgCarbonTracker", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "esgCarbonTracker", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "esgCarbonTracker" };
-    }),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().default(30) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "esg_carbon")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 30);
+    return { history: rows.map(r => ({ date: r.createdAt, metadata: r.metadata })), total: rows.length };
+  }),
+  recordOffset: protectedProcedure.input(z.object({ credits: z.number().positive(), provider: z.string(), certificateId: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "carbon_offset_recorded", resource: "esg_carbon", resourceId: "offset-" + crypto.randomUUID(), status: "success", metadata: { credits: input.credits, provider: input.provider, certificateId: input.certificateId } });
+    return { success: true, credits: input.credits };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [offsets] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "carbon_offset_recorded"));
+    return { totalOffsets: Number(offsets.value), lastUpdated: new Date().toISOString() };
+  }),
 });

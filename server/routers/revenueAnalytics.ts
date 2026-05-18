@@ -1,45 +1,26 @@
-// Sprint 95: Production implementation — revenueAnalytics
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { analyticsMetrics } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum, gte } from "drizzle-orm";
+import { transactions, commissionPayouts, feeAuditTrail, auditLog } from "../../drizzle/schema";
 
 export const revenueAnalyticsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: revenue analytics
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "revenueAnalytics" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "revenueAnalytics", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "revenueAnalytics", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getSummary: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [txVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(eq(transactions.status, "success"));
+    const [feeRevenue] = await db.select({ value: sum(feeAuditTrail.feeAmount) }).from(feeAuditTrail);
+    const [commissionPaid] = await db.select({ value: sum(commissionPayouts.amount) }).from(commissionPayouts).where(eq(commissionPayouts.status, "paid"));
+    return { transactionVolume: Number(txVolume.value ?? 0), feeRevenue: Number(feeRevenue.value ?? 0), commissionPaid: Number(commissionPaid.value ?? 0), netRevenue: Number(feeRevenue.value ?? 0) - Number(commissionPaid.value ?? 0) };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "revenueAnalytics", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "revenueAnalytics", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "revenueAnalytics" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getTrend: protectedProcedure.input(z.object({ days: z.number().default(30) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select({ date: sql<string>`DATE(${transactions.createdAt})`, volume: sum(transactions.amount), cnt: count() }).from(transactions).where(gte(transactions.createdAt, sql`NOW() - INTERVAL '${sql.raw(String(input?.days ?? 30))} days'`)).groupBy(sql`DATE(${transactions.createdAt})`).orderBy(sql`DATE(${transactions.createdAt})`);
+    return { trend: rows.map(r => ({ date: r.date, volume: Number(r.volume ?? 0), count: Number(r.cnt) })), period: `${input?.days ?? 30} days` };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(transactions);
+    const [totalVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    return { totalTransactions: Number(total.value), totalVolume: Number(totalVolume.value ?? 0) };
+  }),
 });

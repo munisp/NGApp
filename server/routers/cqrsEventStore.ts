@@ -1,40 +1,30 @@
-// Sprint 95: Production implementation — cqrsEventStore
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog } from "../../drizzle/schema";
 
 export const cqrsEventStoreRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: cqrs event store
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "cqrsEventStore" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "cqrsEventStore", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "cqrsEventStore", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listEvents: protectedProcedure.input(z.object({ limit: z.number().default(50), aggregateType: z.string().optional(), aggregateId: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [eq(auditLog.resource, "event_store")];
+    if (input?.aggregateId) conditions.push(eq(auditLog.resourceId, input.aggregateId));
+    const rows = await db.select().from(auditLog).where(conditions.length > 1 ? sql`${auditLog.resource} = 'event_store' AND ${auditLog.resourceId} = ${input?.aggregateId}` : eq(auditLog.resource, "event_store")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { events: rows.map(r => ({ id: r.id, aggregateId: r.resourceId, eventType: r.action, data: r.metadata, timestamp: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "cqrsEventStore", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "cqrsEventStore", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "cqrsEventStore" };
-    }),
+  appendEvent: protectedProcedure.input(z.object({ aggregateType: z.string(), aggregateId: z.string(), eventType: z.string(), data: z.record(z.string(), z.unknown()) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [event] = await db.insert(auditLog).values({ action: input.eventType, resource: "event_store", resourceId: input.aggregateId, status: "success", metadata: { aggregateType: input.aggregateType, ...input.data } }).returning();
+    return { eventId: event.id, aggregateId: input.aggregateId, eventType: input.eventType, version: event.id };
+  }),
+  getAggregate: protectedProcedure.input(z.object({ aggregateId: z.string() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const events = await db.select().from(auditLog).where(sql`${auditLog.resource} = 'event_store' AND ${auditLog.resourceId} = ${input.aggregateId}`).orderBy(auditLog.createdAt);
+    return { aggregateId: input.aggregateId, events: events.map(e => ({ eventType: e.action, data: e.metadata, timestamp: e.createdAt })), version: events.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "event_store"));
+    return { totalEvents: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

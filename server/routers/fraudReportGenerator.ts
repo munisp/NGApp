@@ -1,40 +1,26 @@
-// Sprint 95: Production implementation — fraudReportGenerator
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { fraudAlerts } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum, gte } from "drizzle-orm";
+import { fraudAlerts, fraudMlScores, transactions, auditLog } from "../../drizzle/schema";
 
 export const fraudReportGeneratorRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: fraud report generator
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "fraudReportGenerator" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "fraudReportGenerator", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "fraudReportGenerator", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  generateReport: protectedProcedure.input(z.object({ dateFrom: z.string(), dateTo: z.string(), type: z.enum(["summary", "detailed", "regulatory"]).default("summary") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [totalAlerts] = await db.select({ value: count() }).from(fraudAlerts).where(gte(fraudAlerts.createdAt, new Date(input.dateFrom)));
+    const [totalVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(gte(transactions.createdAt, new Date(input.dateFrom)));
+    const reportId = "fraud-rpt-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "fraud_report_generated", resource: "fraud_reports", resourceId: reportId, status: "success", metadata: { dateFrom: input.dateFrom, dateTo: input.dateTo, type: input.type, totalAlerts: Number(totalAlerts.value) } });
+    return { reportId, type: input.type, totalAlerts: Number(totalAlerts.value), totalTransactionVolume: Number(totalVolume.value ?? 0), generatedAt: new Date().toISOString() };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "fraudReportGenerator", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "fraudReportGenerator", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "fraudReportGenerator" };
-    }),
+  listReports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "fraud_report_generated")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { reports: rows.map(r => ({ id: r.resourceId, metadata: r.metadata, generatedAt: r.createdAt })), total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "fraud_report_generated"));
+    return { totalReports: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

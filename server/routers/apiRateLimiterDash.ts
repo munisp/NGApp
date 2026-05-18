@@ -1,40 +1,33 @@
-// Sprint 95: Production implementation — apiRateLimiterDash
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { rateLimitRules, auditLog } from "../../drizzle/schema";
 
 export const apiRateLimiterDashRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: api rate limiter dash
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "apiRateLimiterDash" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "apiRateLimiterDash", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "apiRateLimiterDash", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(rateLimitRules).orderBy(desc(rateLimitRules.createdAt)).limit(input?.limit ?? 50);
+    return { rules: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "apiRateLimiterDash", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "apiRateLimiterDash", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "apiRateLimiterDash" };
-    }),
+  getViolations: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, "rate_limit_exceeded")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { violations: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalRules] = await db.select({ value: count() }).from(rateLimitRules);
+    const [violations] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "rate_limit_exceeded"));
+    return { totalRules: Number(totalRules.value), totalViolations: Number(violations.value), lastUpdated: new Date().toISOString() };
+  }),
+  updateRule: protectedProcedure.input(z.object({ id: z.number(), maxRequests: z.number().optional(), windowSeconds: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const updates: Record<string, unknown> = {};
+    if (input.maxRequests !== undefined) updates.maxRequests = input.maxRequests;
+    if (input.windowSeconds !== undefined) updates.windowSeconds = input.windowSeconds;
+    await db.update(rateLimitRules).set(updates).where(eq(rateLimitRules.id, input.id));
+    await db.insert(auditLog).values({ action: "rate_limit_updated", resource: "rate_limit_rules", resourceId: String(input.id), status: "success", metadata: updates });
+    return { success: true };
+  }),
 });

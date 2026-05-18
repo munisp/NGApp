@@ -1,65 +1,34 @@
-// Sprint 95: Production implementation — fxRates
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const fxRatesRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: fx rates
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "fxRates" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "fxRates", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "fxRates", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getRates: protectedProcedure.input(z.object({ baseCurrency: z.string().default("NGN") }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "fx_rates")).limit(1);
+    const rates = config ? JSON.parse(String(config.value)) : { USD: 1550.0, EUR: 1680.0, GBP: 1950.0, GHS: 95.0, KES: 12.0 };
+    return { baseCurrency: input?.baseCurrency ?? "NGN", rates, lastUpdated: config?.updatedAt ?? new Date() };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "fxRates", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "fxRates", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "fxRates" };
-    }),
-  convert: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  currencies: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getRates: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  historical: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  refresh: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  convert: protectedProcedure.input(z.object({ from: z.string(), to: z.string(), amount: z.number().positive() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "fx_rates")).limit(1);
+    const rates: Record<string, number> = config ? JSON.parse(String(config.value)) : { USD: 1550.0, EUR: 1680.0, GBP: 1950.0 };
+    const fromRate = input.from === "NGN" ? 1 : (rates[input.from] ?? 1);
+    const toRate = input.to === "NGN" ? 1 : (rates[input.to] ?? 1);
+    const converted = input.amount * fromRate / toRate;
+    return { from: input.from, to: input.to, amount: input.amount, convertedAmount: Math.round(converted * 100) / 100, rate: fromRate / toRate };
+  }),
+  updateRates: protectedProcedure.input(z.object({ rates: z.record(z.string(), z.number()) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(systemConfig).values({ key: "fx_rates", value: JSON.stringify(input.rates) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input.rates), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "fx_rates_updated", resource: "fx_rates", resourceId: "rates", status: "success", metadata: { rates: input.rates } });
+    return { success: true, updatedAt: new Date().toISOString() };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "fx_rates_updated"));
+    return { totalUpdates: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

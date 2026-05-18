@@ -1,60 +1,38 @@
-// Sprint 95: Production implementation — customerDisputePortal
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { disputes } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { disputes, disputeMessages, disputeEvidence, transactions, auditLog } from "../../drizzle/schema";
 
 export const customerDisputePortalRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: customer dispute portal
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "customerDisputePortal" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "customerDisputePortal", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "customerDisputePortal", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listMyDisputes: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().default(20), status: z.string().optional() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input.status ? await db.select().from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, input.status))).orderBy(desc(disputes.createdAt)).limit(input.limit) : await db.select().from(disputes).where(eq(disputes.customerId, input.customerId)).orderBy(desc(disputes.createdAt)).limit(input.limit);
+    return { disputes: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "customerDisputePortal", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "customerDisputePortal", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "customerDisputePortal" };
-    }),
-  escalateDispute: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  fileDispute: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  listDisputes: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  updateDispute: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getDispute: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [dispute] = await db.select().from(disputes).where(eq(disputes.id, input.id)).limit(1);
+    if (!dispute) return null;
+    const messages = await db.select().from(disputeMessages).where(eq(disputeMessages.disputeId, input.id)).orderBy(disputeMessages.createdAt);
+    const evidence = await db.select().from(disputeEvidence).where(eq(disputeEvidence.disputeId, input.id));
+    return { ...dispute, messages, evidence };
+  }),
+  fileDispute: protectedProcedure.input(z.object({ customerId: z.number(), transactionId: z.number(), reason: z.string(), description: z.string(), amount: z.number().positive() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [dispute] = await db.insert(disputes).values({ customerId: input.customerId, transactionId: input.transactionId, reason: input.reason, description: input.description, amount: String(input.amount), status: "open", type: "customer" }).returning();
+    await db.insert(auditLog).values({ action: "customer_dispute_filed", resource: "disputes", resourceId: String(dispute.id), status: "success", metadata: { customerId: input.customerId, transactionId: input.transactionId } });
+    return dispute;
+  }),
+  addMessage: protectedProcedure.input(z.object({ disputeId: z.number(), content: z.string(), senderType: z.string().default("customer") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [msg] = await db.insert(disputeMessages).values({ disputeId: input.disputeId, content: input.content, senderType: input.senderType }).returning();
+    return msg;
+  }),
+  getStats: protectedProcedure.input(z.object({ customerId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(disputes).where(eq(disputes.customerId, input.customerId));
+    const [open] = await db.select({ value: count() }).from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, "open")));
+    return { totalDisputes: Number(total.value), openDisputes: Number(open.value) };
+  }),
 });

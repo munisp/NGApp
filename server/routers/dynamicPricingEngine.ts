@@ -1,40 +1,37 @@
-// Sprint 95: Production implementation — dynamicPricingEngine
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { feeRules, feeAuditTrail, auditLog } from "../../drizzle/schema";
 
 export const dynamicPricingEngineRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: dynamic pricing engine
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "dynamicPricingEngine" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "dynamicPricingEngine", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "dynamicPricingEngine", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(feeRules).orderBy(desc(feeRules.createdAt)).limit(input?.limit ?? 50);
+    return { rules: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "dynamicPricingEngine", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "dynamicPricingEngine", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "dynamicPricingEngine" };
-    }),
+  getRule: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [rule] = await db.select().from(feeRules).where(eq(feeRules.id, input.id)).limit(1);
+    return rule ?? null;
+  }),
+  calculatePrice: protectedProcedure.input(z.object({ amount: z.number().positive(), type: z.string(), channel: z.string().optional() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rules = await db.select().from(feeRules).where(eq(feeRules.transactionType, input.type)).limit(5);
+    const applicableRule = rules[0];
+    const fee = applicableRule ? (applicableRule.feeType === "percentage" ? input.amount * Number(applicableRule.feeValue) / 100 : Number(applicableRule.feeValue)) : 0;
+    return { originalAmount: input.amount, fee: Math.round(fee * 100) / 100, totalAmount: input.amount + fee, ruleApplied: applicableRule?.id ?? null };
+  }),
+  createRule: protectedProcedure.input(z.object({ transactionType: z.string(), feeType: z.enum(["percentage", "flat"]), feeValue: z.number(), minAmount: z.number().optional(), maxAmount: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [rule] = await db.insert(feeRules).values({ transactionType: input.transactionType, feeType: input.feeType, feeValue: String(input.feeValue), minAmount: input.minAmount ? String(input.minAmount) : null, maxAmount: input.maxAmount ? String(input.maxAmount) : null }).returning();
+    await db.insert(auditLog).values({ action: "pricing_rule_created", resource: "fee_rules", resourceId: String(rule.id), status: "success", metadata: { transactionType: input.transactionType } });
+    return rule;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(feeRules);
+    const [totalAudit] = await db.select({ value: count() }).from(feeAuditTrail);
+    return { totalRules: Number(total.value), totalFeeCalculations: Number(totalAudit.value) };
+  }),
 });

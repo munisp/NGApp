@@ -1,40 +1,23 @@
-// Sprint 95: Production implementation — transactionMapLoading
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { transactions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { transactions, deviceLocations, auditLog } from "../../drizzle/schema";
 
 export const transactionMapLoadingRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: transaction map loading
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "transactionMapLoading" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "transactionMapLoading", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "transactionMapLoading", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getMapData: protectedProcedure.input(z.object({ limit: z.number().default(200) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const locations = await db.select().from(deviceLocations).orderBy(desc(deviceLocations.createdAt)).limit(input?.limit ?? 200);
+    return { points: locations.map(l => ({ lat: l.latitude, lng: l.longitude, agentId: l.agentId, timestamp: l.createdAt })), total: locations.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "transactionMapLoading", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "transactionMapLoading", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "transactionMapLoading" };
-    }),
+  getClusterData: protectedProcedure.input(z.object({ zoomLevel: z.number().default(10) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const locations = await db.select().from(deviceLocations).orderBy(desc(deviceLocations.createdAt)).limit(500);
+    return { clusters: locations.map(l => ({ lat: l.latitude, lng: l.longitude, count: 1 })), zoomLevel: input?.zoomLevel ?? 10 };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(deviceLocations);
+    return { totalLocations: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

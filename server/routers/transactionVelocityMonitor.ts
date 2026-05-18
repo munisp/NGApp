@@ -1,40 +1,31 @@
-// Sprint 95: Production implementation — transactionVelocityMonitor
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { transactions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum, gte } from "drizzle-orm";
+import { transactions, velocityRules, velocityBreaches, auditLog } from "../../drizzle/schema";
 
 export const transactionVelocityMonitorRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: transaction velocity monitor
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "transactionVelocityMonitor" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "transactionVelocityMonitor", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "transactionVelocityMonitor", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(velocityRules).orderBy(desc(velocityRules.createdAt)).limit(input?.limit ?? 50);
+    return { rules: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "transactionVelocityMonitor", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "transactionVelocityMonitor", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "transactionVelocityMonitor" };
-    }),
+  getBreaches: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(velocityBreaches).orderBy(desc(velocityBreaches.createdAt)).limit(input?.limit ?? 50);
+    return { breaches: rows, total: rows.length };
+  }),
+  checkVelocity: protectedProcedure.input(z.object({ agentId: z.number(), transactionType: z.string() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [hourCount] = await db.select({ value: count() }).from(transactions).where(sql`${transactions.agentId} = ${input.agentId} AND ${transactions.createdAt} >= NOW() - INTERVAL '1 hour'`);
+    const [dayCount] = await db.select({ value: count() }).from(transactions).where(sql`${transactions.agentId} = ${input.agentId} AND ${transactions.createdAt} >= CURRENT_DATE`);
+    const [dayVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions).where(sql`${transactions.agentId} = ${input.agentId} AND ${transactions.createdAt} >= CURRENT_DATE`);
+    return { agentId: input.agentId, hourlyCount: Number(hourCount.value), dailyCount: Number(dayCount.value), dailyVolume: Number(dayVolume.value ?? 0), status: Number(hourCount.value) > 50 ? "exceeded" : "within_limits" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalRules] = await db.select({ value: count() }).from(velocityRules);
+    const [totalBreaches] = await db.select({ value: count() }).from(velocityBreaches);
+    return { totalRules: Number(totalRules.value), totalBreaches: Number(totalBreaches.value) };
+  }),
 });

@@ -1,40 +1,39 @@
-// Sprint 95: Production implementation — chargebackManagement
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, and, sql, count, sum } from "drizzle-orm";
+import { disputes, transactions, refunds, auditLog } from "../../drizzle/schema";
 
 export const chargebackManagementRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: chargeback management
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "chargebackManagement" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "chargebackManagement", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "chargebackManagement", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listChargebacks: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(disputes).where(and(eq(disputes.type, "chargeback"), eq(disputes.status, input.status))).orderBy(desc(disputes.createdAt)).limit(input?.limit ?? 50) : await db.select().from(disputes).where(eq(disputes.type, "chargeback")).orderBy(desc(disputes.createdAt)).limit(input?.limit ?? 50);
+    return { chargebacks: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "chargebackManagement", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "chargebackManagement", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "chargebackManagement" };
-    }),
+  getChargeback: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [dispute] = await db.select().from(disputes).where(eq(disputes.id, input.id)).limit(1);
+    if (!dispute) return null;
+    const [tx] = dispute.transactionId ? await db.select().from(transactions).where(eq(transactions.id, dispute.transactionId)).limit(1) : [null];
+    return { ...dispute, transaction: tx };
+  }),
+  createChargeback: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string(), amount: z.number().positive(), evidence: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [chargeback] = await db.insert(disputes).values({ transactionId: input.transactionId, type: "chargeback", reason: input.reason, amount: String(input.amount), status: "open" }).returning();
+    await db.insert(auditLog).values({ action: "chargeback_created", resource: "disputes", resourceId: String(chargeback.id), status: "success", metadata: { transactionId: input.transactionId, amount: input.amount } });
+    return chargeback;
+  }),
+  resolveChargeback: protectedProcedure.input(z.object({ id: z.number(), resolution: z.enum(["accepted", "rejected", "partial"]), refundAmount: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(disputes).set({ status: "resolved", resolution: input.resolution }).where(eq(disputes.id, input.id));
+    await db.insert(auditLog).values({ action: "chargeback_resolved", resource: "disputes", resourceId: String(input.id), status: "success", metadata: { resolution: input.resolution, refundAmount: input.refundAmount } });
+    return { success: true, id: input.id, resolution: input.resolution };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(disputes).where(eq(disputes.type, "chargeback"));
+    const [open] = await db.select({ value: count() }).from(disputes).where(and(eq(disputes.type, "chargeback"), eq(disputes.status, "open")));
+    const [resolved] = await db.select({ value: count() }).from(disputes).where(and(eq(disputes.type, "chargeback"), eq(disputes.status, "resolved")));
+    return { totalChargebacks: Number(total.value), openChargebacks: Number(open.value), resolvedChargebacks: Number(resolved.value) };
+  }),
 });

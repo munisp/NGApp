@@ -1,55 +1,24 @@
-// Sprint 95: Production implementation — ussdIntegration
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { ussdSessions, transactions, auditLog } from "../../drizzle/schema";
 
 export const ussdIntegrationRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: ussd integration
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "ussdIntegration" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "ussdIntegration", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "ussdIntegration", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  handleInput: protectedProcedure.input(z.object({ sessionId: z.number(), input: z.string() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.select().from(ussdSessions).where(eq(ussdSessions.id, input.sessionId)).limit(1);
+    if (!session) throw new Error("Session not found");
+    const menu = input.input === "1" ? "CON Cash In\n1. Enter Amount" : input.input === "2" ? "CON Cash Out\n1. Enter Amount" : "END Thank you for using 54Link";
+    await db.insert(auditLog).values({ action: "ussd_input", resource: "ussd_sessions", resourceId: String(input.sessionId), status: "success", metadata: { input: input.input } });
+    return { sessionId: input.sessionId, response: menu, continued: menu.startsWith("CON") };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "ussdIntegration", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "ussdIntegration", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "ussdIntegration" };
-    }),
-  getShortcuts: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  processInput: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  startSession: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getMenuConfig: protectedProcedure.query(async () => {
+    return { menus: [{ code: "1", label: "Cash In" }, { code: "2", label: "Cash Out" }, { code: "3", label: "Balance" }, { code: "4", label: "Transfer" }, { code: "5", label: "Bills" }] };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(ussdSessions);
+    return { totalSessions: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

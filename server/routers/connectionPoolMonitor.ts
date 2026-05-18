@@ -1,40 +1,29 @@
-// Sprint 95: Production implementation — connectionPoolMonitor
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const connectionPoolMonitorRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: connection pool monitor
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "connectionPoolMonitor" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "connectionPoolMonitor", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "connectionPoolMonitor", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getPoolStatus: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "connection_pool_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { activeConnections: 0, idleConnections: 10, maxConnections: 100, waitingRequests: 0, avgLatencyMs: 5 };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "connectionPoolMonitor", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "connectionPoolMonitor", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "connectionPoolMonitor" };
-    }),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().default(100) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "connection_pool")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 100);
+    return { history: rows.map(r => ({ timestamp: r.createdAt, metadata: r.metadata })), total: rows.length };
+  }),
+  updateConfig: protectedProcedure.input(z.object({ maxConnections: z.number().optional(), idleTimeoutMs: z.number().optional(), acquireTimeoutMs: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(systemConfig).values({ key: "connection_pool_config", value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: "pool_config_updated", resource: "connection_pool", resourceId: "config", status: "success", metadata: input });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "connection_pool"));
+    return { totalEvents: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

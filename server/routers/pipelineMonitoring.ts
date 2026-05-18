@@ -1,50 +1,29 @@
-// Sprint 95: Production implementation — pipelineMonitoring
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog } from "../../drizzle/schema";
 
 export const pipelineMonitoringRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: pipeline monitoring
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "pipelineMonitoring" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "pipelineMonitoring", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "pipelineMonitoring", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listPipelines: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "pipeline")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { pipelines: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "pipelineMonitoring", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "pipelineMonitoring", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "pipelineMonitoring" };
-    }),
-  activeAlerts: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getPipelineStatus: protectedProcedure.input(z.object({ pipelineId: z.string() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const events = await db.select().from(auditLog).where(sql`${auditLog.resource} = 'pipeline' AND ${auditLog.resourceId} = ${input.pipelineId}`).orderBy(desc(auditLog.createdAt)).limit(10);
+    return { pipelineId: input.pipelineId, events, status: events[0]?.status ?? "unknown" };
+  }),
+  triggerPipeline: protectedProcedure.input(z.object({ name: z.string(), params: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const runId = "pipe-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "pipeline_triggered", resource: "pipeline", resourceId: runId, status: "success", metadata: { name: input.name, params: input.params } });
+    return { runId, name: input.name, status: "triggered" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "pipeline"));
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

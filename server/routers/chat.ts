@@ -1,90 +1,44 @@
-// Sprint 95: Production implementation — chat
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { chatSessions, chatMessages, auditLog } from "../../drizzle/schema";
 
 export const chatRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: chat
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "chat" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "chat", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "chat", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listSessions: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.enum(["open", "assigned", "resolved", "escalated"]).optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(chatSessions).where(eq(chatSessions.status, input.status)).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50) : await db.select().from(chatSessions).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50);
+    return { sessions: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "chat", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "chat", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "chat" };
-    }),
-  adminAssignSession: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  adminDeleteSession: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  adminEscalate: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  adminGetMessages: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  adminListSessions: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  adminReply: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  adminResolve: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  adminStats: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  sendMessage: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  startSession: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getSession: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, input.id)).limit(1);
+    if (!session) return null;
+    const messages = await db.select().from(chatMessages).where(eq(chatMessages.sessionId, input.id)).orderBy(chatMessages.createdAt);
+    return { ...session, messages };
+  }),
+  createSession: protectedProcedure.input(z.object({ subject: z.string().optional(), agentId: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.insert(chatSessions).values({ status: "open", agentId: input.agentId, subject: input.subject }).returning();
+    await db.insert(auditLog).values({ action: "chat_session_created", resource: "chat_sessions", resourceId: String(session.id), status: "success", metadata: {} });
+    return session;
+  }),
+  sendMessage: protectedProcedure.input(z.object({ sessionId: z.number(), content: z.string(), senderType: z.enum(["agent", "support", "system"]).default("support") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [msg] = await db.insert(chatMessages).values({ sessionId: input.sessionId, content: input.content, senderType: input.senderType }).returning();
+    return msg;
+  }),
+  closeSession: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(chatSessions).set({ status: "resolved" }).where(eq(chatSessions.id, input.id));
+    await db.insert(auditLog).values({ action: "chat_session_closed", resource: "chat_sessions", resourceId: String(input.id), status: "success", metadata: {} });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(chatSessions);
+    const [open] = await db.select({ value: count() }).from(chatSessions).where(eq(chatSessions.status, "open"));
+    const [resolved] = await db.select({ value: count() }).from(chatSessions).where(eq(chatSessions.status, "resolved"));
+    return { totalSessions: Number(total.value), openSessions: Number(open.value), resolvedSessions: Number(resolved.value) };
+  }),
 });

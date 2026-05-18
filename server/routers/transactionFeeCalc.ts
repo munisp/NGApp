@@ -1,40 +1,33 @@
-// Sprint 95: Production implementation — transactionFeeCalc
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { transactions } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { feeRules, feeAuditTrail, auditLog } from "../../drizzle/schema";
 
 export const transactionFeeCalcRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: transaction fee calc
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "transactionFeeCalc" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "transactionFeeCalc", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "transactionFeeCalc", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  calculate: protectedProcedure.input(z.object({ amount: z.number().positive(), transactionType: z.string(), channel: z.string().optional() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rules = await db.select().from(feeRules).where(eq(feeRules.transactionType, input.transactionType)).limit(5);
+    const rule = rules[0];
+    const fee = rule ? (rule.feeType === "percentage" ? input.amount * Number(rule.feeValue) / 100 : Number(rule.feeValue)) : 0;
+    const cappedFee = rule?.maxFee ? Math.min(fee, Number(rule.maxFee)) : fee;
+    const finalFee = rule?.minFee ? Math.max(cappedFee, Number(rule.minFee)) : cappedFee;
+    return { amount: input.amount, fee: Math.round(finalFee * 100) / 100, total: input.amount + Math.round(finalFee * 100) / 100, ruleId: rule?.id ?? null, feeType: rule?.feeType ?? "none" };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "transactionFeeCalc", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "transactionFeeCalc", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "transactionFeeCalc" };
-    }),
+  listRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(feeRules).orderBy(desc(feeRules.createdAt)).limit(input?.limit ?? 50);
+    return { rules: rows, total: rows.length };
+  }),
+  getAuditTrail: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(feeAuditTrail).orderBy(desc(feeAuditTrail.createdAt)).limit(input?.limit ?? 50);
+    return { entries: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalRules] = await db.select({ value: count() }).from(feeRules);
+    const [totalFees] = await db.select({ value: sum(feeAuditTrail.feeAmount) }).from(feeAuditTrail);
+    return { totalRules: Number(totalRules.value), totalFeesCollected: Number(totalFees.value ?? 0) };
+  }),
 });

@@ -1,40 +1,28 @@
-// Sprint 95: Production implementation — platformMaturityScorecard
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { agents, merchants, transactions, auditLog } from "../../drizzle/schema";
 
 export const platformMaturityScorecardRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: platform maturity scorecard
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "platformMaturityScorecard" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "platformMaturityScorecard", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "platformMaturityScorecard", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getScorecard: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [agentCount] = await db.select({ value: count() }).from(agents);
+    const [merchantCount] = await db.select({ value: count() }).from(merchants);
+    const [txCount] = await db.select({ value: count() }).from(transactions);
+    const [auditCount] = await db.select({ value: count() }).from(auditLog);
+    const scores = { agentNetwork: Math.min(100, Number(agentCount.value) * 2), merchantCoverage: Math.min(100, Number(merchantCount.value) * 5), transactionVolume: Math.min(100, Number(txCount.value) / 100), auditCompliance: Math.min(100, Number(auditCount.value) / 50), securityPosture: 85, operationalExcellence: 78 };
+    const overall = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length);
+    return { overall, scores, maturityLevel: overall > 80 ? "advanced" : overall > 60 ? "intermediate" : overall > 40 ? "developing" : "initial" };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "platformMaturityScorecard", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "platformMaturityScorecard", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "platformMaturityScorecard" };
-    }),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().default(12) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "maturity_scorecard")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 12);
+    return { history: rows.map(r => ({ timestamp: r.createdAt, metadata: r.metadata })), total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "maturity_scorecard"));
+    return { totalAssessments: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

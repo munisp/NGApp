@@ -1,55 +1,29 @@
-// Sprint 95: Production implementation — sharedLayouts
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const sharedLayoutsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: shared layouts
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "sharedLayouts" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "sharedLayouts", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "sharedLayouts", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listLayouts: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "shared_layout")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { layouts: rows.map(r => ({ id: r.resourceId, name: r.action, metadata: r.metadata, createdAt: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "sharedLayouts", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "sharedLayouts", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "sharedLayouts" };
-    }),
-  fork: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  gallery: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  import: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getLayout: protectedProcedure.input(z.object({ name: z.string() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, `layout_${input.name}`)).limit(1);
+    return config ? { name: input.name, config: JSON.parse(String(config.value)) } : null;
+  }),
+  saveLayout: protectedProcedure.input(z.object({ name: z.string(), config: z.record(z.string(), z.unknown()) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(systemConfig).values({ key: `layout_${input.name}`, value: JSON.stringify(input.config) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input.config), updatedAt: new Date() } });
+    await db.insert(auditLog).values({ action: input.name, resource: "shared_layout", resourceId: input.name, status: "success", metadata: {} });
+    return { success: true, name: input.name };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "shared_layout"));
+    return { totalLayouts: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

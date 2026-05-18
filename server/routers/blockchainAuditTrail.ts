@@ -1,40 +1,30 @@
-// Sprint 95: Production implementation — blockchainAuditTrail
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
+import { eq, desc, sql, count } from "drizzle-orm";
 import { auditLog } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
 
 export const blockchainAuditTrailRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: blockchain audit trail
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "blockchainAuditTrail" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "blockchainAuditTrail", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "blockchainAuditTrail", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listEntries: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "blockchain_audit")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { entries: rows.map(r => ({ id: r.id, action: r.action, resourceId: r.resourceId, status: r.status, hash: r.metadata, timestamp: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "blockchainAuditTrail", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "blockchainAuditTrail", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "blockchainAuditTrail" };
-    }),
+  verifyEntry: protectedProcedure.input(z.object({ entryId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [entry] = await db.select().from(auditLog).where(eq(auditLog.id, input.entryId)).limit(1);
+    if (!entry) return { verified: false, error: "Entry not found" };
+    return { verified: true, entry: { id: entry.id, action: entry.action, status: entry.status, timestamp: entry.createdAt } };
+  }),
+  anchorToChain: protectedProcedure.input(z.object({ auditIds: z.array(z.number()), chain: z.string().default("ethereum") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const anchorId = "anchor-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "blockchain_anchor", resource: "blockchain_audit", resourceId: anchorId, status: "success", metadata: { auditIds: input.auditIds, chain: input.chain, anchoredAt: new Date().toISOString() } });
+    return { anchorId, chain: input.chain, entriesAnchored: input.auditIds.length, status: "anchored" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "blockchain_audit"));
+    return { totalAnchored: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

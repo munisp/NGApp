@@ -1,40 +1,24 @@
-// Sprint 95: Production implementation — e2eTestFramework
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { loadTestRuns, auditLog } from "../../drizzle/schema";
 
 export const e2eTestFrameworkRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: e2e test framework
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "e2eTestFramework" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "e2eTestFramework", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "e2eTestFramework", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listSuites: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.createdAt)).limit(input?.limit ?? 20);
+    return { suites: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "e2eTestFramework", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "e2eTestFramework", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "e2eTestFramework" };
-    }),
+  runSuite: protectedProcedure.input(z.object({ name: z.string(), environment: z.enum(["staging", "production"]).default("staging"), tags: z.array(z.string()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [run] = await db.insert(loadTestRuns).values({ name: input.name, status: "running", config: { environment: input.environment, tags: input.tags } }).returning();
+    await db.insert(auditLog).values({ action: "e2e_test_started", resource: "load_test_runs", resourceId: String(run.id), status: "success", metadata: { name: input.name, environment: input.environment } });
+    return run;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(loadTestRuns);
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

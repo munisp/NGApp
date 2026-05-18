@@ -1,50 +1,35 @@
-// Sprint 95: Production implementation — featureFlags
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { tenantFeatureToggles, auditLog } from "../../drizzle/schema";
 
 export const featureFlagsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: feature flags
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "featureFlags" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "featureFlags", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "featureFlags", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listFlags: protectedProcedure.input(z.object({ limit: z.number().default(100) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(tenantFeatureToggles).orderBy(desc(tenantFeatureToggles.createdAt)).limit(input?.limit ?? 100);
+    return { flags: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "featureFlags", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "featureFlags", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "featureFlags" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  toggleFlag: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  getFlag: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [flag] = await db.select().from(tenantFeatureToggles).where(eq(tenantFeatureToggles.id, input.id)).limit(1);
+    return flag ?? null;
+  }),
+  toggleFlag: protectedProcedure.input(z.object({ id: z.number(), enabled: z.boolean() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(tenantFeatureToggles).set({ enabled: input.enabled }).where(eq(tenantFeatureToggles.id, input.id));
+    await db.insert(auditLog).values({ action: input.enabled ? "feature_flag_enabled" : "feature_flag_disabled", resource: "tenant_feature_toggles", resourceId: String(input.id), status: "success", metadata: { enabled: input.enabled } });
+    return { success: true, id: input.id, enabled: input.enabled };
+  }),
+  createFlag: protectedProcedure.input(z.object({ featureName: z.string(), tenantId: z.number(), enabled: z.boolean().default(false), description: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [flag] = await db.insert(tenantFeatureToggles).values({ featureName: input.featureName, tenantId: input.tenantId, enabled: input.enabled }).returning();
+    await db.insert(auditLog).values({ action: "feature_flag_created", resource: "tenant_feature_toggles", resourceId: String(flag.id), status: "success", metadata: { featureName: input.featureName } });
+    return flag;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(tenantFeatureToggles);
+    return { totalFlags: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

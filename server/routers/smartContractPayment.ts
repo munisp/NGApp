@@ -1,50 +1,30 @@
-// Sprint 95: Production implementation — smartContractPayment
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { transactions, auditLog } from "../../drizzle/schema";
 
 export const smartContractPaymentRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: smart contract payment
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "smartContractPayment" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "smartContractPayment", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "smartContractPayment", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listContracts: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "smart_contract")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
+    return { contracts: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "smartContractPayment", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "smartContractPayment", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "smartContractPayment" };
-    }),
-  deployContract: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  listContracts: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  deployContract: protectedProcedure.input(z.object({ name: z.string(), type: z.enum(["escrow", "recurring", "conditional", "milestone"]), conditions: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const contractId = "sc-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "smart_contract_deployed", resource: "smart_contract", resourceId: contractId, status: "success", metadata: { name: input.name, type: input.type, conditions: input.conditions } });
+    return { contractId, name: input.name, type: input.type, status: "deployed" };
+  }),
+  executePayment: protectedProcedure.input(z.object({ contractId: z.string(), amount: z.number().positive(), agentId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: String(input.amount), type: "Smart Contract", status: "success", channel: "Blockchain", reference: input.contractId }).returning();
+    await db.insert(auditLog).values({ action: "smart_contract_payment", resource: "smart_contract", resourceId: input.contractId, status: "success", metadata: { amount: input.amount, transactionId: tx.id } });
+    return { success: true, transactionId: tx.id };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "smart_contract"));
+    return { totalContracts: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

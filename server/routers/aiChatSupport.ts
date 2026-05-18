@@ -1,40 +1,40 @@
-// Sprint 95: Production implementation — aiChatSupport
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { chatSessions, chatMessages, auditLog } from "../../drizzle/schema";
 
 export const aiChatSupportRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: ai chat support
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "aiChatSupport" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "aiChatSupport", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "aiChatSupport", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listSessions: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.enum(["open", "assigned", "resolved", "escalated"]).optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = input?.status ? [eq(chatSessions.status, input.status)] : [];
+    const rows = conditions.length > 0 ? await db.select().from(chatSessions).where(conditions[0]).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50) : await db.select().from(chatSessions).orderBy(desc(chatSessions.createdAt)).limit(input?.limit ?? 50);
+    return { sessions: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "aiChatSupport", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "aiChatSupport", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "aiChatSupport" };
-    }),
+  getSession: protectedProcedure.input(z.object({ sessionId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, input.sessionId)).limit(1);
+    if (!session) return null;
+    const messages = await db.select().from(chatMessages).where(eq(chatMessages.sessionId, input.sessionId)).orderBy(chatMessages.createdAt);
+    return { ...session, messages };
+  }),
+  sendMessage: protectedProcedure.input(z.object({ sessionId: z.number(), content: z.string(), senderType: z.enum(["agent", "support", "system"]).default("support") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [msg] = await db.insert(chatMessages).values({ sessionId: input.sessionId, content: input.content, senderType: input.senderType }).returning();
+    await db.insert(auditLog).values({ action: "chat_message_sent", resource: "chat_messages", resourceId: String(msg.id), status: "success", metadata: { sessionId: input.sessionId } });
+    return msg;
+  }),
+  resolveSession: protectedProcedure.input(z.object({ sessionId: z.number(), resolution: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(chatSessions).set({ status: "resolved" }).where(eq(chatSessions.id, input.sessionId));
+    await db.insert(auditLog).values({ action: "chat_session_resolved", resource: "chat_sessions", resourceId: String(input.sessionId), status: "success", metadata: { resolution: input.resolution } });
+    return { success: true };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(chatSessions);
+    const [open] = await db.select({ value: count() }).from(chatSessions).where(eq(chatSessions.status, "open"));
+    const [resolved] = await db.select({ value: count() }).from(chatSessions).where(eq(chatSessions.status, "resolved"));
+    return { totalSessions: Number(total.value), openSessions: Number(open.value), resolvedSessions: Number(resolved.value), resolutionRate: Number(total.value) > 0 ? Math.round(Number(resolved.value) / Number(total.value) * 100) : 0 };
+  }),
 });

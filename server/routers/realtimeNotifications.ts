@@ -1,55 +1,34 @@
-// Sprint 95: Production implementation — realtimeNotifications
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { notification_logs } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { notifications, auditLog } from "../../drizzle/schema";
 
 export const realtimeNotificationsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: realtime notifications
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "realtimeNotifications" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "realtimeNotifications", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "realtimeNotifications", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  list: protectedProcedure.input(z.object({ limit: z.number().default(50), read: z.boolean().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.read !== undefined ? await db.select().from(notifications).where(eq(notifications.read, input.read)).orderBy(desc(notifications.createdAt)).limit(input?.limit ?? 50) : await db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(input?.limit ?? 50);
+    return { notifications: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "realtimeNotifications", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "realtimeNotifications", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "realtimeNotifications" };
-    }),
-  broadcast: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  markRead: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
+  markRead: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(notifications).set({ read: true }).where(eq(notifications.id, input.id));
+    return { success: true };
+  }),
+  markAllRead: protectedProcedure.mutation(async () => {
+    const db = (await getDb())!;
+    await db.update(notifications).set({ read: true }).where(eq(notifications.read, false));
+    return { success: true };
+  }),
+  send: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), type: z.enum(["info", "warning", "error", "success"]).default("info"), userId: z.number().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [notif] = await db.insert(notifications).values({ title: input.title, message: input.message, type: input.type, read: false }).returning();
+    return notif;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(notifications);
+    const [unread] = await db.select({ value: count() }).from(notifications).where(eq(notifications.read, false));
+    return { totalNotifications: Number(total.value), unreadCount: Number(unread.value) };
+  }),
 });

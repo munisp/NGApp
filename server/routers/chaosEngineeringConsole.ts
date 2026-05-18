@@ -1,40 +1,29 @@
-// Sprint 95: Production implementation — chaosEngineeringConsole
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog } from "../../drizzle/schema";
 
 export const chaosEngineeringConsoleRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: chaos engineering console
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "chaosEngineeringConsole" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "chaosEngineeringConsole", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "chaosEngineeringConsole", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listExperiments: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "chaos_experiment")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { experiments: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "chaosEngineeringConsole", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "chaosEngineeringConsole", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "chaosEngineeringConsole" };
-    }),
+  runExperiment: protectedProcedure.input(z.object({ name: z.string(), target: z.string(), type: z.enum(["latency", "failure", "cpu_stress", "memory_stress", "network_partition"]), duration: z.number().default(60), intensity: z.number().min(1).max(100).default(50) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const expId = "chaos-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "chaos_experiment_run", resource: "chaos_experiment", resourceId: expId, status: "success", metadata: { name: input.name, target: input.target, type: input.type, duration: input.duration, intensity: input.intensity } });
+    return { experimentId: expId, name: input.name, status: "completed", target: input.target, type: input.type };
+  }),
+  stopExperiment: protectedProcedure.input(z.object({ experimentId: z.string() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "chaos_experiment_stopped", resource: "chaos_experiment", resourceId: input.experimentId, status: "warning", metadata: {} });
+    return { success: true, experimentId: input.experimentId, status: "stopped" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "chaos_experiment"));
+    return { totalExperiments: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

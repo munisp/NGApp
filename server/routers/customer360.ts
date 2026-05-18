@@ -1,55 +1,28 @@
-// Sprint 95: Production implementation — customer360
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { customers } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, and, sql, count, sum } from "drizzle-orm";
+import { customers, transactions, disputes, loyaltyHistory, auditLog } from "../../drizzle/schema";
 
 export const customer360Router = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: customer360
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "customer360" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "customer360", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "customer360", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getProfile: protectedProcedure.input(z.object({ customerId: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [customer] = await db.select().from(customers).where(eq(customers.id, input.customerId)).limit(1);
+    if (!customer) return null;
+    const [txStats] = await db.select({ txCount: count(), volume: sum(transactions.amount) }).from(transactions).where(eq(transactions.customerId, input.customerId));
+    const [disputeCount] = await db.select({ cnt: count() }).from(disputes).where(eq(disputes.customerId, input.customerId));
+    const [loyaltyPoints] = await db.select({ total: sum(loyaltyHistory.points) }).from(loyaltyHistory).where(eq(loyaltyHistory.customerId, input.customerId));
+    return { ...customer, metrics: { totalTransactions: Number(txStats.txCount), totalVolume: Number(txStats.volume ?? 0), totalDisputes: Number(disputeCount.cnt), loyaltyPoints: Number(loyaltyPoints.total ?? 0) } };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "customer360", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "customer360", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "customer360" };
-    }),
-  analyzeSentiment: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getProfile: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  listCustomers: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(customers).where(eq(customers.status, input.status as any)).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50) : await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(input?.limit ?? 50);
+    return { customers: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(customers);
+    const [active] = await db.select({ value: count() }).from(customers).where(eq(customers.status, "active"));
+    return { totalCustomers: Number(total.value), activeCustomers: Number(active.value) };
+  }),
 });

@@ -1,45 +1,28 @@
-// Sprint 95: Production implementation — graphqlFederation
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { auditLog, systemConfig } from "../../drizzle/schema";
 
 export const graphqlFederationRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: graphql federation
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "graphqlFederation" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "graphqlFederation", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "graphqlFederation", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getSchemaRegistry: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "graphql_schema")).orderBy(desc(auditLog.createdAt)).limit(20);
+    return { schemas: rows.map(r => ({ service: r.resourceId, action: r.action, registeredAt: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "graphqlFederation", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "graphqlFederation", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "graphqlFederation" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getConfig: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "graphql_federation_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { gateway: "apollo", services: [], introspection: false, playground: false };
+  }),
+  registerSubgraph: protectedProcedure.input(z.object({ name: z.string(), url: z.string(), sdl: z.string().optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "subgraph_registered", resource: "graphql_schema", resourceId: input.name, status: "success", metadata: { url: input.url } });
+    return { success: true, name: input.name, url: input.url };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "graphql_schema"));
+    return { totalSchemas: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

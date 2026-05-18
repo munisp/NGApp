@@ -1,50 +1,35 @@
-// Sprint 95: Production implementation — eventDrivenArch
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { dlqMessages, auditLog, systemConfig } from "../../drizzle/schema";
 
 export const eventDrivenArchRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: event driven arch
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "eventDrivenArch" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "eventDrivenArch", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "eventDrivenArch", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listTopics: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const rows = await db.select({ resource: auditLog.resource, cnt: count() }).from(auditLog).groupBy(auditLog.resource).orderBy(desc(count())).limit(30);
+    return { topics: rows.map(r => ({ name: r.resource, messageCount: Number(r.cnt) })) };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "eventDrivenArch", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "eventDrivenArch", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "eventDrivenArch" };
-    }),
-  dashboard: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  getDeadLetterQueue: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getDlqMessages: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(dlqMessages).orderBy(desc(dlqMessages.createdAt)).limit(input?.limit ?? 50);
+    return { messages: rows, total: rows.length };
+  }),
+  retryDlqMessage: protectedProcedure.input(z.object({ messageId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(dlqMessages).set({ status: "retrying" }).where(eq(dlqMessages.id, input.messageId));
+    await db.insert(auditLog).values({ action: "dlq_message_retried", resource: "dlq_messages", resourceId: String(input.messageId), status: "success", metadata: {} });
+    return { success: true, messageId: input.messageId };
+  }),
+  getConfig: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "event_driven_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { broker: "kafka", dlqEnabled: true, retryPolicy: { maxRetries: 3, backoffMs: 1000 } };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [totalDlq] = await db.select({ value: count() }).from(dlqMessages);
+    const [totalEvents] = await db.select({ value: count() }).from(auditLog);
+    return { totalEvents: Number(totalEvents.value), dlqMessages: Number(totalDlq.value) };
+  }),
 });

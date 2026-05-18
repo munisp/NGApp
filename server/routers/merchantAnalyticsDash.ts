@@ -1,40 +1,26 @@
-// Sprint 95: Production implementation — merchantAnalyticsDash
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { merchants } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { merchants, merchantSettlements, transactions, auditLog } from "../../drizzle/schema";
 
 export const merchantAnalyticsDashRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: merchant analytics dash
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "merchantAnalyticsDash" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "merchantAnalyticsDash", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "merchantAnalyticsDash", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  getDashboard: protectedProcedure.input(z.object({ merchantId: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [totalMerchants] = await db.select({ value: count() }).from(merchants);
+    const [activeMerchants] = await db.select({ value: count() }).from(merchants).where(eq(merchants.status, "active"));
+    const [txCount] = await db.select({ value: count() }).from(transactions);
+    const [txVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions);
+    return { totalMerchants: Number(totalMerchants.value), activeMerchants: Number(activeMerchants.value), totalTransactions: Number(txCount.value), totalVolume: Number(txVolume.value ?? 0) };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "merchantAnalyticsDash", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "merchantAnalyticsDash", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "merchantAnalyticsDash" };
-    }),
+  listMerchants: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(merchants).where(eq(merchants.status, input.status as any)).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50) : await db.select().from(merchants).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50);
+    return { merchants: rows, total: rows.length };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(merchants);
+    return { totalMerchants: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

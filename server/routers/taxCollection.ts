@@ -1,55 +1,25 @@
-// Sprint 95: Production implementation — taxCollection
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count, sum } from "drizzle-orm";
+import { transactions, agents, auditLog } from "../../drizzle/schema";
 
 export const taxCollectionRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: tax collection
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "taxCollection" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "taxCollection", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "taxCollection", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listCollections: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "tax_collection")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { collections: rows.map(r => ({ id: r.resourceId, status: r.status, metadata: r.metadata, collectedAt: r.createdAt })), total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "taxCollection", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "taxCollection", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "taxCollection" };
-    }),
-  analytics: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  history: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  taxTypes: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  collectTax: protectedProcedure.input(z.object({ taxpayerId: z.string(), taxType: z.enum(["PAYE", "VAT", "WHT", "CIT", "CGT", "stamp_duty"]), amount: z.number().positive(), period: z.string(), agentId: z.number() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const collectionId = "tax-" + crypto.randomUUID();
+    const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: String(input.amount), type: "Tax", status: "success", channel: "POS", reference: collectionId }).returning();
+    await db.insert(auditLog).values({ action: "tax_collected", resource: "tax_collection", resourceId: collectionId, status: "success", metadata: { taxpayerId: input.taxpayerId, taxType: input.taxType, amount: input.amount, period: input.period, transactionId: tx.id } });
+    return { collectionId, transactionId: tx.id, amount: input.amount, taxType: input.taxType, status: "success" };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "tax_collection"));
+    return { totalCollections: Number(total.value), lastUpdated: new Date().toISOString() };
+  }),
 });

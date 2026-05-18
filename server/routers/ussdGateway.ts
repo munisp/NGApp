@@ -1,65 +1,30 @@
-// Sprint 95: Production implementation — ussdGateway
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { eq, desc, sql, count } from "drizzle-orm";
+import { ussdSessions, auditLog } from "../../drizzle/schema";
 
 export const ussdGatewayRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const db = (await getDb())!;
-      // Domain: ussd gateway
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "ussdGateway" };
-    }),
-  getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return { id: input.id, domain: "ussdGateway", status: "active", createdAt: new Date().toISOString() };
-    }),
-  getStats: protectedProcedure.query(async () => {
-    return { domain: "ussdGateway", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+  listSessions: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = input?.status ? await db.select().from(ussdSessions).where(eq(ussdSessions.status, input.status)).orderBy(desc(ussdSessions.createdAt)).limit(input?.limit ?? 50) : await db.select().from(ussdSessions).orderBy(desc(ussdSessions.createdAt)).limit(input?.limit ?? 50);
+    return { sessions: rows, total: rows.length };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "ussdGateway", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "ussdGateway", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "ussdGateway" };
-    }),
-  activeSessions: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  analytics: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  menuTree: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
-  processInput: protectedProcedure
-    .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
-    }),
-  transactions: protectedProcedure
-    .input(z.object({}).optional())
-    .query(async ({ ctx }) => {
-      return {} as any;
-    }),
+  getSession: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.select().from(ussdSessions).where(eq(ussdSessions.id, input.id)).limit(1);
+    return session ?? null;
+  }),
+  initiateSession: protectedProcedure.input(z.object({ phoneNumber: z.string(), serviceCode: z.string().default("*347#") })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [session] = await db.insert(ussdSessions).values({ phoneNumber: input.phoneNumber, serviceCode: input.serviceCode, status: "active" }).returning();
+    await db.insert(auditLog).values({ action: "ussd_session_started", resource: "ussd_sessions", resourceId: String(session.id), status: "success", metadata: { phoneNumber: input.phoneNumber } });
+    return session;
+  }),
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(ussdSessions);
+    const [active] = await db.select({ value: count() }).from(ussdSessions).where(eq(ussdSessions.status, "active"));
+    return { totalSessions: Number(total.value), activeSessions: Number(active.value) };
+  }),
 });
