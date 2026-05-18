@@ -481,6 +481,16 @@ func cacheSet(key, value string, ttlSeconds int) {
 		len(key), key, len(value), value, len(fmt.Sprintf("%d", ttlSeconds)), ttlSeconds)
 }
 
+// --- mTLS Configuration ---
+func getTLSConfig() (bool, string, string) {
+	if os.Getenv("TLS_ENABLED") != "true" { return false, "", "" }
+	cert := os.Getenv("TLS_CERT_PATH")
+	key := os.Getenv("TLS_KEY_PATH")
+	if cert == "" { cert = "/etc/54bank/certs/service.crt" }
+	if key == "" { key = "/etc/54bank/certs/service.key" }
+	return true, cert, key
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9395" }
