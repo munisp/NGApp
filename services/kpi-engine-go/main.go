@@ -22,6 +22,8 @@ import (
 
 )
 
+var db *sql.DB
+
 var serviceName = "kpi-engine-go"
 
 var (

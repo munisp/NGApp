@@ -24,6 +24,8 @@ import (
 	"strings"
 )
 
+var db *sql.DB
+
 var serviceName = "gl-engine-go"
 
 // ─── MIDDLEWARE CLIENTS ─────────────────────────────────────────────────────

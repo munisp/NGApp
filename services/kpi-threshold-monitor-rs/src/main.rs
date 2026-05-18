@@ -427,10 +427,12 @@ fn sanitize_input(s: &str) -> String {
 async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
     if let Some(ref client) = state.db_client {
         let id = format!("{}_{}_{}", "kpi_threshold_monitor_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let svc_name = String::from("kpi-threshold-monitor-rs");
+        let status = String::from("active");
         let data_str = serde_json::to_string(data).unwrap_or_default();
         let _ = client.execute(
             "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
-            &[&id, &"kpi-threshold-monitor-rs" as &str, &endpoint, &"active" as &str, &data_str],
+            &[&id, &svc_name, &endpoint, &status, &data_str],
         ).await;
     }
 }

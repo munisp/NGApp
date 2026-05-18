@@ -6,6 +6,7 @@
 package main
 
 import (
+	"database/sql"
 "context"
 "os/signal"
 "syscall"
@@ -26,6 +27,8 @@ import (
 
 	"strings"
 )
+
+var db *sql.DB
 
 var serviceName = "identity-verification-go"
 
@@ -700,6 +703,20 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
+
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL != "" {
+		var dbErr error
+		db, dbErr = sql.Open("postgres", dbURL)
+		if dbErr != nil {
+			log.Printf("[%s] DB open failed: %v", serviceName, dbErr)
+		} else {
+			db.SetMaxOpenConns(10)
+			db.SetMaxIdleConns(5)
+			db.Exec("CREATE TABLE IF NOT EXISTS service_records (id TEXT PRIMARY KEY, service TEXT, type TEXT, status TEXT, data TEXT, created_at TIMESTAMPTZ DEFAULT NOW())")
+			log.Printf("[%s] DB connected", serviceName)
+		}
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8114"
