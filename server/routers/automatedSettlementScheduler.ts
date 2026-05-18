@@ -23,49 +23,49 @@ const DEFAULT_SCHEDULES = [
     id: "SCH-601",
     name: "Daily EOD Settlement",
     cronExpression: "0 23 * * *",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-602",
     name: "Weekly Merchant Payout",
     cronExpression: "0 6 * * 1",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-603",
     name: "Monthly Agent Commission",
     cronExpression: "0 0 1 * *",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-604",
     name: "Hourly Micro-Settlement",
     cronExpression: "0 * * * *",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-605",
     name: "T+1 Bank Settlement",
     cronExpression: "0 8 * * 1-5",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-606",
     name: "Cross-Border Settlement",
     cronExpression: "0 12 * * 3",
-        status: "active" as const,
+    status: "active" as const,
   },
   {
     id: "SCH-607",
     name: "Refund Batch",
     cronExpression: "0 18 * * *",
-        status: "paused" as const,
+    status: "paused" as const,
   },
   {
     id: "SCH-608",
     name: "Float Reconciliation",
     cronExpression: "0 0,12 * * *",
-        status: "paused" as const,
+    status: "paused" as const,
   },
 ];
 
@@ -228,7 +228,7 @@ export const automatedSettlementSchedulerRouter = router({
           await tbRecordSettlementTransfer({
             batchId: batchRef,
             amount: 0,
-                      });
+          });
         } catch (e) {
           // @ts-expect-error middleware type mismatch
           logger.warn("[SettlementScheduler] Middleware:", e);

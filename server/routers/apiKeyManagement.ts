@@ -171,7 +171,7 @@ const createKey = protectedProcedure
       }
       const [row] = await db
         .insert(apiKeys)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "createKey completed" };
     } catch (error) {
@@ -213,7 +213,7 @@ const revokeKey = protectedProcedure
       }
       const [row] = await db
         .insert(apiKeys)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "revokeKey completed" };
     } catch (error) {

@@ -199,7 +199,10 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [agent] = await db.insert(agents).values(input as any).returning();
+          const [agent] = await db
+            .insert(agents)
+            .values(input as any)
+            .returning();
           return agent;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -694,7 +697,10 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [t] = await db.insert(posTerminals).values(input as any).returning();
+          const [t] = await db
+            .insert(posTerminals)
+            .values(input as any)
+            .returning();
           return t;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -758,7 +764,10 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [g] = await db.insert(terminalGroups).values(input as any).returning();
+          const [g] = await db
+            .insert(terminalGroups)
+            .values(input as any)
+            .returning();
           return g;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -930,7 +939,10 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [r] = await db.insert(serviceRecords).values(input as any).returning();
+          const [r] = await db
+            .insert(serviceRecords)
+            .values(input as any)
+            .returning();
           return r;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -1532,7 +1544,10 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [ad] = await db.insert(storefrontAds).values(input as any).returning();
+          const [ad] = await db
+            .insert(storefrontAds)
+            .values(input as any)
+            .returning();
           return ad;
         } catch (error) {
           if (error instanceof TRPCError) throw error;

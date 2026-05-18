@@ -156,7 +156,10 @@ export const commissionClawbackRouter = router({
         } as any);
       } catch (e) {
         // @ts-expect-error middleware type mismatch
-        logger.warn("[CommissionClawback] Middleware event failed:", e instanceof Error ? e.message : String(e));
+        logger.warn(
+          "[CommissionClawback] Middleware event failed:",
+          e instanceof Error ? e.message : String(e)
+        );
       }
       return { success: true, id: clawback.id, message: "Clawback initiated" };
     }),
@@ -191,7 +194,10 @@ export const commissionClawbackRouter = router({
           } as any);
         } catch (e) {
           // @ts-expect-error auto-fix
-          logger.warn("[CommissionClawback] Middleware event failed:", e instanceof Error ? e.message : String(e));
+          logger.warn(
+            "[CommissionClawback] Middleware event failed:",
+            e instanceof Error ? e.message : String(e)
+          );
         }
         return { success: true, message: "Clawback approved and applied" };
       } catch (error) {

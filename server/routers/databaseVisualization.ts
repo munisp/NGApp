@@ -237,7 +237,7 @@ const runHealthCheck = protectedProcedure
       }
       const [row] = await db
         .insert(deviceLocations)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "runHealthCheck completed" };
     } catch (error) {

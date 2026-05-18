@@ -135,7 +135,7 @@ const submitApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "submitApplication completed" };
     } catch (error) {
@@ -177,7 +177,7 @@ const approveApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "approveApplication completed" };
     } catch (error) {
@@ -219,7 +219,7 @@ const rejectApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "rejectApplication completed" };
     } catch (error) {

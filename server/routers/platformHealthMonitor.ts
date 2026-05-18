@@ -243,7 +243,7 @@ const createIncident = protectedProcedure
       }
       const [row] = await db
         .insert(platformSettings)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "createIncident completed" };
     } catch (error) {

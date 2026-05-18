@@ -201,7 +201,7 @@ const cancelBatch = protectedProcedure
       }
       const [row] = await db
         .insert(transactions)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "cancelBatch completed" };
     } catch (error) {

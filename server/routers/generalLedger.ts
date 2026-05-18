@@ -122,7 +122,7 @@ export const generalLedgerRouter = router({
           postedBy: ctx.user?.id,
           posted: true,
         }));
-                await db.insert(glEntries).values(records as any as any);
+        await db.insert(glEntries).values(records as any as any);
         return {
           journalRef,
           entriesPosted: records.length,
@@ -196,11 +196,11 @@ export const generalLedgerRouter = router({
           if (row.entryType === "debit") acc.debits += Number(row.total || 0);
           else acc.credits += Number(row.total || 0);
         }
-                const totalDebits = GL_ACCOUNTS.reduce(
+        const totalDebits = GL_ACCOUNTS.reduce(
           (s: any, a: any) => s + a.debits,
           0
         );
-                const totalCredits = GL_ACCOUNTS.reduce(
+        const totalCredits = GL_ACCOUNTS.reduce(
           (s: any, a: any) => s + a.credits,
           0
         );

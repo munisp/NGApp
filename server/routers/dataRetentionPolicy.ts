@@ -174,7 +174,7 @@ const createPolicy = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "createPolicy completed" };
     } catch (error) {
@@ -251,7 +251,7 @@ const runRetention = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {} as any)
+        .values(input.data || ({} as any))
         .returning();
       return { success: true, ...row, message: "runRetention completed" };
     } catch (error) {

@@ -231,7 +231,10 @@ async function ensureDefaults() {
     if (Number(existing[0].c) === 0) {
       logger.info("[CommissionEngine] Seeding default tiers...");
       for (const t of DEFAULT_TIERS) {
-        await db.insert(commissionTiers).values(t as any).onConflictDoNothing();
+        await db
+          .insert(commissionTiers)
+          .values(t as any)
+          .onConflictDoNothing();
       }
     }
     const existingSplits = await db
@@ -241,7 +244,10 @@ async function ensureDefaults() {
     if (Number(existingSplits[0].c) === 0) {
       logger.info("[CommissionEngine] Seeding default splits...");
       for (const s of DEFAULT_SPLITS) {
-        await db.insert(commissionSplits).values(s as any).onConflictDoNothing();
+        await db
+          .insert(commissionSplits)
+          .values(s as any)
+          .onConflictDoNothing();
       }
     }
   } catch (e: any) {
@@ -370,7 +376,8 @@ export const commissionEngineRouter = router({
 
         const [updated] = await db
           .update(commissionTiers)
-          .set(updates as any).where(eq(commissionTiers.tierId, input.id))
+          .set(updates as any)
+          .where(eq(commissionTiers.tierId, input.id))
           .returning();
 
         // Audit trail
