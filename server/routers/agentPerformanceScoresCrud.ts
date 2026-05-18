@@ -64,6 +64,6 @@ export const agentPerformanceScoresRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(agentPerformanceScores).where(eq(agentPerformanceScores.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

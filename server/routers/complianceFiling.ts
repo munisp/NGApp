@@ -55,7 +55,7 @@ export const complianceFilingRouter = router({
       await db.update(complianceFilings).set({
         status: "submitted", submittedAt: new Date(), submittedBy: ctx.user?.id, updatedAt: new Date(),
       }).where(eq(complianceFilings.id, input.filingId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   acknowledgeFiling: protectedProcedure
@@ -66,7 +66,7 @@ export const complianceFilingRouter = router({
       await db.update(complianceFilings).set({
         status: "acknowledged", acknowledgementRef: input.acknowledgementRef, updatedAt: new Date(),
       }).where(eq(complianceFilings.id, input.filingId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   upcomingDeadlines: protectedProcedure.query(async () => {

@@ -245,7 +245,7 @@ export const managementRouter = router({
       const db = (await getDb())!;
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       await db.delete(commissionRules).where(eq(commissionRules.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
     stats: mgmtProcedure.query(async () => {
       const db = (await getDb())!;
@@ -328,7 +328,7 @@ export const managementRouter = router({
         // Unassign all terminals in this group first
         await db.update(posTerminals).set({ groupId: null, updatedAt: new Date() }).where(eq(posTerminals.groupId, input.id));
         await db.delete(terminalGroups).where(eq(terminalGroups.id, input.id));
-        return { success: true } as any;
+        return { success: true };
       }),
     assignTerminalToGroup: adminProcedure
       .input(z.object({ terminalId: z.number(), groupId: z.number().nullable() }))
@@ -730,7 +730,7 @@ export const managementRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         await db.update(emailQueue).set({ status: "sent", sentAt: new Date() }).where(eq(emailQueue.id, input.id));
-        return { success: true } as any;
+        return { success: true };
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
@@ -738,7 +738,7 @@ export const managementRouter = router({
         const db = (await getDb())!;
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         await db.delete(emailQueue).where(eq(emailQueue.id, input.id));
-        return { success: true } as any;
+        return { success: true };
       }),
   }),
 

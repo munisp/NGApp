@@ -52,7 +52,7 @@ export const rateLimitEngineRouter = router({
       if (input.burstAllowance !== undefined) updates.burstAllowance = input.burstAllowance;
       if (input.active !== undefined) updates.active = input.active;
       await db.update(rateLimitRules).set(updates).where(eq(rateLimitRules.id, input.ruleId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   deleteRule: protectedProcedure
@@ -61,7 +61,7 @@ export const rateLimitEngineRouter = router({
       const db = (await getDb())!;
       if (!db) throw new Error("Database unavailable");
       await db.delete(rateLimitRules).where(eq(rateLimitRules.id, input.ruleId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Check rate limit for an endpoint

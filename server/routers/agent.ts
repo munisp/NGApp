@@ -130,7 +130,7 @@ export const agentRouter = router({
   // ── Logout ────────────────────────────────────────────────────────────────
   logout: protectedProcedure.mutation(({ ctx }) => {
     ctx.res.clearCookie("agent_session", { path: "/" });
-    return { success: true } as any;
+    return { success: true };
   }),
 
   // ── Get current agent profile ─────────────────────────────────────────────
@@ -342,7 +342,7 @@ export const agentRouter = router({
 
       await db.update(agents).set(updateData as Partial<typeof agents.$inferInsert>).where(eq(agents.id, id));
       await writeAuditLog({ agentId: id, agentCode: agent.agentCode, action: "AGENT_UPDATED", resource: "agent", resourceId: String(id), status: "success", metadata: updates as Record<string, unknown> });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Soft delete ───────────────────────────────────────────────────────────
@@ -355,7 +355,7 @@ export const agentRouter = router({
       if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
       await db.update(agents).set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() }).where(eq(agents.id, input.id));
       await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: "AGENT_DELETED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Float lock/unlock ─────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ export const agentRouter = router({
       if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
       await db.update(agents).set({ floatLocked: input.locked, updatedAt: new Date() }).where(eq(agents.id, input.id));
       await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: input.locked ? "FLOAT_LOCKED" : "FLOAT_UNLOCKED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Terminal enable/disable ───────────────────────────────────────────────
@@ -381,7 +381,7 @@ export const agentRouter = router({
       if (!agent || agent.deletedAt) throw new TRPCError({ code: "NOT_FOUND" });
       await db.update(agents).set({ terminalEnabled: input.enabled, terminalDisabledReason: input.enabled ? null : (input.reason ?? "Disabled by admin"), updatedAt: new Date() }).where(eq(agents.id, input.id));
       await writeAuditLog({ agentId: input.id, agentCode: agent.agentCode, action: input.enabled ? "TERMINAL_ENABLED" : "TERMINAL_DISABLED", resource: "agent", resourceId: String(input.id), status: "success", metadata: { reason: input.reason } });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Bulk activate ─────────────────────────────────────────────────────────

@@ -288,7 +288,7 @@ export const superAdminRouter = router({
     })),
     metrics: superAdminProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return {} as any;
+      if (!db) return {};
       const [txToday] = await db.select({ c: count() }).from(transactions).where(gte(transactions.createdAt, new Date(new Date().setHours(0, 0, 0, 0))));
       const [fraudOpen] = await db.select({ c: count() }).from(fraudAlerts).where(eq(fraudAlerts.status, "open"));
       return {

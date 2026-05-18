@@ -40,6 +40,6 @@ export const gl_journal_entriesRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(gl_journal_entries).where(eq(gl_journal_entries.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

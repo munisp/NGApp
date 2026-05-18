@@ -112,7 +112,7 @@ export const dynamicFeeEngineRouter = router({
         previousValues: JSON.stringify(oldRule),
         newValues: JSON.stringify(updates),
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Calculate fee for a transaction

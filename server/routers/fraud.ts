@@ -60,7 +60,7 @@ export const fraudRouter = router({
         resourceId: String(input.id),
         status: "success",
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Create alert (called by fraud engine or manually) ────────────────────
@@ -174,7 +174,7 @@ export const fraudRouter = router({
       const db = (await getDb())!;
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
       await db.delete(fraudRules).where(eq(fraudRules.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   toggleRule: protectedProcedure

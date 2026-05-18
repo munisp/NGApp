@@ -52,7 +52,7 @@ export const slaMonitoringRouter = router({
       if (input.targetValue !== undefined) updates.targetValue = String(input.targetValue);
       if (input.active !== undefined) updates.active = input.active;
       await db.update(sla_definitions).set(updates).where(eq(sla_definitions.id, input.definitionId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   listBreaches: protectedProcedure
@@ -94,7 +94,7 @@ export const slaMonitoringRouter = router({
       await db.update(sla_breaches).set({
         resolvedAt: new Date(), resolution: input.resolution, resolvedBy: ctx.user?.id, updatedAt: new Date(),
       }).where(eq(sla_breaches.id, input.breachId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   summary: protectedProcedure.query(async () => {

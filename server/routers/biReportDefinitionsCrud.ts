@@ -30,7 +30,7 @@ export const biReportDefinitionsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(biReportDefinitions).where(eq(biReportDefinitions.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
   getFormats: protectedProcedure.query(() => ({ formats: REPORT_FORMATS, schedules: SCHEDULE_FREQUENCIES })),
 });

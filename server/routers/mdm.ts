@@ -806,7 +806,7 @@ export const mdmRouter = router({
     .mutation(async ({ input }) => {
       const db = await requireDb();
       await db.update(otaReleases).set({ status: "archived" }).where(eq(otaReleases.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   listOtaUpdateLog: adminProcedure

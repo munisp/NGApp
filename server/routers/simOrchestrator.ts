@@ -263,7 +263,7 @@ export const simOrchestratorRouter = router({
             updatedAt:       new Date(),
           },
         });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   /**

@@ -52,7 +52,7 @@ export const tenantFeatureToggleRouter = router({
       if (input.rolloutPercentage !== undefined) updates.rolloutPercentage = input.rolloutPercentage;
       if (input.config !== undefined) updates.config = JSON.stringify(input.config);
       await db.update(tenantFeatureToggles).set(updates).where(eq(tenantFeatureToggles.id, input.toggleId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   delete: protectedProcedure
@@ -61,7 +61,7 @@ export const tenantFeatureToggleRouter = router({
       const db = (await getDb())!;
       if (!db) throw new Error("Database unavailable");
       await db.delete(tenantFeatureToggles).where(eq(tenantFeatureToggles.id, input.toggleId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Check if feature is enabled for a tenant

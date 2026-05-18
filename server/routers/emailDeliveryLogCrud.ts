@@ -42,6 +42,6 @@ export const emailDeliveryLogRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(emailDeliveryLog).where(eq(emailDeliveryLog.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

@@ -53,7 +53,7 @@ export const merchantKycOnboardingRouter = router({
         verifiedBy: ctx.user?.id, verifiedAt: new Date(),
         rejectionReason: input.rejectionReason, updatedAt: new Date(),
       }).where(eq(merchantKycDocs.id, input.docId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   kycProgress: protectedProcedure

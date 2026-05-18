@@ -360,7 +360,7 @@ export const resilienceRouter = router({
       if (!result) {
         await safeFetch(`${OFFLINE_URL}/queue/dequeue/${input.id}`, { method: "POST" });
       }
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Web Push: save push subscription for an agent ───────────────────────
@@ -727,7 +727,7 @@ export const resilienceRouter = router({
       await db.update(dlqMessages)
         .set({ status: "resolved", resolvedAt: new Date() })
         .where(eq(dlqMessages.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   retryDlqMessage: protectedProcedure

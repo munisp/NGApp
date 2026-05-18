@@ -62,16 +62,16 @@ export const dataExportRouter = router({
   availableTables: protectedProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
-      return {} as any;
+      return {};
     }),
   createJob: protectedProcedure
     .input(z.object({}))
     .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
+      return { success: true };
     }),
   listJobs: protectedProcedure
     .input(z.object({}).optional())
     .query(async ({ ctx }) => {
-      return {} as any;
+      return {};
     }),
 });

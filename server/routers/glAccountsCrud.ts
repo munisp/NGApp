@@ -40,6 +40,6 @@ export const gl_accountsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(gl_accounts).where(eq(gl_accounts.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

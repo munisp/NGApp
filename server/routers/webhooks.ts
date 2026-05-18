@@ -91,7 +91,7 @@ export const webhooksRouter = router({
       const db = (await getDb())!;
       if (!db) throw new Error("Database unavailable");
       await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── List delivery history for an endpoint ────────────────────────────────

@@ -59,6 +59,6 @@ export const tenantBrandingRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(tenantBranding).where(eq(tenantBranding.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

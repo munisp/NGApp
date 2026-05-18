@@ -246,7 +246,7 @@ export const geofencingRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       await db.delete(agentGeofenceZones).where(eq(agentGeofenceZones.zoneId, input.id));
       await db.delete(geofenceZones).where(eq(geofenceZones.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Admin: assign agent to zone ────────────────────────────────────────────
@@ -287,7 +287,7 @@ export const geofencingRouter = router({
             eq(agentGeofenceZones.zoneId, input.zoneId)
           )
         );
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Admin: list zones assigned to an agent ─────────────────────────────────

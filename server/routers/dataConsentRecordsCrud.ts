@@ -50,6 +50,6 @@ export const dataConsentRecordsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(dataConsentRecords).where(eq(dataConsentRecords.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

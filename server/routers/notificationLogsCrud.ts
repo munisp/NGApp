@@ -30,6 +30,6 @@ export const notification_logsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(notification_logs).where(eq(notification_logs.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

@@ -53,7 +53,7 @@ export const merchantPayoutSettlementRouter = router({
       if (!db) throw new Error("Database unavailable");
       await db.update(merchantPayouts).set({ status: "approved", approvedBy: ctx.user?.id, updatedAt: new Date() })
         .where(eq(merchantPayouts.id, input.payoutId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   processPayout: protectedProcedure
@@ -63,7 +63,7 @@ export const merchantPayoutSettlementRouter = router({
       if (!db) throw new Error("Database unavailable");
       await db.update(merchantPayouts).set({ status: "processing", transferRef: input.transferRef, processedAt: new Date(), updatedAt: new Date() })
         .where(eq(merchantPayouts.id, input.payoutId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   completePayout: protectedProcedure
@@ -73,7 +73,7 @@ export const merchantPayoutSettlementRouter = router({
       if (!db) throw new Error("Database unavailable");
       await db.update(merchantPayouts).set({ status: "completed", completedAt: new Date(), updatedAt: new Date() })
         .where(eq(merchantPayouts.id, input.payoutId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   summary: protectedProcedure.query(async () => {

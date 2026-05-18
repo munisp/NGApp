@@ -40,7 +40,7 @@ const removeAccount = protectedProcedure
   .mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(agentBankAccounts).where(eq(agentBankAccounts.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   });
 
 export const bankAccountManagementRouter = router({
@@ -67,7 +67,7 @@ export const bankAccountManagementRouter = router({
     .mutation(async ({ input }) => {
       const db = (await getDb())!;
       await db.delete(agentBankAccounts).where(eq(agentBankAccounts.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
   verify: protectedProcedure
     .input(z.object({ id: z.number() }))

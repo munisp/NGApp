@@ -986,7 +986,7 @@ export const transactionsRouter = router({
         metadata: { rejectedBy: agent.agentCode, reason: input.reason },
       });
 
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Velocity Limits CRUD (admin) ──────────────────────────────────────────
@@ -1036,7 +1036,7 @@ export const transactionsRouter = router({
         status: "success",
         metadata: { tier: input.tier, maxTxPerHour: input.maxTxPerHour, maxSingleTxAmount: input.maxSingleTxAmount, maxDailyVolume: input.maxDailyVolume },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Platform Settings CRUD (admin) ────────────────────────────────────────
@@ -1074,7 +1074,7 @@ export const transactionsRouter = router({
         status: "success",
         metadata: { key: input.key, value: input.value },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Security Audit Log ─────────────────────────────────────────────────────────────
@@ -1172,7 +1172,7 @@ export const transactionsRouter = router({
         status: "success",
         metadata: { alertId: input.alertId, resolution: input.resolution },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Export Security Audit Log as CSV ────────────────────────────────────────────

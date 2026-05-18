@@ -32,7 +32,7 @@ export const analyticsDashboardsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(analyticsDashboards).where(eq(analyticsDashboards.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
   getWidgetTypes: protectedProcedure.query(() => ({ types: WIDGET_TYPES, maxPerDashboard: MAX_WIDGETS_PER_DASHBOARD })),
 });

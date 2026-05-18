@@ -357,7 +357,7 @@ export const developerPortalRouter = router({
       const db = (await getDb())!;
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       await db.update(webhookSecrets).set({ isActive: input.isActive }).where(eq(webhookSecrets.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   deleteWebhookSecret: protectedProcedure
@@ -367,7 +367,7 @@ export const developerPortalRouter = router({
       const db = (await getDb())!;
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       await db.delete(webhookSecrets).where(eq(webhookSecrets.id, input.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── apiKeyUsage CRUD ──────────────────────────────────────────────────────
@@ -416,7 +416,7 @@ export const developerPortalRouter = router({
       const db = (await getDb())!;
       if (!db) return { success: false };
       await db.insert(apiKeyUsage).values(input);
-      return { success: true } as any;
+      return { success: true };
     }),
 
   /**

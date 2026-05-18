@@ -271,7 +271,7 @@ export const billingRbacRouter = router({
         afterState: { isActive: false },
       });
 
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // List all role assignments for a tenant (requires manage_tenant_billing)

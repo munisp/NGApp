@@ -105,7 +105,7 @@ export const realtimeTxMonitorRouter = router({
         resolvedBy: ctx.user?.id,
         resolvedAt: new Date(),
       }).where(eq(txMonitoringAlerts.id, input.alertId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Geographic distribution of transactions

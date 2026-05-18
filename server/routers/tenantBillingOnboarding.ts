@@ -367,7 +367,7 @@ export const tenantBillingOnboardingRouter = router({
         afterState: updates,
       });
 
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Get provisioning history for a tenant
@@ -432,6 +432,6 @@ export const tenantBillingOnboardingRouter = router({
         afterState: { status: "inactive", reason: input.reason },
       });
 
-      return { success: true } as any;
+      return { success: true };
     }),
 });

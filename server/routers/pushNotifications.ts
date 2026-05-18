@@ -101,7 +101,7 @@ export const pushNotificationsRouter = router({
             eq(agentPushSubscriptions.endpoint, input.endpoint)
           )
         );
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── List subscriptions for an agent ──────────────────────────────────────

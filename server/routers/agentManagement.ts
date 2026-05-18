@@ -81,7 +81,7 @@ export const agentManagementRouter = router({
         status: "success",
         metadata: { newRole: input.role },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Toggle agent active status ────────────────────────────────────────────
@@ -106,7 +106,7 @@ export const agentManagementRouter = router({
         resourceId: String(input.agentId),
         status: "success",
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── List float top-up requests ────────────────────────────────────────────
@@ -236,7 +236,7 @@ export const agentManagementRouter = router({
         status: "success",
         metadata: { reason: input.reason, targetAgentId: req.agentId },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── Agent submits a float top-up request (agent-side, no admin required) ──
@@ -277,6 +277,6 @@ export const agentManagementRouter = router({
         status: "success",
         metadata: { amount: input.amount, notes: input.notes },
       });
-      return { success: true } as any;
+      return { success: true };
     }),
 });

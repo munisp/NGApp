@@ -51,6 +51,6 @@ export const realtime_tx_alertsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(realtime_tx_alerts).where(eq(realtime_tx_alerts.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

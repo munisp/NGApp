@@ -313,7 +313,7 @@ export const agentOnboardingRouter = router({
         .update(agentOnboardingProgress)
         .set({ notes: input.note, updatedAt: new Date() })
         .where(eq(agentOnboardingProgress.agentCode, input.agentCode));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // ── List all onboarding records with pagination/search ────────────────────

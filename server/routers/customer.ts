@@ -241,7 +241,7 @@ export const customerRouter = router({
         await db.update(fido2Credentials)
           .set({ status: "revoked" })
           .where(and(eq(fido2Credentials.credentialId, input.credentialId), eq(fido2Credentials.userId, Number(ctx.user.id))));
-        return { success: true } as any;
+        return { success: true };
       }),
     createChallenge: protectedProcedure
       .input(z.object({ type: z.enum(["registration", "authentication"]), userId: z.number().optional() }))

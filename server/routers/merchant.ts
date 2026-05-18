@@ -115,7 +115,7 @@ export const merchantRouter = router({
       if (input.settlementBankName !== undefined) updateData.settlementBankName = input.settlementBankName;
 
       await db.update(merchants).set(updateData as any).where(eq(merchants.id, merchant.id));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   /**

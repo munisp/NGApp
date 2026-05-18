@@ -90,7 +90,7 @@ export const agentLoanFacilityRouter = router({
         approvedBy: ctx.user?.id,
         updatedAt: new Date(),
       }).where(eq(agentLoans.id, input.loanId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Disburse a loan (credit agent float)
@@ -140,7 +140,7 @@ export const agentLoanFacilityRouter = router({
       const db = (await getDb())!;
       if (!db) throw new Error("Database unavailable");
       await db.update(agentLoans).set({ status: "rejected", updatedAt: new Date() }).where(eq(agentLoans.id, input.loanId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   // Get credit score for an agent

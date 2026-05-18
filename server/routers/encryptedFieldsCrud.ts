@@ -52,6 +52,6 @@ export const encryptedFieldsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     await db.delete(encryptedFields).where(eq(encryptedFields.id, input.id));
-    return { success: true } as any;
+    return { success: true };
   }),
 });

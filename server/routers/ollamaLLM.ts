@@ -87,6 +87,6 @@ export const ollamaLLMRouter = router({
   classifyTransaction: protectedProcedure
     .input(z.object({}))
     .mutation(async ({ ctx, input }) => {
-      return { success: true } as any;
+      return { success: true };
     }),
 });

@@ -96,7 +96,7 @@ export const workflowEngineRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       await db.update(workflowInstances).set({ status: "cancelled", completedAt: new Date() })
         .where(eq(workflowInstances.id, input.instanceId));
-      return { success: true } as any;
+      return { success: true };
     }),
 
   summary: protectedProcedure.query(async () => {

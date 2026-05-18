@@ -76,6 +76,6 @@ export const disputeResolutionRouter = router({
         senderType: "admin", senderName: ctx.user?.name ?? "System",
       });
       try { await publishDisputeEvent({ eventType: "dispute.status_changed", disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
-      return { success: true } as any;
+      return { success: true };
     }),
 });
