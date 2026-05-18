@@ -525,7 +525,9 @@ export const platformSettings = pgTable("platform_settings", {
   description: text("description"),
   updatedBy: varchar("updatedBy", { length: 64 }),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  ps_key_idx: index("ps_key_idx").on(t.key),
+}));
 
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 
@@ -543,7 +545,9 @@ export const velocityLimits = pgTable("velocity_limits", {
   hourlyTxCount: integer("hourlyTxCount").default(50).notNull(),
   dailyTxCount: integer("dailyTxCount").default(200).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  vl_tier_idx: index("vl_tier_idx").on(t.tier),
+}));
 
 export type VelocityLimit = typeof velocityLimits.$inferSelect;
 
@@ -597,7 +601,10 @@ export const geofenceZones = pgTable("geofence_zones", {
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  gz_isActive_idx: index("gz_isActive_idx").on(t.isActive),
+  gz_type_idx: index("gz_type_idx").on(t.type),
+}));
 
 export type GeofenceZone = typeof geofenceZones.$inferSelect;
 
@@ -726,7 +733,9 @@ export const terminalGroups = pgTable("terminal_groups", {
   description: text("description"),
   configJson: json("configJson"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  tg_name_idx: index("tg_name_idx").on(t.name),
+}));
 
 export type TerminalGroup = typeof terminalGroups.$inferSelect;
 
@@ -758,7 +767,10 @@ export const softwareUpdates = pgTable("software_updates", {
   targetModels: json("targetModels").$type<string[]>(),
   appliedCount: integer("appliedCount").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  su_version_idx: index("su_version_idx").on(t.version),
+  su_createdAt_idx: index("su_createdAt_idx").on(t.createdAt),
+}));
 
 export type SoftwareUpdate = typeof softwareUpdates.$inferSelect;
 
@@ -778,7 +790,11 @@ export const commissionRules = pgTable("commission_rules", {
   effectiveTo: timestamp("effectiveTo"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  cr_txType_idx: index("cr_txType_idx").on(t.txType),
+  cr_isActive_idx: index("cr_isActive_idx").on(t.isActive),
+  cr_agentTier_idx: index("cr_agentTier_idx").on(t.agentTier),
+}));
 
 export type CommissionRule = typeof commissionRules.$inferSelect;
 
@@ -821,7 +837,10 @@ export const inventoryItems = pgTable("inventory_items", {
   lastRestockedAt: timestamp("lastRestockedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  inv_status_idx: index("inv_status_idx").on(t.status),
+  inv_category_idx: index("inv_category_idx").on(t.category),
+}));
 
 export type InventoryItem = typeof inventoryItems.$inferSelect;
 
@@ -840,7 +859,10 @@ export const multiSimProfiles = pgTable("multi_sim_profiles", {
   lastCheckedAt: timestamp("lastCheckedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  msp_terminalId_idx: index("msp_terminalId_idx").on(t.terminalId),
+  msp_status_idx: index("msp_status_idx").on(t.status),
+}));
 
 export type MultiSimProfile = typeof multiSimProfiles.$inferSelect;
 
@@ -992,7 +1014,10 @@ export const storefrontAds = pgTable("storefront_ads", {
   endsAt: timestamp("endsAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  sa_status_idx: index("sa_status_idx").on(t.status),
+  sa_createdAt_idx: index("sa_createdAt_idx").on(t.createdAt),
+}));
 
 export type StorefrontAd = typeof storefrontAds.$inferSelect;
 
@@ -1036,7 +1061,10 @@ export const erpConfig = pgTable("erp_config", {
   lastSyncCount: integer("lastSyncCount").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  ec_tenantId_idx: index("ec_tenantId_idx").on(t.tenantId),
+  ec_erpType_idx: index("ec_erpType_idx").on(t.erpType),
+}));
 
 export type ErpConfig = typeof erpConfig.$inferSelect;
 export type ErpConfigInsert = typeof erpConfig.$inferInsert;
@@ -1065,7 +1093,10 @@ export const mqttBridgeConfig = pgTable("mqtt_bridge_config", {
   lastTestError: text("lastTestError"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  mbc_tenantId_idx: index("mbc_tenantId_idx").on(t.tenantId),
+  mbc_isActive_idx: index("mbc_isActive_idx").on(t.isActive),
+}));
 
 export type MqttBridgeConfig = typeof mqttBridgeConfig.$inferSelect;
 export type MqttBridgeConfigInsert = typeof mqttBridgeConfig.$inferInsert;
@@ -1095,7 +1126,9 @@ export const webhookSecrets = pgTable("webhook_secrets", {
   isActive: boolean("isActive").default(true).notNull(),
   lastRotatedAt: timestamp("lastRotatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  ws_tenantId_idx: index("ws_tenantId_idx").on(t.tenantId),
+}));
 
 export type WebhookSecret = typeof webhookSecrets.$inferSelect;
 
@@ -1657,7 +1690,11 @@ export const commissionPayouts = pgTable("commission_payouts", {
   processedAt: timestamp("processed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  cp_agentId_idx: index("cp_agentId_idx").on(t.agentId),
+  cp_status_idx: index("cp_status_idx").on(t.status),
+  cp_createdAt_idx: index("cp_createdAt_idx").on(t.createdAt),
+}));
 
 // ── Referral Program ──────────────────────────────────────────────────────────
 export const referralStatusEnum = pgEnum("referral_status", [
@@ -1678,7 +1715,10 @@ export const referrals = pgTable("referrals", {
   rewardedAt: timestamp("rewarded_at"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  ref_referrerAgentId_idx: index("ref_referrerAgentId_idx").on(t.referrerAgentId),
+  ref_status_idx: index("ref_status_idx").on(t.status),
+}));
 
 // ── Outbound Webhook Endpoints ────────────────────────────────────────────────
 export const webhookEndpoints = pgTable("webhook_endpoints", {
@@ -1695,7 +1735,10 @@ export const webhookEndpoints = pgTable("webhook_endpoints", {
   lastStatusCode: integer("last_status_code"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  we_tenantId_idx: index("we_tenantId_idx").on(t.tenantId),
+  we_isActive_idx: index("we_isActive_idx").on(t.isActive),
+}));
 
 export const webhookDeliveryStatusEnum = pgEnum("webhook_delivery_status", [
   "pending", "delivered", "failed", "retrying",
@@ -1719,7 +1762,11 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   deliveredAt: timestamp("delivered_at"),
   updatedAt: timestamp("updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  wd_endpointId_idx: index("wd_endpointId_idx").on(t.endpointId),
+  wd_status_idx: index("wd_status_idx").on(t.status),
+  wd_createdAt_idx: index("wd_createdAt_idx").on(t.createdAt),
+}));
 
 // ── Agent Onboarding Progress ─────────────────────────────────────────────────
 export const onboardingStepEnum = pgEnum("onboarding_step", [
@@ -1740,7 +1787,10 @@ export const agentOnboardingProgress = pgTable("agent_onboarding_progress", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  aop_agentId_idx: index("aop_agentId_idx").on(t.agentId),
+  aop_currentStep_idx: index("aop_currentStep_idx").on(t.currentStep),
+}));
 
 // ── Settlement Reconciliation ─────────────────────────────────────────────────
 export const reconciliationStatusEnum = pgEnum("reconciliation_status", [
@@ -1760,7 +1810,11 @@ export const settlementReconciliation = pgTable("settlement_reconciliation", {
   resolutionNote: text("resolution_note"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  sr_agentId_idx: index("sr_agentId_idx").on(t.agentId),
+  sr_status_idx: index("sr_status_idx").on(t.status),
+  sr_settlementDate_idx: index("sr_settlementDate_idx").on(t.settlementDate),
+}));
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2003,7 +2057,9 @@ export const agentBankAccounts = pgTable("agent_bank_accounts", {
   verified: boolean("verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  aba_agentId_idx: index("aba_agentId_idx").on(t.agentId),
+}));
 
 export const kycDocuments = pgTable("kyc_documents", {
   id: serial("id").primaryKey(),
@@ -2017,7 +2073,10 @@ export const kycDocuments = pgTable("kyc_documents", {
   rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  kd_agentId_idx: index("kd_agentId_idx").on(t.agentId),
+  kd_status_idx: index("kd_status_idx").on(t.status),
+}));
 
 
 export const floatReconciliations = pgTable("float_reconciliations", {
@@ -2032,7 +2091,11 @@ export const floatReconciliations = pgTable("float_reconciliations", {
   resolvedAt: timestamp("resolved_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  fr_agentId_idx: index("fr_agentId_idx").on(t.agentId),
+  fr_status_idx: index("fr_status_idx").on(t.status),
+  fr_date_idx: index("fr_date_idx").on(t.date),
+}));
 
 export const agentPerformanceScores = pgTable("agent_performance_scores", {
   id: serial("id").primaryKey(),
@@ -2047,7 +2110,10 @@ export const agentPerformanceScores = pgTable("agent_performance_scores", {
   overallScore: numeric("overall_score", { precision: 5, scale: 2 }).default("0"),
   rank: integer("rank"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  aps_agentId_idx: index("aps_agentId_idx").on(t.agentId),
+  aps_period_idx: index("aps_period_idx").on(t.period),
+}));
 
 
 export const commissionClawbacks = pgTable("commission_clawbacks", {
@@ -2060,7 +2126,10 @@ export const commissionClawbacks = pgTable("commission_clawbacks", {
   status: text("status").default("pending"), // pending, applied, failed
   appliedAt: timestamp("applied_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  cc_agentId_idx: index("cc_agentId_idx").on(t.agentId),
+  cc_status_idx: index("cc_status_idx").on(t.status),
+}));
 
 export const pnlReports = pgTable("pnl_reports", {
   id: serial("id").primaryKey(),
@@ -2076,7 +2145,11 @@ export const pnlReports = pgTable("pnl_reports", {
   txCount: integer("tx_count").default(0),
   txVolume: numeric("tx_volume", { precision: 15, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  pnl_period_idx: index("pnl_period_idx").on(t.period),
+  pnl_agentId_idx: index("pnl_agentId_idx").on(t.agentId),
+  pnl_periodType_idx: index("pnl_periodType_idx").on(t.periodType),
+}));
 
 export const geoFences = pgTable("geo_fences", {
   id: serial("id").primaryKey(),
@@ -2087,7 +2160,10 @@ export const geoFences = pgTable("geo_fences", {
   radiusKm: numeric("radius_km", { precision: 8, scale: 2 }).notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  gf_regionCode_idx: index("gf_regionCode_idx").on(t.regionCode),
+  gf_isActive_idx: index("gf_isActive_idx").on(t.isActive),
+}));
 
 export const transactionLimits = pgTable("transaction_limits", {
   id: serial("id").primaryKey(),
@@ -2099,7 +2175,10 @@ export const transactionLimits = pgTable("transaction_limits", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  tl_agentTier_txType_idx: index("tl_agentTier_txType_idx").on(t.agentTier, t.txType),
+  tl_isActive_idx: index("tl_isActive_idx").on(t.isActive),
+}));
 
 export const complianceChecks = pgTable("compliance_checks", {
   id: serial("id").primaryKey(),
@@ -2113,7 +2192,11 @@ export const complianceChecks = pgTable("compliance_checks", {
   reportedToRegulator: boolean("reported_to_regulator").default(false),
   reportedAt: timestamp("reported_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  cck_agentId_idx: index("cck_agentId_idx").on(t.agentId),
+  cck_checkType_idx: index("cck_checkType_idx").on(t.checkType),
+  cck_createdAt_idx: index("cck_createdAt_idx").on(t.createdAt),
+}));
 
 export const agentSuspensionLog = pgTable("agent_suspension_log", {
   id: serial("id").primaryKey(),
@@ -2124,7 +2207,10 @@ export const agentSuspensionLog = pgTable("agent_suspension_log", {
   previousStatus: text("previous_status"),
   newStatus: text("new_status"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  asl_agentId_idx: index("asl_agentId_idx").on(t.agentId),
+  asl_createdAt_idx: index("asl_createdAt_idx").on(t.createdAt),
+}));
 
 // ==================== Sprint 50: 20 Production Features Schema ====================
 
@@ -2142,7 +2228,11 @@ export const txMonitoringAlerts = pgTable("tx_monitoring_alerts", {
   resolvedAt: timestamp("resolved_at"),
   metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  tma_agentId_idx: index("tma_agentId_idx").on(t.agentId),
+  tma_severity_idx: index("tma_severity_idx").on(t.severity),
+  tma_createdAt_idx: index("tma_createdAt_idx").on(t.createdAt),
+}));
 
 // F02: Fraud ML Scoring
 export const fraudMlScores = pgTable("fraud_ml_scores", {
@@ -2158,7 +2248,11 @@ export const fraudMlScores = pgTable("fraud_ml_scores", {
   reviewedBy: integer("reviewed_by"),
   reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  fms_transactionId_idx: index("fms_transactionId_idx").on(t.transactionId),
+  fms_agentId_idx: index("fms_agentId_idx").on(t.agentId),
+  fms_createdAt_idx: index("fms_createdAt_idx").on(t.createdAt),
+}));
 
 // F03: Notification Dispatch Log
 export const notificationDispatchLog = pgTable("notification_dispatch_log", {
@@ -2178,7 +2272,11 @@ export const notificationDispatchLog = pgTable("notification_dispatch_log", {
   failureReason: text("failure_reason"),
   metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  ndl_recipientId_idx: index("ndl_recipientId_idx").on(t.recipientId),
+  ndl_status_idx: index("ndl_status_idx").on(t.status),
+  ndl_createdAt_idx: index("ndl_createdAt_idx").on(t.createdAt),
+}));
 
 // F04: Agent Loans
 export const loanStatusEnum = pgEnum("loan_status", ["pending", "approved", "disbursed", "repaying", "completed", "defaulted", "rejected"]);
@@ -2200,7 +2298,11 @@ export const agentLoans = pgTable("agent_loans", {
   collateralValue: numeric("collateral_value", { precision: 15, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  al_agentId_idx: index("al_agentId_idx").on(t.agentId),
+  al_status_idx: index("al_status_idx").on(t.status),
+  al_createdAt_idx: index("al_createdAt_idx").on(t.createdAt),
+}));
 
 // F05: Dynamic Fee Engine
 export const feeRules = pgTable("fee_rules", {
@@ -2222,7 +2324,10 @@ export const feeRules = pgTable("fee_rules", {
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  fer_txType_idx: index("fer_txType_idx").on(t.txType),
+  fer_isActive_idx: index("fer_isActive_idx").on(t.isActive),
+}));
 
 export const feeAuditTrail = pgTable("fee_audit_trail", {
   id: serial("id").primaryKey(),
@@ -2234,7 +2339,10 @@ export const feeAuditTrail = pgTable("fee_audit_trail", {
   waiverApplied: boolean("waiver_applied").default(false),
   waiverReason: text("waiver_reason"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  fat_transactionId_idx: index("fat_transactionId_idx").on(t.transactionId),
+  fat_createdAt_idx: index("fat_createdAt_idx").on(t.createdAt),
+}));
 
 // F06: Merchant KYC & Payouts
 export const merchantKycDocs = pgTable("merchant_kyc_docs", {
@@ -2248,7 +2356,10 @@ export const merchantKycDocs = pgTable("merchant_kyc_docs", {
   rejectionReason: text("rejection_reason"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  mkd_merchantId_idx: index("mkd_merchantId_idx").on(t.merchantId),
+  mkd_status_idx: index("mkd_status_idx").on(t.status),
+}));
 
 export const merchantPayouts = pgTable("merchant_payouts", {
   id: serial("id").primaryKey(),
@@ -2266,7 +2377,11 @@ export const merchantPayouts = pgTable("merchant_payouts", {
   periodEnd: timestamp("period_end").notNull(),
   txCount: integer("tx_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  mp_merchantId_idx: index("mp_merchantId_idx").on(t.merchantId),
+  mp_status_idx: index("mp_status_idx").on(t.status),
+  mp_createdAt_idx: index("mp_createdAt_idx").on(t.createdAt),
+}));
 
 // F07: Compliance Filings
 export const complianceFilings = pgTable("compliance_filings", {
@@ -2285,7 +2400,11 @@ export const complianceFilings = pgTable("compliance_filings", {
   preparedBy: integer("prepared_by"),
   reviewedBy: integer("reviewed_by"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  cf_status_idx: index("cf_status_idx").on(t.status),
+  cf_filingType_idx: index("cf_filingType_idx").on(t.filingType),
+  cf_createdAt_idx: index("cf_createdAt_idx").on(t.createdAt),
+}));
 
 // F08: Agent Achievements & Badges
 export const agentAchievements = pgTable("agent_achievements", {
@@ -2299,7 +2418,10 @@ export const agentAchievements = pgTable("agent_achievements", {
   level: integer("level").default(1),
   unlockedAt: timestamp("unlocked_at").defaultNow(),
   metadata: text("metadata"),
-});
+}, (t) => ({
+  aa_agentId_idx: index("aa_agentId_idx").on(t.agentId),
+  aa_achievementType_idx: index("aa_achievementType_idx").on(t.achievementType),
+}));
 
 export const agentBadges = pgTable("agent_badges", {
   id: serial("id").primaryKey(),
@@ -2311,7 +2433,10 @@ export const agentBadges = pgTable("agent_badges", {
   pointsValue: integer("points_value").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  ab_category_idx: index("ab_category_idx").on(t.category),
+  ab_isActive_idx: index("ab_isActive_idx").on(t.isActive),
+}));
 
 // F09: Tenant Feature Toggles
 export const tenantFeatureToggles = pgTable("tenant_feature_toggles", {
@@ -2323,7 +2448,10 @@ export const tenantFeatureToggles = pgTable("tenant_feature_toggles", {
   enabledBy: integer("enabled_by"),
   enabledAt: timestamp("enabled_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  tft_tenantId_idx: index("tft_tenantId_idx").on(t.tenantId),
+  tft_featureKey_idx: index("tft_featureKey_idx").on(t.featureKey),
+}));
 
 // F10: Batch Reconciliation
 export const reconciliationBatches = pgTable("reconciliation_batches", {
@@ -2341,7 +2469,10 @@ export const reconciliationBatches = pgTable("reconciliation_batches", {
   processedBy: integer("processed_by"),
   processedAt: timestamp("processed_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  rb_status_idx: index("rb_status_idx").on(t.status),
+  rb_createdAt_idx: index("rb_createdAt_idx").on(t.createdAt),
+}));
 
 export const reconciliationItems = pgTable("reconciliation_items", {
   id: serial("id").primaryKey(),
@@ -2356,7 +2487,10 @@ export const reconciliationItems = pgTable("reconciliation_items", {
   resolvedBy: integer("resolved_by"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  ri_batchId_idx: index("ri_batchId_idx").on(t.batchId),
+  ri_matchStatus_idx: index("ri_matchStatus_idx").on(t.matchStatus),
+}));
 
 // F11: Analytics Dashboards
 export const analyticsDashboards = pgTable("analytics_dashboards", {
@@ -2370,7 +2504,9 @@ export const analyticsDashboards = pgTable("analytics_dashboards", {
   refreshInterval: integer("refresh_interval").default(300),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => ({
+  ad_ownerId_idx: index("ad_ownerId_idx").on(t.ownerId),
+}));
 
 // F12: Customer Journey
 export const customerJourneySteps = pgTable("customer_journey_steps", {
@@ -2381,7 +2517,10 @@ export const customerJourneySteps = pgTable("customer_journey_steps", {
   completedAt: timestamp("completed_at"),
   metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  cjs_customerId_idx: index("cjs_customerId_idx").on(t.customerId),
+  cjs_status_idx: index("cjs_status_idx").on(t.status),
+}));
 
 // F13: Rate Limit Rules
 export const rateLimitRules = pgTable("rate_limit_rules", {
@@ -2394,7 +2533,10 @@ export const rateLimitRules = pgTable("rate_limit_rules", {
   scope: text("scope").notNull().default("global"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  rlr_endpoint_idx: index("rlr_endpoint_idx").on(t.endpoint),
+  rlr_isActive_idx: index("rlr_isActive_idx").on(t.isActive),
+}));
 
 // F14: Backup Snapshots
 export const backupSnapshots = pgTable("backup_snapshots", {
@@ -2412,7 +2554,10 @@ export const backupSnapshots = pgTable("backup_snapshots", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  bs_status_idx: index("bs_status_idx").on(t.status),
+  bs_createdAt_idx: index("bs_createdAt_idx").on(t.createdAt),
+}));
 
 // F15: Workflow Definitions & Instances
 export const workflowDefinitions = pgTable("workflow_definitions", {
@@ -2427,7 +2572,10 @@ export const workflowDefinitions = pgTable("workflow_definitions", {
   version: integer("version").default(1),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  wdef_category_idx: index("wdef_category_idx").on(t.category),
+  wdef_isActive_idx: index("wdef_isActive_idx").on(t.isActive),
+}));
 
 export const workflowInstances = pgTable("workflow_instances", {
   id: serial("id").primaryKey(),
@@ -2442,7 +2590,11 @@ export const workflowInstances = pgTable("workflow_instances", {
   slaDeadline: timestamp("sla_deadline"),
   stepHistory: text("step_history"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  wi_definitionId_idx: index("wi_definitionId_idx").on(t.definitionId),
+  wi_status_idx: index("wi_status_idx").on(t.status),
+  wi_assignedTo_idx: index("wi_assignedTo_idx").on(t.assignedTo),
+}));
 
 // F16: General Ledger
 export const glEntries = pgTable("gl_entries", {
@@ -2459,7 +2611,11 @@ export const glEntries = pgTable("gl_entries", {
   isReversed: boolean("is_reversed").default(false),
   reversalRef: text("reversal_ref"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  gle_accountCode_idx: index("gle_accountCode_idx").on(t.accountCode),
+  gle_periodDate_idx: index("gle_periodDate_idx").on(t.periodDate),
+  gle_entryType_idx: index("gle_entryType_idx").on(t.entryType),
+}));
 
 // F17: Training Courses & Enrollments
 export const trainingCourses = pgTable("training_courses", {
@@ -2476,7 +2632,10 @@ export const trainingCourses = pgTable("training_courses", {
   version: integer("version").default(1),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  tc_category_idx: index("tc_category_idx").on(t.category),
+  tc_isActive_idx: index("tc_isActive_idx").on(t.isActive),
+}));
 
 export const trainingEnrollments = pgTable("training_enrollments", {
   id: serial("id").primaryKey(),
@@ -2490,7 +2649,11 @@ export const trainingEnrollments = pgTable("training_enrollments", {
   certificateUrl: text("certificate_url"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  te_courseId_idx: index("te_courseId_idx").on(t.courseId),
+  te_agentId_idx: index("te_agentId_idx").on(t.agentId),
+  te_status_idx: index("te_status_idx").on(t.status),
+}));
 
 // F18: BI Report Definitions
 export const biReportDefinitions = pgTable("bi_report_definitions", {
@@ -2506,7 +2669,10 @@ export const biReportDefinitions = pgTable("bi_report_definitions", {
   isActive: boolean("is_active").default(true),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  brd_reportType_idx: index("brd_reportType_idx").on(t.reportType),
+  brd_isActive_idx: index("brd_isActive_idx").on(t.isActive),
+}));
 
 // F19: Observability Alerts
 export const observabilityAlerts = pgTable("observability_alerts", {
@@ -2522,7 +2688,12 @@ export const observabilityAlerts = pgTable("observability_alerts", {
   acknowledgedAt: timestamp("acknowledged_at"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  oa_service_idx: index("oa_service_idx").on(t.service),
+  oa_status_idx: index("oa_status_idx").on(t.status),
+  oa_severity_idx: index("oa_severity_idx").on(t.severity),
+  oa_createdAt_idx: index("oa_createdAt_idx").on(t.createdAt),
+}));
 
 // F20: Encrypted Fields & Data Consent
 export const encryptedFields = pgTable("encrypted_fields", {
@@ -2534,7 +2705,10 @@ export const encryptedFields = pgTable("encrypted_fields", {
   lastRotatedAt: timestamp("last_rotated_at"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  ef_entityType_idx: index("ef_entityType_idx").on(t.entityType),
+  ef_fieldName_idx: index("ef_fieldName_idx").on(t.fieldName),
+}));
 
 export const dataConsentRecords = pgTable("data_consent_records", {
   id: serial("id").primaryKey(),
@@ -2548,7 +2722,11 @@ export const dataConsentRecords = pgTable("data_consent_records", {
   userAgent: text("user_agent"),
   version: integer("version").default(1),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  dcr_userId_idx: index("dcr_userId_idx").on(t.userId),
+  dcr_consentType_idx: index("dcr_consentType_idx").on(t.consentType),
+  dcr_status_idx: index("dcr_status_idx").on(t.status),
+}));
 
 
 // ── Sprint 51: Missing tables identified by deep audit ──
@@ -2563,7 +2741,11 @@ export const realtime_tx_alerts = pgTable("realtime_tx_alerts", {
   acknowledgedBy: text("acknowledged_by"),
   acknowledgedAt: timestamp("acknowledged_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  rta_transactionId_idx: index("rta_transactionId_idx").on(t.transactionId),
+  rta_agentId_idx: index("rta_agentId_idx").on(t.agentId),
+  rta_severity_idx: index("rta_severity_idx").on(t.severity),
+}));
 
 export const notification_channels = pgTable("notification_channels", {
   id: serial("id").primaryKey(),
@@ -2574,7 +2756,10 @@ export const notification_channels = pgTable("notification_channels", {
   priority: integer("priority").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
-});
+}, (t) => ({
+  nc_channelType_idx: index("nc_channelType_idx").on(t.channelType),
+  nc_isActive_idx: index("nc_isActive_idx").on(t.isActive),
+}));
 
 export const notification_logs = pgTable("notification_logs", {
   id: serial("id").primaryKey(),
@@ -2589,7 +2774,11 @@ export const notification_logs = pgTable("notification_logs", {
   failureReason: text("failure_reason"),
   retryCount: integer("retry_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  nl_channelId_idx: index("nl_channelId_idx").on(t.channelId),
+  nl_status_idx: index("nl_status_idx").on(t.status),
+  nl_createdAt_idx: index("nl_createdAt_idx").on(t.createdAt),
+}));
 
 export const customer_journey_events = pgTable("customer_journey_events", {
   id: serial("id").primaryKey(),
@@ -2601,7 +2790,11 @@ export const customer_journey_events = pgTable("customer_journey_events", {
   deviceType: text("device_type"),
   channel: text("channel"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  cje_customerId_idx: index("cje_customerId_idx").on(t.customerId),
+  cje_eventType_idx: index("cje_eventType_idx").on(t.eventType),
+  cje_createdAt_idx: index("cje_createdAt_idx").on(t.createdAt),
+}));
 
 export const gl_accounts = pgTable("gl_accounts", {
   id: serial("id").primaryKey(),
@@ -2615,7 +2808,11 @@ export const gl_accounts = pgTable("gl_accounts", {
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
-});
+}, (t) => ({
+  gla_accountCode_idx: index("gla_accountCode_idx").on(t.accountCode),
+  gla_accountType_idx: index("gla_accountType_idx").on(t.accountType),
+  gla_isActive_idx: index("gla_isActive_idx").on(t.isActive),
+}));
 
 export const gl_journal_entries = pgTable("gl_journal_entries", {
   id: serial("id").primaryKey(),
@@ -2632,7 +2829,11 @@ export const gl_journal_entries = pgTable("gl_journal_entries", {
   status: text("status").notNull().default("posted"),
   postedAt: timestamp("posted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  glje_accountId_idx: index("glje_accountId_idx").on(t.accountId),
+  glje_entryType_idx: index("glje_entryType_idx").on(t.entryType),
+  glje_status_idx: index("glje_status_idx").on(t.status),
+}));
 
 export const sla_definitions = pgTable("sla_definitions", {
   id: serial("id").primaryKey(),
@@ -2646,7 +2847,10 @@ export const sla_definitions = pgTable("sla_definitions", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
-});
+}, (t) => ({
+  slad_serviceType_idx: index("slad_serviceType_idx").on(t.serviceType),
+  slad_isActive_idx: index("slad_isActive_idx").on(t.isActive),
+}));
 
 export const sla_breaches = pgTable("sla_breaches", {
   id: serial("id").primaryKey(),
@@ -2659,7 +2863,10 @@ export const sla_breaches = pgTable("sla_breaches", {
   resolvedAt: timestamp("resolved_at"),
   resolution: text("resolution"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  slab_slaDefinitionId_idx: index("slab_slaDefinitionId_idx").on(t.slaDefinitionId),
+  slab_createdAt_idx: index("slab_createdAt_idx").on(t.createdAt),
+}));
 
 export const data_export_jobs = pgTable("data_export_jobs", {
   id: serial("id").primaryKey(),
@@ -2676,7 +2883,11 @@ export const data_export_jobs = pgTable("data_export_jobs", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (t) => ({
+  dej_status_idx: index("dej_status_idx").on(t.status),
+  dej_requestedBy_idx: index("dej_requestedBy_idx").on(t.requestedBy),
+  dej_createdAt_idx: index("dej_createdAt_idx").on(t.createdAt),
+}));
 
 export const platform_health_checks = pgTable("platform_health_checks", {
   id: serial("id").primaryKey(),
@@ -2688,7 +2899,11 @@ export const platform_health_checks = pgTable("platform_health_checks", {
   message: text("message"),
   metadata: text("metadata"),
   checkedAt: timestamp("checked_at").defaultNow(),
-});
+}, (t) => ({
+  phc_serviceName_idx: index("phc_serviceName_idx").on(t.serviceName),
+  phc_status_idx: index("phc_status_idx").on(t.status),
+  phc_checkedAt_idx: index("phc_checkedAt_idx").on(t.checkedAt),
+}));
 
 export const platform_incidents = pgTable("platform_incidents", {
   id: serial("id").primaryKey(),
@@ -2705,7 +2920,11 @@ export const platform_incidents = pgTable("platform_incidents", {
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
-});
+}, (t) => ({
+  pi_severity_idx: index("pi_severity_idx").on(t.severity),
+  pi_status_idx: index("pi_status_idx").on(t.status),
+  pi_createdAt_idx: index("pi_createdAt_idx").on(t.createdAt),
+}));
 
 
 // ── Sprint 53: Commission Engine DB Persistence ─────────────────────────────
@@ -2764,7 +2983,10 @@ export const disputeEvidence = pgTable("dispute_evidence", {
   fileSize: integer("file_size"),
   uploadedBy: varchar("uploaded_by", { length: 64 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  de_disputeId_idx: index("de_disputeId_idx").on(t.disputeId),
+  de_createdAt_idx: index("de_createdAt_idx").on(t.createdAt),
+}));
 export type DisputeEvidence = typeof disputeEvidence.$inferSelect;
 
 // ── Sprint 53: Commission Audit Trail ───────────────────────────────────────
