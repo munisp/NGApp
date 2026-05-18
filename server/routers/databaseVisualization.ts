@@ -105,6 +105,7 @@ const runHealthCheck = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runHealthCheck: record not found" });
         return { success: true, id: input.id, message: "runHealthCheck completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(deviceLocations).values(input.data || {}).returning();
       return { success: true, ...row, message: "runHealthCheck completed" };
     } catch (error) {

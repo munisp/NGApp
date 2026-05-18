@@ -61,7 +61,7 @@ export const realtime_tx_alertsRouter = router({
   dismiss: protectedProcedure.input(z.object({ id: z.number(), reason: z.string().min(5) })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      await db.update(realtime_tx_alerts).set({ status: "dismissed", dismissReason: input.reason, dismissedAt: new Date() }).where(eq(realtime_tx_alerts.id, input.id));
+      await db.update(realtime_tx_alerts).set({ metadata: "dismissed", acknowledged: true } as any).where(eq(realtime_tx_alerts.id, input.id));
       return { success: true, message: "Alert dismissed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

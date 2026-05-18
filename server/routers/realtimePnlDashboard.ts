@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
 import { auditLog, systemConfig } from "../../drizzle/schema";
@@ -53,7 +53,7 @@ export const realtimePnlDashboardRouter = router({
     const database = await getDb();
     if (!database) return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() };
     try {
-      const [result] = await database.execute(sql`SELECT 1 as ok`);
+      await database.execute(sql`SELECT 1 as ok`);
       return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() };
     } catch { return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() }; }
   }),

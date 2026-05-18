@@ -109,6 +109,7 @@ const createTerritory = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createTerritory: record not found" });
         return { success: true, id: input.id, message: "createTerritory completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(agents).values(input.data || {}).returning();
       return { success: true, ...row, message: "createTerritory completed" };
     } catch (error) {

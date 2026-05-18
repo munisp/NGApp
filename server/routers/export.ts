@@ -88,16 +88,15 @@ export const exportRouter = router({
 
         // Build agent code lookup map
         const agentMap: Record<number, string> = {};
-        if (agentIds.length > 0) {
-          for (const aid of agentIds) {
-            const agentRows = await db
-              .select({ agentCode: agents.agentCode })
-              .from(agents)
-              .where(eq(agents.id, aid))
-              .limit(1);
-            if (agentRows.length > 0) {
-              agentMap[aid] = agentRows[0].agentCode;
-            }
+        const uniqueAgentIds = [...new Set(rows.map(r => r.agentId))];
+        for (const aid of uniqueAgentIds) {
+          const agentRows = await db
+            .select({ agentCode: agents.agentCode })
+            .from(agents)
+            .where(eq(agents.id, aid))
+            .limit(1);
+          if (agentRows.length > 0) {
+            agentMap[aid] = agentRows[0].agentCode;
           }
         }
 

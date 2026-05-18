@@ -210,7 +210,7 @@ export const analyticsRouter = router({
         const d = dispStats.rows[0] as Record<string, string>;
         const k = kycStats.rows[0] as Record<string, string>;
         const f = floatStats.rows[0] as Record<string, string>;
-        const fr = fraudStats.rows[0] as Record<string, string>;
+        const fr = fraudStats.rows[0] as unknown as Record<string, string>;
         const sar = sarStats.rows[0] as Record<string, string>;
 
         const completed = parseInt(r.completed ?? "0", 10);

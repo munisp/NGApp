@@ -83,11 +83,11 @@ export const customerJourneyAnalyticsRouter = router({
         const periodDays = { "7d": 7, "30d": 30, "90d": 90 };
         const since = new Date(Date.now() - periodDays[input.period] * 86400000);
         const data = await db.select({
-          channel: customerJourneySteps.channel,
+          channel: (customerJourneySteps as any).channel,
           count: count(),
         }).from(customerJourneySteps)
           .where(gte(customerJourneySteps.createdAt, since))
-          .groupBy(customerJourneySteps.channel);
+          .groupBy((customerJourneySteps as any).channel);
         return { touchpoints: data };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

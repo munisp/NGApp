@@ -79,7 +79,6 @@ import { mobileMoneyRouter } from "./routers/mobileMoney";
 import { agentHierarchyRouter } from "./routers/agentHierarchy";
 import { commissionEngineRouter } from "./routers/commissionEngine";
 import { bulkOperationsRouter } from "./routers/bulkOperations";
-import { geoFencingDedicatedRouter } from "./routers/geoFencingDedicated";
 import { realtimeTxMonitorRouter } from "./routers/realtimeTxMonitor";
 import { fraudMlScoringEngineRouter } from "./routers/fraudMlScoringEngine";
 import { notificationOrchestratorRouter } from "./routers/notificationOrchestrator";
@@ -389,7 +388,6 @@ import { dataExportRouter as dataExportRouterV2 } from "./routers/dataExport";
 import { loadTestMetricsRouter } from "./routers/loadTestMetrics";
 import { agentSuspensionWorkflowRouter } from "./routers/agentSuspensionWorkflow";
 import { auditExportRouter } from "./routers/auditExport";
-import { geoFencingRouter as geoFencingS49Router } from "./routers/geoFencing";
 import { networkTelemetryRouter } from "./routers/networkTelemetry";
 // Sprint 75: USSD Integration, Carrier Switching, Network Status Dashboard
 import { ussdIntegrationRouter } from "./routers/ussdIntegration";
@@ -681,7 +679,6 @@ export const appRouter = router({
   agentHierarchy: agentHierarchyRouter,
   commissionEngine: commissionEngineRouter,
   bulkOps: bulkOperationsRouter,
-  geoFenceDedicated: geoFencingDedicatedRouter,
   biometricAuth: biometricAuthRouter,
   offlineSync: offlineSyncRouter,
   whatsappChannel: whatsappChannelRouter,
@@ -960,7 +957,6 @@ export const appRouter = router({
   systemHealthDashboard: systemHealthDashboardRouter,
   agentSuspensionWorkflow: agentSuspensionWorkflowRouter,
   auditExport: auditExportRouter,
-  geoFencing: geoFencingS49Router,
   // Sprint 50 Production Features
   realtimeTxMonitor: realtimeTxMonitorRouter,
   fraudMlScoring: fraudMlScoringEngineRouter,

@@ -95,9 +95,11 @@ export const tenantFeatureToggleRouter = router({
           .where(and(eq(tenantFeatureToggles.tenantId, input.tenantId), eq(tenantFeatureToggles.featureKey, input.featureName)));
         if (!toggle) return { enabled: false };
         if (!toggle.enabled) return { enabled: false };
-        if (toggle.rolloutPercentage < 100) {
+        const config = toggle.config ? JSON.parse(String(toggle.config)) : null;
+        const rollout = config?.rolloutPercentage ?? 100;
+        if (rollout < 100) {
           const hash = (input.tenantId * 31 + input.featureName.length) % 100;
-          return { enabled: hash < toggle.rolloutPercentage };
+          return { enabled: hash < rollout };
         }
         return { enabled: true, config: toggle.config ? JSON.parse(String(toggle.config)) : null };
       } catch (error) {
@@ -113,7 +115,7 @@ export const tenantFeatureToggleRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) throw new Error("Database unavailable");
-        await db.update(tenantFeatureToggles).set({ enabled: false, updatedAt: new Date(), updatedBy: ctx.user?.id })
+        await db.update(tenantFeatureToggles).set({ enabled: false } as any)
           .where(eq(tenantFeatureToggles.featureKey, input.featureName));
         return { success: true, killed: input.featureName };
       } catch (error) {

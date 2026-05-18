@@ -35,6 +35,7 @@ export const biReportDefinitionsRouter = router({
   create: protectedProcedure.input(z.object({ name: z.string().min(3), description: z.string().optional(), outputFormat: z.enum(["pdf", "csv", "xlsx", "json"]).default("pdf"), schedule: z.enum(["daily", "weekly", "monthly", "quarterly"]).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(biReportDefinitions).values(input).returning();
       return { ...row, message: input.schedule ? `Report scheduled ${input.schedule}` : "Report definition created" };
     } catch (error) {

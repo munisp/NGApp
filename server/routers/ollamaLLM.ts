@@ -119,9 +119,9 @@ export const ollamaLLMRouter = router({
   classifyTransaction,
   listSessions,
   analytics,
-  classifyTransaction: protectedProcedure
+  classifyTransactionMutation: protectedProcedure
     .input(z.object({}))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async () => {
       try {
         return { success: true };
       } catch (error) {

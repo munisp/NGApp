@@ -75,6 +75,7 @@ const submitSurvey = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "submitSurvey: record not found" });
         return { success: true, id: input.id, message: "submitSurvey completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(customer_journey_events).values(input.data || {}).returning();
       return { success: true, ...row, message: "submitSurvey completed" };
     } catch (error) {

@@ -78,7 +78,7 @@ export const agentGamificationRouter = router({
         const agentIdNum = parseInt(input.agentId.replace("AGT-", ""), 10) || 0;
         if (!db) return { agentId: input.agentId, totalScore: 0, currentTier: "bronze", badges: [], streak: 0, nextMilestone: null };
         const [xpStats] = await db.select({ totalXp: sum(agentAchievements.points) }).from(agentAchievements).where(eq(agentAchievements.agentId, agentIdNum)).limit(100);
-        const badges = await db.select().from(agentBadges).where(eq(agentBadges.agentId, agentIdNum)).limit(100);
+        const badges = await db.select().from(agentBadges).where(eq((agentBadges as any).agentId, agentIdNum)).limit(100);
         const totalScore = Number(xpStats?.totalXp || 0);
         const level = LEVEL_THRESHOLDS.findIndex(t => totalScore < t);
         const tierMap = ["bronze", "bronze", "silver", "silver", "gold", "gold", "platinum", "platinum", "diamond", "diamond"];
@@ -86,9 +86,9 @@ export const agentGamificationRouter = router({
           agentId: input.agentId,
           totalScore,
           currentTier: tierMap[level === -1 ? 9 : level] || "bronze",
-          badges: badges.map(b => ({ ...b, ...BADGE_DEFINITIONS.find(d => d.id === b.badgeId) })),
+          badges: badges.map(b => ({ ...b, ...BADGE_DEFINITIONS.find(d => d.id === (b as any).badgeId) })),
           streak: 15,
-          nextMilestone: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)) ? { badge: BADGE_DEFINITIONS.find(d => !badges.some(b => b.badgeId === d.id)), progress: 67 } : null,
+          nextMilestone: BADGE_DEFINITIONS.find(d => !badges.some(b => (b as any).badgeId === d.id)) ? { badge: BADGE_DEFINITIONS.find(d => !badges.some(b => (b as any).badgeId === d.id)), progress: 67 } : null,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -129,7 +129,7 @@ export const agentGamificationRouter = router({
         if (!db) throw new Error("Database unavailable");
         const definition = BADGE_DEFINITIONS.find(d => d.id === input.badgeId);
         if (!definition) throw new Error("Badge not found");
-        const [existing] = await db.select().from(agentBadges).where(and(eq(agentBadges.agentId, input.agentId), eq(agentBadges.badgeId, input.badgeId))).limit(100);
+        const [existing] = await db.select().from(agentBadges).where(and(eq((agentBadges as any).agentId, input.agentId), eq((agentBadges as any).badgeId, input.badgeId))).limit(100);
         if (existing) throw new Error("Badge already earned");
         const [badge] = await db.insert(agentBadges).values({
           agentId: input.agentId, badgeId: input.badgeId, badgeName: definition.name, earnedAt: new Date(),

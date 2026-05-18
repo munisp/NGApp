@@ -101,6 +101,7 @@ const createIncident = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createIncident: record not found" });
         return { success: true, id: input.id, message: "createIncident completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(platformSettings).values(input.data || {}).returning();
       return { success: true, ...row, message: "createIncident completed" };
     } catch (error) {

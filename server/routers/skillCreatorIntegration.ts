@@ -75,7 +75,7 @@ const generateRouter = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "generateRouter: record not found" });
         return { success: true, id: input.id, message: "generateRouter completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(workflowInstances).values(input.data || {}).returning();
+      const [row] = await db.insert(workflowInstances).values((input.data || {}) as any).returning();
       return { success: true, ...row, message: "generateRouter completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

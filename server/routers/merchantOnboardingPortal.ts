@@ -9,7 +9,7 @@ export const merchantOnboardingPortalRouter = router({
   listApplications: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = input?.status ? await db.select().from(merchants).where(eq(merchants.status, input.status)).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50) : await db.select().from(merchants).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50);
+      const rows = input?.status ? await db.select().from(merchants).where(eq(merchants.status, input.status as any)).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50) : await db.select().from(merchants).orderBy(desc(merchants.createdAt)).limit(input?.limit ?? 50);
       return { applications: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

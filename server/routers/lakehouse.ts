@@ -340,7 +340,7 @@ export const lakehouseRouter = router({
             and(
               gte(transactions.createdAt, since),
               eq(transactions.status, "success"),
-              ...(input.txType ? [eq(transactions.type, input.txType)] : []),
+              ...(input.txType ? [eq(transactions.type, input.txType as any)] : []),
             )
           )
           .limit(50_000);

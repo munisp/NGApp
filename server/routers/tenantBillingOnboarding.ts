@@ -295,7 +295,7 @@ export const tenantBillingOnboardingRouter = router({
             billingModel: input.billingModel,
             customConfig: input.customConfig,
             provisionedBy: ctx.user.id,
-            temporalWorkflowId: null,
+            temporalWorkflowId: undefined,
           });
         }
 

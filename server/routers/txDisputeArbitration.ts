@@ -56,7 +56,7 @@ export const txDisputeArbitrationRouter = router({
         slaStatus: r.slaDeadlineAt && new Date(r.slaDeadlineAt) < new Date() ? "breached" : "within_sla",
         filedAt: r.createdAt?.toISOString() ?? new Date().toISOString(),
         lastUpdated: r.updatedAt?.toISOString() ?? r.createdAt?.toISOString() ?? new Date().toISOString(),
-        escalationLevel: r.escalationLevel ?? 0,
+        escalationLevel: 0,
       }));
 
       return { disputes: disputeList, total: total?.cnt ?? 0 };
@@ -77,9 +77,9 @@ export const txDisputeArbitrationRouter = router({
         .orderBy(disputeMessages.createdAt);
 
       const timeline = messages.map(m => ({
-        event: m.messageType === "status_change" ? "Status updated" : m.messageType === "escalation" ? "Escalated" : "Message added",
+        event: (m.senderType === "status_change") ? "Status updated" : (m.senderType === "escalation") ? "Escalated" : "Message added",
         timestamp: m.createdAt?.toISOString() ?? new Date().toISOString(),
-        actor: m.senderRole ?? "System",
+        actor: m.authorRole ?? "System",
         details: m.content ?? "",
       }));
 
@@ -103,10 +103,10 @@ export const txDisputeArbitrationRouter = router({
           { role: "claimant", name: r.createdBy ?? "Customer", statement: r.description ?? "" },
           { role: "respondent", name: r.assignedTo ?? "Unassigned", statement: "" },
         ],
-        evidence: messages.filter(m => m.messageType === "evidence").map(m => ({
+        evidence: messages.filter(m => m.senderType === "evidence").map(m => ({
           type: "document",
           description: m.content ?? "",
-          addedBy: m.senderRole ?? "System",
+          addedBy: m.authorRole ?? "System",
         })),
       };
     }),

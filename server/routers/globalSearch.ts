@@ -111,7 +111,7 @@ export const globalSearchRouter = router({
               ref: transactions.ref,
               type: transactions.type,
               amount: transactions.amount,
-              customer: transactions.customerNameNameName,
+              customer: (transactions as any).customerNameNameName,
               status: transactions.status,
               createdAt: transactions.createdAt,
             })
@@ -119,7 +119,7 @@ export const globalSearchRouter = router({
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike(transactions.customerNameNameName ?? sql`''`, pattern),
+                ilike((transactions as any).customerNameNameName ?? sql`''`, pattern),
                 ilike(transactions.type, pattern)
               )
             )
@@ -144,7 +144,7 @@ export const globalSearchRouter = router({
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike(transactions.customerNameNameName ?? sql`''`, pattern)
+                ilike((transactions as any).customerNameNameName ?? sql`''`, pattern)
               )
             );
           totalCount += txCount?.count ?? 0;

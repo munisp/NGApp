@@ -89,7 +89,7 @@ export const customer360ViewRouter = router({
     const database = await getDb();
     if (!database) return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() };
     try {
-      const [result] = await database.execute(sql`SELECT 1 as ok`);
+      await database.execute(sql`SELECT 1 as ok`);
       return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() };
     } catch { return { total: 0, active: 0, recent: 0, lastUpdated: new Date().toISOString() }; }
   }),

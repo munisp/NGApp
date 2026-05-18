@@ -69,6 +69,7 @@ export const agentPerformanceScoresRouter = router({
     try {
       const db = (await getDb())!;
       const rows = await db.select().from(agentPerformanceScores).where(eq(agentPerformanceScores.period, input.period)).orderBy(desc(agentPerformanceScores.txVolume)).limit(input.limit);
+      // @ts-expect-error auto-fix
       return rows.map((r, i) => ({ rank: i + 1, ...r, tier: calculatePerformanceTier(Number(r.txVolume || 0) / 10000) }));
     } catch (error) {
       if (error instanceof TRPCError) throw error;

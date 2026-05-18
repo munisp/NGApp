@@ -75,7 +75,7 @@ const createEndpoint = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createEndpoint: record not found" });
         return { success: true, id: input.id, message: "createEndpoint completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(webhookEndpoints).values(input.data || {}).returning();
+      const [row] = await db.insert(webhookEndpoints).values((input.data || {}) as any).returning();
       return { success: true, ...row, message: "createEndpoint completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

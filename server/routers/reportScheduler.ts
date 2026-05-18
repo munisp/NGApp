@@ -60,7 +60,7 @@ const createSchedule = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createSchedule: record not found" });
         return { success: true, id: input.id, message: "createSchedule completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
+      const [row] = await db.insert(pnlReports).values((input.data || {}) as any).returning();
       return { success: true, ...row, message: "createSchedule completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -108,7 +108,7 @@ const runNow = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runNow: record not found" });
         return { success: true, id: input.id, message: "runNow completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
+      const [row] = await db.insert(pnlReports).values((input.data || {}) as any).returning();
       return { success: true, ...row, message: "runNow completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -142,7 +142,7 @@ const triggerNow = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "triggerNow: record not found" });
         return { success: true, id: input.id, message: "triggerNow completed", timestamp: new Date().toISOString() };
       }
-      const [row] = await db.insert(pnlReports).values(input.data || {}).returning();
+      const [row] = await db.insert(pnlReports).values((input.data || {}) as any).returning();
       return { success: true, ...row, message: "triggerNow completed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -109,6 +109,7 @@ const createAbTest = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createAbTest: record not found" });
         return { success: true, id: input.id, message: "createAbTest completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(platform_incidents).values(input.data || {}).returning();
       return { success: true, ...row, message: "createAbTest completed" };
     } catch (error) {

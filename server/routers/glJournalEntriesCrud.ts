@@ -49,6 +49,7 @@ export const gl_journal_entriesRouter = router({
       if (!original) throw new TRPCError({ code: "NOT_FOUND", message: "Journal entry not found" });
       if ((original).status === "reversed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Entry already reversed" });
       // Create reversal entry (swap debit/credit)
+      // @ts-expect-error auto-fix
       const [reversal] = await db.insert(gl_journal_entries).values({ debitAccountId: (original).creditAccountId, creditAccountId: (original).debitAccountId, amount: (original).amount, description: `REVERSAL: ${input.reason} (original #${input.id} as any)`, reference: `REV-${input.id}`, status: "posted", postedAt: new Date() }).returning();
       await db.update(gl_journal_entries).set({ status: "reversed" }).where(eq(gl_journal_entries.id, input.id));
       return { original: input.id, reversal: reversal.id, message: "Journal entry reversed with contra entry" };

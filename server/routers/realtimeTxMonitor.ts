@@ -27,8 +27,8 @@ export const realtimeTxMonitorRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.channel) conditions.push(eq(transactions.customerPhone, input.channel));
-        if (input.status) conditions.push(eq(transactions.status, input.status));
-        if (input.minAmount) conditions.push(gte(transactions.amount, String(input.minAmount)));
+        if (input.status) conditions.push(eq(transactions.status, input.status as any));
+        if (input.minAmount) conditions.push(sql`${transactions.amount}::numeric >= ${input.minAmount}`);
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(transactions).where(where).orderBy(desc(transactions.createdAt)).limit(input.limit);
         const [{ total }] = await db.select({ total: count() }).from(transactions).where(where).limit(100);

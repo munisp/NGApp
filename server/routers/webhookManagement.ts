@@ -206,7 +206,7 @@ export const webhookManagementRouter = router({
       const db = (await getDb())!;
       const conditions = [];
       if (input?.endpointId) conditions.push(eq(webhookDeliveries.endpointId, input.endpointId));
-      if (input?.status) conditions.push(eq(webhookDeliveries.statusCode, input.status));
+      if (input?.status) conditions.push(sql`${webhookDeliveries.statusCode}::text = ${input.status}`);
       const rows = await db.select().from(webhookDeliveries).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(webhookDeliveries.createdAt)).limit(input?.limit ?? 50);
       return { deliveries: rows, total: rows.length };
     } catch (error) {

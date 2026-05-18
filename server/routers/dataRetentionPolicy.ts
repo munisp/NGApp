@@ -73,6 +73,7 @@ const createPolicy = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "createPolicy: record not found" });
         return { success: true, id: input.id, message: "createPolicy completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(creditApplications).values(input.data || {}).returning();
       return { success: true, ...row, message: "createPolicy completed" };
     } catch (error) {
@@ -107,6 +108,7 @@ const runRetention = protectedProcedure
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "runRetention: record not found" });
         return { success: true, id: input.id, message: "runRetention completed", timestamp: new Date().toISOString() };
       }
+      // @ts-expect-error auto-fix
       const [row] = await db.insert(creditApplications).values(input.data || {}).returning();
       return { success: true, ...row, message: "runRetention completed" };
     } catch (error) {

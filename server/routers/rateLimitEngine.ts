@@ -17,7 +17,7 @@ export const rateLimitEngineRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
-        const conditions = input.isActive !== undefined ? [eq(rateLimitRules.isActive, input.active)] : [];
+        const conditions = input.active !== undefined ? [eq(rateLimitRules.isActive, input.active)] : [];
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(rateLimitRules).where(where).orderBy(desc(rateLimitRules.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);
@@ -95,7 +95,7 @@ export const rateLimitEngineRouter = router({
           .where(and(eq(rateLimitRules.endpoint, input.endpoint), eq(rateLimitRules.isActive, true))).limit(1);
         if (!rule) return { allowed: true, remaining: 999, resetIn: 0, noRule: true };
         // In production, this would check Redis/in-memory counters
-        return { allowed: true, remaining: rule.maxRequests, resetIn: rule.windowSeconds, rule: { id: rule.id, name: rule.name } };
+        return { allowed: true, remaining: rule.maxRequests, resetIn: rule.windowSeconds, rule: { id: rule.id, endpoint: rule.endpoint } };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });

@@ -78,7 +78,7 @@ export const slaMonitoringRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.slaId) conditions.push(eq(sla_breaches.slaDefinitionId, input.slaId));
-        if (input.severity) conditions.push(eq(sla_breaches.resolvedAt, input.severity));
+        // severity filter removed - column not in schema
         if (input.resolved !== undefined) conditions.push(input.resolved ? sql`${sla_breaches.resolvedAt} IS NOT NULL` : sql`${sla_breaches.resolvedAt} IS NULL`);
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(sla_breaches).where(where).orderBy(desc(sla_breaches.createdAt))
@@ -118,7 +118,7 @@ export const slaMonitoringRouter = router({
         const db = (await getDb())!;
         if (!db) throw new Error("Database unavailable");
         await db.update(sla_breaches).set({
-          resolvedAt: new Date(), resolution: input.resolution, resolvedBy: ctx.user?.id, updatedAt: new Date(),
+          resolvedAt: new Date(),
         }).where(eq(sla_breaches.id, input.breachId));
         return { success: true };
       } catch (error) {

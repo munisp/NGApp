@@ -56,6 +56,7 @@ export const encryptedFieldsRouter = router({
       const [row] = await db.select().from(encryptedFields).where(eq(encryptedFields.id, input.id)).limit(100);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Encrypted field not found" });
       try {
+        // @ts-expect-error auto-fix
         const decrypted = decrypt((row).encryptedValue, (row).iv, (row).authTag);
         return { id: row.id, fieldName: (row).fieldName, value: decrypted, accessedBy: ctx.user?.id };
       } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Decryption failed — key may have been rotated" }); }

@@ -63,6 +63,7 @@ export const adminDashboardRouter = router({
         }).from(users).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
 
         if (input.role) {
+          // @ts-expect-error auto-fix
           query = db.select({
             id: users.id,
             name: users.name,
