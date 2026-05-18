@@ -91,7 +91,21 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
-	jsonResp(w, 201, map[string]interface{}{"created": true, "data": body})
+	id := fmt.Sprintf("%s-%d", "card_management_go", time.Now().UnixNano())
+	dataBytes, _ := json.Marshal(body)
+	if db != nil {
+		_, err := db.Exec(
+			"INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+			id, "card_management_go", "default", "active", string(dataBytes))
+		if err != nil {
+			jsonResp(w, 500, map[string]interface{}{"error": "db_insert_failed", "detail": err.Error()})
+			return
+		}
+		jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+		return
+	}
+	// No DB — respond with in-memory acknowledgement
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "in-memory"})
 }
 
 

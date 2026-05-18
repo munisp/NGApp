@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 struct AppState {
     records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 fn generate_otp(length: u32) -> String { use std::time::SystemTime; let seed = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos(); (0..length).map(|i| ((seed >> (i * 4)) % 10).to_string()).collect() }
@@ -147,9 +148,16 @@ fn sanitize_input(s: &str) -> String {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8251);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("sms-otp-service-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
     let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
     });
     println!("sms-otp-service-rs on port {}", port);
     HttpServer::new(move || {

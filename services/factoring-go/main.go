@@ -106,22 +106,44 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleList(w http.ResponseWriter, r *http.Request) {
+	// DB-first query with in-memory fallback
+	if db != nil {
+		rows, err := db.Query("SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT 100", "factoring_go")
+		if err == nil {
+			defer rows.Close()
+			var items []map[string]interface{}
+			for rows.Next() {
+				var id, svc, typ, status, data string
+				var createdAt time.Time
+				if rows.Scan(&id, &svc, &typ, &status, &data, &createdAt) == nil {
+					items = append(items, map[string]interface{}{"id": id, "type": typ, "status": status, "data": data, "created_at": createdAt})
+				}
+			}
+			respondJSON(w, 200, map[string]interface{}{"records": items, "total": len(items), "source": "database"})
+			return
+		}
+		log.Printf("factoring-go: DB query failed, falling back to in-memory: %v", err)
+	}
+	// In-memory fallback
 	mu.Lock()
 	defer mu.Unlock()
-	status := r.URL.Query().Get("status")
-	filtered := []Record{}
-	for _, rec := range records {
-		if status == "" || rec.Status == status {
-			filtered = append(filtered, rec)
-		}
-	}
-	respondJSON(w, 200, map[string]interface{}{"records": filtered, "total": len(filtered), "domain": "Lending"})
+	respondJSON(w, 200, map[string]interface{}{"records": records, "total": len(records), "source": "in-memory"})
 }
 
 func handleCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" { respondJSON(w, 405, map[string]string{"error": "POST required"}); return }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
+	// Inter-service call: health_check
+	_upstreamURL := os.Getenv("CORE_BANKING_URL")
+	if _upstreamURL == "" { _upstreamURL = "http://localhost:8100" }
+	_result, _err := callService("POST", _upstreamURL+"/v1/health", nil)
+	if _err != nil {
+		log.Printf("factoring-go: health_check failed: %v", _err)
+	} else {
+		log.Printf("factoring-go: health_check ok: %v", _result)
+	}
+
 
 	mu.Lock()
 	defer mu.Unlock()

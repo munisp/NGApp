@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 struct AppState {
     records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 fn cache_hit_rate(hits: u64, misses: u64) -> f64 { if hits + misses == 0 { 0.0 } else { hits as f64 / (hits + misses) as f64 * 100.0 } }
@@ -146,9 +147,16 @@ fn sanitize_input(s: &str) -> String {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8219);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("hot-data-cache-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
     let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
     });
     println!("hot-data-cache-rs on port {}", port);
     HttpServer::new(move || {

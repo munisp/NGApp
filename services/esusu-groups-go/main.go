@@ -80,7 +80,30 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
-	jsonResp(w, 201, map[string]interface{}{"created": true, "data": body})
+	id := fmt.Sprintf("%s-%d", "esusu_groups_go", time.Now().UnixNano())
+	dataBytes, _ := json.Marshal(body)
+	if db != nil {
+		_, err := db.Exec(
+			"INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+			id, "esusu_groups_go", "default", "active", string(dataBytes))
+		if err != nil {
+			jsonResp(w, 500, map[string]interface{}{"error": "db_insert_failed", "detail": err.Error()})
+			return
+		}
+			// Inter-service call: health_check
+	upstreamURL := os.Getenv("CORE_BANKING_URL")
+	if upstreamURL == "" { upstreamURL = "http://localhost:8100" }
+	result, err := callService("POST", upstreamURL+"/v1/health", body)
+	if err != nil {
+		log.Printf("esusu-groups-go: health_check call failed: %v", err)
+	} else {
+		log.Printf("esusu-groups-go: health_check result: %v", result)
+	}
+jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+		return
+	}
+	// No DB — respond with in-memory acknowledgement
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "in-memory"})
 }
 
 

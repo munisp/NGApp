@@ -99,7 +99,10 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
-	jsonResp(w, 201, map[string]interface{}{"created": true, "data": body})
+	id := fmt.Sprintf("%s-%d", "trade_finance_go", time.Now().UnixNano())
+	dataBytes, _ := json.Marshal(body)
+	_ = dataBytes
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 
 

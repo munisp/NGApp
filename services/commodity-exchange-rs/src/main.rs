@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 struct AppState {
     records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 fn futures_price(spot: f64, risk_free_rate: f64, storage_cost: f64, tenor_days: u32) -> f64 {
@@ -73,18 +74,45 @@ async fn futures_price_handler(req: actix_web::HttpRequest, body: web::Json<serd
 
 async fn list_records(req: actix_web::HttpRequest, state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
-    let records = state.records.lock().unwrap();
     let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
     let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let offset = (page - 1) * limit;
+    if let Some(ref client) = state.db_client {
+        match client.query(
+            "SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            &[&"commodity_exchange_rs", &(limit as i64), &(offset as i64)]
+        ).await {
+            Ok(rows) => {
+                let items: Vec<serde_json::Value> = rows.iter().map(|r| {
+                    json!({
+                        "id": r.get::<_, String>(0),
+                        "service": r.get::<_, String>(1),
+                        "type": r.get::<_, String>(2),
+                        "status": r.get::<_, String>(3),
+                        "data": r.get::<_, serde_json::Value>(4),
+                    })
+                }).collect();
+                let total: i64 = client.query_one("SELECT COUNT(*) FROM service_records WHERE service = $1", &[&"commodity_exchange_rs"]).await.map(|r| r.get(0)).unwrap_or(0);
+                return HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": "database"}));
+            }
+            Err(e) => { eprintln!("DB query failed: {} — fallback to in-memory", e); }
+        }
+    }
+    let records = state.records.lock().unwrap();
     let total = records.len();
-    let start = (page - 1) * limit;
-    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
-    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": if state.db_url.is_some() { "database" } else { "in-memory" }}))
+    let items: Vec<&serde_json::Value> = records.iter().skip(offset).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": "in-memory"}))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    if let Some(ref client) = state.db_client {
+        if let Ok(row) = client.query_one("SELECT COUNT(*) FROM service_records WHERE service = $1", &[&"commodity_exchange_rs"]).await {
+            let total: i64 = row.get(0);
+            return HttpResponse::Ok().json(json!({"total": total, "service": env!("CARGO_PKG_NAME"), "source": "database"}));
+        }
+    }
     let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME"), "source": "in-memory"}))
 }
 
 
@@ -184,9 +212,16 @@ fn sanitize_input(s: &str) -> String {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8155);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("commodity-exchange-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
     let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
     });
     println!("commodity-exchange-rs listening on port {}", port);
     HttpServer::new(move || {

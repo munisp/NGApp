@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 struct AppState {
     records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 fn partition_key(key: &str, partitions: u32) -> u32 { key.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32)) % partitions }
@@ -147,9 +148,16 @@ fn sanitize_input(s: &str) -> String {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8268);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("fluvio-streams-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
     let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
     });
     println!("fluvio-streams-rs on port {}", port);
     HttpServer::new(move || {

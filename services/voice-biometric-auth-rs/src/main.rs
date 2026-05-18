@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 struct AppState {
     records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
 }
 
 fn voiceprint_similarity(embedding1: &[f64], embedding2: &[f64]) -> f64 { let dot: f64 = embedding1.iter().zip(embedding2).map(|(a, b)| a * b).sum(); let n1: f64 = embedding1.iter().map(|a| a*a).sum::<f64>().sqrt(); let n2: f64 = embedding2.iter().map(|b| b*b).sum::<f64>().sqrt(); if n1 * n2 == 0.0 { 0.0 } else { dot / (n1 * n2) } }
@@ -148,9 +149,16 @@ fn sanitize_input(s: &str) -> String {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8262);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("voice-biometric-auth-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
     let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
     });
     println!("voice-biometric-auth-rs on port {}", port);
     HttpServer::new(move || {

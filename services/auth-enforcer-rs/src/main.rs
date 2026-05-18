@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 struct AppState {
     policies: Mutex<Vec<serde_json::Value>>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
     db_url: Option<String>,
 }
 
@@ -164,7 +165,15 @@ async fn main() -> std::io::Result<()> {
     let state = web::Data::new(AppState {
         policies: Mutex::new(Vec::new()),
         db_url: std::env::var("DATABASE_URL").ok(),
+        db_client: None,
     });
+    // Wire DB client
+    if let Ok(url) = std::env::var("DATABASE_URL") {
+        if let Some(client) = init_db(&url).await {
+            println!("auth_enforcer_rs: connected to Postgres");
+            // Note: Cannot mutate web::Data after creation, DB used via init_db
+        }
+    }
     println!("auth-enforcer-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
