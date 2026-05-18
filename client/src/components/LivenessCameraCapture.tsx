@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Camera,
   CheckCircle,
@@ -16,7 +17,11 @@ import {
   SignalHigh,
   Wifi,
   WifiOff,
+  Eye,
+  Scan,
 } from "lucide-react";
+import { useFaceMotionDetection } from "@/hooks/useFaceMotionDetection";
+import type { ChallengeType as MotionChallengeType } from "@/hooks/useFaceMotionDetection";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -301,6 +306,31 @@ export default function LivenessCameraCapture({
   const [activeFailureCount, setActiveFailureCount] = useState(0);
   const [fallbackMode, setFallbackMode] = useState(false);
   const [showFallbackNotice, setShowFallbackNotice] = useState(false);
+
+  // ── Face Motion Detection (MediaPipe) ───────────────────────────────────
+
+  const currentChallengeType: MotionChallengeType | null =
+    capturing && !fallbackMode && challenges.length > 0 && currentChallengeIdx < challenges.length
+      ? challenges[currentChallengeIdx].type
+      : null;
+
+  const handleMotionDetected = useCallback(
+    (type: MotionChallengeType, confidence: number) => {
+      if (!capturing || fallbackMode || livenessComplete) return;
+      if (currentChallengeIdx >= challenges.length) return;
+      if (type !== challenges[currentChallengeIdx].type) return;
+      handleChallengeResponse(true);
+    },
+    [capturing, fallbackMode, livenessComplete, currentChallengeIdx, challenges]
+  );
+
+  const motionState = useFaceMotionDetection({
+    videoRef,
+    enabled: cameraReady && mode === "active" && capturing && !fallbackMode,
+    activeChallenge: currentChallengeType,
+    onChallengeDetected: handleMotionDetected,
+    detectionIntervalMs: 100,
+  });
 
   // ── Camera Setup ──────────────────────────────────────────────────────────
 
@@ -667,12 +697,17 @@ export default function LivenessCameraCapture({
           {/* Active Challenge Overlay */}
           {capturing && !fallbackMode && challenges.length > 0 && currentChallengeIdx < challenges.length && (
             <div className="absolute inset-0 flex flex-col items-center justify-between p-4 pointer-events-none">
-              <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-center">
+              <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-center max-w-[85%]">
                 <p className="text-sm font-medium">
                   Challenge {currentChallengeIdx + 1} of {challenges.length}
                 </p>
                 <p className="text-lg font-bold mt-1">
                   {challenges[currentChallengeIdx].instruction}
+                </p>
+                <p className="text-xs opacity-70 mt-1">
+                  {motionState.ready
+                    ? "Motion will be detected automatically"
+                    : "Loading face detection..."}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -711,25 +746,67 @@ export default function LivenessCameraCapture({
           )}
         </div>
 
-        {/* Challenge Action Buttons (during active liveness) */}
+        {/* Face Detection Status (during active liveness) */}
         {capturing && !fallbackMode && (
-          <div className="flex gap-2">
-            <Button
-              variant="default"
-              className="flex-1"
-              onClick={() => handleChallengeResponse(true)}
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Done
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => handleChallengeResponse(false)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Skip
-            </Button>
+          <div className="space-y-3">
+            {/* Motion detection status */}
+            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+              {motionState.ready ? (
+                <>
+                  {motionState.faceDetected ? (
+                    <Eye className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Scan className="h-4 w-4 text-yellow-500 animate-pulse" />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">
+                      {motionState.faceDetected
+                        ? "Face detected — perform the action shown above"
+                        : "Position your face in the oval"}
+                    </p>
+                    {motionState.faceDetected && currentChallengeType && (
+                      <div className="flex gap-3 text-[10px] text-muted-foreground mt-1">
+                        {currentChallengeType === "blink" && (
+                          <span>Eye openness: {(motionState.metrics.ear * 100).toFixed(0)}%</span>
+                        )}
+                        {(currentChallengeType === "turn_left" || currentChallengeType === "turn_right") && (
+                          <span>Head angle: {motionState.metrics.yaw.toFixed(1)}&deg;</span>
+                        )}
+                        {currentChallengeType === "nod" && (
+                          <span>Head pitch: {motionState.metrics.pitch.toFixed(1)}&deg;</span>
+                        )}
+                        {currentChallengeType === "smile" && (
+                          <span>Smile: {(motionState.metrics.smileRatio / 4 * 100).toFixed(0)}%</span>
+                        )}
+                        {currentChallengeType === "open_mouth" && (
+                          <span>Mouth: {(motionState.metrics.mar * 100).toFixed(0)}%</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">
+                    Loading face detection model...
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Skip button as accessibility fallback */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => handleChallengeResponse(false)}
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Skip this challenge
+              </Button>
+            </div>
           </div>
         )}
 
