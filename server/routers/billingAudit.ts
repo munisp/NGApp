@@ -152,7 +152,7 @@ export const billingAuditRouter = router({
         if (input.startDate) conditions.push(gte(billingAuditLog.createdAt, new Date(input.startDate)));
         if (input.endDate) conditions.push(lte(billingAuditLog.createdAt, new Date(input.endDate)));
 
-        const logs = await db
+        const logs = await (await db())
           .select()
           .from(billingAuditLog)
           .where(and(...conditions))
@@ -160,7 +160,7 @@ export const billingAuditRouter = router({
           .limit(input.limit)
           .offset(input.offset);
 
-        const [{ count }] = await db
+        const [{ count }] = await (await db())
           .select({ count: sql<number>`count(*)` })
           .from(billingAuditLog)
           .where(and(...conditions));
@@ -185,12 +185,12 @@ export const billingAuditRouter = router({
           gte(billingAuditLog.createdAt, since),
         ];
 
-        const [{ total }] = await db
+        const [{ total }] = await (await db())
           .select({ total: sql<number>`count(*)` })
           .from(billingAuditLog)
           .where(and(...conditions));
 
-        const actionCounts = await db
+        const actionCounts = await (await db())
           .select({
             action: billingAuditLog.action,
             count: sql<number>`count(*)`,
@@ -199,7 +199,7 @@ export const billingAuditRouter = router({
           .where(and(...conditions))
           .groupBy(billingAuditLog.action);
 
-        const recentChanges = await db
+        const recentChanges = await (await db())
           .select()
           .from(billingAuditLog)
           .where(and(...conditions))
@@ -229,7 +229,7 @@ export const billingAuditRouter = router({
       try {
         await requireBillingPermission(ctx.user.id, input.tenantId, "view_ledger");
 
-        const history = await db
+        const history = await (await db())
           .select()
           .from(billingAuditLog)
           .where(and(
@@ -257,7 +257,7 @@ export const billingAuditRouter = router({
       try {
         await requireBillingPermission(ctx.user.id, input.tenantId, "export_data");
 
-        const logs = await db
+        const logs = await (await db())
           .select()
           .from(billingAuditLog)
           .where(and(

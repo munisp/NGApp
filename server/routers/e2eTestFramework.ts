@@ -9,7 +9,7 @@ export const e2eTestFrameworkRouter = router({
   listSuites: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.createdAt)).limit(input?.limit ?? 20);
+      const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.startedAt)).limit(input?.limit ?? 20);
       return { suites: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

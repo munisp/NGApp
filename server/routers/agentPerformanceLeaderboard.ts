@@ -14,8 +14,8 @@ export const agentPerformanceLeaderboardRouter = router({
       const leaderboard = [];
       for (const row of rows) {
         if (row.agentId) {
-          const [agent] = await db.select({ businessName: agents.businessName, location: agents.location, tier: agents.tier }).from(agents).where(eq(agents.id, row.agentId)).limit(1);
-          leaderboard.push({ rank: leaderboard.length + 1, agentId: row.agentId, name: agent?.businessName ?? "Unknown", location: agent?.location, tier: agent?.tier, txCount: Number(row.txCount), totalVolume: Number(row.totalVolume ?? 0) });
+          const [agent] = await db.select({ businessName: agents.name, location: agents.location, tier: agents.tier }).from(agents).where(eq(agents.id, row.agentId)).limit(1);
+          leaderboard.push({ rank: leaderboard.length + 1, agentId: row.agentId, name: agent?.name ?? "Unknown", location: agent?.location, tier: agent?.tier, txCount: Number(row.txCount), totalVolume: Number(row.totalVolume ?? 0) });
         }
       }
       return { leaderboard, period: input.period, generatedAt: new Date().toISOString() };

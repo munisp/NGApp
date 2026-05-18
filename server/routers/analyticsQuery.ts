@@ -127,7 +127,7 @@ export const analyticsQueryRouter = router({
         // Fallback: search billing ledger by invoice ID
         const db = (await getDb())!;
         const results = await db.select().from(platformBillingLedger)
-          .where(sql`${platformBillingLedger.invoiceId} LIKE ${"%" + input.query + "%"}`)
+          .where(sql`${platformBillingLedger.transactionRef} LIKE ${"%" + input.query + "%"}`)
           .limit(input.limit);
 
         return {

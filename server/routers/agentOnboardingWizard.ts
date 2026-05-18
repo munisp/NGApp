@@ -16,7 +16,7 @@ export const agentOnboardingWizardRouter = router({
       const [terminal] = await db.select({ cnt: count() }).from(posTerminals).where(eq(posTerminals.agentId, input.agentId)).limit(100);
       const [training] = await db.select({ cnt: count() }).from(trainingEnrollments).where(eq(trainingEnrollments.agentId, input.agentId)).limit(100);
       const steps = [
-        { name: "Profile", completed: !!agent.businessName, order: 1 },
+        { name: "Profile", completed: !!agent.name, order: 1 },
         { name: "KYC Verification", completed: Number(kyc.cnt) > 0, order: 2 },
         { name: "Float Setup", completed: Number(floatReq.cnt) > 0, order: 3 },
         { name: "Terminal Assignment", completed: Number(terminal.cnt) > 0, order: 4 },
@@ -24,7 +24,7 @@ export const agentOnboardingWizardRouter = router({
       ];
       const completedSteps = steps.filter(s => s.completed).length;
       const currentStep = steps.find(s => !s.completed)?.order ?? 5;
-      return { step: currentStep, steps, completedSteps, totalSteps: 5, agentName: agent.businessName, status: completedSteps === 5 ? "completed" : "in_progress" };
+      return { step: currentStep, steps, completedSteps, totalSteps: 5, agentName: agent.name, status: completedSteps === 5 ? "completed" : "in_progress" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });

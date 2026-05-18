@@ -9,7 +9,7 @@ export const automatedTestingFrameworkRouter = router({
   listTestRuns: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.createdAt)).limit(input?.limit ?? 50);
+      const rows = await db.select().from(loadTestRuns).orderBy(desc(loadTestRuns.startedAt)).limit(input?.limit ?? 50);
       return { testRuns: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

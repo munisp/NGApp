@@ -29,7 +29,7 @@ export const agentGamificationRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return { totalBadges: BADGE_DEFINITIONS.length, activePlayers: 0, topScore: 0, avgEngagement: "0%" };
-    const [stats] = await db.select({ activePlayers: count(), topScore: sum(agentAchievements.xpEarned) }).from(agentAchievements).limit(100);
+    const [stats] = await db.select({ activePlayers: count(), topScore: sum(agentAchievements.points) }).from(agentAchievements).limit(100);
     return { totalBadges: BADGE_DEFINITIONS.length, activePlayers: stats.activePlayers || 0, topScore: Number(stats.topScore || 0), avgEngagement: "78%" };
   }),
 
@@ -43,12 +43,12 @@ export const agentGamificationRouter = router({
         const since = new Date(Date.now() - periodDays[input?.period || "monthly"] * 86400000);
         const data = await db.select({
           agentId: agentAchievements.agentId,
-          totalXp: sum(agentAchievements.xpEarned),
+          totalXp: sum(agentAchievements.points),
           achievementCount: count(),
         }).from(agentAchievements)
-          .where(gte(agentAchievements.earnedAt, since))
+          .where(gte(agentAchievements.unlockedAt, since))
           .groupBy(agentAchievements.agentId)
-          .orderBy(desc(sum(agentAchievements.xpEarned)))
+          .orderBy(desc(sum(agentAchievements.points)))
           .limit(input?.limit || 20);
         const leaderboard = data.map((d, i) => ({
           rank: i + 1,
@@ -77,7 +77,7 @@ export const agentGamificationRouter = router({
         const db = (await getDb())!;
         const agentIdNum = parseInt(input.agentId.replace("AGT-", ""), 10) || 0;
         if (!db) return { agentId: input.agentId, totalScore: 0, currentTier: "bronze", badges: [], streak: 0, nextMilestone: null };
-        const [xpStats] = await db.select({ totalXp: sum(agentAchievements.xpEarned) }).from(agentAchievements).where(eq(agentAchievements.agentId, agentIdNum)).limit(100);
+        const [xpStats] = await db.select({ totalXp: sum(agentAchievements.points) }).from(agentAchievements).where(eq(agentAchievements.agentId, agentIdNum)).limit(100);
         const badges = await db.select().from(agentBadges).where(eq(agentBadges.agentId, agentIdNum)).limit(100);
         const totalScore = Number(xpStats?.totalXp || 0);
         const level = LEVEL_THRESHOLDS.findIndex(t => totalScore < t);
@@ -99,7 +99,7 @@ export const agentGamificationRouter = router({
   getAchievements: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db) return [];
-    const items = await db.select().from(agentAchievements).orderBy(desc(agentAchievements.earnedAt)).limit(50);
+    const items = await db.select().from(agentAchievements).orderBy(desc(agentAchievements.unlockedAt)).limit(50);
     return items;
   }),
 

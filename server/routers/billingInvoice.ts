@@ -57,8 +57,8 @@ export const billingInvoiceRouter = router({
         const ledgerEntries = await db
           .select({
             totalGrossFees: sql<number>`COALESCE(SUM(${platformBillingLedger.grossFee}), 0)`,
-            totalPlatformShare: sql<number>`COALESCE(SUM(${platformBillingLedger.platformShare}), 0)`,
-            totalClientShare: sql<number>`COALESCE(SUM(${platformBillingLedger.clientShare}), 0)`,
+            totalPlatformShare: sql<number>`COALESCE(SUM(${platformBillingLedger.platformRevenue}), 0)`,
+            totalClientShare: sql<number>`COALESCE(SUM(${platformBillingLedger.clientRevenue}), 0)`,
             totalSwitchFee: sql<number>`COALESCE(SUM(${platformBillingLedger.switchFee}), 0)`,
             totalAgentCommission: sql<number>`COALESCE(SUM(${platformBillingLedger.agentCommission}), 0)`,
             transactionCount: sql<number>`COUNT(*)`,

@@ -21,7 +21,7 @@ export const bankingWorkflowPatternsRouter = router({
       const db = (await getDb())!;
       const [wf] = await db.select().from(workflowDefinitions).where(eq(workflowDefinitions.id, input.id)).limit(1);
       if (!wf) return null;
-      const instances = await db.select().from(workflowInstances).where(eq(workflowInstances.workflowId, input.id)).orderBy(desc(workflowInstances.createdAt)).limit(20);
+      const instances = await db.select().from(workflowInstances).where(eq(workflowInstances.definitionId, input.id)).orderBy(desc(workflowInstances.createdAt)).limit(20);
       return { ...wf, instances };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -31,7 +31,7 @@ export const bankingWorkflowPatternsRouter = router({
   listInstances: protectedProcedure.input(z.object({ workflowId: z.number().optional(), limit: z.number().default(50) })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = input.workflowId ? await db.select().from(workflowInstances).where(eq(workflowInstances.workflowId, input.workflowId)).orderBy(desc(workflowInstances.createdAt)).limit(input.limit) : await db.select().from(workflowInstances).orderBy(desc(workflowInstances.createdAt)).limit(input.limit);
+      const rows = input.workflowId ? await db.select().from(workflowInstances).where(eq(workflowInstances.definitionId, input.workflowId)).orderBy(desc(workflowInstances.createdAt)).limit(input.limit) : await db.select().from(workflowInstances).orderBy(desc(workflowInstances.createdAt)).limit(input.limit);
       return { instances: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
