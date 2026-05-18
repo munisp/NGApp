@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
 use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 // ─── Domain Types ───────────────────────────────────────────────────────────
 
@@ -193,7 +194,6 @@ fn rand_u32() -> u32 {
 
 fn chrono_now() -> String {
     use std::time::SystemTime;
-use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
     let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
 }
