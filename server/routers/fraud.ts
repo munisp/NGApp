@@ -159,7 +159,7 @@ export const fraudRouter = router({
   // ── Fraud Rule Management ─────────────────────────────────────────────────
   listRules: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return [];
+    if (!db) throw new Error("Database connection unavailable");
     try {
       const rows = await db
         .select()
@@ -470,7 +470,7 @@ export const fraudRouter = router({
       ];
       const inserted = await db
         .insert(fraudRules)
-        .values(DEFAULT_RULES)
+        .values(DEFAULT_RULES as any)
         .returning({ id: fraudRules.id });
       await writeAuditLog({
         agentId: agent.id,
@@ -497,7 +497,7 @@ export const fraudRouter = router({
   // ── Hourly fraud stats for dashboard chart (last 24 hours) ───────────────
   hourlyStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return [];
+    if (!db) throw new Error("Database connection unavailable");
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const hourExpr = sql<string>`TO_CHAR(DATE_TRUNC('hour', ${fraudAlerts.createdAt}), 'HH24:00')`;
     const rows = await db

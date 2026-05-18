@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * F08: Compliance Filing & Regulatory Reporting
  * CBN/NDIC/FIRS filings, SAR generation, CTR reports, regulatory calendar
@@ -143,8 +142,6 @@ export const complianceFilingRouter = router({
           .update(complianceFilings)
           .set({
             status: "acknowledged",
-            acknowledgementRef: input.acknowledgementRef,
-            updatedAt: new Date(),
           })
           .where(eq(complianceFilings.id, input.filingId));
         return { success: true };

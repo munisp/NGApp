@@ -42,7 +42,7 @@ async function generateMonthlyReportFromDb(
   institutionCode: string
 ) {
   const db = (await getDb())!;
-  if (!db) return null;
+  if (!db) throw new Error("Database connection unavailable");
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 0, 23, 59, 59);
   const txStats = await db.execute(sql`
@@ -89,7 +89,7 @@ async function generateQuarterlyFraudReportFromDb(
   institutionCode: string
 ) {
   const db = (await getDb())!;
-  if (!db) return null;
+  if (!db) throw new Error("Database connection unavailable");
   const quarterStart = new Date(year, (quarter - 1) * 3, 1);
   const quarterEnd = new Date(year, quarter * 3, 0, 23, 59, 59);
   const fraudStats = await db.execute(sql`

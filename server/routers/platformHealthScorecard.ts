@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — platformHealthScorecard
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -169,7 +168,7 @@ const acknowledgeAlert = protectedProcedure
       }
       const [row] = await db
         .insert(platform_health_checks)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "acknowledgeAlert completed" };
     } catch (error) {

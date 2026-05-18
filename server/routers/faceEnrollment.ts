@@ -180,7 +180,7 @@ export const faceEnrollmentRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select({
           id: faceEnrollments.id,
@@ -216,7 +216,7 @@ export const faceEnrollmentRouter = router({
     .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const [enrollment] = await db
           .select({
             id: faceEnrollments.id,

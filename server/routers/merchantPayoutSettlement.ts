@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * F07: Merchant Payout Settlement
  * Batch payouts, settlement cycles, reconciliation, payout tracking
@@ -108,8 +107,6 @@ export const merchantPayoutSettlementRouter = router({
           .update(merchantPayouts)
           .set({
             status: "approved",
-            approvedBy: ctx.user?.id,
-            updatedAt: new Date(),
           })
           .where(eq(merchantPayouts.id, input.payoutId));
         return { success: true };
@@ -133,9 +130,7 @@ export const merchantPayoutSettlementRouter = router({
           .update(merchantPayouts)
           .set({
             status: "processing",
-            transferRef: input.transferRef,
             processedAt: new Date(),
-            updatedAt: new Date(),
           })
           .where(eq(merchantPayouts.id, input.payoutId));
         return { success: true };
@@ -159,8 +154,6 @@ export const merchantPayoutSettlementRouter = router({
           .update(merchantPayouts)
           .set({
             status: "completed",
-            completedAt: new Date(),
-            updatedAt: new Date(),
           })
           .where(eq(merchantPayouts.id, input.payoutId));
         return { success: true };

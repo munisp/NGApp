@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -124,31 +124,31 @@ export const sprint23Router = router({
     return { configs: rows };
   }),
 
-  disputeAutoRules: publicProcedure.query(async () => {
+  disputeAutoRules: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  kycVerification: publicProcedure.query(async () => {
+  kycVerification: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  rateLimits: publicProcedure.query(async () => {
+  rateLimits: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  reportComparison: publicProcedure.query(async () => {
+  reportComparison: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  scheduledDelivery: publicProcedure.query(async () => {
+  scheduledDelivery: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  thresholds: publicProcedure.query(async () => {
+  thresholds: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  webhookDelivery: publicProcedure.query(async () => {
+  webhookDelivery: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

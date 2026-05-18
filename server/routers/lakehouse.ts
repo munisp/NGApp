@@ -367,7 +367,7 @@ export const lakehouseRouter = router({
           grid[key].count++;
         }
 
-        return { cells: Object.values(grid), source: "postgresql-fallback" };
+        return { cells: Object.values(grid as any), source: "postgresql-fallback" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -471,7 +471,7 @@ export const lakehouseRouter = router({
           grid[key].volume += amount;
         }
 
-        return { cells: Object.values(grid), source: "postgresql-fallback" };
+        return { cells: Object.values(grid as any), source: "postgresql-fallback" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({

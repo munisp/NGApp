@@ -109,7 +109,7 @@ export const simOrchestratorRouter = router({
           probedAt,
         }));
 
-        await db.insert(simProbeLog).values(rows);
+        await db.insert(simProbeLog).values(rows as any);
         return { accepted: true, ingested: rows.length };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { commissionRules } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const guideFeedbackRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
@@ -35,7 +35,7 @@ export const guideFeedbackRouter = router({
       };
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
@@ -52,7 +52,7 @@ export const guideFeedbackRouter = router({
       return record;
     }),
 
-  getSummary: publicProcedure.query(async () => {
+  getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
     const [totalResult] = await database
@@ -65,7 +65,7 @@ export const guideFeedbackRouter = router({
     };
   }),
 
-  getRecent: publicProcedure
+  getRecent: protectedProcedure
     .input(
       z.object({
         days: z.number().min(1).max(90).default(7),
@@ -87,11 +87,11 @@ export const guideFeedbackRouter = router({
       return results;
     }),
 
-  stats: publicProcedure.query(async () => {
+  stats: protectedProcedure.query(async () => {
     return { total: 0, active: 0, pending: 0 };
   }),
 
-  submit: publicProcedure
+  submit: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -99,7 +99,7 @@ export const guideFeedbackRouter = router({
       return { success: true };
     }),
 
-  summary: publicProcedure.query(async () => {
+  summary: protectedProcedure.query(async () => {
     return { total: 0, breakdown: [], lastUpdated: new Date().toISOString() };
   }),
 });

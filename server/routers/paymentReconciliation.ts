@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — paymentReconciliation
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -172,7 +171,7 @@ const runReconciliation = protectedProcedure
       }
       const [row] = await db
         .insert(floatReconciliations)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "runReconciliation completed" };
     } catch (error) {
@@ -214,7 +213,7 @@ const resolveDiscrepancy = protectedProcedure
       }
       const [row] = await db
         .insert(floatReconciliations)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "resolveDiscrepancy completed" };
     } catch (error) {

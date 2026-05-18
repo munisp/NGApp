@@ -46,7 +46,7 @@ export const mqttBridgeRouter = router({
   // ── Get current MQTT bridge config ──────────────────────────────────────────
   getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return null;
+    if (!db) throw new Error("Database connection unavailable");
     const rows = await db.select().from(mqttBridgeConfig).limit(1);
     if (rows.length === 0) {
       return {

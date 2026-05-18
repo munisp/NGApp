@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — agentLoanOrigination2
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -136,7 +135,7 @@ const submitApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "submitApplication completed" };
     } catch (error) {
@@ -178,7 +177,7 @@ const approveApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "approveApplication completed" };
     } catch (error) {
@@ -220,7 +219,7 @@ const rejectApplication = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "rejectApplication completed" };
     } catch (error) {

@@ -2,7 +2,7 @@
  * Item 24: API Documentation Generation
  * Provides OpenAPI/Swagger spec for all tRPC endpoints and microservices.
  */
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 const API_SPEC = {
@@ -123,9 +123,9 @@ const API_SPEC = {
 } as const;
 
 export const apiDocsRouter = router({
-  openapi: publicProcedure.query(() => API_SPEC),
+  openapi: protectedProcedure.query(() => API_SPEC),
 
-  endpoints: publicProcedure.query(() => {
+  endpoints: protectedProcedure.query(() => {
     return {
       trpc: {
         base: "/api/trpc",

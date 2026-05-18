@@ -136,7 +136,7 @@ export const tenantFeeOverridesRouter = router({
           });
         const [row] = await db
           .insert(tenantFeeOverrides)
-          .values(input)
+          .values(input as any)
           .returning();
         return { ...row, message: "Fee override created" };
       } catch (error) {

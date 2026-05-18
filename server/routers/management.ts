@@ -87,7 +87,7 @@ export const managementRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           return db
             .select()
             .from(auditLog)
@@ -199,7 +199,7 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [agent] = await db.insert(agents).values(input).returning();
+          const [agent] = await db.insert(agents).values(input as any).returning();
           return agent;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -498,7 +498,7 @@ export const managementRouter = router({
   commissions: router({
     rules: mgmtProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select()
         .from(commissionRules)
@@ -539,7 +539,7 @@ export const managementRouter = router({
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           const [rule] = await db
             .insert(commissionRules)
-            .values(input)
+            .values(input as any)
             .returning();
           return rule;
         } catch (error) {
@@ -694,7 +694,7 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [t] = await db.insert(posTerminals).values(input).returning();
+          const [t] = await db.insert(posTerminals).values(input as any).returning();
           return t;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -745,7 +745,7 @@ export const managementRouter = router({
       }),
     getTerminalGroups: mgmtProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select()
         .from(terminalGroups)
@@ -758,7 +758,7 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [g] = await db.insert(terminalGroups).values(input).returning();
+          const [g] = await db.insert(terminalGroups).values(input as any).returning();
           return g;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -898,7 +898,7 @@ export const managementRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           const where = input.terminalId
             ? eq(serviceRecords.terminalId, input.terminalId)
             : undefined;
@@ -930,7 +930,7 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [r] = await db.insert(serviceRecords).values(input).returning();
+          const [r] = await db.insert(serviceRecords).values(input as any).returning();
           return r;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -943,7 +943,7 @@ export const managementRouter = router({
       }),
     getSoftwareUpdates: mgmtProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select()
         .from(softwareUpdates)
@@ -967,7 +967,7 @@ export const managementRouter = router({
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           const [u] = await db
             .insert(softwareUpdates)
-            .values(input)
+            .values(input as any)
             .returning();
           return u;
         } catch (error) {
@@ -995,7 +995,7 @@ export const managementRouter = router({
     }),
     getFraudAlerts: mgmtProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select()
         .from(fraudAlerts)
@@ -1138,7 +1138,7 @@ export const managementRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           return db
             .select({
               agentId: transactions.agentId,
@@ -1257,7 +1257,7 @@ export const managementRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           const where = input.terminalId
             ? eq(multiSimProfiles.terminalId, input.terminalId)
             : undefined;
@@ -1532,7 +1532,7 @@ export const managementRouter = router({
         try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          const [ad] = await db.insert(storefrontAds).values(input).returning();
+          const [ad] = await db.insert(storefrontAds).values(input as any).returning();
           return ad;
         } catch (error) {
           if (error instanceof TRPCError) throw error;

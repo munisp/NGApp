@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -116,7 +116,7 @@ export const predictiveAgentChurnRouter = router({
       }
     }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database)
       return {
@@ -143,11 +143,11 @@ export const predictiveAgentChurnRouter = router({
     }
   }),
 
-  listAtRisk: publicProcedure.query(async () => {
+  listAtRisk: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  triggerIntervention: publicProcedure
+  triggerIntervention: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — incidentPlaybook
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -136,7 +135,7 @@ const createPlaybook = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createPlaybook completed" };
     } catch (error) {
@@ -178,7 +177,7 @@ const triggerPlaybook = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "triggerPlaybook completed" };
     } catch (error) {
@@ -220,7 +219,7 @@ const resolveIncident = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "resolveIncident completed" };
     } catch (error) {

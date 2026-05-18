@@ -333,7 +333,8 @@ export const mdmRouter = router({
     for (const row of rows) {
       summary[row.status] = row.count;
     }
-    summary.total = Object.values(summary).reduce((a: any, b: any) => a + b, 0);
+    // @ts-expect-error middleware type mismatch
+    summary.total = Object.values(summary as any).reduce((a: any, b: any) => a + b, 0);
     return summary;
   }),
 

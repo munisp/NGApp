@@ -115,7 +115,7 @@ export const gl_accountsRouter = router({
             code: "CONFLICT",
             message: `Account code ${input.accountCode} already exists`,
           });
-        const [row] = await db.insert(gl_accounts).values(input).returning();
+        const [row] = await db.insert(gl_accounts).values(input as any).returning();
         return { ...row, normalBalance: NORMAL_BALANCE[input.accountType] };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

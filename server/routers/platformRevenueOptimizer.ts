@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -116,7 +116,7 @@ export const platformRevenueOptimizerRouter = router({
       }
     }),
 
-  createExperiment: publicProcedure
+  createExperiment: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -124,7 +124,7 @@ export const platformRevenueOptimizerRouter = router({
       return { success: true };
     }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database)
       return {
@@ -151,7 +151,7 @@ export const platformRevenueOptimizerRouter = router({
     }
   }),
 
-  listExperiments: publicProcedure.query(async () => {
+  listExperiments: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

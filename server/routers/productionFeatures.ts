@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -158,11 +158,11 @@ export const productionFeaturesRouter = router({
       }
     }),
 
-  batchOps: publicProcedure.query(async () => {
+  batchOps: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  prefMatrix: publicProcedure.query(async () => {
+  prefMatrix: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

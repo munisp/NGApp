@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const weeklyReportsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
@@ -35,7 +35,7 @@ export const weeklyReportsRouter = router({
       };
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
@@ -52,7 +52,7 @@ export const weeklyReportsRouter = router({
       return record;
     }),
 
-  getSummary: publicProcedure.query(async () => {
+  getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
     const [totalResult] = await database
@@ -65,7 +65,7 @@ export const weeklyReportsRouter = router({
     };
   }),
 
-  getRecent: publicProcedure
+  getRecent: protectedProcedure
     .input(
       z.object({
         days: z.number().min(1).max(90).default(7),
@@ -87,7 +87,7 @@ export const weeklyReportsRouter = router({
       return results;
     }),
 
-  addRecipient: publicProcedure
+  addRecipient: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -95,7 +95,7 @@ export const weeklyReportsRouter = router({
       return { success: true };
     }),
 
-  generate: publicProcedure
+  generate: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -103,27 +103,27 @@ export const weeklyReportsRouter = router({
       return { success: true };
     }),
 
-  getEmailConfig: publicProcedure.query(async () => {
+  getEmailConfig: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  getPdfHtml: publicProcedure.query(async () => {
+  getPdfHtml: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  getSchedule: publicProcedure.query(async () => {
+  getSchedule: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  latest: publicProcedure.query(async () => {
+  latest: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listRecipients: publicProcedure.query(async () => {
+  listRecipients: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  removeRecipient: publicProcedure
+  removeRecipient: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -131,7 +131,7 @@ export const weeklyReportsRouter = router({
       return { success: true };
     }),
 
-  sendEmail: publicProcedure
+  sendEmail: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -139,7 +139,7 @@ export const weeklyReportsRouter = router({
       return { success: true };
     }),
 
-  updateEmailConfig: publicProcedure
+  updateEmailConfig: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -147,7 +147,7 @@ export const weeklyReportsRouter = router({
       return { success: true };
     }),
 
-  updateSchedule: publicProcedure
+  updateSchedule: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

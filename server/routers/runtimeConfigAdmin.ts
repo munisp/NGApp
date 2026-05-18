@@ -76,7 +76,7 @@ export const runtimeConfigAdminRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const rows = await db
           .select()
           .from(systemConfig)
@@ -157,7 +157,7 @@ export const runtimeConfigAdminRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const rows = await db
           .select()
           .from(systemConfig)

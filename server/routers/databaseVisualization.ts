@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — databaseVisualization
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -238,7 +237,7 @@ const runHealthCheck = protectedProcedure
       }
       const [row] = await db
         .insert(deviceLocations)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "runHealthCheck completed" };
     } catch (error) {

@@ -53,7 +53,7 @@ export const dataExportRouter = router({
         if (rows.length === 0) return { data: "", count: 0, format: "csv" };
         const headers = Object.keys(rows[0]).join(",");
         const csvRows = rows.map(r =>
-          Object.values(r)
+          Object.values(r as any)
             .map(v =>
               typeof v === "string"
                 ? `"${v.replace(/"/g, '""')}"`
@@ -97,7 +97,7 @@ export const dataExportRouter = router({
         if (rows.length === 0) return { data: "", count: 0, format: "csv" };
         const headers = Object.keys(rows[0]).join(",");
         const csvRows = rows.map(r =>
-          Object.values(r)
+          Object.values(r as any)
             .map(v =>
               typeof v === "string"
                 ? `"${v.replace(/"/g, '""')}"`

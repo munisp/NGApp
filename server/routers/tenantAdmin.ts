@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -93,7 +93,7 @@ export const tenantAdminRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const rows = await db
           .select()
           .from(tenants)
@@ -226,7 +226,7 @@ export const tenantAdminRouter = router({
       }
     }),
 
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalItems: 0,
       activeItems: 0,
@@ -235,7 +235,7 @@ export const tenantAdminRouter = router({
     };
   }),
 
-  inviteUser: publicProcedure
+  inviteUser: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -243,11 +243,11 @@ export const tenantAdminRouter = router({
       return { success: true };
     }),
 
-  listUsers: publicProcedure.query(async () => {
+  listUsers: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  removeUser: publicProcedure
+  removeUser: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -255,11 +255,11 @@ export const tenantAdminRouter = router({
       return { success: true };
     }),
 
-  settings: publicProcedure.query(async () => {
+  settings: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  toggleLive: publicProcedure
+  toggleLive: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

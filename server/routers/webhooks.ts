@@ -17,7 +17,7 @@ export const webhooksRouter = router({
   // ── List all webhook endpoints ────────────────────────────────────────────
   list: mgmtProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return [];
+    if (!db) throw new Error("Database connection unavailable");
     return db
       .select()
       .from(webhookEndpoints)

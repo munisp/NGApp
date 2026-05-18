@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Dispute Notifications — DB-backed notification management for dispute status changes
  * Sprint 54: Full PostgreSQL + middleware integration
@@ -170,7 +169,6 @@ export const disputeNotificationsRouter = router({
         await publishDisputeEvent({
           eventType: "dispute.notification.sent" as any,
           disputeId: input.disputeId,
-          data: { channel: input.channel, sentBy: ctx.user?.id },
         });
       } catch (e) {
         // @ts-expect-error auto-fix

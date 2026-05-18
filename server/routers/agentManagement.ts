@@ -51,7 +51,7 @@ export const agentManagementRouter = router({
     try {
       await requireAdmin(ctx.req);
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       const rows = await db
         .select()
         .from(agents)
@@ -193,7 +193,7 @@ export const agentManagementRouter = router({
       try {
         await requireAdmin(ctx.req);
         const db = (await getDb())!;
-        if (!db) return [];
+        if (!db) throw new Error("Database connection unavailable");
         const rows = await db
           .select({
             id: floatTopUpRequests.id,

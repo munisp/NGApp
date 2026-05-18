@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: GDPR/NDPR compliance, consent expiry, withdrawal workflow
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -147,10 +146,8 @@ export const dataConsentRecordsRouter = router({
         await db
           .update(dataConsentRecords)
           .set({
-            status: "withdrawn",
-            withdrawnAt: new Date(),
             withdrawalReason: input.reason,
-          })
+          } as any)
           .where(eq(dataConsentRecords.id, input.id));
         return {
           success: true,

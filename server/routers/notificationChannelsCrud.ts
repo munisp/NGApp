@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Channel health monitoring, failover routing, rate limiting
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -98,7 +97,7 @@ export const notification_channelsRouter = router({
         const db = (await getDb())!;
         const [row] = await db
           .insert(notification_channels)
-          .values(input)
+          .values(input as any)
           .returning();
         return {
           ...row,

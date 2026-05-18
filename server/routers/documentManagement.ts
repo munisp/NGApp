@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { kycDocuments, auditLog } from "../../drizzle/schema";
@@ -147,7 +147,7 @@ export const documentManagementRouter = router({
     };
   }),
 
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalItems: 0,
       activeItems: 0,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Report scheduling, parameter validation, output formatting
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -79,7 +78,7 @@ export const biReportDefinitionsRouter = router({
         const db = (await getDb())!;
         const [row] = await db
           .insert(biReportDefinitions)
-          .values(input)
+          .values(input as any)
           .returning();
         return {
           ...row,

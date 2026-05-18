@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — agentTrainingPortal
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -205,7 +204,7 @@ const submitQuiz = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "submitQuiz completed" };
     } catch (error) {
@@ -247,7 +246,7 @@ const createCourse = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createCourse completed" };
     } catch (error) {

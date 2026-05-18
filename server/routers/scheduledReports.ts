@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -161,7 +161,7 @@ export const scheduledReportsRouter = router({
       }
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({ data: z.record(z.string(), z.any()).optional() }))
     .mutation(async ({ input }) => {
       return {
@@ -171,21 +171,21 @@ export const scheduledReportsRouter = router({
       };
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.union([z.number(), z.string()]) }))
     .mutation(async ({ input }) => {
       return { success: true, deletedId: input.id };
     }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  recentRuns: publicProcedure.query(async () => {
+  recentRuns: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  runNow: publicProcedure
+  runNow: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -193,11 +193,11 @@ export const scheduledReportsRouter = router({
       return { success: true };
     }),
 
-  templates: publicProcedure.query(async () => {
+  templates: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

@@ -35,7 +35,7 @@ async function getMerchantFromRequest(
   const merchantCode = req.headers?.["x-merchant-code"] as string | undefined;
   if (!merchantCode) return null;
   const db = (await getDb())!;
-  if (!db) return null;
+  if (!db) throw new Error("Database connection unavailable");
   const rows = await db
     .select({
       id: merchants.id,

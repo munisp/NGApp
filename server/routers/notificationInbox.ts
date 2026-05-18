@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -155,7 +155,7 @@ export const notificationInboxRouter = router({
       }
     }),
 
-  archive: publicProcedure
+  archive: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -163,7 +163,7 @@ export const notificationInboxRouter = router({
       return { success: true };
     }),
 
-  bulkDelete: publicProcedure
+  bulkDelete: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -171,11 +171,11 @@ export const notificationInboxRouter = router({
       return { success: true };
     }),
 
-  getUnreadCounts: publicProcedure.query(async () => {
+  getUnreadCounts: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  toggleStar: publicProcedure.query(async () => {
+  toggleStar: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

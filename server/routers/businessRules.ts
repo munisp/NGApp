@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -92,7 +92,7 @@ export const businessRulesRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const rows = await db
           .select()
           .from(systemConfig)
@@ -266,19 +266,19 @@ export const businessRulesRouter = router({
       }
     }),
 
-  cbnLimits: publicProcedure.query(async () => {
+  cbnLimits: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  commissionRates: publicProcedure.query(async () => {
+  commissionRates: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  kycTierLimits: publicProcedure.query(async () => {
+  kycTierLimits: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  rewardCatalog: publicProcedure.query(async () => {
+  rewardCatalog: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

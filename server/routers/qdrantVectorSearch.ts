@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const qdrantVectorSearchRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
@@ -35,7 +35,7 @@ export const qdrantVectorSearchRouter = router({
       };
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
@@ -52,7 +52,7 @@ export const qdrantVectorSearchRouter = router({
       return record;
     }),
 
-  getSummary: publicProcedure.query(async () => {
+  getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
     const [totalResult] = await database
@@ -65,7 +65,7 @@ export const qdrantVectorSearchRouter = router({
     };
   }),
 
-  getRecent: publicProcedure
+  getRecent: protectedProcedure
     .input(
       z.object({
         days: z.number().min(1).max(90).default(7),
@@ -87,23 +87,23 @@ export const qdrantVectorSearchRouter = router({
       return results;
     }),
 
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
   }),
 
-  collectionStats: publicProcedure.query(async () => {
+  collectionStats: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  health: publicProcedure.query(async () => {
+  health: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  ragAnswer: publicProcedure.query(async () => {
+  ragAnswer: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  semanticSearch: publicProcedure.query(async () => {
+  semanticSearch: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

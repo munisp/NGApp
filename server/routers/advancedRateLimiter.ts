@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -140,7 +140,7 @@ export const advancedRateLimiterRouter = router({
       }
     }),
 
-  getBlockedIps: publicProcedure.query(async () => {
+  getBlockedIps: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

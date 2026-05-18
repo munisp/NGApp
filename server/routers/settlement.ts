@@ -163,7 +163,7 @@ export const settlementRouter = router({
    */
   getLastRun: agentAdminProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return null;
+    if (!db) throw new Error("Database connection unavailable");
     const rows = await db
       .select()
       .from(auditLog)

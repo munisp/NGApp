@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Full domain logic — account verification, duplicate detection, primary account management
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -110,7 +109,7 @@ export const agentBankAccountsRouter = router({
         bankCode: z.string().min(3),
         accountNumber: z.string(),
         accountName: z.string().min(2),
-        isPrimary: z.boolean().default(false),
+        isDefault: z.boolean().default(false),
       })
     )
     .mutation(async ({ input }) => {
@@ -166,15 +165,15 @@ export const agentBankAccountsRouter = router({
             "Maximum 5 bank accounts per agent. Remove one before adding a new one.",
         });
       // If setting as primary, unset existing primary
-      if (input.isPrimary) {
+      if (input.isDefault) {
         await db
           .update(agentBankAccounts)
-          .set({ isPrimary: false })
+          .set({ isDefault: false })
           .where(eq(agentBankAccounts.agentId, input.agentId));
       }
       const [row] = await db
         .insert(agentBankAccounts)
-        .values(input)
+        .values(input as any)
         .returning();
       return { ...row, maskedAccount: maskAccountNumber(row.accountNumber) };
     }),
@@ -200,11 +199,11 @@ export const agentBankAccountsRouter = router({
           });
         await db
           .update(agentBankAccounts)
-          .set({ isPrimary: false })
+          .set({ isDefault: false })
           .where(eq(agentBankAccounts.agentId, input.agentId));
         await db
           .update(agentBankAccounts)
-          .set({ isPrimary: true })
+          .set({ isDefault: true })
           .where(eq(agentBankAccounts.id, input.id));
         return { success: true, message: "Primary account updated" };
       } catch (error) {

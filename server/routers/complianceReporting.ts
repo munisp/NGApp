@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — complianceReporting
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -172,7 +171,7 @@ const generateReport = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "generateReport completed" };
     } catch (error) {
@@ -214,7 +213,7 @@ const createSchedule = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createSchedule completed" };
     } catch (error) {

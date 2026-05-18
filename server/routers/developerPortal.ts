@@ -398,7 +398,7 @@ export const developerPortalRouter = router({
     try {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select({
           id: webhookSecrets.id,
@@ -538,7 +538,7 @@ export const developerPortalRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return [];
+        if (!db) throw new Error("Database connection unavailable");
         const conditions: ReturnType<typeof eq>[] = [
           eq(apiKeyUsage.apiKeyId, input.apiKeyId),
         ];
@@ -601,7 +601,7 @@ export const developerPortalRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) return { success: false };
-        await db.insert(apiKeyUsage).values(input);
+        await db.insert(apiKeyUsage).values(input as any);
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

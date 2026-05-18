@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Bounce handling, retry logic, deliverability scoring
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -130,8 +129,6 @@ export const emailDeliveryLogRouter = router({
           .update(emailDeliveryLog)
           .set({
             status: "queued",
-            retryCount: retryCount + 1,
-            nextRetryAt: new Date(Date.now() + RETRY_DELAYS[retryCount] * 1000),
           })
           .where(eq(emailDeliveryLog.id, input.id));
         return {

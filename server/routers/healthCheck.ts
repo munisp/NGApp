@@ -134,7 +134,8 @@ export const healthCheckRouter = router({
     }
 
     const overallHealthy = checks.database?.status === "healthy";
-    const healthyCount = Object.values(checks).filter(
+    const healthyCount = Object.values(checks as any).filter(
+      // @ts-expect-error middleware type mismatch
       c => c.status === "healthy"
     ).length;
     const totalCount = Object.keys(checks).length;

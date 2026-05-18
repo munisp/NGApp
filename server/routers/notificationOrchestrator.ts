@@ -189,7 +189,7 @@ export const notificationOrchestratorRouter = router({
           maxRetries: MAX_RETRIES,
           metadata: input.metadata ? JSON.stringify(input.metadata) : null,
         }));
-        await db.insert(notificationDispatchLog).values(records);
+        await db.insert(notificationDispatchLog).values(records as any);
         return { queued: records.length, template: input.templateId };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

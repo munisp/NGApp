@@ -968,7 +968,7 @@ export const resilienceRouter = router({
     .mutation(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const [row] = await db
           .insert(dlqMessages)
           .values({
@@ -1093,7 +1093,7 @@ export const resilienceRouter = router({
       })
     )
     .query(({ input }) => {
-      const FEATURE_MATRIX: Record<string, any> = {
+      const FEATURE_MATRIX = {
         "5g_wifi": {
           useWebSocket: true,
           usePolling: false,

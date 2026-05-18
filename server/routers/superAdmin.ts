@@ -302,7 +302,7 @@ export const superAdminRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           const conditions = [];
           if (input.from)
             conditions.push(gte(transactions.createdAt, input.from));
@@ -326,7 +326,7 @@ export const superAdminRouter = router({
       }),
     fraudSummary: superAdminProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select({
           severity: fraudAlerts.severity,
@@ -338,7 +338,7 @@ export const superAdminRouter = router({
     }),
     kycSummary: superAdminProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select({
           status: kycSessions.status,
@@ -465,7 +465,7 @@ export const superAdminRouter = router({
   settings: router({
     list: superAdminProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       return db
         .select()
         .from(platformSettings)
@@ -486,7 +486,7 @@ export const superAdminRouter = router({
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           const [setting] = await db
             .insert(platformSettings)
-            .values(input)
+            .values(input as any)
             .onConflictDoUpdate({
               target: platformSettings.key,
               set: { value: input.value, updatedAt: new Date() },
@@ -587,7 +587,7 @@ export const superAdminRouter = router({
     })),
     metrics: superAdminProcedure.query(async () => {
       const db = (await getDb())!;
-      if (!db) return {};
+      if (!db) throw new Error("Database connection unavailable");
       const [txToday] = await db
         .select({ c: count() })
         .from(transactions)

@@ -256,7 +256,7 @@ export const agentGamificationRouter = router({
 
   getAchievements: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    if (!db) return [];
+    if (!db) throw new Error("Database connection unavailable");
     const items = await db
       .select()
       .from(agentAchievements)

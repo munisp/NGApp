@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -116,7 +116,7 @@ export const platformCapacityPlannerRouter = router({
       }
     }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database)
       return {
@@ -143,11 +143,11 @@ export const platformCapacityPlannerRouter = router({
     }
   }),
 
-  listResources: publicProcedure.query(async () => {
+  listResources: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  runProjection: publicProcedure
+  runProjection: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

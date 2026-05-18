@@ -64,7 +64,7 @@ export const auditLogRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return [];
+        if (!db) throw new Error("Database connection unavailable");
         return db
           .select()
           .from(auditLog)

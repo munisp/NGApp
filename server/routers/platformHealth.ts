@@ -3,7 +3,7 @@
  * Aggregates health checks from all microservices into a single endpoint.
  */
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
@@ -111,7 +111,7 @@ async function checkService(svc: {
 }
 
 export const platformHealthRouter = router({
-  overview: publicProcedure.query(async () => {
+  overview: protectedProcedure.query(async () => {
     const results = await Promise.allSettled(
       SERVICE_REGISTRY.map(checkService)
     );
@@ -150,7 +150,7 @@ export const platformHealthRouter = router({
     };
   }),
 
-  checkService: publicProcedure
+  checkService: protectedProcedure
     .input(z.object({ serviceName: z.string() }))
     .query(async ({ input }) => {
       try {
@@ -170,7 +170,7 @@ export const platformHealthRouter = router({
       }
     }),
 
-  serviceRegistry: publicProcedure.query(() => {
+  serviceRegistry: protectedProcedure.query(() => {
     return SERVICE_REGISTRY.map(s => ({ name: s.name, url: s.url }));
   }),
 });

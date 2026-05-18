@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -129,7 +129,7 @@ export const pbacManagementRouter = router({
       }
     }),
 
-  assignRole: publicProcedure
+  assignRole: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -137,27 +137,27 @@ export const pbacManagementRouter = router({
       return { success: true };
     }),
 
-  getAuditLog: publicProcedure.query(async () => {
+  getAuditLog: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  getRoleDetail: publicProcedure.query(async () => {
+  getRoleDetail: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listPermissions: publicProcedure.query(async () => {
+  listPermissions: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listRoles: publicProcedure.query(async () => {
+  listRoles: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listUserAssignments: publicProcedure.query(async () => {
+  listUserAssignments: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  modifyPermissions: publicProcedure
+  modifyPermissions: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -165,7 +165,7 @@ export const pbacManagementRouter = router({
       return { success: true };
     }),
 
-  removeAssignment: publicProcedure
+  removeAssignment: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

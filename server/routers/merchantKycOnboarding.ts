@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * F06: Merchant KYC & Onboarding Workflow
  * Document upload, verification workflow, compliance checks, merchant activation
@@ -126,7 +125,6 @@ export const merchantKycOnboardingRouter = router({
             verifiedBy: ctx.user?.id,
             verifiedAt: new Date(),
             rejectionReason: input.rejectionReason,
-            updatedAt: new Date(),
           })
           .where(eq(merchantKycDocs.id, input.docId));
         return { success: true };

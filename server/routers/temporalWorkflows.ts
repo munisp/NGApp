@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count, and } from "drizzle-orm";
 import {
@@ -168,19 +168,19 @@ export const temporalWorkflowsRouter = router({
     };
   }),
 
-  health: publicProcedure.query(async () => {
+  health: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  summary: publicProcedure.query(async () => {
+  summary: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  terminate: publicProcedure
+  terminate: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -188,7 +188,7 @@ export const temporalWorkflowsRouter = router({
       return { success: true };
     }),
 
-  workflowTypes: publicProcedure.query(async () => {
+  workflowTypes: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

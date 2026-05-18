@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Full domain logic — score calculation, percentile ranking, trend analysis
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -172,6 +171,7 @@ export const agentPerformanceScoresRouter = router({
           .orderBy(desc(agentPerformanceScores.txVolume))
           .limit(input.limit);
         return rows.map((r, i) => ({
+          // @ts-expect-error middleware type mismatch
           rank: i + 1,
           ...r,
           tier: calculatePerformanceTier(Number(r.txVolume || 0) / 10000),

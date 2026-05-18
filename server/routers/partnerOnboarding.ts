@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const partnerOnboardingRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
@@ -35,7 +35,7 @@ export const partnerOnboardingRouter = router({
       };
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
@@ -52,7 +52,7 @@ export const partnerOnboardingRouter = router({
       return record;
     }),
 
-  getSummary: publicProcedure.query(async () => {
+  getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
     const [totalResult] = await database
@@ -65,7 +65,7 @@ export const partnerOnboardingRouter = router({
     };
   }),
 
-  getRecent: publicProcedure
+  getRecent: protectedProcedure
     .input(
       z.object({
         days: z.number().min(1).max(90).default(7),
@@ -87,7 +87,7 @@ export const partnerOnboardingRouter = router({
       return results;
     }),
 
-  addCorridor: publicProcedure
+  addCorridor: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -95,7 +95,7 @@ export const partnerOnboardingRouter = router({
       return { success: true };
     }),
 
-  addFeeOverride: publicProcedure
+  addFeeOverride: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -103,7 +103,7 @@ export const partnerOnboardingRouter = router({
       return { success: true };
     }),
 
-  completeOnboarding: publicProcedure
+  completeOnboarding: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -111,19 +111,19 @@ export const partnerOnboardingRouter = router({
       return { success: true };
     }),
 
-  getBranding: publicProcedure.query(async () => {
+  getBranding: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listCorridors: publicProcedure.query(async () => {
+  listCorridors: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  listFees: publicProcedure.query(async () => {
+  listFees: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  registerTenant: publicProcedure
+  registerTenant: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -131,7 +131,7 @@ export const partnerOnboardingRouter = router({
       return { success: true };
     }),
 
-  updateBranding: publicProcedure
+  updateBranding: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — bulkPaymentProcessor
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -205,7 +204,7 @@ const processBatch = protectedProcedure
       }
       const [row] = await db
         .insert(merchantPayouts)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "processBatch completed" };
     } catch (error) {
@@ -247,7 +246,7 @@ const cancelBatch = protectedProcedure
       }
       const [row] = await db
         .insert(merchantPayouts)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "cancelBatch completed" };
     } catch (error) {

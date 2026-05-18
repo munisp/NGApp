@@ -24,7 +24,7 @@ export const agentOnboardingRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
 
         const [agent] = await db
           .select()
@@ -489,7 +489,7 @@ export const agentOnboardingRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return null;
+        if (!db) throw new Error("Database connection unavailable");
         const [progress] = await db
           .select()
           .from(agentOnboardingProgress)

@@ -139,7 +139,7 @@ export const floatTopUpRouter = router({
           message: "Agent session required",
         });
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
       const rows = await db
         .select()
         .from(floatTopUpRequests)
@@ -177,7 +177,7 @@ export const floatTopUpRouter = router({
       }
 
       const db = (await getDb())!;
-      if (!db) return [];
+      if (!db) throw new Error("Database connection unavailable");
 
       // For supervisors: only show top-ups for their assigned agents
       // For admins: show all supervisor-required top-ups

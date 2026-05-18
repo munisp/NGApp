@@ -118,7 +118,7 @@ export const observabilityAlertsRouter = router({
           };
         const [row] = await db
           .insert(observabilityAlerts)
-          .values(input)
+          .values(input as any)
           .returning();
         const escalationLevel =
           input.severity === "critical"

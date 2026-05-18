@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -166,7 +166,7 @@ export const reportTemplateDesignerRouter = router({
       }
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -174,7 +174,7 @@ export const reportTemplateDesignerRouter = router({
       return { success: true };
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -182,11 +182,11 @@ export const reportTemplateDesignerRouter = router({
       return { success: true };
     }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 
-  setDefault: publicProcedure
+  setDefault: protectedProcedure
     .input(
       z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
     )
@@ -194,7 +194,7 @@ export const reportTemplateDesignerRouter = router({
       return { success: true };
     }),
 
-  widgetCatalog: publicProcedure.query(async () => {
+  widgetCatalog: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

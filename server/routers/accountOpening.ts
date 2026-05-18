@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -144,11 +144,11 @@ export const accountOpeningRouter = router({
       }
     }),
 
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
   }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
 });

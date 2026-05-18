@@ -90,7 +90,7 @@ export const agentBankingRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           return db
             .select()
             .from(transactions)
@@ -111,7 +111,7 @@ export const agentBankingRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           return db
             .select()
             .from(fraudAlerts)
@@ -683,7 +683,7 @@ export const agentBankingRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return null;
+          if (!db) throw new Error("Database connection unavailable");
           const [session] = await db
             .select()
             .from(kycSessions)

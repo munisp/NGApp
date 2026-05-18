@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — platformHealthMonitor
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -244,7 +243,7 @@ const createIncident = protectedProcedure
       }
       const [row] = await db
         .insert(platformSettings)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createIncident completed" };
     } catch (error) {

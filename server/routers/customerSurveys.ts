@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — customerSurveys
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -172,7 +171,7 @@ const submitSurvey = protectedProcedure
       }
       const [row] = await db
         .insert(customer_journey_events)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "submitSurvey completed" };
     } catch (error) {

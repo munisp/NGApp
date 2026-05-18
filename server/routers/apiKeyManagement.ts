@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — apiKeyManagement
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -172,7 +171,7 @@ const createKey = protectedProcedure
       }
       const [row] = await db
         .insert(apiKeys)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createKey completed" };
     } catch (error) {
@@ -214,7 +213,7 @@ const revokeKey = protectedProcedure
       }
       const [row] = await db
         .insert(apiKeys)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "revokeKey completed" };
     } catch (error) {

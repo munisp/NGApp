@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Upgraded from mock data to real DB queries — dataRetentionPolicy
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -175,7 +174,7 @@ const createPolicy = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "createPolicy completed" };
     } catch (error) {
@@ -252,7 +251,7 @@ const runRetention = protectedProcedure
       }
       const [row] = await db
         .insert(creditApplications)
-        .values(input.data || {})
+        .values(input.data || {} as any)
         .returning();
       return { success: true, ...row, message: "runRetention completed" };
     } catch (error) {

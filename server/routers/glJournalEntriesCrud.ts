@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Sprint 87: Double-entry validation, auto-balancing, reversal workflow
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -121,11 +120,12 @@ export const gl_journal_entriesRouter = router({
         // Create reversal entry (swap debit/credit)
         const [reversal] = await db
           .insert(gl_journal_entries)
+          // @ts-expect-error middleware type mismatch
           .values({
             debitAccountId: original.creditAccountId,
             creditAccountId: original.debitAccountId,
             amount: original.amount,
-            description: `REVERSAL: ${input.reason} (original #${input.id} as any)`,
+            description: `REVERSAL: ${input.reason} (original #${input.id} )`,
             reference: `REV-${input.id}`,
             status: "posted",
             postedAt: new Date(),

@@ -137,7 +137,7 @@ export const customerRouter = router({
             });
           const [customer] = await db
             .insert(customers)
-            .values(input)
+            .values(input as any)
             .returning();
           const { passwordHash: _, refreshToken: __, ...safe } = customer;
           return safe;
@@ -448,7 +448,7 @@ export const customerRouter = router({
     listCredentials: customerProcedure.query(async ({ ctx }) => {
       try {
         const db = (await getDb())!;
-        if (!db) return [];
+        if (!db) throw new Error("Database connection unavailable");
         return db
           .select({
             id: fido2Credentials.id,
@@ -568,7 +568,7 @@ export const customerRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return null;
+          if (!db) throw new Error("Database connection unavailable");
           const now = new Date();
           const [row] = await db
             .select()
@@ -599,7 +599,7 @@ export const customerRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           return db
             .select()
             .from(creditScoreHistory)
@@ -677,7 +677,7 @@ export const customerRouter = router({
       .query(async ({ input }) => {
         try {
           const db = (await getDb())!;
-          if (!db) return [];
+          if (!db) throw new Error("Database connection unavailable");
           const conditions: ReturnType<typeof eq>[] = [];
           if (input.agentId)
             conditions.push(eq(creditApplications.agentId, input.agentId));
