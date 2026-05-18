@@ -13,6 +13,7 @@ export const merchantSettlementDashboardRouter = router({
     }))
     .query(async ({ input }) => {
       const database = await getDb();
+      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const results = await database
         .select()
         .from(merchants)
@@ -36,6 +37,7 @@ export const merchantSettlementDashboardRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
+      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const [record] = await database
         .select()
         .from(merchants)
@@ -51,6 +53,7 @@ export const merchantSettlementDashboardRouter = router({
   getSummary: publicProcedure
     .query(async () => {
       const database = await getDb();
+      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const [totalResult] = await database
         .select({ total: count() })
         .from(merchants);
@@ -68,6 +71,7 @@ export const merchantSettlementDashboardRouter = router({
     }))
     .query(async ({ input }) => {
       const database = await getDb();
+      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const since = new Date();
       since.setDate(since.getDate() - input.days);
       
