@@ -16,6 +16,7 @@
 package main
 
 import (
+	"fmt"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"

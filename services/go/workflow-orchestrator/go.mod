@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0
 	go.opentelemetry.io/otel/sdk v1.26.0
-	go.opentelemetry.io/otel/semconv/v1.26.0 v1.26.0
+	go.opentelemetry.io/otel/semconv v1.26.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
