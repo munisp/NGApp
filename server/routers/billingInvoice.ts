@@ -112,30 +112,36 @@ export const billingInvoiceRouter = router({
 
   listInvoices: protectedProcedure
     .input(z.object({ tenantId: z.number(), status: z.string().optional(), limit: z.number().default(20) }))
-    .query(async ({ input }) => { return { invoices: [], total: 0, limit: input.limit }; }),
+    .query(async ({ input }) => {
       try {
+        return { invoices: [], total: 0, limit: input.limit };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
+    }),
 
   getInvoice: protectedProcedure
     .input(z.object({ invoiceId: z.string() }))
-    .query(async ({ input }) => { return { invoice: null, found: false }; }),
+    .query(async ({ input }) => {
       try {
+        return { invoice: null, found: false };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
+    }),
 
   markPaid: protectedProcedure
     .input(z.object({ invoiceId: z.string(), paymentRef: z.string(), paidAt: z.string().optional() }))
-    .mutation(async ({ input }) => { return { success: true, invoiceId: input.invoiceId, status: "paid", paymentRef: input.paymentRef }; }),
+    .mutation(async ({ input }) => {
       try {
+        return { success: true, invoiceId: input.invoiceId, status: "paid", paymentRef: input.paymentRef };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
+    }),
 
   generateCreditNote: protectedProcedure
     .input(z.object({ invoiceId: z.string(), amount: z.number(), reason: z.string() }))
@@ -150,12 +156,14 @@ export const billingInvoiceRouter = router({
 
   exportInvoices: protectedProcedure
     .input(z.object({ tenantId: z.number(), startDate: z.string(), endDate: z.string(), format: z.enum(["csv", "xlsx"]).default("csv") }))
-    .mutation(async ({ input }) => { return { downloadUrl: `/api/billing/export/${input.tenantId}/${input.format}`, expiresAt: new Date(Date.now() + 3600000).toISOString() }; }),
+    .mutation(async ({ input }) => {
       try {
+        return { downloadUrl: `/api/billing/export/${input.tenantId}/${input.format}`, expiresAt: new Date(Date.now() + 3600000).toISOString() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
+    }),
 
   convertCurrency: protectedProcedure
     .input(z.object({ amount: z.number(), from: z.string().default("NGN"), to: z.string() }))
