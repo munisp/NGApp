@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9326" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/browser-fingerprint/list", handleList)
-	http.HandleFunc("/v1/browser-fingerprint/create", handleCreate)
-	http.HandleFunc("/v1/browser-fingerprint/update", handleUpdate)
-	http.HandleFunc("/v1/browser-fingerprint/process", handleProcess)
-	http.HandleFunc("/v1/browser-fingerprint/audit", handleAudit)
-	http.HandleFunc("/v1/browser-fingerprint/stats", handleStats)
-	http.HandleFunc("/v1/browser-fingerprint/score", browser_fingerprintScoreHandler)
-	http.HandleFunc("/v1/browser-fingerprint/validate", browser_fingerprintValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/browser-fingerprint/list", handleList)
+	mux.HandleFunc("/v1/browser-fingerprint/create", handleCreate)
+	mux.HandleFunc("/v1/browser-fingerprint/update", handleUpdate)
+	mux.HandleFunc("/v1/browser-fingerprint/process", handleProcess)
+	mux.HandleFunc("/v1/browser-fingerprint/audit", handleAudit)
+	mux.HandleFunc("/v1/browser-fingerprint/stats", handleStats)
+	mux.HandleFunc("/v1/browser-fingerprint/score", browser_fingerprintScoreHandler)
+	mux.HandleFunc("/v1/browser-fingerprint/validate", browser_fingerprintValidateRequestHandler)
 	log.Printf("Browser Fingerprint v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

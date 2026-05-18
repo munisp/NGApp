@@ -238,6 +238,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
+        add_security_headers(self)
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 
@@ -245,6 +246,13 @@ class Handler(BaseHTTPRequestHandler):
         trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
         logger.info(f"[kyc-engine-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "1")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
         path = urlparse(self.path).path
 
         if path == "/healthz":
@@ -295,6 +303,13 @@ class Handler(BaseHTTPRequestHandler):
         trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
         logger.info(f"[kyc-engine-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "1")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(length)) if length > 0 else {}

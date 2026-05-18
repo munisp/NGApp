@@ -593,25 +593,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9356" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/event-streaming/list", handleList)
-	http.HandleFunc("/v1/event-streaming/create", handleCreate)
-	http.HandleFunc("/v1/event-streaming/update", handleUpdate)
-	http.HandleFunc("/v1/event-streaming/process", handleProcess)
-	http.HandleFunc("/v1/event-streaming/audit", handleAudit)
-	http.HandleFunc("/v1/event-streaming/stats", handleStats)
-	http.HandleFunc("/v1/event-streaming/throughput", event_streamingThroughputHandler)
-	http.HandleFunc("/v1/event-streaming/partition", event_streamingPartitionHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/event-streaming/list", handleList)
+	mux.HandleFunc("/v1/event-streaming/create", handleCreate)
+	mux.HandleFunc("/v1/event-streaming/update", handleUpdate)
+	mux.HandleFunc("/v1/event-streaming/process", handleProcess)
+	mux.HandleFunc("/v1/event-streaming/audit", handleAudit)
+	mux.HandleFunc("/v1/event-streaming/stats", handleStats)
+	mux.HandleFunc("/v1/event-streaming/throughput", event_streamingThroughputHandler)
+	mux.HandleFunc("/v1/event-streaming/partition", event_streamingPartitionHandler)
 	log.Printf("Event Streaming v2.0 (Infrastructure/Data) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

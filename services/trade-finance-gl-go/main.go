@@ -605,23 +605,24 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8098" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/trade-finance/lc-gl", lcLifecycleGL)
-	http.HandleFunc("/v1/trade-finance/collections-gl", docCollectionsGL)
-	http.HandleFunc("/v1/islamic/murabaha-gl", murabahaGL)
-	http.HandleFunc("/v1/disputes/chargeback-gl", disputeChargebackGL)
-	http.HandleFunc("/v1/trade-finance-gl/score", trade_finance_glScoreHandler)
-	http.HandleFunc("/v1/trade-finance-gl/validate", trade_finance_glValidateRequestHandler)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/trade-finance/lc-gl", lcLifecycleGL)
+	mux.HandleFunc("/v1/trade-finance/collections-gl", docCollectionsGL)
+	mux.HandleFunc("/v1/islamic/murabaha-gl", murabahaGL)
+	mux.HandleFunc("/v1/disputes/chargeback-gl", disputeChargebackGL)
+	mux.HandleFunc("/v1/trade-finance-gl/score", trade_finance_glScoreHandler)
+	mux.HandleFunc("/v1/trade-finance-gl/validate", trade_finance_glValidateRequestHandler)
 	log.Printf("Trade Finance & Specialized Banking GL (Go) on :%s — Gaps 17-20", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

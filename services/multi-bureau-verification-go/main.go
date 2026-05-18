@@ -577,23 +577,24 @@ func main() {
 	if port == "" {
 		port = "9088"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/multi-bureau/verify", handleVerify)
-	http.HandleFunc("/v1/multi-bureau/bureaus", handleBureaus)
-	http.HandleFunc("/v1/multi-bureau/checks", handleChecks)
-	http.HandleFunc("/v1/multi-bureau/stats", handleStats)
-	http.HandleFunc("/v1/multi-bureau-verification/score", multi_bureau_verificationScoreHandler)
-	http.HandleFunc("/v1/multi-bureau-verification/validate", multi_bureau_verificationValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/multi-bureau/verify", handleVerify)
+	mux.HandleFunc("/v1/multi-bureau/bureaus", handleBureaus)
+	mux.HandleFunc("/v1/multi-bureau/checks", handleChecks)
+	mux.HandleFunc("/v1/multi-bureau/stats", handleStats)
+	mux.HandleFunc("/v1/multi-bureau-verification/score", multi_bureau_verificationScoreHandler)
+	mux.HandleFunc("/v1/multi-bureau-verification/validate", multi_bureau_verificationValidateRequestHandler)
 	log.Printf("Multi-Bureau Verification v2.0 (Go) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

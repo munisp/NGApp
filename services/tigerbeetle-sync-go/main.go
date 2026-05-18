@@ -593,25 +593,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9451" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/tigerbeetle-sync/list", handleList)
-	http.HandleFunc("/v1/tigerbeetle-sync/create", handleCreate)
-	http.HandleFunc("/v1/tigerbeetle-sync/update", handleUpdate)
-	http.HandleFunc("/v1/tigerbeetle-sync/process", handleProcess)
-	http.HandleFunc("/v1/tigerbeetle-sync/audit", handleAudit)
-	http.HandleFunc("/v1/tigerbeetle-sync/stats", handleStats)
-	http.HandleFunc("/v1/tigerbeetle-sync/throughput", tigerbeetle_syncThroughputHandler)
-	http.HandleFunc("/v1/tigerbeetle-sync/partition", tigerbeetle_syncPartitionHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/tigerbeetle-sync/list", handleList)
+	mux.HandleFunc("/v1/tigerbeetle-sync/create", handleCreate)
+	mux.HandleFunc("/v1/tigerbeetle-sync/update", handleUpdate)
+	mux.HandleFunc("/v1/tigerbeetle-sync/process", handleProcess)
+	mux.HandleFunc("/v1/tigerbeetle-sync/audit", handleAudit)
+	mux.HandleFunc("/v1/tigerbeetle-sync/stats", handleStats)
+	mux.HandleFunc("/v1/tigerbeetle-sync/throughput", tigerbeetle_syncThroughputHandler)
+	mux.HandleFunc("/v1/tigerbeetle-sync/partition", tigerbeetle_syncPartitionHandler)
 	log.Printf("Tigerbeetle Sync v2.0 (Infrastructure/Data) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

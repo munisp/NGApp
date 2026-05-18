@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9329" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cash-pooling/list", handleList)
-	http.HandleFunc("/v1/cash-pooling/create", handleCreate)
-	http.HandleFunc("/v1/cash-pooling/update", handleUpdate)
-	http.HandleFunc("/v1/cash-pooling/process", handleProcess)
-	http.HandleFunc("/v1/cash-pooling/audit", handleAudit)
-	http.HandleFunc("/v1/cash-pooling/stats", handleStats)
-	http.HandleFunc("/v1/cash-pooling/score", cash_poolingScoreHandler)
-	http.HandleFunc("/v1/cash-pooling/validate", cash_poolingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cash-pooling/list", handleList)
+	mux.HandleFunc("/v1/cash-pooling/create", handleCreate)
+	mux.HandleFunc("/v1/cash-pooling/update", handleUpdate)
+	mux.HandleFunc("/v1/cash-pooling/process", handleProcess)
+	mux.HandleFunc("/v1/cash-pooling/audit", handleAudit)
+	mux.HandleFunc("/v1/cash-pooling/stats", handleStats)
+	mux.HandleFunc("/v1/cash-pooling/score", cash_poolingScoreHandler)
+	mux.HandleFunc("/v1/cash-pooling/validate", cash_poolingValidateRequestHandler)
 	log.Printf("Cash Pooling v2.0 (Treasury/Markets) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

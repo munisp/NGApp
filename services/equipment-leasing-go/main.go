@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9352" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/equipment-leasing/list", handleList)
-	http.HandleFunc("/v1/equipment-leasing/create", handleCreate)
-	http.HandleFunc("/v1/equipment-leasing/update", handleUpdate)
-	http.HandleFunc("/v1/equipment-leasing/process", handleProcess)
-	http.HandleFunc("/v1/equipment-leasing/audit", handleAudit)
-	http.HandleFunc("/v1/equipment-leasing/stats", handleStats)
-	http.HandleFunc("/v1/equipment-leasing/score", equipment_leasingScoreHandler)
-	http.HandleFunc("/v1/equipment-leasing/validate", equipment_leasingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/equipment-leasing/list", handleList)
+	mux.HandleFunc("/v1/equipment-leasing/create", handleCreate)
+	mux.HandleFunc("/v1/equipment-leasing/update", handleUpdate)
+	mux.HandleFunc("/v1/equipment-leasing/process", handleProcess)
+	mux.HandleFunc("/v1/equipment-leasing/audit", handleAudit)
+	mux.HandleFunc("/v1/equipment-leasing/stats", handleStats)
+	mux.HandleFunc("/v1/equipment-leasing/score", equipment_leasingScoreHandler)
+	mux.HandleFunc("/v1/equipment-leasing/validate", equipment_leasingValidateRequestHandler)
 	log.Printf("Equipment Leasing v2.0 (Lending) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

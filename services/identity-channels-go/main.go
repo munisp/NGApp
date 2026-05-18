@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9370" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/identity-channels/list", handleList)
-	http.HandleFunc("/v1/identity-channels/create", handleCreate)
-	http.HandleFunc("/v1/identity-channels/update", handleUpdate)
-	http.HandleFunc("/v1/identity-channels/process", handleProcess)
-	http.HandleFunc("/v1/identity-channels/audit", handleAudit)
-	http.HandleFunc("/v1/identity-channels/stats", handleStats)
-	http.HandleFunc("/v1/identity-channels/score", identity_channelsScoreHandler)
-	http.HandleFunc("/v1/identity-channels/validate", identity_channelsValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/identity-channels/list", handleList)
+	mux.HandleFunc("/v1/identity-channels/create", handleCreate)
+	mux.HandleFunc("/v1/identity-channels/update", handleUpdate)
+	mux.HandleFunc("/v1/identity-channels/process", handleProcess)
+	mux.HandleFunc("/v1/identity-channels/audit", handleAudit)
+	mux.HandleFunc("/v1/identity-channels/stats", handleStats)
+	mux.HandleFunc("/v1/identity-channels/score", identity_channelsScoreHandler)
+	mux.HandleFunc("/v1/identity-channels/validate", identity_channelsValidateRequestHandler)
 	log.Printf("Identity Channels v2.0 (KYC/Identity) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

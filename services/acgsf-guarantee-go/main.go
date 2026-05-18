@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9300" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/acgsf-guarantee/list", handleList)
-	http.HandleFunc("/v1/acgsf-guarantee/create", handleCreate)
-	http.HandleFunc("/v1/acgsf-guarantee/update", handleUpdate)
-	http.HandleFunc("/v1/acgsf-guarantee/process", handleProcess)
-	http.HandleFunc("/v1/acgsf-guarantee/audit", handleAudit)
-	http.HandleFunc("/v1/acgsf-guarantee/stats", handleStats)
-	http.HandleFunc("/v1/acgsf-guarantee/yield-score", acgsf_guaranteeYieldHandler)
-	http.HandleFunc("/v1/acgsf-guarantee/risk-assess", acgsf_guaranteeRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/acgsf-guarantee/list", handleList)
+	mux.HandleFunc("/v1/acgsf-guarantee/create", handleCreate)
+	mux.HandleFunc("/v1/acgsf-guarantee/update", handleUpdate)
+	mux.HandleFunc("/v1/acgsf-guarantee/process", handleProcess)
+	mux.HandleFunc("/v1/acgsf-guarantee/audit", handleAudit)
+	mux.HandleFunc("/v1/acgsf-guarantee/stats", handleStats)
+	mux.HandleFunc("/v1/acgsf-guarantee/yield-score", acgsf_guaranteeYieldHandler)
+	mux.HandleFunc("/v1/acgsf-guarantee/risk-assess", acgsf_guaranteeRiskHandler)
 	log.Printf("Acgsf Guarantee v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

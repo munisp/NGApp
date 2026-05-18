@@ -594,25 +594,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9364" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/grid-token-card/list", handleList)
-	http.HandleFunc("/v1/grid-token-card/create", handleCreate)
-	http.HandleFunc("/v1/grid-token-card/update", handleUpdate)
-	http.HandleFunc("/v1/grid-token-card/process", handleProcess)
-	http.HandleFunc("/v1/grid-token-card/audit", handleAudit)
-	http.HandleFunc("/v1/grid-token-card/stats", handleStats)
-	http.HandleFunc("/v1/grid-token-card/validate", grid_token_cardValidateHandler)
-	http.HandleFunc("/v1/grid-token-card/rate-limit", grid_token_cardRateLimitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/grid-token-card/list", handleList)
+	mux.HandleFunc("/v1/grid-token-card/create", handleCreate)
+	mux.HandleFunc("/v1/grid-token-card/update", handleUpdate)
+	mux.HandleFunc("/v1/grid-token-card/process", handleProcess)
+	mux.HandleFunc("/v1/grid-token-card/audit", handleAudit)
+	mux.HandleFunc("/v1/grid-token-card/stats", handleStats)
+	mux.HandleFunc("/v1/grid-token-card/validate", grid_token_cardValidateHandler)
+	mux.HandleFunc("/v1/grid-token-card/rate-limit", grid_token_cardRateLimitHandler)
 	log.Printf("Grid Token Card v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

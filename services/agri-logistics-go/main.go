@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9305" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/agri-logistics/list", handleList)
-	http.HandleFunc("/v1/agri-logistics/create", handleCreate)
-	http.HandleFunc("/v1/agri-logistics/update", handleUpdate)
-	http.HandleFunc("/v1/agri-logistics/process", handleProcess)
-	http.HandleFunc("/v1/agri-logistics/audit", handleAudit)
-	http.HandleFunc("/v1/agri-logistics/stats", handleStats)
-	http.HandleFunc("/v1/agri-logistics/yield-score", agri_logisticsYieldHandler)
-	http.HandleFunc("/v1/agri-logistics/risk-assess", agri_logisticsRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/agri-logistics/list", handleList)
+	mux.HandleFunc("/v1/agri-logistics/create", handleCreate)
+	mux.HandleFunc("/v1/agri-logistics/update", handleUpdate)
+	mux.HandleFunc("/v1/agri-logistics/process", handleProcess)
+	mux.HandleFunc("/v1/agri-logistics/audit", handleAudit)
+	mux.HandleFunc("/v1/agri-logistics/stats", handleStats)
+	mux.HandleFunc("/v1/agri-logistics/yield-score", agri_logisticsYieldHandler)
+	mux.HandleFunc("/v1/agri-logistics/risk-assess", agri_logisticsRiskHandler)
 	log.Printf("Agri Logistics v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

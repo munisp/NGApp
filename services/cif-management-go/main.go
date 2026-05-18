@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9333" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cif-management/list", handleList)
-	http.HandleFunc("/v1/cif-management/create", handleCreate)
-	http.HandleFunc("/v1/cif-management/update", handleUpdate)
-	http.HandleFunc("/v1/cif-management/process", handleProcess)
-	http.HandleFunc("/v1/cif-management/audit", handleAudit)
-	http.HandleFunc("/v1/cif-management/stats", handleStats)
-	http.HandleFunc("/v1/cif-management/score", cif_managementScoreHandler)
-	http.HandleFunc("/v1/cif-management/validate", cif_managementValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cif-management/list", handleList)
+	mux.HandleFunc("/v1/cif-management/create", handleCreate)
+	mux.HandleFunc("/v1/cif-management/update", handleUpdate)
+	mux.HandleFunc("/v1/cif-management/process", handleProcess)
+	mux.HandleFunc("/v1/cif-management/audit", handleAudit)
+	mux.HandleFunc("/v1/cif-management/stats", handleStats)
+	mux.HandleFunc("/v1/cif-management/score", cif_managementScoreHandler)
+	mux.HandleFunc("/v1/cif-management/validate", cif_managementValidateRequestHandler)
 	log.Printf("Cif Management v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9303" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/agri-evoucher/list", handleList)
-	http.HandleFunc("/v1/agri-evoucher/create", handleCreate)
-	http.HandleFunc("/v1/agri-evoucher/update", handleUpdate)
-	http.HandleFunc("/v1/agri-evoucher/process", handleProcess)
-	http.HandleFunc("/v1/agri-evoucher/audit", handleAudit)
-	http.HandleFunc("/v1/agri-evoucher/stats", handleStats)
-	http.HandleFunc("/v1/agri-evoucher/yield-score", agri_evoucherYieldHandler)
-	http.HandleFunc("/v1/agri-evoucher/risk-assess", agri_evoucherRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/agri-evoucher/list", handleList)
+	mux.HandleFunc("/v1/agri-evoucher/create", handleCreate)
+	mux.HandleFunc("/v1/agri-evoucher/update", handleUpdate)
+	mux.HandleFunc("/v1/agri-evoucher/process", handleProcess)
+	mux.HandleFunc("/v1/agri-evoucher/audit", handleAudit)
+	mux.HandleFunc("/v1/agri-evoucher/stats", handleStats)
+	mux.HandleFunc("/v1/agri-evoucher/yield-score", agri_evoucherYieldHandler)
+	mux.HandleFunc("/v1/agri-evoucher/risk-assess", agri_evoucherRiskHandler)
 	log.Printf("Agri Evoucher v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

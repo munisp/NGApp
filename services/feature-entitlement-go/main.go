@@ -911,25 +911,26 @@ func main() {
 	if port == "" {
 		port = "8107"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/entitlements/tiers", getTiers)
-	http.HandleFunc("/v1/entitlements/all", getEntitlements)
-	http.HandleFunc("/v1/entitlements/tenant", getEntitlement)
-	http.HandleFunc("/v1/entitlements/check", checkFeatureAccess)
-	http.HandleFunc("/v1/entitlements/provision", provisionTenant)
-	http.HandleFunc("/v1/entitlements/purchase-addon", purchaseAddOn)
-	http.HandleFunc("/v1/entitlements/upgrade", upgradeTier)
-	http.HandleFunc("/v1/entitlements/usage", featureUsageSummary)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/entitlements/tiers", getTiers)
+	mux.HandleFunc("/v1/entitlements/all", getEntitlements)
+	mux.HandleFunc("/v1/entitlements/tenant", getEntitlement)
+	mux.HandleFunc("/v1/entitlements/check", checkFeatureAccess)
+	mux.HandleFunc("/v1/entitlements/provision", provisionTenant)
+	mux.HandleFunc("/v1/entitlements/purchase-addon", purchaseAddOn)
+	mux.HandleFunc("/v1/entitlements/upgrade", upgradeTier)
+	mux.HandleFunc("/v1/entitlements/usage", featureUsageSummary)
 	log.Printf("Feature Entitlement Engine (Go) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

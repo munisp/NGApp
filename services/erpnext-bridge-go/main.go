@@ -849,29 +849,30 @@ func main() {
 
 	initCoAMappings()
 
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/erpnext-bridge/coa-discovery", handleCoADiscovery)
-	http.HandleFunc("/v1/erpnext-bridge/coa-sync", handleCoASync)
-	http.HandleFunc("/v1/erpnext-bridge/webhooks", handleWebhookReceive)
-	http.HandleFunc("/v1/erpnext-bridge/credit-notes", handleCreditNotes)
-	http.HandleFunc("/v1/erpnext-bridge/sync-streams", handleSyncStreams)
-	http.HandleFunc("/v1/erpnext-bridge/summary", handleSyncSummary)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/erpnext-bridge/coa-discovery", handleCoADiscovery)
+	mux.HandleFunc("/v1/erpnext-bridge/coa-sync", handleCoASync)
+	mux.HandleFunc("/v1/erpnext-bridge/webhooks", handleWebhookReceive)
+	mux.HandleFunc("/v1/erpnext-bridge/credit-notes", handleCreditNotes)
+	mux.HandleFunc("/v1/erpnext-bridge/sync-streams", handleSyncStreams)
+	mux.HandleFunc("/v1/erpnext-bridge/summary", handleSyncSummary)
 
-	http.HandleFunc("/v1/erpnext-bridge/score", erpnext_bridgeScoreHandler)
-	http.HandleFunc("/v1/erpnext-bridge/validate", erpnext_bridgeValidateRequestHandler)
+	mux.HandleFunc("/v1/erpnext-bridge/score", erpnext_bridgeScoreHandler)
+	mux.HandleFunc("/v1/erpnext-bridge/validate", erpnext_bridgeValidateRequestHandler)
 	log.Printf("ERPNext Bridge (Go) on :%s — 5 gaps closed", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

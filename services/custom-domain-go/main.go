@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9342" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/custom-domain/list", handleList)
-	http.HandleFunc("/v1/custom-domain/create", handleCreate)
-	http.HandleFunc("/v1/custom-domain/update", handleUpdate)
-	http.HandleFunc("/v1/custom-domain/process", handleProcess)
-	http.HandleFunc("/v1/custom-domain/audit", handleAudit)
-	http.HandleFunc("/v1/custom-domain/stats", handleStats)
-	http.HandleFunc("/v1/custom-domain/score", custom_domainScoreHandler)
-	http.HandleFunc("/v1/custom-domain/validate", custom_domainValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/custom-domain/list", handleList)
+	mux.HandleFunc("/v1/custom-domain/create", handleCreate)
+	mux.HandleFunc("/v1/custom-domain/update", handleUpdate)
+	mux.HandleFunc("/v1/custom-domain/process", handleProcess)
+	mux.HandleFunc("/v1/custom-domain/audit", handleAudit)
+	mux.HandleFunc("/v1/custom-domain/stats", handleStats)
+	mux.HandleFunc("/v1/custom-domain/score", custom_domainScoreHandler)
+	mux.HandleFunc("/v1/custom-domain/validate", custom_domainValidateRequestHandler)
 	log.Printf("Custom Domain v2.0 (Platform) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

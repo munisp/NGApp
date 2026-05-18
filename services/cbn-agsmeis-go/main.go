@@ -591,25 +591,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9330" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cbn-agsmeis/list", handleList)
-	http.HandleFunc("/v1/cbn-agsmeis/create", handleCreate)
-	http.HandleFunc("/v1/cbn-agsmeis/update", handleUpdate)
-	http.HandleFunc("/v1/cbn-agsmeis/process", handleProcess)
-	http.HandleFunc("/v1/cbn-agsmeis/audit", handleAudit)
-	http.HandleFunc("/v1/cbn-agsmeis/stats", handleStats)
-	http.HandleFunc("/v1/cbn-agsmeis/generate", cbn_agsmeisGenerateHandler)
-	http.HandleFunc("/v1/cbn-agsmeis/validate-period", cbn_agsmeisValidateHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cbn-agsmeis/list", handleList)
+	mux.HandleFunc("/v1/cbn-agsmeis/create", handleCreate)
+	mux.HandleFunc("/v1/cbn-agsmeis/update", handleUpdate)
+	mux.HandleFunc("/v1/cbn-agsmeis/process", handleProcess)
+	mux.HandleFunc("/v1/cbn-agsmeis/audit", handleAudit)
+	mux.HandleFunc("/v1/cbn-agsmeis/stats", handleStats)
+	mux.HandleFunc("/v1/cbn-agsmeis/generate", cbn_agsmeisGenerateHandler)
+	mux.HandleFunc("/v1/cbn-agsmeis/validate-period", cbn_agsmeisValidateHandler)
 	log.Printf("Cbn Agsmeis v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

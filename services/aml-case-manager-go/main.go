@@ -606,25 +606,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9308" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/aml-case-manager/list", handleList)
-	http.HandleFunc("/v1/aml-case-manager/create", handleCreate)
-	http.HandleFunc("/v1/aml-case-manager/update", handleUpdate)
-	http.HandleFunc("/v1/aml-case-manager/process", handleProcess)
-	http.HandleFunc("/v1/aml-case-manager/audit", handleAudit)
-	http.HandleFunc("/v1/aml-case-manager/stats", handleStats)
-	http.HandleFunc("/v1/aml-case-manager/screen", aml_case_managerScreenHandler)
-	http.HandleFunc("/v1/aml-case-manager/risk-score", aml_case_managerRiskScoreHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/aml-case-manager/list", handleList)
+	mux.HandleFunc("/v1/aml-case-manager/create", handleCreate)
+	mux.HandleFunc("/v1/aml-case-manager/update", handleUpdate)
+	mux.HandleFunc("/v1/aml-case-manager/process", handleProcess)
+	mux.HandleFunc("/v1/aml-case-manager/audit", handleAudit)
+	mux.HandleFunc("/v1/aml-case-manager/stats", handleStats)
+	mux.HandleFunc("/v1/aml-case-manager/screen", aml_case_managerScreenHandler)
+	mux.HandleFunc("/v1/aml-case-manager/risk-score", aml_case_managerRiskScoreHandler)
 	log.Printf("Aml Case Manager v2.0 (AML/Compliance) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

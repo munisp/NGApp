@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9393" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/mojaloop-pisp/list", handleList)
-	http.HandleFunc("/v1/mojaloop-pisp/create", handleCreate)
-	http.HandleFunc("/v1/mojaloop-pisp/update", handleUpdate)
-	http.HandleFunc("/v1/mojaloop-pisp/process", handleProcess)
-	http.HandleFunc("/v1/mojaloop-pisp/audit", handleAudit)
-	http.HandleFunc("/v1/mojaloop-pisp/stats", handleStats)
-	http.HandleFunc("/v1/mojaloop-pisp/score", mojaloop_pispScoreHandler)
-	http.HandleFunc("/v1/mojaloop-pisp/validate", mojaloop_pispValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/mojaloop-pisp/list", handleList)
+	mux.HandleFunc("/v1/mojaloop-pisp/create", handleCreate)
+	mux.HandleFunc("/v1/mojaloop-pisp/update", handleUpdate)
+	mux.HandleFunc("/v1/mojaloop-pisp/process", handleProcess)
+	mux.HandleFunc("/v1/mojaloop-pisp/audit", handleAudit)
+	mux.HandleFunc("/v1/mojaloop-pisp/stats", handleStats)
+	mux.HandleFunc("/v1/mojaloop-pisp/score", mojaloop_pispScoreHandler)
+	mux.HandleFunc("/v1/mojaloop-pisp/validate", mojaloop_pispValidateRequestHandler)
 	log.Printf("Mojaloop Pisp v2.0 (Cross-Border) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

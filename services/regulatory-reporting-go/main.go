@@ -591,25 +591,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9418" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/regulatory-reporting/list", handleList)
-	http.HandleFunc("/v1/regulatory-reporting/create", handleCreate)
-	http.HandleFunc("/v1/regulatory-reporting/update", handleUpdate)
-	http.HandleFunc("/v1/regulatory-reporting/process", handleProcess)
-	http.HandleFunc("/v1/regulatory-reporting/audit", handleAudit)
-	http.HandleFunc("/v1/regulatory-reporting/stats", handleStats)
-	http.HandleFunc("/v1/regulatory-reporting/generate", regulatory_reportingGenerateHandler)
-	http.HandleFunc("/v1/regulatory-reporting/validate-period", regulatory_reportingValidateHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/regulatory-reporting/list", handleList)
+	mux.HandleFunc("/v1/regulatory-reporting/create", handleCreate)
+	mux.HandleFunc("/v1/regulatory-reporting/update", handleUpdate)
+	mux.HandleFunc("/v1/regulatory-reporting/process", handleProcess)
+	mux.HandleFunc("/v1/regulatory-reporting/audit", handleAudit)
+	mux.HandleFunc("/v1/regulatory-reporting/stats", handleStats)
+	mux.HandleFunc("/v1/regulatory-reporting/generate", regulatory_reportingGenerateHandler)
+	mux.HandleFunc("/v1/regulatory-reporting/validate-period", regulatory_reportingValidateHandler)
 	log.Printf("Regulatory Reporting v2.0 (Regulatory) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

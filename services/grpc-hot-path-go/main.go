@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9365" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/grpc-hot-path/list", handleList)
-	http.HandleFunc("/v1/grpc-hot-path/create", handleCreate)
-	http.HandleFunc("/v1/grpc-hot-path/update", handleUpdate)
-	http.HandleFunc("/v1/grpc-hot-path/process", handleProcess)
-	http.HandleFunc("/v1/grpc-hot-path/audit", handleAudit)
-	http.HandleFunc("/v1/grpc-hot-path/stats", handleStats)
-	http.HandleFunc("/v1/grpc-hot-path/score", grpc_hot_pathScoreHandler)
-	http.HandleFunc("/v1/grpc-hot-path/validate", grpc_hot_pathValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/grpc-hot-path/list", handleList)
+	mux.HandleFunc("/v1/grpc-hot-path/create", handleCreate)
+	mux.HandleFunc("/v1/grpc-hot-path/update", handleUpdate)
+	mux.HandleFunc("/v1/grpc-hot-path/process", handleProcess)
+	mux.HandleFunc("/v1/grpc-hot-path/audit", handleAudit)
+	mux.HandleFunc("/v1/grpc-hot-path/stats", handleStats)
+	mux.HandleFunc("/v1/grpc-hot-path/score", grpc_hot_pathScoreHandler)
+	mux.HandleFunc("/v1/grpc-hot-path/validate", grpc_hot_pathValidateRequestHandler)
 	log.Printf("Grpc Hot Path v2.0 (Infrastructure/Data) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

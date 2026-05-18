@@ -594,25 +594,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9310" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/api-key-enforcer/list", handleList)
-	http.HandleFunc("/v1/api-key-enforcer/create", handleCreate)
-	http.HandleFunc("/v1/api-key-enforcer/update", handleUpdate)
-	http.HandleFunc("/v1/api-key-enforcer/process", handleProcess)
-	http.HandleFunc("/v1/api-key-enforcer/audit", handleAudit)
-	http.HandleFunc("/v1/api-key-enforcer/stats", handleStats)
-	http.HandleFunc("/v1/api-key-enforcer/validate", api_key_enforcerValidateHandler)
-	http.HandleFunc("/v1/api-key-enforcer/rate-limit", api_key_enforcerRateLimitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/api-key-enforcer/list", handleList)
+	mux.HandleFunc("/v1/api-key-enforcer/create", handleCreate)
+	mux.HandleFunc("/v1/api-key-enforcer/update", handleUpdate)
+	mux.HandleFunc("/v1/api-key-enforcer/process", handleProcess)
+	mux.HandleFunc("/v1/api-key-enforcer/audit", handleAudit)
+	mux.HandleFunc("/v1/api-key-enforcer/stats", handleStats)
+	mux.HandleFunc("/v1/api-key-enforcer/validate", api_key_enforcerValidateHandler)
+	mux.HandleFunc("/v1/api-key-enforcer/rate-limit", api_key_enforcerRateLimitHandler)
 	log.Printf("Api Key Enforcer v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

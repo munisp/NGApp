@@ -507,25 +507,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8105" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/growth/chatbot", conversationalBanking)
-	http.HandleFunc("/v1/growth/smart-savings", smartSavings)
-	http.HandleFunc("/v1/growth/virtual-cards", virtualCards)
-	http.HandleFunc("/v1/growth/qr-payments", qrPayments)
-	http.HandleFunc("/v1/growth/bnpl", bnpl)
-	http.HandleFunc("/v1/growth/investments", investmentMarketplace)
-	http.HandleFunc("/v1/growth/remittances", crossBorderRemittances)
-	http.HandleFunc("/v1/growth/gamification", gamification)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/growth/chatbot", conversationalBanking)
+	mux.HandleFunc("/v1/growth/smart-savings", smartSavings)
+	mux.HandleFunc("/v1/growth/virtual-cards", virtualCards)
+	mux.HandleFunc("/v1/growth/qr-payments", qrPayments)
+	mux.HandleFunc("/v1/growth/bnpl", bnpl)
+	mux.HandleFunc("/v1/growth/investments", investmentMarketplace)
+	mux.HandleFunc("/v1/growth/remittances", crossBorderRemittances)
+	mux.HandleFunc("/v1/growth/gamification", gamification)
 	log.Printf("Growth Features (Go) on :%s — Enhancements 13-20", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

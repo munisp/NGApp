@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9455" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/utility-payments/list", handleList)
-	http.HandleFunc("/v1/utility-payments/create", handleCreate)
-	http.HandleFunc("/v1/utility-payments/update", handleUpdate)
-	http.HandleFunc("/v1/utility-payments/process", handleProcess)
-	http.HandleFunc("/v1/utility-payments/audit", handleAudit)
-	http.HandleFunc("/v1/utility-payments/stats", handleStats)
-	http.HandleFunc("/v1/utility-payments/compute-fee", utility_paymentsFeeHandler)
-	http.HandleFunc("/v1/utility-payments/route", utility_paymentsRouteHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/utility-payments/list", handleList)
+	mux.HandleFunc("/v1/utility-payments/create", handleCreate)
+	mux.HandleFunc("/v1/utility-payments/update", handleUpdate)
+	mux.HandleFunc("/v1/utility-payments/process", handleProcess)
+	mux.HandleFunc("/v1/utility-payments/audit", handleAudit)
+	mux.HandleFunc("/v1/utility-payments/stats", handleStats)
+	mux.HandleFunc("/v1/utility-payments/compute-fee", utility_paymentsFeeHandler)
+	mux.HandleFunc("/v1/utility-payments/route", utility_paymentsRouteHandler)
 	log.Printf("Utility Payments v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

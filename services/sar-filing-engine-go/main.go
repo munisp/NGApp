@@ -602,25 +602,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9425" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/sar-filing-engine/list", handleList)
-	http.HandleFunc("/v1/sar-filing-engine/create", handleCreate)
-	http.HandleFunc("/v1/sar-filing-engine/update", handleUpdate)
-	http.HandleFunc("/v1/sar-filing-engine/process", handleProcess)
-	http.HandleFunc("/v1/sar-filing-engine/audit", handleAudit)
-	http.HandleFunc("/v1/sar-filing-engine/stats", handleStats)
-	http.HandleFunc("/v1/sar-filing-engine/screen", sar_filing_engineScreenHandler)
-	http.HandleFunc("/v1/sar-filing-engine/risk-score", sar_filing_engineRiskScoreHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/sar-filing-engine/list", handleList)
+	mux.HandleFunc("/v1/sar-filing-engine/create", handleCreate)
+	mux.HandleFunc("/v1/sar-filing-engine/update", handleUpdate)
+	mux.HandleFunc("/v1/sar-filing-engine/process", handleProcess)
+	mux.HandleFunc("/v1/sar-filing-engine/audit", handleAudit)
+	mux.HandleFunc("/v1/sar-filing-engine/stats", handleStats)
+	mux.HandleFunc("/v1/sar-filing-engine/screen", sar_filing_engineScreenHandler)
+	mux.HandleFunc("/v1/sar-filing-engine/risk-score", sar_filing_engineRiskScoreHandler)
 	log.Printf("Sar Filing Engine v2.0 (AML/Compliance) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

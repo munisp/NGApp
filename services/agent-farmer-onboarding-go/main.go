@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9301" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/agent-farmer-onboarding/list", handleList)
-	http.HandleFunc("/v1/agent-farmer-onboarding/create", handleCreate)
-	http.HandleFunc("/v1/agent-farmer-onboarding/update", handleUpdate)
-	http.HandleFunc("/v1/agent-farmer-onboarding/process", handleProcess)
-	http.HandleFunc("/v1/agent-farmer-onboarding/audit", handleAudit)
-	http.HandleFunc("/v1/agent-farmer-onboarding/stats", handleStats)
-	http.HandleFunc("/v1/agent-farmer-onboarding/yield-score", agent_farmer_onboardingYieldHandler)
-	http.HandleFunc("/v1/agent-farmer-onboarding/risk-assess", agent_farmer_onboardingRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/list", handleList)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/create", handleCreate)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/update", handleUpdate)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/process", handleProcess)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/audit", handleAudit)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/stats", handleStats)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/yield-score", agent_farmer_onboardingYieldHandler)
+	mux.HandleFunc("/v1/agent-farmer-onboarding/risk-assess", agent_farmer_onboardingRiskHandler)
 	log.Printf("Agent Farmer Onboarding v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -726,24 +726,25 @@ func main() {
 	if port == "" {
 		port = "9096"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/beneficial-ownership/register", handleRegister)
-	http.HandleFunc("/v1/beneficial-ownership/traverse-chain", handleTraverseChain)
-	http.HandleFunc("/v1/beneficial-ownership/identify-ubos", handleIdentifyUBOs)
-	http.HandleFunc("/v1/beneficial-ownership/register/add", handleAddToRegister)
-	http.HandleFunc("/v1/beneficial-ownership/stats", handleStats)
-	http.HandleFunc("/v1/beneficial-ownership/score", beneficial_ownershipScoreHandler)
-	http.HandleFunc("/v1/beneficial-ownership/validate", beneficial_ownershipValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/beneficial-ownership/register", handleRegister)
+	mux.HandleFunc("/v1/beneficial-ownership/traverse-chain", handleTraverseChain)
+	mux.HandleFunc("/v1/beneficial-ownership/identify-ubos", handleIdentifyUBOs)
+	mux.HandleFunc("/v1/beneficial-ownership/register/add", handleAddToRegister)
+	mux.HandleFunc("/v1/beneficial-ownership/stats", handleStats)
+	mux.HandleFunc("/v1/beneficial-ownership/score", beneficial_ownershipScoreHandler)
+	mux.HandleFunc("/v1/beneficial-ownership/validate", beneficial_ownershipValidateRequestHandler)
 	log.Printf("Beneficial Ownership Register v2.0 (Go) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

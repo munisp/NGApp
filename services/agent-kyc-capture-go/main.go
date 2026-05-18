@@ -665,27 +665,28 @@ func main() {
 	if port == "" {
 		port = "9016"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/agent-kyc/captures", handleCaptures)
-	http.HandleFunc("/v1/agent-kyc/capture", handleCreateCapture)
-	http.HandleFunc("/v1/agent-kyc/sync", handleSyncCapture)
-	http.HandleFunc("/v1/agent-kyc/batch-sync", handleBatchSync)
-	http.HandleFunc("/v1/agent-kyc/ussd-capture", handleUSSDCapture)
-	http.HandleFunc("/v1/agent-kyc/agents", handleAgents)
-	http.HandleFunc("/v1/agent-kyc/sync-queue", handleSyncQueue)
-	http.HandleFunc("/v1/agent-kyc/stats", handleStats)
-	http.HandleFunc("/v1/agent-kyc-capture/score", agent_kyc_captureScoreHandler)
-	http.HandleFunc("/v1/agent-kyc-capture/validate", agent_kyc_captureValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/agent-kyc/captures", handleCaptures)
+	mux.HandleFunc("/v1/agent-kyc/capture", handleCreateCapture)
+	mux.HandleFunc("/v1/agent-kyc/sync", handleSyncCapture)
+	mux.HandleFunc("/v1/agent-kyc/batch-sync", handleBatchSync)
+	mux.HandleFunc("/v1/agent-kyc/ussd-capture", handleUSSDCapture)
+	mux.HandleFunc("/v1/agent-kyc/agents", handleAgents)
+	mux.HandleFunc("/v1/agent-kyc/sync-queue", handleSyncQueue)
+	mux.HandleFunc("/v1/agent-kyc/stats", handleStats)
+	mux.HandleFunc("/v1/agent-kyc-capture/score", agent_kyc_captureScoreHandler)
+	mux.HandleFunc("/v1/agent-kyc-capture/validate", agent_kyc_captureValidateRequestHandler)
 	log.Printf("Agent KYC Capture v2.0 (Go) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

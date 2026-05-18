@@ -721,25 +721,26 @@ func main() {
 	if port == "" {
 		port = "8114"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/identity/verify-bvn", handleVerifyBVN)
-	http.HandleFunc("/v1/identity/verify-nin", handleVerifyNIN)
-	http.HandleFunc("/v1/identity/liveness", handleLivenessCheck)
-	http.HandleFunc("/v1/identity/verifications", handleVerifications)
-	http.HandleFunc("/v1/identity/liveness-sessions", handleLivenessSessions)
-	http.HandleFunc("/v1/identity/stats", handleStats)
-	http.HandleFunc("/v1/identity/face-analyze", handleFaceAnalyze)
-	http.HandleFunc("/v1/identity/dedup-check", handleDedupCheck)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/identity/verify-bvn", handleVerifyBVN)
+	mux.HandleFunc("/v1/identity/verify-nin", handleVerifyNIN)
+	mux.HandleFunc("/v1/identity/liveness", handleLivenessCheck)
+	mux.HandleFunc("/v1/identity/verifications", handleVerifications)
+	mux.HandleFunc("/v1/identity/liveness-sessions", handleLivenessSessions)
+	mux.HandleFunc("/v1/identity/stats", handleStats)
+	mux.HandleFunc("/v1/identity/face-analyze", handleFaceAnalyze)
+	mux.HandleFunc("/v1/identity/dedup-check", handleDedupCheck)
 	log.Printf("Identity Verification v3.0 (Go, DeepFace-enhanced) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

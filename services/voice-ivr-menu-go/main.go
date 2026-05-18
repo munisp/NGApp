@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9458" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/voice-ivr-menu/list", handleList)
-	http.HandleFunc("/v1/voice-ivr-menu/create", handleCreate)
-	http.HandleFunc("/v1/voice-ivr-menu/update", handleUpdate)
-	http.HandleFunc("/v1/voice-ivr-menu/process", handleProcess)
-	http.HandleFunc("/v1/voice-ivr-menu/audit", handleAudit)
-	http.HandleFunc("/v1/voice-ivr-menu/stats", handleStats)
-	http.HandleFunc("/v1/voice-ivr-menu/score", voice_ivr_menuScoreHandler)
-	http.HandleFunc("/v1/voice-ivr-menu/validate", voice_ivr_menuValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/voice-ivr-menu/list", handleList)
+	mux.HandleFunc("/v1/voice-ivr-menu/create", handleCreate)
+	mux.HandleFunc("/v1/voice-ivr-menu/update", handleUpdate)
+	mux.HandleFunc("/v1/voice-ivr-menu/process", handleProcess)
+	mux.HandleFunc("/v1/voice-ivr-menu/audit", handleAudit)
+	mux.HandleFunc("/v1/voice-ivr-menu/stats", handleStats)
+	mux.HandleFunc("/v1/voice-ivr-menu/score", voice_ivr_menuScoreHandler)
+	mux.HandleFunc("/v1/voice-ivr-menu/validate", voice_ivr_menuValidateRequestHandler)
 	log.Printf("Voice Ivr Menu v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

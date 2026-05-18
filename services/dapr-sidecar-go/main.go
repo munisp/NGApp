@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9343" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/dapr-sidecar/list", handleList)
-	http.HandleFunc("/v1/dapr-sidecar/create", handleCreate)
-	http.HandleFunc("/v1/dapr-sidecar/update", handleUpdate)
-	http.HandleFunc("/v1/dapr-sidecar/process", handleProcess)
-	http.HandleFunc("/v1/dapr-sidecar/audit", handleAudit)
-	http.HandleFunc("/v1/dapr-sidecar/stats", handleStats)
-	http.HandleFunc("/v1/dapr-sidecar/score", dapr_sidecarScoreHandler)
-	http.HandleFunc("/v1/dapr-sidecar/validate", dapr_sidecarValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/dapr-sidecar/list", handleList)
+	mux.HandleFunc("/v1/dapr-sidecar/create", handleCreate)
+	mux.HandleFunc("/v1/dapr-sidecar/update", handleUpdate)
+	mux.HandleFunc("/v1/dapr-sidecar/process", handleProcess)
+	mux.HandleFunc("/v1/dapr-sidecar/audit", handleAudit)
+	mux.HandleFunc("/v1/dapr-sidecar/stats", handleStats)
+	mux.HandleFunc("/v1/dapr-sidecar/score", dapr_sidecarScoreHandler)
+	mux.HandleFunc("/v1/dapr-sidecar/validate", dapr_sidecarValidateRequestHandler)
 	log.Printf("Dapr Sidecar v2.0 (Infrastructure/Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

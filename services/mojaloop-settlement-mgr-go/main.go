@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9394" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/list", handleList)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/create", handleCreate)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/update", handleUpdate)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/process", handleProcess)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/audit", handleAudit)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/stats", handleStats)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/compute-fee", mojaloop_settlement_mgrFeeHandler)
-	http.HandleFunc("/v1/mojaloop-settlement-mgr/route", mojaloop_settlement_mgrRouteHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/list", handleList)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/create", handleCreate)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/update", handleUpdate)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/process", handleProcess)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/audit", handleAudit)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/stats", handleStats)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/compute-fee", mojaloop_settlement_mgrFeeHandler)
+	mux.HandleFunc("/v1/mojaloop-settlement-mgr/route", mojaloop_settlement_mgrRouteHandler)
 	log.Printf("Mojaloop Settlement Mgr v2.0 (Cross-Border) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

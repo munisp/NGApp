@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9442" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/telegram-mini-app/list", handleList)
-	http.HandleFunc("/v1/telegram-mini-app/create", handleCreate)
-	http.HandleFunc("/v1/telegram-mini-app/update", handleUpdate)
-	http.HandleFunc("/v1/telegram-mini-app/process", handleProcess)
-	http.HandleFunc("/v1/telegram-mini-app/audit", handleAudit)
-	http.HandleFunc("/v1/telegram-mini-app/stats", handleStats)
-	http.HandleFunc("/v1/telegram-mini-app/score", telegram_mini_appScoreHandler)
-	http.HandleFunc("/v1/telegram-mini-app/validate", telegram_mini_appValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/telegram-mini-app/list", handleList)
+	mux.HandleFunc("/v1/telegram-mini-app/create", handleCreate)
+	mux.HandleFunc("/v1/telegram-mini-app/update", handleUpdate)
+	mux.HandleFunc("/v1/telegram-mini-app/process", handleProcess)
+	mux.HandleFunc("/v1/telegram-mini-app/audit", handleAudit)
+	mux.HandleFunc("/v1/telegram-mini-app/stats", handleStats)
+	mux.HandleFunc("/v1/telegram-mini-app/score", telegram_mini_appScoreHandler)
+	mux.HandleFunc("/v1/telegram-mini-app/validate", telegram_mini_appValidateRequestHandler)
 	log.Printf("Telegram Mini App v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

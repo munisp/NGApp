@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9421" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/request-coalescer/list", handleList)
-	http.HandleFunc("/v1/request-coalescer/create", handleCreate)
-	http.HandleFunc("/v1/request-coalescer/update", handleUpdate)
-	http.HandleFunc("/v1/request-coalescer/process", handleProcess)
-	http.HandleFunc("/v1/request-coalescer/audit", handleAudit)
-	http.HandleFunc("/v1/request-coalescer/stats", handleStats)
-	http.HandleFunc("/v1/request-coalescer/score", request_coalescerScoreHandler)
-	http.HandleFunc("/v1/request-coalescer/validate", request_coalescerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/request-coalescer/list", handleList)
+	mux.HandleFunc("/v1/request-coalescer/create", handleCreate)
+	mux.HandleFunc("/v1/request-coalescer/update", handleUpdate)
+	mux.HandleFunc("/v1/request-coalescer/process", handleProcess)
+	mux.HandleFunc("/v1/request-coalescer/audit", handleAudit)
+	mux.HandleFunc("/v1/request-coalescer/stats", handleStats)
+	mux.HandleFunc("/v1/request-coalescer/score", request_coalescerScoreHandler)
+	mux.HandleFunc("/v1/request-coalescer/validate", request_coalescerValidateRequestHandler)
 	log.Printf("Request Coalescer v2.0 (Platform/Infra) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

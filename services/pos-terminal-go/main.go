@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9409" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/pos-terminal/list", handleList)
-	http.HandleFunc("/v1/pos-terminal/create", handleCreate)
-	http.HandleFunc("/v1/pos-terminal/update", handleUpdate)
-	http.HandleFunc("/v1/pos-terminal/process", handleProcess)
-	http.HandleFunc("/v1/pos-terminal/audit", handleAudit)
-	http.HandleFunc("/v1/pos-terminal/stats", handleStats)
-	http.HandleFunc("/v1/pos-terminal/compute-fee", pos_terminalFeeHandler)
-	http.HandleFunc("/v1/pos-terminal/route", pos_terminalRouteHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/pos-terminal/list", handleList)
+	mux.HandleFunc("/v1/pos-terminal/create", handleCreate)
+	mux.HandleFunc("/v1/pos-terminal/update", handleUpdate)
+	mux.HandleFunc("/v1/pos-terminal/process", handleProcess)
+	mux.HandleFunc("/v1/pos-terminal/audit", handleAudit)
+	mux.HandleFunc("/v1/pos-terminal/stats", handleStats)
+	mux.HandleFunc("/v1/pos-terminal/compute-fee", pos_terminalFeeHandler)
+	mux.HandleFunc("/v1/pos-terminal/route", pos_terminalRouteHandler)
 	log.Printf("Pos Terminal v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

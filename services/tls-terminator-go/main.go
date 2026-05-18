@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9452" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/tls-terminator/list", handleList)
-	http.HandleFunc("/v1/tls-terminator/create", handleCreate)
-	http.HandleFunc("/v1/tls-terminator/update", handleUpdate)
-	http.HandleFunc("/v1/tls-terminator/process", handleProcess)
-	http.HandleFunc("/v1/tls-terminator/audit", handleAudit)
-	http.HandleFunc("/v1/tls-terminator/stats", handleStats)
-	http.HandleFunc("/v1/tls-terminator/score", tls_terminatorScoreHandler)
-	http.HandleFunc("/v1/tls-terminator/validate", tls_terminatorValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/tls-terminator/list", handleList)
+	mux.HandleFunc("/v1/tls-terminator/create", handleCreate)
+	mux.HandleFunc("/v1/tls-terminator/update", handleUpdate)
+	mux.HandleFunc("/v1/tls-terminator/process", handleProcess)
+	mux.HandleFunc("/v1/tls-terminator/audit", handleAudit)
+	mux.HandleFunc("/v1/tls-terminator/stats", handleStats)
+	mux.HandleFunc("/v1/tls-terminator/score", tls_terminatorScoreHandler)
+	mux.HandleFunc("/v1/tls-terminator/validate", tls_terminatorValidateRequestHandler)
 	log.Printf("Tls Terminator v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

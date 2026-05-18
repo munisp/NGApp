@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9424" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/salary-processing/list", handleList)
-	http.HandleFunc("/v1/salary-processing/create", handleCreate)
-	http.HandleFunc("/v1/salary-processing/update", handleUpdate)
-	http.HandleFunc("/v1/salary-processing/process", handleProcess)
-	http.HandleFunc("/v1/salary-processing/audit", handleAudit)
-	http.HandleFunc("/v1/salary-processing/stats", handleStats)
-	http.HandleFunc("/v1/salary-processing/score", salary_processingScoreHandler)
-	http.HandleFunc("/v1/salary-processing/validate", salary_processingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/salary-processing/list", handleList)
+	mux.HandleFunc("/v1/salary-processing/create", handleCreate)
+	mux.HandleFunc("/v1/salary-processing/update", handleUpdate)
+	mux.HandleFunc("/v1/salary-processing/process", handleProcess)
+	mux.HandleFunc("/v1/salary-processing/audit", handleAudit)
+	mux.HandleFunc("/v1/salary-processing/stats", handleStats)
+	mux.HandleFunc("/v1/salary-processing/score", salary_processingScoreHandler)
+	mux.HandleFunc("/v1/salary-processing/validate", salary_processingValidateRequestHandler)
 	log.Printf("Salary Processing v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

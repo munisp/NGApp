@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9378" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/keda-scaler/list", handleList)
-	http.HandleFunc("/v1/keda-scaler/create", handleCreate)
-	http.HandleFunc("/v1/keda-scaler/update", handleUpdate)
-	http.HandleFunc("/v1/keda-scaler/process", handleProcess)
-	http.HandleFunc("/v1/keda-scaler/audit", handleAudit)
-	http.HandleFunc("/v1/keda-scaler/stats", handleStats)
-	http.HandleFunc("/v1/keda-scaler/score", keda_scalerScoreHandler)
-	http.HandleFunc("/v1/keda-scaler/validate", keda_scalerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/keda-scaler/list", handleList)
+	mux.HandleFunc("/v1/keda-scaler/create", handleCreate)
+	mux.HandleFunc("/v1/keda-scaler/update", handleUpdate)
+	mux.HandleFunc("/v1/keda-scaler/process", handleProcess)
+	mux.HandleFunc("/v1/keda-scaler/audit", handleAudit)
+	mux.HandleFunc("/v1/keda-scaler/stats", handleStats)
+	mux.HandleFunc("/v1/keda-scaler/score", keda_scalerScoreHandler)
+	mux.HandleFunc("/v1/keda-scaler/validate", keda_scalerValidateRequestHandler)
 	log.Printf("Keda Scaler v2.0 (Infrastructure/Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9420" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/remittance/list", handleList)
-	http.HandleFunc("/v1/remittance/create", handleCreate)
-	http.HandleFunc("/v1/remittance/update", handleUpdate)
-	http.HandleFunc("/v1/remittance/process", handleProcess)
-	http.HandleFunc("/v1/remittance/audit", handleAudit)
-	http.HandleFunc("/v1/remittance/stats", handleStats)
-	http.HandleFunc("/v1/remittance/compute-fee", remittanceFeeHandler)
-	http.HandleFunc("/v1/remittance/route", remittanceRouteHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/remittance/list", handleList)
+	mux.HandleFunc("/v1/remittance/create", handleCreate)
+	mux.HandleFunc("/v1/remittance/update", handleUpdate)
+	mux.HandleFunc("/v1/remittance/process", handleProcess)
+	mux.HandleFunc("/v1/remittance/audit", handleAudit)
+	mux.HandleFunc("/v1/remittance/stats", handleStats)
+	mux.HandleFunc("/v1/remittance/compute-fee", remittanceFeeHandler)
+	mux.HandleFunc("/v1/remittance/route", remittanceRouteHandler)
 	log.Printf("Remittance v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

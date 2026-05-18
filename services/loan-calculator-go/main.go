@@ -600,25 +600,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9383" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/loan-calculator/list", handleList)
-	http.HandleFunc("/v1/loan-calculator/create", handleCreate)
-	http.HandleFunc("/v1/loan-calculator/update", handleUpdate)
-	http.HandleFunc("/v1/loan-calculator/process", handleProcess)
-	http.HandleFunc("/v1/loan-calculator/audit", handleAudit)
-	http.HandleFunc("/v1/loan-calculator/stats", handleStats)
-	http.HandleFunc("/v1/loan-calculator/compute-emi", loan_calculatorEMIHandler)
-	http.HandleFunc("/v1/loan-calculator/credit-check", loan_calculatorCreditCheckHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/loan-calculator/list", handleList)
+	mux.HandleFunc("/v1/loan-calculator/create", handleCreate)
+	mux.HandleFunc("/v1/loan-calculator/update", handleUpdate)
+	mux.HandleFunc("/v1/loan-calculator/process", handleProcess)
+	mux.HandleFunc("/v1/loan-calculator/audit", handleAudit)
+	mux.HandleFunc("/v1/loan-calculator/stats", handleStats)
+	mux.HandleFunc("/v1/loan-calculator/compute-emi", loan_calculatorEMIHandler)
+	mux.HandleFunc("/v1/loan-calculator/credit-check", loan_calculatorCreditCheckHandler)
 	log.Printf("Loan Calculator v2.0 (Lending) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

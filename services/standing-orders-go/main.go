@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9435" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/standing-orders/list", handleList)
-	http.HandleFunc("/v1/standing-orders/create", handleCreate)
-	http.HandleFunc("/v1/standing-orders/update", handleUpdate)
-	http.HandleFunc("/v1/standing-orders/process", handleProcess)
-	http.HandleFunc("/v1/standing-orders/audit", handleAudit)
-	http.HandleFunc("/v1/standing-orders/stats", handleStats)
-	http.HandleFunc("/v1/standing-orders/score", standing_ordersScoreHandler)
-	http.HandleFunc("/v1/standing-orders/validate", standing_ordersValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/standing-orders/list", handleList)
+	mux.HandleFunc("/v1/standing-orders/create", handleCreate)
+	mux.HandleFunc("/v1/standing-orders/update", handleUpdate)
+	mux.HandleFunc("/v1/standing-orders/process", handleProcess)
+	mux.HandleFunc("/v1/standing-orders/audit", handleAudit)
+	mux.HandleFunc("/v1/standing-orders/stats", handleStats)
+	mux.HandleFunc("/v1/standing-orders/score", standing_ordersScoreHandler)
+	mux.HandleFunc("/v1/standing-orders/validate", standing_ordersValidateRequestHandler)
 	log.Printf("Standing Orders v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

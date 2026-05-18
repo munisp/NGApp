@@ -608,25 +608,26 @@ func main() {
 	if port == "" {
 		port = "8111"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/nip/name-enquiry", handleNameEnquiry)
-	http.HandleFunc("/v1/nip/funds-transfer", handleFundsTransfer)
-	http.HandleFunc("/v1/nip/tsq", handleTSQ)
-	http.HandleFunc("/v1/nip/transactions", handleTransactions)
-	http.HandleFunc("/v1/nip/mandates", handleMandates)
-	http.HandleFunc("/v1/nip/settlements", handleSettlements)
-	http.HandleFunc("/v1/nip/response-codes", handleResponseCodes)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/nip/name-enquiry", handleNameEnquiry)
+	mux.HandleFunc("/v1/nip/funds-transfer", handleFundsTransfer)
+	mux.HandleFunc("/v1/nip/tsq", handleTSQ)
+	mux.HandleFunc("/v1/nip/transactions", handleTransactions)
+	mux.HandleFunc("/v1/nip/mandates", handleMandates)
+	mux.HandleFunc("/v1/nip/settlements", handleSettlements)
+	mux.HandleFunc("/v1/nip/response-codes", handleResponseCodes)
 
 	log.Printf("NIBSS/NIP Engine (Go) on :%s — ISO 8583 + Direct Debit", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

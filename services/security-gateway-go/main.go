@@ -491,25 +491,26 @@ func main() {
 	}
 	port := os.Getenv("PORT")
 	if port == "" { port = "9429" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/security-gateway/list", handleList)
-	http.HandleFunc("/v1/security-gateway/create", handleCreate)
-	http.HandleFunc("/v1/security-gateway/update", handleUpdate)
-	http.HandleFunc("/v1/security-gateway/process", handleProcess)
-	http.HandleFunc("/v1/security-gateway/audit", handleAudit)
-	http.HandleFunc("/v1/security-gateway/stats", handleStats)
-	http.HandleFunc("/v1/security-gateway/health-score", security_gatewayHealthScoreHandler)
-	http.HandleFunc("/v1/security-gateway/circuit-state", security_gatewayCircuitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/security-gateway/list", handleList)
+	mux.HandleFunc("/v1/security-gateway/create", handleCreate)
+	mux.HandleFunc("/v1/security-gateway/update", handleUpdate)
+	mux.HandleFunc("/v1/security-gateway/process", handleProcess)
+	mux.HandleFunc("/v1/security-gateway/audit", handleAudit)
+	mux.HandleFunc("/v1/security-gateway/stats", handleStats)
+	mux.HandleFunc("/v1/security-gateway/health-score", security_gatewayHealthScoreHandler)
+	mux.HandleFunc("/v1/security-gateway/circuit-state", security_gatewayCircuitHandler)
 	log.Printf("Security Gateway v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

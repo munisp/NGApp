@@ -593,25 +593,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9422" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/route-schema-enforcer/list", handleList)
-	http.HandleFunc("/v1/route-schema-enforcer/create", handleCreate)
-	http.HandleFunc("/v1/route-schema-enforcer/update", handleUpdate)
-	http.HandleFunc("/v1/route-schema-enforcer/process", handleProcess)
-	http.HandleFunc("/v1/route-schema-enforcer/audit", handleAudit)
-	http.HandleFunc("/v1/route-schema-enforcer/stats", handleStats)
-	http.HandleFunc("/v1/route-schema-enforcer/throughput", route_schema_enforcerThroughputHandler)
-	http.HandleFunc("/v1/route-schema-enforcer/partition", route_schema_enforcerPartitionHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/route-schema-enforcer/list", handleList)
+	mux.HandleFunc("/v1/route-schema-enforcer/create", handleCreate)
+	mux.HandleFunc("/v1/route-schema-enforcer/update", handleUpdate)
+	mux.HandleFunc("/v1/route-schema-enforcer/process", handleProcess)
+	mux.HandleFunc("/v1/route-schema-enforcer/audit", handleAudit)
+	mux.HandleFunc("/v1/route-schema-enforcer/stats", handleStats)
+	mux.HandleFunc("/v1/route-schema-enforcer/throughput", route_schema_enforcerThroughputHandler)
+	mux.HandleFunc("/v1/route-schema-enforcer/partition", route_schema_enforcerPartitionHandler)
 	log.Printf("Route Schema Enforcer v2.0 (General) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

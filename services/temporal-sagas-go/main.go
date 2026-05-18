@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9444" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/temporal-sagas/list", handleList)
-	http.HandleFunc("/v1/temporal-sagas/create", handleCreate)
-	http.HandleFunc("/v1/temporal-sagas/update", handleUpdate)
-	http.HandleFunc("/v1/temporal-sagas/process", handleProcess)
-	http.HandleFunc("/v1/temporal-sagas/audit", handleAudit)
-	http.HandleFunc("/v1/temporal-sagas/stats", handleStats)
-	http.HandleFunc("/v1/temporal-sagas/score", temporal_sagasScoreHandler)
-	http.HandleFunc("/v1/temporal-sagas/validate", temporal_sagasValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/temporal-sagas/list", handleList)
+	mux.HandleFunc("/v1/temporal-sagas/create", handleCreate)
+	mux.HandleFunc("/v1/temporal-sagas/update", handleUpdate)
+	mux.HandleFunc("/v1/temporal-sagas/process", handleProcess)
+	mux.HandleFunc("/v1/temporal-sagas/audit", handleAudit)
+	mux.HandleFunc("/v1/temporal-sagas/stats", handleStats)
+	mux.HandleFunc("/v1/temporal-sagas/score", temporal_sagasScoreHandler)
+	mux.HandleFunc("/v1/temporal-sagas/validate", temporal_sagasValidateRequestHandler)
 	log.Printf("Temporal Sagas v2.0 (Platform/Infra) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

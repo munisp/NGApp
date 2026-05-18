@@ -650,22 +650,23 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8096" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/payments/gl-posting", paymentsToGL)
-	http.HandleFunc("/v1/loans/lifecycle-gl", loanLifecycleToGL)
-	http.HandleFunc("/v1/fx/dealing-gl", fxDealingToGL)
-	http.HandleFunc("/v1/fd/lifecycle-gl", fixedDepositToGL)
-	http.HandleFunc("/v1/si/execution-gl", standingInstructionsToGL)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/payments/gl-posting", paymentsToGL)
+	mux.HandleFunc("/v1/loans/lifecycle-gl", loanLifecycleToGL)
+	mux.HandleFunc("/v1/fx/dealing-gl", fxDealingToGL)
+	mux.HandleFunc("/v1/fd/lifecycle-gl", fixedDepositToGL)
+	mux.HandleFunc("/v1/si/execution-gl", standingInstructionsToGL)
 	log.Printf("Banking Domain Integration (Go) listening on :%s — Gaps 8-12, 14 middleware", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

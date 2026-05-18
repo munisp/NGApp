@@ -600,25 +600,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9341" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/custody-service/list", handleList)
-	http.HandleFunc("/v1/custody-service/create", handleCreate)
-	http.HandleFunc("/v1/custody-service/update", handleUpdate)
-	http.HandleFunc("/v1/custody-service/process", handleProcess)
-	http.HandleFunc("/v1/custody-service/audit", handleAudit)
-	http.HandleFunc("/v1/custody-service/stats", handleStats)
-	http.HandleFunc("/v1/custody-service/fx-convert", custody_serviceFXHandler)
-	http.HandleFunc("/v1/custody-service/risk-calc", custody_serviceRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/custody-service/list", handleList)
+	mux.HandleFunc("/v1/custody-service/create", handleCreate)
+	mux.HandleFunc("/v1/custody-service/update", handleUpdate)
+	mux.HandleFunc("/v1/custody-service/process", handleProcess)
+	mux.HandleFunc("/v1/custody-service/audit", handleAudit)
+	mux.HandleFunc("/v1/custody-service/stats", handleStats)
+	mux.HandleFunc("/v1/custody-service/fx-convert", custody_serviceFXHandler)
+	mux.HandleFunc("/v1/custody-service/risk-calc", custody_serviceRiskHandler)
 	log.Printf("Custody Service v2.0 (Treasury/Markets) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

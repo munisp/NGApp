@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9302" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/aggregation-center/list", handleList)
-	http.HandleFunc("/v1/aggregation-center/create", handleCreate)
-	http.HandleFunc("/v1/aggregation-center/update", handleUpdate)
-	http.HandleFunc("/v1/aggregation-center/process", handleProcess)
-	http.HandleFunc("/v1/aggregation-center/audit", handleAudit)
-	http.HandleFunc("/v1/aggregation-center/stats", handleStats)
-	http.HandleFunc("/v1/aggregation-center/yield-score", aggregation_centerYieldHandler)
-	http.HandleFunc("/v1/aggregation-center/risk-assess", aggregation_centerRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/aggregation-center/list", handleList)
+	mux.HandleFunc("/v1/aggregation-center/create", handleCreate)
+	mux.HandleFunc("/v1/aggregation-center/update", handleUpdate)
+	mux.HandleFunc("/v1/aggregation-center/process", handleProcess)
+	mux.HandleFunc("/v1/aggregation-center/audit", handleAudit)
+	mux.HandleFunc("/v1/aggregation-center/stats", handleStats)
+	mux.HandleFunc("/v1/aggregation-center/yield-score", aggregation_centerYieldHandler)
+	mux.HandleFunc("/v1/aggregation-center/risk-assess", aggregation_centerRiskHandler)
 	log.Printf("Aggregation Center v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

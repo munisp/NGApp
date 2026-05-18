@@ -702,29 +702,30 @@ func main() {
 	port := os.Getenv("PORT")
 
 	if port == "" { port = "9384" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/health", handleHealthz)
-	http.HandleFunc("/v1/loan-origination/list", handleList)
-	http.HandleFunc("/v1/loan-origination/create", handleCreate)
-	http.HandleFunc("/v1/loan-origination/update", handleUpdate)
-	http.HandleFunc("/v1/loan-origination/process", handleProcess)
-	http.HandleFunc("/v1/loan-origination/kyc-callback", handleKYCCallback)
-	http.HandleFunc("/v1/loan-origination/audit", handleAudit)
-	http.HandleFunc("/v1/loan-origination/stats", handleStats)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/health", handleHealthz)
+	mux.HandleFunc("/v1/loan-origination/list", handleList)
+	mux.HandleFunc("/v1/loan-origination/create", handleCreate)
+	mux.HandleFunc("/v1/loan-origination/update", handleUpdate)
+	mux.HandleFunc("/v1/loan-origination/process", handleProcess)
+	mux.HandleFunc("/v1/loan-origination/kyc-callback", handleKYCCallback)
+	mux.HandleFunc("/v1/loan-origination/audit", handleAudit)
+	mux.HandleFunc("/v1/loan-origination/stats", handleStats)
 	// Alternate paths
-	http.HandleFunc("/v1/applications", handleCreate)
-	http.HandleFunc("/v1/applications/approve", handleProcess)
-	http.HandleFunc("/v1/disbursements", handleProcess)
+	mux.HandleFunc("/v1/applications", handleCreate)
+	mux.HandleFunc("/v1/applications/approve", handleProcess)
+	mux.HandleFunc("/v1/disbursements", handleProcess)
 	log.Printf("Loan Origination v3.0 (Lending, KYC enforced) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

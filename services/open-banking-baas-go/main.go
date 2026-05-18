@@ -551,22 +551,23 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8102" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/open-banking/apis", openBankingAPIs)
-	http.HandleFunc("/v1/ai/credit-scoring", aiCreditScoring)
-	http.HandleFunc("/v1/embedded-finance", embeddedFinance)
-	http.HandleFunc("/v1/open-banking-baas/score", open_banking_baasScoreHandler)
-	http.HandleFunc("/v1/open-banking-baas/validate", open_banking_baasValidateRequestHandler)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/open-banking/apis", openBankingAPIs)
+	mux.HandleFunc("/v1/ai/credit-scoring", aiCreditScoring)
+	mux.HandleFunc("/v1/embedded-finance", embeddedFinance)
+	mux.HandleFunc("/v1/open-banking-baas/score", open_banking_baasScoreHandler)
+	mux.HandleFunc("/v1/open-banking-baas/validate", open_banking_baasValidateRequestHandler)
 	log.Printf("Open Banking & BaaS (Go) on :%s — Enhancements 1, 2, 5", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

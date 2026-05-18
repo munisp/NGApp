@@ -596,25 +596,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9307" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/agri-savings-cycles/list", handleList)
-	http.HandleFunc("/v1/agri-savings-cycles/create", handleCreate)
-	http.HandleFunc("/v1/agri-savings-cycles/update", handleUpdate)
-	http.HandleFunc("/v1/agri-savings-cycles/process", handleProcess)
-	http.HandleFunc("/v1/agri-savings-cycles/audit", handleAudit)
-	http.HandleFunc("/v1/agri-savings-cycles/stats", handleStats)
-	http.HandleFunc("/v1/agri-savings-cycles/yield-score", agri_savings_cyclesYieldHandler)
-	http.HandleFunc("/v1/agri-savings-cycles/risk-assess", agri_savings_cyclesRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/agri-savings-cycles/list", handleList)
+	mux.HandleFunc("/v1/agri-savings-cycles/create", handleCreate)
+	mux.HandleFunc("/v1/agri-savings-cycles/update", handleUpdate)
+	mux.HandleFunc("/v1/agri-savings-cycles/process", handleProcess)
+	mux.HandleFunc("/v1/agri-savings-cycles/audit", handleAudit)
+	mux.HandleFunc("/v1/agri-savings-cycles/stats", handleStats)
+	mux.HandleFunc("/v1/agri-savings-cycles/yield-score", agri_savings_cyclesYieldHandler)
+	mux.HandleFunc("/v1/agri-savings-cycles/risk-assess", agri_savings_cyclesRiskHandler)
 	log.Printf("Agri Savings Cycles v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9445" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/temporal-worker/list", handleList)
-	http.HandleFunc("/v1/temporal-worker/create", handleCreate)
-	http.HandleFunc("/v1/temporal-worker/update", handleUpdate)
-	http.HandleFunc("/v1/temporal-worker/process", handleProcess)
-	http.HandleFunc("/v1/temporal-worker/audit", handleAudit)
-	http.HandleFunc("/v1/temporal-worker/stats", handleStats)
-	http.HandleFunc("/v1/temporal-worker/score", temporal_workerScoreHandler)
-	http.HandleFunc("/v1/temporal-worker/validate", temporal_workerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/temporal-worker/list", handleList)
+	mux.HandleFunc("/v1/temporal-worker/create", handleCreate)
+	mux.HandleFunc("/v1/temporal-worker/update", handleUpdate)
+	mux.HandleFunc("/v1/temporal-worker/process", handleProcess)
+	mux.HandleFunc("/v1/temporal-worker/audit", handleAudit)
+	mux.HandleFunc("/v1/temporal-worker/stats", handleStats)
+	mux.HandleFunc("/v1/temporal-worker/score", temporal_workerScoreHandler)
+	mux.HandleFunc("/v1/temporal-worker/validate", temporal_workerValidateRequestHandler)
 	log.Printf("Temporal Worker v2.0 (Platform/Infra) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

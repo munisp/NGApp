@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9439" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/swift-messaging/list", handleList)
-	http.HandleFunc("/v1/swift-messaging/create", handleCreate)
-	http.HandleFunc("/v1/swift-messaging/update", handleUpdate)
-	http.HandleFunc("/v1/swift-messaging/process", handleProcess)
-	http.HandleFunc("/v1/swift-messaging/audit", handleAudit)
-	http.HandleFunc("/v1/swift-messaging/stats", handleStats)
-	http.HandleFunc("/v1/swift-messaging/score", swift_messagingScoreHandler)
-	http.HandleFunc("/v1/swift-messaging/validate", swift_messagingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/swift-messaging/list", handleList)
+	mux.HandleFunc("/v1/swift-messaging/create", handleCreate)
+	mux.HandleFunc("/v1/swift-messaging/update", handleUpdate)
+	mux.HandleFunc("/v1/swift-messaging/process", handleProcess)
+	mux.HandleFunc("/v1/swift-messaging/audit", handleAudit)
+	mux.HandleFunc("/v1/swift-messaging/stats", handleStats)
+	mux.HandleFunc("/v1/swift-messaging/score", swift_messagingScoreHandler)
+	mux.HandleFunc("/v1/swift-messaging/validate", swift_messagingValidateRequestHandler)
 	log.Printf("Swift Messaging v2.0 (Cross-Border) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

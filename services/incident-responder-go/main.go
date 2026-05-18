@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9372" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/incident-responder/list", handleList)
-	http.HandleFunc("/v1/incident-responder/create", handleCreate)
-	http.HandleFunc("/v1/incident-responder/update", handleUpdate)
-	http.HandleFunc("/v1/incident-responder/process", handleProcess)
-	http.HandleFunc("/v1/incident-responder/audit", handleAudit)
-	http.HandleFunc("/v1/incident-responder/stats", handleStats)
-	http.HandleFunc("/v1/incident-responder/score", incident_responderScoreHandler)
-	http.HandleFunc("/v1/incident-responder/validate", incident_responderValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/incident-responder/list", handleList)
+	mux.HandleFunc("/v1/incident-responder/create", handleCreate)
+	mux.HandleFunc("/v1/incident-responder/update", handleUpdate)
+	mux.HandleFunc("/v1/incident-responder/process", handleProcess)
+	mux.HandleFunc("/v1/incident-responder/audit", handleAudit)
+	mux.HandleFunc("/v1/incident-responder/stats", handleStats)
+	mux.HandleFunc("/v1/incident-responder/score", incident_responderScoreHandler)
+	mux.HandleFunc("/v1/incident-responder/validate", incident_responderValidateRequestHandler)
 	log.Printf("Incident Responder v2.0 (Testing/Observability) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

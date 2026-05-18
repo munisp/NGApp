@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9407" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/pgbouncer-manager/list", handleList)
-	http.HandleFunc("/v1/pgbouncer-manager/create", handleCreate)
-	http.HandleFunc("/v1/pgbouncer-manager/update", handleUpdate)
-	http.HandleFunc("/v1/pgbouncer-manager/process", handleProcess)
-	http.HandleFunc("/v1/pgbouncer-manager/audit", handleAudit)
-	http.HandleFunc("/v1/pgbouncer-manager/stats", handleStats)
-	http.HandleFunc("/v1/pgbouncer-manager/score", pgbouncer_managerScoreHandler)
-	http.HandleFunc("/v1/pgbouncer-manager/validate", pgbouncer_managerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/pgbouncer-manager/list", handleList)
+	mux.HandleFunc("/v1/pgbouncer-manager/create", handleCreate)
+	mux.HandleFunc("/v1/pgbouncer-manager/update", handleUpdate)
+	mux.HandleFunc("/v1/pgbouncer-manager/process", handleProcess)
+	mux.HandleFunc("/v1/pgbouncer-manager/audit", handleAudit)
+	mux.HandleFunc("/v1/pgbouncer-manager/stats", handleStats)
+	mux.HandleFunc("/v1/pgbouncer-manager/score", pgbouncer_managerScoreHandler)
+	mux.HandleFunc("/v1/pgbouncer-manager/validate", pgbouncer_managerValidateRequestHandler)
 	log.Printf("Pgbouncer Manager v2.0 (Infrastructure/Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

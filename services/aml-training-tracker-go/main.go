@@ -602,25 +602,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9309" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/aml-training-tracker/list", handleList)
-	http.HandleFunc("/v1/aml-training-tracker/create", handleCreate)
-	http.HandleFunc("/v1/aml-training-tracker/update", handleUpdate)
-	http.HandleFunc("/v1/aml-training-tracker/process", handleProcess)
-	http.HandleFunc("/v1/aml-training-tracker/audit", handleAudit)
-	http.HandleFunc("/v1/aml-training-tracker/stats", handleStats)
-	http.HandleFunc("/v1/aml-training-tracker/screen", aml_training_trackerScreenHandler)
-	http.HandleFunc("/v1/aml-training-tracker/risk-score", aml_training_trackerRiskScoreHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/aml-training-tracker/list", handleList)
+	mux.HandleFunc("/v1/aml-training-tracker/create", handleCreate)
+	mux.HandleFunc("/v1/aml-training-tracker/update", handleUpdate)
+	mux.HandleFunc("/v1/aml-training-tracker/process", handleProcess)
+	mux.HandleFunc("/v1/aml-training-tracker/audit", handleAudit)
+	mux.HandleFunc("/v1/aml-training-tracker/stats", handleStats)
+	mux.HandleFunc("/v1/aml-training-tracker/screen", aml_training_trackerScreenHandler)
+	mux.HandleFunc("/v1/aml-training-tracker/risk-score", aml_training_trackerRiskScoreHandler)
 	log.Printf("Aml Training Tracker v2.0 (AML/Compliance) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

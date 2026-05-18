@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9462" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/whatsapp-payment-integration/list", handleList)
-	http.HandleFunc("/v1/whatsapp-payment-integration/create", handleCreate)
-	http.HandleFunc("/v1/whatsapp-payment-integration/update", handleUpdate)
-	http.HandleFunc("/v1/whatsapp-payment-integration/process", handleProcess)
-	http.HandleFunc("/v1/whatsapp-payment-integration/audit", handleAudit)
-	http.HandleFunc("/v1/whatsapp-payment-integration/stats", handleStats)
-	http.HandleFunc("/v1/whatsapp-payment-integration/compute-fee", whatsapp_payment_integrationFeeHandler)
-	http.HandleFunc("/v1/whatsapp-payment-integration/route", whatsapp_payment_integrationRouteHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/list", handleList)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/create", handleCreate)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/update", handleUpdate)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/process", handleProcess)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/audit", handleAudit)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/stats", handleStats)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/compute-fee", whatsapp_payment_integrationFeeHandler)
+	mux.HandleFunc("/v1/whatsapp-payment-integration/route", whatsapp_payment_integrationRouteHandler)
 	log.Printf("Whatsapp Payment Integration v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

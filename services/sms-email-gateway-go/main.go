@@ -594,25 +594,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9432" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/sms-email-gateway/list", handleList)
-	http.HandleFunc("/v1/sms-email-gateway/create", handleCreate)
-	http.HandleFunc("/v1/sms-email-gateway/update", handleUpdate)
-	http.HandleFunc("/v1/sms-email-gateway/process", handleProcess)
-	http.HandleFunc("/v1/sms-email-gateway/audit", handleAudit)
-	http.HandleFunc("/v1/sms-email-gateway/stats", handleStats)
-	http.HandleFunc("/v1/sms-email-gateway/health-score", sms_email_gatewayHealthScoreHandler)
-	http.HandleFunc("/v1/sms-email-gateway/circuit-state", sms_email_gatewayCircuitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/sms-email-gateway/list", handleList)
+	mux.HandleFunc("/v1/sms-email-gateway/create", handleCreate)
+	mux.HandleFunc("/v1/sms-email-gateway/update", handleUpdate)
+	mux.HandleFunc("/v1/sms-email-gateway/process", handleProcess)
+	mux.HandleFunc("/v1/sms-email-gateway/audit", handleAudit)
+	mux.HandleFunc("/v1/sms-email-gateway/stats", handleStats)
+	mux.HandleFunc("/v1/sms-email-gateway/health-score", sms_email_gatewayHealthScoreHandler)
+	mux.HandleFunc("/v1/sms-email-gateway/circuit-state", sms_email_gatewayCircuitHandler)
 	log.Printf("Sms Email Gateway v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

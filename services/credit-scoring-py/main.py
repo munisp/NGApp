@@ -165,20 +165,6 @@ def validate_jwt(headers):
     return {"sub": "authenticated"}, None
 
 # --- Domain Logic ---
-def get_db():
-    global db_conn
-    if db_conn is not None:
-        return db_conn
-    if not DB_URL:
-        return None
-    try:
-        logger.info(f"Connected to Postgres")
-        return db_conn
-    except Exception as e:
-        logger.warning(f"DB connection failed: {e}")
-        return None
-
-
 def compute_credit_score(income, debt, employment_years, loan_history_count, defaults, age):
     score = 300
     dti = debt / max(income, 1) * 100
@@ -292,6 +278,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
+        add_security_headers(self)
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 
@@ -299,6 +286,13 @@ class Handler(BaseHTTPRequestHandler):
         trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
         logger.info(f"[credit-scoring-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "1")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
         path = urlparse(self.path).path
 
         if path == "/healthz":
@@ -349,6 +343,13 @@ class Handler(BaseHTTPRequestHandler):
         trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
         logger.info(f"[credit-scoring-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "1")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(length)) if length > 0 else {}

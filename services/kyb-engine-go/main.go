@@ -678,23 +678,24 @@ func main() {
 	if port == "" {
 		port = "9106"
 	}
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/kyb-structure/analyze", handleAnalyze)
-	http.HandleFunc("/v1/kyb-structure/list", handleStructures)
-	http.HandleFunc("/v1/kyb-structure/voting-rights", handleVotingRights)
-	http.HandleFunc("/v1/kyb-structure/stats", handleStats)
-	http.HandleFunc("/v1/kyb-engine/score", kyb_engineScoreHandler)
-	http.HandleFunc("/v1/kyb-engine/validate", kyb_engineValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/kyb-structure/analyze", handleAnalyze)
+	mux.HandleFunc("/v1/kyb-structure/list", handleStructures)
+	mux.HandleFunc("/v1/kyb-structure/voting-rights", handleVotingRights)
+	mux.HandleFunc("/v1/kyb-structure/stats", handleStats)
+	mux.HandleFunc("/v1/kyb-engine/score", kyb_engineScoreHandler)
+	mux.HandleFunc("/v1/kyb-engine/validate", kyb_engineValidateRequestHandler)
 	log.Printf("KYB Engine — Corporate Structure v2.0 (Go) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

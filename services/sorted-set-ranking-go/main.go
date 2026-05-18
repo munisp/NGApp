@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9433" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/sorted-set-ranking/list", handleList)
-	http.HandleFunc("/v1/sorted-set-ranking/create", handleCreate)
-	http.HandleFunc("/v1/sorted-set-ranking/update", handleUpdate)
-	http.HandleFunc("/v1/sorted-set-ranking/process", handleProcess)
-	http.HandleFunc("/v1/sorted-set-ranking/audit", handleAudit)
-	http.HandleFunc("/v1/sorted-set-ranking/stats", handleStats)
-	http.HandleFunc("/v1/sorted-set-ranking/score", sorted_set_rankingScoreHandler)
-	http.HandleFunc("/v1/sorted-set-ranking/validate", sorted_set_rankingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/sorted-set-ranking/list", handleList)
+	mux.HandleFunc("/v1/sorted-set-ranking/create", handleCreate)
+	mux.HandleFunc("/v1/sorted-set-ranking/update", handleUpdate)
+	mux.HandleFunc("/v1/sorted-set-ranking/process", handleProcess)
+	mux.HandleFunc("/v1/sorted-set-ranking/audit", handleAudit)
+	mux.HandleFunc("/v1/sorted-set-ranking/stats", handleStats)
+	mux.HandleFunc("/v1/sorted-set-ranking/score", sorted_set_rankingScoreHandler)
+	mux.HandleFunc("/v1/sorted-set-ranking/validate", sorted_set_rankingValidateRequestHandler)
 	log.Printf("Sorted Set Ranking v2.0 (Platform/Infra) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

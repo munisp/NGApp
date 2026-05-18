@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9335" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cooperative-meetings/list", handleList)
-	http.HandleFunc("/v1/cooperative-meetings/create", handleCreate)
-	http.HandleFunc("/v1/cooperative-meetings/update", handleUpdate)
-	http.HandleFunc("/v1/cooperative-meetings/process", handleProcess)
-	http.HandleFunc("/v1/cooperative-meetings/audit", handleAudit)
-	http.HandleFunc("/v1/cooperative-meetings/stats", handleStats)
-	http.HandleFunc("/v1/cooperative-meetings/score", cooperative_meetingsScoreHandler)
-	http.HandleFunc("/v1/cooperative-meetings/validate", cooperative_meetingsValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cooperative-meetings/list", handleList)
+	mux.HandleFunc("/v1/cooperative-meetings/create", handleCreate)
+	mux.HandleFunc("/v1/cooperative-meetings/update", handleUpdate)
+	mux.HandleFunc("/v1/cooperative-meetings/process", handleProcess)
+	mux.HandleFunc("/v1/cooperative-meetings/audit", handleAudit)
+	mux.HandleFunc("/v1/cooperative-meetings/stats", handleStats)
+	mux.HandleFunc("/v1/cooperative-meetings/score", cooperative_meetingsScoreHandler)
+	mux.HandleFunc("/v1/cooperative-meetings/validate", cooperative_meetingsValidateRequestHandler)
 	log.Printf("Cooperative Meetings v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

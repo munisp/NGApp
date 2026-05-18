@@ -647,23 +647,24 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8101" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/gap-f/multi-tenancy", multiTenancyIsolation)
-	http.HandleFunc("/v1/gap-g/webhooks", webhookDelivery)
-	http.HandleFunc("/v1/gap-h/api-documentation", apiDocumentation)
-	http.HandleFunc("/v1/gap-i/input-validation", inputValidation)
-	http.HandleFunc("/v1/platform-security-infra/fx-convert", platform_security_infraFXHandler)
-	http.HandleFunc("/v1/platform-security-infra/risk-calc", platform_security_infraRiskHandler)
+	mux.HandleFunc("/healthz", healthz)
+	mux.HandleFunc("/v1/gap-f/multi-tenancy", multiTenancyIsolation)
+	mux.HandleFunc("/v1/gap-g/webhooks", webhookDelivery)
+	mux.HandleFunc("/v1/gap-h/api-documentation", apiDocumentation)
+	mux.HandleFunc("/v1/gap-i/input-validation", inputValidation)
+	mux.HandleFunc("/v1/platform-security-infra/fx-convert", platform_security_infraFXHandler)
+	mux.HandleFunc("/v1/platform-security-infra/risk-calc", platform_security_infraRiskHandler)
 	log.Printf("Platform Security & Infra (Go) on :%s — Gaps F-I, 14 middleware", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

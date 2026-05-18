@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9340" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/ctr-auto-filer/list", handleList)
-	http.HandleFunc("/v1/ctr-auto-filer/create", handleCreate)
-	http.HandleFunc("/v1/ctr-auto-filer/update", handleUpdate)
-	http.HandleFunc("/v1/ctr-auto-filer/process", handleProcess)
-	http.HandleFunc("/v1/ctr-auto-filer/audit", handleAudit)
-	http.HandleFunc("/v1/ctr-auto-filer/stats", handleStats)
-	http.HandleFunc("/v1/ctr-auto-filer/score", ctr_auto_filerScoreHandler)
-	http.HandleFunc("/v1/ctr-auto-filer/validate", ctr_auto_filerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/ctr-auto-filer/list", handleList)
+	mux.HandleFunc("/v1/ctr-auto-filer/create", handleCreate)
+	mux.HandleFunc("/v1/ctr-auto-filer/update", handleUpdate)
+	mux.HandleFunc("/v1/ctr-auto-filer/process", handleProcess)
+	mux.HandleFunc("/v1/ctr-auto-filer/audit", handleAudit)
+	mux.HandleFunc("/v1/ctr-auto-filer/stats", handleStats)
+	mux.HandleFunc("/v1/ctr-auto-filer/score", ctr_auto_filerScoreHandler)
+	mux.HandleFunc("/v1/ctr-auto-filer/validate", ctr_auto_filerValidateRequestHandler)
 	log.Printf("Ctr Auto Filer v2.0 (AML/Compliance) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

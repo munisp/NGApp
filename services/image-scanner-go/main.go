@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9371" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/image-scanner/list", handleList)
-	http.HandleFunc("/v1/image-scanner/create", handleCreate)
-	http.HandleFunc("/v1/image-scanner/update", handleUpdate)
-	http.HandleFunc("/v1/image-scanner/process", handleProcess)
-	http.HandleFunc("/v1/image-scanner/audit", handleAudit)
-	http.HandleFunc("/v1/image-scanner/stats", handleStats)
-	http.HandleFunc("/v1/image-scanner/score", image_scannerScoreHandler)
-	http.HandleFunc("/v1/image-scanner/validate", image_scannerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/image-scanner/list", handleList)
+	mux.HandleFunc("/v1/image-scanner/create", handleCreate)
+	mux.HandleFunc("/v1/image-scanner/update", handleUpdate)
+	mux.HandleFunc("/v1/image-scanner/process", handleProcess)
+	mux.HandleFunc("/v1/image-scanner/audit", handleAudit)
+	mux.HandleFunc("/v1/image-scanner/stats", handleStats)
+	mux.HandleFunc("/v1/image-scanner/score", image_scannerScoreHandler)
+	mux.HandleFunc("/v1/image-scanner/validate", image_scannerValidateRequestHandler)
 	log.Printf("Image Scanner v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

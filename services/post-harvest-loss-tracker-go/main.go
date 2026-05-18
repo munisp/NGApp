@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9410" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/list", handleList)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/create", handleCreate)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/update", handleUpdate)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/process", handleProcess)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/audit", handleAudit)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/stats", handleStats)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/score", post_harvest_loss_trackerScoreHandler)
-	http.HandleFunc("/v1/post-harvest-loss-tracker/validate", post_harvest_loss_trackerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/list", handleList)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/create", handleCreate)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/update", handleUpdate)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/process", handleProcess)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/audit", handleAudit)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/stats", handleStats)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/score", post_harvest_loss_trackerScoreHandler)
+	mux.HandleFunc("/v1/post-harvest-loss-tracker/validate", post_harvest_loss_trackerValidateRequestHandler)
 	log.Printf("Post Harvest Loss Tracker v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

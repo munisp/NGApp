@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9456" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/voice-agent-escalation/list", handleList)
-	http.HandleFunc("/v1/voice-agent-escalation/create", handleCreate)
-	http.HandleFunc("/v1/voice-agent-escalation/update", handleUpdate)
-	http.HandleFunc("/v1/voice-agent-escalation/process", handleProcess)
-	http.HandleFunc("/v1/voice-agent-escalation/audit", handleAudit)
-	http.HandleFunc("/v1/voice-agent-escalation/stats", handleStats)
-	http.HandleFunc("/v1/voice-agent-escalation/score", voice_agent_escalationScoreHandler)
-	http.HandleFunc("/v1/voice-agent-escalation/validate", voice_agent_escalationValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/voice-agent-escalation/list", handleList)
+	mux.HandleFunc("/v1/voice-agent-escalation/create", handleCreate)
+	mux.HandleFunc("/v1/voice-agent-escalation/update", handleUpdate)
+	mux.HandleFunc("/v1/voice-agent-escalation/process", handleProcess)
+	mux.HandleFunc("/v1/voice-agent-escalation/audit", handleAudit)
+	mux.HandleFunc("/v1/voice-agent-escalation/stats", handleStats)
+	mux.HandleFunc("/v1/voice-agent-escalation/score", voice_agent_escalationScoreHandler)
+	mux.HandleFunc("/v1/voice-agent-escalation/validate", voice_agent_escalationValidateRequestHandler)
 	log.Printf("Voice Agent Escalation v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

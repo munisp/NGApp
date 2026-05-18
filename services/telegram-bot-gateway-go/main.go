@@ -594,25 +594,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9441" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/telegram-bot-gateway/list", handleList)
-	http.HandleFunc("/v1/telegram-bot-gateway/create", handleCreate)
-	http.HandleFunc("/v1/telegram-bot-gateway/update", handleUpdate)
-	http.HandleFunc("/v1/telegram-bot-gateway/process", handleProcess)
-	http.HandleFunc("/v1/telegram-bot-gateway/audit", handleAudit)
-	http.HandleFunc("/v1/telegram-bot-gateway/stats", handleStats)
-	http.HandleFunc("/v1/telegram-bot-gateway/health-score", telegram_bot_gatewayHealthScoreHandler)
-	http.HandleFunc("/v1/telegram-bot-gateway/circuit-state", telegram_bot_gatewayCircuitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/telegram-bot-gateway/list", handleList)
+	mux.HandleFunc("/v1/telegram-bot-gateway/create", handleCreate)
+	mux.HandleFunc("/v1/telegram-bot-gateway/update", handleUpdate)
+	mux.HandleFunc("/v1/telegram-bot-gateway/process", handleProcess)
+	mux.HandleFunc("/v1/telegram-bot-gateway/audit", handleAudit)
+	mux.HandleFunc("/v1/telegram-bot-gateway/stats", handleStats)
+	mux.HandleFunc("/v1/telegram-bot-gateway/health-score", telegram_bot_gatewayHealthScoreHandler)
+	mux.HandleFunc("/v1/telegram-bot-gateway/circuit-state", telegram_bot_gatewayCircuitHandler)
 	log.Printf("Telegram Bot Gateway v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9367" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/hpa-autoscaler/list", handleList)
-	http.HandleFunc("/v1/hpa-autoscaler/create", handleCreate)
-	http.HandleFunc("/v1/hpa-autoscaler/update", handleUpdate)
-	http.HandleFunc("/v1/hpa-autoscaler/process", handleProcess)
-	http.HandleFunc("/v1/hpa-autoscaler/audit", handleAudit)
-	http.HandleFunc("/v1/hpa-autoscaler/stats", handleStats)
-	http.HandleFunc("/v1/hpa-autoscaler/score", hpa_autoscalerScoreHandler)
-	http.HandleFunc("/v1/hpa-autoscaler/validate", hpa_autoscalerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/hpa-autoscaler/list", handleList)
+	mux.HandleFunc("/v1/hpa-autoscaler/create", handleCreate)
+	mux.HandleFunc("/v1/hpa-autoscaler/update", handleUpdate)
+	mux.HandleFunc("/v1/hpa-autoscaler/process", handleProcess)
+	mux.HandleFunc("/v1/hpa-autoscaler/audit", handleAudit)
+	mux.HandleFunc("/v1/hpa-autoscaler/stats", handleStats)
+	mux.HandleFunc("/v1/hpa-autoscaler/score", hpa_autoscalerScoreHandler)
+	mux.HandleFunc("/v1/hpa-autoscaler/validate", hpa_autoscalerValidateRequestHandler)
 	log.Printf("Hpa Autoscaler v2.0 (Infrastructure/Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

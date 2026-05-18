@@ -594,25 +594,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9408" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/pkce-auth-flow/list", handleList)
-	http.HandleFunc("/v1/pkce-auth-flow/create", handleCreate)
-	http.HandleFunc("/v1/pkce-auth-flow/update", handleUpdate)
-	http.HandleFunc("/v1/pkce-auth-flow/process", handleProcess)
-	http.HandleFunc("/v1/pkce-auth-flow/audit", handleAudit)
-	http.HandleFunc("/v1/pkce-auth-flow/stats", handleStats)
-	http.HandleFunc("/v1/pkce-auth-flow/validate", pkce_auth_flowValidateHandler)
-	http.HandleFunc("/v1/pkce-auth-flow/rate-limit", pkce_auth_flowRateLimitHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/pkce-auth-flow/list", handleList)
+	mux.HandleFunc("/v1/pkce-auth-flow/create", handleCreate)
+	mux.HandleFunc("/v1/pkce-auth-flow/update", handleUpdate)
+	mux.HandleFunc("/v1/pkce-auth-flow/process", handleProcess)
+	mux.HandleFunc("/v1/pkce-auth-flow/audit", handleAudit)
+	mux.HandleFunc("/v1/pkce-auth-flow/stats", handleStats)
+	mux.HandleFunc("/v1/pkce-auth-flow/validate", pkce_auth_flowValidateHandler)
+	mux.HandleFunc("/v1/pkce-auth-flow/rate-limit", pkce_auth_flowRateLimitHandler)
 	log.Printf("Pkce Auth Flow v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

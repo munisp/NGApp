@@ -593,25 +593,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9332" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cdn-edge-cache/list", handleList)
-	http.HandleFunc("/v1/cdn-edge-cache/create", handleCreate)
-	http.HandleFunc("/v1/cdn-edge-cache/update", handleUpdate)
-	http.HandleFunc("/v1/cdn-edge-cache/process", handleProcess)
-	http.HandleFunc("/v1/cdn-edge-cache/audit", handleAudit)
-	http.HandleFunc("/v1/cdn-edge-cache/stats", handleStats)
-	http.HandleFunc("/v1/cdn-edge-cache/throughput", cdn_edge_cacheThroughputHandler)
-	http.HandleFunc("/v1/cdn-edge-cache/partition", cdn_edge_cachePartitionHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cdn-edge-cache/list", handleList)
+	mux.HandleFunc("/v1/cdn-edge-cache/create", handleCreate)
+	mux.HandleFunc("/v1/cdn-edge-cache/update", handleUpdate)
+	mux.HandleFunc("/v1/cdn-edge-cache/process", handleProcess)
+	mux.HandleFunc("/v1/cdn-edge-cache/audit", handleAudit)
+	mux.HandleFunc("/v1/cdn-edge-cache/stats", handleStats)
+	mux.HandleFunc("/v1/cdn-edge-cache/throughput", cdn_edge_cacheThroughputHandler)
+	mux.HandleFunc("/v1/cdn-edge-cache/partition", cdn_edge_cachePartitionHandler)
 	log.Printf("Cdn Edge Cache v2.0 (KYC/Identity) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

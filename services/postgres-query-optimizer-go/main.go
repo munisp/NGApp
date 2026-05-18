@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9412" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/postgres-query-optimizer/list", handleList)
-	http.HandleFunc("/v1/postgres-query-optimizer/create", handleCreate)
-	http.HandleFunc("/v1/postgres-query-optimizer/update", handleUpdate)
-	http.HandleFunc("/v1/postgres-query-optimizer/process", handleProcess)
-	http.HandleFunc("/v1/postgres-query-optimizer/audit", handleAudit)
-	http.HandleFunc("/v1/postgres-query-optimizer/stats", handleStats)
-	http.HandleFunc("/v1/postgres-query-optimizer/score", postgres_query_optimizerScoreHandler)
-	http.HandleFunc("/v1/postgres-query-optimizer/validate", postgres_query_optimizerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/postgres-query-optimizer/list", handleList)
+	mux.HandleFunc("/v1/postgres-query-optimizer/create", handleCreate)
+	mux.HandleFunc("/v1/postgres-query-optimizer/update", handleUpdate)
+	mux.HandleFunc("/v1/postgres-query-optimizer/process", handleProcess)
+	mux.HandleFunc("/v1/postgres-query-optimizer/audit", handleAudit)
+	mux.HandleFunc("/v1/postgres-query-optimizer/stats", handleStats)
+	mux.HandleFunc("/v1/postgres-query-optimizer/score", postgres_query_optimizerScoreHandler)
+	mux.HandleFunc("/v1/postgres-query-optimizer/validate", postgres_query_optimizerValidateRequestHandler)
 	log.Printf("Postgres Query Optimizer v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

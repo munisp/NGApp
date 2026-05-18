@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9399" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/notification-service/list", handleList)
-	http.HandleFunc("/v1/notification-service/create", handleCreate)
-	http.HandleFunc("/v1/notification-service/update", handleUpdate)
-	http.HandleFunc("/v1/notification-service/process", handleProcess)
-	http.HandleFunc("/v1/notification-service/audit", handleAudit)
-	http.HandleFunc("/v1/notification-service/stats", handleStats)
-	http.HandleFunc("/v1/notification-service/score", notification_serviceScoreHandler)
-	http.HandleFunc("/v1/notification-service/validate", notification_serviceValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/notification-service/list", handleList)
+	mux.HandleFunc("/v1/notification-service/create", handleCreate)
+	mux.HandleFunc("/v1/notification-service/update", handleUpdate)
+	mux.HandleFunc("/v1/notification-service/process", handleProcess)
+	mux.HandleFunc("/v1/notification-service/audit", handleAudit)
+	mux.HandleFunc("/v1/notification-service/stats", handleStats)
+	mux.HandleFunc("/v1/notification-service/score", notification_serviceScoreHandler)
+	mux.HandleFunc("/v1/notification-service/validate", notification_serviceValidateRequestHandler)
 	log.Printf("Notification Service v2.0 (Messaging/Channels) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

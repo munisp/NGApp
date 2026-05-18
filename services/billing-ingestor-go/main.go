@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9322" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/billing-ingestor/list", handleList)
-	http.HandleFunc("/v1/billing-ingestor/create", handleCreate)
-	http.HandleFunc("/v1/billing-ingestor/update", handleUpdate)
-	http.HandleFunc("/v1/billing-ingestor/process", handleProcess)
-	http.HandleFunc("/v1/billing-ingestor/audit", handleAudit)
-	http.HandleFunc("/v1/billing-ingestor/stats", handleStats)
-	http.HandleFunc("/v1/billing-ingestor/score", billing_ingestorScoreHandler)
-	http.HandleFunc("/v1/billing-ingestor/validate", billing_ingestorValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/billing-ingestor/list", handleList)
+	mux.HandleFunc("/v1/billing-ingestor/create", handleCreate)
+	mux.HandleFunc("/v1/billing-ingestor/update", handleUpdate)
+	mux.HandleFunc("/v1/billing-ingestor/process", handleProcess)
+	mux.HandleFunc("/v1/billing-ingestor/audit", handleAudit)
+	mux.HandleFunc("/v1/billing-ingestor/stats", handleStats)
+	mux.HandleFunc("/v1/billing-ingestor/score", billing_ingestorScoreHandler)
+	mux.HandleFunc("/v1/billing-ingestor/validate", billing_ingestorValidateRequestHandler)
 	log.Printf("Billing Ingestor v2.0 (Billing) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

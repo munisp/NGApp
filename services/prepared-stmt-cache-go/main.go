@@ -593,25 +593,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9413" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/prepared-stmt-cache/list", handleList)
-	http.HandleFunc("/v1/prepared-stmt-cache/create", handleCreate)
-	http.HandleFunc("/v1/prepared-stmt-cache/update", handleUpdate)
-	http.HandleFunc("/v1/prepared-stmt-cache/process", handleProcess)
-	http.HandleFunc("/v1/prepared-stmt-cache/audit", handleAudit)
-	http.HandleFunc("/v1/prepared-stmt-cache/stats", handleStats)
-	http.HandleFunc("/v1/prepared-stmt-cache/throughput", prepared_stmt_cacheThroughputHandler)
-	http.HandleFunc("/v1/prepared-stmt-cache/partition", prepared_stmt_cachePartitionHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/prepared-stmt-cache/list", handleList)
+	mux.HandleFunc("/v1/prepared-stmt-cache/create", handleCreate)
+	mux.HandleFunc("/v1/prepared-stmt-cache/update", handleUpdate)
+	mux.HandleFunc("/v1/prepared-stmt-cache/process", handleProcess)
+	mux.HandleFunc("/v1/prepared-stmt-cache/audit", handleAudit)
+	mux.HandleFunc("/v1/prepared-stmt-cache/stats", handleStats)
+	mux.HandleFunc("/v1/prepared-stmt-cache/throughput", prepared_stmt_cacheThroughputHandler)
+	mux.HandleFunc("/v1/prepared-stmt-cache/partition", prepared_stmt_cachePartitionHandler)
 	log.Printf("Prepared Stmt Cache v2.0 (KYC/Identity) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

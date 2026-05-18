@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9358" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/factoring/list", handleList)
-	http.HandleFunc("/v1/factoring/create", handleCreate)
-	http.HandleFunc("/v1/factoring/update", handleUpdate)
-	http.HandleFunc("/v1/factoring/process", handleProcess)
-	http.HandleFunc("/v1/factoring/audit", handleAudit)
-	http.HandleFunc("/v1/factoring/stats", handleStats)
-	http.HandleFunc("/v1/factoring/score", factoringScoreHandler)
-	http.HandleFunc("/v1/factoring/validate", factoringValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/factoring/list", handleList)
+	mux.HandleFunc("/v1/factoring/create", handleCreate)
+	mux.HandleFunc("/v1/factoring/update", handleUpdate)
+	mux.HandleFunc("/v1/factoring/process", handleProcess)
+	mux.HandleFunc("/v1/factoring/audit", handleAudit)
+	mux.HandleFunc("/v1/factoring/stats", handleStats)
+	mux.HandleFunc("/v1/factoring/score", factoringScoreHandler)
+	mux.HandleFunc("/v1/factoring/validate", factoringValidateRequestHandler)
 	log.Printf("Factoring v2.0 (Lending) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

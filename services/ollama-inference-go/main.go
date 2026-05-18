@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9400" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/ollama-inference/list", handleList)
-	http.HandleFunc("/v1/ollama-inference/create", handleCreate)
-	http.HandleFunc("/v1/ollama-inference/update", handleUpdate)
-	http.HandleFunc("/v1/ollama-inference/process", handleProcess)
-	http.HandleFunc("/v1/ollama-inference/audit", handleAudit)
-	http.HandleFunc("/v1/ollama-inference/stats", handleStats)
-	http.HandleFunc("/v1/ollama-inference/score", ollama_inferenceScoreHandler)
-	http.HandleFunc("/v1/ollama-inference/validate", ollama_inferenceValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/ollama-inference/list", handleList)
+	mux.HandleFunc("/v1/ollama-inference/create", handleCreate)
+	mux.HandleFunc("/v1/ollama-inference/update", handleUpdate)
+	mux.HandleFunc("/v1/ollama-inference/process", handleProcess)
+	mux.HandleFunc("/v1/ollama-inference/audit", handleAudit)
+	mux.HandleFunc("/v1/ollama-inference/stats", handleStats)
+	mux.HandleFunc("/v1/ollama-inference/score", ollama_inferenceScoreHandler)
+	mux.HandleFunc("/v1/ollama-inference/validate", ollama_inferenceValidateRequestHandler)
 	log.Printf("Ollama Inference v2.0 (Platform) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

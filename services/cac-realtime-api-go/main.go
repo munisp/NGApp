@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9328" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/cac-realtime-api/list", handleList)
-	http.HandleFunc("/v1/cac-realtime-api/create", handleCreate)
-	http.HandleFunc("/v1/cac-realtime-api/update", handleUpdate)
-	http.HandleFunc("/v1/cac-realtime-api/process", handleProcess)
-	http.HandleFunc("/v1/cac-realtime-api/audit", handleAudit)
-	http.HandleFunc("/v1/cac-realtime-api/stats", handleStats)
-	http.HandleFunc("/v1/cac-realtime-api/score", cac_realtime_apiScoreHandler)
-	http.HandleFunc("/v1/cac-realtime-api/validate", cac_realtime_apiValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/cac-realtime-api/list", handleList)
+	mux.HandleFunc("/v1/cac-realtime-api/create", handleCreate)
+	mux.HandleFunc("/v1/cac-realtime-api/update", handleUpdate)
+	mux.HandleFunc("/v1/cac-realtime-api/process", handleProcess)
+	mux.HandleFunc("/v1/cac-realtime-api/audit", handleAudit)
+	mux.HandleFunc("/v1/cac-realtime-api/stats", handleStats)
+	mux.HandleFunc("/v1/cac-realtime-api/score", cac_realtime_apiScoreHandler)
+	mux.HandleFunc("/v1/cac-realtime-api/validate", cac_realtime_apiValidateRequestHandler)
 	log.Printf("Cac Realtime Api v2.0 (KYC/Identity) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

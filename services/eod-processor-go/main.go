@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9351" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/eod-processor/list", handleList)
-	http.HandleFunc("/v1/eod-processor/create", handleCreate)
-	http.HandleFunc("/v1/eod-processor/update", handleUpdate)
-	http.HandleFunc("/v1/eod-processor/process", handleProcess)
-	http.HandleFunc("/v1/eod-processor/audit", handleAudit)
-	http.HandleFunc("/v1/eod-processor/stats", handleStats)
-	http.HandleFunc("/v1/eod-processor/score", eod_processorScoreHandler)
-	http.HandleFunc("/v1/eod-processor/validate", eod_processorValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/eod-processor/list", handleList)
+	mux.HandleFunc("/v1/eod-processor/create", handleCreate)
+	mux.HandleFunc("/v1/eod-processor/update", handleUpdate)
+	mux.HandleFunc("/v1/eod-processor/process", handleProcess)
+	mux.HandleFunc("/v1/eod-processor/audit", handleAudit)
+	mux.HandleFunc("/v1/eod-processor/stats", handleStats)
+	mux.HandleFunc("/v1/eod-processor/score", eod_processorScoreHandler)
+	mux.HandleFunc("/v1/eod-processor/validate", eod_processorValidateRequestHandler)
 	log.Printf("Eod Processor v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9317" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/atm-management/list", handleList)
-	http.HandleFunc("/v1/atm-management/create", handleCreate)
-	http.HandleFunc("/v1/atm-management/update", handleUpdate)
-	http.HandleFunc("/v1/atm-management/process", handleProcess)
-	http.HandleFunc("/v1/atm-management/audit", handleAudit)
-	http.HandleFunc("/v1/atm-management/stats", handleStats)
-	http.HandleFunc("/v1/atm-management/score", atm_managementScoreHandler)
-	http.HandleFunc("/v1/atm-management/validate", atm_managementValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/atm-management/list", handleList)
+	mux.HandleFunc("/v1/atm-management/create", handleCreate)
+	mux.HandleFunc("/v1/atm-management/update", handleUpdate)
+	mux.HandleFunc("/v1/atm-management/process", handleProcess)
+	mux.HandleFunc("/v1/atm-management/audit", handleAudit)
+	mux.HandleFunc("/v1/atm-management/stats", handleStats)
+	mux.HandleFunc("/v1/atm-management/score", atm_managementScoreHandler)
+	mux.HandleFunc("/v1/atm-management/validate", atm_managementValidateRequestHandler)
 	log.Printf("Atm Management v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

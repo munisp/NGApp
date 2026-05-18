@@ -600,25 +600,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9361" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/fixed-assets/list", handleList)
-	http.HandleFunc("/v1/fixed-assets/create", handleCreate)
-	http.HandleFunc("/v1/fixed-assets/update", handleUpdate)
-	http.HandleFunc("/v1/fixed-assets/process", handleProcess)
-	http.HandleFunc("/v1/fixed-assets/audit", handleAudit)
-	http.HandleFunc("/v1/fixed-assets/stats", handleStats)
-	http.HandleFunc("/v1/fixed-assets/fx-convert", fixed_assetsFXHandler)
-	http.HandleFunc("/v1/fixed-assets/risk-calc", fixed_assetsRiskHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/fixed-assets/list", handleList)
+	mux.HandleFunc("/v1/fixed-assets/create", handleCreate)
+	mux.HandleFunc("/v1/fixed-assets/update", handleUpdate)
+	mux.HandleFunc("/v1/fixed-assets/process", handleProcess)
+	mux.HandleFunc("/v1/fixed-assets/audit", handleAudit)
+	mux.HandleFunc("/v1/fixed-assets/stats", handleStats)
+	mux.HandleFunc("/v1/fixed-assets/fx-convert", fixed_assetsFXHandler)
+	mux.HandleFunc("/v1/fixed-assets/risk-calc", fixed_assetsRiskHandler)
 	log.Printf("Fixed Assets v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

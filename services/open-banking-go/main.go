@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9401" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/open-banking/list", handleList)
-	http.HandleFunc("/v1/open-banking/create", handleCreate)
-	http.HandleFunc("/v1/open-banking/update", handleUpdate)
-	http.HandleFunc("/v1/open-banking/process", handleProcess)
-	http.HandleFunc("/v1/open-banking/audit", handleAudit)
-	http.HandleFunc("/v1/open-banking/stats", handleStats)
-	http.HandleFunc("/v1/open-banking/score", open_bankingScoreHandler)
-	http.HandleFunc("/v1/open-banking/validate", open_bankingValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/open-banking/list", handleList)
+	mux.HandleFunc("/v1/open-banking/create", handleCreate)
+	mux.HandleFunc("/v1/open-banking/update", handleUpdate)
+	mux.HandleFunc("/v1/open-banking/process", handleProcess)
+	mux.HandleFunc("/v1/open-banking/audit", handleAudit)
+	mux.HandleFunc("/v1/open-banking/stats", handleStats)
+	mux.HandleFunc("/v1/open-banking/score", open_bankingScoreHandler)
+	mux.HandleFunc("/v1/open-banking/validate", open_bankingValidateRequestHandler)
 	log.Printf("Open Banking v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

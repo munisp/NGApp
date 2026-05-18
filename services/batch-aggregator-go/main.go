@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9320" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/batch-aggregator/list", handleList)
-	http.HandleFunc("/v1/batch-aggregator/create", handleCreate)
-	http.HandleFunc("/v1/batch-aggregator/update", handleUpdate)
-	http.HandleFunc("/v1/batch-aggregator/process", handleProcess)
-	http.HandleFunc("/v1/batch-aggregator/audit", handleAudit)
-	http.HandleFunc("/v1/batch-aggregator/stats", handleStats)
-	http.HandleFunc("/v1/batch-aggregator/score", batch_aggregatorScoreHandler)
-	http.HandleFunc("/v1/batch-aggregator/validate", batch_aggregatorValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/batch-aggregator/list", handleList)
+	mux.HandleFunc("/v1/batch-aggregator/create", handleCreate)
+	mux.HandleFunc("/v1/batch-aggregator/update", handleUpdate)
+	mux.HandleFunc("/v1/batch-aggregator/process", handleProcess)
+	mux.HandleFunc("/v1/batch-aggregator/audit", handleAudit)
+	mux.HandleFunc("/v1/batch-aggregator/stats", handleStats)
+	mux.HandleFunc("/v1/batch-aggregator/score", batch_aggregatorScoreHandler)
+	mux.HandleFunc("/v1/batch-aggregator/validate", batch_aggregatorValidateRequestHandler)
 	log.Printf("Batch Aggregator v2.0 (Payments) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

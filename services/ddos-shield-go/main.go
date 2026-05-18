@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9347" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/ddos-shield/list", handleList)
-	http.HandleFunc("/v1/ddos-shield/create", handleCreate)
-	http.HandleFunc("/v1/ddos-shield/update", handleUpdate)
-	http.HandleFunc("/v1/ddos-shield/process", handleProcess)
-	http.HandleFunc("/v1/ddos-shield/audit", handleAudit)
-	http.HandleFunc("/v1/ddos-shield/stats", handleStats)
-	http.HandleFunc("/v1/ddos-shield/score", ddos_shieldScoreHandler)
-	http.HandleFunc("/v1/ddos-shield/validate", ddos_shieldValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/ddos-shield/list", handleList)
+	mux.HandleFunc("/v1/ddos-shield/create", handleCreate)
+	mux.HandleFunc("/v1/ddos-shield/update", handleUpdate)
+	mux.HandleFunc("/v1/ddos-shield/process", handleProcess)
+	mux.HandleFunc("/v1/ddos-shield/audit", handleAudit)
+	mux.HandleFunc("/v1/ddos-shield/stats", handleStats)
+	mux.HandleFunc("/v1/ddos-shield/score", ddos_shieldScoreHandler)
+	mux.HandleFunc("/v1/ddos-shield/validate", ddos_shieldValidateRequestHandler)
 	log.Printf("Ddos Shield v2.0 (Security) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

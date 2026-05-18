@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9427" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/scratch-card-pin/list", handleList)
-	http.HandleFunc("/v1/scratch-card-pin/create", handleCreate)
-	http.HandleFunc("/v1/scratch-card-pin/update", handleUpdate)
-	http.HandleFunc("/v1/scratch-card-pin/process", handleProcess)
-	http.HandleFunc("/v1/scratch-card-pin/audit", handleAudit)
-	http.HandleFunc("/v1/scratch-card-pin/stats", handleStats)
-	http.HandleFunc("/v1/scratch-card-pin/score", scratch_card_pinScoreHandler)
-	http.HandleFunc("/v1/scratch-card-pin/validate", scratch_card_pinValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/scratch-card-pin/list", handleList)
+	mux.HandleFunc("/v1/scratch-card-pin/create", handleCreate)
+	mux.HandleFunc("/v1/scratch-card-pin/update", handleUpdate)
+	mux.HandleFunc("/v1/scratch-card-pin/process", handleProcess)
+	mux.HandleFunc("/v1/scratch-card-pin/audit", handleAudit)
+	mux.HandleFunc("/v1/scratch-card-pin/stats", handleStats)
+	mux.HandleFunc("/v1/scratch-card-pin/score", scratch_card_pinScoreHandler)
+	mux.HandleFunc("/v1/scratch-card-pin/validate", scratch_card_pinValidateRequestHandler)
 	log.Printf("Scratch Card Pin v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

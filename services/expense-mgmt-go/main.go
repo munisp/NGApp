@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9357" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/expense-mgmt/list", handleList)
-	http.HandleFunc("/v1/expense-mgmt/create", handleCreate)
-	http.HandleFunc("/v1/expense-mgmt/update", handleUpdate)
-	http.HandleFunc("/v1/expense-mgmt/process", handleProcess)
-	http.HandleFunc("/v1/expense-mgmt/audit", handleAudit)
-	http.HandleFunc("/v1/expense-mgmt/stats", handleStats)
-	http.HandleFunc("/v1/expense-mgmt/score", expense_mgmtScoreHandler)
-	http.HandleFunc("/v1/expense-mgmt/validate", expense_mgmtValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/expense-mgmt/list", handleList)
+	mux.HandleFunc("/v1/expense-mgmt/create", handleCreate)
+	mux.HandleFunc("/v1/expense-mgmt/update", handleUpdate)
+	mux.HandleFunc("/v1/expense-mgmt/process", handleProcess)
+	mux.HandleFunc("/v1/expense-mgmt/audit", handleAudit)
+	mux.HandleFunc("/v1/expense-mgmt/stats", handleStats)
+	mux.HandleFunc("/v1/expense-mgmt/score", expense_mgmtScoreHandler)
+	mux.HandleFunc("/v1/expense-mgmt/validate", expense_mgmtValidateRequestHandler)
 	log.Printf("Expense Mgmt v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

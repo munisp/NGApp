@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9369" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/idempotency/list", handleList)
-	http.HandleFunc("/v1/idempotency/create", handleCreate)
-	http.HandleFunc("/v1/idempotency/update", handleUpdate)
-	http.HandleFunc("/v1/idempotency/process", handleProcess)
-	http.HandleFunc("/v1/idempotency/audit", handleAudit)
-	http.HandleFunc("/v1/idempotency/stats", handleStats)
-	http.HandleFunc("/v1/idempotency/score", idempotencyScoreHandler)
-	http.HandleFunc("/v1/idempotency/validate", idempotencyValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/idempotency/list", handleList)
+	mux.HandleFunc("/v1/idempotency/create", handleCreate)
+	mux.HandleFunc("/v1/idempotency/update", handleUpdate)
+	mux.HandleFunc("/v1/idempotency/process", handleProcess)
+	mux.HandleFunc("/v1/idempotency/audit", handleAudit)
+	mux.HandleFunc("/v1/idempotency/stats", handleStats)
+	mux.HandleFunc("/v1/idempotency/score", idempotencyScoreHandler)
+	mux.HandleFunc("/v1/idempotency/validate", idempotencyValidateRequestHandler)
 	log.Printf("Idempotency v2.0 (Platform/Infra) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

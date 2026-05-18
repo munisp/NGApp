@@ -600,25 +600,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9338" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/credit-facility/list", handleList)
-	http.HandleFunc("/v1/credit-facility/create", handleCreate)
-	http.HandleFunc("/v1/credit-facility/update", handleUpdate)
-	http.HandleFunc("/v1/credit-facility/process", handleProcess)
-	http.HandleFunc("/v1/credit-facility/audit", handleAudit)
-	http.HandleFunc("/v1/credit-facility/stats", handleStats)
-	http.HandleFunc("/v1/credit-facility/compute-emi", credit_facilityEMIHandler)
-	http.HandleFunc("/v1/credit-facility/credit-check", credit_facilityCreditCheckHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/credit-facility/list", handleList)
+	mux.HandleFunc("/v1/credit-facility/create", handleCreate)
+	mux.HandleFunc("/v1/credit-facility/update", handleUpdate)
+	mux.HandleFunc("/v1/credit-facility/process", handleProcess)
+	mux.HandleFunc("/v1/credit-facility/audit", handleAudit)
+	mux.HandleFunc("/v1/credit-facility/stats", handleStats)
+	mux.HandleFunc("/v1/credit-facility/compute-emi", credit_facilityEMIHandler)
+	mux.HandleFunc("/v1/credit-facility/credit-check", credit_facilityCreditCheckHandler)
 	log.Printf("Credit Facility v2.0 (Lending) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

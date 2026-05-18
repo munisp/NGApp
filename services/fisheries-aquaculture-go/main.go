@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9360" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/fisheries-aquaculture/list", handleList)
-	http.HandleFunc("/v1/fisheries-aquaculture/create", handleCreate)
-	http.HandleFunc("/v1/fisheries-aquaculture/update", handleUpdate)
-	http.HandleFunc("/v1/fisheries-aquaculture/process", handleProcess)
-	http.HandleFunc("/v1/fisheries-aquaculture/audit", handleAudit)
-	http.HandleFunc("/v1/fisheries-aquaculture/stats", handleStats)
-	http.HandleFunc("/v1/fisheries-aquaculture/score", fisheries_aquacultureScoreHandler)
-	http.HandleFunc("/v1/fisheries-aquaculture/validate", fisheries_aquacultureValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/fisheries-aquaculture/list", handleList)
+	mux.HandleFunc("/v1/fisheries-aquaculture/create", handleCreate)
+	mux.HandleFunc("/v1/fisheries-aquaculture/update", handleUpdate)
+	mux.HandleFunc("/v1/fisheries-aquaculture/process", handleProcess)
+	mux.HandleFunc("/v1/fisheries-aquaculture/audit", handleAudit)
+	mux.HandleFunc("/v1/fisheries-aquaculture/stats", handleStats)
+	mux.HandleFunc("/v1/fisheries-aquaculture/score", fisheries_aquacultureScoreHandler)
+	mux.HandleFunc("/v1/fisheries-aquaculture/validate", fisheries_aquacultureValidateRequestHandler)
 	log.Printf("Fisheries Aquaculture v2.0 (Agriculture) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

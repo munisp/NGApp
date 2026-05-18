@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9344" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/db-migration-manager/list", handleList)
-	http.HandleFunc("/v1/db-migration-manager/create", handleCreate)
-	http.HandleFunc("/v1/db-migration-manager/update", handleUpdate)
-	http.HandleFunc("/v1/db-migration-manager/process", handleProcess)
-	http.HandleFunc("/v1/db-migration-manager/audit", handleAudit)
-	http.HandleFunc("/v1/db-migration-manager/stats", handleStats)
-	http.HandleFunc("/v1/db-migration-manager/score", db_migration_managerScoreHandler)
-	http.HandleFunc("/v1/db-migration-manager/validate", db_migration_managerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/db-migration-manager/list", handleList)
+	mux.HandleFunc("/v1/db-migration-manager/create", handleCreate)
+	mux.HandleFunc("/v1/db-migration-manager/update", handleUpdate)
+	mux.HandleFunc("/v1/db-migration-manager/process", handleProcess)
+	mux.HandleFunc("/v1/db-migration-manager/audit", handleAudit)
+	mux.HandleFunc("/v1/db-migration-manager/stats", handleStats)
+	mux.HandleFunc("/v1/db-migration-manager/score", db_migration_managerScoreHandler)
+	mux.HandleFunc("/v1/db-migration-manager/validate", db_migration_managerValidateRequestHandler)
 	log.Printf("Db Migration Manager v2.0 (Infrastructure/Data) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

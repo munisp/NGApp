@@ -595,25 +595,26 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9385" }
-	http.HandleFunc("/readyz", readyzHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
 
-	http.HandleFunc("/livez", livezHandler)
+	mux.HandleFunc("/livez", livezHandler)
 
-	http.HandleFunc("/metrics", metricsHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
 
-	http.HandleFunc("/healthz", handleHealthz)
-	http.HandleFunc("/v1/locker/list", handleList)
-	http.HandleFunc("/v1/locker/create", handleCreate)
-	http.HandleFunc("/v1/locker/update", handleUpdate)
-	http.HandleFunc("/v1/locker/process", handleProcess)
-	http.HandleFunc("/v1/locker/audit", handleAudit)
-	http.HandleFunc("/v1/locker/stats", handleStats)
-	http.HandleFunc("/v1/locker/score", lockerScoreHandler)
-	http.HandleFunc("/v1/locker/validate", lockerValidateRequestHandler)
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/locker/list", handleList)
+	mux.HandleFunc("/v1/locker/create", handleCreate)
+	mux.HandleFunc("/v1/locker/update", handleUpdate)
+	mux.HandleFunc("/v1/locker/process", handleProcess)
+	mux.HandleFunc("/v1/locker/audit", handleAudit)
+	mux.HandleFunc("/v1/locker/stats", handleStats)
+	mux.HandleFunc("/v1/locker/score", lockerScoreHandler)
+	mux.HandleFunc("/v1/locker/validate", lockerValidateRequestHandler)
 	log.Printf("Locker v2.0 (Banking Ops) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: nil,
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,
