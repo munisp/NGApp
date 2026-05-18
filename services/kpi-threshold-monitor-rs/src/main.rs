@@ -4,6 +4,7 @@ use tokio_postgres;
 // Port: 8501
 // Middleware: Postgres, Redis, Kafka, Dapr, Fluvio, Temporal, OpenSearch, Permify
 mod middleware_integration;
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

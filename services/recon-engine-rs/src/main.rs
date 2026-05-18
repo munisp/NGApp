@@ -5,6 +5,7 @@
 //! Matching: exact hash, fuzzy (amount tolerance ±₦0.01), date window (T±1).
 //! Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

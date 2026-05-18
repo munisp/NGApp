@@ -4,6 +4,7 @@
 //! Integrates with TigerBeetle (ledger verification), Fluvio (event streaming),
 //! Kafka (report events), Redis (caching), and all 14 middleware.
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

@@ -3,6 +3,7 @@
 //! Enhancements 3, 4: eNaira/CBDC Integration, Real-Time Fraud Detection (ML)
 //! High-performance sub-100ms scoring on every transaction
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};

@@ -5,6 +5,7 @@
 //! GL suspense clearance, and generates CBN reconciliation returns.
 //! Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

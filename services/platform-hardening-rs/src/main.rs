@@ -4,6 +4,7 @@
 //! Test Coverage, Security Scanning, DB Indexing, API Versioning,
 //! Feature Flags, Secrets Management, GraphQL, Event Sourcing
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};

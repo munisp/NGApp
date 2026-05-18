@@ -3,6 +3,7 @@
 // MT103 (Customer Credit Transfer), MT202 (Bank-to-Bank), MT760 (Guarantee)
 // pacs.008 (FI to FI Customer Credit), pacs.009 (FI to FI Institution Credit)
 // camt.053 (Bank-to-Customer Statement), SWIFT gpi tracking (UETR)
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

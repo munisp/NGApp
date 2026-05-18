@@ -5,6 +5,7 @@
 //! Pipeline: Loan Book → Credit Risk Assessment → Stage Classification → ECL Computation → GL Provisioning
 //! Integrates with all 14 middleware.
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

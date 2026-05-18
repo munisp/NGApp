@@ -2,6 +2,7 @@
 //! 54Bank Operations Control GL Engine — Rust
 //! Closes gaps 21-23: Maker-Checker Execution, Limit Management, Product→GL Mapping
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};

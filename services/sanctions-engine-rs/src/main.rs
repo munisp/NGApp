@@ -5,6 +5,7 @@
 //! Batch rescreening, false positive management, decision audit trail, NFIU/GoAML reporting.
 //! Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
