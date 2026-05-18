@@ -156,7 +156,7 @@ export const commissionClawbackRouter = router({
         } as any);
       } catch (e) {
         logger.warn(
-          `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
+          `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
         );
       }
       return { success: true, id: clawback.id, message: "Clawback initiated" };
@@ -192,7 +192,7 @@ export const commissionClawbackRouter = router({
           } as any);
         } catch (e) {
           logger.warn(
-            `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
+            `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
           );
         }
         return { success: true, message: "Clawback approved and applied" };

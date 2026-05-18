@@ -130,7 +130,7 @@ export const agentCommissionCalcRouter = router({
         } as any);
       } catch (e) {
         logger.warn(
-          `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
+          `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
         );
       }
       return {
@@ -240,7 +240,7 @@ export const agentCommissionCalcRouter = router({
           } as any);
         } catch (e) {
           logger.warn(
-            `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`,
+            `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
           );
         }
         return {
