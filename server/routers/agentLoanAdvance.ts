@@ -12,7 +12,7 @@ export const agentLoanAdvanceRouter = router({
     const rows = await db.select().from(agentLoans).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(agentLoans.createdAt)).limit(input?.limit ?? 50);
     return { loans: rows, total: rows.length };
   }),
-  apply: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.number().positive(), purpose: z.string().min(3) })).mutation(async ({ input }) => {
+  applyLoan: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.number().positive(), purpose: z.string().min(3) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const [loan] = await db.insert(agentLoans).values({ agentId: input.agentId, principalAmount: String(input.amount), interestRate: "5.00", tenorDays: 180, loanType: "advance", totalRepayable: String(input.amount * 1.05), status: "pending" }).returning();
     await db.insert(auditLog).values({ action: "loan_advance_applied", resource: "agent_loans", resourceId: String(loan.id), status: "success", metadata: { agentId: input.agentId, amount: input.amount } });
