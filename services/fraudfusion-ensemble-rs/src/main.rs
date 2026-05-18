@@ -105,7 +105,7 @@ async fn list_records(req: actix_web::HttpRequest, state: web::Data<AppState>, q
                         "service": r.get::<_, String>(1),
                         "type": r.get::<_, String>(2),
                         "status": r.get::<_, String>(3),
-                        "data": r.get::<_, serde_json::Value>(4),
+                        "data": r.get::<_, String>(4),
                     })
                 }).collect();
                 let total: i64 = client.query_one("SELECT COUNT(*) FROM service_records WHERE service = $1", &[&"fraudfusion_ensemble_rs"]).await.map(|r| r.get(0)).unwrap_or(0);
