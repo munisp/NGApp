@@ -294,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
     def respond(self, code, data):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-            self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
+        self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 
