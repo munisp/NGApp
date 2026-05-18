@@ -6,6 +6,7 @@
 //! Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 
 use actix_web::dev::Service;
+use std::time::Duration;
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
