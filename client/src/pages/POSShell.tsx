@@ -21,6 +21,8 @@ import { trpc } from "../lib/trpc";
 import { useTransactionCreate } from "../hooks/useTransactionCreate";
 import { NotificationBell } from "../components/NotificationBell";
 import { GdprConsentBanner } from "../components/GdprConsentBanner";
+import { useFaceMotionDetection } from "../hooks/useFaceMotionDetection";
+import type { ChallengeType as MotionChallengeType } from "../hooks/useFaceMotionDetection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TileSize = "sm" | "md" | "lg" | "wide";
@@ -1821,6 +1823,21 @@ function CustomerLookupScreen({ onBack }: { onBack: () => void }) {
 type KycStep = "status" | "liveness" | "document" | "complete";
 type DocType = "NIN" | "BVN_CARD" | "PASSPORT" | "DRIVERS_LICENCE" | "VOTER_CARD";
 
+// Liveness challenge pool for multi-challenge active verification
+const KYC_CHALLENGE_POOL: Array<{ type: MotionChallengeType; instruction: string }> = [
+  { type: "blink", instruction: "Please blink your eyes" },
+  { type: "turn_left", instruction: "Turn your head slowly to the left" },
+  { type: "turn_right", instruction: "Turn your head slowly to the right" },
+  { type: "nod", instruction: "Nod your head up and down" },
+  { type: "smile", instruction: "Please smile" },
+  { type: "open_mouth", instruction: "Open your mouth slightly" },
+];
+
+function pickChallenges(count: number): Array<{ type: MotionChallengeType; instruction: string; completed: boolean }> {
+  const shuffled = [...KYC_CHALLENGE_POOL].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length)).map(c => ({ ...c, completed: false }));
+}
+
 function KYCVerifyScreen({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<KycStep>("status");
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -1835,6 +1852,71 @@ function KYCVerifyScreen({ onBack }: { onBack: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
+
+  // ── Multi-challenge liveness state ──────────────────────────────────────
+  const [challenges, setChallenges] = useState<Array<{ type: MotionChallengeType; instruction: string; completed: boolean }>>([]);
+  const [currentChallengeIdx, setCurrentChallengeIdx] = useState(0);
+  const [livenessActive, setLivenessActive] = useState(false);
+
+  // Current challenge type for motion detection
+  const currentChallengeType: MotionChallengeType | null =
+    livenessActive && challenges.length > 0 && currentChallengeIdx < challenges.length
+      ? challenges[currentChallengeIdx].type
+      : null;
+
+  // Handle motion detection callback
+  const handleMotionDetected = useCallback(
+    (type: MotionChallengeType, confidence: number) => {
+      if (!livenessActive || currentChallengeIdx >= challenges.length) return;
+      if (type !== challenges[currentChallengeIdx].type) return;
+
+      // Mark current challenge as completed
+      setChallenges(prev => {
+        const updated = [...prev];
+        if (currentChallengeIdx < updated.length) {
+          updated[currentChallengeIdx] = { ...updated[currentChallengeIdx], completed: true };
+        }
+        return updated;
+      });
+
+      const nextIdx = currentChallengeIdx + 1;
+      if (nextIdx >= challenges.length) {
+        // All challenges complete — auto-capture and submit
+        setLivenessActive(false);
+        autoSubmitLiveness();
+      } else {
+        setCurrentChallengeIdx(nextIdx);
+      }
+    },
+    [livenessActive, currentChallengeIdx, challenges]
+  );
+
+  // Face motion detection hook
+  const motionState = useFaceMotionDetection({
+    videoRef,
+    enabled: cameraActive && livenessActive && step === "liveness",
+    activeChallenge: currentChallengeType,
+    onChallengeDetected: handleMotionDetected,
+    detectionIntervalMs: 100,
+  });
+
+  // Auto-submit liveness frame after all challenges pass
+  const autoSubmitLiveness = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !sessionId || !challengeId) return;
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+    canvasRef.current.width = videoRef.current.videoWidth || 640;
+    canvasRef.current.height = videoRef.current.videoHeight || 480;
+    ctx.drawImage(videoRef.current, 0, 0);
+    const frame = canvasRef.current.toDataURL("image/jpeg", 0.8).split(",")[1];
+    try {
+      const res = await submitFrame.mutateAsync({ sessionId, challengeId, frameBase64: frame });
+      stopCamera();
+      setLivenessResult({ passed: res.passed, score: res.score });
+      if (res.passed) { toast.success("Liveness check passed!"); setStep("document"); }
+      else { toast.error("Liveness check failed — please retry"); }
+    } catch { toast.error("Liveness verification error"); }
+  }, [sessionId, challengeId]);
 
   // Existing KYC status
   const { data: statusData, isLoading: statusLoading } = trpc.kyc.getStatus.useQuery();
@@ -1933,13 +2015,56 @@ function KYCVerifyScreen({ onBack }: { onBack: () => void }) {
 
   // ── Step: Liveness ────────────────────────────────────────────────────────
   if (step === "liveness") {
+    // Start multi-challenge flow when entering liveness step
+    if (!livenessActive && challenges.length === 0 && cameraActive) {
+      const picked = pickChallenges(3);
+      setChallenges(picked);
+      setCurrentChallengeIdx(0);
+      setLivenessActive(true);
+    }
+
+    const currentChallenge = challenges.length > 0 && currentChallengeIdx < challenges.length
+      ? challenges[currentChallengeIdx]
+      : null;
+
     return (
       <div className="flex flex-col h-full">
-        <ScreenHeader title="Liveness Check" onBack={() => { stopCamera(); setStep("status"); }} />
+        <ScreenHeader title="Liveness Check" onBack={() => { stopCamera(); setLivenessActive(false); setChallenges([]); setCurrentChallengeIdx(0); setStep("status"); }} />
         <div className="flex flex-col gap-4 p-4">
-          <div className="rounded-2xl p-3 text-center text-sm font-semibold" style={{ background: "oklch(0.55 0.22 300 / 0.15)", color: "#a78bfa", fontFamily: DISP }}>
-            {instruction || "Position your face in the frame and follow the instruction"}
+          {/* Challenge instruction */}
+          <div className="rounded-2xl p-3 text-center" style={{ background: "oklch(0.55 0.22 300 / 0.15)", fontFamily: DISP }}>
+            {livenessActive && currentChallenge ? (
+              <>
+                <div className="text-xs mb-1" style={{ color: "#a78bfa99" }}>
+                  Challenge {currentChallengeIdx + 1} of {challenges.length}
+                </div>
+                <div className="text-sm font-bold" style={{ color: "#a78bfa" }}>
+                  {currentChallenge.instruction}
+                </div>
+                <div className="text-xs mt-1" style={{ color: "#a78bfa77" }}>
+                  {motionState.ready ? "Motion will be detected automatically" : "Loading face detection..."}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm font-semibold" style={{ color: "#a78bfa" }}>
+                {instruction || "Position your face in the frame and follow the instruction"}
+              </div>
+            )}
           </div>
+
+          {/* Challenge progress dots */}
+          {livenessActive && challenges.length > 0 && (
+            <div className="flex items-center justify-center gap-2">
+              {challenges.map((c, i) => (
+                <div key={i} className="w-3 h-3 rounded-full transition-all" style={{
+                  background: i < currentChallengeIdx ? (c.completed ? GREEN : "#ef4444")
+                    : i === currentChallengeIdx ? "#facc15"
+                    : "oklch(0.3 0.01 230)",
+                  boxShadow: i === currentChallengeIdx ? "0 0 8px #facc1566" : "none",
+                }} />
+              ))}
+            </div>
+          )}
 
           {/* Camera preview */}
           <div className="relative rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}`, aspectRatio: "4/3" }}>
@@ -1953,22 +2078,76 @@ function KYCVerifyScreen({ onBack }: { onBack: () => void }) {
             )}
           </div>
 
-          <button onClick={async () => {
-            const frame = captureFrame();
-            if (!frame) { toast.error("No frame captured — enable camera first"); return; }
-            if (!sessionId || !challengeId) { toast.error("Session not initialised"); return; }
-            try {
-              const res = await submitFrame.mutateAsync({ sessionId, challengeId, frameBase64: frame });
-              stopCamera();
-              setLivenessResult({ passed: res.passed, score: res.score });
-              if (res.passed) { toast.success("Liveness check passed!"); setStep("document"); }
-              else { toast.error("Liveness check failed — please retry"); }
-            } catch { toast.error("Liveness verification error"); }
-          }} disabled={!cameraActive || submitFrame.isPending}
-            className="w-full py-4 rounded-xl font-bold text-white disabled:opacity-40"
-            style={{ background: "#8b5cf6", fontFamily: DISP }}>
-            {submitFrame.isPending ? "Verifying..." : "Capture & Verify"}
-          </button>
+          {/* Face detection status & real-time metrics */}
+          {livenessActive && cameraActive && (
+            <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: "oklch(0.15 0.01 230)", border: `1px solid ${BORDER}` }}>
+              {motionState.ready ? (
+                <>
+                  <div className="w-3 h-3 rounded-full" style={{
+                    background: motionState.faceDetected ? GREEN : "#facc15",
+                    boxShadow: motionState.faceDetected ? `0 0 8px ${GREEN}66` : "0 0 8px #facc1544",
+                    animation: motionState.faceDetected ? "none" : "pulse 1.5s infinite",
+                  }} />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold" style={{ color: motionState.faceDetected ? GREEN : GOLD, fontFamily: DISP }}>
+                      {motionState.faceDetected ? "Face detected — perform the action" : "Position your face in the frame"}
+                    </div>
+                    {motionState.faceDetected && currentChallengeType && (
+                      <div className="text-[10px] mt-0.5" style={{ color: "oklch(0.55 0.01 230)" }}>
+                        {currentChallengeType === "blink" && `Eye openness: ${(motionState.metrics.ear * 100).toFixed(0)}%`}
+                        {(currentChallengeType === "turn_left" || currentChallengeType === "turn_right") && `Head angle: ${motionState.metrics.yaw.toFixed(1)}°`}
+                        {currentChallengeType === "nod" && `Head pitch: ${motionState.metrics.pitch.toFixed(1)}°`}
+                        {currentChallengeType === "smile" && `Smile: ${(motionState.metrics.smileRatio / 4 * 100).toFixed(0)}%`}
+                        {currentChallengeType === "open_mouth" && `Mouth: ${(motionState.metrics.mar * 100).toFixed(0)}%`}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="animate-spin text-sm">⟳</div>
+                  <div className="text-xs" style={{ color: "oklch(0.55 0.01 230)", fontFamily: DISP }}>Loading face detection model...</div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Manual capture fallback + skip */}
+          <div className="flex gap-2">
+            <button onClick={async () => {
+              const frame = captureFrame();
+              if (!frame) { toast.error("No frame captured — enable camera first"); return; }
+              if (!sessionId || !challengeId) { toast.error("Session not initialised"); return; }
+              try {
+                const res = await submitFrame.mutateAsync({ sessionId, challengeId, frameBase64: frame });
+                stopCamera();
+                setLivenessActive(false);
+                setLivenessResult({ passed: res.passed, score: res.score });
+                if (res.passed) { toast.success("Liveness check passed!"); setStep("document"); }
+                else { toast.error("Liveness check failed — please retry"); }
+              } catch { toast.error("Liveness verification error"); }
+            }} disabled={!cameraActive || submitFrame.isPending}
+              className="flex-1 py-3 rounded-xl font-bold text-white disabled:opacity-40 text-sm"
+              style={{ background: "#8b5cf6", fontFamily: DISP }}>
+              {submitFrame.isPending ? "Verifying..." : "Manual Capture & Verify"}
+            </button>
+            {livenessActive && (
+              <button onClick={() => {
+                // Skip current challenge
+                const nextIdx = currentChallengeIdx + 1;
+                if (nextIdx >= challenges.length) {
+                  setLivenessActive(false);
+                  autoSubmitLiveness();
+                } else {
+                  setCurrentChallengeIdx(nextIdx);
+                }
+              }}
+                className="py-3 px-4 rounded-xl text-xs font-semibold"
+                style={{ background: CARD, color: "oklch(0.55 0.01 230)", border: `1px solid ${BORDER}`, fontFamily: DISP }}>
+                Skip
+              </button>
+            )}
+          </div>
 
           {livenessResult && !livenessResult.passed && (
             <div className="text-center text-red-400 text-sm" style={{ fontFamily: DISP }}>
@@ -1978,7 +2157,7 @@ function KYCVerifyScreen({ onBack }: { onBack: () => void }) {
 
           {/* Skip liveness if service unavailable */}
           {!challengeId && (
-            <button onClick={() => { stopCamera(); setStep("document"); }}
+            <button onClick={() => { stopCamera(); setLivenessActive(false); setStep("document"); }}
               className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: CARD, color: GOLD, border: `1px solid ${BORDER}`, fontFamily: DISP }}>
               Skip (Liveness Service Unavailable)
             </button>
