@@ -51,7 +51,7 @@ export const merchantKycOnboardingRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   verifyDoc: protectedProcedure
     .input(z.object({ docId: z.number(), approved: z.boolean(), rejectionReason: z.string().optional() }))

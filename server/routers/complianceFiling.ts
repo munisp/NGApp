@@ -55,7 +55,7 @@ export const complianceFilingRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   submitFiling: protectedProcedure
     .input(z.object({ filingId: z.number() }))

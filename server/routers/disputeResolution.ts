@@ -71,7 +71,7 @@ export const disputeResolutionRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   updateStatus: protectedProcedure.input(z.object({ disputeId: z.number(), status: z.string(), resolution: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
@@ -92,5 +92,5 @@ export const disputeResolutionRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 });

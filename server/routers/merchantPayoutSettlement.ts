@@ -54,7 +54,7 @@ export const merchantPayoutSettlementRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   approvePayout: protectedProcedure
     .input(z.object({ payoutId: z.number() }))

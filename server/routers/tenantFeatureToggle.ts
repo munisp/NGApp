@@ -50,7 +50,7 @@ export const tenantFeatureToggleRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   update: protectedProcedure
     .input(z.object({ toggleId: z.number(), enabled: z.boolean().optional(), rolloutPercentage: z.number().optional(), config: z.any().optional() }))

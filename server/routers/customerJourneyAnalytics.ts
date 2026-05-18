@@ -49,7 +49,7 @@ export const customerJourneyAnalyticsRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   funnelAnalysis: protectedProcedure
     .input(z.object({ journeyType: z.string(), period: z.enum(["7d", "30d", "90d"]).default("30d") }))

@@ -118,7 +118,7 @@ export const agentGamificationRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   // Award badge
   awardBadge: protectedProcedure
@@ -142,7 +142,7 @@ export const agentGamificationRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   badgeDefinitions: protectedProcedure.query(() => BADGE_DEFINITIONS),
   levelThresholds: protectedProcedure.query(() => LEVEL_THRESHOLDS),

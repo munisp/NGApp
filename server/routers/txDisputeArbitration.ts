@@ -153,7 +153,7 @@ export const txDisputeArbitrationRouter = router({
         refundAmount: input.refundAmount ?? 0,
         resolvedAt: new Date().toISOString(),
       };
-    } as any),
+    }),
 
   escalateDispute: protectedProcedure
     .input(z.object({
@@ -190,7 +190,7 @@ export const txDisputeArbitrationRouter = router({
         escalatedTo: input.escalateTo,
         newSlaDeadline: new Date(Date.now() + (slaExtension[input.escalateTo] ?? 10) * 86400000).toISOString(),
       };
-    } as any),
+    }),
 
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;

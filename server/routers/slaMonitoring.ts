@@ -51,7 +51,7 @@ export const slaMonitoringRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   updateDefinition: protectedProcedure
     .input(z.object({ definitionId: z.number(), targetValue: z.number().optional(), active: z.boolean().optional() }))
@@ -109,7 +109,7 @@ export const slaMonitoringRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    } as any),
+    }),
 
   resolveBreach: protectedProcedure
     .input(z.object({ breachId: z.number(), resolution: z.string() }))
