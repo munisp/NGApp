@@ -457,6 +457,7 @@ import { networkQualityHeatmapRouter } from "./routers/networkQualityHeatmap";
 import { bulkRoleImportRouter } from "./routers/bulkRoleImport";
 import { networkTrendsRouter } from "./routers/networkTrends";
 import { kybRouter } from "./routers/kyb";
+import { deepfaceRouter } from "./routers/deepface";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -521,6 +522,7 @@ export const appRouter = router({
   geofencing: geofencingRouter,
   kyc: kycRouter,
   kyb: kybRouter,
+  deepface: deepfaceRouter,
   // Back-office and multi-app routers
   management: managementRouter,
   agentBanking: agentBankingRouter,

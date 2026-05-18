@@ -9,6 +9,7 @@
  *  5. Video-KYC liveness (legacy)          (KYC_SERVICE_URL, default: https://videokyc.54link.io)
  *  6. PaddleOCR document service           (PADDLEOCR_SERVICE_URL, default: https://ocr.54link.io)
  *  7. Compliance-KYC record store          (COMPLIANCE_KYC_URL, default: https://kyc.54link.io)
+ *  8. DeepFace Service                     (DEEPFACE_SERVICE_URL, default: http://localhost:8133)
  *
  * All calls are fail-safe: if the downstream service is unavailable the
  * function returns a structured error object rather than throwing, so the
@@ -25,6 +26,7 @@ const DEEPFAKE_SERVICE_URL    = (ENV as any).DEEPFAKE_SERVICE_URL    ?? "http://
 const KYC_SERVICE_URL         = (ENV as any).KYC_SERVICE_URL         ?? "https://videokyc.54link.io";
 const PADDLEOCR_URL           = (ENV as any).PADDLEOCR_SERVICE_URL   ?? "https://ocr.54link.io";
 const COMPLIANCE_KYC_URL      = (ENV as any).COMPLIANCE_KYC_URL      ?? "https://kyc.54link.io";
+const DEEPFACE_SERVICE_URL    = (ENV as any).DEEPFACE_SERVICE_URL    ?? "http://localhost:8133";
 
 const TIMEOUT_MS = 30_000;
 
@@ -383,6 +385,7 @@ export async function checkBiometricServicesHealth(): Promise<ServiceHealthStatu
     { name: "video_kyc_legacy", url: `${KYC_SERVICE_URL}/health` },
     { name: "paddleocr", url: `${PADDLEOCR_URL}/health` },
     { name: "compliance_kyc", url: `${COMPLIANCE_KYC_URL}/health` },
+    { name: "deepface", url: `${DEEPFACE_SERVICE_URL}/health` },
   ];
 
   const results = await Promise.allSettled(
@@ -405,6 +408,399 @@ export async function checkBiometricServicesHealth(): Promise<ServiceHealthStatu
   return results.map((r) =>
     r.status === "fulfilled" ? r.value : { name: "unknown", url: "", status: "unavailable" as const, error: "Promise rejected" }
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEEPFACE SERVICE (serengil/deepface — multi-model face recognition & analysis)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── DeepFace Verification (1:1) ────────────────────────────────────────────
+
+export interface DeepFaceVerifyResult {
+  verified: boolean;
+  distance: number;
+  threshold: number;
+  model: string;
+  detectorBackend: string;
+  similarityMetric: string;
+  facialAreas: Record<string, unknown>;
+  processingTimeMs: number;
+  eventId: string;
+}
+
+/** 1:1 face verification using DeepFace (supports 10 model backends) */
+export async function deepfaceVerify(
+  image1Base64: string,
+  image2Base64: string,
+  modelName = "ArcFace",
+  detectorBackend = "retinaface",
+  distanceMetric = "cosine",
+  antiSpoofing = false,
+): Promise<DeepFaceVerifyResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image1_base64: image1Base64,
+      image2_base64: image2Base64,
+      model_name: modelName,
+      detector_backend: detectorBackend,
+      distance_metric: distanceMetric,
+      anti_spoofing: antiSpoofing,
+    }),
+  }, 60_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  return {
+    verified: Boolean(d.verified),
+    distance: Number(d.distance ?? 0),
+    threshold: Number(d.threshold ?? 0),
+    model: String(d.model ?? modelName),
+    detectorBackend: String(d.detector_backend ?? detectorBackend),
+    similarityMetric: String(d.similarity_metric ?? distanceMetric),
+    facialAreas: (d.facial_areas ?? {}) as Record<string, unknown>,
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+    eventId: String(d.event_id ?? ""),
+  };
+}
+
+// ─── DeepFace Ensemble Verification ─────────────────────────────────────────
+
+export interface DeepFaceEnsembleResult {
+  ensembleVerified: boolean;
+  consensusRatio: number;
+  consensusThreshold: number;
+  modelsAgreed: number;
+  modelsTotal: number;
+  resultsPerModel: Array<{
+    model: string;
+    verified: boolean;
+    distance?: number;
+    threshold?: number;
+    error?: string;
+  }>;
+  processingTimeMs: number;
+  eventId: string;
+}
+
+/** Multi-model ensemble verification for higher confidence */
+export async function deepfaceEnsembleVerify(
+  image1Base64: string,
+  image2Base64: string,
+  models: string[] = ["ArcFace", "Facenet512", "VGG-Face"],
+  threshold = 0.6,
+  antiSpoofing = false,
+): Promise<DeepFaceEnsembleResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/verify/ensemble`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image1_base64: image1Base64,
+      image2_base64: image2Base64,
+      models,
+      threshold,
+      anti_spoofing: antiSpoofing,
+    }),
+  }, 120_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  const perModel = (d.results_per_model ?? []) as Record<string, unknown>[];
+  return {
+    ensembleVerified: Boolean(d.ensemble_verified),
+    consensusRatio: Number(d.consensus_ratio ?? 0),
+    consensusThreshold: Number(d.consensus_threshold ?? threshold),
+    modelsAgreed: Number(d.models_agreed ?? 0),
+    modelsTotal: Number(d.models_total ?? 0),
+    resultsPerModel: perModel.map((r) => ({
+      model: String(r.model ?? ""),
+      verified: Boolean(r.verified),
+      distance: r.distance != null ? Number(r.distance) : undefined,
+      threshold: r.threshold != null ? Number(r.threshold) : undefined,
+      error: r.error ? String(r.error) : undefined,
+    })),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+    eventId: String(d.event_id ?? ""),
+  };
+}
+
+// ─── DeepFace Facial Analysis ───────────────────────────────────────────────
+
+export interface DeepFaceFaceAttributes {
+  region: Record<string, number>;
+  faceConfidence: number;
+  age?: number;
+  dominantGender?: string;
+  gender?: Record<string, number>;
+  dominantEmotion?: string;
+  emotion?: Record<string, number>;
+  dominantRace?: string;
+  race?: Record<string, number>;
+}
+
+export interface DeepFaceAnalysisResult {
+  faces: DeepFaceFaceAttributes[];
+  facesCount: number;
+  actionsPerformed: string[];
+  processingTimeMs: number;
+}
+
+/** Analyze facial attributes: age, gender, emotion, race */
+export async function deepfaceAnalyze(
+  imageBase64: string,
+  actions: string[] = ["age", "gender", "emotion", "race"],
+  detectorBackend = "retinaface",
+  antiSpoofing = false,
+): Promise<DeepFaceAnalysisResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      actions,
+      detector_backend: detectorBackend,
+      anti_spoofing: antiSpoofing,
+    }),
+  }, 60_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  const faces = (d.faces ?? []) as Record<string, unknown>[];
+  return {
+    faces: faces.map((f) => ({
+      region: (f.region ?? {}) as Record<string, number>,
+      faceConfidence: Number(f.face_confidence ?? 0),
+      age: f.age != null ? Number(f.age) : undefined,
+      dominantGender: f.dominant_gender ? String(f.dominant_gender) : undefined,
+      gender: f.gender ? (f.gender as Record<string, number>) : undefined,
+      dominantEmotion: f.dominant_emotion ? String(f.dominant_emotion) : undefined,
+      emotion: f.emotion ? (f.emotion as Record<string, number>) : undefined,
+      dominantRace: f.dominant_race ? String(f.dominant_race) : undefined,
+      race: f.race ? (f.race as Record<string, number>) : undefined,
+    })),
+    facesCount: Number(d.faces_count ?? 0),
+    actionsPerformed: Array.isArray(d.actions_performed) ? (d.actions_performed as string[]) : [],
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
+}
+
+// ─── DeepFace Embedding Extraction ──────────────────────────────────────────
+
+export interface DeepFaceEmbeddingResult {
+  embedding: number[];
+  embeddingDim: number;
+  model: string;
+  facialArea: Record<string, number>;
+  cached: boolean;
+  processingTimeMs: number;
+}
+
+/** Extract face embedding vector using DeepFace */
+export async function deepfaceExtractEmbedding(
+  imageBase64: string,
+  modelName = "ArcFace",
+  detectorBackend = "retinaface",
+): Promise<DeepFaceEmbeddingResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/represent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      model_name: modelName,
+      detector_backend: detectorBackend,
+    }),
+  }, 60_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  return {
+    embedding: (d.embedding ?? []) as number[],
+    embeddingDim: Number(d.embedding_dim ?? 0),
+    model: String(d.model ?? modelName),
+    facialArea: (d.facial_area ?? {}) as Record<string, number>,
+    cached: Boolean(d.cached),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
+}
+
+// ─── DeepFace Anti-Spoofing ─────────────────────────────────────────────────
+
+export interface DeepFaceAntiSpoofResult {
+  isReal: boolean;
+  faces: Array<{
+    facialArea: Record<string, number>;
+    isReal: boolean;
+    antispoofScore: number;
+    confidence: number;
+  }>;
+  facesCount: number;
+  processingTimeMs: number;
+}
+
+/** Run DeepFace anti-spoofing detection */
+export async function deepfaceAntiSpoof(
+  imageBase64: string,
+  detectorBackend = "retinaface",
+): Promise<DeepFaceAntiSpoofResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/anti-spoof`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      detector_backend: detectorBackend,
+    }),
+  });
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  const faces = (d.faces ?? []) as Record<string, unknown>[];
+  return {
+    isReal: Boolean(d.is_real),
+    faces: faces.map((f) => ({
+      facialArea: (f.facial_area ?? {}) as Record<string, number>,
+      isReal: Boolean(f.is_real),
+      antispoofScore: Number(f.antispoof_score ?? 0),
+      confidence: Number(f.confidence ?? 0),
+    })),
+    facesCount: Number(d.faces_count ?? 0),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
+}
+
+// ─── DeepFace Face Detection ────────────────────────────────────────────────
+
+export interface DeepFaceDetectedFace {
+  facialArea: Record<string, number>;
+  confidence: number;
+  isReal?: boolean;
+  antispoofScore?: number;
+}
+
+export interface DeepFaceDetectionResult {
+  faces: DeepFaceDetectedFace[];
+  facesCount: number;
+  detectorBackend: string;
+  processingTimeMs: number;
+}
+
+/** Detect faces using DeepFace (supports 9 detector backends) */
+export async function deepfaceDetectFaces(
+  imageBase64: string,
+  detectorBackend = "retinaface",
+  antiSpoofing = false,
+): Promise<DeepFaceDetectionResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/detect`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      detector_backend: detectorBackend,
+      anti_spoofing: antiSpoofing,
+    }),
+  });
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  const faces = (d.faces ?? []) as Record<string, unknown>[];
+  return {
+    faces: faces.map((f) => ({
+      facialArea: (f.facial_area ?? {}) as Record<string, number>,
+      confidence: Number(f.confidence ?? 0),
+      isReal: f.is_real != null ? Boolean(f.is_real) : undefined,
+      antispoofScore: f.antispoof_score != null ? Number(f.antispoof_score) : undefined,
+    })),
+    facesCount: Number(d.faces_count ?? 0),
+    detectorBackend: String(d.detector_backend ?? detectorBackend),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
+}
+
+// ─── DeepFace Gallery Operations ────────────────────────────────────────────
+
+export interface DeepFaceEnrollResult {
+  enrolled: boolean;
+  identity: string;
+  model: string;
+  embeddingDim: number;
+  processingTimeMs: number;
+}
+
+/** Enroll a face into the DeepFace gallery for 1:N recognition */
+export async function deepfaceEnroll(
+  imageBase64: string,
+  identity: string,
+  modelName = "ArcFace",
+  metadata?: Record<string, unknown>,
+): Promise<DeepFaceEnrollResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/gallery/enroll`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      identity,
+      model_name: modelName,
+      metadata,
+    }),
+  }, 60_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  return {
+    enrolled: Boolean(d.enrolled),
+    identity: String(d.identity ?? identity),
+    model: String(d.model ?? modelName),
+    embeddingDim: Number(d.embedding_dim ?? 0),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
+}
+
+export interface DeepFaceSearchMatch {
+  identity: string;
+  distance: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface DeepFaceSearchResult {
+  matches: DeepFaceSearchMatch[];
+  gallerySize: number;
+  model: string;
+  distanceMetric: string;
+  processingTimeMs: number;
+}
+
+/** Search the DeepFace gallery for matching faces (1:N recognition) */
+export async function deepfaceSearch(
+  imageBase64: string,
+  modelName = "ArcFace",
+  topK = 5,
+  threshold?: number,
+): Promise<DeepFaceSearchResult | null> {
+  const res = await kycFetch(`${DEEPFACE_SERVICE_URL}/gallery/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      model_name: modelName,
+      top_k: topK,
+      threshold,
+    }),
+  }, 60_000);
+
+  if (!res.ok) return null;
+  const d = res.data as Record<string, unknown>;
+  const matches = (d.matches ?? []) as Record<string, unknown>[];
+  return {
+    matches: matches.map((m) => ({
+      identity: String(m.identity ?? ""),
+      distance: Number(m.distance ?? 0),
+      metadata: (m.metadata ?? {}) as Record<string, unknown>,
+    })),
+    gallerySize: Number(d.gallery_size ?? 0),
+    model: String(d.model ?? modelName),
+    distanceMetric: String(d.distance_metric ?? "cosine"),
+    processingTimeMs: Number(d.processing_time_ms ?? 0),
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

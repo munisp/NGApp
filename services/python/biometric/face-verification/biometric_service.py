@@ -59,6 +59,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 LIVENESS_SERVICE_URL = os.getenv("LIVENESS_SERVICE_URL", "http://localhost:8104")
 FACE_MATCHING_SERVICE_URL = os.getenv("FACE_MATCHING_SERVICE_URL", "http://localhost:8105")
 DEEPFAKE_SERVICE_URL = os.getenv("DEEPFAKE_SERVICE_URL", "http://localhost:8106")
+DEEPFACE_SERVICE_URL = os.getenv("DEEPFACE_SERVICE_URL", "http://localhost:8133")
 
 
 # ── Enums ────────────────────────────────────────────────────────────────────
@@ -556,7 +557,76 @@ class BiometricVerificationEngine:
                 "source": "deepfake_service",
             }
 
-        # ── Step 5: Determine Overall Verdict ──
+        # ── Step 5: DeepFace Cross-Verification ──
+        # Uses serengil/deepface for multi-model ensemble verification,
+        # facial attribute analysis, and anti-spoofing as a secondary check.
+        deepface_data = {
+            "available": False,
+            "source": "deepface_service",
+        }
+        deepface_verify = await self._call_service(
+            f"{DEEPFACE_SERVICE_URL}/verify",
+            {
+                "image1_base64": selfie_b64,
+                "image2_base64": doc_b64,
+                "model_name": "ArcFace",
+                "detector_backend": "retinaface",
+                "anti_spoofing": True,
+            },
+            timeout=60.0,
+        )
+        if deepface_verify is not None:
+            deepface_data["available"] = True
+            deepface_data["verified"] = deepface_verify.get("verified", False)
+            deepface_data["distance"] = deepface_verify.get("distance", 0)
+            deepface_data["threshold"] = deepface_verify.get("threshold", 0)
+            deepface_data["model"] = deepface_verify.get("model", "ArcFace")
+
+            # If primary face matching failed but DeepFace agrees, boost confidence
+            if not face_match_ok and deepface_verify.get("verified", False):
+                face_match_data["deepface_override"] = True
+                face_match_data["deepface_distance"] = deepface_verify.get("distance", 0)
+
+        # DeepFace facial attribute analysis (age, gender, emotion)
+        deepface_analysis = await self._call_service(
+            f"{DEEPFACE_SERVICE_URL}/analyze",
+            {
+                "image_base64": selfie_b64,
+                "actions": ["age", "gender", "emotion"],
+                "detector_backend": "retinaface",
+            },
+            timeout=30.0,
+        )
+        if deepface_analysis is not None:
+            faces = deepface_analysis.get("faces", [])
+            if faces:
+                deepface_data["attributes"] = {
+                    "age": faces[0].get("age"),
+                    "dominant_gender": faces[0].get("dominant_gender"),
+                    "dominant_emotion": faces[0].get("dominant_emotion"),
+                    "gender_confidence": faces[0].get("gender", {}),
+                    "emotion_scores": faces[0].get("emotion", {}),
+                }
+
+        # DeepFace anti-spoofing as secondary check
+        deepface_antispoof = await self._call_service(
+            f"{DEEPFACE_SERVICE_URL}/anti-spoof",
+            {
+                "image_base64": selfie_b64,
+                "detector_backend": "retinaface",
+            },
+            timeout=30.0,
+        )
+        if deepface_antispoof is not None:
+            deepface_data["anti_spoof"] = {
+                "is_real": deepface_antispoof.get("is_real", True),
+                "faces_checked": deepface_antispoof.get("faces_count", 0),
+            }
+            # If DeepFace anti-spoof disagrees with liveness, flag for review
+            if not deepface_antispoof.get("is_real", True) and liveness_ok:
+                deepface_data["spoof_disagreement"] = True
+
+        # ── Step 6: Determine Overall Verdict ──
         issues = []
         liveness_ok = liveness_data["is_live"]
         face_match_ok = face_match_data["match"]
@@ -623,6 +693,7 @@ class BiometricVerificationEngine:
                 "source": liveness_data.get("source", "unknown"),
             },
             "deepfake": deepfake_data,
+            "deepface": deepface_data,
             "quality": {
                 "selfie": selfie_quality,
                 "document": doc_quality,
@@ -803,6 +874,7 @@ async def health():
             "liveness_url": LIVENESS_SERVICE_URL,
             "face_matching_url": FACE_MATCHING_SERVICE_URL,
             "deepfake_url": DEEPFAKE_SERVICE_URL,
+            "deepface_url": DEEPFACE_SERVICE_URL,
         },
         "capabilities": {
             "biometric_verification": True,
@@ -815,6 +887,9 @@ async def health():
             "icao_compliance": True,
             "local_fallback": True,
             "real_inference": True,
+            "deepface_cross_verification": True,
+            "deepface_attribute_analysis": True,
+            "deepface_anti_spoofing": True,
         },
         "anti_spoofing_checks": [
             "texture_lbp",
