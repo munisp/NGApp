@@ -33,13 +33,20 @@ async fn health() -> HttpResponse {
 
 async fn score_customer(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    // Extract parameters from input and call domain logic
-    let result = serde_json::to_value(weighted_score_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
+    let factors: Vec<(f64, f64)> = input.get("factors").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|f| {
+            let score = f.get("score").and_then(|s| s.as_f64())?;
+            let weight = f.get("weight").and_then(|w| w.as_f64())?;
+            Some((score, weight))
+        }).collect()
+    }).unwrap_or_default();
+    let score = weighted_score(&factors);
+    let band = risk_band(score);
+    let edd = edd_required(score);
     HttpResponse::Ok().json(json!({
         "service": "aml-risk-scoring-rs",
         "endpoint": "score_customer",
-        "result": result,
-        "input": input,
+        "result": {"score": score, "risk_band": band, "edd_required": edd},
     }))
 }
 

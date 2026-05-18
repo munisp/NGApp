@@ -62,13 +62,15 @@ async fn add_entry(body: web::Json<serde_json::Value>) -> HttpResponse {
 
 async fn merge_lists(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    // Extract parameters from input and call domain logic
-    let result = serde_json::to_value(dedup_entries_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
+    let mut entries: Vec<String> = input.get("entries").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|e| e.as_str().map(String::from)).collect()
+    }).unwrap_or_default();
+    let before_count = entries.len();
+    dedup_entries(&mut entries);
     HttpResponse::Ok().json(json!({
         "service": "watchlist-manager-rs",
         "endpoint": "merge_lists",
-        "result": result,
-        "input": input,
+        "result": {"entries": entries, "before": before_count, "after": entries.len(), "duplicates_removed": before_count - entries.len()},
     }))
 }
 

@@ -32,13 +32,22 @@ async fn health() -> HttpResponse {
 
 async fn create_trust(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    // Extract parameters from input and call domain logic
-    let result = serde_json::to_value(compute_distribution_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
+    let corpus = input.get("corpus").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let beneficiaries: Vec<(String, f64)> = input.get("beneficiaries").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|b| {
+            let name = b.get("name").and_then(|n| n.as_str())?.to_string();
+            let share = b.get("share").and_then(|s| s.as_f64())?;
+            Some((name, share))
+        }).collect()
+    }).unwrap_or_default();
+    let distribution = compute_distribution(corpus, &beneficiaries);
+    let trust_type_s = input.get("trust_type").and_then(|v| v.as_str()).unwrap_or("standard").to_string();
+    let rules = trust_type_rules(&trust_type_s);
+    let dist_json: Vec<serde_json::Value> = distribution.iter().map(|(name, amount)| json!({"beneficiary": name, "amount": amount})).collect();
     HttpResponse::Ok().json(json!({
         "service": "trust-estate-rs",
         "endpoint": "create_trust",
-        "result": result,
-        "input": input,
+        "result": {"distribution": dist_json, "trust_rules": rules, "corpus": corpus},
     }))
 }
 

@@ -40,13 +40,19 @@ async fn revalue_positions(body: web::Json<serde_json::Value>) -> HttpResponse {
 
 async fn compute_pnl(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    // Extract parameters from input and call domain logic
-    let result = serde_json::to_value(unrealized_pnl_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
+    let positions: Vec<(f64, f64, f64)> = input.get("positions").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|p| {
+            let notional = p.get("notional").and_then(|n| n.as_f64())?;
+            let book_rate = p.get("book_rate").and_then(|b| b.as_f64())?;
+            let market_rate = p.get("market_rate").and_then(|m| m.as_f64())?;
+            Some((notional, book_rate, market_rate))
+        }).collect()
+    }).unwrap_or_default();
+    let pnl = unrealized_pnl(&positions);
     HttpResponse::Ok().json(json!({
         "service": "multicurrency-revaluation-rs",
         "endpoint": "compute_pnl",
-        "result": result,
-        "input": input,
+        "result": {"unrealized_pnl": pnl, "positions_count": positions.len()},
     }))
 }
 

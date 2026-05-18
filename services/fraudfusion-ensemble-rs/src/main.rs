@@ -37,13 +37,22 @@ async fn health() -> HttpResponse {
 
 async fn ensemble_score(body: web::Json<serde_json::Value>) -> HttpResponse {
     let input = body.into_inner();
-    // Extract parameters from input and call domain logic
-    let result = serde_json::to_value(ensemble_weighted_avg_wrapper(&input)).unwrap_or(json!({"error": "computation failed"}));
+    let scores: Vec<(f64, f64)> = input.get("models").and_then(|v| v.as_array()).map(|a| {
+        a.iter().filter_map(|m| {
+            let score = m.get("score").and_then(|s| s.as_f64())?;
+            let weight = m.get("weight").and_then(|w| w.as_f64()).unwrap_or(1.0);
+            Some((score, weight))
+        }).collect()
+    }).unwrap_or_default();
+    let weighted_avg = ensemble_weighted_avg(&scores);
+    let all_scores: Vec<f64> = scores.iter().map(|(s, _)| *s).collect();
+    let max_score = ensemble_max(&all_scores);
+    let threshold = input.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.5);
+    let (fraud_votes, legit_votes) = ensemble_voting(&all_scores, threshold);
     HttpResponse::Ok().json(json!({
         "service": "fraudfusion-ensemble-rs",
         "endpoint": "ensemble_score",
-        "result": result,
-        "input": input,
+        "result": {"weighted_avg": weighted_avg, "max_score": max_score, "fraud_votes": fraud_votes, "legit_votes": legit_votes},
     }))
 }
 
