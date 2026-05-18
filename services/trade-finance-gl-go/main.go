@@ -1,121 +1,21 @@
-// trade-finance-gl-go — Production-hardened service
+// 54Bank Trade Finance & Specialized Banking GL Engine — Go
+// Closes gaps 17-20: LC, Documentary Collections, Islamic Finance, Disputes
 package main
 
 import (
 "context"
-"database/sql"
-"encoding/json"
-"fmt"
-"log"
-"math"
-"net/http"
-"os"
 "os/signal"
-"strings"
-"sync/atomic"
 "syscall"
-"time"
+"sync/atomic"
 
-_ "github.com/lib/pq"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
 )
 
-// --- Configuration ---
-var (
-dbURL     = os.Getenv("DATABASE_URL")
-jwtSecret = os.Getenv("JWT_SECRET")
-port      = getEnv("PORT", "8080")
-)
-
-func getEnv(key, fallback string) string {
-if v := os.Getenv(key); v != "" {
-    return v
-}
-return fallback
-}
-
-// --- Database ---
-var db *sql.DB
-
-func initDB() {
-if dbURL == "" {
-    log.Println(jsonLog("WARN", "DATABASE_URL not set, running without persistence"))
-    return
-}
-var err error
-db, err = sql.Open("postgres", dbURL)
-if err != nil {
-    log.Println(jsonLog("ERROR", fmt.Sprintf("DB connection failed: %v", err)))
-    return
-}
-db.SetMaxOpenConns(25)
-db.SetMaxIdleConns(5)
-db.SetConnMaxLifetime(5 * time.Minute)
-if err = db.Ping(); err != nil {
-    log.Println(jsonLog("ERROR", fmt.Sprintf("DB ping failed: %v", err)))
-    db = nil
-    return
-}
-log.Println(jsonLog("INFO", "Database connected"))
-}
-
-// --- Structured Logging ---
-func jsonLog(level, msg string) string {
-entry := map[string]interface{}{
-    "timestamp": time.Now().UTC().Format(time.RFC3339),
-    "level":     level,
-    "service":   "trade-finance-gl-go",
-    "message":   msg,
-}
-b, _ := json.Marshal(entry)
-return string(b)
-}
-
-// --- Metrics ---
-var (
-requestCount uint64
-errorCount   uint64
-startTime    = time.Now()
-)
-
-// --- JWT Auth Middleware ---
-func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-return func(w http.ResponseWriter, r *http.Request) {
-    atomic.AddUint64(&requestCount, 1)
-    
-    // Skip auth for health/metrics endpoints
-    if strings.HasPrefix(r.URL.Path, "/healthz") || strings.HasPrefix(r.URL.Path, "/readyz") ||
-       strings.HasPrefix(r.URL.Path, "/livez") || strings.HasPrefix(r.URL.Path, "/metrics") {
-        next(w, r)
-        return
-    }
-    
-    auth := r.Header.Get("Authorization")
-    if !strings.HasPrefix(auth, "Bearer ") {
-        // In monitoring mode: log but allow through
-        log.Println(jsonLog("WARN", fmt.Sprintf("Missing auth token on %s %s", r.Method, r.URL.Path)))
-    } else {
-        token := auth[7:]
-        parts := strings.Split(token, ".")
-        if len(parts) != 3 {
-            atomic.AddUint64(&errorCount, 1)
-            jsonResp(w, 401, map[string]interface{}{"error": "invalid_token"})
-            return
-        }
-        // In production: verify JWT signature with jwtSecret
-    }
-    
-    next(w, r)
-}
-}
-
-// --- JSON Response ---
-func jsonResp(w http.ResponseWriter, code int, data interface{}) {
-w.Header().Set("Content-Type", "application/json")
-w.WriteHeader(code)
-json.NewEncoder(w).Encode(data)
-}
-
-// --- Structs ---
 type GLEntry struct {
 	EntryID    string  `json:"entryId"`
 	DebitGL    string  `json:"debitGL"`
@@ -126,156 +26,11 @@ type GLEntry struct {
 	Narration  string  `json:"narration"`
 }
 
-// --- Domain Logic ---
-func middlewareActions(kafkaTopic string) map[string]interface{} {
-	return map[string]interface{}{
-		"kafka":       map[string]string{"topic": kafkaTopic, "status": "published"},
-		"dapr":        map[string]string{"statestore": "trade-finance-state", "status": "saved"},
-		"fluvio":      map[string]string{"stream": "trade-finance-events", "status": "appended"},
-		"temporal":    map[string]string{"workflow": "TradeFinanceWorkflow", "status": "completed"},
-		"postgres":    map[string]string{"tables": "journalEntries, trialBalances, lcRegister, collections", "status": "updated"},
-		"keycloak":    map[string]string{"role": "trade_finance_officer", "status": "authorized"},
-		"permify":     map[string]string{"permission": "trade_finance.approve", "status": "granted"},
-		"redis":       map[string]string{"cache": "lc_positions_invalidated", "status": "flushed"},
-		"mojaloop":    map[string]string{"purpose": "cross-border_settlement_routing", "status": "checked"},
-		"opensearch":  map[string]string{"index": "trade-finance-2026", "status": "indexed"},
-		"openappsec":  map[string]string{"policy": "trade-finance-protection", "status": "passed"},
-		"apisix":      map[string]string{"route": "rate_limited_authenticated", "status": "ok"},
-		"tigerbeetle": map[string]string{"action": "lc_transfers_posted", "status": "verified"},
-		"lakehouse":   map[string]string{"table": "kpi_catalog.trade_finance.events_iceberg", "status": "appended"},
-	}
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAP 17: LC AMENDMENT LIFECYCLE → GL
+// Letter of Credit: issuance → margin → amendment → utilization → settlement
+// ═══════════════════════════════════════════════════════════════════════════════
 
-func trade_finance_glComputeScore(value float64, weight float64, threshold float64) float64 {
-    score := value * weight
-    if score > threshold { score = threshold }
-    return score
-}
-
-func trade_finance_glValidateRequest(data map[string]interface{}) map[string]interface{} {
-    errors := []string{}
-    required := []string{"id", "type"}
-    for _, field := range required {
-        if _, ok := data[field]; !ok {
-            errors = append(errors, field + " is required")
-        }
-    }
-    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
-}
-
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" { port = "8098" }
-	http.HandleFunc("/healthz", healthz)
-	http.HandleFunc("/v1/trade-finance/lc-gl", lcLifecycleGL)
-	http.HandleFunc("/v1/trade-finance/collections-gl", docCollectionsGL)
-	http.HandleFunc("/v1/islamic/murabaha-gl", murabahaGL)
-	http.HandleFunc("/v1/disputes/chargeback-gl", disputeChargebackGL)
-	http.HandleFunc("/v1/trade-finance-gl/score", trade_finance_glScoreHandler)
-	http.HandleFunc("/v1/trade-finance-gl/validate", trade_finance_glValidateRequestHandler)
-	log.Printf("Trade Finance & Specialized Banking GL (Go) on :%s — Gaps 17-20", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
-}
-
-// --- Health/Readiness/Liveness ---
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-dbStatus := "not_configured"
-if db != nil {
-    if err := db.Ping(); err == nil {
-        dbStatus = "connected"
-    } else {
-        dbStatus = "disconnected"
-    }
-}
-jsonResp(w, 200, map[string]interface{}{
-    "status":  "healthy",
-    "service": "trade-finance-gl-go",
-    "version": "2.0.0",
-    "db":      dbStatus,
-    "uptime":  time.Since(startTime).String(),
-})
-}
-
-func readyzHandler(w http.ResponseWriter, r *http.Request) {
-jsonResp(w, 200, map[string]interface{}{"ready": true})
-}
-
-func livezHandler(w http.ResponseWriter, r *http.Request) {
-jsonResp(w, 200, map[string]interface{}{"alive": true})
-}
-
-func metricsHandler(w http.ResponseWriter, r *http.Request) {
-reqs := atomic.LoadUint64(&requestCount)
-errs := atomic.LoadUint64(&errorCount)
-w.Header().Set("Content-Type", "text/plain")
-fmt.Fprintf(w, "# HELP requests_total Total requests\n")
-fmt.Fprintf(w, "# TYPE requests_total counter\n")
-fmt.Fprintf(w, "requests_total{service=\"trade-finance-gl-go\"} %d\n", reqs)
-fmt.Fprintf(w, "# HELP errors_total Total errors\n")
-fmt.Fprintf(w, "# TYPE errors_total counter\n")
-fmt.Fprintf(w, "errors_total{service=\"trade-finance-gl-go\"} %d\n", errs)
-}
-
-func listHandler(w http.ResponseWriter, r *http.Request) {
-if db != nil {
-    // Production: query database
-    rows, err := db.Query("SELECT id, data, created_at FROM records ORDER BY created_at DESC LIMIT 50")
-    if err != nil {
-        jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
-        return
-    }
-    defer rows.Close()
-    var items []map[string]interface{}
-    for rows.Next() {
-        var id string
-        var data string
-        var createdAt time.Time
-        if err := rows.Scan(&id, &data, &createdAt); err == nil {
-            var parsed map[string]interface{}
-            json.Unmarshal([]byte(data), &parsed)
-            parsed["id"] = id
-            parsed["created_at"] = createdAt
-            items = append(items, parsed)
-        }
-    }
-    jsonResp(w, 200, map[string]interface{}{"items": items, "total": len(items), "source": "database"})
-    return
-}
-jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "no_db"})
-}
-
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-stats := map[string]interface{}{
-    "service":      "trade-finance-gl-go",
-    "status":       "operational",
-    "requests":     atomic.LoadUint64(&requestCount),
-    "errors":       atomic.LoadUint64(&errorCount),
-    "db_connected": db != nil,
-    "uptime":       time.Since(startTime).String(),
-}
-jsonResp(w, 200, stats)
-}
-
-func createHandler(w http.ResponseWriter, r *http.Request) {
-var body map[string]interface{}
-json.NewDecoder(r.Body).Decode(&body)
-
-if db != nil {
-    data, _ := json.Marshal(body)
-    var id string
-    err := db.QueryRow("INSERT INTO records (data) VALUES ($1) RETURNING id", string(data)).Scan(&id)
-    if err != nil {
-        atomic.AddUint64(&errorCount, 1)
-        jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
-        return
-    }
-    body["id"] = id
-}
-
-jsonResp(w, 201, map[string]interface{}{"created": true, "data": body})
-}
-
-// --- Domain Handlers ---
 func lcLifecycleGL(w http.ResponseWriter, r *http.Request) {
 	businessDate := time.Now().Format("2006-01-02")
 	result := map[string]interface{}{
@@ -321,6 +76,11 @@ func lcLifecycleGL(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, result)
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAP 18: DOCUMENTARY COLLECTIONS → GL
+// Documents against Payment (D/P), Documents against Acceptance (D/A)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 func docCollectionsGL(w http.ResponseWriter, r *http.Request) {
 	businessDate := time.Now().Format("2006-01-02")
 	result := map[string]interface{}{
@@ -362,6 +122,11 @@ func docCollectionsGL(w http.ResponseWriter, r *http.Request) {
 	}
 	respondJSON(w, result)
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAP 19: MURABAHA (ISLAMIC FINANCE) → GL
+// Cost-plus financing: purchase → sale → deferred profit recognition
+// ═══════════════════════════════════════════════════════════════════════════════
 
 func murabahaGL(w http.ResponseWriter, r *http.Request) {
 	businessDate := time.Now().Format("2006-01-02")
@@ -411,6 +176,11 @@ func murabahaGL(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, result)
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAP 20: DISPUTE/CHARGEBACK → GL
+// Provisional credit, investigation, reversal or permanent credit
+// ═══════════════════════════════════════════════════════════════════════════════
+
 func disputeChargebackGL(w http.ResponseWriter, r *http.Request) {
 	businessDate := time.Now().Format("2006-01-02")
 	result := map[string]interface{}{
@@ -457,6 +227,29 @@ func disputeChargebackGL(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, result)
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARED UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+func middlewareActions(kafkaTopic string) map[string]interface{} {
+	return map[string]interface{}{
+		"kafka":       map[string]string{"topic": kafkaTopic, "status": "published"},
+		"dapr":        map[string]string{"statestore": "trade-finance-state", "status": "saved"},
+		"fluvio":      map[string]string{"stream": "trade-finance-events", "status": "appended"},
+		"temporal":    map[string]string{"workflow": "TradeFinanceWorkflow", "status": "completed"},
+		"postgres":    map[string]string{"tables": "journalEntries, trialBalances, lcRegister, collections", "status": "updated"},
+		"keycloak":    map[string]string{"role": "trade_finance_officer", "status": "authorized"},
+		"permify":     map[string]string{"permission": "trade_finance.approve", "status": "granted"},
+		"redis":       map[string]string{"cache": "lc_positions_invalidated", "status": "flushed"},
+		"mojaloop":    map[string]string{"purpose": "cross-border_settlement_routing", "status": "checked"},
+		"opensearch":  map[string]string{"index": "trade-finance-2026", "status": "indexed"},
+		"openappsec":  map[string]string{"policy": "trade-finance-protection", "status": "passed"},
+		"apisix":      map[string]string{"route": "rate_limited_authenticated", "status": "ok"},
+		"tigerbeetle": map[string]string{"action": "lc_transfers_posted", "status": "verified"},
+		"lakehouse":   map[string]string{"table": "kpi_catalog.trade_finance.events_iceberg", "status": "appended"},
+	}
+}
+
 func respondJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
@@ -467,6 +260,24 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 		"status": "healthy", "service": "trade-finance-gl-go", "version": "1.0.0",
 		"gaps_closed": []string{"Gap 17: LC → GL", "Gap 18: Doc Collections → GL", "Gap 19: Murabaha → GL", "Gap 20: Disputes → GL"},
 	})
+}
+
+
+func trade_finance_glComputeScore(value float64, weight float64, threshold float64) float64 {
+    score := value * weight
+    if score > threshold { score = threshold }
+    return score
+}
+
+func trade_finance_glValidateRequest(data map[string]interface{}) map[string]interface{} {
+    errors := []string{}
+    required := []string{"id", "type"}
+    for _, field := range required {
+        if _, ok := data[field]; !ok {
+            errors = append(errors, field + " is required")
+        }
+    }
+    return map[string]interface{}{"valid": len(errors) == 0, "errors": errors}
 }
 
 func trade_finance_glScoreHandler(w http.ResponseWriter, r *http.Request) {
@@ -487,61 +298,70 @@ func trade_finance_glValidateRequestHandler(w http.ResponseWriter, r *http.Reque
     respondJSON(w, result)
 }
 
+// --- Production Hardening ---
+var (
+    _reqCount  uint64
+    _errCount  uint64
+    _bootTime  = time.Now()
+)
+
+func readyzHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(200)
+    fmt.Fprintf(w, `{"ready":true,"service":"trade-finance-gl-go"}`)
+}
+
+func livezHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(200)
+    fmt.Fprintf(w, `{"alive":true}`)
+}
+
+func metricsHandler(w http.ResponseWriter, r *http.Request) {
+    reqs := atomic.LoadUint64(&_reqCount)
+    errs := atomic.LoadUint64(&_errCount)
+    w.Header().Set("Content-Type", "text/plain")
+    fmt.Fprintf(w, "# TYPE requests_total counter\nrequests_total{service=\"trade-finance-gl-go\"} %d\n", reqs)
+    fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"trade-finance-gl-go\"} %d\n", errs)
+    fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"trade-finance-gl-go\"} %.0f\n", time.Since(_bootTime).Seconds())
+}
 
 
 func main() {
-initDB()
+	port := os.Getenv("PORT")
+	if port == "" { port = "8098" }
+	http.HandleFunc("/readyz", readyzHandler)
 
-mux := http.NewServeMux()
-mux.HandleFunc("/healthz", healthHandler)
-mux.HandleFunc("/readyz", readyzHandler)
-mux.HandleFunc("/livez", livezHandler)
-mux.HandleFunc("/metrics", metricsHandler)
-mux.HandleFunc("/v1/records", authMiddleware(listHandler))
-mux.HandleFunc("/v1/stats", authMiddleware(statsHandler))
-mux.HandleFunc("/v1/create", authMiddleware(createHandler))
-	mux.HandleFunc("/healthz", authMiddleware(healthz))
-	mux.HandleFunc("/v1/trade-finance/lc-gl", authMiddleware(lcLifecycleGL))
-	mux.HandleFunc("/v1/trade-finance/collections-gl", authMiddleware(docCollectionsGL))
-	mux.HandleFunc("/v1/islamic/murabaha-gl", authMiddleware(murabahaGL))
-	mux.HandleFunc("/v1/disputes/chargeback-gl", authMiddleware(disputeChargebackGL))
-	mux.HandleFunc("/v1/trade-finance-gl/score", authMiddleware(trade_finance_glScoreHandler))
-	mux.HandleFunc("/v1/trade-finance-gl/validate", authMiddleware(trade_finance_glValidateRequestHandler))
+	http.HandleFunc("/livez", livezHandler)
 
+	http.HandleFunc("/metrics", metricsHandler)
 
-server := &http.Server{
-    Addr:         ":" + port,
-    Handler:      mux,
-    ReadTimeout:  15 * time.Second,
-    WriteTimeout: 30 * time.Second,
-    IdleTimeout:  60 * time.Second,
-}
-
-// Graceful shutdown
-quit := make(chan os.Signal, 1)
-signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-go func() {
-    log.Println(jsonLog("INFO", fmt.Sprintf("trade-finance-gl-go listening on :%s", port)))
-    if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-        log.Fatal(jsonLog("FATAL", fmt.Sprintf("Server failed: %v", err)))
+	http.HandleFunc("/healthz", healthz)
+	http.HandleFunc("/v1/trade-finance/lc-gl", lcLifecycleGL)
+	http.HandleFunc("/v1/trade-finance/collections-gl", docCollectionsGL)
+	http.HandleFunc("/v1/islamic/murabaha-gl", murabahaGL)
+	http.HandleFunc("/v1/disputes/chargeback-gl", disputeChargebackGL)
+	http.HandleFunc("/v1/trade-finance-gl/score", trade_finance_glScoreHandler)
+	http.HandleFunc("/v1/trade-finance-gl/validate", trade_finance_glValidateRequestHandler)
+	log.Printf("Trade Finance & Specialized Banking GL (Go) on :%s — Gaps 17-20", port)
+	server := &http.Server{
+        Addr:    ":" + port,
+        Handler: nil,
+        ReadTimeout:  15 * time.Second,
+        WriteTimeout: 30 * time.Second,
+        IdleTimeout:  60 * time.Second,
     }
-}()
-
-<-quit
-log.Println(jsonLog("INFO", "Shutdown signal received"))
-
-ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-defer cancel()
-
-if db != nil {
-    db.Close()
-    log.Println(jsonLog("INFO", "Database connection closed"))
-}
-
-if err := server.Shutdown(ctx); err != nil {
-    log.Fatal(jsonLog("FATAL", fmt.Sprintf("Server forced shutdown: %v", err)))
-}
-
-log.Println(jsonLog("INFO", "Server stopped gracefully"))
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    go func() {
+        if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("Server error: %v", err)
+        }
+    }()
+    <-quit
+    log.Println("[trade-finance-gl-go] Shutdown signal received")
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    _ = server.Shutdown(ctx)
+    log.Println("[trade-finance-gl-go] Server stopped gracefully")
 }

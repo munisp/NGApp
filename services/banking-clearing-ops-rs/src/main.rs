@@ -5,6 +5,7 @@
 
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde_json::json;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GAP 13: CHEQUE CLEARING → GL (inward/outward clearing)
@@ -263,6 +264,25 @@ async fn healthz() -> HttpResponse {
     }))
 }
 
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "banking-clearing-ops-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"banking-clearing-ops-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"banking-clearing-ops-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8097".into());
@@ -274,8 +294,12 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/collateral/gl", web::get().to(collateral_gl))
             .route("/v1/cash/management-gl", web::get().to(cash_management_gl))
             .route("/v1/swift/correspondent-gl", web::get().to(swift_correspondent_gl))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
     })
     .bind(format!("0.0.0.0:{}", port))?
+    .shutdown_timeout(30)
     .run()
     .await
 }

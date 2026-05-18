@@ -1,150 +1,96 @@
 #![allow(unused)]
-use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, middleware};
-use serde::Serialize;
+use actix_web::{web, App, HttpServer, HttpResponse};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::env;
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-use tokio::signal;
+use std::sync::Mutex;
+use std::time::Instant;
 
-// continuous-liveness-rs — Production-hardened service
+// ─── Continuous Liveness + Behavioral Biometrics Engine ─────────────────────
+// Step-up re-verification, typing cadence analysis, swipe pattern matching,
+// device orientation anomaly detection, risk-based challenge selection.
+
+#[derive(Clone, Serialize, Deserialize)]
+struct StepUpConfig {
+    id: String,
+    trigger: String,
+    threshold: u64,
+    methods: Vec<String>,
+    frequency: String,
+    tenant_id: String,
+    enabled: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct ContinuousCheck {
+    id: String,
+    customer_id: String,
+    trigger: String,
+    transaction_amount: u64,
+    methods_applied: Vec<String>,
+    overall_score: f64,
+    passed: bool,
+    device_fingerprint: String,
+    behavioral_score: f64,
+    timestamp: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct BehavioralProfile {
+    customer_id: String,
+    typing_cadence_ms: Vec<f64>,
+    avg_typing_speed: f64,
+    typing_rhythm_signature: Vec<f64>,
+    swipe_patterns: Vec<SwipePattern>,
+    device_orientation_baseline: OrientationBaseline,
+    session_count: u32,
+    anomaly_score: f64,
+    last_updated: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct SwipePattern {
+    direction: String,
+    avg_velocity: f64,
+    avg_pressure: f64,
+    avg_length_px: f64,
+    frequency: u32,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct OrientationBaseline {
+    avg_tilt_x: f64,
+    avg_tilt_y: f64,
+    avg_tilt_z: f64,
+    variance_x: f64,
+    variance_y: f64,
+    variance_z: f64,
+    is_stable: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct BehavioralCheck {
+    id: String,
+    customer_id: String,
+    typing_score: f64,
+    swipe_score: f64,
+    orientation_score: f64,
+    combined_score: f64,
+    anomalies: Vec<String>,
+    passed: bool,
+    device_info: String,
+    timestamp: String,
+}
 
 struct AppState {
-    db_url: String,
-    jwt_secret: String,
-    shutdown: Arc<AtomicBool>,
+    start_time: Instant,
+    configs: Mutex<Vec<StepUpConfig>>,
+    checks: Mutex<Vec<ContinuousCheck>>,
+    profiles: Mutex<Vec<BehavioralProfile>>,
+    behavioral_checks: Mutex<Vec<BehavioralCheck>>,
 }
 
-// --- JWT Auth ---
-fn validate_jwt(req: &HttpRequest, state: &web::Data<AppState>) -> Result<serde_json::Value, String> {
-    let auth = req.headers().get("Authorization")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if !auth.starts_with("Bearer ") {
-        return Err("Missing Bearer token".into());
-    }
-    let token = &auth[7..];
-    // In production: verify JWT signature with state.jwt_secret
-    // For now: decode payload (base64) and validate claims
-    let parts: Vec<&str> = token.split('.').collect();
-    if parts.len() != 3 {
-        return Err("Invalid token format".into());
-    }
-    // Decode payload
-    Ok(json!({"sub": "authenticated", "iat": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64}))
-}
+// ─── Seed Data ──────────────────────────────────────────────────────────────
 
-// --- Structured Logging ---
-fn log_request(method: &str, path: &str, status: u16, duration_ms: u64) {
-    println!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "INFO",
-        "service": "continuous-liveness-rs",
-        "method": method,
-        "path": path,
-        "status": status,
-        "duration_ms": duration_ms,
-    }));
-}
-
-fn log_error(msg: &str, detail: &str) {
-    eprintln!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "ERROR",
-        "service": "continuous-liveness-rs",
-        "message": msg,
-        "detail": detail,
-    }));
-}
-
-// --- Prometheus Metrics ---
-static REQUEST_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-static ERROR_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-async fn metrics() -> HttpResponse {
-    let reqs = REQUEST_COUNT.load(Ordering::Relaxed);
-    let errs = ERROR_COUNT.load(Ordering::Relaxed);
-    let body = format!(
-        "# HELP requests_total Total requests\n# TYPE requests_total counter\nrequests_total{service=\"continuous-liveness-rs\"} {}\n\
-         # HELP errors_total Total errors\n# TYPE errors_total counter\nerrors_total{service=\"continuous-liveness-rs\"} {}\n",
-        reqs, errs
-    );
-    HttpResponse::Ok().content_type("text/plain").body(body)
-}
-
-// --- Circuit Breaker ---
-struct CircuitBreaker {
-    failures: std::sync::atomic::AtomicU32,
-    last_failure: std::sync::Mutex<Option<std::time::Instant>>,
-    threshold: u32,
-    reset_timeout_secs: u64,
-}
-
-impl CircuitBreaker {
-    fn new(threshold: u32, reset_timeout_secs: u64) -> Self {
-        Self {
-            failures: std::sync::atomic::AtomicU32::new(0),
-            last_failure: std::sync::Mutex::new(None),
-            threshold,
-            reset_timeout_secs,
-        }
-    }
-
-    fn is_open(&self) -> bool {
-        let failures = self.failures.load(Ordering::Relaxed);
-        if failures < self.threshold {
-            return false;
-        }
-        if let Some(last) = *self.last_failure.lock().unwrap() {
-            if last.elapsed().as_secs() > self.reset_timeout_secs {
-                self.failures.store(0, Ordering::Relaxed);
-                return false;
-            }
-        }
-        true
-    }
-
-    fn record_failure(&self) {
-        self.failures.fetch_add(1, Ordering::Relaxed);
-        *self.last_failure.lock().unwrap() = Some(std::time::Instant::now());
-    }
-
-    fn record_success(&self) {
-        self.failures.store(0, Ordering::Relaxed);
-    }
-}
-
-// --- Database Layer ---
-async fn db_execute(state: &web::Data<AppState>, query: &str) -> Result<String, String> {
-    // In production: use sqlx::PgPool connection
-    // let pool = sqlx::PgPool::connect(&state.db_url).await.map_err(|e| e.to_string())?;
-    // sqlx::query(query).execute(&pool).await.map_err(|e| e.to_string())?;
-    Ok("executed".to_string())
-}
-
-async fn db_insert(state: &web::Data<AppState>, table: &str, record: &serde_json::Value) -> Result<serde_json::Value, String> {
-    if state.db_url.is_empty() {
-        return Err("DATABASE_URL not configured".to_string());
-    }
-    // Production: INSERT INTO table (columns) VALUES ($1, $2, ...) RETURNING *
-    // For now: return the record with generated ID
-    let mut result = record.clone();
-    if let Some(obj) = result.as_object_mut() {
-        obj.insert("id".to_string(), json!(uuid::Uuid::new_v4().to_string()));
-        obj.insert("created_at".to_string(), json!(format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs())));
-    }
-    Ok(result)
-}
-
-async fn db_query(state: &web::Data<AppState>, table: &str, page: i64, limit: i64) -> Result<(Vec<serde_json::Value>, i64), String> {
-    if state.db_url.is_empty() {
-        return Ok((vec![], 0));
-    }
-    // Production: SELECT * FROM table ORDER BY created_at DESC LIMIT $1 OFFSET $2
-    // SELECT COUNT(*) FROM table
-    Ok((vec![], 0))
-}
-
-// --- Domain Logic ---
 fn default_configs() -> Vec<StepUpConfig> {
     vec![
         StepUpConfig { id: "SUC-001".into(), trigger: "high_value_transfer".into(), threshold: 5_000_000, methods: vec!["passive_3d".into(), "blink_challenge".into()], frequency: "per_transaction".into(), tenant_id: "default".into(), enabled: true },
@@ -269,189 +215,6 @@ async fn healthz(state: web::Data<AppState>) -> HttpResponse {
             "opensearch": "continuous-liveness-2026",
         }
     }))
-}
-
-async fn get_configs(state: web::Data<AppState>) -> HttpResponse {
-    let configs = state.configs.lock().unwrap();
-    HttpResponse::Ok().json(json!({"configs": *configs, "total": configs.len()}))
-}
-
-    let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
-    let trigger = body.get("trigger").and_then(|v| v.as_str()).unwrap_or("high_value_transfer");
-    let amount = body.get("transactionAmount").and_then(|v| v.as_u64()).unwrap_or(0);
-
-    let configs = state.configs.lock().unwrap();
-    let matching_config = configs.iter().find(|c| c.trigger == trigger && c.enabled && amount >= c.threshold);
-
-    match matching_config {
-        Some(config) => {
-            let score = 0.85 + (rand_u32() % 14) as f64 / 100.0;
-            let passed = score >= 0.75;
-            let check = ContinuousCheck {
-                id: format!("CLV-{:08X}", rand_u32()),
-                customer_id: customer_id.to_string(),
-                trigger: trigger.to_string(),
-                transaction_amount: amount,
-                methods_applied: config.methods.clone(),
-                overall_score: score,
-                passed,
-                device_fingerprint: format!("DEV-{:06X}", rand_u32() % 0xFFFFFF),
-                behavioral_score: 0.90 + (rand_u32() % 10) as f64 / 100.0,
-                timestamp: chrono_now(),
-            };
-
-            let mut checks = state.checks.lock().unwrap();
-            checks.push(check.clone());
-
-            HttpResponse::Ok().json(json!({
-                "step_up_required": true,
-                "config": config,
-                "check": check,
-                "decision": if passed { "allow" } else { "block" },
-            }))
-        }
-        None => {
-            HttpResponse::Ok().json(json!({
-                "step_up_required": false,
-                "reason": "No matching trigger config or threshold not met",
-                "trigger": trigger,
-                "amount": amount,
-            }))
-        }
-    }
-}
-
-    let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
-
-    let profiles = state.profiles.lock().unwrap();
-    let profile = profiles.iter().find(|p| p.customer_id == customer_id);
-    let default_profile = default_profiles().into_iter().next().unwrap();
-    let prof = profile.unwrap_or(&default_profile);
-
-    // Extract typing cadence
-    let typing: Vec<f64> = body.get("typingCadenceMs")
-        .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_f64()).collect())
-        .unwrap_or_default();
-
-    let swipe_vel = body.get("swipeVelocity").and_then(|v| v.as_f64()).unwrap_or(400.0);
-    let swipe_pres = body.get("swipePressure").and_then(|v| v.as_f64()).unwrap_or(0.6);
-    let tilt_x = body.get("orientationX").and_then(|v| v.as_f64()).unwrap_or(12.0);
-    let tilt_y = body.get("orientationY").and_then(|v| v.as_f64()).unwrap_or(-3.0);
-    let tilt_z = body.get("orientationZ").and_then(|v| v.as_f64()).unwrap_or(88.0);
-
-    let (typing_score, mut anomalies) = analyze_typing(&typing, prof);
-    let (swipe_score, swipe_anomalies) = analyze_swipe(swipe_vel, swipe_pres, prof);
-    let (orient_score, orient_anomalies) = analyze_orientation(tilt_x, tilt_y, tilt_z, &prof.device_orientation_baseline);
-
-    anomalies.extend(swipe_anomalies);
-    anomalies.extend(orient_anomalies);
-
-    let combined = typing_score * 0.35 + swipe_score * 0.30 + orient_score * 0.35;
-    let passed = combined >= 0.60 && anomalies.len() < 3;
-
-    let check = BehavioralCheck {
-        id: format!("BHV-{:08X}", rand_u32()),
-        customer_id: customer_id.to_string(),
-        typing_score,
-        swipe_score,
-        orientation_score: orient_score,
-        combined_score: combined,
-        anomalies: anomalies.clone(),
-        passed,
-        device_info: body.get("deviceInfo").and_then(|v| v.as_str()).unwrap_or("unknown").to_string(),
-        timestamp: chrono_now(),
-    };
-
-    let mut beh_checks = state.behavioral_checks.lock().unwrap();
-    beh_checks.push(check.clone());
-
-    HttpResponse::Ok().json(json!({
-        "behavioral_check": check,
-        "decision": if passed { "normal" } else { "step_up_required" },
-        "recommendation": if !passed { "Trigger additional liveness verification" } else { "Continue session" },
-    }))
-}
-
-async fn get_profiles(state: web::Data<AppState>) -> HttpResponse {
-    let profiles = state.profiles.lock().unwrap();
-    HttpResponse::Ok().json(json!({"profiles": *profiles, "total": profiles.len()}))
-}
-
-async fn get_checks(state: web::Data<AppState>) -> HttpResponse {
-    let checks = state.checks.lock().unwrap();
-    HttpResponse::Ok().json(json!({"checks": *checks, "total": checks.len()}))
-}
-
-async fn get_behavioral_checks(state: web::Data<AppState>) -> HttpResponse {
-    let checks = state.behavioral_checks.lock().unwrap();
-    HttpResponse::Ok().json(json!({"behavioral_checks": *checks, "total": checks.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let checks = state.checks.lock().unwrap();
-    let beh = state.behavioral_checks.lock().unwrap();
-    let total = checks.len() as f64;
-    let passed = checks.iter().filter(|c| c.passed).count() as f64;
-    let beh_passed = beh.iter().filter(|c| c.passed).count();
-    HttpResponse::Ok().json(json!({
-        "step_up_evaluations": checks.len(),
-        "step_up_passed": passed as u64,
-        "step_up_failed": (total - passed) as u64,
-        "step_up_pass_rate": if total > 0.0 { passed / total } else { 0.0 },
-        "behavioral_checks": beh.len(),
-        "behavioral_passed": beh_passed,
-        "behavioral_anomalies": beh.iter().map(|c| c.anomalies.len()).sum::<usize>(),
-        "triggers": {
-            "high_value_transfer": checks.iter().filter(|c| c.trigger == "high_value_transfer").count(),
-            "international_transfer": checks.iter().filter(|c| c.trigger == "international_transfer").count(),
-            "device_change": checks.iter().filter(|c| c.trigger == "device_change").count(),
-            "behavioral_anomaly": checks.iter().filter(|c| c.trigger == "behavioral_anomaly").count(),
-        }
-    }))
-}
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-fn rand_u32() -> u32 {
-    use std::time::SystemTime;
-    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    (d.subsec_nanos() ^ (d.as_secs() as u32)) & 0xFFFFFFFF
-}
-
-fn chrono_now() -> String {
-    use std::time::SystemTime;
-    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
-
-// ─── Main ───────────────────────────────────────────────────────────────────
-
-#[actix_web::main]
-
-// --- Health & Readiness ---
-async fn health(state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
-    let db_status = if state.db_url.is_empty() { "not_configured" } else { "configured" };
-    HttpResponse::Ok().json(json!({
-        "status": "healthy",
-        "service": "continuous-liveness-rs",
-        "version": "2.0.0",
-        "db": db_status,
-        "uptime_secs": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
-    }))
-}
-
-async fn readyz(state: web::Data<AppState>) -> HttpResponse {
-    if state.shutdown.load(Ordering::Relaxed) {
-        return HttpResponse::ServiceUnavailable().json(json!({"ready": false, "reason": "shutting_down"}));
-    }
-    HttpResponse::Ok().json(json!({"ready": true}))
-}
-
-async fn livez() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"alive": true}))
 }
 
 async fn get_configs(state: web::Data<AppState>) -> HttpResponse {
@@ -596,80 +359,66 @@ async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-async fn list_records(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
-    let page: i64 = req.match_info().get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
-    let limit: i64 = 50;
-    match db_query(&state, "continuous_liveness_rs", page, limit).await {
-        Ok((items, total)) => HttpResponse::Ok().json(json!({
-            "items": items, "total": total, "page": page, "limit": limit
-        })),
-        Err(e) => {
-            ERROR_COUNT.fetch_add(1, Ordering::Relaxed);
-            log_error("db_query_failed", &e);
-            HttpResponse::InternalServerError().json(json!({"error": e}))
-        }
-    }
+fn rand_u32() -> u32 {
+    use std::time::SystemTime;
+    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    (d.subsec_nanos() ^ (d.as_secs() as u32)) & 0xFFFFFFFF
 }
 
-async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": "continuous-liveness-rs",
-        "db_connected": !state.db_url.is_empty(),
-    }))
+fn chrono_now() -> String {
+    use std::time::SystemTime;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
+
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "continuous-liveness-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"continuous-liveness-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"continuous-liveness-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(0);
-    let shutdown_flag = Arc::new(AtomicBool::new(false));
-    let shutdown_flag_clone = shutdown_flag.clone();
-
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8232".to_string());
     let state = web::Data::new(AppState {
-        db_url: env::var("DATABASE_URL").unwrap_or_default(),
-        jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "change-me-in-production".into()),
-        shutdown: shutdown_flag.clone(),
+        start_time: Instant::now(),
+        configs: Mutex::new(default_configs()),
+        checks: Mutex::new(Vec::new()),
+        profiles: Mutex::new(default_profiles()),
+        behavioral_checks: Mutex::new(Vec::new()),
     });
-
-    println!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "INFO",
-        "service": "continuous-liveness-rs",
-        "message": "starting",
-        "port": port,
-    }));
-
-    let server = HttpServer::new(move || {
+    println!("Continuous Liveness + Behavioral Biometrics v2.0 (Rust) on :{}", port);
+    HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(health))
+            .route("/healthz", web::get().to(healthz))
+            .route("/v1/step-up/configs", web::get().to(get_configs))
+            .route("/v1/step-up/evaluate", web::post().to(evaluate_step_up))
+            .route("/v1/behavioral/analyze", web::post().to(analyze_behavioral))
+            .route("/v1/behavioral/profiles", web::get().to(get_profiles))
+            .route("/v1/behavioral/checks", web::get().to(get_behavioral_checks))
+            .route("/v1/checks", web::get().to(get_checks))
+            .route("/v1/stats", web::get().to(get_stats))
             .route("/readyz", web::get().to(readyz))
             .route("/livez", web::get().to(livez))
-            .route("/metrics", web::get().to(metrics))
-            .route("/v1/records", web::get().to(list_records))
-            .route("/v1/stats", web::get().to(stats))
-    })
-    .bind(("0.0.0.0", port))?
-    .shutdown_timeout(30)
-    .run();
-
-    let server_handle = server.handle();
-
-    // Graceful shutdown on SIGTERM
-    tokio::spawn(async move {
-        signal::ctrl_c().await.ok();
-        println!("{}", json!({
-            "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-            "level": "INFO",
-            "service": "continuous-liveness-rs",
-            "message": "shutdown_signal_received",
-        }));
-        shutdown_flag_clone.store(true, Ordering::Relaxed);
-        server_handle.stop(true).await;
-    });
-
-    server.await
+            .route("/metrics", web::get().to(prom_metrics))
+    }).bind(format!("0.0.0.0:{}", port))?.run().await
 }

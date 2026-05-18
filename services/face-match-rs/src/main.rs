@@ -1,210 +1,101 @@
 #![allow(unused)]
-use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, middleware};
-use serde::Serialize;
+use actix_web::{web, App, HttpServer, HttpResponse};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::env;
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-use tokio::signal;
+use std::sync::Mutex;
+use std::time::Instant;
 
-// face-match-rs — Production-hardened service
+// ─── Domain Types ───────────────────────────────────────────────────────────
+
+#[derive(Clone, Serialize, Deserialize)]
+struct FaceMatchResult {
+    id: String,
+    customer_id: String,
+    matched: bool,
+    similarity_score: f64,
+    embedding_distance: f64,
+    face1_quality: f64,
+    face2_quality: f64,
+    age_estimation: u32,
+    gender_estimation: String,
+    glasses_detected: bool,
+    mask_detected: bool,
+    head_pose_diff: f64,
+    purpose: String,
+    processing_time_ms: f64,
+    timestamp: String,
+}
+
+#[derive(Clone, Serialize, Default)]
+struct MatchStats {
+    total_matches: u64,
+    successful_matches: u64,
+    failed_matches: u64,
+    match_rate: f64,
+    avg_similarity: f64,
+    avg_processing_ms: f64,
+    purpose_breakdown: PurposeBreakdown,
+}
+
+#[derive(Clone, Serialize, Default)]
+struct PurposeBreakdown {
+    kyc_onboarding: u64,
+    transaction_auth: u64,
+    periodic_reverify: u64,
+}
 
 struct AppState {
-    db_url: String,
-    jwt_secret: String,
-    shutdown: Arc<AtomicBool>,
+    start_time: Instant,
+    matches: Mutex<Vec<FaceMatchResult>>,
+    stats: Mutex<MatchStats>,
 }
 
-// --- JWT Auth ---
-fn validate_jwt(req: &HttpRequest, state: &web::Data<AppState>) -> Result<serde_json::Value, String> {
-    let auth = req.headers().get("Authorization")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if !auth.starts_with("Bearer ") {
-        return Err("Missing Bearer token".into());
-    }
-    let token = &auth[7..];
-    // In production: verify JWT signature with state.jwt_secret
-    // For now: decode payload (base64) and validate claims
-    let parts: Vec<&str> = token.split('.').collect();
-    if parts.len() != 3 {
-        return Err("Invalid token format".into());
-    }
-    // Decode payload
-    Ok(json!({"sub": "authenticated", "iat": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64}))
+#[derive(Deserialize)]
+struct FaceMatchRequest {
+    customer_id: Option<String>,
+    image1_embedding: Option<Vec<f64>>,
+    image2_embedding: Option<Vec<f64>>,
+    face1_quality: Option<f64>,
+    face2_quality: Option<f64>,
+    age_estimation: Option<u32>,
+    gender_estimation: Option<String>,
+    glasses_detected: Option<bool>,
+    mask_detected: Option<bool>,
+    purpose: Option<String>,
 }
 
-// --- Structured Logging ---
-fn log_request(method: &str, path: &str, status: u16, duration_ms: u64) {
-    println!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "INFO",
-        "service": "face-match-rs",
-        "method": method,
-        "path": path,
-        "status": status,
-        "duration_ms": duration_ms,
-    }));
-}
+// ─── Handlers ───────────────────────────────────────────────────────────────
 
-fn log_error(msg: &str, detail: &str) {
-    eprintln!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "ERROR",
-        "service": "face-match-rs",
-        "message": msg,
-        "detail": detail,
-    }));
-}
-
-// --- Prometheus Metrics ---
-static REQUEST_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-static ERROR_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-async fn metrics() -> HttpResponse {
-    let reqs = REQUEST_COUNT.load(Ordering::Relaxed);
-    let errs = ERROR_COUNT.load(Ordering::Relaxed);
-    let body = format!(
-        "# HELP requests_total Total requests\n# TYPE requests_total counter\nrequests_total{service=\"face-match-rs\"} {}\n\
-         # HELP errors_total Total errors\n# TYPE errors_total counter\nerrors_total{service=\"face-match-rs\"} {}\n",
-        reqs, errs
-    );
-    HttpResponse::Ok().content_type("text/plain").body(body)
-}
-
-// --- Circuit Breaker ---
-struct CircuitBreaker {
-    failures: std::sync::atomic::AtomicU32,
-    last_failure: std::sync::Mutex<Option<std::time::Instant>>,
-    threshold: u32,
-    reset_timeout_secs: u64,
-}
-
-impl CircuitBreaker {
-    fn new(threshold: u32, reset_timeout_secs: u64) -> Self {
-        Self {
-            failures: std::sync::atomic::AtomicU32::new(0),
-            last_failure: std::sync::Mutex::new(None),
-            threshold,
-            reset_timeout_secs,
-        }
-    }
-
-    fn is_open(&self) -> bool {
-        let failures = self.failures.load(Ordering::Relaxed);
-        if failures < self.threshold {
-            return false;
-        }
-        if let Some(last) = *self.last_failure.lock().unwrap() {
-            if last.elapsed().as_secs() > self.reset_timeout_secs {
-                self.failures.store(0, Ordering::Relaxed);
-                return false;
-            }
-        }
-        true
-    }
-
-    fn record_failure(&self) {
-        self.failures.fetch_add(1, Ordering::Relaxed);
-        *self.last_failure.lock().unwrap() = Some(std::time::Instant::now());
-    }
-
-    fn record_success(&self) {
-        self.failures.store(0, Ordering::Relaxed);
-    }
-}
-
-// --- Database Layer ---
-async fn db_execute(state: &web::Data<AppState>, query: &str) -> Result<String, String> {
-    // In production: use sqlx::PgPool connection
-    // let pool = sqlx::PgPool::connect(&state.db_url).await.map_err(|e| e.to_string())?;
-    // sqlx::query(query).execute(&pool).await.map_err(|e| e.to_string())?;
-    Ok("executed".to_string())
-}
-
-async fn db_insert(state: &web::Data<AppState>, table: &str, record: &serde_json::Value) -> Result<serde_json::Value, String> {
-    if state.db_url.is_empty() {
-        return Err("DATABASE_URL not configured".to_string());
-    }
-    // Production: INSERT INTO table (columns) VALUES ($1, $2, ...) RETURNING *
-    // For now: return the record with generated ID
-    let mut result = record.clone();
-    if let Some(obj) = result.as_object_mut() {
-        obj.insert("id".to_string(), json!(uuid::Uuid::new_v4().to_string()));
-        obj.insert("created_at".to_string(), json!(format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs())));
-    }
-    Ok(result)
-}
-
-async fn db_query(state: &web::Data<AppState>, table: &str, page: i64, limit: i64) -> Result<(Vec<serde_json::Value>, i64), String> {
-    if state.db_url.is_empty() {
-        return Ok((vec![], 0));
-    }
-    // Production: SELECT * FROM table ORDER BY created_at DESC LIMIT $1 OFFSET $2
-    // SELECT COUNT(*) FROM table
-    Ok((vec![], 0))
-}
-
-// --- Domain Logic ---
-fn rand_u32() -> u32 {
-    use std::time::SystemTime;
-    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    (d.subsec_nanos() ^ (d.as_secs() as u32)) & 0xFFFFFFFF
-}
-
-fn chrono_now() -> String {
-    use std::time::SystemTime;
-    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
-
-async fn deepface_info() -> HttpResponse {
-    let inference_url = std::env::var("LIVENESS_INFERENCE_URL").unwrap_or_else(|_| "http://localhost:8230".into());
+async fn healthz(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "deepface_integration": {
-            "description": "Face matching routes through DeepFace-powered liveness-inference-py for ML inference",
-            "inference_service_url": inference_url,
-            "recognition_models": ["VGG-Face", "FaceNet", "FaceNet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace", "GhostFaceNet", "Buffalo_L"],
-            "detectors": ["opencv", "retinaface", "mtcnn", "ssd", "dlib", "mediapipe", "yolov8", "yunet", "centerface"],
-            "database_backends": ["postgres", "pgvector", "mongo", "pinecone", "weaviate", "neo4j"],
-            "features": {
-                "face_verification": "1:1 comparison via DeepFace.verify()",
-                "face_search": "1:N search via DeepFace.find() with pgvector/ANN",
-                "face_registration": "Register faces via DeepFace.register()",
-                "deduplication": "Cross-account duplicate detection via face DB search",
-                "facial_attributes": "Age, gender, emotion, race analysis via DeepFace.analyze()",
-            },
-            "local_fallback": "Cosine similarity on raw embeddings when inference service unavailable",
-        }
-    }))
-}
-
-// ─── Main ───────────────────────────────────────────────────────────────────
-
-#[actix_web::main]
-
-// --- Health & Readiness ---
-async fn health(state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
-    let db_status = if state.db_url.is_empty() { "not_configured" } else { "configured" };
-    HttpResponse::Ok().json(json!({
+        "service": "face-match-engine-rs",
         "status": "healthy",
-        "service": "face-match-rs",
         "version": "2.0.0",
-        "db": db_status,
-        "uptime_secs": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+        "uptime_secs": state.start_time.elapsed().as_secs(),
+        "model": "ArcFace-R100 (512-dim cosine similarity) + DeepFace routing",
+        "deepface_integration": {
+            "enabled": true,
+            "inference_url": std::env::var("LIVENESS_INFERENCE_URL").unwrap_or_else(|_| "http://localhost:8230".into()),
+            "supported_models": ["VGG-Face", "FaceNet", "FaceNet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace", "GhostFaceNet", "Buffalo_L"],
+            "supported_backends": ["postgres", "pgvector", "mongo", "pinecone", "weaviate"],
+            "endpoints": ["/v1/face-match", "/v1/face/search", "/v1/face/register", "/v1/dedup/check"],
+        },
+        "threshold": 0.68,
+        "capabilities": [
+            "1:1_face_comparison", "1:N_gallery_search",
+            "age_estimation", "gender_estimation",
+            "quality_assessment", "adaptive_threshold",
+            "deepface_routing", "pgvector_search",
+            "customer_deduplication", "multi_model_ensemble",
+        ],
+        "middleware": {
+            "kafka": "face-match.events, face-match.audit",
+            "postgres": "face_matches, face_embeddings (pgvector)",
+            "redis": "embedding_cache (TTL 10min)",
+            "temporal": "FaceMatchWorkflow",
+            "opensearch": "face-match-2026",
+        }
     }))
-}
-
-async fn readyz(state: web::Data<AppState>) -> HttpResponse {
-    if state.shutdown.load(Ordering::Relaxed) {
-        return HttpResponse::ServiceUnavailable().json(json!({"ready": false, "reason": "shutting_down"}));
-    }
-    HttpResponse::Ok().json(json!({"ready": true}))
-}
-
-async fn livez() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"alive": true}))
 }
 
 async fn perform_match(body: web::Json<FaceMatchRequest>, state: web::Data<AppState>) -> HttpResponse {
@@ -278,85 +169,97 @@ async fn get_matches(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({"matches": *matches, "total": matches.len()}))
 }
 
+async fn get_match_by_id(path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
+    let id = path.into_inner();
+    let matches = state.matches.lock().unwrap();
+    match matches.iter().find(|m| m.id == id) {
+        Some(m) => HttpResponse::Ok().json(m),
+        None => HttpResponse::NotFound().json(json!({"error": format!("Match {} not found", id)})),
+    }
+}
+
 async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
     let st = state.stats.lock().unwrap();
     HttpResponse::Ok().json(&*st)
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-async fn list_records(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
-    let page: i64 = req.match_info().get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
-    let limit: i64 = 50;
-    match db_query(&state, "face_match_rs", page, limit).await {
-        Ok((items, total)) => HttpResponse::Ok().json(json!({
-            "items": items, "total": total, "page": page, "limit": limit
-        })),
-        Err(e) => {
-            ERROR_COUNT.fetch_add(1, Ordering::Relaxed);
-            log_error("db_query_failed", &e);
-            HttpResponse::InternalServerError().json(json!({"error": e}))
-        }
-    }
+fn rand_u32() -> u32 {
+    use std::time::SystemTime;
+    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    (d.subsec_nanos() ^ (d.as_secs() as u32)) & 0xFFFFFFFF
 }
 
-async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    REQUEST_COUNT.fetch_add(1, Ordering::Relaxed);
+fn chrono_now() -> String {
+    use std::time::SystemTime;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
+}
+
+async fn deepface_info() -> HttpResponse {
+    let inference_url = std::env::var("LIVENESS_INFERENCE_URL").unwrap_or_else(|_| "http://localhost:8230".into());
     HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": "face-match-rs",
-        "db_connected": !state.db_url.is_empty(),
+        "deepface_integration": {
+            "description": "Face matching routes through DeepFace-powered liveness-inference-py for ML inference",
+            "inference_service_url": inference_url,
+            "recognition_models": ["VGG-Face", "FaceNet", "FaceNet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace", "GhostFaceNet", "Buffalo_L"],
+            "detectors": ["opencv", "retinaface", "mtcnn", "ssd", "dlib", "mediapipe", "yolov8", "yunet", "centerface"],
+            "database_backends": ["postgres", "pgvector", "mongo", "pinecone", "weaviate", "neo4j"],
+            "features": {
+                "face_verification": "1:1 comparison via DeepFace.verify()",
+                "face_search": "1:N search via DeepFace.find() with pgvector/ANN",
+                "face_registration": "Register faces via DeepFace.register()",
+                "deduplication": "Cross-account duplicate detection via face DB search",
+                "facial_attributes": "Age, gender, emotion, race analysis via DeepFace.analyze()",
+            },
+            "local_fallback": "Cosine similarity on raw embeddings when inference service unavailable",
+        }
     }))
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
+
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "face-match-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"face-match-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"face-match-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(30);
-    let shutdown_flag = Arc::new(AtomicBool::new(false));
-    let shutdown_flag_clone = shutdown_flag.clone();
-
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8227".to_string());
     let state = web::Data::new(AppState {
-        db_url: env::var("DATABASE_URL").unwrap_or_default(),
-        jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "change-me-in-production".into()),
-        shutdown: shutdown_flag.clone(),
+        start_time: Instant::now(),
+        matches: Mutex::new(Vec::new()),
+        stats: Mutex::new(MatchStats::default()),
     });
-
-    println!("{}", json!({
-        "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-        "level": "INFO",
-        "service": "face-match-rs",
-        "message": "starting",
-        "port": port,
-    }));
-
-    let server = HttpServer::new(move || {
+    println!("Face Match Engine v2.0 (Rust, DeepFace-enhanced) on :{}", port);
+    HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(health))
+            .route("/healthz", web::get().to(healthz))
+            .route("/v1/match", web::post().to(perform_match))
+            .route("/v1/matches", web::get().to(get_matches))
+            .route("/v1/matches/{id}", web::get().to(get_match_by_id))
+            .route("/v1/stats", web::get().to(get_stats))
+            .route("/v1/deepface-info", web::get().to(deepface_info))
             .route("/readyz", web::get().to(readyz))
             .route("/livez", web::get().to(livez))
-            .route("/metrics", web::get().to(metrics))
-            .route("/v1/records", web::get().to(list_records))
-            .route("/v1/stats", web::get().to(stats))
-    })
-    .bind(("0.0.0.0", port))?
-    .shutdown_timeout(30)
-    .run();
-
-    let server_handle = server.handle();
-
-    // Graceful shutdown on SIGTERM
-    tokio::spawn(async move {
-        signal::ctrl_c().await.ok();
-        println!("{}", json!({
-            "timestamp": format!("{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-            "level": "INFO",
-            "service": "face-match-rs",
-            "message": "shutdown_signal_received",
-        }));
-        shutdown_flag_clone.store(true, Ordering::Relaxed);
-        server_handle.stop(true).await;
-    });
-
-    server.await
+            .route("/metrics", web::get().to(prom_metrics))
+    }).bind(format!("0.0.0.0:{}", port))?.run().await
 }

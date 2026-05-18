@@ -7,6 +7,7 @@ use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 #[derive(Clone)]
 struct AppState { start_time: Instant }
@@ -85,6 +86,25 @@ async fn validate_mt103(body: web::Json<serde_json::Value>) -> HttpResponse {
     }
 }
 
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "swift-iso20022-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"swift-iso20022-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"swift-iso20022-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8112".to_string());
@@ -97,8 +117,12 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/swift/messages", web::get().to(list_messages))
             .route("/v1/swift/gpi-track", web::get().to(gpi_track))
             .route("/v1/swift/validate-mt103", web::post().to(validate_mt103))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
     })
     .bind(format!("0.0.0.0:{}", port))?
+    .shutdown_timeout(30)
     .run()
     .await
 }

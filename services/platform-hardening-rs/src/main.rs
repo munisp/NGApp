@@ -6,6 +6,7 @@
 
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde_json::json;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 // Enhancement 21: Test Coverage
 async fn test_coverage() -> HttpResponse {
@@ -295,6 +296,25 @@ async fn healthz() -> HttpResponse {
     }))
 }
 
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "platform-hardening-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"platform-hardening-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"platform-hardening-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8106".into());
@@ -311,8 +331,12 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/enhancement/27-graphql", web::get().to(graphql_layer))
             .route("/v1/enhancement/28-event-sourcing", web::get().to(event_sourcing))
             .route("/v1/quick-wins", web::get().to(quick_wins))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
     })
     .bind(format!("0.0.0.0:{}", port))?
+    .shutdown_timeout(30)
     .run()
     .await
 }

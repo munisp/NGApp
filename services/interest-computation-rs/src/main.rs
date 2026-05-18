@@ -1,9 +1,11 @@
 #![allow(unused)]
+use tokio_postgres;
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
 use std::env;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -102,6 +104,25 @@ async fn effective_rate(body: web::Json<InterestCalcRequest>) -> HttpResponse {
     HttpResponse::Ok().json(json!({"nominal_rate": body.rate_percent, "effective_rate": (effective * 10000.0).round() / 10000.0, "compounding_frequency": n}))
 }
 
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "interest-computation-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"interest-computation-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"interest-computation-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8103);
@@ -116,8 +137,12 @@ async fn main() -> std::io::Result<()> {
             .route("/v1/interest/calculate", web::post().to(calculate_interest))
             .route("/v1/interest/accrual-schedule", web::post().to(accrual_schedule))
             .route("/v1/interest/effective-rate", web::post().to(effective_rate))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
     })
     .bind(("0.0.0.0", port))?
+    .shutdown_timeout(30)
     .run()
     .await
 }

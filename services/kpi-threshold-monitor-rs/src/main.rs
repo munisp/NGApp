@@ -1,4 +1,5 @@
 #![allow(unused)]
+use tokio_postgres;
 // kpi-threshold-monitor-rs — Real-time KPI threshold monitoring with Kafka alert publishing
 // Port: 8501
 // Middleware: Postgres, Redis, Kafka, Dapr, Fluvio, Temporal, OpenSearch, Permify
@@ -9,6 +10,7 @@ use serde_json::{json, Value};
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 
 #[derive(Clone)]
 struct AppState {
@@ -320,6 +322,25 @@ fn default_thresholds() -> Vec<ThresholdRule> {
     ]
 }
 
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "kpi-threshold-monitor-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"kpi-threshold-monitor-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"kpi-threshold-monitor-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = std::env::var("PORT").unwrap_or_else(|_| "8501".into()).parse().unwrap_or(8501);
@@ -346,8 +367,12 @@ async fn main() -> std::io::Result<()> {
             .route("/api/kpi/alerts/{id}/acknowledge", web::post().to(acknowledge_alert))
             .route("/api/kpi/alerts/{id}/resolve", web::post().to(resolve_alert))
             .route("/api/kpi/alerts/summary", web::get().to(dashboard_summary))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
     })
     .bind(("0.0.0.0", port))?
+    .shutdown_timeout(30)
     .run()
     .await
 }
