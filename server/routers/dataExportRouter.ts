@@ -4,7 +4,7 @@ import { getDb } from "../db";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { data_export_jobs, auditLog } from "../../drizzle/schema";
 
-export const dataExportRouterRouter = router({
+export const dataExportRouter = router({
   list: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
     const rows = await db.select().from(data_export_jobs).orderBy(desc(data_export_jobs.createdAt)).limit(input?.limit ?? 50);
