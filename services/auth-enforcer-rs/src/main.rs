@@ -1,142 +1,79 @@
 use tokio_postgres;
-// auth-enforcer-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
 
-#[derive(Clone)]
+// auth-enforcer-rs — Authentication enforcement gateway
+
 struct AppState {
-    start_time: Instant,
-    db_url: String,
-    service_name: String,
-    table_name: String,
+    policies: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    let uptime = state.start_time.elapsed();
-    HttpResponse::Ok().json(json!({
-        "service": state.service_name,
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": uptime.as_secs(),
-        "database": "configured",
-        "middleware": {
-            "postgres": "configured",
-            "kafka": "configured",
-            "redis": "configured",
-            "temporal": "configured"
-        }
-    }))
+fn validate_token_claims(exp: u64, iss: &str) -> Result<(), String> {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+    if exp < now { return Err("Token expired".into()); }
+    if iss != "54bank-auth" { return Err("Invalid issuer".into()); }
+    Ok(())
 }
 
-async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> HttpResponse {
-    let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(50).min(100);
-    
-    // In production, this connects to Postgres via sqlx
-    // For now, return structured response format compatible with CrudWorkspace
-    
-    // Real Postgres query via tokio-postgres
-    let db_url = &state.db_url;
-    if !db_url.is_empty() {
-        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
-            tokio::spawn(async move { let _ = connection.await; });
-            let count_sql = "SELECT COUNT(*) FROM auth_enforcer";
-            let total: i64 = client.query_one(count_sql, &[]).await
-                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-            let row_sql = format!(
-                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM auth_enforcer ORDER BY 1 LIMIT {} OFFSET {}) t",
-                    limit, (page - 1) * limit
-                );
-                if let Ok(rows) = client.query(&row_sql, &[]).await {
-                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
-                    let json_str: Option<String> = row.try_get(0).ok();
-                    json_str.and_then(|s| serde_json::from_str(&s).ok())
-                }).collect();
-                return HttpResponse::Ok().json(json!({
-                    "items": items,
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "source": "database",
-                    "service": state.service_name,
-                }));
-            }
-        }
+fn permission_check(role: &str, resource: &str, action: &str) -> bool {
+    match role {
+        "admin" => true,
+        "manager" => action != "delete",
+        "user" => action == "read",
+        _ => false,
     }
-
-    // Fallback to empty response
-    HttpResponse::Ok().json(json!({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "limit": limit,
-        "source": "postgres",
-        "service": state.service_name
-    }))
 }
 
-#[derive(Deserialize)]
-struct ListParams {
-    page: Option<u32>,
-    limit: Option<u32>,
-    search: Option<String>,
+fn role_hierarchy(role: &str) -> u8 {
+    match role { "admin" => 4, "manager" => 3, "operator" => 2, "user" => 1, _ => 0 }
+}
+
+fn can_escalate(current_role: &str, target_role: &str) -> bool {
+    role_hierarchy(current_role) > role_hierarchy(target_role)
+}
+
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"status": "healthy", "service": "auth-enforcer-rs", "version": "1.0.0"}))
+}
+
+async fn enforce(body: web::Json<serde_json::Value>) -> HttpResponse {
+    let role = body.get("role").and_then(|v| v.as_str()).unwrap_or("user");
+    let resource = body.get("resource").and_then(|v| v.as_str()).unwrap_or("");
+    let action = body.get("action").and_then(|v| v.as_str()).unwrap_or("read");
+    let exp = body.get("token_exp").and_then(|v| v.as_u64()).unwrap_or(0);
+    let iss = body.get("token_iss").and_then(|v| v.as_str()).unwrap_or("");
+    let token_valid = validate_token_claims(exp, iss).is_ok();
+    let permitted = permission_check(role, resource, action);
+    let allowed = token_valid && permitted;
+    HttpResponse::Ok().json(json!({
+        "allowed": allowed, "token_valid": token_valid, "permission": permitted,
+        "role": role, "action": action, "resource": resource,
+    }))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
+    let policies = state.policies.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total_policies": policies.len(), "service": "auth-enforcer-rs"}))
 }
 
-async fn get_by_id(state: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
-    let id = path.into_inner();
-    HttpResponse::Ok().json(json!({
-        "id": id,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn create(state: web::Data<AppState>, body: web::Json<Value>) -> HttpResponse {
-    HttpResponse::Created().json(json!({
-        "message": "Created successfully",
-        "data": *body,
-        "source": "postgres"
-    }))
-}
-
-
-// Real Postgres query: SELECT "customerId", "riskScore", "riskLevel", status FROM "aml_risk_scores" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("PORT").unwrap_or("8314".into()).parse().unwrap_or(8314);
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db".into());
-    
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8201);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        db_url,
-        service_name: "auth-enforcer-rs".into(),
-        table_name: "auth_enforcer".into(),
+        policies: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
-    println!("[auth-enforcer-rs] Starting on :{}", port);
-    
+    println!("auth-enforcer-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/health", web::get().to(healthz))
-            .route("/v1/auth-enforcer/list", web::get().to(list))
-            .route("/v1/auth-enforcer/stats", web::get().to(stats))
-            .route("/v1/auth-enforcer/{id}", web::get().to(get_by_id))
-            .route("/v1/auth-enforcer", web::post().to(create))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/enforce", web::post().to(enforce))
+            .route("/v1/stats", web::get().to(stats))
     })
     .bind(("0.0.0.0", port))?
     .run()

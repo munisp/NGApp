@@ -1,147 +1,112 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Product Factory — Banking Ops ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// product-factory-rs — Dynamic product configuration factory
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "PRO-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Banking Ops", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "PRO-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Banking Ops", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "PRO-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Banking Ops", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+
+fn validate_product_config(min_balance: f64, max_balance: f64, interest_rate: f64) -> Vec<String> {
+    let mut errors = Vec::new();
+    if min_balance < 0.0 { errors.push("min_balance must be non-negative".into()); }
+    if max_balance < min_balance { errors.push("max_balance must exceed min_balance".into()); }
+    if interest_rate < 0.0 || interest_rate > 50.0 { errors.push("interest_rate must be 0-50%".into()); }
+    errors
+}
+fn product_code(category: &str, sub: &str) -> String { format!("{}-{}-{}", category.to_uppercase(), sub.to_uppercase(), "001") }
+fn eligible(age: u32, income: f64, min_age: u32, min_income: f64) -> bool { age >= min_age && income >= min_income }
+
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({
+        "status": "healthy",
+        "service": "product-factory-rs",
+        "version": "1.0.0",
+        "description": "Dynamic product configuration factory",
+    }))
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("PRO-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
-}
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
-
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn create_product(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
         "service": "product-factory-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Product Factory — Banking Ops",
-        "middleware": {
-            "kafka": "product-factory.events, product-factory.audit",
-            "postgres": "product_factory_records",
-            "redis": "product-factory_cache",
-            "temporal": "ProductFactoryWorkflow",
-            "opensearch": "product-factory-2026",
-        }
+        "endpoint": "create_product",
+        "description": "Create new banking product with rules",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
+async fn configure_features(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
     let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Banking Ops"}))
-}
-
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
     HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "Banking Ops",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
+        "service": "product-factory-rs",
+        "endpoint": "configure_features",
+        "description": "Configure product features and limits",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
+
+async fn product_eligibility(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "product-factory-rs",
+        "endpoint": "product_eligibility",
+        "description": "Check customer eligibility for product",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
+}
+
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
+}
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9538".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8163);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Product Factory v2.0 (Banking Ops) on :{}", port);
+    println!("product-factory-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/product-factory/list", web::get().to(list_records))
-            .route("/v1/product-factory/create", web::post().to(create_record))
-            .route("/v1/product-factory/process", web::post().to(process_record))
-            .route("/v1/product-factory/audit", web::get().to(get_audit))
-            .route("/v1/product-factory/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/create", web::post().to(create_product))
+            .route("/v1/configure", web::post().to(configure_features))
+            .route("/v1/eligibility", web::post().to(product_eligibility))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

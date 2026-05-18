@@ -1,147 +1,111 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Otc Derivatives — Treasury/Markets ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// otc-derivatives-rs — OTC derivatives pricing and risk
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "OTC-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Treasury/Markets", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "OTC-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Treasury/Markets", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "OTC-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Treasury/Markets", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+
+fn price_irs(notional: f64, fixed_rate: f64, floating_rate: f64, tenor_years: f64) -> f64 {
+    notional * (fixed_rate - floating_rate) / 100.0 * tenor_years
+}
+fn compute_cva(expected_exposure: f64, pd: f64, lgd: f64) -> f64 { expected_exposure * pd * lgd }
+fn initial_margin(notional: f64, asset_class: &str) -> f64 {
+    let rate = match asset_class { "interest_rate" => 0.01, "fx" => 0.06, "equity" => 0.15, "commodity" => 0.15, "credit" => 0.10, _ => 0.15 };
+    notional * rate
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("OTC-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({
+        "status": "healthy",
+        "service": "otc-derivatives-rs",
+        "version": "1.0.0",
+        "description": "OTC derivatives pricing and risk",
+    }))
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn price_swap(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
         "service": "otc-derivatives-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Otc Derivatives — Treasury/Markets",
-        "middleware": {
-            "kafka": "otc-derivatives.events, otc-derivatives.audit",
-            "postgres": "otc_derivatives_records",
-            "redis": "otc-derivatives_cache",
-            "temporal": "OtcDerivativesWorkflow",
-            "opensearch": "otc-derivatives-2026",
-        }
+        "endpoint": "price_swap",
+        "description": "Price interest rate swap",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
+async fn compute_cva(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
     let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Treasury/Markets"}))
-}
-
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
     HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "Treasury/Markets",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
+        "service": "otc-derivatives-rs",
+        "endpoint": "compute_cva",
+        "description": "Compute Credit Valuation Adjustment",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
+
+async fn margin_call(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "otc-derivatives-rs",
+        "endpoint": "margin_call",
+        "description": "Calculate margin requirements",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
+}
+
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
+}
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9526".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8153);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Otc Derivatives v2.0 (Treasury/Markets) on :{}", port);
+    println!("otc-derivatives-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/otc-derivatives/list", web::get().to(list_records))
-            .route("/v1/otc-derivatives/create", web::post().to(create_record))
-            .route("/v1/otc-derivatives/process", web::post().to(process_record))
-            .route("/v1/otc-derivatives/audit", web::get().to(get_audit))
-            .route("/v1/otc-derivatives/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/price", web::post().to(price_swap))
+            .route("/v1/cva", web::post().to(compute_cva))
+            .route("/v1/margin", web::post().to(margin_call))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

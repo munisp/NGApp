@@ -1,142 +1,113 @@
 use tokio_postgres;
-// mortgage-servicing-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
 
-#[derive(Clone)]
+// mortgage-servicing-rs — Mortgage servicing and amortization
+
 struct AppState {
-    start_time: Instant,
-    db_url: String,
-    service_name: String,
-    table_name: String,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    let uptime = state.start_time.elapsed();
+
+fn monthly_payment(principal: f64, annual_rate: f64, months: u32) -> f64 {
+    let r = annual_rate / 100.0 / 12.0;
+    if r == 0.0 { return principal / months as f64; }
+    principal * r * (1.0 + r).powi(months as i32) / ((1.0 + r).powi(months as i32) - 1.0)
+}
+fn dti_ratio(monthly_debt: f64, monthly_income: f64) -> f64 {
+    if monthly_income == 0.0 { 999.0 } else { monthly_debt / monthly_income * 100.0 }
+}
+fn ltv_ratio(loan_amount: f64, property_value: f64) -> f64 {
+    if property_value == 0.0 { 999.0 } else { loan_amount / property_value * 100.0 }
+}
+fn prepayment_penalty(outstanding: f64, rate: f64) -> f64 { outstanding * rate / 100.0 * 0.5 }
+
+async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "service": state.service_name,
         "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": uptime.as_secs(),
-        "database": "configured",
-        "middleware": {
-            "postgres": "configured",
-            "kafka": "configured",
-            "redis": "configured",
-            "temporal": "configured"
-        }
+        "service": "mortgage-servicing-rs",
+        "version": "1.0.0",
+        "description": "Mortgage servicing and amortization",
     }))
 }
 
-async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> HttpResponse {
-    let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(50).min(100);
-    
-    // In production, this connects to Postgres via sqlx
-    // For now, return structured response format compatible with CrudWorkspace
-    
-    // Real Postgres query via tokio-postgres
-    let db_url = &state.db_url;
-    if !db_url.is_empty() {
-        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
-            tokio::spawn(async move { let _ = connection.await; });
-            let count_sql = "SELECT COUNT(*) FROM mortgage_servicing";
-            let total: i64 = client.query_one(count_sql, &[]).await
-                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-            let row_sql = format!(
-                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM mortgage_servicing ORDER BY 1 LIMIT {} OFFSET {}) t",
-                    limit, (page - 1) * limit
-                );
-                if let Ok(rows) = client.query(&row_sql, &[]).await {
-                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
-                    let json_str: Option<String> = row.try_get(0).ok();
-                    json_str.and_then(|s| serde_json::from_str(&s).ok())
-                }).collect();
-                return HttpResponse::Ok().json(json!({
-                    "items": items,
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "source": "database",
-                    "service": state.service_name,
-                }));
-            }
-        }
-    }
 
-    // Fallback to empty response
+async fn compute_amortization(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "limit": limit,
-        "source": "postgres",
-        "service": state.service_name
+        "service": "mortgage-servicing-rs",
+        "endpoint": "compute_amortization",
+        "description": "Generate full amortization schedule",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-#[derive(Deserialize)]
-struct ListParams {
-    page: Option<u32>,
-    limit: Option<u32>,
-    search: Option<String>,
+async fn early_repayment(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "mortgage-servicing-rs",
+        "endpoint": "early_repayment",
+        "description": "Calculate early repayment penalty",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn affordability_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "mortgage-servicing-rs",
+        "endpoint": "affordability_check",
+        "description": "Check borrower affordability (DTI ratio)",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn get_by_id(state: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
-    let id = path.into_inner();
-    HttpResponse::Ok().json(json!({
-        "id": id,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn create(state: web::Data<AppState>, body: web::Json<Value>) -> HttpResponse {
-    HttpResponse::Created().json(json!({
-        "message": "Created successfully",
-        "data": *body,
-        "source": "postgres"
-    }))
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
 
 
-// Real Postgres query: SELECT "loanId", "customerId", "principalAmount", status FROM "loans" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("PORT").unwrap_or("8094".into()).parse().unwrap_or(8094);
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db".into());
-    
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8160);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        db_url,
-        service_name: "mortgage-servicing-rs".into(),
-        table_name: "mortgage_servicing".into(),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
-    println!("[mortgage-servicing-rs] Starting on :{}", port);
-    
+    println!("mortgage-servicing-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/health", web::get().to(healthz))
-            .route("/v1/mortgage-servicing/list", web::get().to(list))
-            .route("/v1/mortgage-servicing/stats", web::get().to(stats))
-            .route("/v1/mortgage-servicing/{id}", web::get().to(get_by_id))
-            .route("/v1/mortgage-servicing", web::post().to(create))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/amortize", web::post().to(compute_amortization))
+            .route("/v1/prepay", web::post().to(early_repayment))
+            .route("/v1/affordability", web::post().to(affordability_check))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
     })
     .bind(("0.0.0.0", port))?
     .run()

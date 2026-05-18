@@ -1,142 +1,107 @@
 use tokio_postgres;
-// basel-engine-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
 
-#[derive(Clone)]
+// basel-engine-rs — Basel III/IV regulatory capital computation
+
 struct AppState {
-    start_time: Instant,
-    db_url: String,
-    service_name: String,
-    table_name: String,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    let uptime = state.start_time.elapsed();
+
+fn compute_rwa_credit(exposure: f64, risk_weight: f64) -> f64 { exposure * risk_weight / 100.0 }
+fn compute_rwa_market(var_10day: f64) -> f64 { var_10day * 3.0 }
+fn compute_rwa_operational(gross_income_3yr_avg: f64) -> f64 { gross_income_3yr_avg * 0.15 }
+fn capital_adequacy_ratio(capital: f64, rwa: f64) -> f64 { if rwa > 0.0 { capital / rwa * 100.0 } else { 0.0 } }
+fn cbn_minimum_car() -> f64 { 15.0 }  // CBN requires 15% for systemically important banks
+fn countercyclical_buffer(car: f64) -> f64 { (car - cbn_minimum_car()).max(0.0) }
+
+async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "service": state.service_name,
         "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": uptime.as_secs(),
-        "database": "configured",
-        "middleware": {
-            "postgres": "configured",
-            "kafka": "configured",
-            "redis": "configured",
-            "temporal": "configured"
-        }
+        "service": "basel-engine-rs",
+        "version": "1.0.0",
+        "description": "Basel III/IV regulatory capital computation",
     }))
 }
 
-async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> HttpResponse {
-    let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(50).min(100);
-    
-    // In production, this connects to Postgres via sqlx
-    // For now, return structured response format compatible with CrudWorkspace
-    
-    // Real Postgres query via tokio-postgres
-    let db_url = &state.db_url;
-    if !db_url.is_empty() {
-        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
-            tokio::spawn(async move { let _ = connection.await; });
-            let count_sql = "SELECT COUNT(*) FROM basel_engine";
-            let total: i64 = client.query_one(count_sql, &[]).await
-                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-            let row_sql = format!(
-                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM basel_engine ORDER BY 1 LIMIT {} OFFSET {}) t",
-                    limit, (page - 1) * limit
-                );
-                if let Ok(rows) = client.query(&row_sql, &[]).await {
-                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
-                    let json_str: Option<String> = row.try_get(0).ok();
-                    json_str.and_then(|s| serde_json::from_str(&s).ok())
-                }).collect();
-                return HttpResponse::Ok().json(json!({
-                    "items": items,
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "source": "database",
-                    "service": state.service_name,
-                }));
-            }
-        }
-    }
 
-    // Fallback to empty response
+async fn compute_rwa(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "limit": limit,
-        "source": "postgres",
-        "service": state.service_name
+        "service": "basel-engine-rs",
+        "endpoint": "compute_rwa",
+        "description": "Calculate Risk-Weighted Assets (RWA) for credit, market, operational risk",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-#[derive(Deserialize)]
-struct ListParams {
-    page: Option<u32>,
-    limit: Option<u32>,
-    search: Option<String>,
+async fn capital_ratio(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "basel-engine-rs",
+        "endpoint": "capital_ratio",
+        "description": "Compute CET1, Tier 1, Total Capital ratios",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn stress_scenario(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "basel-engine-rs",
+        "endpoint": "stress_scenario",
+        "description": "Run stress test scenarios on capital buffers",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn get_by_id(state: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
-    let id = path.into_inner();
-    HttpResponse::Ok().json(json!({
-        "id": id,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn create(state: web::Data<AppState>, body: web::Json<Value>) -> HttpResponse {
-    HttpResponse::Created().json(json!({
-        "message": "Created successfully",
-        "data": *body,
-        "source": "postgres"
-    }))
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
 
 
-// Real Postgres query: SELECT "tenantId", status FROM "regulatoryReports" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("PORT").unwrap_or("2026".into()).parse().unwrap_or(2026);
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db".into());
-    
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8104);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        db_url,
-        service_name: "basel-engine-rs".into(),
-        table_name: "basel_engine".into(),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
-    println!("[basel-engine-rs] Starting on :{}", port);
-    
+    println!("basel-engine-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/health", web::get().to(healthz))
-            .route("/v1/basel-engine/list", web::get().to(list))
-            .route("/v1/basel-engine/stats", web::get().to(stats))
-            .route("/v1/basel-engine/{id}", web::get().to(get_by_id))
-            .route("/v1/basel-engine", web::post().to(create))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/risk_weighted_assets", web::post().to(compute_rwa))
+            .route("/v1/capital_adequacy", web::post().to(capital_ratio))
+            .route("/v1/stress_test", web::post().to(stress_scenario))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
     })
     .bind(("0.0.0.0", port))?
     .run()

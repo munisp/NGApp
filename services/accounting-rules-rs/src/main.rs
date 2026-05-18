@@ -1,142 +1,110 @@
 use tokio_postgres;
-// accounting-rules-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
 
-#[derive(Clone)]
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AccountingRule {
+    pub rule_id: Option<String>,
+    pub rule_name: String,
+    pub event_type: String,
+    pub debit_account: String,
+    pub credit_account: String,
+    pub amount_formula: String,
+    pub currency: Option<String>,
+    pub active: Option<bool>,
+    pub priority: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RuleEvalRequest {
+    pub event_type: String,
+    pub amount: f64,
+    pub currency: String,
+    pub metadata: Option<serde_json::Value>,
+}
+
 struct AppState {
-    start_time: Instant,
-    db_url: String,
-    service_name: String,
-    table_name: String,
+    rules: Mutex<Vec<AccountingRule>>,
+    db_url: Option<String>,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    let uptime = state.start_time.elapsed();
-    HttpResponse::Ok().json(json!({
-        "service": state.service_name,
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": uptime.as_secs(),
-        "database": "configured",
-        "middleware": {
-            "postgres": "configured",
-            "kafka": "configured",
-            "redis": "configured",
-            "temporal": "configured"
-        }
-    }))
-}
 
-async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> HttpResponse {
-    let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(50).min(100);
-    
-    // In production, this connects to Postgres via sqlx
-    // For now, return structured response format compatible with CrudWorkspace
-    
-    // Real Postgres query via tokio-postgres
-    let db_url = &state.db_url;
-    if !db_url.is_empty() {
-        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
-            tokio::spawn(async move { let _ = connection.await; });
-            let count_sql = "SELECT COUNT(*) FROM accounting_rules";
-            let total: i64 = client.query_one(count_sql, &[]).await
-                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-            let row_sql = format!(
-                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM accounting_rules ORDER BY 1 LIMIT {} OFFSET {}) t",
-                    limit, (page - 1) * limit
-                );
-                if let Ok(rows) = client.query(&row_sql, &[]).await {
-                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
-                    let json_str: Option<String> = row.try_get(0).ok();
-                    json_str.and_then(|s| serde_json::from_str(&s).ok())
-                }).collect();
-                return HttpResponse::Ok().json(json!({
-                    "items": items,
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "source": "database",
-                    "service": state.service_name,
-                }));
-            }
-        }
+fn evaluate_formula(formula: &str, amount: f64) -> f64 {
+    match formula {
+        "full_amount" => amount,
+        "vat_component" => amount * 0.075,
+        "withholding_tax" => amount * 0.10,
+        "stamp_duty" => if amount >= 10000.0 { 50.0 } else { 0.0 },
+        "commission" => amount * 0.01,
+        "interest_accrual" => amount,
+        f if f.starts_with("percent_") => {
+            let pct: f64 = f.trim_start_matches("percent_").parse().unwrap_or(0.0);
+            amount * pct / 100.0
+        },
+        _ => amount,
     }
+}
 
-    // Fallback to empty response
+fn validate_rule(rule: &AccountingRule) -> Vec<String> {
+    let mut errors = Vec::new();
+    if rule.debit_account.is_empty() { errors.push("debit_account required".into()); }
+    if rule.credit_account.is_empty() { errors.push("credit_account required".into()); }
+    if rule.debit_account == rule.credit_account { errors.push("debit and credit accounts must differ".into()); }
+    if rule.event_type.is_empty() { errors.push("event_type required".into()); }
+    errors
+}
+
+async fn health(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "limit": limit,
-        "source": "postgres",
-        "service": state.service_name
-    }))
-}
-
-#[derive(Deserialize)]
-struct ListParams {
-    page: Option<u32>,
-    limit: Option<u32>,
-    search: Option<String>,
-}
-
-async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn get_by_id(state: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
-    let id = path.into_inner();
-    HttpResponse::Ok().json(json!({
-        "id": id,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn create(state: web::Data<AppState>, body: web::Json<Value>) -> HttpResponse {
-    HttpResponse::Created().json(json!({
-        "message": "Created successfully",
-        "data": *body,
-        "source": "postgres"
+        "status": "healthy",
+        "service": "accounting-rules-rs",
+        "version": "1.0.0",
     }))
 }
 
 
-// Real Postgres query: SELECT "journalId", "accountCode", amount, "entryType", status FROM "gl_journal_entries" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
+async fn evaluate_rules(body: web::Json<RuleEvalRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let rules = state.rules.lock().unwrap();
+    let matching: Vec<serde_json::Value> = rules.iter()
+        .filter(|r| r.event_type == body.event_type && r.active.unwrap_or(true))
+        .map(|r| {
+            let computed = evaluate_formula(&r.amount_formula, body.amount);
+            json!({"rule_id": r.rule_id, "debit": r.debit_account, "credit": r.credit_account, "amount": computed, "formula": r.amount_formula})
+        }).collect();
+    HttpResponse::Ok().json(json!({"event": body.event_type, "entries": matching, "total_rules_matched": matching.len()}))
+}
+
+async fn validate_rule_handler(body: web::Json<AccountingRule>) -> HttpResponse {
+    let errors = validate_rule(&body);
+    HttpResponse::Ok().json(json!({"valid": errors.is_empty(), "errors": errors}))
+}
+
+async fn rules_by_event(path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
+    let event_type = path.into_inner();
+    let rules = state.rules.lock().unwrap();
+    let matching: Vec<&AccountingRule> = rules.iter().filter(|r| r.event_type == event_type).collect();
+    HttpResponse::Ok().json(json!({"event_type": event_type, "rules": matching, "count": matching.len()}))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("PORT").unwrap_or("8209".into()).parse().unwrap_or(8209);
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db".into());
-    
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8102);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        db_url,
-        service_name: "accounting-rules-rs".into(),
-        table_name: "accounting_rules".into(),
+            rules: Mutex::new(Vec::new()),
+            db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
-    println!("[accounting-rules-rs] Starting on :{}", port);
-    
+    println!("accounting-rules-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/health", web::get().to(healthz))
-            .route("/v1/accounting-rules/list", web::get().to(list))
-            .route("/v1/accounting-rules/stats", web::get().to(stats))
-            .route("/v1/accounting-rules/{id}", web::get().to(get_by_id))
-            .route("/v1/accounting-rules", web::post().to(create))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/rules/evaluate", web::post().to(evaluate_rules))
+            .route("/v1/rules/validate", web::post().to(validate_rule_handler))
+            .route("/v1/rules/by-event/{event_type}", web::get().to(rules_by_event))
     })
     .bind(("0.0.0.0", port))?
     .run()

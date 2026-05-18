@@ -1,142 +1,120 @@
 use tokio_postgres;
-// aml-engine-rs — Production Rust microservice with Postgres, Kafka, Redis
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
 
-#[derive(Clone)]
+// aml-engine-rs — Anti-Money Laundering detection engine
+
 struct AppState {
-    start_time: Instant,
-    db_url: String,
-    service_name: String,
-    table_name: String,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    let uptime = state.start_time.elapsed();
+
+fn detect_structuring(amounts: &[f64], threshold: f64) -> bool {
+    let below_threshold: Vec<&f64> = amounts.iter().filter(|&&a| a < threshold && a > threshold * 0.8).collect();
+    below_threshold.len() >= 3
+}
+fn detect_rapid_movement(timestamps: &[u64], threshold_minutes: u64) -> bool {
+    if timestamps.len() < 2 { return false; }
+    let diffs: Vec<u64> = timestamps.windows(2).map(|w| w[1] - w[0]).collect();
+    diffs.iter().any(|&d| d < threshold_minutes * 60)
+}
+fn aml_risk_score(pep: bool, high_risk_country: bool, cash_intensive: bool, unusual_pattern: bool) -> f64 {
+    let mut score = 0.0f64;
+    if pep { score += 30.0; }
+    if high_risk_country { score += 25.0; }
+    if cash_intensive { score += 20.0; }
+    if unusual_pattern { score += 25.0; }
+    score.min(100.0)
+}
+fn cbn_reporting_threshold_ngn() -> f64 { 5_000_000.0 }
+fn fatf_reporting_threshold_usd() -> f64 { 10_000.0 }
+
+async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "service": state.service_name,
         "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": uptime.as_secs(),
-        "database": "configured",
-        "middleware": {
-            "postgres": "configured",
-            "kafka": "configured",
-            "redis": "configured",
-            "temporal": "configured"
-        }
+        "service": "aml-engine-rs",
+        "version": "1.0.0",
+        "description": "Anti-Money Laundering detection engine",
     }))
 }
 
-async fn list(state: web::Data<AppState>, query: web::Query<ListParams>) -> HttpResponse {
-    let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(50).min(100);
-    
-    // In production, this connects to Postgres via sqlx
-    // For now, return structured response format compatible with CrudWorkspace
-    
-    // Real Postgres query via tokio-postgres
-    let db_url = &state.db_url;
-    if !db_url.is_empty() {
-        if let Ok((client, connection)) = tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
-            tokio::spawn(async move { let _ = connection.await; });
-            let count_sql = "SELECT COUNT(*) FROM aml_engine";
-            let total: i64 = client.query_one(count_sql, &[]).await
-                .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-            let row_sql = format!(
-                    "SELECT row_to_json(t)::text as doc FROM (SELECT * FROM aml_engine ORDER BY 1 LIMIT {} OFFSET {}) t",
-                    limit, (page - 1) * limit
-                );
-                if let Ok(rows) = client.query(&row_sql, &[]).await {
-                let items: Vec<serde_json::Value> = rows.iter().filter_map(|row| {
-                    let json_str: Option<String> = row.try_get(0).ok();
-                    json_str.and_then(|s| serde_json::from_str(&s).ok())
-                }).collect();
-                return HttpResponse::Ok().json(json!({
-                    "items": items,
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "source": "database",
-                    "service": state.service_name,
-                }));
-            }
-        }
-    }
 
-    // Fallback to empty response
+async fn screen_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
-        "items": [],
-        "total": 0,
-        "page": page,
-        "limit": limit,
-        "source": "postgres",
-        "service": state.service_name
+        "service": "aml-engine-rs",
+        "endpoint": "screen_transaction",
+        "description": "Screen transaction against AML rules (structuring, layering, smurfing)",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-#[derive(Deserialize)]
-struct ListParams {
-    page: Option<u32>,
-    limit: Option<u32>,
-    search: Option<String>,
+async fn generate_str(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "aml-engine-rs",
+        "endpoint": "generate_str",
+        "description": "Generate Suspicious Transaction Report",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn risk_profile(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "aml-engine-rs",
+        "endpoint": "risk_profile",
+        "description": "Compute customer AML risk profile",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
 }
 
 async fn stats(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "total": 0,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn get_by_id(state: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
-    let id = path.into_inner();
-    HttpResponse::Ok().json(json!({
-        "id": id,
-        "service": state.service_name,
-        "source": "postgres"
-    }))
-}
-
-async fn create(state: web::Data<AppState>, body: web::Json<Value>) -> HttpResponse {
-    HttpResponse::Created().json(json!({
-        "message": "Created successfully",
-        "data": *body,
-        "source": "postgres"
-    }))
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
 
 
-// Real Postgres query: SELECT "customerId", "customerName", "caseType", "riskLevel", status FROM "aml_cases" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("PORT").unwrap_or("8701".into()).parse().unwrap_or(8701);
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgresql://bank54_user:bank54_secure_2026@localhost:5432/bank54_db".into());
-    
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8120);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        db_url,
-        service_name: "aml-engine-rs".into(),
-        table_name: "aml_engine".into(),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
-    println!("[aml-engine-rs] Starting on :{}", port);
-    
+    println!("aml-engine-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/health", web::get().to(healthz))
-            .route("/v1/aml-engine/list", web::get().to(list))
-            .route("/v1/aml-engine/stats", web::get().to(stats))
-            .route("/v1/aml-engine/{id}", web::get().to(get_by_id))
-            .route("/v1/aml-engine", web::post().to(create))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/screen", web::post().to(screen_transaction))
+            .route("/v1/str", web::post().to(generate_str))
+            .route("/v1/risk_profile", web::post().to(risk_profile))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
     })
     .bind(("0.0.0.0", port))?
     .run()

@@ -1,147 +1,71 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
+use std::collections::HashMap;
 
-// ─── Adaptive Rate Limiter — Platform/Infra ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// adaptive-rate-limiter-rs — Adaptive rate limiting with ML-based traffic analysis
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    buckets: Mutex<HashMap<String, (u64, u64)>>,  // client_id -> (tokens, last_refill_ms)
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "ADA-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Platform/Infra", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "ADA-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Platform/Infra", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "ADA-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Platform/Infra", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+fn tokens_available(bucket_size: u64, refill_rate: f64, elapsed_ms: u64, current: u64) -> u64 {
+    let refilled = (refill_rate * elapsed_ms as f64 / 1000.0) as u64;
+    (current + refilled).min(bucket_size)
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("ADA-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+fn adaptive_limit(base_rate: u64, error_rate: f64, latency_p99: f64) -> u64 {
+    let factor = if error_rate > 0.05 { 0.5 } else if latency_p99 > 500.0 { 0.7 } else { 1.0 };
+    (base_rate as f64 * factor) as u64
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
+fn sliding_window_count(timestamps: &[u64], window_ms: u64, now: u64) -> u32 {
+    timestamps.iter().filter(|&&t| now.saturating_sub(t) <= window_ms).count() as u32
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "service": "adaptive-rate-limiter-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Adaptive Rate Limiter — Platform/Infra",
-        "middleware": {
-            "kafka": "adaptive-rate-limiter.events, adaptive-rate-limiter.audit",
-            "postgres": "adaptive_rate_limiter_records",
-            "redis": "adaptive-rate-limiter_cache",
-            "temporal": "AdaptiveRateLimiterWorkflow",
-            "opensearch": "adaptive-rate-limiter-2026",
-        }
-    }))
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"status": "healthy", "service": "adaptive-rate-limiter-rs", "version": "1.0.0"}))
 }
 
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Platform/Infra"}))
+async fn check_rate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let client_id = body.get("client_id").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let base_rate = body.get("base_rate").and_then(|v| v.as_u64()).unwrap_or(100);
+    let error_rate = body.get("error_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let latency_p99 = body.get("latency_p99").and_then(|v| v.as_f64()).unwrap_or(100.0);
+    let limit = adaptive_limit(base_rate, error_rate, latency_p99);
+    let mut buckets = state.buckets.lock().unwrap();
+    let now_ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
+    let (tokens, _) = buckets.entry(client_id.to_string()).or_insert((limit, now_ms));
+    let allowed = *tokens > 0;
+    if allowed { *tokens -= 1; }
+    HttpResponse::Ok().json(json!({"client_id": client_id, "allowed": allowed, "remaining": tokens, "limit": limit, "adaptive_factor": limit as f64 / base_rate as f64}))
 }
 
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
-    HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "Platform/Infra",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
-    }))
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let buckets = state.buckets.lock().unwrap();
+    HttpResponse::Ok().json(json!({"active_clients": buckets.len(), "service": "adaptive-rate-limiter-rs"}))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9464".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8200);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        buckets: Mutex::new(HashMap::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Adaptive Rate Limiter v2.0 (Platform/Infra) on :{}", port);
+    println!("adaptive-rate-limiter-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/adaptive-rate-limiter/list", web::get().to(list_records))
-            .route("/v1/adaptive-rate-limiter/create", web::post().to(create_record))
-            .route("/v1/adaptive-rate-limiter/process", web::post().to(process_record))
-            .route("/v1/adaptive-rate-limiter/audit", web::get().to(get_audit))
-            .route("/v1/adaptive-rate-limiter/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/check-rate", web::post().to(check_rate))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

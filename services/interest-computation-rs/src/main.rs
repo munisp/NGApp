@@ -1,147 +1,123 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Interest Computation — Lending ────────────────────────────────────────────────
 
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct InterestCalcRequest {
+    pub principal: f64,
+    pub rate_percent: f64,
+    pub tenor_days: u32,
+    pub day_count_convention: Option<String>,
+    pub compounding: Option<String>,
+    pub accrual_start: Option<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AccrualSchedule {
+    pub account_id: String,
+    pub principal: f64,
+    pub rate: f64,
+    pub start_date: String,
+    pub end_date: String,
+    pub frequency: String,
 }
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "INT-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Lending", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "INT-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Lending", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "INT-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Lending", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+
+fn compute_simple_interest(principal: f64, rate: f64, days: u32, day_basis: u32) -> f64 {
+    principal * (rate / 100.0) * (days as f64 / day_basis as f64)
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("INT-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+fn compute_compound_interest(principal: f64, rate: f64, days: u32, day_basis: u32, freq: u32) -> f64 {
+    let periods = days as f64 / (day_basis as f64 / freq as f64);
+    let rate_per_period = rate / 100.0 / freq as f64;
+    principal * (1.0 + rate_per_period).powf(periods) - principal
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
-
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "service": "interest-computation-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Interest Computation — Lending",
-        "middleware": {
-            "kafka": "interest-computation.events, interest-computation.audit",
-            "postgres": "interest_computation_records",
-            "redis": "interest-computation_cache",
-            "temporal": "InterestComputationWorkflow",
-            "opensearch": "interest-computation-2026",
-        }
-    }))
-}
-
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Lending"}))
-}
-
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
+fn get_day_basis(convention: &str) -> u32 {
+    match convention {
+        "ACT/360" => 360,
+        "ACT/365" => 365,
+        "30/360" => 360,
+        "ACT/ACT" => 365,
+        _ => 365,
     }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
 }
 
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
+fn generate_accrual_schedule(principal: f64, rate: f64, days: u32, freq: &str) -> Vec<serde_json::Value> {
+    let periods = match freq {
+        "daily" => days,
+        "monthly" => days / 30,
+        "quarterly" => days / 90,
+        _ => 1,
+    };
+    let per_period = compute_simple_interest(principal, rate, days / periods.max(1), 365) ;
+    (0..periods.max(1)).map(|i| json!({"period": i + 1, "accrued": per_period * (i + 1) as f64, "incremental": per_period})).collect()
 }
 
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
+async fn health(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "Lending",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
+        "status": "healthy",
+        "service": "interest-computation-rs",
+        "version": "1.0.0",
     }))
+}
+
+
+async fn calculate_interest(body: web::Json<InterestCalcRequest>) -> HttpResponse {
+    let convention = body.day_count_convention.as_deref().unwrap_or("ACT/365");
+    let day_basis = get_day_basis(convention);
+    let compounding = body.compounding.as_deref().unwrap_or("simple");
+    let interest = match compounding {
+        "simple" => compute_simple_interest(body.principal, body.rate_percent, body.tenor_days, day_basis),
+        "monthly" => compute_compound_interest(body.principal, body.rate_percent, body.tenor_days, day_basis, 12),
+        "quarterly" => compute_compound_interest(body.principal, body.rate_percent, body.tenor_days, day_basis, 4),
+        "daily" => compute_compound_interest(body.principal, body.rate_percent, body.tenor_days, day_basis, 365),
+        _ => compute_simple_interest(body.principal, body.rate_percent, body.tenor_days, day_basis),
+    };
+    let maturity = body.principal + interest;
+    HttpResponse::Ok().json(json!({"principal": body.principal, "rate": body.rate_percent, "tenor_days": body.tenor_days,
+        "day_count": convention, "compounding": compounding, "interest": (interest * 100.0).round() / 100.0,
+        "maturity_amount": (maturity * 100.0).round() / 100.0}))
+}
+
+async fn accrual_schedule(body: web::Json<AccrualSchedule>) -> HttpResponse {
+    let schedule = generate_accrual_schedule(body.principal, body.rate, 365, &body.frequency);
+    HttpResponse::Ok().json(json!({"account_id": body.account_id, "schedule": schedule}))
+}
+
+async fn effective_rate(body: web::Json<InterestCalcRequest>) -> HttpResponse {
+    let nominal = body.rate_percent / 100.0;
+    let n = match body.compounding.as_deref().unwrap_or("monthly") {
+        "daily" => 365.0, "monthly" => 12.0, "quarterly" => 4.0, "semi-annual" => 2.0, _ => 12.0,
+    };
+    let effective = ((1.0 + nominal / n).powf(n) - 1.0) * 100.0;
+    HttpResponse::Ok().json(json!({"nominal_rate": body.rate_percent, "effective_rate": (effective * 10000.0).round() / 10000.0, "compounding_frequency": n}))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9506".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8103);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+            db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Interest Computation v2.0 (Lending) on :{}", port);
+    println!("interest-computation-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/interest-computation/list", web::get().to(list_records))
-            .route("/v1/interest-computation/create", web::post().to(create_record))
-            .route("/v1/interest-computation/process", web::post().to(process_record))
-            .route("/v1/interest-computation/audit", web::get().to(get_audit))
-            .route("/v1/interest-computation/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/interest/calculate", web::post().to(calculate_interest))
+            .route("/v1/interest/accrual-schedule", web::post().to(accrual_schedule))
+            .route("/v1/interest/effective-rate", web::post().to(effective_rate))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

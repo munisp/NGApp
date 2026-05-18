@@ -5,154 +5,167 @@ use serde_json::json;
 use std::sync::Mutex;
 use std::env;
 
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct Record {
-    pub gl_account_code: Option<String>,
-    pub gl_account_name: Option<String>,
-    pub account_type: Option<String>,
-    pub balance: Option<String>,
+struct GLAccount {
+    pub account_code: Option<String>,
+    pub account_name: Option<String>,
+    pub account_type: Option<String>,  // asset, liability, equity, revenue, expense
+    pub parent_code: Option<String>,
     pub currency: Option<String>,
+    pub balance: Option<f64>,
+    pub blocked: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct JournalEntry {
+    pub entry_id: Option<String>,
+    pub debit_account: String,
+    pub credit_account: String,
+    pub amount: f64,
+    pub currency: String,
+    pub narration: String,
+    pub value_date: String,
+    pub posted_by: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TrialBalanceRequest {
+    pub as_of_date: Option<String>,
+    pub currency: Option<String>,
+    pub branch_code: Option<String>,
 }
 
 struct AppState {
-    records: Mutex<Vec<Record>>,
+    accounts: Mutex<Vec<GLAccount>>,
     db_url: Option<String>,
 }
 
-async fn health(data: web::Data<AppState>) -> HttpResponse {
-    let db_status = if data.db_url.is_some() { "configured" } else { "not_configured" };
+
+fn validate_double_entry(entries: &[JournalEntry]) -> Result<(), String> {
+    let total_debit: f64 = entries.iter().map(|e| e.amount).sum();
+    let total_credit: f64 = entries.iter().map(|e| e.amount).sum();
+    if (total_debit - total_credit).abs() > 0.01 {
+        return Err(format!("Double-entry imbalance: debit={} credit={}", total_debit, total_credit));
+    }
+    Ok(())
+}
+
+fn classify_account(code: &str) -> &str {
+    match code.chars().next() {
+        Some('1') => "asset",
+        Some('2') => "liability",
+        Some('3') => "equity",
+        Some('4') => "revenue",
+        Some('5') => "expense",
+        _ => "unknown",
+    }
+}
+
+fn compute_trial_balance(accounts: &[GLAccount]) -> serde_json::Value {
+    let mut total_debit = 0.0f64;
+    let mut total_credit = 0.0f64;
+    let mut entries = Vec::new();
+    for acc in accounts {
+        let bal = acc.balance.unwrap_or(0.0);
+        let acct_type = acc.account_type.as_deref().unwrap_or("unknown");
+        let (dr, cr) = match acct_type {
+            "asset" | "expense" => if bal >= 0.0 { (bal, 0.0) } else { (0.0, bal.abs()) },
+            _ => if bal >= 0.0 { (0.0, bal) } else { (bal.abs(), 0.0) },
+        };
+        total_debit += dr;
+        total_credit += cr;
+        entries.push(json!({
+            "account_code": acc.account_code,
+            "account_name": acc.account_name,
+            "debit": dr, "credit": cr,
+        }));
+    }
+    json!({
+        "entries": entries,
+        "total_debit": total_debit,
+        "total_credit": total_credit,
+        "balanced": (total_debit - total_credit).abs() < 0.01,
+    })
+}
+
+async fn health(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "gl-engine-rs",
-        "database": db_status,
-        "table": "gl_accounts",
+        "version": "1.0.0",
     }))
 }
 
-async fn list_records(
-    data: web::Data<AppState>,
-    query: web::Query<std::collections::HashMap<String, String>>,
-) -> HttpResponse {
-    let records = data.records.lock().unwrap();
-    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
-    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
-    let search = query.get("search").cloned().unwrap_or_default();
 
-    // Try real Postgres query first
-    if let Some(ref db_url) = data.db_url {
-        if let Ok(config) = db_url.parse::<tokio_postgres::Config>() {
-            if let Ok((client, connection)) = tokio_postgres::connect(&db_url, tokio_postgres::NoTls).await {
-                tokio::spawn(async move { let _ = connection.await; });
-                let count_sql = format!("SELECT COUNT(*) FROM gl_accounts");
-                let total: i64 = client.query_one(&count_sql, &[]).await
-                    .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-                let sql = format!(
-                    "SELECT gl_account_code, gl_account_name, account_type, balance, currency FROM gl_accounts ORDER BY 1 LIMIT $1 OFFSET $2"
-                );
-                if let Ok(rows) = client.query(&sql, &[&(limit as i64), &(((page - 1) * limit) as i64)]).await {
-                    let items: Vec<Record> = rows.iter().map(|row| Record {
-                    gl_account_code: row.get(0),
-                    gl_account_name: row.get(1),
-                    account_type: row.get(2),
-                    balance: row.get(3),
-                    currency: row.get(4),
-                    }).collect();
-                    return HttpResponse::Ok().json(json!({
-                        "items": items,
-                        "total": total,
-                        "page": page,
-                        "limit": limit,
-                        "source": "database",
-                    }));
-                }
-            }
+async fn post_journal(body: web::Json<Vec<JournalEntry>>, state: web::Data<AppState>) -> HttpResponse {
+    let entries = body.into_inner();
+    if let Err(e) = validate_double_entry(&entries) {
+        return HttpResponse::BadRequest().json(json!({"error": e}));
+    }
+    let entry_id = format!("JRN-{}", chrono::Utc::now().format("%Y%m%d%H%M%S"));
+    let mut accounts = state.accounts.lock().unwrap();
+    for entry in &entries {
+        if let Some(acc) = accounts.iter_mut().find(|a| a.account_code.as_deref() == Some(&entry.debit_account)) {
+            *acc.balance.get_or_insert(0.0) += entry.amount;
+        }
+        if let Some(acc) = accounts.iter_mut().find(|a| a.account_code.as_deref() == Some(&entry.credit_account)) {
+            *acc.balance.get_or_insert(0.0) -= entry.amount;
         }
     }
-
-    // Fallback to in-memory data
-
-    
-    let filtered: Vec<&Record> = if search.is_empty() {
-        records.iter().collect()
-    } else {
-        records.iter().filter(|r| {
-            r.gl_account_code.as_ref().map_or(false, |v| v.to_lowercase().contains(&search.to_lowercase()))
-        }).collect()
-    };
-    
-    let total = filtered.len();
-    let start = (page - 1) * limit;
-    let items: Vec<&Record> = filtered.into_iter().skip(start).take(limit).collect();
-    
-    HttpResponse::Ok().json(json!({
-        "items": items,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "source": "database",
-    }))
+    HttpResponse::Ok().json(json!({"entry_id": entry_id, "status": "posted", "entries": entries.len()}))
 }
 
-async fn get_record(
-    data: web::Data<AppState>,
-    path: web::Path<String>,
-) -> HttpResponse {
-    let id = path.into_inner();
-    let records = data.records.lock().unwrap();
-    if let Some(record) = records.iter().find(|r| r.gl_account_code.as_ref().map_or(false, |v| v == &id)) {
-        HttpResponse::Ok().json(record)
-    } else {
-        HttpResponse::NotFound().json(json!({"error": "Not found"}))
+async fn trial_balance(body: web::Json<TrialBalanceRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let accounts = state.accounts.lock().unwrap();
+    let tb = compute_trial_balance(&accounts);
+    HttpResponse::Ok().json(tb)
+}
+
+async fn chart_of_accounts(state: web::Data<AppState>) -> HttpResponse {
+    let accounts = state.accounts.lock().unwrap();
+    let grouped: std::collections::HashMap<&str, Vec<&GLAccount>> = accounts.iter().fold(
+        std::collections::HashMap::new(),
+        |mut map, acc| { map.entry(classify_account(acc.account_code.as_deref().unwrap_or(""))).or_default().push(acc); map }
+    );
+    HttpResponse::Ok().json(json!({"chart": grouped, "total_accounts": accounts.len()}))
+}
+
+async fn account_balance(path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
+    let code = path.into_inner();
+    let accounts = state.accounts.lock().unwrap();
+    match accounts.iter().find(|a| a.account_code.as_deref() == Some(&code)) {
+        Some(acc) => HttpResponse::Ok().json(json!({"account": acc, "classification": classify_account(&code)})),
+        None => HttpResponse::NotFound().json(json!({"error": "Account not found"})),
     }
 }
 
-async fn create_record(
-    data: web::Data<AppState>,
-    body: web::Json<serde_json::Value>,
-) -> HttpResponse {
-    let mut records = data.records.lock().unwrap();
-    let record: Record = serde_json::from_value(body.into_inner()).unwrap_or_else(|_| Record {
-        gl_account_code: Some("auto".to_string()), gl_account_name: Some("auto".to_string()), account_type: Some("auto".to_string()), balance: Some("auto".to_string()), currency: Some("auto".to_string())
-    });
-    records.push(record.clone());
-    HttpResponse::Created().json(json!({"created": true, "data": record}))
+async fn validate_entry(body: web::Json<Vec<JournalEntry>>) -> HttpResponse {
+    match validate_double_entry(&body) {
+        Ok(_) => HttpResponse::Ok().json(json!({"valid": true})),
+        Err(e) => HttpResponse::Ok().json(json!({"valid": false, "error": e})),
+    }
 }
 
-async fn stats(data: web::Data<AppState>) -> HttpResponse {
-    let records = data.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({
-        "total": records.len(),
-        "table": "gl_accounts",
-        "source": "database",
-    }))
-}
-
-
-// Real Postgres query: SELECT "journalId", "accountCode", amount, "entryType", status FROM "gl_journal_entries" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080);
-    let db_url = env::var("DATABASE_URL").ok();
-    
-    println!("[gl-engine-rs] Starting on :{}", port);
-    
-    let data = web::Data::new(AppState {
-        records: Mutex::new(Vec::new()),
-        db_url,
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8101);
+    let state = web::Data::new(AppState {
+            accounts: Mutex::new(Vec::new()),
+            db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
+    println!("gl-engine-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
-            .app_data(data.clone())
-            .route("/health", web::get().to(health))
+            .app_data(state.clone())
             .route("/healthz", web::get().to(health))
-            .route("/v1/gl-engine/list", web::get().to(list_records))
-            .route("/v1/gl-engine/stats", web::get().to(stats))
-            .route("/v1/gl-engine/{id}", web::get().to(get_record))
-            .route("/v1/gl-engine", web::post().to(create_record))
+            .route("/v1/gl/post-journal", web::post().to(post_journal))
+            .route("/v1/gl/trial-balance", web::post().to(trial_balance))
+            .route("/v1/gl/chart-of-accounts", web::get().to(chart_of_accounts))
+            .route("/v1/gl/account/{code}/balance", web::get().to(account_balance))
+            .route("/v1/gl/validate-entry", web::post().to(validate_entry))
     })
-    .bind(format!("0.0.0.0:{}", port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

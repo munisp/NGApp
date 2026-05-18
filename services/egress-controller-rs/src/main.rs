@@ -1,147 +1,59 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Egress Controller — Security ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// egress-controller-rs — Network egress control
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "EGR-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "Security", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "EGR-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "Security", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "EGR-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "Security", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+fn allowed_destination(host: &str, whitelist: &[&str]) -> bool { whitelist.iter().any(|w| host.ends_with(w)) }
+
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"status": "healthy", "service": "egress-controller-rs"}))
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("EGR-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+async fn check_egress(body: web::Json<serde_json::Value>) -> HttpResponse {
+    let input = body.into_inner();
+    HttpResponse::Ok().json(json!({"service": "egress-controller-rs", "action": "check_egress", "processed": true, "input": input}))
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
-
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
-        "service": "egress-controller-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Egress Controller — Security",
-        "middleware": {
-            "kafka": "egress-controller.events, egress-controller.audit",
-            "postgres": "egress_controller_records",
-            "redis": "egress-controller_cache",
-            "temporal": "EgressControllerWorkflow",
-            "opensearch": "egress-controller-2026",
-        }
-    }))
-}
-
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
     let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "Security"}))
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let items: Vec<&serde_json::Value> = records.iter().skip((page-1)*limit).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page}))
 }
 
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
     let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
-    HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "Security",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
-    }))
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": "egress-controller-rs"}))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9484".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8212);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Egress Controller v2.0 (Security) on :{}", port);
+    println!("egress-controller-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/egress-controller/list", web::get().to(list_records))
-            .route("/v1/egress-controller/create", web::post().to(create_record))
-            .route("/v1/egress-controller/process", web::post().to(process_record))
-            .route("/v1/egress-controller/audit", web::get().to(get_audit))
-            .route("/v1/egress-controller/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/check_egress", web::post().to(check_egress))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

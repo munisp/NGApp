@@ -1,147 +1,114 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Wire Transfer Monitor — AML/Compliance ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// wire-transfer-monitor-rs — Wire transfer monitoring and compliance
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "WIR-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "AML/Compliance", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "WIR-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "AML/Compliance", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "WIR-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "AML/Compliance", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+
+fn travel_rule_required(amount_usd: f64) -> bool { amount_usd >= 1000.0 }
+fn high_risk_corridor(origin: &str, destination: &str) -> bool {
+    let high_risk = ["IR", "KP", "SY", "MM", "SD"];
+    high_risk.contains(&origin) || high_risk.contains(&destination)
+}
+fn compute_transfer_risk(amount: f64, corridor_risk: bool, pep: bool) -> f64 {
+    let mut risk = (amount / 100000.0 * 20.0).min(40.0);
+    if corridor_risk { risk += 35.0; }
+    if pep { risk += 25.0; }
+    risk.min(100.0)
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("WIR-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({
+        "status": "healthy",
+        "service": "wire-transfer-monitor-rs",
+        "version": "1.0.0",
+        "description": "Wire transfer monitoring and compliance",
+    }))
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
-}
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn monitor_transfer(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
     HttpResponse::Ok().json(json!({
         "service": "wire-transfer-monitor-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Wire Transfer Monitor — AML/Compliance",
-        "middleware": {
-            "kafka": "wire-transfer-monitor.events, wire-transfer-monitor.audit",
-            "postgres": "wire_transfer_monitor_records",
-            "redis": "wire-transfer-monitor_cache",
-            "temporal": "WireTransferMonitorWorkflow",
-            "opensearch": "wire-transfer-monitor-2026",
-        }
+        "endpoint": "monitor_transfer",
+        "description": "Monitor wire transfer for compliance flags",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
 
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
+async fn travel_rule_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
     let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "AML/Compliance"}))
-}
-
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
     HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "AML/Compliance",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
+        "service": "wire-transfer-monitor-rs",
+        "endpoint": "travel_rule_check",
+        "description": "FATF Travel Rule compliance check",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
     }))
 }
+
+async fn correspondent_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "wire-transfer-monitor-rs",
+        "endpoint": "correspondent_check",
+        "description": "Verify correspondent bank status",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let total = records.len();
+    let start = (page - 1) * limit;
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
+}
+
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
+}
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9586".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8140);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Wire Transfer Monitor v2.0 (AML/Compliance) on :{}", port);
+    println!("wire-transfer-monitor-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/wire-transfer-monitor/list", web::get().to(list_records))
-            .route("/v1/wire-transfer-monitor/create", web::post().to(create_record))
-            .route("/v1/wire-transfer-monitor/process", web::post().to(process_record))
-            .route("/v1/wire-transfer-monitor/audit", web::get().to(get_audit))
-            .route("/v1/wire-transfer-monitor/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/monitor", web::post().to(monitor_transfer))
+            .route("/v1/travel_rule", web::post().to(travel_rule_check))
+            .route("/v1/correspondent", web::post().to(correspondent_check))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

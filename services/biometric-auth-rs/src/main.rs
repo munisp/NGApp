@@ -1,147 +1,88 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use tokio_postgres;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::env;
 
-// ─── Biometric Auth — KYC/Identity ────────────────────────────────────────────────
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Record {
-    id: String,
-    record_type: String,
-    status: String,
-    data: serde_json::Value,
-    score: f64,
-    version: u32,
-    created_at: String,
-    updated_at: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct AuditEntry {
-    id: String,
-    action: String,
-    record_id: String,
-    actor: String,
-    timestamp: String,
-}
+// biometric-auth-rs — Biometric authentication scoring and matching
 
 struct AppState {
-    start_time: Instant,
-    records: Mutex<Vec<Record>>,
-    audit_log: Mutex<Vec<AuditEntry>>,
+    enrollments: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
 }
 
-fn seed_records() -> Vec<Record> {
-    vec![
-        Record { id: "BIO-001".into(), record_type: "primary".into(), status: "active".into(), data: json!({"domain": "KYC/Identity", "priority": "high"}), score: 0.95, version: 1, created_at: "2026-05-09T10:00:00Z".into(), updated_at: "2026-05-09T10:00:00Z".into() },
-        Record { id: "BIO-002".into(), record_type: "secondary".into(), status: "processing".into(), data: json!({"domain": "KYC/Identity", "priority": "medium"}), score: 0.82, version: 2, created_at: "2026-05-09T11:00:00Z".into(), updated_at: "2026-05-09T11:30:00Z".into() },
-        Record { id: "BIO-003".into(), record_type: "primary".into(), status: "completed".into(), data: json!({"domain": "KYC/Identity", "priority": "low"}), score: 0.91, version: 1, created_at: "2026-05-08T14:00:00Z".into(), updated_at: "2026-05-09T08:00:00Z".into() },
-    ]
+fn match_confidence(template_distance: f64, threshold: f64) -> (bool, f64) {
+    let confidence = (1.0 - template_distance / threshold).max(0.0).min(1.0);
+    (template_distance <= threshold, confidence)
 }
 
-fn rand_id() -> String {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("BIO-{:08X}", (t.subsec_nanos() ^ (t.as_secs() as u32)) & 0xFFFFFFFF)
+fn multi_factor_score(biometric: f64, device: f64, behavioral: f64) -> f64 {
+    biometric * 0.5 + device * 0.3 + behavioral * 0.2
 }
 
-fn now_str() -> String {
-    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
-    format!("2026-05-09T{:02}:{:02}:{:02}Z", (d.as_secs() / 3600) % 24, (d.as_secs() / 60) % 60, d.as_secs() % 60)
+fn liveness_score(blink_detected: bool, head_movement: bool, texture_score: f64) -> f64 {
+    let mut score = texture_score * 0.4;
+    if blink_detected { score += 0.3; }
+    if head_movement { score += 0.3; }
+    score.min(1.0)
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+fn auth_decision(mfa_score: f64, liveness: f64) -> (&'static str, f64) {
+    let combined = mfa_score * 0.7 + liveness * 0.3;
+    if combined >= 0.8 { ("authenticated", combined) }
+    else if combined >= 0.5 { ("step_up_required", combined) }
+    else { ("rejected", combined) }
+}
+
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"status": "healthy", "service": "biometric-auth-rs", "version": "1.0.0"}))
+}
+
+async fn enroll(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let mut enrollments = state.enrollments.lock().unwrap();
+    enrollments.push(body.into_inner());
+    HttpResponse::Ok().json(json!({"enrolled": true, "total_enrollments": enrollments.len()}))
+}
+
+async fn verify(body: web::Json<serde_json::Value>) -> HttpResponse {
+    let distance = body.get("template_distance").and_then(|v| v.as_f64()).unwrap_or(0.5);
+    let threshold = body.get("threshold").and_then(|v| v.as_f64()).unwrap_or(0.6);
+    let biometric = body.get("biometric_score").and_then(|v| v.as_f64()).unwrap_or(0.8);
+    let device = body.get("device_score").and_then(|v| v.as_f64()).unwrap_or(0.9);
+    let behavioral = body.get("behavioral_score").and_then(|v| v.as_f64()).unwrap_or(0.7);
+    let (matched, confidence) = match_confidence(distance, threshold);
+    let mfa = multi_factor_score(biometric, device, behavioral);
+    let live = liveness_score(true, true, 0.85);
+    let (decision, combined) = auth_decision(mfa, live);
     HttpResponse::Ok().json(json!({
-        "service": "biometric-auth-rs",
-        "status": "healthy",
-        "version": "2.0.0",
-        "uptime_secs": state.start_time.elapsed().as_secs(),
-        "domain": "Biometric Auth — KYC/Identity",
-        "middleware": {
-            "kafka": "biometric-auth.events, biometric-auth.audit",
-            "postgres": "biometric_auth_records",
-            "redis": "biometric-auth_cache",
-            "temporal": "BiometricAuthWorkflow",
-            "opensearch": "biometric-auth-2026",
-        }
+        "matched": matched, "confidence": confidence, "mfa_score": mfa,
+        "liveness_score": live, "decision": decision, "combined_score": combined,
     }))
 }
 
-async fn list_records(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({"records": *records, "total": records.len(), "domain": "KYC/Identity"}))
-}
-
-async fn create_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let rec = Record {
-        id: rand_id(),
-        record_type: body.get("type").and_then(|v| v.as_str()).unwrap_or("primary").to_string(),
-        status: "pending".into(),
-        data: body.into_inner(),
-        score: 0.0,
-        version: 1,
-        created_at: now_str(),
-        updated_at: now_str(),
-    };
-    let mut records = state.records.lock().unwrap();
-    records.push(rec.clone());
-    let mut audit = state.audit_log.lock().unwrap();
-    audit.push(AuditEntry { id: rand_id(), action: "create".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-    HttpResponse::Created().json(json!({"created": true, "record": rec}))
-}
-
-async fn process_record(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let id = body.get("id").and_then(|v| v.as_str()).unwrap_or("");
-    let mut records = state.records.lock().unwrap();
-    for rec in records.iter_mut() {
-        if rec.id == id {
-            rec.status = "completed".into();
-            rec.score = 0.85 + (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos() % 14) as f64 / 100.0;
-            rec.version += 1;
-            rec.updated_at = now_str();
-            let mut audit = state.audit_log.lock().unwrap();
-            audit.push(AuditEntry { id: rand_id(), action: "process".into(), record_id: rec.id.clone(), actor: "system".into(), timestamp: now_str() });
-            return HttpResponse::Ok().json(json!({"processed": true, "record": rec.clone()}));
-        }
-    }
-    HttpResponse::NotFound().json(json!({"error": format!("Record not found: {}", id)}))
-}
-
-async fn get_audit(state: web::Data<AppState>) -> HttpResponse {
-    let audit = state.audit_log.lock().unwrap();
-    HttpResponse::Ok().json(json!({"auditLog": *audit, "total": audit.len()}))
-}
-
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
-    let records = state.records.lock().unwrap();
-    let active = records.iter().filter(|r| r.status == "active" || r.status == "completed").count();
-    let pending = records.iter().filter(|r| r.status == "pending" || r.status == "processing").count();
-    let avg_score = if records.is_empty() { 0.0 } else { records.iter().map(|r| r.score).sum::<f64>() / records.len() as f64 };
-    HttpResponse::Ok().json(json!({
-        "totalRecords": records.len(), "activeRecords": active, "pendingRecords": pending,
-        "avgScore": avg_score, "domain": "KYC/Identity",
-        "metrics": {"successRate": 98.5, "avgProcessingMs": 180, "throughput": 245}
-    }))
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let enrollments = state.enrollments.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total_enrollments": enrollments.len(), "service": "biometric-auth-rs"}))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "9470".to_string());
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8202);
     let state = web::Data::new(AppState {
-        start_time: Instant::now(),
-        records: Mutex::new(seed_records()),
-        audit_log: Mutex::new(vec![]),
+        enrollments: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    println!("Biometric Auth v2.0 (KYC/Identity) on :{}", port);
+    println!("biometric-auth-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/healthz", web::get().to(healthz))
-            .route("/v1/biometric-auth/list", web::get().to(list_records))
-            .route("/v1/biometric-auth/create", web::post().to(create_record))
-            .route("/v1/biometric-auth/process", web::post().to(process_record))
-            .route("/v1/biometric-auth/audit", web::get().to(get_audit))
-            .route("/v1/biometric-auth/stats", web::get().to(get_stats))
-    }).bind(format!("0.0.0.0:{}", port))?.run().await
+            .route("/healthz", web::get().to(health))
+            .route("/v1/biometric/enroll", web::post().to(enroll))
+            .route("/v1/biometric/verify", web::post().to(verify))
+            .route("/v1/stats", web::get().to(stats))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }

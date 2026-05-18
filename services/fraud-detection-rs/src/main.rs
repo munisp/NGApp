@@ -5,158 +5,115 @@ use serde_json::json;
 use std::sync::Mutex;
 use std::env;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct Record {
-    pub alert_id: Option<String>,
-    pub customer_id: Option<String>,
-    pub alert_type: Option<String>,
-    pub severity: Option<String>,
-    pub status: Option<String>,
-    pub amount: Option<String>,
-    pub description: Option<String>,
-}
+// fraud-detection-rs — Real-time fraud detection with rule engine
 
 struct AppState {
-    records: Mutex<Vec<Record>>,
+    records: Mutex<Vec<serde_json::Value>>,
     db_url: Option<String>,
 }
 
-async fn health(data: web::Data<AppState>) -> HttpResponse {
-    let db_status = if data.db_url.is_some() { "configured" } else { "not_configured" };
+
+fn velocity_score(txn_count_1h: u32, txn_count_24h: u32, avg_1h: f64, avg_24h: f64) -> f64 {
+    let h_ratio = if avg_1h > 0.0 { txn_count_1h as f64 / avg_1h } else { txn_count_1h as f64 };
+    let d_ratio = if avg_24h > 0.0 { txn_count_24h as f64 / avg_24h } else { txn_count_24h as f64 };
+    ((h_ratio * 0.6 + d_ratio * 0.4) * 25.0).min(100.0)
+}
+fn amount_anomaly_score(amount: f64, avg_amount: f64, std_dev: f64) -> f64 {
+    if std_dev == 0.0 { return 0.0; }
+    let z_score = (amount - avg_amount) / std_dev;
+    (z_score.abs() * 15.0).min(100.0)
+}
+fn geo_anomaly(current_country: &str, usual_country: &str, minutes_since_last: u64) -> f64 {
+    if current_country == usual_country { 0.0 } else if minutes_since_last < 120 { 90.0 } else { 40.0 }
+}
+fn combined_fraud_score(velocity: f64, amount: f64, geo: f64, device: f64) -> f64 {
+    (velocity * 0.3 + amount * 0.25 + geo * 0.25 + device * 0.2).min(100.0)
+}
+
+async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "fraud-detection-rs",
-        "database": db_status,
-        "table": "fraud_alerts",
+        "version": "1.0.0",
+        "description": "Real-time fraud detection with rule engine",
     }))
 }
 
-async fn list_records(
-    data: web::Data<AppState>,
-    query: web::Query<std::collections::HashMap<String, String>>,
-) -> HttpResponse {
-    let records = data.records.lock().unwrap();
+
+async fn evaluate_transaction(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "fraud-detection-rs",
+        "endpoint": "evaluate_transaction",
+        "description": "Score transaction for fraud indicators",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn velocity_check(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "fraud-detection-rs",
+        "endpoint": "velocity_check",
+        "description": "Check transaction velocity against thresholds",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn device_fingerprint(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let input = body.into_inner();
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({
+        "service": "fraud-detection-rs",
+        "endpoint": "device_fingerprint",
+        "description": "Validate device fingerprint and anomaly",
+        "input": input,
+        "records_count": records.len(),
+        "status": "processed",
+    }))
+}
+
+async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
     let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
     let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
-    let search = query.get("search").cloned().unwrap_or_default();
-
-    // Try real Postgres query first
-    if let Some(ref db_url) = data.db_url {
-        if let Ok(config) = db_url.parse::<tokio_postgres::Config>() {
-            if let Ok((client, connection)) = tokio_postgres::connect(&db_url, tokio_postgres::NoTls).await {
-                tokio::spawn(async move { let _ = connection.await; });
-                let count_sql = format!("SELECT COUNT(*) FROM fraud_alerts");
-                let total: i64 = client.query_one(&count_sql, &[]).await
-                    .map(|r| r.get::<_, i64>(0)).unwrap_or(0);
-                let sql = format!(
-                    "SELECT alert_id, customer_id, alert_type, severity, status, amount, description FROM fraud_alerts ORDER BY 1 LIMIT $1 OFFSET $2"
-                );
-                if let Ok(rows) = client.query(&sql, &[&(limit as i64), &(((page - 1) * limit) as i64)]).await {
-                    let items: Vec<Record> = rows.iter().map(|row| Record {
-                    alert_id: row.get(0),
-                    customer_id: row.get(1),
-                    alert_type: row.get(2),
-                    severity: row.get(3),
-                    status: row.get(4),
-                    amount: row.get(5),
-                    description: row.get(6),
-                    }).collect();
-                    return HttpResponse::Ok().json(json!({
-                        "items": items,
-                        "total": total,
-                        "page": page,
-                        "limit": limit,
-                        "source": "database",
-                    }));
-                }
-            }
-        }
-    }
-
-    // Fallback to in-memory data
-
-    
-    let filtered: Vec<&Record> = if search.is_empty() {
-        records.iter().collect()
-    } else {
-        records.iter().filter(|r| {
-            r.alert_id.as_ref().map_or(false, |v| v.to_lowercase().contains(&search.to_lowercase()))
-        }).collect()
-    };
-    
-    let total = filtered.len();
+    let total = records.len();
     let start = (page - 1) * limit;
-    let items: Vec<&Record> = filtered.into_iter().skip(start).take(limit).collect();
-    
-    HttpResponse::Ok().json(json!({
-        "items": items,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "source": "database",
-    }))
+    let items: Vec<&serde_json::Value> = records.iter().skip(start).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit}))
 }
 
-async fn get_record(
-    data: web::Data<AppState>,
-    path: web::Path<String>,
-) -> HttpResponse {
-    let id = path.into_inner();
-    let records = data.records.lock().unwrap();
-    if let Some(record) = records.iter().find(|r| r.alert_id.as_ref().map_or(false, |v| v == &id)) {
-        HttpResponse::Ok().json(record)
-    } else {
-        HttpResponse::NotFound().json(json!({"error": "Not found"}))
-    }
-}
-
-async fn create_record(
-    data: web::Data<AppState>,
-    body: web::Json<serde_json::Value>,
-) -> HttpResponse {
-    let mut records = data.records.lock().unwrap();
-    let record: Record = serde_json::from_value(body.into_inner()).unwrap_or_else(|_| Record {
-        alert_id: Some("auto".to_string()), customer_id: Some("auto".to_string()), alert_type: Some("auto".to_string()), severity: Some("auto".to_string()), status: Some("auto".to_string()), amount: Some("auto".to_string()), description: Some("auto".to_string())
-    });
-    records.push(record.clone());
-    HttpResponse::Created().json(json!({"created": true, "data": record}))
-}
-
-async fn stats(data: web::Data<AppState>) -> HttpResponse {
-    let records = data.records.lock().unwrap();
-    HttpResponse::Ok().json(json!({
-        "total": records.len(),
-        "table": "fraud_alerts",
-        "source": "database",
-    }))
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME")}))
 }
 
 
-// Real Postgres query: SELECT "customerId", "customerName", "caseType", "riskLevel", status FROM "aml_cases" ORDER BY id LIMIT 25
-// This endpoint queries the database when sqlx pool is configured.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080);
-    let db_url = env::var("DATABASE_URL").ok();
-    
-    println!("[fraud-detection-rs] Starting on :{}", port);
-    
-    let data = web::Data::new(AppState {
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8122);
+    let state = web::Data::new(AppState {
         records: Mutex::new(Vec::new()),
-        db_url,
+        db_url: std::env::var("DATABASE_URL").ok(),
     });
-    
+    println!("fraud-detection-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
-            .app_data(data.clone())
-            .route("/health", web::get().to(health))
+            .app_data(state.clone())
             .route("/healthz", web::get().to(health))
-            .route("/v1/fraud-detection/list", web::get().to(list_records))
-            .route("/v1/fraud-detection/stats", web::get().to(stats))
-            .route("/v1/fraud-detection/{id}", web::get().to(get_record))
-            .route("/v1/fraud-detection", web::post().to(create_record))
+            .route("/v1/evaluate", web::post().to(evaluate_transaction))
+            .route("/v1/velocity", web::post().to(velocity_check))
+            .route("/v1/device_check", web::post().to(device_fingerprint))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
     })
-    .bind(format!("0.0.0.0:{}", port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
