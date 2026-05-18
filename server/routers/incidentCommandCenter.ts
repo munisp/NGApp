@@ -29,8 +29,8 @@ export const incidentCommandCenterRouter = router({
   createIncident: protectedProcedure.input(z.object({ title: z.string(), description: z.string(), severity: z.enum(["low", "medium", "high", "critical"]), service: z.string() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [incident] = await db.insert(platform_incidents).values({ title: input.title, description: input.description, severity: input.severity, service: input.service, status: "open" }).returning();
-      await db.insert(auditLog).values({ action: "incident_created", resource: "platform_incidents", resourceId: String(incident.id), status: "success", metadata: { title: input.title, severity: input.severity } });
+      const [incident] = await db.insert(platform_incidents).values({ title: input.title, description: input.description, severity: input.severity, service: input.service, status: "open" } as any).returning();
+      await db.insert(auditLog).values({ action: "incident_created", resource: "platform_incidents", resourceId: String(incident.id), status: "success", metadata: { title: input.title, severity: input.severity } } as any);
       return incident;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

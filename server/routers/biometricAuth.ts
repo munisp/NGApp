@@ -218,9 +218,10 @@ export const biometricAuthRouter = router({
 
         // Persist to kycSessions if sessionRef provided
         if (input.sessionRef) {
-          const db = getDb();
+          const dbInst = await getDb();
+          if (!dbInst) throw new Error("DB unavailable");
           try {
-            await ((await db())).update(kycSessions)
+            await dbInst.update(kycSessions)
               .set({
                 livenessScore: String(result.liveness?.confidence ?? 0),
                 livenessPassed: result.liveness?.result === "real",
@@ -312,8 +313,9 @@ export const biometricAuthRouter = router({
   // ── List Biometric Records ──────────────────────────────────────────────
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = getDb();
-      const sessions = await ((await db())).select()
+      const dbInst = await getDb();
+      if (!dbInst) throw new Error("DB unavailable");
+      const sessions = await dbInst.select()
         .from(kycSessions)
         .where(and(
           eq(kycSessions.agentId, ctx.user.id),
@@ -344,23 +346,24 @@ export const biometricAuthRouter = router({
   // ── Analytics ───────────────────────────────────────────────────────────
   analytics: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = getDb();
+      const dbInst = await getDb();
+      if (!dbInst) throw new Error("DB unavailable");
 
-      const [totalResult] = await ((await db())).select({ count: count() })
+      const [totalResult] = await dbInst.select({ count: count() })
         .from(kycSessions)
         .where(and(
           eq(kycSessions.agentId, ctx.user.id),
           sql`${kycSessions.livenessScore} IS NOT NULL`,
         ));
 
-      const [passedResult] = await ((await db())).select({ count: count() })
+      const [passedResult] = await dbInst.select({ count: count() })
         .from(kycSessions)
         .where(and(
           eq(kycSessions.agentId, ctx.user.id),
           eq(kycSessions.livenessPassed, true),
         ));
 
-      const [failedResult] = await ((await db())).select({ count: count() })
+      const [failedResult] = await dbInst.select({ count: count() })
         .from(kycSessions)
         .where(and(
           eq(kycSessions.agentId, ctx.user.id),

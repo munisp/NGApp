@@ -26,7 +26,7 @@ export const realtimeTxMonitorRouter = router({
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
         const conditions = [];
-        if (input.channel) conditions.push(eq(transactions.channel, input.channel));
+        if (input.channel) conditions.push(eq(transactions.customerPhone, input.channel));
         if (input.status) conditions.push(eq(transactions.status, input.status));
         if (input.minAmount) conditions.push(gte(transactions.amount, String(input.minAmount)));
         const where = conditions.length > 0 ? and(...conditions) : undefined;

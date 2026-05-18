@@ -52,4 +52,9 @@ export const advancedRateLimiterRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  getBlockedIps: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

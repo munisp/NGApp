@@ -51,7 +51,7 @@ export const agentCommissionCalcRouter = router({
     const rate = Number(tier.rate); const flatFee = Number(tier.flatFee); const bonusRate = Number(tier.bonusRate ?? 0);
     const commission = (input.volume * (rate + bonusRate) / 100) + flatFee;
     try {
-      await publishCommissionEvent({ eventType: "commission.calculated", data: { agentId: input.agentId, volume: input.volume, commission, tier: tier.name } });
+      await publishCommissionEvent({ eventType: "commission.calculated" as any, data: { agentId: input.agentId, volume: input.volume, commission, tier: tier.name } });
       await tbRecordCommissionCredit({ agentId: parseInt(input.agentId.replace(/\D/g, "")) || 0, amount: commission, currency: "NGN", type: "commission_credit", referenceId: `CALC-${Date.now()}` });
     } catch (e) { logger.warn("[AgentCommCalc] Middleware event failed:", e); }
     return {
@@ -87,13 +87,13 @@ export const agentCommissionCalcRouter = router({
     try {
       const db = (await getDb())!;
       const payoutIdNum = parseInt(input.payoutId.replace(/\D/g, "")) || 0;
-      const [updated] = await db.update(commissionPayouts).set({ status: "approved" }).where(eq(commissionPayouts.id, payoutIdNum)).returning();
+      const [updated] = await db.update(commissionPayouts).set({ status: "approved" } as any).where(eq(commissionPayouts.id, payoutIdNum)).returning();
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Payout not found" });
       await db.insert(commissionAuditTrail).values({
         action: "payout_approved", entityType: "payout", entityId: input.payoutId,
-        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ approvedAt: new Date().toISOString() }),
-      });
-      try { await publishCommissionEvent({ eventType: "commission.payout.approved", data: { payoutId: input.payoutId } }); }
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ approvedAt: new Date().toISOString() } as any),
+      } as any);
+      try { await publishCommissionEvent({ eventType: "commission.payout.approved" as any, data: { payoutId: input.payoutId } }); }
       catch (e) { logger.warn("[AgentCommCalc] Middleware event failed:", e); }
       return { success: true, payoutId: input.payoutId, approvedAt: Date.now() };
     } catch (error) {

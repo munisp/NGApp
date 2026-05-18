@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, CheckCircle, XCircle, Clock } from "lucide-react";
 
 export default function CarrierSlaDashboard() {
-  const targets = trpc.carrierSla.getTargets.useQuery();
+  const targets = trpc.carrierSla.getStats.useQuery();
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const violations = trpc.carrierSla.getViolations.useQuery({ hours: 24 });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
@@ -44,7 +44,6 @@ export default function CarrierSlaDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                     {targets.data.map((t: any) => (
                       <tr key={t.carrier} className="border-b hover:bg-muted/30">
                         <td className="p-2 font-medium">{t.carrier}</td>

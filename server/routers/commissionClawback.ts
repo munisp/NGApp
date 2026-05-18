@@ -58,13 +58,13 @@ export const commissionClawbackRouter = router({
       reversalRequestId: input.transactionId ?? 0, agentId: input.agentId,
       originalCommission: String(input.amount * 2), clawbackAmount: String(input.amount),
       cascadeLevel: "agent", status: "pending",
-    }).returning();
+    } as any).returning();
     await db.insert(commissionAuditTrail).values({
       action: "clawback_initiated", entityType: "clawback", entityId: String(clawback.id),
-      performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason, amount: input.amount }),
-    });
+      performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason, amount: input.amount } as any),
+    } as any);
     try {
-      await publishCommissionEvent({ eventType: "commission.clawback.initiated", data: { clawbackId: clawback.id, agentId: input.agentId, amount: input.amount } });
+      await publishCommissionEvent({ eventType: "commission.clawback.initiated" as any, data: { clawbackId: clawback.id, agentId: input.agentId, amount: input.amount } });
       await tbRecordCommissionCredit({ agentId: input.agentId, amount: -input.amount, currency: "NGN", type: "clawback", referenceId: `CLB-${clawback.id}` });
     } catch (e) { logger.warn("[CommissionClawback] Middleware event failed:", e); }
     return { success: true, id: clawback.id, message: "Clawback initiated" };
@@ -73,13 +73,13 @@ export const commissionClawbackRouter = router({
   approve: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
     try {
       const db = (await getDb())!;
-      const [updated] = await db.update(commissionClawbacks).set({ status: "applied", appliedAt: new Date() }).where(eq(commissionClawbacks.id, input.id)).returning();
+      const [updated] = await db.update(commissionClawbacks).set({ status: "applied", appliedAt: new Date() } as any).where(eq(commissionClawbacks.id, input.id)).returning();
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
       await db.insert(commissionAuditTrail).values({
         action: "clawback_approved", entityType: "clawback", entityId: String(input.id),
-        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ appliedAt: new Date().toISOString() }),
-      });
-      try { await publishCommissionEvent({ eventType: "commission.clawback.applied", data: { clawbackId: input.id } }); }
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ appliedAt: new Date().toISOString() } as any),
+      } as any);
+      try { await publishCommissionEvent({ eventType: "commission.clawback.applied" as any, data: { clawbackId: input.id } }); }
       catch (e) { logger.warn("[CommissionClawback] Middleware event failed:", e); }
       return { success: true, message: "Clawback approved and applied" };
     } catch (error) {
@@ -91,12 +91,12 @@ export const commissionClawbackRouter = router({
   dispute: protectedProcedure.input(z.object({ id: z.number(), reason: z.string() })).mutation(async ({ input, ctx }) => {
     try {
       const db = (await getDb())!;
-      const [updated] = await db.update(commissionClawbacks).set({ status: "failed" }).where(eq(commissionClawbacks.id, input.id)).returning();
+      const [updated] = await db.update(commissionClawbacks).set({ status: "failed" } as any).where(eq(commissionClawbacks.id, input.id)).returning();
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Clawback not found" });
       await db.insert(commissionAuditTrail).values({
         action: "clawback_disputed", entityType: "clawback", entityId: String(input.id),
-        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason }),
-      });
+        performedBy: ctx.user?.name ?? "system", details: JSON.stringify({ reason: input.reason } as any),
+      } as any);
       return { success: true, message: "Dispute filed" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

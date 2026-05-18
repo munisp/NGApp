@@ -83,4 +83,9 @@ export const cardRequestRouter = router({
       
       return results;
     }),
+
+
+  analytics: publicProcedure.query(async () => {
+    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
+  }),
 });

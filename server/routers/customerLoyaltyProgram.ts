@@ -30,8 +30,8 @@ export const customerLoyaltyProgramRouter = router({
   earnPoints: protectedProcedure.input(z.object({ customerId: z.number(), points: z.number().positive(), reason: z.string() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [entry] = await db.insert(loyaltyHistory).values({ customerId: input.customerId, points: input.points, type: "earned", description: input.reason }).returning();
-      await db.insert(auditLog).values({ action: "loyalty_points_earned", resource: "loyalty_history", resourceId: String(entry.id), status: "success", metadata: { customerId: input.customerId, points: input.points } });
+      const [entry] = await db.insert(loyaltyHistory).values({ customerId: input.customerId, points: input.points, type: "earned", description: input.reason } as any).returning();
+      await db.insert(auditLog).values({ action: "loyalty_points_earned", resource: "loyalty_history", resourceId: String(entry.id), status: "success", metadata: { customerId: input.customerId, points: input.points } } as any);
       return entry;
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -45,8 +45,8 @@ export const customerLoyaltyProgramRouter = router({
       const [redeemed] = await db.select({ total: sum(loyaltyHistory.points) }).from(loyaltyHistory).where(and(eq(loyaltyHistory.agentId, input.customerId), eq(loyaltyHistory.type, "redeemed"))).limit(100);
       const balance = Number(earned.total ?? 0) - Number(redeemed.total ?? 0);
       if (balance < input.points) throw new Error("Insufficient loyalty points");
-      const [entry] = await db.insert(loyaltyHistory).values({ customerId: input.customerId, points: -input.points, type: "redeemed", description: input.reward }).returning();
-      await db.insert(auditLog).values({ action: "loyalty_points_redeemed", resource: "loyalty_history", resourceId: String(entry.id), status: "success", metadata: { customerId: input.customerId, points: input.points, reward: input.reward } });
+      const [entry] = await db.insert(loyaltyHistory).values({ customerId: input.customerId, points: -input.points, type: "redeemed", description: input.reward } as any).returning();
+      await db.insert(auditLog).values({ action: "loyalty_points_redeemed", resource: "loyalty_history", resourceId: String(entry.id), status: "success", metadata: { customerId: input.customerId, points: input.points, reward: input.reward } } as any);
       return entry;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -69,4 +69,9 @@ export const agentTrainingRouter = router({
     const [completed] = await db.select({ value: count() }).from(trainingEnrollments).where(eq(trainingEnrollments.status, "completed")).limit(100);
     return { totalCourses: Number(totalCourses.value), totalEnrollments: Number(totalEnrollments.value), completedEnrollments: Number(completed.value), completionRate: Number(totalEnrollments.value) > 0 ? Math.round(Number(completed.value) / Number(totalEnrollments.value) * 100) : 0 };
   }),
+
+
+  dashboard: publicProcedure.query(async () => {
+    return { totalItems: 0, activeItems: 0, recentActivity: [], lastUpdated: new Date().toISOString() };
+  }),
 });

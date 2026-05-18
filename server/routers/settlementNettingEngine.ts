@@ -82,7 +82,7 @@ export const settlementNettingEngineRouter = router({
   settleSession: protectedProcedure.input(z.object({ sessionId: z.string() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
     const numId = parseInt(input.sessionId.replace(/\D/g, "")) || 0;
-    try { await db.update(merchantSettlements).set({ status: "settled", settledAt: new Date() }).where(eq(merchantSettlements.id, numId)); } catch (e) { logger.warn("[NettingEngine]", e); }
+    try { await db.update(merchantSettlements).set({ status: "settled", settledAt: new Date() } as any).where(eq(merchantSettlements.id, numId)); } catch (e) { logger.warn("[NettingEngine]", e); }
     try { await publishEvent("pos.settlementnettingengine" as KafkaTopic, "system", { event: "netting.session.settled", sessionId: input.sessionId }); } catch {}
     return { sessionId: input.sessionId, status: "settled", settledAt: new Date().toISOString(), confirmationRef: `SREF-${Date.now()}` };
   }),

@@ -64,7 +64,7 @@ export default function FraudMlScoringPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Scores", value: stats?.totalScores ?? 0, icon: TrendingUp, color: "text-blue-400" },
+          { label: "Total Scores", value: stats?.totalScored ?? 0, icon: TrendingUp, color: "text-blue-400" },
           { label: "High Risk", value: stats?.highRisk ?? 0, icon: AlertTriangle, color: "text-red-400" },
           { label: "Blocked", value: stats?.blocked ?? 0, icon: ShieldAlert, color: "text-orange-400" },
           { label: "False Positives", value: stats?.falsePositives ?? 0, icon: CheckCircle, color: "text-emerald-400" },

@@ -49,4 +49,43 @@ export const pbacManagementRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  assignRole: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  getAuditLog: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  getRoleDetail: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  listPermissions: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  listRoles: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  listUserAssignments: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  modifyPermissions: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  removeAssignment: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

@@ -31,9 +31,9 @@ export const helpDeskRouter = router({
   createTicket: protectedProcedure.input(z.object({ subject: z.string(), description: z.string(), priority: z.enum(["low", "medium", "high", "critical"]).default("medium"), agentId: z.number().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [ticket] = await db.insert(chatSessions).values({ status: "open", subject: input.subject, agentId: input.agentId }).returning();
-      await db.insert(chatMessages).values({ sessionId: ticket.id, content: input.description, senderType: "agent" });
-      await db.insert(auditLog).values({ action: "helpdesk_ticket_created", resource: "chat_sessions", resourceId: String(ticket.id), status: "success", metadata: { subject: input.subject, priority: input.priority } });
+      const [ticket] = await db.insert(chatSessions).values({ status: "open", subject: input.subject, agentId: input.agentId } as any).returning();
+      await db.insert(chatMessages).values({ sessionId: ticket.id, content: input.description, senderType: "agent" } as any);
+      await db.insert(auditLog).values({ action: "helpdesk_ticket_created", resource: "chat_sessions", resourceId: String(ticket.id), status: "success", metadata: { subject: input.subject, priority: input.priority } } as any);
       return ticket;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

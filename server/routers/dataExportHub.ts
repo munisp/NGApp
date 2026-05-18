@@ -29,7 +29,7 @@ export const dataExportHubRouter = router({
   createExport: protectedProcedure.input(z.object({ name: z.string(), type: z.string(), format: z.enum(["csv", "json", "xlsx", "parquet"]).default("csv"), filters: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [job] = await db.insert(data_export_jobs).values({ name: input.name, type: input.type, format: input.format, status: "pending", filters: input.filters ?? {} }).returning();
+      const [job] = await db.insert(data_export_jobs).values({ name: input.name, type: input.type, format: input.format, status: "pending", filters: input.filters ?? {} } as any).returning();
       await db.insert(auditLog).values({ action: "data_export_created", resource: "data_export_jobs", resourceId: String(job.id), status: "success", metadata: { name: input.name, type: input.type, format: input.format } });
       return job;
     } catch (error) {

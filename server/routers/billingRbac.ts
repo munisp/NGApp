@@ -88,7 +88,8 @@ export async function checkBillingPermission(
   permission: BillingPermission
 ): Promise<boolean> {
   // 1. Check local role assignments
-  const assignments = await db
+  const database = await db();
+  const assignments = await database
     .select()
     .from(billingRoleAssignments)
     .where(
@@ -165,7 +166,8 @@ export async function getUserBillingPermissions(
   userId: number,
   tenantId: number
 ): Promise<{ role: string; permissions: BillingPermission[] }> {
-  const assignments = await db
+  const database2 = await db();
+  const assignments = await database2
     .select()
     .from(billingRoleAssignments)
     .where(
@@ -192,6 +194,7 @@ export async function getUserBillingPermissions(
     customPerms.forEach(p => allPerms.add(p as BillingPermission));
   }
 
+  return { role: highestRole, permissions: Array.from(allPerms) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -259,7 +262,8 @@ export const billingRbacRouter = router({
       try {
         await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-        const [existing] = await db
+        const dbRev = await db();
+        const [existing] = await dbRev
           .select()
           .from(billingRoleAssignments)
           .where(eq(billingRoleAssignments.id, input.assignmentId));
@@ -296,7 +300,8 @@ export const billingRbacRouter = router({
       try {
         await requireBillingPermission(ctx.user.id, input.tenantId, "manage_tenant_billing");
 
-        const assignments = await db
+        const dbList = await db();
+        const assignments = await dbList
           .select()
           .from(billingRoleAssignments)
           .where(eq(billingRoleAssignments.tenantId, input.tenantId))

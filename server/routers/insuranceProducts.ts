@@ -53,4 +53,13 @@ export const insuranceProductsRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  analytics: publicProcedure.query(async () => {
+    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  policies: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

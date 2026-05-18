@@ -41,8 +41,8 @@ export const bankingWorkflowPatternsRouter = router({
   createWorkflow: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), steps: z.array(z.object({ name: z.string(), type: z.string() })).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [wf] = await db.insert(workflowDefinitions).values({ name: input.name, description: input.description, steps: input.steps ?? [] }).returning();
-      await db.insert(auditLog).values({ action: "workflow_created", resource: "workflow_definitions", resourceId: String(wf.id), status: "success", metadata: { name: input.name } });
+      const [wf] = await db.insert(workflowDefinitions).values({ name: input.name, description: input.description, steps: input.steps ?? [] } as any).returning();
+      await db.insert(auditLog).values({ action: "workflow_created", resource: "workflow_definitions", resourceId: String(wf.id), status: "success", metadata: { name: input.name } } as any);
       return wf;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

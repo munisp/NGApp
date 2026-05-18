@@ -112,13 +112,13 @@ export const agentGamificationRouter = router({
         if (!db) throw new Error("Database unavailable");
         const [achievement] = await db.insert(agentAchievements).values({
           agentId: input.agentId, achievementType: input.achievementType, description: input.description, xpEarned: input.xp, earnedAt: new Date(),
-        }).returning();
+        } as any).returning();
         return { achievement };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   // Award badge
   awardBadge: protectedProcedure
@@ -133,16 +133,16 @@ export const agentGamificationRouter = router({
         if (existing) throw new Error("Badge already earned");
         const [badge] = await db.insert(agentBadges).values({
           agentId: input.agentId, badgeId: input.badgeId, badgeName: definition.name, earnedAt: new Date(),
-        }).returning();
+        } as any).returning();
         await db.insert(agentAchievements).values({
           agentId: input.agentId, achievementType: "badge_earned", description: `Earned badge: ${definition.name}`, xpEarned: definition.xp, earnedAt: new Date(),
-        });
+        } as any);
         return { badge, xpAwarded: definition.xp };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   badgeDefinitions: protectedProcedure.query(() => BADGE_DEFINITIONS),
   levelThresholds: protectedProcedure.query(() => LEVEL_THRESHOLDS),

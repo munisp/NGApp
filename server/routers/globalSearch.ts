@@ -111,7 +111,7 @@ export const globalSearchRouter = router({
               ref: transactions.ref,
               type: transactions.type,
               amount: transactions.amount,
-              customer: transactions.customer,
+              customer: transactions.customerNameNameName,
               status: transactions.status,
               createdAt: transactions.createdAt,
             })
@@ -119,7 +119,7 @@ export const globalSearchRouter = router({
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike(transactions.customer ?? sql`''`, pattern),
+                ilike(transactions.customerNameNameName ?? sql`''`, pattern),
                 ilike(transactions.type, pattern)
               )
             )
@@ -144,7 +144,7 @@ export const globalSearchRouter = router({
             .where(
               or(
                 ilike(transactions.ref, pattern),
-                ilike(transactions.customer ?? sql`''`, pattern)
+                ilike(transactions.customerNameNameName ?? sql`''`, pattern)
               )
             );
           totalCount += txCount?.count ?? 0;
@@ -159,7 +159,7 @@ export const globalSearchRouter = router({
           const custResults = await db
             .select({
               id: customers.id,
-              name: customers.name,
+              name: customers.lastName,
               phone: customers.phone,
               email: customers.email,
               createdAt: customers.createdAt,
@@ -167,7 +167,7 @@ export const globalSearchRouter = router({
             .from(customers)
             .where(
               or(
-                ilike(customers.name, pattern),
+                ilike(customers.lastName, pattern),
                 ilike(customers.phone ?? sql`''`, pattern),
                 ilike(customers.email ?? sql`''`, pattern)
               )
@@ -191,7 +191,7 @@ export const globalSearchRouter = router({
             .from(customers)
             .where(
               or(
-                ilike(customers.name, pattern),
+                ilike(customers.lastName, pattern),
                 ilike(customers.phone ?? sql`''`, pattern)
               )
             );

@@ -19,8 +19,8 @@ export const partnerSelfServiceRouter = router({
   createApiKey: protectedProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [key] = await db.insert(apiKeys).values({ name: input.name, key: "pk_" + crypto.randomUUID().replace(/-/g, ""), status: "active" }).returning();
-      await db.insert(auditLog).values({ action: "partner_api_key_created", resource: "api_keys", resourceId: String(key.id), status: "success", metadata: { name: input.name } });
+      const [key] = await db.insert(apiKeys).values({ name: input.name, key: "pk_" + crypto.randomUUID().replace(/-/g, ""), status: "active" } as any).returning();
+      await db.insert(auditLog).values({ action: "partner_api_key_created", resource: "api_keys", resourceId: String(key.id), status: "success", metadata: { name: input.name } } as any);
       return key;
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -41,7 +41,7 @@ export const partnerSelfServiceRouter = router({
   getUsage: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rows = await db.select().from(apiKeyUsage).orderBy(desc(apiKeyUsage.lastUsedAt)).limit(input?.limit ?? 50);
+      const rows = await db.select().from(apiKeyUsage).orderBy(desc(apiKeyUsage.createdAt)).limit(input?.limit ?? 50);
       return { usage: rows, total: rows.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

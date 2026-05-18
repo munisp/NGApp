@@ -64,14 +64,14 @@ export const disputeResolutionRouter = router({
           ref, transactionId: parseInt(input.transactionId.replace(/\D/g, "")) || null,
           type: input.type, reason: input.reason, amount: String(input.amount),
           status: "open", priority: "medium", description: input.reason, createdBy: ctx.user?.name ?? "system",
-        }).returning();
-        try { await publishDisputeEvent({ eventType: "dispute.created", disputeId: d.id, data: { ref, type: input.type } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
+        } as any).returning();
+        try { await publishDisputeEvent({ eventType: "dispute.created" as any, disputeId: d.id, data: { ref, type: input.type } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
         return { id: d.id, ref: d.ref, status: d.status };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   updateStatus: protectedProcedure.input(z.object({ disputeId: z.number(), status: z.string(), resolution: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
@@ -85,12 +85,12 @@ export const disputeResolutionRouter = router({
           disputeId: input.disputeId, authorName: ctx.user?.name ?? "System", authorRole: "admin",
           message: `Status changed to ${input.status}`, content: `Status changed to ${input.status}`,
           senderType: "admin", senderName: ctx.user?.name ?? "System",
-        });
-        try { await publishDisputeEvent({ eventType: "dispute.status_changed", disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
+        } as any);
+        try { await publishDisputeEvent({ eventType: "dispute.status_changed" as any, disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeResolution]", e); }
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 });

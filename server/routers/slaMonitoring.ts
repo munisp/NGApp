@@ -45,13 +45,13 @@ export const slaMonitoringRouter = router({
           measurementWindow: input.measurementWindow, breachThreshold: String(input.breachThreshold),
           escalationPolicy: input.escalationPolicy ? JSON.stringify(input.escalationPolicy) : null,
           active: true, createdBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         return { definition: def };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   updateDefinition: protectedProcedure
     .input(z.object({ definitionId: z.number(), targetValue: z.number().optional(), active: z.boolean().optional() }))
@@ -77,8 +77,8 @@ export const slaMonitoringRouter = router({
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
         const conditions = [];
-        if (input.slaId) conditions.push(eq(sla_breaches.slaId, input.slaId));
-        if (input.severity) conditions.push(eq(sla_breaches.severity, input.severity));
+        if (input.slaId) conditions.push(eq(sla_breaches.slaDefinitionId, input.slaId));
+        if (input.severity) conditions.push(eq(sla_breaches.resolvedAt, input.severity));
         if (input.resolved !== undefined) conditions.push(input.resolved ? sql`${sla_breaches.resolvedAt} IS NOT NULL` : sql`${sla_breaches.resolvedAt} IS NULL`);
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(sla_breaches).where(where).orderBy(desc(sla_breaches.createdAt))
@@ -103,13 +103,13 @@ export const slaMonitoringRouter = router({
         const [breach] = await db.insert(sla_breaches).values({
           slaId: input.slaId, actualValue: String(input.actualValue),
           severity: input.severity, description: input.description, breachedAt: new Date(),
-        }).returning();
+        } as any).returning();
         return { breach };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   resolveBreach: protectedProcedure
     .input(z.object({ breachId: z.number(), resolution: z.string() }))

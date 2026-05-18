@@ -31,8 +31,8 @@ export const financialReconciliationDashRouter = router({
   createBatch: protectedProcedure.input(z.object({ name: z.string(), type: z.string(), dateRange: z.object({ from: z.string(), to: z.string() }).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [batch] = await db.insert(reconciliationBatches).values({ name: input.name, type: input.type, status: "pending" }).returning();
-      await db.insert(auditLog).values({ action: "reconciliation_batch_created", resource: "reconciliation_batches", resourceId: String(batch.id), status: "success", metadata: { name: input.name, type: input.type } });
+      const [batch] = await db.insert(reconciliationBatches).values({ name: input.name, type: input.type, status: "pending" } as any).returning();
+      await db.insert(auditLog).values({ action: "reconciliation_batch_created", resource: "reconciliation_batches", resourceId: String(batch.id), status: "success", metadata: { name: input.name, type: input.type } } as any);
       return batch;
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -43,7 +43,7 @@ export const financialReconciliationDashRouter = router({
     const db = (await getDb())!;
     const [totalBatches] = await db.select({ value: count() }).from(reconciliationBatches).limit(100);
     const [totalItems] = await db.select({ value: count() }).from(reconciliationItems).limit(100);
-    const [matched] = await db.select({ value: count() }).from(reconciliationItems).where(eq(reconciliationItems.status, "matched")).limit(100);
+    const [matched] = await db.select({ value: count() }).from(reconciliationItems).where(eq(reconciliationItems.matchStatus, "matched")).limit(100);
     return { totalBatches: Number(totalBatches.value), totalItems: Number(totalItems.value), matchedItems: Number(matched.value), matchRate: Number(totalItems.value) > 0 ? Math.round(Number(matched.value) / Number(totalItems.value) * 100) : 0 };
   }),
 });

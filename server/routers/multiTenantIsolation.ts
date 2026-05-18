@@ -31,8 +31,8 @@ export const multiTenantIsolationRouter = router({
   createTenant: protectedProcedure.input(z.object({ name: z.string(), domain: z.string().optional(), plan: z.string().default("standard") })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [tenant] = await db.insert(tenants).values({ name: input.name, domain: input.domain, status: "active" }).returning();
-      await db.insert(auditLog).values({ action: "tenant_created", resource: "tenants", resourceId: String(tenant.id), status: "success", metadata: { name: input.name } });
+      const [tenant] = await db.insert(tenants).values({ name: input.name, domain: input.domain, status: "active" } as any).returning();
+      await db.insert(auditLog).values({ action: "tenant_created", resource: "tenants", resourceId: String(tenant.id), status: "success", metadata: { name: input.name } } as any);
       return tenant;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

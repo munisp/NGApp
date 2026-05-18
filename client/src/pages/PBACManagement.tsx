@@ -84,7 +84,7 @@ export default function PBACManagement() {
       setAssignUserId("");
       setAssignRoleId("");
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error(`Assignment failed: ${err.message}`);
     },
   });

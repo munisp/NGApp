@@ -70,7 +70,7 @@ export const mobileMoneyRouter = router({
 
         await db.update(agents).set({
           floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount + fee)}`,
-          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
         }).where(eq(agents.id, session.id));
 
         await writeAuditLog({
@@ -117,7 +117,7 @@ export const mobileMoneyRouter = router({
 
         await db.update(agents).set({
           floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
         }).where(eq(agents.id, session.id));
 
         await writeAuditLog({
@@ -158,7 +158,7 @@ export const mobileMoneyRouter = router({
 
         await db.update(agents).set({
           floatBalance: sql`CAST(${agents.floatBalance} AS numeric) + ${String(input.amount)}`,
-          commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
+          // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
         }).where(eq(agents.id, session.id));
 
         await writeAuditLog({

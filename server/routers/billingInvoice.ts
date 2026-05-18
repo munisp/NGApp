@@ -8,7 +8,7 @@ import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2025-04-30.basil" as any,
 });
 
 interface InvoiceLineItem {
@@ -65,8 +65,8 @@ export const billingInvoiceRouter = router({
           })
           .from(platformBillingLedger)
           .where(and(
-            eq(platformBillingLedger.tenantId, input.tenantId),
-            eq(platformBillingLedger.clientId, input.clientId),
+            eq(platformBillingLedger.agentId, input.tenantId),
+            eq(platformBillingLedger.agentId, input.clientId),
             gte(platformBillingLedger.createdAt, new Date(input.periodStart)),
             lte(platformBillingLedger.createdAt, new Date(input.periodEnd)),
           ));

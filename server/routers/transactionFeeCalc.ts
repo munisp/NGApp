@@ -9,7 +9,7 @@ export const transactionFeeCalcRouter = router({
   calculate: protectedProcedure.input(z.object({ amount: z.number().positive(), transactionType: z.string(), channel: z.string().optional() })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rules = await db.select().from(feeRules).where(eq(feeRules.transactionType, input.transactionType)).limit(5);
+      const rules = await db.select().from(feeRules).where(eq(feeRules.txType, input.transactionType)).limit(5);
       const rule = rules[0];
       const fee = rule ? (rule.feeType === "percentage" ? input.amount * Number(rule.feeValue) / 100 : Number(rule.feeValue)) : 0;
       const cappedFee = rule?.maxFee ? Math.min(fee, Number(rule.maxFee)) : fee;
@@ -43,7 +43,7 @@ export const transactionFeeCalcRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [totalRules] = await db.select({ value: count() }).from(feeRules).limit(100);
-    const [totalFees] = await db.select({ value: sum(feeAuditTrail.feeAmount) }).from(feeAuditTrail).limit(100);
+    const [totalFees] = await db.select({ value: sum(feeAuditTrail.txAmount) }).from(feeAuditTrail).limit(100);
     return { totalRules: Number(totalRules.value), totalFeesCollected: Number(totalFees.value ?? 0) };
   }),
 });

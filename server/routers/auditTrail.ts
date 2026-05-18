@@ -12,7 +12,7 @@ export const auditTrailRouter = router({
       const conditions = [];
       if (input.action) conditions.push(eq(auditLog.action, input.action));
       if (input.resource) conditions.push(eq(auditLog.resource, input.resource));
-      if (input.status) conditions.push(eq(auditLog.status, input.status));
+      if (input.status) conditions.push(eq(auditLog.tenantId, input.status));
       const rows = conditions.length > 0 ? await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input.limit).offset(input.offset) : await db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(input.limit).offset(input.offset);
       const [totalResult] = conditions.length > 0 ? await db.select({ value: count() }).from(auditLog).where(and(...conditions)) : await db.select({ value: count() }).from(auditLog).limit(100);
       return { items: rows, total: Number(totalResult.value), limit: input.limit, offset: input.offset };

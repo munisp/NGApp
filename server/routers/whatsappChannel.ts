@@ -83,4 +83,17 @@ export const whatsappChannelRouter = router({
       
       return results;
     }),
+
+
+  analytics: publicProcedure.query(async () => {
+    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  messages: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  templates: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

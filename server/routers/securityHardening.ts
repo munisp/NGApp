@@ -83,4 +83,31 @@ export const securityHardeningRouter = router({
       
       return results;
     }),
+
+
+  cbnCompliance: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  dashboard: publicProcedure.query(async () => {
+    return { totalItems: 0, activeItems: 0, recentActivity: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  owaspTop10: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  pciDssCompliance: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  recentScans: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  runScan: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

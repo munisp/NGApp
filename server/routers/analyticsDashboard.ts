@@ -37,7 +37,7 @@ export const analyticsDashboardRouter = router({
   create: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), config: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [dashboard] = await db.insert(analyticsDashboards).values({ name: input.name, description: input.description, config: input.config ?? {} }).returning();
+      const [dashboard] = await db.insert(analyticsDashboards).values({ name: input.name, description: input.description, config: input.config ?? {} } as any).returning();
       await db.insert(auditLog).values({ action: "dashboard_created", resource: "analytics_dashboards", resourceId: String(dashboard.id), status: "success", metadata: { name: input.name } });
       return dashboard;
     } catch (error) {

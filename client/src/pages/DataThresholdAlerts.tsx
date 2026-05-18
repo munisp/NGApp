@@ -48,19 +48,19 @@ export default function DataThresholdAlerts() {
 
   const createMut = trpc.thresholdAlerts.create.useMutation({
     onSuccess: () => { utils.thresholdAlerts.list.invalidate(); setShowCreate(false); resetForm(); toast.success("Threshold rule created"); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
   const toggleMut = trpc.thresholdAlerts.toggleStatus.useMutation({
     onSuccess: () => { utils.thresholdAlerts.list.invalidate(); toast.success("Status updated"); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
   const deleteMut = trpc.thresholdAlerts.delete.useMutation({
     onSuccess: () => { utils.thresholdAlerts.list.invalidate(); toast.success("Rule deleted"); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
   const ackMut = trpc.thresholdAlerts.acknowledge.useMutation({
     onSuccess: () => { utils.thresholdAlerts.events.invalidate(); toast.success("Alert acknowledged"); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
   const simulateMut = trpc.thresholdAlerts.simulateCheck.useMutation({
     onSuccess: (data: any) => {
@@ -69,7 +69,7 @@ export default function DataThresholdAlerts() {
       if (data.breached) toast.warning("Threshold breached! Alert triggered.");
       else toast.success(`Check passed. Current value: ${data.currentValue}`);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const rules = rulesData?.rules ?? [];

@@ -31,11 +31,11 @@ export const fraudMlScoringEngineRouter = router({
       const db = (await getDb())!;
       const [tx] = await db.select().from(transactions).where(eq(transactions.id, input.transactionId)).limit(1);
       const riskScore = tx ? Math.min(100, Math.max(0, Number(tx.amount) > 500000 ? 75 : Number(tx.amount) > 100000 ? 50 : 15)) : 0;
-      const [score] = await db.insert(fraudMlScores).values({ transactionId: input.transactionId, score: riskScore, model: "ensemble_v2", features: input.features ?? {} }).returning();
+      const [score] = await db.insert(fraudMlScores).values({ transactionId: input.transactionId, score: riskScore, model: "ensemble_v2", features: input.features ?? {} } as any).returning();
       if (riskScore > 70) {
-        await db.insert(fraudAlerts).values({ transactionId: input.transactionId, severity: riskScore > 90 ? "critical" : "high", status: "open", description: "ML model flagged high risk", riskScore });
+        await db.insert(fraudAlerts).values({ transactionId: input.transactionId, severity: riskScore > 90 ? "critical" : "high", status: "open", description: "ML model flagged high risk", riskScore } as any);
       }
-      await db.insert(auditLog).values({ action: "fraud_ml_scored", resource: "fraud_ml_scores", resourceId: String(score.id), status: "success", metadata: { transactionId: input.transactionId, riskScore } });
+      await db.insert(auditLog).values({ action: "fraud_ml_scored", resource: "fraud_ml_scores", resourceId: String(score.id), status: "success", metadata: { transactionId: input.transactionId, riskScore } } as any);
       return score;
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -45,7 +45,7 @@ export const fraudMlScoringEngineRouter = router({
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(fraudMlScores).limit(100);
-    const [avgScore] = await db.select({ value: avg(fraudMlScores.score) }).from(fraudMlScores).limit(100);
+    const [avgScore] = await db.select({ value: avg(fraudMlScores.riskScore) }).from(fraudMlScores).limit(100);
     const [alerts] = await db.select({ value: count() }).from(fraudAlerts).limit(100);
     return { totalScored: Number(total.value), averageScore: Number(avgScore.value ?? 0), totalAlerts: Number(alerts.value) };
   }),

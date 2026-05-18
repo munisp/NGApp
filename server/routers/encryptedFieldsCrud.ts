@@ -43,7 +43,7 @@ export const encryptedFieldsRouter = router({
     try {
       const db = (await getDb())!;
       const { encrypted, iv, tag } = encrypt(input.plaintext);
-      const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag }).returning();
+      const [row] = await db.insert(encryptedFields).values({ fieldName: input.fieldName, entityType: input.entityType, entityId: input.entityId, encryptedValue: encrypted, iv, authTag: tag } as any).returning();
       return { id: row.id, fieldName: input.fieldName, message: "Field encrypted with AES-256-GCM" };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

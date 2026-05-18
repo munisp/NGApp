@@ -60,7 +60,7 @@ export default function QdrantVectorSearchPage() {
               {searchResults.data?.results && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Found {searchResults.data.results.length} results ({searchResults.data.source})</p>
-                  {searchResults.data.results.map((r, i) => (
+                  {searchResults.data.results.map((r: any, i) => (
                     <div key={i} className="p-3 border rounded-lg flex justify-between items-center">
                       <div>
                         <p className="font-medium">{String(r.payload?.type ?? "Transaction")} — {String(r.payload?.channel ?? "POS")}</p>
@@ -93,7 +93,7 @@ export default function QdrantVectorSearchPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Contexts ({ragMut.data.contexts?.length ?? 0}):</p>
-                    {ragMut.data.contexts?.map((c, i) => (
+                    {ragMut.data.contexts?.map((c: any, i) => (
                       <div key={i} className="p-2 border rounded mb-1 text-sm">
                         <Badge variant="outline" className="mr-2">Score: {(c.score * 100).toFixed(0)}%</Badge>
                         {c.text.slice(0, 200)}...
@@ -113,8 +113,8 @@ export default function QdrantVectorSearchPage() {
                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Database className="w-4 h-4" />{key}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-muted-foreground">Points:</span> {c.count.toLocaleString()}</div>
-                    <div><span className="text-muted-foreground">Status:</span> <Badge variant="default" className="text-xs">{c.status}</Badge></div>
+                    <div><span className="text-muted-foreground">Points:</span> {(c as any).count.toLocaleString()}</div>
+                    <div><span className="text-muted-foreground">Status:</span> <Badge variant="default" className="text-xs">{(c as any).status}</Badge></div>
                   </div>
                 </CardContent>
               </Card>

@@ -49,7 +49,7 @@ export default function ReportTemplateDesigner() {
       setNewName(""); setNewDesc("");
       utils.reportTemplate.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const deleteMutation = trpc.reportTemplate.delete.useMutation({
@@ -57,7 +57,7 @@ export default function ReportTemplateDesigner() {
       toast.success("Template deleted");
       utils.reportTemplate.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const setDefaultMutation = trpc.reportTemplate.setDefault.useMutation({

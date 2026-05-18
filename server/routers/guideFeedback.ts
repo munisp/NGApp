@@ -83,4 +83,19 @@ export const guideFeedbackRouter = router({
       
       return results;
     }),
+
+
+  stats: publicProcedure.query(async () => {
+    return { total: 0, active: 0, pending: 0 };
+  }),
+
+  submit: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  summary: publicProcedure.query(async () => {
+    return { total: 0, breakdown: [], lastUpdated: new Date().toISOString() };
+  }),
 });

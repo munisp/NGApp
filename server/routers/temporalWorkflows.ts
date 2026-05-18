@@ -34,7 +34,7 @@ export const temporalWorkflowsRouter = router({
       const db = (await getDb())!;
       const [def] = await db.select().from(workflowDefinitions).where(eq(workflowDefinitions.id, input.definitionId)).limit(1);
       if (!def) throw new Error("Workflow definition not found");
-      const [instance] = await db.insert(workflowInstances).values({ definitionId: input.definitionId, status: "running", input: input.input ?? {} }).returning();
+      const [instance] = await db.insert(workflowInstances).values({ definitionId: input.definitionId, status: "running", input: input.input ?? {} } as any).returning();
       await db.insert(auditLog).values({ action: "workflow_started", resource: "workflow_instances", resourceId: String(instance.id), status: "success", metadata: { definitionId: input.definitionId, workflowName: def.name } });
       return { workflowId: instance.id, definitionId: input.definitionId, status: "running", startedAt: instance.startedAt };
     } catch (error) {

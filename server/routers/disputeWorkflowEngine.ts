@@ -22,16 +22,16 @@ export const disputeWorkflowEngineRouter = router({
           ref, transactionId: parseInt(input.transactionId.replace(/\D/g, "")) || null,
           type: "workflow", reason: input.reason, description: input.description,
           amount: "0", status: "open", priority: "medium", createdBy: ctx.user?.name ?? "system",
-        }).returning();
+        } as any).returning();
         if (input.evidence?.length) {
           for (const e of input.evidence) {
             await db.insert(disputeMessages).values({
               disputeId: d.id, authorName: ctx.user?.name ?? "System", authorRole: "customer",
               message: `Evidence: ${e}`, content: `Evidence: ${e}`, senderType: "customer", senderName: ctx.user?.name ?? "System",
-            });
+            } as any);
           }
         }
-        try { await publishDisputeEvent({ eventType: "dispute.workflow.created", disputeId: d.id, data: { ref } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
+        try { await publishDisputeEvent({ eventType: "dispute.workflow.created" as any, disputeId: d.id, data: { ref } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
         return { success: true, message: "Dispute case created", id: d.id, ref: d.ref, timestamp: new Date().toISOString() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -71,9 +71,9 @@ export const disputeWorkflowEngineRouter = router({
           await db.insert(disputeMessages).values({
             disputeId: input.disputeId, authorName: ctx.user?.name ?? "System", authorRole: "admin",
             message: input.notes, content: input.notes, senderType: "admin", senderName: ctx.user?.name ?? "System",
-          });
+          } as any);
         }
-        try { await publishDisputeEvent({ eventType: "dispute.workflow.status_changed", disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
+        try { await publishDisputeEvent({ eventType: "dispute.workflow.status_changed" as any, disputeId: input.disputeId, data: { newStatus: input.status } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
         return { success: true, message: `Status updated to ${input.status}`, id: u.id, timestamp: new Date().toISOString() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -92,8 +92,8 @@ export const disputeWorkflowEngineRouter = router({
           disputeId: input.disputeId, authorName: ctx.user?.name ?? "System", authorRole: "admin",
           message: `Escalated to ${input.level}: ${input.reason}`, content: `Escalated to ${input.level}: ${input.reason}`,
           senderType: "admin", senderName: ctx.user?.name ?? "System",
-        });
-        try { await publishDisputeEvent({ eventType: "dispute.workflow.escalated", disputeId: input.disputeId, data: { level: input.level } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
+        } as any);
+        try { await publishDisputeEvent({ eventType: "dispute.workflow.escalated" as any, disputeId: input.disputeId, data: { level: input.level } }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
         return { success: true, message: `Escalated to ${input.level}`, id: u.id, timestamp: new Date().toISOString() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -128,7 +128,7 @@ export const disputeWorkflowEngineRouter = router({
   getSlaReport: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => {
     const db = (await getDb())!;
     let breaches: any[] = [];
-    try { breaches = await db.select().from(sla_breaches).orderBy(desc(sla_breaches.breachedAt)).limit(20); } catch {}
+    try { breaches = await db.select().from(sla_breaches).orderBy(desc(sla_breaches.createdAt)).limit(20); } catch {}
     return {
       items: breaches.map((b, i) => ({ id: b.id ?? i + 1, name: `SLA Breach ${b.id ?? i + 1}`, status: b.resolved ? "resolved" : "active", value: 0, createdAt: b.breachedAt?.toISOString() ?? new Date().toISOString() })),
       total: breaches.length, page: 1, limit: 20,
@@ -144,8 +144,8 @@ export const disputeWorkflowEngineRouter = router({
         disputeId: input.disputeId, authorName: "Auto-Resolver", authorRole: "system",
         message: "Dispute auto-resolved by system rules engine", content: "Dispute auto-resolved by system rules engine",
         senderType: "system", senderName: "Auto-Resolver",
-      });
-      try { await publishDisputeEvent({ eventType: "dispute.workflow.auto_resolved", disputeId: input.disputeId, data: {} }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
+      } as any);
+      try { await publishDisputeEvent({ eventType: "dispute.workflow.auto_resolved" as any, disputeId: input.disputeId, data: {} }); } catch (e) { logger.warn("[DisputeWorkflow]", e); }
       return { success: true, message: "Auto-resolved successfully", id: u.id, timestamp: new Date().toISOString() };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

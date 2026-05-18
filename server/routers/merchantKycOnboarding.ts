@@ -45,13 +45,13 @@ export const merchantKycOnboardingRouter = router({
         const [doc] = await db.insert(merchantKycDocs).values({
           merchantId: input.merchantId, docType: input.docType, docUrl: input.docUrl,
           docNumber: input.docNumber, expiryDate: input.expiryDate ? new Date(input.expiryDate) : null, status: "pending",
-        }).returning();
+        } as any).returning();
         return { doc };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   verifyDoc: protectedProcedure
     .input(z.object({ docId: z.number(), approved: z.boolean(), rejectionReason: z.string().optional() }))

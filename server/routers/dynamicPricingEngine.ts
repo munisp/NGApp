@@ -29,7 +29,7 @@ export const dynamicPricingEngineRouter = router({
   calculatePrice: protectedProcedure.input(z.object({ amount: z.number().positive(), type: z.string(), channel: z.string().optional() })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const rules = await db.select().from(feeRules).where(eq(feeRules.transactionType, input.type)).limit(5);
+      const rules = await db.select().from(feeRules).where(eq(feeRules.txType, input.type)).limit(5);
       const applicableRule = rules[0];
       const fee = applicableRule ? (applicableRule.feeType === "percentage" ? input.amount * Number(applicableRule.feeValue) / 100 : Number(applicableRule.feeValue)) : 0;
       return { originalAmount: input.amount, fee: Math.round(fee * 100) / 100, totalAmount: input.amount + fee, ruleApplied: applicableRule?.id ?? null };
@@ -41,8 +41,8 @@ export const dynamicPricingEngineRouter = router({
   createRule: protectedProcedure.input(z.object({ transactionType: z.string(), feeType: z.enum(["percentage", "flat"]), feeValue: z.number(), minAmount: z.number().optional(), maxAmount: z.number().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [rule] = await db.insert(feeRules).values({ transactionType: input.transactionType, feeType: input.feeType, feeValue: String(input.feeValue), minAmount: input.minAmount ? String(input.minAmount) : null, maxAmount: input.maxAmount ? String(input.maxAmount) : null }).returning();
-      await db.insert(auditLog).values({ action: "pricing_rule_created", resource: "fee_rules", resourceId: String(rule.id), status: "success", metadata: { transactionType: input.transactionType } });
+      const [rule] = await db.insert(feeRules).values({ transactionType: input.transactionType, feeType: input.feeType, feeValue: String(input.feeValue), minAmount: input.minAmount ? String(input.minAmount) : null, maxAmount: input.maxAmount ? String(input.maxAmount) : null } as any).returning();
+      await db.insert(auditLog).values({ action: "pricing_rule_created", resource: "fee_rules", resourceId: String(rule.id), status: "success", metadata: { transactionType: input.transactionType } } as any);
       return rule;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

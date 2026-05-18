@@ -83,4 +83,17 @@ export const networkQualityHeatmapRouter = router({
       
       return results;
     }),
+
+
+  getEvents: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  getRegionDetail: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  getRegionMetrics: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

@@ -20,7 +20,7 @@ export const realtime_tx_alertsRouter = router({
       const db = (await getDb())!;
       const conditions: any[] = [];
       if (input.severity) conditions.push(eq(realtime_tx_alerts.severity, input.severity));
-      if (input.status) conditions.push(eq(realtime_tx_alerts.status, input.status));
+      if (input.status) conditions.push(eq(realtime_tx_alerts.metadata, input.status));
       const rows = await db.select().from(realtime_tx_alerts).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(realtime_tx_alerts.id)).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(realtime_tx_alerts).where(conditions.length ? and(...conditions) : undefined).limit(100);
       return { items: rows, total };
@@ -50,7 +50,7 @@ export const realtime_tx_alertsRouter = router({
       if (triggers.length === 0) return { agentId: input.agentId, riskLevel: "low", triggers: [], action: "allow" };
       const severity = triggers.includes("large_amount") ? "critical" : "warning";
       const action = severity === "critical" ? "block" : "flag";
-      const [alert] = await db.insert(realtime_tx_alerts).values({ agentId: input.agentId, severity, triggers: JSON.stringify(triggers), action, amount: input.amount.toString(), txType: input.txType, status: "active" }).returning();
+      const [alert] = await db.insert(realtime_tx_alerts).values({ agentId: input.agentId, severity, triggers: JSON.stringify(triggers), action, amount: input.amount.toString(), txType: input.txType, status: "active" } as any).returning();
       return { ...alert, riskLevel: severity === "critical" ? "high" : "medium", triggers, action };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

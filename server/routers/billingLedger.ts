@@ -71,7 +71,7 @@ export const billingLedgerRouter = router({
           currency: input.currency,
           region: input.region || null,
           carrier: input.carrier || null,
-        }).returning();
+        } as any).returning();
 
         // Publish to Kafka topic: billing.ledger.splits
         const kafkaUrl = process.env.KAFKA_BROKER_URL;

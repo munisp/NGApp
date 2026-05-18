@@ -51,7 +51,7 @@ export const automatedSettlementSchedulerRouter = router({
       try {
         const ns = { id: `SCH-${Date.now()}`, ...input, status: "active" as const, lastRun: 0, nextRun: Date.now() + 3600000, successRate: 100, avgDuration: 0, totalRuns: 0, totalSettled: 0, failedRuns: 0 };
         scheduleState.push(ns);
-        try { await publishSettlementEvent({ eventType: "settlement.schedule.created", batchId: ns.id, data: { name: input.name, createdBy: ctx.user?.id } }); }
+        try { await publishSettlementEvent({ eventType: "settlement.schedule.created" as any, batchId: ns.id, data: { name: input.name, createdBy: ctx.user?.id } }); }
         catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
         return { id: ns.id, ...input, status: "active", createdAt: Date.now() };
       } catch (error) {
@@ -85,10 +85,10 @@ export const automatedSettlementSchedulerRouter = router({
         batchReference: batchRef, sourceType: `manual_${s.type}`, status: "processing",
         totalRecords: 0, matchedCount: 0, unmatchedCount: 0, discrepancyCount: 0,
         processedBy: ctx.user?.id ?? null, processedAt: new Date(),
-      });
+      } as any);
       s.lastRun = Date.now(); s.totalRuns += 1;
       try {
-        await publishSettlementEvent({ eventType: "settlement.schedule.manual_trigger", batchId: batchRef, data: { scheduleId: input.scheduleId, triggeredBy: ctx.user?.id } });
+        await publishSettlementEvent({ eventType: "settlement.schedule.manual_trigger" as any, batchId: batchRef, data: { scheduleId: input.scheduleId, triggeredBy: ctx.user?.id } });
         await tbRecordSettlementTransfer({ batchId: batchRef, amount: 0, currency: "NGN", type: "manual_trigger" });
       } catch (e) { logger.warn("[SettlementScheduler] Middleware:", e); }
       return { executionId: batchRef, scheduleId: input.scheduleId, status: "running", startedAt: Date.now() };

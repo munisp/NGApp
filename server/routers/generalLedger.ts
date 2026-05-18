@@ -40,8 +40,8 @@ export const generalLedgerRouter = router({
         const conditions = [];
         if (input.accountCode) conditions.push(eq(glEntries.accountCode, input.accountCode));
         if (input.entryType) conditions.push(eq(glEntries.entryType, input.entryType));
-        if (input.dateFrom) conditions.push(gte(glEntries.entryDate, new Date(input.dateFrom)));
-        if (input.dateTo) conditions.push(lte(glEntries.entryDate, new Date(input.dateTo)));
+        if (input.dateFrom) conditions.push(gte(glEntries.entryType, new Date(input.dateFrom)));
+        if (input.dateTo) conditions.push(lte(glEntries.entryType, new Date(input.dateTo)));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(glEntries).where(where).orderBy(desc(glEntries.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);
@@ -91,8 +91,8 @@ export const generalLedgerRouter = router({
         const db = (await getDb())!;
         if (!db) return { accounts: [], totalDebits: 0, totalCredits: 0, balanced: true };
         const conditions = [];
-        if (input.dateFrom) conditions.push(gte(glEntries.entryDate, new Date(input.dateFrom)));
-        if (input.dateTo) conditions.push(lte(glEntries.entryDate, new Date(input.dateTo)));
+        if (input.dateFrom) conditions.push(gte(glEntries.entryType, new Date(input.dateFrom)));
+        if (input.dateTo) conditions.push(lte(glEntries.entryType, new Date(input.dateTo)));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const data = await db.select({
           accountCode: glEntries.accountCode,

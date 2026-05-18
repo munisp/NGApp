@@ -169,7 +169,7 @@ export default function WeeklyReports() {
       utils.weeklyReports.list.invalidate();
       utils.weeklyReports.latest.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const updateScheduleM = trpc.weeklyReports.updateSchedule.useMutation({
@@ -177,14 +177,14 @@ export default function WeeklyReports() {
       toast.success("Schedule updated");
       utils.weeklyReports.getSchedule.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const sendEmailM = trpc.weeklyReports.sendEmail.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`Email sent to ${data.sent} recipient(s)`);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const updateEmailConfigM = trpc.weeklyReports.updateEmailConfig.useMutation({
@@ -192,7 +192,7 @@ export default function WeeklyReports() {
       toast.success("Email settings updated");
       utils.weeklyReports.getEmailConfig.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const addRecipientM = trpc.weeklyReports.addRecipient.useMutation({
@@ -203,7 +203,7 @@ export default function WeeklyReports() {
       utils.weeklyReports.listRecipients.invalidate();
       utils.weeklyReports.getEmailConfig.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const removeRecipientM = trpc.weeklyReports.removeRecipient.useMutation({
@@ -212,7 +212,7 @@ export default function WeeklyReports() {
       utils.weeklyReports.listRecipients.invalidate();
       utils.weeklyReports.getEmailConfig.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const pdfHtmlQ = trpc.weeklyReports.getPdfHtml.useQuery(
@@ -334,7 +334,7 @@ export default function WeeklyReports() {
                 <p className="text-sm font-semibold text-red-400 mb-1">
                   {latest.report.alerts.length} Alert(s)
                 </p>
-                {latest.report.alerts.slice(0, 3).map((a, i) => (
+                {latest.report.alerts.slice(0, 3).map((a: any, i) => (
                   <p key={i} className="text-xs text-red-300">{a}</p>
                 ))}
               </div>
@@ -511,7 +511,7 @@ export default function WeeklyReports() {
                         <p className="text-sm font-semibold text-red-400 mb-2">
                           Alerts ({detail.report.alerts.length})
                         </p>
-                        {detail.report.alerts.map((a, i) => (
+                        {detail.report.alerts.map((a: any, i) => (
                           <p key={i} className="text-xs text-red-300 flex items-start gap-1 mb-1">
                             <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" /> {a}
                           </p>
@@ -525,7 +525,7 @@ export default function WeeklyReports() {
                         <p className="text-sm font-semibold text-emerald-400 mb-2">
                           Recommendations ({detail.report.recommendations.length})
                         </p>
-                        {detail.report.recommendations.map((r, i) => (
+                        {detail.report.recommendations.map((r: any, i) => (
                           <p key={i} className="text-xs text-emerald-300 flex items-start gap-1 mb-1">
                             <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" /> {r}
                           </p>

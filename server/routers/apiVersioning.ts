@@ -83,4 +83,9 @@ export const apiVersioningRouter = router({
       
       return results;
     }),
+
+
+  dashboard: publicProcedure.query(async () => {
+    return { totalItems: 0, activeItems: 0, recentActivity: [], lastUpdated: new Date().toISOString() };
+  }),
 });

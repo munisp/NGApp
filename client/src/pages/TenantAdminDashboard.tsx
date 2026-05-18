@@ -33,7 +33,7 @@ export default function TenantAdminDashboard() {
       usersList.refetch();
       dashboard.refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const removeUser = trpc.tenantAdmin.removeUser.useMutation({
@@ -46,11 +46,11 @@ export default function TenantAdminDashboard() {
 
   const updateBranding = trpc.partnerOnboarding.updateBranding.useMutation({
     onSuccess: () => { toast.success("Branding updated!"); branding.refetch(); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const toggleLive = trpc.tenantAdmin.toggleLive.useMutation({
-    onSuccess: (data) => toast.success(data.message),
+    onSuccess: (data: any) => toast.success(data.message),
   });
 
   const d = dashboard.data;

@@ -27,7 +27,7 @@ export const dynamicFeeEngineRouter = router({
         const conditions = [];
         if (input.txType) conditions.push(eq(feeRules.txType, input.txType));
         if (input.channel) conditions.push(eq(feeRules.channel, input.channel));
-        if (input.active !== undefined) conditions.push(eq(feeRules.active, input.active));
+        if (input.isActive !== undefined) conditions.push(eq(feeRules.isActive, input.active));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(feeRules).where(where)
           .orderBy(desc(feeRules.createdAt)).limit(input.limit).offset((input.page - 1) * input.limit);
@@ -77,20 +77,20 @@ export const dynamicFeeEngineRouter = router({
           effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
           active: true,
           createdBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         // Audit trail
         await db.insert(feeAuditTrail).values({
           feeRuleId: rule.id,
           action: "created",
           changedBy: ctx.user?.id,
           newValues: JSON.stringify(input),
-        });
+        } as any);
         return { rule };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   // Update fee rule
   updateRule: protectedProcedure
@@ -102,7 +102,7 @@ export const dynamicFeeEngineRouter = router({
       minFee: z.number().optional(),
       maxFee: z.number().optional(),
       active: z.boolean().optional(),
-    }))
+    } as any))
     .mutation(async ({ input, ctx }) => {
       try {
         const db = (await getDb())!;
@@ -122,13 +122,13 @@ export const dynamicFeeEngineRouter = router({
           changedBy: ctx.user?.id,
           previousValues: JSON.stringify(oldRule),
           newValues: JSON.stringify(updates),
-        });
+        } as any);
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   // Calculate fee for a transaction
   calculateFee: protectedProcedure
@@ -146,7 +146,7 @@ export const dynamicFeeEngineRouter = router({
           .where(and(
             eq(feeRules.txType, input.txType),
             eq(feeRules.channel, input.channel),
-            eq(feeRules.active, true),
+            eq(feeRules.isActive, true),
           )).limit(1);
         if (!rule) return { fee: 0, breakdown: { message: "No matching fee rule" } };
         let fee = 0;
@@ -223,7 +223,7 @@ export const dynamicFeeEngineRouter = router({
         const db = (await getDb())!;
         if (!db) return { results: [] };
         const [rule] = await db.select().from(feeRules)
-          .where(and(eq(feeRules.txType, input.txType), eq(feeRules.channel, input.channel), eq(feeRules.active, true))).limit(1);
+          .where(and(eq(feeRules.txType, input.txType), eq(feeRules.channel, input.channel), eq(feeRules.isActive, true))).limit(1);
         if (!rule) return { results: input.amounts.map(a => ({ amount: a, fee: 0, noRule: true })) };
         const results = input.amounts.map(amount => {
           let fee = 0;

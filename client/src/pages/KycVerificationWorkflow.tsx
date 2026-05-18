@@ -51,7 +51,7 @@ export default function KycVerificationWorkflow() {
   });
 
   const reviewMutation = trpc.sprint23.kycVerification.review.useMutation({
-    onSuccess: (_, vars) => {
+    onSuccess: (_: any, vars) => {
       utils.sprint23.kycVerification.agentStatus.invalidate();
       utils.sprint23.kycVerification.pendingReviews.invalidate();
       toast.success(`Document ${vars.decision}`);

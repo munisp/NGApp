@@ -60,34 +60,34 @@ export default function PartnerOnboarding() {
   );
 
   const registerTenant = trpc.partnerOnboarding.registerTenant.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setTenantId(data.tenant.id);
       setBrandName(data.tenant.name);
       setTagline(`${data.tenant.name} — Fast, Secure Remittances`);
       setStep(3);
       toast.success("Company registered successfully!");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const updateBranding = trpc.partnerOnboarding.updateBranding.useMutation({
     onSuccess: () => { setStep(4); toast.success("Branding saved!"); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const addCorridor = trpc.partnerOnboarding.addCorridor.useMutation({
     onSuccess: () => toast.success("Corridor added!"),
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const addFee = trpc.partnerOnboarding.addFeeOverride.useMutation();
 
   const completeOnboarding = trpc.partnerOnboarding.completeOnboarding.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(data.message);
       setStep(6); // done
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   async function handleValidateCode() {

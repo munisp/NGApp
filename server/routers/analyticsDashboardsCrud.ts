@@ -37,7 +37,7 @@ export const analyticsDashboardsRouter = router({
       const db = (await getDb())!;
       const [existing] = await db.select().from(analyticsDashboards).where(eq(analyticsDashboards.name, input.name)).limit(100);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Dashboard with this name already exists" });
-      const [row] = await db.insert(analyticsDashboards).values({ ...input, createdBy: ctx.user?.id }).returning();
+      const [row] = await db.insert(analyticsDashboards).values({ ...input, createdBy: ctx.user?.id } as any).returning();
       return row;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

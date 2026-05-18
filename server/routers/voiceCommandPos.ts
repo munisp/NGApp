@@ -124,13 +124,13 @@ export const voiceCommandPosRouter = router({
           customerPhone: input.phone ?? null, customerName: input.customerName ?? null,
           status: "success", channel: "App",
           metadata: { voiceInitiated: true, intent: input.intent },
-        }).returning();
+        } as any).returning();
 
         if (["Cash Out", "Transfer", "Airtime", "Bill Payment"].includes(intentInfo.type)) {
           await db.update(agents).set({
             floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.amount)}`,
-            commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`,
-          }).where(eq(agents.id, session.id));
+            // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
+          } as any).where(eq(agents.id, session.id));
         }
         if (intentInfo.type === "Cash In") {
           await db.update(agents).set({

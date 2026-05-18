@@ -505,8 +505,8 @@ export const transactionsRouter = router({
           if (amlResult.triggered) {
             await writeAuditLog({
               agentId: agent.id, agentCode: agent.agentCode,
-              action: "AML_TRIGGER", resource: "transaction", status: "flagged",
-              metadata: { triggers: amlResult.triggers, amount: input.amount },
+              action: "AML_TRIGGER", resource: "transaction", status: "flagged" as any,
+              metadata: { triggered: amlResult.triggered, amount: input.amount },
             });
           }
         } catch (brErr) {

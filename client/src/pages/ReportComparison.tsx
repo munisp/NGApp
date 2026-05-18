@@ -135,22 +135,22 @@ export default function ReportComparison() {
                     <tbody>
                       {Object.entries(comparison.data.deltas).map(([key, d]) => (
                         <tr key={key} className="border-b border-border/50 hover:bg-muted/30">
-                          <td className="py-2 px-3 font-medium">{d.label}</td>
+                          <td className="py-2 px-3 font-medium">{(d as any).label}</td>
                           <td className="text-right py-2 px-3 text-blue-400">
-                            {typeof d.valueA === "number" ? d.valueA.toLocaleString() : d.valueA}
+                            {typeof (d as any).valueA === "number" ? d.valueA.toLocaleString() : d.valueA}
                           </td>
                           <td className="text-right py-2 px-3 text-green-400">
-                            {typeof d.valueB === "number" ? d.valueB.toLocaleString() : d.valueB}
+                            {typeof (d as any).valueB === "number" ? d.valueB.toLocaleString() : d.valueB}
                           </td>
                           <td className="text-right py-2 px-3 flex items-center justify-end gap-1">
-                            {directionIcon(d.direction)}
-                            <span className={d.isImprovement ? "text-green-400" : d.direction === "flat" ? "text-gray-400" : "text-red-400"}>
-                              {d.percentChange > 0 ? "+" : ""}{d.percentChange}%
+                            {directionIcon((d as any).direction)}
+                            <span className={(d as any).isImprovement ? "text-green-400" : d.direction === "flat" ? "text-gray-400" : "text-red-400"}>
+                              {(d as any).percentChange > 0 ? "+" : ""}{d.percentChange}%
                             </span>
                           </td>
                           <td className="text-center py-2 px-3">
-                            <Badge variant={d.isImprovement ? "default" : "destructive"} className="text-xs">
-                              {d.isImprovement ? "Improved" : d.direction === "flat" ? "Stable" : "Regressed"}
+                            <Badge variant={(d as any).isImprovement ? "default" : "destructive"} className="text-xs">
+                              {(d as any).isImprovement ? "Improved" : d.direction === "flat" ? "Stable" : "Regressed"}
                             </Badge>
                           </td>
                         </tr>

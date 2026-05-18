@@ -31,8 +31,8 @@ export const chatRouter = router({
   createSession: protectedProcedure.input(z.object({ subject: z.string().optional(), agentId: z.number().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [session] = await db.insert(chatSessions).values({ status: "open", agentId: input.agentId, subject: input.subject }).returning();
-      await db.insert(auditLog).values({ action: "chat_session_created", resource: "chat_sessions", resourceId: String(session.id), status: "success", metadata: {} });
+      const [session] = await db.insert(chatSessions).values({ status: "open", agentId: input.agentId, subject: input.subject } as any).returning();
+      await db.insert(auditLog).values({ action: "chat_session_created", resource: "chat_sessions", resourceId: String(session.id), status: "success", metadata: {} } as any);
       return session;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -194,7 +194,7 @@ export const commissionEngineRouter = router({
 
         // [Kafka] Publish tier update event
         await publishCommissionEvent({
-          eventType: "commission.tier.updated",
+          eventType: "commission.tier.updated" as any,
           agentId: 0, agentCode: "SYSTEM", amount: 0,
           metadata: { tierId: input.id, changes: input },
         });
@@ -249,7 +249,7 @@ export const commissionEngineRouter = router({
         }).returning();
 
         await logAudit("tier", tierId, "created", ctx.user?.name ?? "admin", null, created);
-        await publishCommissionEvent({ eventType: "commission.tier.created", agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { tierId, tier: input } });
+        await publishCommissionEvent({ eventType: "commission.tier.created" as any, agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { tierId, tier: input } });
         await streamCommissionEvent({ eventType: "tier.created", agentCode: "SYSTEM", amount: 0 });
         logger.info(`[Commission] Tier ${tierId} created: ${input.name}`);
 
@@ -279,7 +279,7 @@ export const commissionEngineRouter = router({
         await db.update(commissionTiers).set({ isActive: false, updatedAt: new Date() }).where(eq(commissionTiers.tierId, input.id));
 
         await logAudit("tier", input.id, "deleted", ctx.user?.name ?? "admin", existing, { isActive: false });
-        await publishCommissionEvent({ eventType: "commission.tier.deleted", agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { tierId: input.id } });
+        await publishCommissionEvent({ eventType: "commission.tier.deleted" as any, agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { tierId: input.id } });
         logger.info(`[Commission] Tier ${input.id} deactivated`);
 
         return { success: true, tierId: input.id };
@@ -403,7 +403,7 @@ export const commissionEngineRouter = router({
 
         await logAudit("split", splitId, "created", ctx.user?.name ?? "admin", null, created);
         await invalidateSplitCache();
-        await publishCommissionEvent({ eventType: "commission.split.created", agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { splitId, split: input } });
+        await publishCommissionEvent({ eventType: "commission.split.created" as any, agentId: 0, agentCode: "SYSTEM", amount: 0, metadata: { splitId, split: input } });
         await streamCommissionEvent({ eventType: "split.created", agentCode: "SYSTEM", amount: 0 });
         logger.info(`[Commission] Split ${splitId} created for ${input.transactionType}`);
 
@@ -552,7 +552,7 @@ export const commissionEngineRouter = router({
 
         // [Kafka] Publish payout approved event
         await publishCommissionEvent({
-          eventType: "commission.payout.approved",
+          eventType: "commission.payout.approved" as any,
           agentId: payout.agentId, agentCode: payout.agentCode, amount: parseFloat(payout.amount as string),
           metadata: { payoutId: input.id, tbTransferId: tbResult?.transferId },
         });

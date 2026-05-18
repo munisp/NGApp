@@ -20,19 +20,19 @@ export default function BatchOperations() {
   const [lastResult, setLastResult] = useState<any>(null);
 
   const kycMut = trpc.production.batchOps.bulkKycAction.useMutation({
-    onSuccess: (d) => { setLastResult(d); toast.success(`KYC ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
+    onSuccess: (d: any) => { setLastResult(d); toast.success(`KYC ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
     onError: () => toast.error("Batch KYC operation failed"),
   });
   const walletMut = trpc.production.batchOps.bulkWalletAction.useMutation({
-    onSuccess: (d) => { setLastResult(d); toast.success(`Wallet ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
+    onSuccess: (d: any) => { setLastResult(d); toast.success(`Wallet ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
     onError: () => toast.error("Batch wallet operation failed"),
   });
   const smsMut = trpc.production.batchOps.bulkSms.useMutation({
-    onSuccess: (d) => { setLastResult(d); toast.success(`SMS sent: ${d.sent}/${d.total}`); },
+    onSuccess: (d: any) => { setLastResult(d); toast.success(`SMS sent: ${d.sent}/${d.total}`); },
     onError: () => toast.error("Batch SMS failed"),
   });
   const agentMut = trpc.production.batchOps.bulkAgentAction.useMutation({
-    onSuccess: (d) => { setLastResult(d); toast.success(`Agent ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
+    onSuccess: (d: any) => { setLastResult(d); toast.success(`Agent ${d.action}: ${d.succeeded}/${d.total} succeeded`); },
     onError: () => toast.error("Batch agent operation failed"),
   });
 

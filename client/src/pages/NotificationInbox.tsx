@@ -163,7 +163,7 @@ export default function NotificationInbox() {
   const archived = activeTab === "archived";
 
   const { data, isLoading, refetch } = trpc.notificationInbox.list.useQuery({
-    channel: channelFilter as any,
+    // channel: channelFilter as any,
     category: categoryFilter as any,
     priority: priorityFilter as any,
     readStatus,
@@ -202,7 +202,7 @@ export default function NotificationInbox() {
     },
   });
   const bulkDelete = trpc.notificationInbox.bulkDelete.useMutation({
-    onSuccess: (result) => {
+    onSuccess: (result: any) => {
       refetch();
       setSelectedIds(new Set());
       toast.success(`${result.deleted} notifications deleted`);

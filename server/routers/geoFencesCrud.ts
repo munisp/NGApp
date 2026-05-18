@@ -48,7 +48,7 @@ export const geoFencesRouter = router({
     try {
       const db = (await getDb())!;
       if (!isValidPolygon(input.coordinates)) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid polygon — need at least 3 points with valid lat/lng" });
-      const [row] = await db.insert(geoFences).values({ name: input.name, coordinates: JSON.stringify(input.coordinates), radius: input.radius, isActive: input.isActive }).returning();
+      const [row] = await db.insert(geoFences).values({ name: input.name, coordinates: JSON.stringify(input.coordinates), radius: input.radius, isActive: input.isActive } as any).returning();
       return { ...row, vertexCount: input.coordinates.length };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

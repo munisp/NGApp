@@ -83,4 +83,21 @@ export const announcementReactionsRouter = router({
       
       return results;
     }),
+
+
+  addComment: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  getReactions: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  react: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

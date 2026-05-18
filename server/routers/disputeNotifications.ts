@@ -82,8 +82,8 @@ export const disputeNotificationsRouter = router({
       message: input.message ?? `Status notification sent via ${input.channel ?? "email"}`,
       content: input.message ?? `Status notification sent via ${input.channel ?? "email"}`,
       senderType: "system", senderName: "Notification System",
-    });
-    try { await publishDisputeEvent({ eventType: "dispute.notification.sent", disputeId: input.disputeId, data: { channel: input.channel, sentBy: ctx.user?.id } }); }
+    } as any);
+    try { await publishDisputeEvent({ eventType: "dispute.notification.sent" as any, disputeId: input.disputeId, data: { channel: input.channel, sentBy: ctx.user?.id } }); }
     catch (e) { logger.warn("[DisputeNotifications]", e); }
     return { success: true, message: "Notification sent", id: notif.id, timestamp: notif.sentAt };
   }),

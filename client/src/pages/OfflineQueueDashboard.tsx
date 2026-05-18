@@ -72,7 +72,7 @@ export default function OfflineQueueDashboard() {
   });
   const networkMetrics = trpc.offlineQueue.getNetworkMetrics.useQuery({});
   const retryMutation = trpc.offlineQueue.retryFailed.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`Retry initiated: ${data.retried} items queued for retry`);
       queueStatus.refetch();
       syncHistory.refetch();
@@ -82,7 +82,7 @@ export default function OfflineQueueDashboard() {
     },
   });
   const clearMutation = trpc.offlineQueue.clearSynced.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`Cleanup complete: ${data.cleared} synced items removed`);
       queueStatus.refetch();
       syncHistory.refetch();

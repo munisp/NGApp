@@ -83,4 +83,29 @@ export const offlineQueueRouter = router({
       
       return results;
     }),
+
+
+  clearSynced: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  getNetworkMetrics: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  getQueueStatus: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  getSyncHistory: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  retryFailed: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

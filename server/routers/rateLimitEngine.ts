@@ -17,7 +17,7 @@ export const rateLimitEngineRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
-        const conditions = input.active !== undefined ? [eq(rateLimitRules.active, input.active)] : [];
+        const conditions = input.isActive !== undefined ? [eq(rateLimitRules.isActive, input.active)] : [];
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(rateLimitRules).where(where).orderBy(desc(rateLimitRules.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);
@@ -43,7 +43,7 @@ export const rateLimitEngineRouter = router({
           name: input.name, endpoint: input.endpoint, method: input.method,
           maxRequests: input.maxRequests, windowSeconds: input.windowSeconds,
           burstAllowance: input.burstAllowance, scope: input.scope, active: true, createdBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         return { rule };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -92,7 +92,7 @@ export const rateLimitEngineRouter = router({
         const db = (await getDb())!;
         if (!db) return { allowed: true, remaining: 999, resetIn: 0 };
         const [rule] = await db.select().from(rateLimitRules)
-          .where(and(eq(rateLimitRules.endpoint, input.endpoint), eq(rateLimitRules.active, true))).limit(1);
+          .where(and(eq(rateLimitRules.endpoint, input.endpoint), eq(rateLimitRules.isActive, true))).limit(1);
         if (!rule) return { allowed: true, remaining: 999, resetIn: 0, noRule: true };
         // In production, this would check Redis/in-memory counters
         return { allowed: true, remaining: rule.maxRequests, resetIn: rule.windowSeconds, rule: { id: rule.id, name: rule.name } };

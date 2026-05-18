@@ -29,8 +29,8 @@ export const dataExportRouter = router({
   create: protectedProcedure.input(z.object({ name: z.string(), type: z.string(), format: z.enum(["csv", "json", "xlsx"]).default("csv") })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [job] = await db.insert(data_export_jobs).values({ name: input.name, type: input.type, format: input.format, status: "pending" }).returning();
-      await db.insert(auditLog).values({ action: "export_created", resource: "data_export_jobs", resourceId: String(job.id), status: "success", metadata: { name: input.name } });
+      const [job] = await db.insert(data_export_jobs).values({ name: input.name, type: input.type, format: input.format, status: "pending" } as any).returning();
+      await db.insert(auditLog).values({ action: "export_created", resource: "data_export_jobs", resourceId: String(job.id), status: "success", metadata: { name: input.name } } as any);
       return job;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -32,8 +32,8 @@ export const customerDisputePortalRouter = router({
   fileDispute: protectedProcedure.input(z.object({ customerId: z.number(), transactionId: z.number(), reason: z.string(), description: z.string(), amount: z.number().positive() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [dispute] = await db.insert(disputes).values({ customerId: input.customerId, transactionId: input.transactionId, reason: input.reason, description: input.description, amount: String(input.amount), status: "open", type: "customer" }).returning();
-      await db.insert(auditLog).values({ action: "customer_dispute_filed", resource: "disputes", resourceId: String(dispute.id), status: "success", metadata: { customerId: input.customerId, transactionId: input.transactionId } });
+      const [dispute] = await db.insert(disputes).values({ customerId: input.customerId, transactionId: input.transactionId, reason: input.reason, description: input.description, amount: String(input.amount), status: "open", type: "customer" } as any).returning();
+      await db.insert(auditLog).values({ action: "customer_dispute_filed", resource: "disputes", resourceId: String(dispute.id), status: "success", metadata: { customerId: input.customerId, transactionId: input.transactionId } } as any);
       return dispute;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

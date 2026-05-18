@@ -53,7 +53,7 @@ export default function AgentTrainingAcademy() {
             </div>
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
               <p className="text-xs text-gray-400 mb-1">Enrolled</p>
-              <p className="text-xl font-bold text-emerald-400">{String(stats?.totalEnrolled ?? "—")}</p>
+              <p className="text-xl font-bold text-emerald-400">{String(stats?.totalEnrollments ?? "—")}</p>
             </div>
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
               <p className="text-xs text-gray-400 mb-1">Completed</p>

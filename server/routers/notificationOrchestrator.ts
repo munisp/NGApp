@@ -94,7 +94,7 @@ export const notificationOrchestratorRouter = router({
           status: "queued",
           maxRetries: MAX_RETRIES,
           metadata: input.metadata ? JSON.stringify(input.metadata) : null,
-        }).returning();
+        } as any).returning();
         return { notification, queued: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

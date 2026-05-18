@@ -55,7 +55,7 @@ export async function recordBillingAudit(params: {
     userAgent: ctx.userAgent || null,
     sessionId: ctx.sessionId || null,
     notificationSent: false,
-  }).returning();
+  } as any).returning();
 
   // 2. Publish to Kafka (billing.audit.* topic) if configured
   const kafkaUrl = process.env.KAFKA_BROKER_URL;
@@ -70,7 +70,7 @@ export async function recordBillingAudit(params: {
         resourceType,
         resourceId,
         timestamp: entry.createdAt,
-      });
+      } as any);
     } catch (e) {
       console.warn("[BillingAudit] Kafka publish failed:", (e as Error).message);
     }

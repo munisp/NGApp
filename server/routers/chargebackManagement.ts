@@ -31,8 +31,8 @@ export const chargebackManagementRouter = router({
   createChargeback: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string(), amount: z.number().positive(), evidence: z.string().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [chargeback] = await db.insert(disputes).values({ transactionId: input.transactionId, type: "chargeback", reason: input.reason, amount: String(input.amount), status: "open" }).returning();
-      await db.insert(auditLog).values({ action: "chargeback_created", resource: "disputes", resourceId: String(chargeback.id), status: "success", metadata: { transactionId: input.transactionId, amount: input.amount } });
+      const [chargeback] = await db.insert(disputes).values({ transactionId: input.transactionId, type: "chargeback", reason: input.reason, amount: String(input.amount), status: "open" } as any).returning();
+      await db.insert(auditLog).values({ action: "chargeback_created", resource: "disputes", resourceId: String(chargeback.id), status: "success", metadata: { transactionId: input.transactionId, amount: input.amount } } as any);
       return chargeback;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

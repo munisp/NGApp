@@ -32,7 +32,7 @@ export const disputeAnalyticsRouter = router({
   getRefundRates: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [totalRefunds] = await db.select({ value: count() }).from(refunds).limit(100);
-    const [totalAmount] = await db.select({ value: sum(refunds.amount) }).from(refunds).limit(100);
+    const [totalAmount] = await db.select({ value: sum(refunds.originalAmount) }).from(refunds).limit(100);
     return { totalRefunds: Number(totalRefunds.value), totalRefundAmount: Number(totalAmount.value ?? 0) };
   }),
   getResolutionMetrics: protectedProcedure.query(async () => {

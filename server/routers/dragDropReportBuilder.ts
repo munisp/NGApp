@@ -29,7 +29,7 @@ export const dragDropReportBuilderRouter = router({
   createReport: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), config: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [report] = await db.insert(biReportDefinitions).values({ name: input.name, description: input.description, config: input.config ?? {} }).returning();
+      const [report] = await db.insert(biReportDefinitions).values({ name: input.name, description: input.description, config: input.config ?? {} } as any).returning();
       await db.insert(auditLog).values({ action: "report_created", resource: "bi_report_definitions", resourceId: String(report.id), status: "success", metadata: { name: input.name } });
       return report;
     } catch (error) {

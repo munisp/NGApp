@@ -55,7 +55,7 @@ function CreateScheduleDialog({ onCreated }: { onCreated: () => void }) {
       setName("");
       onCreated();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const handleCreate = () => {

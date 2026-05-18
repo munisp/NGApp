@@ -96,4 +96,21 @@ export const businessRulesRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  cbnLimits: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  commissionRates: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  kycTierLimits: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  rewardCatalog: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

@@ -20,7 +20,7 @@ export default function ScheduledEmailDelivery() {
   });
 
   const triggerMutation = trpc.sprint23.scheduledDelivery.triggerNow.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       utils.sprint23.scheduledDelivery.getConfig.invalidate();
       toast.success(`Report sent to ${data.recipientCount} recipients`);
     },
@@ -110,7 +110,7 @@ export default function ScheduledEmailDelivery() {
                         </tr>
                       </thead>
                       <tbody>
-                        {config.data.deliveryHistory.map((entry, idx) => (
+                        {config.data.deliveryHistory.map((entry: any, idx) => (
                           <tr key={idx} className="border-b border-border/50">
                             <td className="py-2 px-3">{new Date(entry.sentAt).toLocaleString()}</td>
                             <td className="text-center py-2 px-3">{entry.recipientCount}</td>

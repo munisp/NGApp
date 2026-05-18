@@ -488,7 +488,7 @@ export default function NetworkQualityHeatmap() {
                 <div className="space-y-3">
                   {events.map((evt: any) => {
                     const region = regionMetrics?.find(
-                      (r) => r.regionId === evt.regionId
+                      (r: any) => r.regionId === evt.regionId
                     );
                     return (
                       <div

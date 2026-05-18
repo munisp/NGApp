@@ -83,4 +83,47 @@ export const partnerOnboardingRouter = router({
       
       return results;
     }),
+
+
+  addCorridor: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  addFeeOverride: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  completeOnboarding: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  getBranding: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  listCorridors: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  listFees: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  registerTenant: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  updateBranding: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

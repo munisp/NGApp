@@ -19,8 +19,8 @@ export const webhookNotificationsRouter = router({
   createEndpoint: protectedProcedure.input(z.object({ url: z.string().url(), events: z.array(z.string()), secret: z.string().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [endpoint] = await db.insert(webhookEndpoints).values({ url: input.url, events: input.events, status: "active" }).returning();
-      await db.insert(auditLog).values({ action: "webhook_endpoint_created", resource: "webhook_endpoints", resourceId: String(endpoint.id), status: "success", metadata: { url: input.url, events: input.events } });
+      const [endpoint] = await db.insert(webhookEndpoints).values({ url: input.url, events: input.events, status: "active" } as any).returning();
+      await db.insert(auditLog).values({ action: "webhook_endpoint_created", resource: "webhook_endpoints", resourceId: String(endpoint.id), status: "success", metadata: { url: input.url, events: input.events } } as any);
       return endpoint;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

@@ -273,7 +273,7 @@ export const merchantRouter = router({
             status: "open",
             createdAt: new Date(),
             updatedAt: new Date(),
-          })
+          } as any)
           .returning({ id: disputes.id });
 
         return {

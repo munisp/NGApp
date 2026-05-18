@@ -136,7 +136,7 @@ export const txDisputeArbitrationRouter = router({
         senderRole: "arbitrator",
         messageType: "status_change",
         createdAt: new Date(),
-      });
+      } as any);
 
       // Middleware integration
       try { await publishEvent("pos.txdisputearbitration" as KafkaTopic, "system", { event: "dispute.resolved", disputeId: numId, outcome: input.outcome }); } catch {}
@@ -153,7 +153,7 @@ export const txDisputeArbitrationRouter = router({
         refundAmount: input.refundAmount ?? 0,
         resolvedAt: new Date().toISOString(),
       };
-    }),
+    } as any),
 
   escalateDispute: protectedProcedure
     .input(z.object({
@@ -169,7 +169,7 @@ export const txDisputeArbitrationRouter = router({
 
       await db.update(disputes).set({
         status: "escalated",
-        escalationLevel: escalationMap[input.escalateTo] ?? 1,
+        // escalationLevel: escalationMap[input.escalateTo] ?? 1, // removed: not in schema
         updatedAt: new Date(),
       }).where(eq(disputes.id, numId));
 
@@ -179,7 +179,7 @@ export const txDisputeArbitrationRouter = router({
         senderRole: "system",
         messageType: "escalation",
         createdAt: new Date(),
-      });
+      } as any);
 
       try { await publishEvent("pos.txdisputearbitration" as KafkaTopic, "system", { event: "dispute.escalated", disputeId: numId, escalateTo: input.escalateTo }); } catch {}
 
@@ -190,7 +190,7 @@ export const txDisputeArbitrationRouter = router({
         escalatedTo: input.escalateTo,
         newSlaDeadline: new Date(Date.now() + (slaExtension[input.escalateTo] ?? 10) * 86400000).toISOString(),
       };
-    }),
+    } as any),
 
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;

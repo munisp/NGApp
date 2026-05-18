@@ -50,4 +50,13 @@ export const advancedNotificationsRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  dashboard: publicProcedure.query(async () => {
+    return { totalItems: 0, activeItems: 0, recentActivity: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  listTemplates: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

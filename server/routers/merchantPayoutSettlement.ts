@@ -48,13 +48,13 @@ export const merchantPayoutSettlementRouter = router({
           accountNumber: input.accountNumber, accountName: input.accountName,
           settlementCycle: input.settlementCycle, settlementDate, status: "pending",
           initiatedBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         return { payout };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   approvePayout: protectedProcedure
     .input(z.object({ payoutId: z.number() }))

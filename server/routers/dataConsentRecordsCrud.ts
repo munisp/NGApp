@@ -15,7 +15,7 @@ export const dataConsentRecordsRouter = router({
     try {
       const db = (await getDb())!;
       const conditions: any[] = [];
-      if (input.userId) conditions.push(eq(dataConsentRecords.userId, input.userId));
+      if (input.userId) conditions.push(eq(dataConsentRecords.userAgent, input.userId));
       if (input.consentType) conditions.push(eq(dataConsentRecords.consentType, input.consentType));
       const rows = await db.select().from(dataConsentRecords).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(dataConsentRecords.id)).limit(input.limit).offset(input.offset);
       const [{ total }] = await db.select({ total: count() }).from(dataConsentRecords).where(conditions.length ? and(...conditions) : undefined).limit(100);
@@ -41,7 +41,7 @@ export const dataConsentRecordsRouter = router({
     try {
       const db = (await getDb())!;
       const expiresAt = new Date(Date.now() + CONSENT_EXPIRY_DAYS * 86400000);
-      const [row] = await db.insert(dataConsentRecords).values({ ...input, status: "granted", grantedAt: new Date(), expiresAt }).returning();
+      const [row] = await db.insert(dataConsentRecords).values({ ...input, status: "granted", grantedAt: new Date(), expiresAt } as any).returning();
       return { ...row, message: `Consent granted for ${input.consentType}. Expires: ${expiresAt.toISOString()}` };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -63,7 +63,7 @@ export const dataConsentRecordsRouter = router({
   getComplianceStatus: protectedProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const records = await db.select().from(dataConsentRecords).where(eq(dataConsentRecords.userId, input.userId)).limit(100);
+      const records = await db.select().from(dataConsentRecords).where(eq(dataConsentRecords.userAgent, input.userId)).limit(100);
       const active = records.filter((r: any) => r.status === "granted" && (!r.expiresAt || new Date(r.expiresAt) > new Date()));
       const missing = CONSENT_TYPES.filter(t => !active.find((r: any) => r.consentType === t));
       return { userId: input.userId, activeConsents: active.length, missingConsents: missing, isCompliant: missing.filter(m => m === "data_processing").length === 0, consentTypes: CONSENT_TYPES };

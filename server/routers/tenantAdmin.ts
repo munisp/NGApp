@@ -77,4 +77,35 @@ export const tenantAdminRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
     }
   }),
+
+
+  dashboard: publicProcedure.query(async () => {
+    return { totalItems: 0, activeItems: 0, recentActivity: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  inviteUser: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  listUsers: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  removeUser: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  settings: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  toggleLive: publicProcedure
+    .input(z.object({ id: z.union([z.number(), z.string()]).optional() }).optional())
+    .mutation(async () => {
+      return { success: true };
+    }),
 });

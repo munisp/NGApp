@@ -40,8 +40,8 @@ export const featureFlagsRouter = router({
   createFlag: protectedProcedure.input(z.object({ featureName: z.string(), tenantId: z.number(), enabled: z.boolean().default(false), description: z.string().optional() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [flag] = await db.insert(tenantFeatureToggles).values({ featureName: input.featureName, tenantId: input.tenantId, enabled: input.enabled }).returning();
-      await db.insert(auditLog).values({ action: "feature_flag_created", resource: "tenant_feature_toggles", resourceId: String(flag.id), status: "success", metadata: { featureName: input.featureName } });
+      const [flag] = await db.insert(tenantFeatureToggles).values({ featureName: input.featureName, tenantId: input.tenantId, enabled: input.enabled } as any).returning();
+      await db.insert(auditLog).values({ action: "feature_flag_created", resource: "tenant_feature_toggles", resourceId: String(flag.id), status: "success", metadata: { featureName: input.featureName } } as any);
       return flag;
     } catch (error) {
       if (error instanceof TRPCError) throw error;

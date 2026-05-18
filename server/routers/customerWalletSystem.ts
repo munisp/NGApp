@@ -32,8 +32,8 @@ export const customerWalletSystemRouter = router({
   topUp: protectedProcedure.input(z.object({ customerId: z.number(), amount: z.number().positive(), source: z.string() })).mutation(async ({ input }) => {
     try {
       const db = (await getDb())!;
-      const [tx] = await db.insert(transactions).values({ customerId: input.customerId, amount: String(input.amount), type: "Cash In", status: "success", channel: "App", reference: "TOP-" + crypto.randomUUID() }).returning();
-      await db.insert(auditLog).values({ action: "wallet_topup", resource: "transactions", resourceId: String(tx.id), status: "success", metadata: { customerId: input.customerId, amount: input.amount, source: input.source } });
+      const [tx] = await db.insert(transactions).values({ customerId: input.customerId, amount: String(input.amount), type: "Cash In", status: "success", channel: "App", reference: "TOP-" + crypto.randomUUID() } as any).returning();
+      await db.insert(auditLog).values({ action: "wallet_topup", resource: "transactions", resourceId: String(tx.id), status: "success", metadata: { customerId: input.customerId, amount: input.amount, source: input.source } } as any);
       return { success: true, transactionId: tx.id, amount: input.amount };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

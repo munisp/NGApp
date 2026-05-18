@@ -57,7 +57,7 @@ export const disputeMediationAIRouter = router({
         const [d] = await db.select().from(disputes).where(eq(disputes.id, did)).limit(1);
         if (!d) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
         const ai = generateAIRecommendation(d);
-        try { await publishDisputeEvent({ eventType: "dispute.ai.analyzed", disputeId: did, data: ai }); } catch (e) { logger.warn("[DisputeMediation]", e); }
+        try { await publishDisputeEvent({ eventType: "dispute.ai.analyzed" as any, disputeId: did, data: ai }); } catch (e) { logger.warn("[DisputeMediation]", e); }
         return { mediationId: `MED-${d.id}`, disputeId: input.disputeId, ...ai, suggestedAmount: 25000, createdAt: Date.now() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -68,10 +68,10 @@ export const disputeMediationAIRouter = router({
   acceptRecommendation: protectedProcedure.input(z.object({ mediationId: z.string() })).mutation(async ({ input, ctx }) => {
     try {
       const db = (await getDb())!; const did = parseInt(input.mediationId.replace(/\D/g, "")) || 0;
-      const [u] = await db.update(disputes).set({ status: "resolved", resolvedAt: new Date(), resolvedBy: "AI-mediation", updatedAt: new Date() }).where(eq(disputes.id, did)).returning();
+      const [u] = await db.update(disputes).set({ status: "resolved", resolvedAt: new Date(), resolvedBy: "AI-mediation", updatedAt: new Date() } as any).where(eq(disputes.id, did)).returning();
       if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
-      await db.insert(disputeMessages).values({ disputeId: did, authorName: "AI Mediation", authorRole: "system", message: "AI recommendation accepted", content: "AI recommendation accepted", senderType: "system", senderName: "AI Mediation" });
-      try { await publishDisputeEvent({ eventType: "dispute.ai.accepted", disputeId: did, data: { acceptedBy: ctx.user?.id } }); await tbRecordRefundReversal({ disputeId: did, amount: 0, currency: "NGN", type: "ai_resolution" }); } catch (e) { logger.warn("[DisputeMediation]", e); }
+      await db.insert(disputeMessages).values({ disputeId: did, authorName: "AI Mediation", authorRole: "system", message: "AI recommendation accepted", content: "AI recommendation accepted", senderType: "system", senderName: "AI Mediation" } as any);
+      try { await publishDisputeEvent({ eventType: "dispute.ai.accepted" as any, disputeId: did, data: { acceptedBy: ctx.user?.id } }); await tbRecordRefundReversal({ disputeId: did, amount: 0, currency: "NGN", type: "ai_resolution" }); } catch (e) { logger.warn("[DisputeMediation]", e); }
       return { success: true, mediationId: input.mediationId, status: "resolved", resolvedAt: Date.now() };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
@@ -83,10 +83,10 @@ export const disputeMediationAIRouter = router({
     try {
       const db = (await getDb())!; const did = parseInt(input.mediationId.replace(/\D/g, "")) || 0;
       const st = input.newDecision === "deny" ? "closed" : "resolved";
-      const [u] = await db.update(disputes).set({ status: st, resolution: input.newDecision, resolvedAt: new Date(), resolvedBy: ctx.user?.name ?? "admin", updatedAt: new Date() }).where(eq(disputes.id, did)).returning();
+      const [u] = await db.update(disputes).set({ status: st, resolution: input.newDecision, resolvedAt: new Date(), resolvedBy: ctx.user?.name ?? "admin", updatedAt: new Date() } as any).where(eq(disputes.id, did)).returning();
       if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
-      await db.insert(disputeMessages).values({ disputeId: did, authorName: ctx.user?.name ?? "Admin", authorRole: "admin", message: `Override: ${input.newDecision}. ${input.reason}`, content: `Override: ${input.newDecision}. ${input.reason}`, senderType: "admin", senderName: ctx.user?.name ?? "Admin" });
-      try { await publishDisputeEvent({ eventType: "dispute.ai.overridden", disputeId: did, data: { newDecision: input.newDecision } }); } catch (e) { logger.warn("[DisputeMediation]", e); }
+      await db.insert(disputeMessages).values({ disputeId: did, authorName: ctx.user?.name ?? "Admin", authorRole: "admin", message: `Override: ${input.newDecision}. ${input.reason}`, content: `Override: ${input.newDecision}. ${input.reason}`, senderType: "admin", senderName: ctx.user?.name ?? "Admin" } as any);
+      try { await publishDisputeEvent({ eventType: "dispute.ai.overridden" as any, disputeId: did, data: { newDecision: input.newDecision } }); } catch (e) { logger.warn("[DisputeMediation]", e); }
       return { success: true, mediationId: input.mediationId, overridden: true, newDecision: input.newDecision, overriddenAt: Date.now() };
     } catch (error) {
       if (error instanceof TRPCError) throw error;

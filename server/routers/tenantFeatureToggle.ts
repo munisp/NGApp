@@ -19,7 +19,7 @@ export const tenantFeatureToggleRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.tenantId) conditions.push(eq(tenantFeatureToggles.tenantId, input.tenantId));
-        if (input.featureName) conditions.push(eq(tenantFeatureToggles.featureName, input.featureName));
+        if (input.featureName) conditions.push(eq(tenantFeatureToggles.featureKey, input.featureName));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(tenantFeatureToggles).where(where).orderBy(desc(tenantFeatureToggles.createdAt))
           .limit(input.limit).offset((input.page - 1) * input.limit);
@@ -44,13 +44,13 @@ export const tenantFeatureToggleRouter = router({
           tenantId: input.tenantId, featureName: input.featureName, enabled: input.enabled,
           rolloutPercentage: input.rolloutPercentage, config: input.config ? JSON.stringify(input.config) : null,
           updatedBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         return { toggle };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   update: protectedProcedure
     .input(z.object({ toggleId: z.number(), enabled: z.boolean().optional(), rolloutPercentage: z.number().optional(), config: z.any().optional() }))
@@ -92,7 +92,7 @@ export const tenantFeatureToggleRouter = router({
         const db = (await getDb())!;
         if (!db) return { enabled: false };
         const [toggle] = await db.select().from(tenantFeatureToggles)
-          .where(and(eq(tenantFeatureToggles.tenantId, input.tenantId), eq(tenantFeatureToggles.featureName, input.featureName)));
+          .where(and(eq(tenantFeatureToggles.tenantId, input.tenantId), eq(tenantFeatureToggles.featureKey, input.featureName)));
         if (!toggle) return { enabled: false };
         if (!toggle.enabled) return { enabled: false };
         if (toggle.rolloutPercentage < 100) {
@@ -114,7 +114,7 @@ export const tenantFeatureToggleRouter = router({
         const db = (await getDb())!;
         if (!db) throw new Error("Database unavailable");
         await db.update(tenantFeatureToggles).set({ enabled: false, updatedAt: new Date(), updatedBy: ctx.user?.id })
-          .where(eq(tenantFeatureToggles.featureName, input.featureName));
+          .where(eq(tenantFeatureToggles.featureKey, input.featureName));
         return { success: true, killed: input.featureName };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

@@ -69,7 +69,7 @@ export default function AgentFloatInsuranceClaims() {
             </div>
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
               <p className="text-xs text-gray-400 mb-1">Paid Amount</p>
-              <p className="text-xl font-bold text-cyan-400">{String(stats?.totalPaidAmount ?? "—")}</p>
+              <p className="text-xl font-bold text-cyan-400">{String(stats?.totalAmount ?? "—")}</p>
             </div>
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
               <p className="text-xs text-gray-400 mb-1">Avg Processing</p>

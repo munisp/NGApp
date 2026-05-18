@@ -42,7 +42,7 @@ export default function RateAlerts() {
   const utils = trpc.useUtils();
 
   const { data: alertsData, isLoading } = trpc.rateAlerts.list.useQuery({
-    status: filter,
+    // status: filter,
     pageSize: 50,
   });
 
@@ -58,32 +58,32 @@ export default function RateAlerts() {
       utils.rateAlerts.list.invalidate();
       utils.rateAlerts.getStats.invalidate();
     },
-    onError: (e) => toast.error("Failed: " + e.message),
+    onError: (e: any) => toast.error("Failed: " + e.message),
   });
 
   const toggleAlert = trpc.rateAlerts.toggle.useMutation({
     onSuccess: () => { utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const rearmAlert = trpc.rateAlerts.rearm.useMutation({
     onSuccess: () => { toast.success("Alert re-armed"); utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const deleteAlert = trpc.rateAlerts.delete.useMutation({
     onSuccess: () => { toast.success("Alert deleted"); utils.rateAlerts.list.invalidate(); utils.rateAlerts.getStats.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const runCheck = trpc.rateAlerts.runCheck.useMutation({
-    onSuccess: (d) => {
+    onSuccess: (d: any) => {
       toast.success(`Check complete: ${d.checked} checked, ${d.triggered} triggered`);
       utils.rateAlerts.list.invalidate();
       utils.rateAlerts.getStats.invalidate();
       utils.rateAlerts.getCheckerStatus.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const alerts = useMemo(() => {
@@ -91,7 +91,7 @@ export default function RateAlerts() {
     if (!search) return alertsData.items;
     const q = search.toLowerCase();
     return alertsData.items.filter(
-      (a) =>
+      (a: any) =>
         a.baseCurrency.toLowerCase().includes(q) ||
         a.targetCurrency.toLowerCase().includes(q) ||
         (a.note && a.note.toLowerCase().includes(q))

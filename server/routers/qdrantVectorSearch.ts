@@ -83,4 +83,25 @@ export const qdrantVectorSearchRouter = router({
       
       return results;
     }),
+
+
+  analytics: publicProcedure.query(async () => {
+    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
+  }),
+
+  collectionStats: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  health: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  ragAnswer: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
+
+  semanticSearch: publicProcedure.query(async () => {
+    return { data: [], total: 0 };
+  }),
 });

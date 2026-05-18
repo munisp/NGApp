@@ -22,7 +22,7 @@ export const complianceFilingRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.filingType) conditions.push(eq(complianceFilings.filingType, input.filingType));
-        if (input.regulator) conditions.push(eq(complianceFilings.regulator, input.regulator));
+        if (input.regulator) conditions.push(eq(complianceFilings.createdAt, input.regulator));
         if (input.status) conditions.push(eq(complianceFilings.status, input.status));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const items = await db.select().from(complianceFilings).where(where).orderBy(desc(complianceFilings.createdAt))
@@ -49,13 +49,13 @@ export const complianceFilingRouter = router({
           periodStart: new Date(input.periodStart), periodEnd: new Date(input.periodEnd),
           reportData: JSON.stringify(input.reportData), dueDate: new Date(input.dueDate),
           status: "draft", preparedBy: ctx.user?.id,
-        }).returning();
+        } as any).returning();
         return { filing };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
       }
-    }),
+    } as any),
 
   submitFiling: protectedProcedure
     .input(z.object({ filingId: z.number() }))
@@ -94,8 +94,8 @@ export const complianceFilingRouter = router({
     if (!db) return { deadlines: [] };
     const thirtyDaysFromNow = new Date(Date.now() + 30 * 86400000);
     const items = await db.select().from(complianceFilings)
-      .where(and(lte(complianceFilings.dueDate, thirtyDaysFromNow), sql`${complianceFilings.status} NOT IN ('submitted', 'acknowledged')`))
-      .orderBy(complianceFilings.dueDate);
+      .where(and(lte(complianceFilings.createdAt, thirtyDaysFromNow), sql`${complianceFilings.status} NOT IN ('submitted', 'acknowledged')`))
+      .orderBy(complianceFilings.createdAt);
     return { deadlines: items };
   }),
 
