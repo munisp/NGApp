@@ -1,41 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { devices, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { agents } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const agentDeviceFingerprintRouter = router({
-  getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalDevices: 0, activeDevices: 0, flaggedDevices: 0 };
-    const [total] = await db.select({ value: count() }).from(devices).limit(100);
-    return { totalDevices: Number(total.value), activeDevices: Number(total.value), flaggedDevices: 0 };
-  }),
-  listDevices: protectedProcedure.input(z.object({ agentId: z.number().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { devices: [], total: 0 };
-      const conditions: any[] = [];
-      if (input?.agentId) conditions.push(eq(devices.agentId, input.agentId));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const rows = await db.select().from(devices).where(where).orderBy(desc(devices.lastSeenAt)).limit(input?.limit ?? 20);
-      return { devices: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  registerDevice: protectedProcedure.input(z.object({ agentId: z.number(), serialNumber: z.string(), model: z.string().optional(), appVersion: z.string().optional() })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) throw new Error("DB not available");
-      const [device] = await db.insert(devices).values({ agentId: input.agentId, serialNumber: input.serialNumber, model: input.model ?? "PAX A920 MAX", appVersion: input.appVersion ?? "1.0.0", status: "active" }).returning();
-      await db.insert(auditLog).values({ action: "device_registered", resource: "devices", resourceId: String(device.id), status: "success", metadata: { agentId: input.agentId } });
-      return { success: true, device };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(agents)
+        .where(eq(agents.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

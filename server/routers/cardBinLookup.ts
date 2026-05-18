@@ -1,46 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { transactions } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const cardBinLookupRouter = router({
-  lookup: protectedProcedure.input(z.object({ bin: z.string().min(6).max(8) })).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { found: false };
-      const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "card_bin_" + input.bin)).limit(1);
-      if (rows.length > 0 && rows[0].value) return { found: true, ...JSON.parse(String(rows[0].value)) };
-      await db.insert(auditLog).values({ action: "bin_lookup", resource: "card_bins", resourceId: input.bin, status: "success", metadata: {} });
-      return { found: false, bin: input.bin };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  addBin: protectedProcedure.input(z.object({ bin: z.string().min(6).max(8), bank: z.string(), scheme: z.enum(["visa", "mastercard", "verve", "amex"]), type: z.enum(["debit", "credit", "prepaid"]), country: z.string().default("NG") })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) throw new Error("DB not available");
-      await db.insert(systemConfig).values({ key: "card_bin_" + input.bin, value: JSON.stringify(input) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(input), updatedAt: new Date() } });
-      return { success: true };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  listBins: protectedProcedure.input(z.object({ scheme: z.string().optional(), limit: z.number().default(50) }).optional()).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { bins: [], total: 0 };
-      const rows = await db.select().from(systemConfig).where(sql`${systemConfig.key} LIKE 'card_bin_%'`).limit(input?.limit ?? 50);
-      let bins = rows.map(r => ({ bin: r.key.replace("card_bin_", ""), ...JSON.parse(String(r.value ?? "{}")) }));
-      if (input?.scheme) bins = bins.filter((b: any) => b.scheme === input.scheme);
-      return { bins, total: bins.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

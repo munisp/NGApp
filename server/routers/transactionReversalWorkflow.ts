@@ -1,46 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { desc, eq, and, count } from "drizzle-orm";
-import { transactions, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { transactions } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const transactionReversalWorkflowRouter = router({
-  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const conditions = [eq(transactions.status, "pending_reversal_approval")];
-      if (input?.status && input.status !== "pending_reversal_approval") conditions.push(eq(transactions.status, input.status));
-      const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
-      const [total] = await db.select({ value: count() }).from(transactions).where(and(...conditions)).limit(100);
-      return { reversals: rows, total: Number(total.value) };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  approve: protectedProcedure.input(z.object({ transactionId: z.number(), approvedBy: z.string().min(1) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [updated] = await db.update(transactions).set({ status: "reversed", approvedBy: input.approvedBy, approvedAt: new Date() }).where(eq(transactions.id, input.transactionId)).returning();
-      if (!updated) throw new Error("Transaction not found");
-      await db.insert(auditLog).values({ action: "transaction_reversal_approved", resource: "transactions", resourceId: String(input.transactionId), status: "success", metadata: { approvedBy: input.approvedBy, ref: updated.ref } });
-      return { id: updated.id, ref: updated.ref, status: "reversed" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  reject: protectedProcedure.input(z.object({ transactionId: z.number(), reason: z.string().min(1), rejectedBy: z.string().min(1) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [updated] = await db.update(transactions).set({ status: "failed", failureReason: input.reason }).where(eq(transactions.id, input.transactionId)).returning();
-      if (!updated) throw new Error("Transaction not found");
-      await db.insert(auditLog).values({ action: "transaction_reversal_rejected", resource: "transactions", resourceId: String(input.transactionId), status: "success", metadata: { reason: input.reason, rejectedBy: input.rejectedBy } });
-      return { id: updated.id, ref: updated.ref, status: "failed", reason: input.reason };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

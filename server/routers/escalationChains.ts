@@ -1,35 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, and } from "drizzle-orm";
-import { observabilityAlerts, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const escalationChainsRouter = router({
-  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const rows = await db.select().from(observabilityAlerts).where(eq(observabilityAlerts.status, "escalated")).orderBy(desc(observabilityAlerts.createdAt)).limit(input?.limit ?? 50);
-      return { escalations: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  escalate: protectedProcedure.input(z.object({ alertId: z.number(), level: z.number().int().min(1).max(5) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [updated] = await db.update(observabilityAlerts).set({ status: "escalated" }).where(eq(observabilityAlerts.id, input.alertId)).returning();
-      await db.insert(auditLog).values({ action: "escalation_triggered", resource: "observability_alerts", resourceId: String(input.alertId), status: "success", metadata: { level: input.level } });
-      return { id: updated?.id ?? input.alertId, level: input.level, status: "escalated" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(observabilityAlerts).where(eq(observabilityAlerts.status, "escalated")).limit(100);
-    return { totalEscalations: Number(total.value) };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

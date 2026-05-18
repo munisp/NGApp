@@ -1,32 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { transactions, agents, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const financialNlEngineRouter = router({
-  query: protectedProcedure.input(z.object({ question: z.string(), context: z.string().optional() })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { answer: "Database not available", confidence: 0, data: [] };
-      await db.insert(auditLog).values({ action: "financial_nl_query", resource: "nl_engine", resourceId: "query-" + crypto.randomUUID(), status: "success", metadata: { question: input.question } });
-      const q = input.question.toLowerCase();
-      if (q.includes("agent")) {
-        const [result] = await db.select({ value: count() }).from(agents).limit(100);
-        return { answer: "Total agents: " + result.value, confidence: 0.95, data: [{ metric: "Total Agents", value: Number(result.value) }] };
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
       }
-      if (q.includes("transaction")) {
-        const [result] = await db.select({ value: count() }).from(transactions).limit(100);
-        return { answer: "Total transactions: " + result.value, confidence: 0.95, data: [{ metric: "Total Transactions", value: Number(result.value) }] };
-      }
-      return { answer: "Query processed. Please refine your question.", confidence: 0.5, data: [] };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getSuggestions: protectedProcedure.query(async () => {
-    return { suggestions: ["What is total revenue?", "How many active agents?", "Transaction volume today?", "Top performing regions?", "Commission payout summary?"] };
-  }),
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

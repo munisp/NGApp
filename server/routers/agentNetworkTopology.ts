@@ -1,38 +1,82 @@
-// Sprint 95: Production implementation — agentNetworkTopology
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
 import { agents } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const agentNetworkTopologyRouter = router({
-  getTopology: protectedProcedure
-    .input(z.object({ region: z.string().optional() }))
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
     .query(async ({ input }) => {
-      try {
-        const db = (await getDb())!;
-        const allAgents = await db.select().from(agents).limit(500);
-        const nodes = allAgents.map(a => ({ id: a.id, name: a.name, tier: a.tier, lat: 0, lng: 0, connections: 0 }));
-        return { nodes, edges: [], totalNodes: nodes.length, density: 0 };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-      }
+      const database = await db();
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
     }),
-  getClusterInfo: protectedProcedure
-    .input(z.object({ clusterId: z.string() }))
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      try {
-        return { clusterId: input.clusterId, agentCount: 0, avgTransactions: 0, healthScore: 85 };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(agents)
+        .where(eq(agents.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
       }
+      return record;
     }),
-  getConnectivityMetrics: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [{ total }] = await db.select({ total: count() }).from(agents).limit(100);
-    return { totalNodes: total, connectedNodes: total, avgLatency: 45, networkHealth: "good" };
-  }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

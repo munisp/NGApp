@@ -1,44 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { systemConfig, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const userNotifPreferencesRouter = router({
-  getPreferences: protectedProcedure.input(z.object({ userId: z.string() })).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { preferences: { email: true, sms: true, push: true, inApp: true, channels: {} } };
-      const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "notif_pref_" + input.userId)).limit(1);
-      if (rows.length > 0 && rows[0].value) return { preferences: JSON.parse(String(rows[0].value)) };
-      return { preferences: { email: true, sms: true, push: true, inApp: true, channels: {} } };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  updatePreferences: protectedProcedure.input(z.object({ userId: z.string(), email: z.boolean().optional(), sms: z.boolean().optional(), push: z.boolean().optional(), inApp: z.boolean().optional(), quietHoursStart: z.string().optional(), quietHoursEnd: z.string().optional() })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) throw new Error("DB not available");
-      const { userId, ...prefs } = input;
-      await db.insert(systemConfig).values({ key: "notif_pref_" + userId, value: JSON.stringify(prefs) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(prefs), updatedAt: new Date() } });
-      return { success: true };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  muteChannel: protectedProcedure.input(z.object({ userId: z.string(), channel: z.string(), muted: z.boolean(), duration: z.number().optional() })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) throw new Error("DB not available");
-      await db.insert(auditLog).values({ action: input.muted ? "channel_muted" : "channel_unmuted", resource: "notification_preferences", resourceId: input.userId, status: "success", metadata: { channel: input.channel, duration: input.duration } });
-      return { success: true };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

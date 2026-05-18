@@ -1,40 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { transactions, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { transactions } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const paymentGatewayRouterRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalTransactions: 0, successRate: 0, totalVolume: "0", avgLatencyMs: 0 };
-    const [total] = await db.select({ value: count() }).from(transactions).limit(100);
-    const [vol] = await db.select({ value: sql<string>`COALESCE(SUM(${transactions.amount}), 0)` }).from(transactions).limit(100);
-    return { totalTransactions: Number(total.value), successRate: 99, totalVolume: vol.value, avgLatencyMs: 85 };
-  }),
-  processPayment: protectedProcedure.input(z.object({ agentId: z.number(), amount: z.string(), type: z.string(), recipientPhone: z.string(), channel: z.string().default("Cash") })).mutation(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) throw new Error("DB not available");
-      const ref = "GW" + crypto.randomUUID().toUpperCase();
-      const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: input.amount, type: input.type, channel: input.channel, status: "success", customerPhone: input.recipientPhone, ref }).returning();
-      await db.insert(auditLog).values({ action: "payment_gateway_tx", resource: "transactions", resourceId: String(tx.id), status: "success" });
-      return { success: true, transaction: tx, reference: ref };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  listTransactions: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { transactions: [], total: 0 };
-      const rows = await db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 20);
-      return { transactions: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

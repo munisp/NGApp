@@ -1,38 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, sum } from "drizzle-orm";
-import { complianceFilings, transactions, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { transactions } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const regulatoryReportingEngineRouter = router({
-  generateReport: protectedProcedure.input(z.object({ reportType: z.enum(["cbn_returns", "nibss_report", "aml_report", "ctr_report"]), period: z.string(), format: z.enum(["pdf", "xlsx", "csv"]).default("xlsx") })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [txCount] = await db.select({ value: count() }).from(transactions).limit(100);
-      const [txVolume] = await db.select({ value: sum(transactions.amount) }).from(transactions).limit(100);
-      const refNum = "RPT-" + crypto.randomUUID().slice(0, 8).toUpperCase();
-      const [filing] = await db.insert(complianceFilings).values({ filingType: input.reportType, referenceNumber: refNum, reportingPeriod: input.period, status: "generated", totalTransactions: Number(txCount.value), totalAmount: String(txVolume.value ?? 0), filingData: JSON.stringify({ format: input.format }) }).returning();
-      await db.insert(auditLog).values({ action: "regulatory_report_generated", resource: "compliance_filings", resourceId: String(filing.id), status: "success", metadata: { reportType: input.reportType, period: input.period } });
-      return { reportId: filing.id, reportType: input.reportType, period: input.period, status: "generated" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  listReports: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const rows = await db.select().from(complianceFilings).orderBy(desc(complianceFilings.createdAt)).limit(input?.limit ?? 20);
-      return { reports: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(complianceFilings).limit(100);
-    return { totalReports: Number(total.value), lastUpdated: new Date().toISOString() };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(transactions);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

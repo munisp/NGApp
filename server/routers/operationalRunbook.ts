@@ -1,38 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, and } from "drizzle-orm";
-import { systemConfig, auditLog, platform_incidents } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const operationalRunbookRouter = router({
-  listRunbooks: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50), category: z.string().optional() }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "runbook_registry")).limit(1);
-      const registry = rows[0] ? JSON.parse(String(rows[0].value)) : [];
-      const filtered = input?.category ? registry.filter((r: any) => r.category === input.category) : registry;
-      return { runbooks: filtered.slice(0, input?.limit ?? 50), total: filtered.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  executeRunbook: protectedProcedure.input(z.object({ runbookId: z.string().min(1), parameters: z.record(z.string(), z.string()).optional(), dryRun: z.boolean().default(false) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const executionId = crypto.randomUUID();
-      await db.insert(auditLog).values({ action: input.dryRun ? "runbook_dry_run" : "runbook_executed", resource: "operational_runbook", resourceId: executionId, status: "success", metadata: { runbookId: input.runbookId, parameters: input.parameters ?? {}, dryRun: input.dryRun } });
-      return { executionId, runbookId: input.runbookId, status: input.dryRun ? "dry_run_complete" : "executed", startedAt: new Date().toISOString() };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [executions] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "runbook_executed")).limit(100);
-    const [incidents] = await db.select({ value: count() }).from(platform_incidents).limit(100);
-    return { totalExecutions: Number(executions.value), openIncidents: Number(incidents.value) };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

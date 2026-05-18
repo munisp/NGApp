@@ -1,39 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, sum, and, gte } from "drizzle-orm";
-import { notification_logs as notificationLogs, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const smsNotificationsRouter = router({
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(notificationLogs).limit(100);
-    const [sent] = await db.select({ value: count() }).from(notificationLogs).where(eq(notificationLogs.status, "sent")).limit(100);
-    const [failed] = await db.select({ value: count() }).from(notificationLogs).where(eq(notificationLogs.status, "failed")).limit(100);
-    return { totalNotifications: Number(total.value), sentCount: Number(sent.value), failedCount: Number(failed.value) };
-  }),
-  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const conditions = [];
-      if (input?.status) conditions.push(eq(notificationLogs.status, input.status));
-      const rows = await db.select().from(notificationLogs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(notificationLogs.createdAt)).limit(input?.limit ?? 50);
-      return { notifications: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  send: protectedProcedure.input(z.object({ recipientId: z.string(), body: z.string().min(1).max(1000), subject: z.string().optional() })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [notif] = await db.insert(notificationLogs).values({ recipientId: input.recipientId, recipientType: "agent", body: input.body, subject: input.subject ?? "SMS Notification", status: "pending" }).returning();
-      await db.insert(auditLog).values({ action: "sms_sent", resource: "notification_logs", resourceId: String(notif.id), status: "success", metadata: { recipientId: input.recipientId } });
-      return { id: notif.id, status: "pending" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

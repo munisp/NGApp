@@ -1,41 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, and, avg } from "drizzle-orm";
-import { rateLimitRules, apiKeys, apiKeyUsage, platform_health_checks, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const apiGatewayRouter = router({
-  listRoutes: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const rows = await db.select().from(rateLimitRules).orderBy(desc(rateLimitRules.createdAt)).limit(input?.limit ?? 50);
-      return { routes: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getHealth: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [checks] = await db.select({ total: count(), avgLatency: avg(platform_health_checks.responseTime) }).from(platform_health_checks).limit(100);
-    return { status: "healthy", totalChecks: Number(checks.total), avgLatencyMs: Math.round(Number(checks.avgLatency ?? 0)) };
-  }),
-  updateRateLimit: protectedProcedure.input(z.object({ ruleId: z.number(), maxRequests: z.number().int().min(1).max(100000), windowMs: z.number().int().min(1000).max(3600000) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      await db.update(rateLimitRules).set({ maxRequests: input.maxRequests, windowMs: input.windowMs }).where(eq(rateLimitRules.id, input.ruleId));
-      await db.insert(auditLog).values({ action: "rate_limit_updated", resource: "rate_limit_rules", resourceId: String(input.ruleId), status: "success", metadata: { maxRequests: input.maxRequests, windowMs: input.windowMs } });
-      return { success: true, ruleId: input.ruleId };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [rules] = await db.select({ value: count() }).from(rateLimitRules).limit(100);
-    const [keys] = await db.select({ value: count() }).from(apiKeys).limit(100);
-    return { totalRules: Number(rules.value), totalApiKeys: Number(keys.value) };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

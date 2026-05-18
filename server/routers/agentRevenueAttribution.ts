@@ -1,39 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { agents, transactions, commissionPayouts } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { agents } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const agentRevenueAttributionRouter = router({
-  getStats: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalRevenue: 0, totalCommissions: 0, totalAgents: 0, avgRevenuePerAgent: 0 };
-    const [agentCount] = await db.select({ value: count() }).from(agents).limit(100);
-    const [txCount] = await db.select({ value: count() }).from(transactions).limit(100);
-    return { totalRevenue: 0, totalCommissions: 0, totalAgents: Number(agentCount.value), totalTransactions: Number(txCount.value), avgRevenuePerAgent: 0 };
-  }),
-  getAgentRevenue: protectedProcedure.input(z.object({ agentId: z.number() })).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return null;
-      const txs = await db.select().from(transactions).where(eq(transactions.agentId, input.agentId)).orderBy(desc(transactions.createdAt)).limit(50);
-      const payouts = await db.select().from(commissionPayouts).where(eq(commissionPayouts.agentId, input.agentId)).orderBy(desc(commissionPayouts.createdAt)).limit(20);
-      return { agentId: input.agentId, transactions: txs, payouts, totalTransactions: txs.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  listTopEarners: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    try {
-      const db = await getDb();
-      if (!db) return { agents: [], total: 0 };
-      const rows = await db.select({ agentId: transactions.agentId, txCount: count() }).from(transactions).groupBy(transactions.agentId).orderBy(desc(count())).limit(input?.limit ?? 20);
-      return { agents: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(agents)
+        .where(eq(agents.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(agents);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(agents)
+        .orderBy(desc(agents.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

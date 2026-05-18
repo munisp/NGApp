@@ -1,46 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, and } from "drizzle-orm";
-import { transactions, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const ussdGatewayRouter = router({
-  initiateSession: protectedProcedure.input(z.object({ phoneNumber: z.string().regex(/^\+?[0-9]{10,15}$/), serviceCode: z.string().min(1).max(20) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const sessionId = "USSD-" + crypto.randomUUID();
-      await db.insert(auditLog).values({ action: "ussd_session_started", resource: "ussd_sessions", resourceId: sessionId, status: "success", metadata: { phoneNumber: input.phoneNumber, serviceCode: input.serviceCode, sessionStatus: "active" } });
-      return { sessionId, phoneNumber: input.phoneNumber, serviceCode: input.serviceCode, status: "active", menu: "CON Welcome to NGApp:\n1. Check Balance\n2. Send Money\n3. Buy Airtime\n4. Pay Bills", createdAt: new Date().toISOString() };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  continueSession: protectedProcedure.input(z.object({ sessionId: z.string().min(1), input: z.string().min(1).max(160) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      await db.insert(auditLog).values({ action: "ussd_session_continued", resource: "ussd_sessions", resourceId: input.sessionId, status: "success", metadata: { userInput: input.input } });
-      return { sessionId: input.sessionId, response: "CON Enter amount:", continueSession: true };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  endSession: protectedProcedure.input(z.object({ sessionId: z.string().min(1) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      await db.insert(auditLog).values({ action: "ussd_session_ended", resource: "ussd_sessions", resourceId: input.sessionId, status: "success", metadata: {} });
-      return { sessionId: input.sessionId, status: "ended" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [started] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "ussd_session_started")).limit(100);
-    const [ended] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "ussd_session_ended")).limit(100);
-    return { totalSessions: Number(started.value), activeSessions: Number(started.value) - Number(ended.value) };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

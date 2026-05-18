@@ -1,44 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, sum, and } from "drizzle-orm";
-import { transactions, agents, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
-
-const PENSION_LIMITS = { minAmount: 500, maxAmount: 5_000_000, pfaCodePattern: /^PFA\/\d{4,}$/i };
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const pensionCollectionRouter = router({
-  listCollections: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), agentId: z.number().optional() }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const conditions = [eq(transactions.type, "Bill Payment")];
-      if (input?.agentId) conditions.push(eq(transactions.agentId, input.agentId));
-      const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
-      return { collections: rows, total: rows.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  collectPension: protectedProcedure.input(z.object({ contributorId: z.string().min(6).max(20), amount: z.number().min(500).max(5_000_000), pfaCode: z.string().min(4).max(20), rsaPin: z.string().min(10).max(20), agentId: z.number() })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [agent] = await db.select().from(agents).where(eq(agents.id, input.agentId)).limit(1);
-      if (!agent) throw new Error("Agent not found");
-      if (!agent.isActive) throw new Error("Agent account is suspended");
-      const commission = Math.round(input.amount * 0.005);
-      const ref = "PEN-" + crypto.randomUUID().slice(0, 12).toUpperCase();
-      const [tx] = await db.insert(transactions).values({ agentId: input.agentId, amount: String(input.amount), fee: String(Math.round(input.amount * 0.01)), commission: String(commission), type: "Bill Payment", status: "success", channel: "Cash", ref }).returning();
-      await db.insert(auditLog).values({ action: "pension_collected", resource: "pension_collection", resourceId: ref, status: "success", metadata: { contributorId: input.contributorId, pfaCode: input.pfaCode, amount: input.amount, transactionId: tx.id, commission } });
-      return { ref, transactionId: tx.id, amount: input.amount, commission, status: "success" };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [stats] = await db.select({ totalCollections: count(), totalVolume: sum(transactions.amount) }).from(transactions).where(eq(transactions.type, "Bill Payment")).limit(100);
-    return { totalCollections: Number(stats.totalCollections), totalVolume: Number(stats.totalVolume ?? 0) };
-  }),
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
+      }
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });

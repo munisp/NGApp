@@ -1,47 +1,82 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
-import { eq, desc, sql, count, and } from "drizzle-orm";
-import { systemConfig, platform_health_checks, auditLog } from "../../drizzle/schema";
-import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "../_core/trpc";
+import { db } from "../_core/db";
+import { auditLog } from "../../drizzle/schema";
+import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const middlewareServiceManagerRouter = router({
-  listServices: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "middleware_services")).limit(1);
-      const services = registry ? JSON.parse(String(registry.value)) : [
-        { name: "kafka", status: "running", type: "message_broker" },
-        { name: "redis", status: "running", type: "cache" },
-        { name: "temporal", status: "running", type: "workflow" },
-        { name: "fluvio", status: "running", type: "streaming" }
-      ];
-      return { services: services.slice(0, input?.limit ?? 50), total: services.length };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  updateServiceConfig: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64), config: z.record(z.string(), z.string()) })).mutation(async ({ input }) => {
-    try {
-      const db = (await getDb())!;
-      const key = `middleware_${input.serviceName}_config`;
-      const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
-      if (existing) {
-        await db.update(systemConfig).set({ value: JSON.stringify(input.config) }).where(eq(systemConfig.key, key));
-      } else {
-        await db.insert(systemConfig).values({ key, value: JSON.stringify(input.config) });
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        data: results,
+        total: totalResult?.total ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const [record] = await database
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.id, input.id))
+        .limit(1);
+      
+      if (!record) {
+        throw new Error(`Record with id ${input.id} not found`);
       }
-      await db.insert(auditLog).values({ action: "middleware_config_updated", resource: "middleware_service", resourceId: input.serviceName, status: "success", metadata: input.config });
-      return { success: true, serviceName: input.serviceName };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Internal server error" });
-    }
-  }),
-  getStats: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [checks] = await db.select({ value: count() }).from(platform_health_checks).limit(100);
-    return { totalHealthChecks: Number(checks.value) };
-  }),
+      return record;
+    }),
+
+  getSummary: publicProcedure
+    .query(async () => {
+      const database = await db();
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(auditLog);
+      
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  getRecent: publicProcedure
+    .input(z.object({
+      days: z.number().min(1).max(90).default(7),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const database = await db();
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+      
+      const results = await database
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
+      
+      return results;
+    }),
 });
