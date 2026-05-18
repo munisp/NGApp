@@ -1,38 +1,34 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count, sum } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, sum, and } from "drizzle-orm";
+import { transactions, agents, auditLog } from "../../drizzle/schema";
 
 export const savingsProductsRouter = router({
-  listProducts: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+  listAccounts: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), agentId: z.number().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "savings_product")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { products: rows.map(r => ({ id: r.resourceId, name: (r.metadata as Record<string, unknown>)?.name ?? r.action, metadata: r.metadata, createdAt: r.createdAt })), total: rows.length };
+    const conditions = [eq(transactions.type, "Savings")];
+    if (input?.agentId) conditions.push(eq(transactions.agentId, input.agentId));
+    const rows = await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt)).limit(input?.limit ?? 50);
+    return { accounts: rows, total: rows.length };
   }),
-  listAccounts: protectedProcedure.input(z.object({ limit: z.number().default(50), status: z.string().optional() }).optional()).query(async ({ input }) => {
+  deposit: protectedProcedure.input(z.object({ accountId: z.number(), amount: z.number().positive().max(10_000_000), agentId: z.number().optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "savings_accounts")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    let accounts = rows.map(r => ({ id: r.id, accountId: r.resourceId, status: (r.metadata as Record<string, unknown>)?.status ?? "active", metadata: r.metadata, createdAt: r.createdAt }));
-    if (input?.status) accounts = accounts.filter(a => a.status === input.status);
-    return { accounts, total: accounts.length };
+    const reference = "SAV-" + crypto.randomUUID().slice(0, 12).toUpperCase();
+    const [tx] = await db.insert(transactions).values({ agentId: input.agentId ?? input.accountId, amount: String(input.amount), type: "Savings", status: "success", channel: "POS", reference }).returning();
+    await db.insert(auditLog).values({ action: "savings_deposit", resource: "savings_transactions", resourceId: String(tx.id), status: "success", metadata: { accountId: input.accountId, amount: input.amount, type: "deposit" } });
+    return { id: tx.id, accountId: input.accountId, amount: input.amount, type: "deposit", reference, status: "success" };
   }),
-  getAccount: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  withdraw: protectedProcedure.input(z.object({ accountId: z.number(), amount: z.number().positive().max(5_000_000), agentId: z.number().optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const [account] = await db.select().from(auditLog).where(eq(auditLog.id, input.id)).limit(1);
-    if (!account) return null;
-    const txns = await db.select().from(auditLog).where(sql`${auditLog.resource} = 'savings_transactions' AND (${auditLog.metadata}->>'accountId')::int = ${input.id}`).orderBy(desc(auditLog.createdAt)).limit(20);
-    return { id: account.id, accountId: account.resourceId, metadata: account.metadata, createdAt: account.createdAt, transactions: txns.map(t => ({ id: t.id, amount: (t.metadata as Record<string, unknown>)?.amount, type: (t.metadata as Record<string, unknown>)?.type, createdAt: t.createdAt })) };
-  }),
-  deposit: protectedProcedure.input(z.object({ accountId: z.number(), amount: z.number().positive() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    const [tx] = await db.insert(auditLog).values({ action: "savings_deposit", resource: "savings_transactions", resourceId: String(input.accountId), status: "success", metadata: { accountId: input.accountId, amount: input.amount, type: "deposit" } }).returning();
-    return { id: tx.id, accountId: input.accountId, amount: input.amount, type: "deposit", createdAt: tx.createdAt };
+    const reference = "SAV-W-" + crypto.randomUUID().slice(0, 12).toUpperCase();
+    const [tx] = await db.insert(transactions).values({ agentId: input.agentId ?? input.accountId, amount: String(-input.amount), type: "Savings", status: "success", channel: "POS", reference }).returning();
+    await db.insert(auditLog).values({ action: "savings_withdrawal", resource: "savings_transactions", resourceId: String(tx.id), status: "success", metadata: { accountId: input.accountId, amount: input.amount, type: "withdrawal" } });
+    return { id: tx.id, accountId: input.accountId, amount: input.amount, type: "withdrawal", reference, status: "success" };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "savings_accounts"));
-    const [totalDeposits] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "savings_deposit"));
-    return { totalAccounts: Number(total.value), totalDeposits: Number(totalDeposits.value) };
+    const [deposits] = await db.select({ total: count(), volume: sum(sql`CAST(amount AS numeric)`) }).from(transactions).where(eq(transactions.type, "Savings"));
+    return { totalAccounts: 0, totalDeposits: Number(deposits.total), totalVolume: Number(deposits.volume ?? 0) };
   }),
 });

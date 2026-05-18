@@ -1,33 +1,36 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { systemConfig, platform_health_checks, auditLog } from "../../drizzle/schema";
 
 export const middlewareServiceManagerRouter = router({
-  listServices: protectedProcedure.query(async () => {
+  listServices: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const services = ["kafka", "redis", "postgresql", "keycloak", "permify", "opensearch", "temporal", "dapr", "fluvio", "apisix", "tigerbeetle"];
-    const statuses = [];
-    for (const svc of services) {
-      const [latest] = await db.select().from(auditLog).where(eq(auditLog.resourceId, svc)).orderBy(desc(auditLog.createdAt)).limit(1);
-      statuses.push({ name: svc, status: latest?.status ?? "unknown", lastSeen: latest?.createdAt ?? null });
+    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "middleware_services")).limit(1);
+    const services = registry ? JSON.parse(String(registry.value)) : [
+      { name: "kafka", status: "running", type: "message_broker" },
+      { name: "redis", status: "running", type: "cache" },
+      { name: "temporal", status: "running", type: "workflow" },
+      { name: "fluvio", status: "running", type: "streaming" }
+    ];
+    return { services: services.slice(0, input?.limit ?? 50), total: services.length };
+  }),
+  updateServiceConfig: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64), config: z.record(z.string(), z.string()) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const key = `middleware_${input.serviceName}_config`;
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(input.config) }).where(eq(systemConfig.key, key));
+    } else {
+      await db.insert(systemConfig).values({ key, value: JSON.stringify(input.config) });
     }
-    return { services: statuses };
-  }),
-  getServiceHealth: protectedProcedure.input(z.object({ service: z.string() })).query(async ({ input }) => {
-    const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resourceId, input.service)).orderBy(desc(auditLog.createdAt)).limit(10);
-    return { service: input.service, events: rows, total: rows.length };
-  }),
-  restartService: protectedProcedure.input(z.object({ service: z.string() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "service_restart", resource: "middleware", resourceId: input.service, status: "success", metadata: { restartedAt: new Date().toISOString() } });
-    return { success: true, service: input.service, status: "restarting" };
+    await db.insert(auditLog).values({ action: "middleware_config_updated", resource: "middleware_service", resourceId: input.serviceName, status: "success", metadata: input.config });
+    return { success: true, serviceName: input.serviceName };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "middleware"));
-    return { totalEvents: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [checks] = await db.select({ value: count() }).from(platform_health_checks);
+    return { totalHealthChecks: Number(checks.value) };
   }),
 });

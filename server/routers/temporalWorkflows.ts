@@ -1,44 +1,42 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { systemConfig, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { workflowDefinitions, workflowInstances, auditLog } from "../../drizzle/schema";
 
 export const temporalWorkflowsRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { totalWorkflows: 0, running: 0, completed: 0, failed: 0 };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "temporal_workflow")).orderBy(desc(auditLog.createdAt)).limit(500);
-    const running = rows.filter(r => (r.metadata as any)?.status === "running").length;
-    const completed = rows.filter(r => r.status === "success").length;
-    return { totalWorkflows: rows.length, running, completed, failed: rows.filter(r => r.status === "failure").length };
+  listWorkflows: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50), status: z.enum(["pending", "running", "completed", "failed", "cancelled"]).optional() }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const conditions = [];
+    if (input?.status) conditions.push(eq(workflowInstances.status, input.status));
+    const rows = conditions.length > 0 ? await db.select().from(workflowInstances).where(and(...conditions)).orderBy(desc(workflowInstances.startedAt)).limit(input?.limit ?? 50) : await db.select().from(workflowInstances).orderBy(desc(workflowInstances.startedAt)).limit(input?.limit ?? 50);
+    return { workflows: rows, total: rows.length };
   }),
-  listWorkflows: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional()).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) return { workflows: [], total: 0 };
-    const conditions: any[] = [eq(auditLog.resource, "temporal_workflow")];
-    if (input?.status) conditions.push(sql`${auditLog.status} = ${input.status}`);
-    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { workflows: rows.map(r => ({ id: r.id, workflowId: r.resourceId, action: r.action, ...r.metadata as any, status: r.status, startedAt: r.createdAt })), total: rows.length };
+  getWorkflow: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [instance] = await db.select().from(workflowInstances).where(eq(workflowInstances.id, input.id)).limit(1);
+    if (!instance) throw new Error("Workflow not found");
+    return instance;
   }),
-  startWorkflow: protectedProcedure.input(z.object({ workflowType: z.string(), taskQueue: z.string().default("default"), input: z.record(z.string(), z.any()).optional(), retryPolicy: z.object({ maxRetries: z.number().default(3), backoffCoefficient: z.number().default(2) }).optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const workflowId = "WF-" + crypto.randomUUID().toUpperCase();
-    await db.insert(auditLog).values({ action: "workflow_started", resource: "temporal_workflow", resourceId: workflowId, status: "success", metadata: { workflowType: input.workflowType, taskQueue: input.taskQueue, status: "running" } });
-    return { success: true, workflowId, status: "running" };
+  startWorkflow: protectedProcedure.input(z.object({ definitionId: z.number(), input: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [def] = await db.select().from(workflowDefinitions).where(eq(workflowDefinitions.id, input.definitionId)).limit(1);
+    if (!def) throw new Error("Workflow definition not found");
+    const [instance] = await db.insert(workflowInstances).values({ definitionId: input.definitionId, status: "running", input: input.input ?? {} }).returning();
+    await db.insert(auditLog).values({ action: "workflow_started", resource: "workflow_instances", resourceId: String(instance.id), status: "success", metadata: { definitionId: input.definitionId, workflowName: def.name } });
+    return { workflowId: instance.id, definitionId: input.definitionId, status: "running", startedAt: instance.startedAt };
   }),
-  cancelWorkflow: protectedProcedure.input(z.object({ workflowId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "workflow_cancelled", resource: "temporal_workflow", resourceId: input.workflowId, status: "success", metadata: { reason: input.reason } });
-    return { success: true };
+  cancelWorkflow: protectedProcedure.input(z.object({ id: z.number(), reason: z.string().max(500).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.update(workflowInstances).set({ status: "cancelled" }).where(eq(workflowInstances.id, input.id));
+    await db.insert(auditLog).values({ action: "workflow_cancelled", resource: "workflow_instances", resourceId: String(input.id), status: "success", metadata: { reason: input.reason ?? "manual" } });
+    return { workflowId: input.id, status: "cancelled" };
   }),
-  getWorkflowConfig: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { config: null };
-    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "temporal_config")).limit(1);
-    if (rows.length > 0 && rows[0].value) return { config: JSON.parse(String(rows[0].value)) };
-    return { config: { namespace: "54link-production", taskQueues: ["default", "high-priority", "bulk-processing"], workerCount: 4, maxConcurrentActivities: 100 } };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [total] = await db.select({ value: count() }).from(workflowInstances);
+    const [running] = await db.select({ value: count() }).from(workflowInstances).where(eq(workflowInstances.status, "running"));
+    const [defs] = await db.select({ value: count() }).from(workflowDefinitions);
+    return { totalInstances: Number(total.value), runningInstances: Number(running.value), totalDefinitions: Number(defs.value) };
   }),
 });

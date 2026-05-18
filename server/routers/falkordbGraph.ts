@@ -1,28 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const falkordbGraphRouter = router({
-  getGraphStats: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "falkordb_config")).limit(1);
-    return config ? JSON.parse(String(config.value)) : { nodes: 0, edges: 0, graphs: 0, status: "disconnected" };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "falkordb_graph")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  executeQuery: protectedProcedure.input(z.object({ graph: z.string(), query: z.string(), params: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "graph_query_executed", resource: "falkordb", resourceId: input.graph, status: "success", metadata: { query: input.query } });
-    return { success: true, graph: input.graph, resultCount: 0, executionTimeMs: 5 };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "falkordb_graph_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  listGraphs: protectedProcedure.query(async () => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "falkordb")).orderBy(desc(auditLog.createdAt)).limit(20);
-    return { graphs: rows.map(r => ({ name: r.resourceId, lastAccessed: r.createdAt })), total: rows.length };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "falkordb_graph_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "falkordb_graph_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "falkordb_graph_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "falkordb_graph_config_updated", resource: "falkordb_graph", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "falkordb"));
-    return { totalQueries: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "falkordb_graph"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "falkordb_graph"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "falkordb_graph"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

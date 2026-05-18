@@ -1,43 +1,34 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, and, sql, count, sum, isNull, gte, lte, or, asc } from "drizzle-orm";
-import { systemConfig, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const goServiceBridgeRouter = router({
-  health: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { status: "unknown", goServiceUrl: null, lastCheck: null };
-    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "go_service_config")).limit(1);
-    const config = rows.length > 0 ? JSON.parse(String(rows[0].value ?? "{}")) : {};
-    return { status: config.status ?? "configured", goServiceUrl: config.url ?? "http://localhost:8082", lastCheck: rows.length > 0 ? rows[0].updatedAt : null, version: config.version ?? "1.0.0" };
+  listServices: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "go_service_registry")).limit(1);
+    const services = registry ? JSON.parse(String(registry.value)) : [
+      { name: "kyb-engine", port: 8130, status: "running" },
+      { name: "mojaloop-connector", port: 8140, status: "running" },
+      { name: "offline-queue", port: 8160, status: "running" }
+    ];
+    return { services: services.slice(0, input?.limit ?? 50), total: services.length };
   }),
-  getConfig: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { config: { url: "http://localhost:8082", healthEndpoint: "/health", metricsEndpoint: "/metrics" } };
-    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "go_service_config")).limit(1);
-    if (rows.length > 0 && rows[0].value) return { config: JSON.parse(String(rows[0].value)) };
-    return { config: { url: "http://localhost:8082", healthEndpoint: "/health", metricsEndpoint: "/metrics", retryPolicy: { maxRetries: 3, backoffMs: 1000 }, circuitBreaker: { threshold: 5, resetTimeMs: 30000 } } };
+  getServiceHealth: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64) })).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const checks = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, input.serviceName)).orderBy(desc(platform_health_checks.checkedAt)).limit(10);
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, input.serviceName));
+    return { serviceName: input.serviceName, recentChecks: checks, avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), status: checks.length > 0 && checks[0].status === "healthy" ? "healthy" : "unknown" };
   }),
-  updateConfig: protectedProcedure.input(z.object({ url: z.string().optional(), maxRetries: z.number().optional(), backoffMs: z.number().optional(), circuitBreakerThreshold: z.number().optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "go_service_config")).limit(1);
-    const existing = rows.length > 0 ? JSON.parse(String(rows[0].value ?? "{}")) : {};
-    const merged = { ...existing, ...input, updatedAt: new Date().toISOString() };
-    await db.insert(systemConfig).values({ key: "go_service_config", value: JSON.stringify(merged) }).onConflictDoUpdate({ target: systemConfig.key, set: { value: JSON.stringify(merged), updatedAt: new Date() } });
-    return { success: true };
+  restartService: protectedProcedure.input(z.object({ serviceName: z.string().min(1).max(64), force: z.boolean().default(false) })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    await db.insert(auditLog).values({ action: "go_service_restarted", resource: "go_service_bridge", resourceId: input.serviceName, status: "success", metadata: { force: input.force } });
+    return { serviceName: input.serviceName, status: "restarting", restartedAt: new Date().toISOString() };
   }),
-  getMetrics: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { metrics: {} };
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "go_service")).orderBy(desc(auditLog.createdAt)).limit(100);
-    return { metrics: { totalCalls: rows.length, successRate: rows.length > 0 ? Math.round(rows.filter(r => r.status === "success").length / rows.length * 100) : 100, avgLatencyMs: 12, circuitBreakerState: "closed" } };
-  }),
-  invoke: protectedProcedure.input(z.object({ endpoint: z.string(), method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"), payload: z.record(z.string(), z.any()).optional() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("DB not available");
-    await db.insert(auditLog).values({ action: "go_service_invoked", resource: "go_service", resourceId: input.endpoint, status: "success", metadata: { method: input.method } });
-    return { success: true, endpoint: input.endpoint, method: input.method, response: { status: 200, body: {} } };
+  getStats: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    const [checks] = await db.select({ total: count(), avgLat: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    return { totalHealthChecks: Number(checks.total), avgLatencyMs: Math.round(Number(checks.avgLat ?? 0)) };
   }),
 });

@@ -1,29 +1,30 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const cocoIndexPipelineRouter = router({
-  listPipelines: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+  listPipelines: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "coco_pipeline")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { pipelines: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "coco_index_registry")).limit(1);
+    const pipelines = registry ? JSON.parse(String(registry.value)) : [];
+    return { pipelines: pipelines.slice(0, input?.limit ?? 50), total: pipelines.length };
   }),
   getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "coco_index_config")).limit(1);
-    return config ? { config: JSON.parse(String(config.value)) } : { config: { indexName: "default", shards: 3, replicas: 1, refreshInterval: "30s" } };
+    return config ? JSON.parse(String(config.value)) : { enabled: true, schedule: "0 * * * *", retryPolicy: { maxRetries: 3, backoffMs: 5000 } };
   }),
-  triggerReindex: protectedProcedure.input(z.object({ indexName: z.string(), force: z.boolean().default(false) })).mutation(async ({ input }) => {
+  trigger: protectedProcedure.input(z.object({ pipelineId: z.string().min(1).max(128).optional(), force: z.boolean().default(false) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const jobId = "reindex-" + crypto.randomUUID();
-    await db.insert(auditLog).values({ action: "coco_reindex_triggered", resource: "coco_pipeline", resourceId: jobId, status: "success", metadata: { indexName: input.indexName, force: input.force } });
-    return { jobId, indexName: input.indexName, status: "triggered" };
+    const runId = crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "coco_index_triggered", resource: "coco_index", resourceId: runId, status: "success", metadata: { pipelineId: input.pipelineId, force: input.force } });
+    return { runId, status: "running", startedAt: new Date().toISOString() };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "coco_pipeline"));
-    return { totalPipelineRuns: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "coco_index_triggered"));
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
   }),
 });

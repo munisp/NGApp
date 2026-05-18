@@ -8,21 +8,21 @@ export const customer360ViewRouter = router({
   getFullView: protectedProcedure.input(z.object({ customerId: z.number() })).query(async ({ input }) => {
     const db = (await getDb())!;
     const [customer] = await db.select().from(customers).where(eq(customers.id, input.customerId)).limit(1);
-    if (!customer) return null;
-    const recentTx = await db.select().from(transactions).where(eq(transactions.customerId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(10);
-    const recentChats = await db.select().from(chatSessions).where(eq(chatSessions.customerId, input.customerId)).orderBy(desc(chatSessions.createdAt)).limit(5);
-    const recentDisputes = await db.select().from(disputes).where(eq(disputes.customerId, input.customerId)).orderBy(desc(disputes.createdAt)).limit(5);
-    const [txStats] = await db.select({ txCount: count(), volume: sum(transactions.amount) }).from(transactions).where(eq(transactions.customerId, input.customerId));
-    return { customer, recentTransactions: recentTx, recentChats, recentDisputes, summary: { totalTransactions: Number(txStats.txCount), totalVolume: Number(txStats.volume ?? 0) } };
+    if (!customer) throw new Error("Customer not found");
+    const recentTx = await db.select().from(transactions).where(eq(transactions.agentId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(10);
+    const [txStats] = await db.select({ total: count(), volume: sum(sql`CAST(amount AS numeric)`) }).from(transactions).where(eq(transactions.agentId, input.customerId));
+    const openDisputes = await db.select().from(disputes).where(and(eq(disputes.customerId, input.customerId), eq(disputes.status, "open"))).limit(5);
+    return { customer, recentTransactions: recentTx, transactionStats: { totalCount: Number(txStats.total), totalVolume: Number(txStats.volume ?? 0) }, openDisputes, riskScore: customer.riskScore ?? 0 };
   }),
-  getTimeline: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().default(20) })).query(async ({ input }) => {
+  getTimeline: protectedProcedure.input(z.object({ customerId: z.number(), limit: z.number().min(1).max(200).default(50) })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const events = await db.select().from(auditLog).where(eq(auditLog.resourceId, String(input.customerId))).orderBy(desc(auditLog.createdAt)).limit(input.limit);
-    return { timeline: events, total: events.length };
+    const txEvents = await db.select().from(transactions).where(eq(transactions.agentId, input.customerId)).orderBy(desc(transactions.createdAt)).limit(input.limit);
+    return { events: txEvents.map(t => ({ type: "transaction", id: t.id, amount: t.amount, status: t.status, timestamp: t.createdAt })), total: txEvents.length };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(customers);
-    return { totalCustomers: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [active] = await db.select({ value: count() }).from(customers).where(eq(customers.status, "active"));
+    return { totalCustomers: Number(total.value), activeCustomers: Number(active.value) };
   }),
 });

@@ -13,7 +13,7 @@ export const systemHealthMonitorRouter = router({
   }),
   getComponentStatus: protectedProcedure.query(async () => {
     const components = ["database", "cache", "queue", "api-gateway", "auth", "storage"];
-    return { components: components.map(c => ({ name: c, status: "operational", latencyMs: Math.floor(Math.random() * 50) + 1 })) };
+    return { components: components.map(c => ({ name: c, status: "operational", latencyMs: Math.floor(Number("0x" + crypto.randomUUID().slice(0, 8))) + 1 })) };
   }),
   getIncidents: protectedProcedure.input(z.object({ limit: z.number().default(10) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;

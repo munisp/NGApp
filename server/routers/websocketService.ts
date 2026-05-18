@@ -1,28 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const websocketServiceRouter = router({
-  getStatus: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "websocket_config")).limit(1);
-    return config ? { ...JSON.parse(String(config.value)), status: "running" } : { status: "running", connections: 0, maxConnections: 10000, uptime: "0h" };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "websocket_service")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  getConnections: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "websocket_connection")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { connections: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, timestamp: r.createdAt })), total: rows.length };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "websocket_service_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  broadcast: protectedProcedure.input(z.object({ channel: z.string(), message: z.string(), data: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "ws_broadcast", resource: "websocket_connection", resourceId: input.channel, status: "success", metadata: { message: input.message, data: input.data } });
-    return { success: true, channel: input.channel, deliveredAt: new Date().toISOString() };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "websocket_service_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "websocket_service_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "websocket_service_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "websocket_service_config_updated", resource: "websocket_service", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "websocket_connection"));
-    return { totalEvents: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "websocket_service"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "websocket_service"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "websocket_service"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

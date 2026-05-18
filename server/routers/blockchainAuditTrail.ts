@@ -1,30 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const blockchainAuditTrailRouter = router({
-  listEntries: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "blockchain_audit")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { entries: rows.map(r => ({ id: r.id, action: r.action, resourceId: r.resourceId, status: r.status, hash: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "blockchain_audit")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  verifyEntry: protectedProcedure.input(z.object({ entryId: z.number() })).query(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [entry] = await db.select().from(auditLog).where(eq(auditLog.id, input.entryId)).limit(1);
-    if (!entry) return { verified: false, error: "Entry not found" };
-    return { verified: true, entry: { id: entry.id, action: entry.action, status: entry.status, timestamp: entry.createdAt } };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "blockchain_audit_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  anchorToChain: protectedProcedure.input(z.object({ auditIds: z.array(z.number()), chain: z.string().default("ethereum") })).mutation(async ({ input }) => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const anchorId = "anchor-" + crypto.randomUUID();
-    await db.insert(auditLog).values({ action: "blockchain_anchor", resource: "blockchain_audit", resourceId: anchorId, status: "success", metadata: { auditIds: input.auditIds, chain: input.chain, anchoredAt: new Date().toISOString() } });
-    return { anchorId, chain: input.chain, entriesAnchored: input.auditIds.length, status: "anchored" };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "blockchain_audit_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "blockchain_audit_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "blockchain_audit_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "blockchain_audit_config_updated", resource: "blockchain_audit", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "blockchain_audit"));
-    return { totalAnchored: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "blockchain_audit"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "blockchain_audit"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "blockchain_audit"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

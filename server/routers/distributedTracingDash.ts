@@ -1,28 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const distributedTracingDashRouter = router({
-  listTraces: protectedProcedure.input(z.object({ limit: z.number().default(50), service: z.string().optional() }).optional()).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = input?.service ? await db.select().from(auditLog).where(sql`${auditLog.resource} = 'trace' AND ${auditLog.metadata}->>'service' = ${input.service}`).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50) : await db.select().from(auditLog).where(eq(auditLog.resource, "trace")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { traces: rows.map(r => ({ traceId: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "distributed_tracing")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  getTrace: protectedProcedure.input(z.object({ traceId: z.string() })).query(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const spans = await db.select().from(auditLog).where(sql`${auditLog.resource} = 'trace' AND ${auditLog.resourceId} = ${input.traceId}`).orderBy(auditLog.createdAt);
-    return { traceId: input.traceId, spans: spans.map(s => ({ spanId: s.id, action: s.action, status: s.status, metadata: s.metadata, timestamp: s.createdAt })), spanCount: spans.length };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "distributed_tracing_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  getServiceMap: protectedProcedure.query(async () => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select({ action: auditLog.action, cnt: count() }).from(auditLog).where(eq(auditLog.resource, "trace")).groupBy(auditLog.action).orderBy(desc(count())).limit(20);
-    return { services: rows.map(r => ({ service: r.action, requestCount: Number(r.cnt) })) };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "distributed_tracing_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "distributed_tracing_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "distributed_tracing_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "distributed_tracing_config_updated", resource: "distributed_tracing", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "trace"));
-    return { totalTraces: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "distributed_tracing"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "distributed_tracing"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "distributed_tracing"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

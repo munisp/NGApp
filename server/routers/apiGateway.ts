@@ -1,36 +1,30 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { apiKeys, apiKeyUsage, rateLimitRules, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and, avg } from "drizzle-orm";
+import { rateLimitRules, apiKeys, apiKeyUsage, platform_health_checks, auditLog } from "../../drizzle/schema";
 
 export const apiGatewayRouter = router({
-  listRoutes: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  listRoutes: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "api_route")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { routes: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, timestamp: r.createdAt, metadata: r.metadata })), total: rows.length };
+    const rows = await db.select().from(rateLimitRules).orderBy(desc(rateLimitRules.createdAt)).limit(input?.limit ?? 50);
+    return { routes: rows, total: rows.length };
   }),
-  getRateLimits: protectedProcedure.query(async () => {
+  getHealth: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const rows = await db.select().from(rateLimitRules).orderBy(desc(rateLimitRules.createdAt)).limit(50);
-    return { rules: rows, total: rows.length };
+    const [checks] = await db.select({ total: count(), avgLatency: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    return { status: "healthy", totalChecks: Number(checks.total), avgLatencyMs: Math.round(Number(checks.avgLatency ?? 0)) };
   }),
-  createRateLimit: protectedProcedure.input(z.object({ endpoint: z.string(), maxRequests: z.number(), windowSeconds: z.number(), action: z.string().default("reject") })).mutation(async ({ input }) => {
+  updateRateLimit: protectedProcedure.input(z.object({ ruleId: z.number(), maxRequests: z.number().int().min(1).max(100000), windowMs: z.number().int().min(1000).max(3600000) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const [rule] = await db.insert(rateLimitRules).values({ endpoint: input.endpoint, maxRequests: input.maxRequests, windowSeconds: input.windowSeconds, action: input.action }).returning();
-    await db.insert(auditLog).values({ action: "rate_limit_created", resource: "rate_limit_rules", resourceId: String(rule.id), status: "success", metadata: { endpoint: input.endpoint } });
-    return rule;
+    await db.update(rateLimitRules).set({ maxRequests: input.maxRequests, windowMs: input.windowMs }).where(eq(rateLimitRules.id, input.ruleId));
+    await db.insert(auditLog).values({ action: "rate_limit_updated", resource: "rate_limit_rules", resourceId: String(input.ruleId), status: "success", metadata: { maxRequests: input.maxRequests, windowMs: input.windowMs } });
+    return { success: true, ruleId: input.ruleId };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [totalKeys] = await db.select({ value: count() }).from(apiKeys);
-    const [totalRules] = await db.select({ value: count() }).from(rateLimitRules);
-    return { totalApiKeys: Number(totalKeys.value), totalRateLimitRules: Number(totalRules.value), lastUpdated: new Date().toISOString() };
-  }),
-  deleteRateLimit: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    await db.delete(rateLimitRules).where(eq(rateLimitRules.id, input.id));
-    await db.insert(auditLog).values({ action: "rate_limit_deleted", resource: "rate_limit_rules", resourceId: String(input.id), status: "success", metadata: {} });
-    return { success: true };
+    const [rules] = await db.select({ value: count() }).from(rateLimitRules);
+    const [keys] = await db.select({ value: count() }).from(apiKeys);
+    return { totalRules: Number(rules.value), totalApiKeys: Number(keys.value) };
   }),
 });

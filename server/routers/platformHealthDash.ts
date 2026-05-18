@@ -1,36 +1,33 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count, gte } from "drizzle-orm";
-import { platform_incidents, auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, platform_incidents, observabilityAlerts, auditLog } from "../../drizzle/schema";
 
 export const platformHealthDashRouter = router({
-  getOverview: protectedProcedure.query(async () => {
+  getDashboard: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [incidents] = await db.select({ value: count() }).from(platform_incidents).where(eq(platform_incidents.status, "open"));
-    const [totalEvents] = await db.select({ value: count() }).from(auditLog);
-    const [failures] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.status, "failure"));
-    return { openIncidents: Number(incidents.value), totalEvents: Number(totalEvents.value), failures: Number(failures.value), uptime: 99.95, status: Number(incidents.value) > 0 ? "degraded" : "healthy" };
+    const [checks] = await db.select({ total: count(), avgLat: avg(platform_health_checks.latencyMs) }).from(platform_health_checks);
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.status, "healthy"));
+    const [incidents] = await db.select({ value: count() }).from(platform_incidents);
+    const [alerts] = await db.select({ value: count() }).from(observabilityAlerts);
+    const totalChecks = Number(checks.total);
+    return { totalChecks, healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(checks.avgLat ?? 0)), uptimePercent: totalChecks > 0 ? Math.round((Number(healthy.value) / totalChecks) * 100) : 100, openIncidents: Number(incidents.value), activeAlerts: Number(alerts.value) };
   }),
-  getServiceHealth: protectedProcedure.query(async () => {
+  getComponentHealth: protectedProcedure.input(z.object({ component: z.string().min(1) })).query(async ({ input }) => {
     const db = (await getDb())!;
-    const services = ["api-gateway", "kyc-service", "kyb-engine", "deepface", "pos-gateway", "transaction-engine", "notification-service"];
-    const results = [];
-    for (const svc of services) {
-      const [latest] = await db.select().from(auditLog).where(eq(auditLog.resourceId, svc)).orderBy(desc(auditLog.createdAt)).limit(1);
-      results.push({ name: svc, status: latest?.status === "failure" ? "unhealthy" : "healthy", lastCheck: latest?.createdAt ?? null });
-    }
-    return { services: results };
+    const checks = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, input.component)).orderBy(desc(platform_health_checks.checkedAt)).limit(20);
+    return { component: input.component, checks, status: checks.length > 0 && checks[0].status === "healthy" ? "healthy" : "degraded" };
   }),
-  getRecentIncidents: protectedProcedure.input(z.object({ limit: z.number().default(10) }).optional()).query(async ({ input }) => {
+  getIncidents: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(20) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(platform_incidents).orderBy(desc(platform_incidents.createdAt)).limit(input?.limit ?? 10);
+    const rows = await db.select().from(platform_incidents).orderBy(desc(platform_incidents.createdAt)).limit(input?.limit ?? 20);
     return { incidents: rows, total: rows.length };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(platform_incidents);
-    const [open] = await db.select({ value: count() }).from(platform_incidents).where(eq(platform_incidents.status, "open"));
-    return { totalIncidents: Number(total.value), openIncidents: Number(open.value), lastUpdated: new Date().toISOString() };
+    const [checks] = await db.select({ value: count() }).from(platform_health_checks);
+    const [incidents] = await db.select({ value: count() }).from(platform_incidents);
+    return { totalChecks: Number(checks.value), totalIncidents: Number(incidents.value) };
   }),
 });

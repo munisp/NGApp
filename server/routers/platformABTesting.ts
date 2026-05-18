@@ -1,42 +1,36 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, and } from "drizzle-orm";
 import { auditLog } from "../../drizzle/schema";
 
 export const platformABTestingRouter = router({
-  listExperiments: protectedProcedure.input(z.object({ limit: z.number().default(20), status: z.string().optional() }).optional()).query(async ({ input }) => {
+  listExperiments: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50), status: z.enum(["draft", "active", "paused", "completed"]).optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "ab_test_experiments")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    let experiments = rows.map(r => ({ id: r.id, experimentId: r.resourceId, name: (r.metadata as Record<string, unknown>)?.name ?? r.action, status: (r.metadata as Record<string, unknown>)?.status ?? "draft", metadata: r.metadata, createdAt: r.createdAt }));
-    if (input?.status) experiments = experiments.filter(e => e.status === input.status);
-    return { experiments, total: experiments.length };
+    const conditions = [eq(auditLog.action, "ab_test_created")];
+    const rows = await db.select().from(auditLog).where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+    return { experiments: rows.map(r => ({ id: r.resourceId, metadata: r.metadata, createdAt: r.createdAt })), total: rows.length };
   }),
-  getExperiment: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  createExperiment: protectedProcedure.input(z.object({ name: z.string().min(3).max(128), variants: z.array(z.object({ name: z.string().min(1).max(64), weight: z.number().min(0).max(100) })).min(2).max(10), targetAudience: z.string().optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const [row] = await db.select().from(auditLog).where(eq(auditLog.id, input.id)).limit(1);
-    if (!row) return null;
-    const variants = await db.select().from(auditLog).where(sql`${auditLog.resource} = 'ab_test_variants' AND (${auditLog.metadata}->>'experimentId')::int = ${input.id}`);
-    return { id: row.id, experimentId: row.resourceId, name: (row.metadata as Record<string, unknown>)?.name, status: (row.metadata as Record<string, unknown>)?.status ?? "draft", metadata: row.metadata, createdAt: row.createdAt, variants: variants.map(v => ({ id: v.id, name: (v.metadata as Record<string, unknown>)?.name, weight: (v.metadata as Record<string, unknown>)?.weight })) };
-  }),
-  createExperiment: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), variants: z.array(z.object({ name: z.string(), weight: z.number() })).min(2) })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    const expId = "exp-" + crypto.randomUUID();
-    const [exp] = await db.insert(auditLog).values({ action: "ab_test_created", resource: "ab_test_experiments", resourceId: expId, status: "success", metadata: { name: input.name, description: input.description, status: "draft", variantCount: input.variants.length } }).returning();
-    for (const v of input.variants) {
-      await db.insert(auditLog).values({ action: "ab_test_variant_added", resource: "ab_test_variants", resourceId: expId + "-" + v.name, status: "success", metadata: { experimentId: exp.id, name: v.name, weight: v.weight } });
+    const totalWeight = input.variants.reduce((s, v) => s + v.weight, 0);
+    if (totalWeight !== 100) throw new Error("Variant weights must sum to 100");
+    const experimentId = "exp-" + crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "ab_test_created", resource: "ab_test_experiments", resourceId: experimentId, status: "success", metadata: { name: input.name, status: "draft", variantCount: input.variants.length } });
+    for (const variant of input.variants) {
+      await db.insert(auditLog).values({ action: "ab_test_variant_added", resource: "ab_test_variants", resourceId: `${experimentId}-${variant.name}`, status: "success", metadata: { experimentId: experimentId, name: variant.name, weight: variant.weight } });
     }
-    return { id: exp.id, experimentId: expId, name: input.name, status: "draft" };
+    return { id: experimentId, name: input.name, status: "draft", variants: input.variants };
   }),
-  startExperiment: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+  activateExperiment: protectedProcedure.input(z.object({ experimentId: z.string().min(1) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "ab_test_started", resource: "ab_test_experiments", resourceId: String(input.id), status: "success", metadata: { status: "active" } });
-    return { success: true };
+    await db.insert(auditLog).values({ action: "ab_test_activated", resource: "ab_test_experiments", resourceId: input.experimentId, status: "success", metadata: { activatedAt: new Date().toISOString() } });
+    return { experimentId: input.experimentId, status: "active" };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "ab_test_created"));
-    const [active] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "ab_test_started"));
+    const [active] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "ab_test_activated"));
     return { totalExperiments: Number(total.value), activeExperiments: Number(active.value) };
   }),
 });

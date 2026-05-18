@@ -1,24 +1,27 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { systemConfig, auditLog, platform_incidents } from "../../drizzle/schema";
 
 export const operationalRunbookRouter = router({
-  listRunbooks: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+  listRunbooks: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50), category: z.string().optional() }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "runbook")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { runbooks: rows.map(r => ({ id: r.resourceId, name: r.action, status: r.status, metadata: r.metadata, lastRun: r.createdAt })), total: rows.length };
+    const rows = await db.select().from(systemConfig).where(eq(systemConfig.key, "runbook_registry")).limit(1);
+    const registry = rows[0] ? JSON.parse(String(rows[0].value)) : [];
+    const filtered = input?.category ? registry.filter((r: any) => r.category === input.category) : registry;
+    return { runbooks: filtered.slice(0, input?.limit ?? 50), total: filtered.length };
   }),
-  executeRunbook: protectedProcedure.input(z.object({ name: z.string(), params: z.record(z.string(), z.unknown()).optional(), dryRun: z.boolean().default(false) })).mutation(async ({ input }) => {
+  executeRunbook: protectedProcedure.input(z.object({ runbookId: z.string().min(1), parameters: z.record(z.string(), z.string()).optional(), dryRun: z.boolean().default(false) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const runId = "runbook-" + crypto.randomUUID();
-    await db.insert(auditLog).values({ action: input.name, resource: "runbook", resourceId: runId, status: input.dryRun ? "dry_run" : "success", metadata: { params: input.params, dryRun: input.dryRun } });
-    return { runId, name: input.name, status: input.dryRun ? "dry_run_completed" : "completed", dryRun: input.dryRun };
+    const executionId = crypto.randomUUID();
+    await db.insert(auditLog).values({ action: input.dryRun ? "runbook_dry_run" : "runbook_executed", resource: "operational_runbook", resourceId: executionId, status: "success", metadata: { runbookId: input.runbookId, parameters: input.parameters ?? {}, dryRun: input.dryRun } });
+    return { executionId, runbookId: input.runbookId, status: input.dryRun ? "dry_run_complete" : "executed", startedAt: new Date().toISOString() };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "runbook"));
-    return { totalExecutions: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [executions] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "runbook_executed"));
+    const [incidents] = await db.select({ value: count() }).from(platform_incidents);
+    return { totalExecutions: Number(executions.value), openIncidents: Number(incidents.value) };
   }),
 });

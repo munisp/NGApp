@@ -1,29 +1,30 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const dbSchemaMigrationManagerRouter = router({
-  listMigrations: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  listPipelines: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "db_migration")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { migrations: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, appliedAt: r.createdAt })), total: rows.length };
+    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_migration_registry")).limit(1);
+    const pipelines = registry ? JSON.parse(String(registry.value)) : [];
+    return { pipelines: pipelines.slice(0, input?.limit ?? 50), total: pipelines.length };
   }),
-  getMigrationStatus: protectedProcedure.query(async () => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "db_migration"));
-    const [latest] = await db.select().from(auditLog).where(eq(auditLog.resource, "db_migration")).orderBy(desc(auditLog.createdAt)).limit(1);
-    return { totalMigrations: Number(total.value), latestMigration: latest?.resourceId ?? null, latestAt: latest?.createdAt ?? null, status: "up_to_date" };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_migration_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, schedule: "0 * * * *", retryPolicy: { maxRetries: 3, backoffMs: 5000 } };
   }),
-  runMigration: protectedProcedure.input(z.object({ name: z.string(), direction: z.enum(["up", "down"]).default("up") })).mutation(async ({ input }) => {
+  trigger: protectedProcedure.input(z.object({ pipelineId: z.string().min(1).max(128).optional(), force: z.boolean().default(false) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: `migration_${input.direction}`, resource: "db_migration", resourceId: input.name, status: "success", metadata: { direction: input.direction } });
-    return { success: true, migration: input.name, direction: input.direction };
+    const runId = crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "db_migration_triggered", resource: "db_migration", resourceId: runId, status: "success", metadata: { pipelineId: input.pipelineId, force: input.force } });
+    return { runId, status: "running", startedAt: new Date().toISOString() };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "db_migration"));
-    return { totalMigrations: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "db_migration_triggered"));
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
   }),
 });

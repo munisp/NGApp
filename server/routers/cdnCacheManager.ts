@@ -1,29 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const cdnCacheManagerRouter = router({
-  getCacheStats: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
+    const db = (await getDb())!;
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "cdn_cache")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
+  }),
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "cdn_cache_config")).limit(1);
-    const cacheConfig = config ? JSON.parse(String(config.value)) : { hitRate: 95, totalCached: 0, totalEvicted: 0 };
-    return { ...cacheConfig, lastUpdated: new Date().toISOString() };
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  listCacheRules: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "cdn_cache_rule")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { rules: rows.map(r => ({ id: r.resourceId, action: r.action, metadata: r.metadata, createdAt: r.createdAt })), total: rows.length };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "cdn_cache_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "cdn_cache_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "cdn_cache_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "cdn_cache_config_updated", resource: "cdn_cache", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
-  purgeCache: protectedProcedure.input(z.object({ pattern: z.string(), type: z.enum(["path", "tag", "all"]).default("path") })).mutation(async ({ input }) => {
+  getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "cdn_cache_purged", resource: "cdn_cache_rule", resourceId: "purge-" + crypto.randomUUID(), status: "success", metadata: { pattern: input.pattern, type: input.type } });
-    return { success: true, pattern: input.pattern, purgedAt: new Date().toISOString() };
-  }),
-  updateCacheRule: protectedProcedure.input(z.object({ path: z.string(), ttlSeconds: z.number(), cacheControl: z.string().optional() })).mutation(async ({ input }) => {
-    const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "cdn_cache_rule_updated", resource: "cdn_cache_rule", resourceId: input.path, status: "success", metadata: { ttlSeconds: input.ttlSeconds, cacheControl: input.cacheControl } });
-    return { success: true, path: input.path, ttlSeconds: input.ttlSeconds };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "cdn_cache"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "cdn_cache"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "cdn_cache"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

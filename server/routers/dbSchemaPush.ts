@@ -1,28 +1,30 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { systemConfig, auditLog } from "../../drizzle/schema";
 
 export const dbSchemaPushRouter = router({
-  listPushHistory: protectedProcedure.input(z.object({ limit: z.number().default(20) }).optional()).query(async ({ input }) => {
+  listPipelines: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "schema_push")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 20);
-    return { history: rows.map(r => ({ id: r.id, status: r.status, metadata: r.metadata, pushedAt: r.createdAt })), total: rows.length };
+    const [registry] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_schema_push_registry")).limit(1);
+    const pipelines = registry ? JSON.parse(String(registry.value)) : [];
+    return { pipelines: pipelines.slice(0, input?.limit ?? 50), total: pipelines.length };
   }),
-  getStatus: protectedProcedure.query(async () => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [latest] = await db.select().from(auditLog).where(eq(auditLog.resource, "schema_push")).orderBy(desc(auditLog.createdAt)).limit(1);
-    return { lastPush: latest?.createdAt ?? null, status: latest?.status ?? "unknown", metadata: latest?.metadata };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "db_schema_push_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, schedule: "0 * * * *", retryPolicy: { maxRetries: 3, backoffMs: 5000 } };
   }),
-  push: protectedProcedure.input(z.object({ dryRun: z.boolean().default(false), force: z.boolean().default(false) })).mutation(async ({ input }) => {
+  trigger: protectedProcedure.input(z.object({ pipelineId: z.string().min(1).max(128).optional(), force: z.boolean().default(false) })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: input.dryRun ? "schema_push_dry_run" : "schema_push", resource: "schema_push", resourceId: "push-" + crypto.randomUUID(), status: "success", metadata: { dryRun: input.dryRun, force: input.force } });
-    return { success: true, dryRun: input.dryRun };
+    const runId = crypto.randomUUID();
+    await db.insert(auditLog).values({ action: "db_schema_push_triggered", resource: "db_schema_push", resourceId: runId, status: "success", metadata: { pipelineId: input.pipelineId, force: input.force } });
+    return { runId, status: "running", startedAt: new Date().toISOString() };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "schema_push"));
-    return { totalPushes: Number(total.value) };
+    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.action, "db_schema_push_triggered"));
+    return { totalRuns: Number(total.value), lastUpdated: new Date().toISOString() };
   }),
 });

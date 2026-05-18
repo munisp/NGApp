@@ -1,29 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count, sum } from "drizzle-orm";
-import { transactions, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const cbdcIntegrationGatewayRouter = router({
-  getStatus: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [config] = await db.select().from(auditLog).where(eq(auditLog.resource, "cbdc_gateway")).orderBy(desc(auditLog.createdAt)).limit(1);
-    return { connected: !!config, lastHeartbeat: config?.createdAt ?? null, currency: "eNaira", issuer: "CBN" };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "cbdc_integration")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  listTransfers: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "cbdc_transfer")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { transfers: rows.map(r => ({ id: r.resourceId, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "cbdc_integration_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  initiateTransfer: protectedProcedure.input(z.object({ fromWallet: z.string(), toWallet: z.string(), amount: z.number().positive(), currency: z.string().default("eNaira") })).mutation(async ({ input }) => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    const transferId = "cbdc-" + crypto.randomUUID();
-    await db.insert(auditLog).values({ action: "cbdc_transfer_initiated", resource: "cbdc_transfer", resourceId: transferId, status: "success", metadata: { fromWallet: input.fromWallet, toWallet: input.toWallet, amount: input.amount, currency: input.currency } });
-    return { transferId, status: "completed", amount: input.amount, currency: input.currency };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "cbdc_integration_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "cbdc_integration_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "cbdc_integration_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "cbdc_integration_config_updated", resource: "cbdc_integration", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "cbdc_transfer"));
-    return { totalTransfers: Number(total.value), currency: "eNaira", lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "cbdc_integration"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "cbdc_integration"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "cbdc_integration"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

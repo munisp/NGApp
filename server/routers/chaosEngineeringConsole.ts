@@ -1,29 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const chaosEngineeringConsoleRouter = router({
-  listExperiments: protectedProcedure.input(z.object({ limit: z.number().default(50) }).optional()).query(async ({ input }) => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "chaos_experiment")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
-    return { experiments: rows.map(r => ({ id: r.resourceId, action: r.action, status: r.status, metadata: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "chaos_engineering")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  runExperiment: protectedProcedure.input(z.object({ name: z.string(), target: z.string(), type: z.enum(["latency", "failure", "cpu_stress", "memory_stress", "network_partition"]), duration: z.number().default(60), intensity: z.number().min(1).max(100).default(50) })).mutation(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const expId = "chaos-" + crypto.randomUUID();
-    await db.insert(auditLog).values({ action: "chaos_experiment_run", resource: "chaos_experiment", resourceId: expId, status: "success", metadata: { name: input.name, target: input.target, type: input.type, duration: input.duration, intensity: input.intensity } });
-    return { experimentId: expId, name: input.name, status: "completed", target: input.target, type: input.type };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "chaos_engineering_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
   }),
-  stopExperiment: protectedProcedure.input(z.object({ experimentId: z.string() })).mutation(async ({ input }) => {
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
     const db = (await getDb())!;
-    await db.insert(auditLog).values({ action: "chaos_experiment_stopped", resource: "chaos_experiment", resourceId: input.experimentId, status: "warning", metadata: {} });
-    return { success: true, experimentId: input.experimentId, status: "stopped" };
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "chaos_engineering_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "chaos_engineering_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "chaos_engineering_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "chaos_engineering_config_updated", resource: "chaos_engineering", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "chaos_experiment"));
-    return { totalExperiments: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "chaos_engineering"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "chaos_engineering"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "chaos_engineering"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

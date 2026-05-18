@@ -1,28 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { agents, merchants, transactions, auditLog } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const platformMaturityScorecardRouter = router({
-  getScorecard: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const [agentCount] = await db.select({ value: count() }).from(agents);
-    const [merchantCount] = await db.select({ value: count() }).from(merchants);
-    const [txCount] = await db.select({ value: count() }).from(transactions);
-    const [auditCount] = await db.select({ value: count() }).from(auditLog);
-    const scores = { agentNetwork: Math.min(100, Number(agentCount.value) * 2), merchantCoverage: Math.min(100, Number(merchantCount.value) * 5), transactionVolume: Math.min(100, Number(txCount.value) / 100), auditCompliance: Math.min(100, Number(auditCount.value) / 50), securityPosture: 85, operationalExcellence: 78 };
-    const overall = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length);
-    return { overall, scores, maturityLevel: overall > 80 ? "advanced" : overall > 60 ? "intermediate" : overall > 40 ? "developing" : "initial" };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "platform_maturity")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().default(12) }).optional()).query(async ({ input }) => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "maturity_scorecard")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 12);
-    return { history: rows.map(r => ({ timestamp: r.createdAt, metadata: r.metadata })), total: rows.length };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "platform_maturity_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
+  }),
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "platform_maturity_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "platform_maturity_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "platform_maturity_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "platform_maturity_config_updated", resource: "platform_maturity", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "maturity_scorecard"));
-    return { totalAssessments: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "platform_maturity"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "platform_maturity"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "platform_maturity"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });

@@ -1,28 +1,37 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq, desc, sql, count, avg, and, gte } from "drizzle-orm";
+import { platform_health_checks, systemConfig, auditLog } from "../../drizzle/schema";
 
 export const networkStatusDashboardRouter = router({
-  getStatus: protectedProcedure.query(async () => {
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional()).query(async ({ input }) => {
     const db = (await getDb())!;
-    const services = ["kafka", "redis", "postgresql", "keycloak", "opensearch", "temporal", "apisix"];
-    const statuses = [];
-    for (const svc of services) {
-      const [latest] = await db.select().from(auditLog).where(eq(auditLog.resourceId, svc)).orderBy(desc(auditLog.createdAt)).limit(1);
-      statuses.push({ name: svc, status: latest ? "healthy" : "unknown", lastCheck: latest?.createdAt ?? null });
-    }
-    return { services: statuses, overallStatus: statuses.every(s => s.status === "healthy") ? "healthy" : "degraded" };
+    const rows = await db.select().from(platform_health_checks).where(eq(platform_health_checks.component, "network_status")).orderBy(desc(platform_health_checks.checkedAt)).limit(input?.limit ?? 50);
+    return { items: rows, total: rows.length };
   }),
-  getLatencyMetrics: protectedProcedure.query(async () => {
+  getConfig: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "network_latency")).orderBy(desc(auditLog.createdAt)).limit(50);
-    return { metrics: rows.map(r => ({ endpoint: r.resourceId, latencyMs: r.metadata, timestamp: r.createdAt })), total: rows.length };
+    const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, "network_status_config")).limit(1);
+    return config ? JSON.parse(String(config.value)) : { enabled: true, intervalMs: 30000, retentionDays: 30 };
+  }),
+  updateConfig: protectedProcedure.input(z.object({ enabled: z.boolean().optional(), intervalMs: z.number().min(1000).max(3600000).optional(), retentionDays: z.number().min(1).max(365).optional() })).mutation(async ({ input }) => {
+    const db = (await getDb())!;
+    const [existing] = await db.select().from(systemConfig).where(eq(systemConfig.key, "network_status_config")).limit(1);
+    const merged = existing ? { ...JSON.parse(String(existing.value)), ...input } : input;
+    if (existing) {
+      await db.update(systemConfig).set({ value: JSON.stringify(merged) }).where(eq(systemConfig.key, "network_status_config"));
+    } else {
+      await db.insert(systemConfig).values({ key: "network_status_config", value: JSON.stringify(merged) });
+    }
+    await db.insert(auditLog).values({ action: "network_status_config_updated", resource: "network_status", resourceId: "config", status: "success", metadata: input });
+    return { success: true, config: merged };
   }),
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
-    const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "network_latency"));
-    return { totalChecks: Number(total.value), lastUpdated: new Date().toISOString() };
+    const [total] = await db.select({ value: count() }).from(platform_health_checks).where(eq(platform_health_checks.component, "network_status"));
+    const [healthy] = await db.select({ value: count() }).from(platform_health_checks).where(and(eq(platform_health_checks.component, "network_status"), eq(platform_health_checks.status, "healthy")));
+    const [avgLat] = await db.select({ value: avg(platform_health_checks.latencyMs) }).from(platform_health_checks).where(eq(platform_health_checks.component, "network_status"));
+    return { totalChecks: Number(total.value), healthyChecks: Number(healthy.value), avgLatencyMs: Math.round(Number(avgLat.value ?? 0)), uptimePercent: Number(total.value) > 0 ? Math.round((Number(healthy.value) / Number(total.value)) * 100) : 100 };
   }),
 });
