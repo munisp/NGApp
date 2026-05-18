@@ -733,6 +733,23 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 
+// --- Distributed Tracing ---
+func traceMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		traceID := r.Header.Get("X-Trace-Id")
+		if traceID == "" {
+			traceID = r.Header.Get("traceparent")
+		}
+		if traceID == "" {
+			traceID = fmt.Sprintf("%x-%x", time.Now().UnixNano(), os.Getpid())
+		}
+		w.Header().Set("X-Trace-Id", traceID)
+		r.Header.Set("X-Trace-Id", traceID)
+		log.Printf("[%s] %s %s trace=%s", serviceName, r.Method, r.URL.Path, traceID)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	app := NewApp()
 
@@ -762,7 +779,7 @@ func main() {
 	log.Printf("GL Engine (Go) listening on :%s — 14 middleware connected", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: countingMiddleware(mux),
+        Handler: traceMiddleware(countingMiddleware(mux)),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

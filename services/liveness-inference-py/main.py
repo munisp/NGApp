@@ -976,6 +976,8 @@ SUPPORTED_METHODS = [
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
+        logger.info(f"[liveness-inference-py] {self.command} {self.path} trace={trace_id}")
         path = urlparse(self.path).path.rstrip("/")
         params = parse_qs(urlparse(self.path).query)
 
@@ -1065,6 +1067,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"error": "Not found"})
 
     def do_POST(self):
+        trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
+        logger.info(f"[liveness-inference-py] {self.command} {self.path} trace={trace_id}")
         path = urlparse(self.path).path.rstrip("/")
         content_len = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
@@ -1571,6 +1575,7 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, code: int, data: dict):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+            self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 

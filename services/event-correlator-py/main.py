@@ -149,10 +149,13 @@ class Handler(BaseHTTPRequestHandler):
     def respond(self, code, data):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+            self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 
     def do_GET(self):
+        trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
+        logger.info(f"[event-correlator-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
         path = urlparse(self.path).path
 
@@ -200,6 +203,8 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(404, {"error": "not_found", "path": path})
 
     def do_POST(self):
+        trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
+        logger.info(f"[event-correlator-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
