@@ -103,7 +103,8 @@ fn fuzzy_score(name: &str, target: &str) -> f64 {
 
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let watchlist = state.watchlist.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -234,7 +235,8 @@ async fn batch_rescreen(body: web::Json<BatchScreenRequest>, state: web::Data<Ap
     }))
 }
 
-async fn list_screenings(state: web::Data<AppState>) -> HttpResponse {
+async fn list_screenings(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let pending = screenings.iter().filter(|s| s.decision_by.is_none()).count();
     HttpResponse::Ok().json(json!({
@@ -244,7 +246,8 @@ async fn list_screenings(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let total = screenings.len();
     let matches = screenings.iter().filter(|s| s.match_score >= 0.7).count();
@@ -266,7 +269,8 @@ async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
-async fn get_false_positives(state: web::Data<AppState>) -> HttpResponse {
+async fn get_false_positives(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let fps: Vec<&Screening> = screenings.iter().filter(|s| s.status == "false_positive").collect();
     HttpResponse::Ok().json(json!({
@@ -306,6 +310,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"sanctions-engine-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"sanctions-engine-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

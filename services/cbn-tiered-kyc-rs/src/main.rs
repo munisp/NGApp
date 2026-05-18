@@ -217,7 +217,8 @@ fn chrono_now() -> String {
 
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "service": "cbn-tiered-kyc-rs",
         "status": "healthy",
@@ -284,12 +285,14 @@ async fn check_transaction_limit(body: web::Json<serde_json::Value>, state: web:
     HttpResponse::Ok().json(json!({"limitCheck": check}))
 }
 
-async fn get_assessments(state: web::Data<AppState>) -> HttpResponse {
+async fn get_assessments(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let assessments = state.assessments.lock().unwrap();
     HttpResponse::Ok().json(json!({"assessments": *assessments, "total": assessments.len()}))
 }
 
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let assessments = state.assessments.lock().unwrap();
     let checks = state.limit_checks.lock().unwrap();
     let mut tier_counts = std::collections::HashMap::new();
@@ -325,6 +328,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"cbn-tiered-kyc-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"cbn-tiered-kyc-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

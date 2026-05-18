@@ -30,7 +30,8 @@ struct SWIFTMessage {
     charges: String,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "service": "swift-iso20022-rs",
         "status": "healthy",
@@ -74,7 +75,8 @@ async fn gpi_track(query: web::Query<std::collections::HashMap<String, String>>)
     }))
 }
 
-async fn validate_mt103(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn validate_mt103(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let fields = vec!["senderBIC", "receiverBIC", "amount", "currency", "beneficiary", "ordering"];
     let mut errors: Vec<String> = vec![];
     for field in &fields {
@@ -104,6 +106,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"swift-iso20022-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"swift-iso20022-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

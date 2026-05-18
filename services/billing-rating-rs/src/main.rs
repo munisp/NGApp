@@ -41,7 +41,8 @@ async fn health() -> HttpResponse {
     }))
 }
 
-async fn rate_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn rate_transaction(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let amount = input.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let fee_type_s = input.get("fee_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -56,7 +57,8 @@ async fn rate_transaction(body: web::Json<serde_json::Value>) -> HttpResponse {
     }))
 }
 
-async fn fee_schedule(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn fee_schedule(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let fees_v: Vec<f64> = input.get("fees").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
     let fees = fees_v.as_slice();
@@ -69,7 +71,8 @@ async fn fee_schedule(body: web::Json<serde_json::Value>) -> HttpResponse {
     }))
 }
 
-async fn revenue_forecast(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn revenue_forecast(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let input = body.into_inner();
     let monthly_txns = input.get("monthly_transactions").and_then(|v| v.as_u64()).unwrap_or(0) as f64;
     let avg_amount = input.get("avg_transaction_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -96,7 +99,8 @@ async fn revenue_forecast(body: web::Json<serde_json::Value>) -> HttpResponse {
     }))
 }
 
-async fn list_records(state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+async fn list_records(req: actix_web::HttpRequest, state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let records = state.records.lock().unwrap();
     let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
     let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
@@ -128,6 +132,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"billing-rating-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"billing-rating-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

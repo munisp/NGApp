@@ -191,7 +191,8 @@ fn analyze_orientation(tilt_x: f64, tilt_y: f64, tilt_z: f64, baseline: &Orienta
 
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "service": "continuous-liveness-rs",
         "status": "healthy",
@@ -219,7 +220,8 @@ async fn healthz(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
-async fn get_configs(state: web::Data<AppState>) -> HttpResponse {
+async fn get_configs(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let configs = state.configs.lock().unwrap();
     HttpResponse::Ok().json(json!({"configs": *configs, "total": configs.len()}))
 }
@@ -323,22 +325,26 @@ async fn analyze_behavioral(body: web::Json<serde_json::Value>, state: web::Data
     }))
 }
 
-async fn get_profiles(state: web::Data<AppState>) -> HttpResponse {
+async fn get_profiles(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let profiles = state.profiles.lock().unwrap();
     HttpResponse::Ok().json(json!({"profiles": *profiles, "total": profiles.len()}))
 }
 
-async fn get_checks(state: web::Data<AppState>) -> HttpResponse {
+async fn get_checks(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let checks = state.checks.lock().unwrap();
     HttpResponse::Ok().json(json!({"checks": *checks, "total": checks.len()}))
 }
 
-async fn get_behavioral_checks(state: web::Data<AppState>) -> HttpResponse {
+async fn get_behavioral_checks(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let checks = state.behavioral_checks.lock().unwrap();
     HttpResponse::Ok().json(json!({"behavioral_checks": *checks, "total": checks.len()}))
 }
 
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let checks = state.checks.lock().unwrap();
     let beh = state.behavioral_checks.lock().unwrap();
     let total = checks.len() as f64;
@@ -394,6 +400,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"continuous-liveness-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"continuous-liveness-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

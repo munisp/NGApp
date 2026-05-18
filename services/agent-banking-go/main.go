@@ -16,7 +16,12 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"database/sql"
+	"strings"
+
 )
+
+var serviceName = "agent-banking-go"
 
 // Inter-service URLs
 var kycURL = func() string { v := os.Getenv("KYC_SERVICE_URL"); if v == "" { return "http://localhost:8201" }; return v }()
@@ -259,6 +264,81 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 
+// --- Database Layer ---
+var db *sql.DB
+
+func initDB() {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Printf("[%s] DATABASE_URL not set — in-memory mode", serviceName)
+		return
+	}
+	var err error
+	db, err = sql.Open("postgres", dsn)
+	if err != nil {
+		log.Printf("[%s] DB open failed: %v — in-memory fallback", serviceName, err)
+		db = nil
+		return
+	}
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[%s] DB ping failed: %v — in-memory fallback", serviceName, err)
+		db = nil
+		return
+	}
+	log.Printf("[%s] Postgres connected (pool: 25/5)", serviceName)
+	db.Exec(`CREATE TABLE IF NOT EXISTS service_records (
+		id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+		status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+		created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(),
+		created_by TEXT DEFAULT '', tenant_id TEXT DEFAULT ''
+	)`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_sr_status ON service_records(service, status)`)
+}
+
+func dbList(service string, limit int) ([]map[string]interface{}, error) {
+	if db == nil { return nil, fmt.Errorf("no db") }
+	rows, err := db.Query("SELECT id, type, status, data, created_at FROM service_records WHERE service=$1 ORDER BY created_at DESC LIMIT $2", service, limit)
+	if err != nil { return nil, err }
+	defer rows.Close()
+	var items []map[string]interface{}
+	for rows.Next() {
+		var id, typ, status, data, ts string
+		rows.Scan(&id, &typ, &status, &data, &ts)
+		items = append(items, map[string]interface{}{"id": id, "type": typ, "status": status, "data": data, "createdAt": ts})
+	}
+	return items, nil
+}
+
+func dbInsert(id, service, typ, status string, data []byte) error {
+	if db == nil { return fmt.Errorf("no db") }
+	_, err := db.Exec("INSERT INTO service_records (id, service, type, status, data) VALUES ($1,$2,$3,$4,$5)", id, service, typ, status, string(data))
+	return err
+}
+
+
+// --- JWT Auth Middleware ---
+func jwtAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if p == "/healthz" || p == "/readyz" || p == "/livez" || p == "/metrics" || p == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		auth := r.Header.Get("Authorization")
+		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(401)
+			fmt.Fprintf(w, `{"error":"unauthorized","service":"%s"}`, serviceName)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 
@@ -283,7 +363,7 @@ func main() {
 	log.Printf("agent-banking-go listening on port %s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: countingMiddleware(mux),
+        Handler: jwtAuthMiddleware(countingMiddleware(mux)),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

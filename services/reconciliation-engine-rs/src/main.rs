@@ -85,7 +85,8 @@ fn now_str() -> String {
 
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "service": "reconciliation-engine-rs",
         "status": "healthy",
@@ -157,7 +158,8 @@ async fn run_settlement_recon(body: web::Json<RunSettlementReconRequest>, state:
     }))
 }
 
-async fn get_suspense(state: web::Data<AppState>) -> HttpResponse {
+async fn get_suspense(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let items = state.suspense_items.lock().unwrap();
     let total_amount: f64 = items.iter().map(|i| i.amount).sum();
     let aging_0_7: usize = items.iter().filter(|i| i.aging_days <= 7).count();
@@ -172,12 +174,14 @@ async fn get_suspense(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
-async fn list_recons(state: web::Data<AppState>) -> HttpResponse {
+async fn list_recons(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
     HttpResponse::Ok().json(json!({"recons": *recons, "total": recons.len()}))
 }
 
-async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
+async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
     let items = state.suspense_items.lock().unwrap();
     HttpResponse::Ok().json(json!({
@@ -192,7 +196,8 @@ async fn get_stats(state: web::Data<AppState>) -> HttpResponse {
     }))
 }
 
-async fn eod_report(state: web::Data<AppState>) -> HttpResponse {
+async fn eod_report(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
     HttpResponse::Ok().json(json!({
         "report_type": "end_of_day_reconciliation",
@@ -231,6 +236,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"reconciliation-engine-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"reconciliation-engine-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]

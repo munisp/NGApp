@@ -40,7 +40,8 @@ struct TBTransfer {
     timestamp: String,
 }
 
-async fn healthz(state: web::Data<AppState>) -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "service": "tigerbeetle-protocol-rs",
         "status": "healthy",
@@ -76,7 +77,8 @@ async fn list_transfers() -> HttpResponse {
     HttpResponse::Ok().json(json!({"transfers": transfers, "total": 3}))
 }
 
-async fn create_transfer(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn create_transfer(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Created().json(json!({
         "success": true,
         "transferId": format!("TB-TXN-{}", chrono_placeholder()),
@@ -87,7 +89,8 @@ async fn create_transfer(body: web::Json<serde_json::Value>) -> HttpResponse {
     }))
 }
 
-async fn commit_pending(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn commit_pending(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "success": true,
         "action": "commit",
@@ -97,7 +100,8 @@ async fn commit_pending(body: web::Json<serde_json::Value>) -> HttpResponse {
     }))
 }
 
-async fn void_pending(body: web::Json<serde_json::Value>) -> HttpResponse {
+async fn void_pending(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "success": true,
         "action": "void",
@@ -126,6 +130,45 @@ async fn prom_metrics() -> HttpResponse {
     let body = format!(
         "# TYPE requests_total counter\nrequests_total{{service=\"tigerbeetle-protocol-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"tigerbeetle-protocol-rs\"}} {}\n", r, e);
     HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
 }
 
 #[actix_web::main]
