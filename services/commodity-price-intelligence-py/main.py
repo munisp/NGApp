@@ -310,6 +310,36 @@ def shutdown_handler(signum, frame):
 
 signal.signal(signal.SIGTERM, shutdown_handler)
 
+# --- Security Headers ---
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'self'",
+}
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "https://dashboard.54bank.ng").split(",")
+
+def add_security_headers(handler_self):
+    """Add security + CORS headers to response."""
+    for k, v in SECURITY_HEADERS.items():
+        handler_self.send_header(k, v)
+    origin = handler_self.headers.get("Origin", "")
+    if origin in [o.strip() for o in CORS_ALLOWED_ORIGINS]:
+        handler_self.send_header("Access-Control-Allow-Origin", origin)
+    handler_self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    handler_self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id")
+
+def sanitize_input(s):
+    """Sanitize user input to prevent XSS/injection."""
+    if not isinstance(s, str):
+        return s
+    s = s.replace("<", "&lt;").replace(">", "&gt;")
+    s = s.replace("'", "&#39;").replace('"', "&quot;")
+    s = s.replace("\\", "")
+    return s[:10000] if len(s) > 10000 else s
+
 # --- OpenTelemetry Export ---
 OTEL_ENDPOINT = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 

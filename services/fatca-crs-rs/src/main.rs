@@ -117,6 +117,38 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
     }
 }
 
+
+// --- Security Headers Middleware ---
+fn add_security_headers(resp: &mut actix_web::HttpResponse) {
+    let hdrs = resp.headers_mut();
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-content-type-options"),
+        actix_web::http::header::HeaderValue::from_static("nosniff"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-frame-options"),
+        actix_web::http::header::HeaderValue::from_static("DENY"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-xss-protection"),
+        actix_web::http::header::HeaderValue::from_static("1; mode=block"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("strict-transport-security"),
+        actix_web::http::header::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("referrer-policy"),
+        actix_web::http::header::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+}
+
+fn sanitize_input(s: &str) -> String {
+    let s = s.replace('<', "&lt;").replace('>', "&gt;")
+        .replace('\'', "&#39;").replace('"', "&quot;");
+    if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8199);
