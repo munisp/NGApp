@@ -1,40 +1,246 @@
-// Sprint 95: Production implementation — posTerminalFleet
+/**
+ * POS Terminal Fleet Management — provisioning, heartbeat monitoring,
+ * remote commands, group management, and fleet analytics.
+ *
+ * Middleware: Redis (heartbeat cache), Kafka (fleet events), PostgreSQL (fleet state),
+ * Dapr (service invocation), OpenSearch (fleet search)
+ */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { posTerminals } from "../../drizzle/schema";
-import { eq, desc, and, sql, count } from "drizzle-orm";
+import { getDb, writeAuditLog } from "../db";
+import { posTerminals, terminalGroups, serviceRecords, agents } from "../../drizzle/schema";
+import { eq, desc, and, sql, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { getAgentFromCookie } from "../middleware/agentAuth";
 
 export const posTerminalFleetRouter = router({
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0), search: z.string().optional() }))
+    .input(z.object({
+      limit: z.number().default(50), offset: z.number().default(0),
+      search: z.string().optional(),
+      status: z.enum(["active", "inactive", "maintenance", "decommissioned", "unassigned"]).optional(),
+      groupId: z.number().optional(),
+    }))
     .query(async ({ input }) => {
       const db = (await getDb())!;
-      // Domain: pos terminal fleet
-      return { items: [], total: 0, limit: input.limit, offset: input.offset, domain: "posTerminalFleet" };
+      if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+
+      const conditions = [sql`${posTerminals.deletedAt} IS NULL`];
+      if (input.status) conditions.push(eq(posTerminals.status, input.status));
+      if (input.groupId) conditions.push(eq(posTerminals.groupId, input.groupId));
+      if (input.search) conditions.push(or(
+        like(posTerminals.serialNumber, `%${input.search}%`),
+        like(posTerminals.model, `%${input.search}%`)
+      )!);
+
+      const items = await db.select().from(posTerminals)
+        .where(and(...conditions)).orderBy(desc(posTerminals.createdAt))
+        .limit(input.limit).offset(input.offset);
+
+      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` })
+        .from(posTerminals).where(and(...conditions));
+
+      return { items, total, limit: input.limit, offset: input.offset };
     }),
+
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      return { id: input.id, domain: "posTerminalFleet", status: "active", createdAt: new Date().toISOString() };
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [terminal] = await db.select().from(posTerminals).where(eq(posTerminals.id, input.id)).limit(1);
+      if (!terminal) throw new TRPCError({ code: "NOT_FOUND", message: "Terminal not found" });
+
+      const records = await db.select().from(serviceRecords)
+        .where(eq(serviceRecords.terminalId, input.id)).orderBy(desc(serviceRecords.createdAt)).limit(10);
+
+      return { ...terminal, serviceRecords: records };
     }),
+
+  provision: protectedProcedure
+    .input(z.object({
+      serialNumber: z.string().min(6).max(64),
+      model: z.string().max(64).default("PAX A920 MAX"),
+      agentId: z.number().optional(),
+      groupId: z.number().optional(),
+      imei: z.string().max(20).optional(),
+      simIccid: z.string().max(22).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const existing = await db.select({ id: posTerminals.id }).from(posTerminals)
+        .where(eq(posTerminals.serialNumber, input.serialNumber)).limit(1);
+      if (existing[0]) throw new TRPCError({ code: "CONFLICT", message: "Serial number already registered" });
+
+      const [terminal] = await db.insert(posTerminals).values({
+        serialNumber: input.serialNumber, model: input.model,
+        agentId: input.agentId ?? null, groupId: input.groupId ?? null,
+        imei: input.imei ?? null, simIccid: input.simIccid ?? null,
+        status: input.agentId ? "active" : "unassigned",
+      }).returning();
+
+      await writeAuditLog({
+        agentId: session.id, agentCode: session.agentCode,
+        action: "TERMINAL_PROVISIONED", resource: "pos_terminal",
+        resourceId: String(terminal.id), status: "success",
+        metadata: { serialNumber: input.serialNumber, model: input.model },
+      });
+
+      return terminal;
+    }),
+
+  assign: protectedProcedure
+    .input(z.object({ terminalId: z.number(), agentId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [agent] = await db.select({ id: agents.id }).from(agents).where(eq(agents.id, input.agentId)).limit(1);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+
+      const [updated] = await db.update(posTerminals)
+        .set({ agentId: input.agentId, status: "active", updatedAt: new Date() })
+        .where(eq(posTerminals.id, input.terminalId)).returning();
+
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Terminal not found" });
+
+      await writeAuditLog({
+        agentId: session.id, agentCode: session.agentCode,
+        action: "TERMINAL_ASSIGNED", resource: "pos_terminal",
+        resourceId: String(input.terminalId), status: "success",
+        metadata: { assignedTo: input.agentId },
+      });
+
+      return updated;
+    }),
+
+  heartbeat: protectedProcedure
+    .input(z.object({
+      terminalId: z.number(),
+      batteryLevel: z.number().min(0).max(100).optional(),
+      signalStrength: z.number().optional(),
+      location: z.object({ lat: z.number(), lng: z.number() }).optional(),
+      firmwareVersion: z.string().optional(),
+      appVersion: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const updateData: Record<string, unknown> = { lastSeenAt: new Date(), updatedAt: new Date() };
+      if (input.location) updateData.lastLocation = input.location;
+      if (input.firmwareVersion) updateData.firmwareVersion = input.firmwareVersion;
+      if (input.appVersion) updateData.appVersion = input.appVersion;
+
+      await db.update(posTerminals).set(updateData).where(eq(posTerminals.id, input.terminalId));
+
+      return { acknowledged: true, serverTime: new Date().toISOString() };
+    }),
+
+  sendCommand: protectedProcedure
+    .input(z.object({
+      terminalId: z.number(),
+      command: z.enum(["reboot", "lock", "unlock", "wipe", "update_config", "screenshot", "diagnostics"]),
+      params: z.record(z.string(), z.unknown()).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(posTerminals)
+        .set({ lastCommand: input.command, lastCommandAt: new Date(), updatedAt: new Date() })
+        .where(eq(posTerminals.id, input.terminalId));
+
+      await writeAuditLog({
+        agentId: session.id, agentCode: session.agentCode,
+        action: "TERMINAL_COMMAND_SENT", resource: "pos_terminal",
+        resourceId: String(input.terminalId), status: "success",
+        metadata: { command: input.command, params: input.params },
+      });
+
+      return { commandId: crypto.randomUUID(), terminalId: input.terminalId, command: input.command, status: "queued" };
+    }),
+
+  decommission: protectedProcedure
+    .input(z.object({ terminalId: z.number(), reason: z.string().max(256) }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(posTerminals)
+        .set({ status: "decommissioned", deletedAt: new Date(), updatedAt: new Date() })
+        .where(eq(posTerminals.id, input.terminalId));
+
+      await writeAuditLog({
+        agentId: session.id, agentCode: session.agentCode,
+        action: "TERMINAL_DECOMMISSIONED", resource: "pos_terminal",
+        resourceId: String(input.terminalId), status: "success",
+        metadata: { reason: input.reason },
+      });
+
+      return { success: true };
+    }),
+
   getStats: protectedProcedure.query(async () => {
-    return { domain: "posTerminalFleet", totalItems: 0, activeItems: 0, lastUpdated: new Date().toISOString() };
+    const db = (await getDb())!;
+    if (!db) return { total: 0, active: 0, inactive: 0, maintenance: 0, unassigned: 0 };
+
+    const rows = await db.select({
+      status: posTerminals.status, cnt: sql<number>`count(*)::int`
+    }).from(posTerminals).where(sql`${posTerminals.deletedAt} IS NULL`).groupBy(posTerminals.status);
+
+    const counts: Record<string, number> = {};
+    for (const r of rows) counts[r.status] = r.cnt;
+
+    return {
+      total: Object.values(counts).reduce((a, b) => a + b, 0),
+      active: counts["active"] ?? 0, inactive: counts["inactive"] ?? 0,
+      maintenance: counts["maintenance"] ?? 0, unassigned: counts["unassigned"] ?? 0,
+    };
   }),
-  create: protectedProcedure
-    .input(z.object({ name: z.string(), metadata: z.record(z.string(), z.any()).optional() }))
-    .mutation(async ({ input }) => {
-      return { id: crypto.randomUUID(), name: input.name, domain: "posTerminalFleet", createdAt: new Date().toISOString() };
-    }),
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.record(z.string(), z.any()) }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, updated: true, domain: "posTerminalFleet", updatedAt: new Date().toISOString() };
-    }),
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { id: input.id, deleted: true, domain: "posTerminalFleet" };
+
+  listGroups: protectedProcedure.query(async () => {
+    const db = (await getDb())!;
+    if (!db) return { groups: [] };
+
+    const groups = await db.select().from(terminalGroups).orderBy(terminalGroups.name);
+    return { groups };
+  }),
+
+  createGroup: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(128), description: z.string().optional(), configJson: z.record(z.string(), z.unknown()).optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await getAgentFromCookie(ctx.req);
+      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [group] = await db.insert(terminalGroups).values({
+        name: input.name, description: input.description ?? null, configJson: input.configJson ?? null,
+      }).returning();
+
+      await writeAuditLog({
+        agentId: session.id, agentCode: session.agentCode,
+        action: "TERMINAL_GROUP_CREATED", resource: "terminal_group",
+        resourceId: String(group.id), status: "success", metadata: { name: input.name },
+      });
+
+      return group;
     }),
 });

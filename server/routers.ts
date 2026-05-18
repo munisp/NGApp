@@ -458,6 +458,16 @@ import { bulkRoleImportRouter } from "./routers/bulkRoleImport";
 import { networkTrendsRouter } from "./routers/networkTrends";
 import { kybRouter } from "./routers/kyb";
 import { deepfaceRouter } from "./routers/deepface";
+// Sprint 96: POS Enhancement Routers
+import { eodReconciliationRouter } from "./routers/eodReconciliation";
+import { multiSimFailoverRouter } from "./routers/multiSimFailover";
+import { agentFloatTransferRouter } from "./routers/agentFloatTransfer";
+import { splitPaymentsRouter } from "./routers/splitPayments";
+import { recurringPaymentsRouter } from "./routers/recurringPayments";
+import { terminalLeasingRouter } from "./routers/terminalLeasing";
+import { posDisputeRouter } from "./routers/posDispute";
+import { crossBorderRemittanceRouter } from "./routers/crossBorderRemittance";
+import { agentTrainingGamificationRouter } from "./routers/agentTrainingGamification";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -1011,6 +1021,16 @@ export const appRouter = router({
   networkQualityHeatmap: networkQualityHeatmapRouter,
   bulkRoleImport: bulkRoleImportRouter,
   networkTrends: networkTrendsRouter,
+  // Sprint 96: POS Enhancement Routers
+  eodReconciliation: eodReconciliationRouter,
+  multiSimFailover: multiSimFailoverRouter,
+  agentFloatTransfer: agentFloatTransferRouter,
+  splitPayments: splitPaymentsRouter,
+  recurringPayments: recurringPaymentsRouter,
+  terminalLeasing: terminalLeasingRouter,
+  posDispute: posDisputeRouter,
+  crossBorderRemittance: crossBorderRemittanceRouter,
+  agentTrainingGamification: agentTrainingGamificationRouter,
 });
 
 export type AppRouter = typeof appRouter;
