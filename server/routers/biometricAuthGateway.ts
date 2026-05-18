@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 90: Biometric Auth Gateway — public-facing endpoints for
 // merchant/agent onboarding biometric verification flow
 import { z } from "zod";

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Automated Settlement Scheduler — DB-backed schedule management
  * Sprint 54: Full PostgreSQL + middleware integration

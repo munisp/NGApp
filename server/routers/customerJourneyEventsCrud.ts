@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: Event sequencing, funnel analysis, attribution
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

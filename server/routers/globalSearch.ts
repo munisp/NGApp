@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Global Search Router — 54Link Agency Banking Platform
  * 

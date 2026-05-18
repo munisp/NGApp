@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 90: Production biometric auth router with real microservice integration
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

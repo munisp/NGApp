@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: Upgraded from mock data to real DB queries — deviceFleetManager
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

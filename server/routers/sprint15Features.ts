@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: Full implementation of Sprint 15 features with real DB queries
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

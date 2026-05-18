@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: GDPR/NDPR compliance, consent expiry, withdrawal workflow
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

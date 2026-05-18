@@ -1,46 +1,35 @@
 /**
- * 54Link POS Shell — API Versioning Middleware
- * 
- * Supports header-based versioning via X-API-Version header.
- * Default version: v1 (current)
- * 
- * Strategy:
- * - v1: Current stable API (tRPC procedures as-is)
- * - v2: Future breaking changes (field renames, removed endpoints)
- * - Deprecation headers warn clients 90 days before removal
+ * Item 15: API versioning middleware
+ * Adds /api/v1/ prefix support for all external endpoints.
+ * Older /api/ routes are preserved for backward compatibility.
  */
 import type { Request, Response, NextFunction } from "express";
 
-export const CURRENT_API_VERSION = "v1";
-export const SUPPORTED_VERSIONS = ["v1"] as const;
-export const DEPRECATED_VERSIONS: string[] = [];
-export type ApiVersion = (typeof SUPPORTED_VERSIONS)[number];
+const CURRENT_VERSION = "v1";
+const SUPPORTED_VERSIONS = ["v1"];
 
-export function apiVersioningMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Extract version from header or query param
-  const requestedVersion = (req.headers["x-api-version"] as string) || 
-                           (req.query["api_version"] as string) || 
-                           CURRENT_API_VERSION;
-  
-  // Set version headers in response
-  res.setHeader("X-API-Version", requestedVersion);
-  res.setHeader("X-API-Current-Version", CURRENT_API_VERSION);
-  
-  if (DEPRECATED_VERSIONS.includes(requestedVersion)) {
-    res.setHeader("X-API-Deprecated", "true");
-    res.setHeader("Sunset", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString());
-    console.warn(`[API] Deprecated version ${requestedVersion} used by ${req.ip}`);
+export function apiVersionMiddleware(req: Request, res: Response, next: NextFunction) {
+  const versionMatch = req.path.match(/^\/api\/(v\d+)\//);
+
+  if (versionMatch) {
+    const requestedVersion = versionMatch[1];
+    if (!SUPPORTED_VERSIONS.includes(requestedVersion)) {
+      res.status(400).json({
+        error: "unsupported_api_version",
+        message: `API version '${requestedVersion}' is not supported. Supported: ${SUPPORTED_VERSIONS.join(", ")}`,
+        current: CURRENT_VERSION,
+      });
+      return;
+    }
+    (req as unknown as Record<string, unknown>).apiVersion = requestedVersion;
+  } else if (req.path.startsWith("/api/")) {
+    (req as unknown as Record<string, unknown>).apiVersion = CURRENT_VERSION;
   }
-  
-  if (!(SUPPORTED_VERSIONS as readonly string[]).includes(requestedVersion) && !DEPRECATED_VERSIONS.includes(requestedVersion)) {
-    return res.status(400).json({
-      error: "Unsupported API version",
-      requestedVersion,
-      supportedVersions: SUPPORTED_VERSIONS,
-      currentVersion: CURRENT_API_VERSION,
-    });
-  }
-  
-  (req as any).apiVersion = requestedVersion as ApiVersion;
+
+  res.setHeader("X-API-Version", CURRENT_VERSION);
+  res.setHeader("X-API-Supported-Versions", SUPPORTED_VERSIONS.join(", "));
+
   next();
 }
+
+export { CURRENT_VERSION, SUPPORTED_VERSIONS };

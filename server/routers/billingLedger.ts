@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Billing Ledger tRPC Router — Sprint 81 (Real DB Queries with correct schema)
  * Records and queries the platform billing ledger — the source of truth for

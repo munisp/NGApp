@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: Regenerated — agentSuspensionWorkflow with real DB queries
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

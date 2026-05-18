@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * F12: Customer Journey Analytics
  * Journey steps, funnel analysis, touchpoint tracking, conversion metrics

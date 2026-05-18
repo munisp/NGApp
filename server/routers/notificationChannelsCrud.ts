@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 87: Channel health monitoring, failover routing, rate limiting
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // Sprint 95: Production implementation — transactionReconciliation
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
