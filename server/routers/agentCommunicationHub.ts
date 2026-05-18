@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { agents, notifications, auditLog } from "../../drizzle/schema";
+import { agents, notification_logs, auditLog } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 
 export const agentCommunicationHubRouter = router({
@@ -19,7 +19,7 @@ export const agentCommunicationHubRouter = router({
     .mutation(async ({ input }) => {
       const db = (await getDb())!;
       const messageId = crypto.randomUUID();
-      const [notif] = await db.insert(notifications).values({ title: `[${input.channel.toUpperCase()}] Agent Message`, message: input.message, type: input.priority === "critical" ? "error" : "info", read: false }).returning();
+      const [notif] = await db.insert(notification_logs).values({ recipientId: String(input.agentId), recipientType: "agent", subject: `[${input.channel.toUpperCase()}] Agent Message`, body: input.message, status: "sent" }).returning();
       await db.insert(auditLog).values({ action: "agent_message_sent", resource: "notifications", resourceId: String(notif.id), status: "success", metadata: { agentId: input.agentId, channel: input.channel, priority: input.priority } });
       return { sent: true, messageId, notificationId: notif.id, channel: input.channel, timestamp: new Date().toISOString() };
     }),
@@ -36,7 +36,7 @@ export const agentCommunicationHubRouter = router({
       const db = (await getDb())!;
       const broadcastId = crypto.randomUUID();
       const [agentCount] = await db.select({ value: count() }).from(agents).where(eq(agents.isActive, true));
-      await db.insert(notifications).values({ title: "Broadcast Alert", message: input.message, type: "warning", read: false });
+      await db.insert(notification_logs).values({ recipientId: "broadcast", recipientType: "all", subject: "Broadcast Alert", body: input.message, status: "sent" });
       await db.insert(auditLog).values({ action: "broadcast_alert_sent", resource: "notifications", resourceId: broadcastId, status: "success", metadata: { channels: input.channels, targetGroup: input.targetGroup, recipientCount: Number(agentCount.value) } });
       return { broadcastId, recipientCount: Number(agentCount.value), channels: input.channels, status: "sent" };
     }),
