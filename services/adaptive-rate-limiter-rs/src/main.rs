@@ -1,4 +1,4 @@
-use tokio_postgres;
+#![allow(unused)]
 use actix_web::{web, App, HttpServer, HttpResponse, middleware};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

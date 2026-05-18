@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 54Bank Banking Clearing & Operations Engine — Rust
 //! Closes gaps 13-16: Cheque Clearing, Collateral, Cash Management, SWIFT/Correspondent
 //! All post double-entry journal entries to GL with 14 middleware integration.

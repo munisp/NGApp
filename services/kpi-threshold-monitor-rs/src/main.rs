@@ -1,4 +1,4 @@
-use tokio_postgres;
+#![allow(unused)]
 // kpi-threshold-monitor-rs — Real-time KPI threshold monitoring with Kafka alert publishing
 // Port: 8501
 // Middleware: Postgres, Redis, Kafka, Dapr, Fluvio, Temporal, OpenSearch, Permify

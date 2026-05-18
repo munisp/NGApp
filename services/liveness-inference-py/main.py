@@ -1578,10 +1578,31 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+import signal
+import threading
+
+_server = None
+_shutdown_event = threading.Event()
+
+def _shutdown_handler(signum, frame):
+    logging.info("Shutdown signal received, draining requests...")
+    _shutdown_event.set()
+    if _server:
+        threading.Thread(target=_server.shutdown).start()
+
+signal.signal(signal.SIGTERM, _shutdown_handler)
+signal.signal(signal.SIGINT, _shutdown_handler)
+
 if __name__ == "__main__":
     logging.info(f"Liveness Inference Engine v2.0 (Python) on :{PORT}")
     logging.info(f"ML Backend: {'DeepFace (' + DEEPFACE_RECOGNITION_MODEL + ')' if DEEPFACE_AVAILABLE else 'Fallback ONNX'}")
     logging.info(f"Detector: {'DeepFace (' + DEEPFACE_DETECTOR + ')' if DEEPFACE_AVAILABLE else 'RetinaFace-R50'}")
     logging.info("Capabilities: passive_liveness, active_liveness, face_match, anti_spoofing, deepfake_detection")
-    logging.info("DeepFace features: facial_attributes, face_search_1n, customer_dedup, 10_recognition_models")
-    HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    _server = HTTPServer(("0.0.0.0", PORT), Handler)
+    try:
+        _server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _server.server_close()
+        logging.info("Server stopped gracefully")

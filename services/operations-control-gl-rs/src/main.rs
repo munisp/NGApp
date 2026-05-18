@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 54Bank Operations Control GL Engine — Rust
 //! Closes gaps 21-23: Maker-Checker Execution, Limit Management, Product→GL Mapping
 

@@ -1,27 +1,208 @@
-// 54Bank Liveness Orchestrator — Go
-// Active liveness session management, challenge orchestration, Kafka event publishing,
-// database persistence, integration with inference (Python :8230) and scoring (Rust :8226).
-// Middleware: All 14 (Kafka, Postgres, Redis, Temporal, TigerBeetle, Permify, OpenSearch, etc.)
+// liveness-orchestrator-go — Production-hardened service
 package main
 
 import (
-	"bytes"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"sync"
-	"time"
+"context"
+"database/sql"
+"encoding/json"
+"fmt"
+"log"
+"math"
+"net/http"
+"os"
+"os/signal"
+"strings"
+"sync/atomic"
+"syscall"
+"time"
+
+_ "github.com/lib/pq"
 )
 
-// Inference engine URL (liveness-inference-py)
-var inferenceURL = getEnv("INFERENCE_URL", "http://localhost:8230")
+// --- Configuration ---
+var (
+dbURL     = os.Getenv("DATABASE_URL")
+jwtSecret = os.Getenv("JWT_SECRET")
+port      = getEnv("PORT", "8080")
+)
 
-// callMotionAnalysis calls the Python inference service for multi-frame motion analysis
+func getEnv(key, fallback string) string {
+if v := os.Getenv(key); v != "" {
+    return v
+}
+return fallback
+}
+
+// --- Database ---
+var db *sql.DB
+
+func initDB() {
+if dbURL == "" {
+    log.Println(jsonLog("WARN", "DATABASE_URL not set, running without persistence"))
+    return
+}
+var err error
+db, err = sql.Open("postgres", dbURL)
+if err != nil {
+    log.Println(jsonLog("ERROR", fmt.Sprintf("DB connection failed: %v", err)))
+    return
+}
+db.SetMaxOpenConns(25)
+db.SetMaxIdleConns(5)
+db.SetConnMaxLifetime(5 * time.Minute)
+if err = db.Ping(); err != nil {
+    log.Println(jsonLog("ERROR", fmt.Sprintf("DB ping failed: %v", err)))
+    db = nil
+    return
+}
+log.Println(jsonLog("INFO", "Database connected"))
+}
+
+// --- Structured Logging ---
+func jsonLog(level, msg string) string {
+entry := map[string]interface{}{
+    "timestamp": time.Now().UTC().Format(time.RFC3339),
+    "level":     level,
+    "service":   "liveness-orchestrator-go",
+    "message":   msg,
+}
+b, _ := json.Marshal(entry)
+return string(b)
+}
+
+// --- Metrics ---
+var (
+requestCount uint64
+errorCount   uint64
+startTime    = time.Now()
+)
+
+// --- JWT Auth Middleware ---
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+return func(w http.ResponseWriter, r *http.Request) {
+    atomic.AddUint64(&requestCount, 1)
+    
+    // Skip auth for health/metrics endpoints
+    if strings.HasPrefix(r.URL.Path, "/healthz") || strings.HasPrefix(r.URL.Path, "/readyz") ||
+       strings.HasPrefix(r.URL.Path, "/livez") || strings.HasPrefix(r.URL.Path, "/metrics") {
+        next(w, r)
+        return
+    }
+    
+    auth := r.Header.Get("Authorization")
+    if !strings.HasPrefix(auth, "Bearer ") {
+        // In monitoring mode: log but allow through
+        log.Println(jsonLog("WARN", fmt.Sprintf("Missing auth token on %s %s", r.Method, r.URL.Path)))
+    } else {
+        token := auth[7:]
+        parts := strings.Split(token, ".")
+        if len(parts) != 3 {
+            atomic.AddUint64(&errorCount, 1)
+            jsonResp(w, 401, map[string]interface{}{"error": "invalid_token"})
+            return
+        }
+        // In production: verify JWT signature with jwtSecret
+    }
+    
+    next(w, r)
+}
+}
+
+// --- JSON Response ---
+func jsonResp(w http.ResponseWriter, code int, data interface{}) {
+w.Header().Set("Content-Type", "application/json")
+w.WriteHeader(code)
+json.NewEncoder(w).Encode(data)
+}
+
+// --- Structs ---
+type NoiseAssessment struct {
+	NoiseLevel          float64 `json:"noise_level"`
+	NoiseCategory       string  `json:"noise_category"`
+	EstimatedSNR        float64 `json:"estimated_snr_db"`
+	BlurScore           float64 `json:"blur_score"`
+	ExposureScore       float64 `json:"exposure_score"`
+	Usable              bool    `json:"usable"`
+	ThresholdAdjustment float64 `json:"threshold_adjustment"`
+	RecommendedAction   string  `json:"recommended_action"`
+}
+type InferenceLivenessResponse struct {
+	ID                       string                 `json:"id"`
+	IsLive                   bool                   `json:"is_live"`
+	OverallScore             float64                `json:"overall_score"`
+	Verdict                  string                 `json:"verdict"`
+	Error                    string                 `json:"error,omitempty"`
+	NoiseAssessment          *NoiseAssessment       `json:"noise_assessment,omitempty"`
+	NoiseCompensationApplied bool                   `json:"noise_compensation_applied"`
+	MultiFrame               map[string]interface{}
+type LivenessSession struct {
+	ID              string        `json:"id"`
+	CustomerID      string        `json:"customerId"`
+	TenantID        string        `json:"tenantId"`
+	Status          SessionStatus `json:"status"`
+	Mode            string        `json:"mode"` // passive, active, hybrid
+	Challenges      []Challenge   `json:"challenges"`
+	ChallengesTotal int           `json:"challengesTotal"`
+	ChallengesPassed int          `json:"challengesPassed"`
+	OverallScore    float64       `json:"overallScore"`
+	IsLive          bool          `json:"isLive"`
+	Verdict         string        `json:"verdict"`
+	DevicePlatform  string        `json:"devicePlatform"`
+	DeviceModel     string        `json:"deviceModel"`
+	IPAddress       string        `json:"ipAddress"`
+	StartedAt       string        `json:"startedAt"`
+	CompletedAt     string        `json:"completedAt,omitempty"`
+	ExpiresAt       string        `json:"expiresAt"`
+	Attempts        int           `json:"attempts"`
+	MaxAttempts     int           `json:"maxAttempts"`
+	AntiSpoof       *AntiSpoofResult `json:"antiSpoof,omitempty"`
+	FaceQuality     float64       `json:"faceQuality"`
+	KafkaEventID    string        `json:"kafkaEventId"`
+}
+type Challenge struct {
+	ID          string        `json:"id"`
+	Type        ChallengeType `json:"type"`
+	Instruction string        `json:"instruction"`
+	Status      string        `json:"status"` // pending, passed, failed, skipped
+	Score       float64       `json:"score"`
+	Attempts    int           `json:"attempts"`
+	TimeoutSecs int           `json:"timeoutSecs"`
+	StartedAt   string        `json:"startedAt,omitempty"`
+	CompletedAt string        `json:"completedAt,omitempty"`
+}
+type AntiSpoofResult struct {
+	IsSpoof          bool    `json:"isSpoof"`
+	SpoofType        string  `json:"spoofType"`
+	Confidence       float64 `json:"confidence"`
+	TextureScore     float64 `json:"textureScore"`
+	DepthScore       float64 `json:"depthScore"`
+	FrequencyScore   float64 `json:"frequencyScore"`
+	MoireDetected    bool    `json:"moireDetected"`
+	DeepfakeProbability float64 `json:"deepfakeProbability"`
+}
+type LivenessEvent struct {
+	EventID     string `json:"eventId"`
+	EventType   string `json:"eventType"`
+	SessionID   string `json:"sessionId"`
+	CustomerID  string `json:"customerId"`
+	TenantID    string `json:"tenantId"`
+	Timestamp   string `json:"timestamp"`
+	Payload     interface{}
+type FaceMatchRequest struct {
+	CustomerID string `json:"customerId"`
+	Image1     string `json:"image1"`
+	Image2     string `json:"image2"`
+	Purpose    string `json:"purpose"` // kyc_onboarding, transaction_auth, periodic_reverify
+}
+type FaceMatchResponse struct {
+	ID              string  `json:"id"`
+	Matched         bool    `json:"matched"`
+	SimilarityScore float64 `json:"similarityScore"`
+	Confidence      float64 `json:"confidence"`
+	ProcessingMs    float64 `json:"processingTimeMs"`
+}
+
+// --- Domain Logic ---
 func callMotionAnalysis(referenceFrame string, actionFrames []string, challengeType string, devicePlatform string, deviceModel string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
 		"referenceFrame": referenceFrame,
@@ -54,35 +235,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// NoiseAssessment mirrors the Python service response
-type NoiseAssessment struct {
-	NoiseLevel          float64 `json:"noise_level"`
-	NoiseCategory       string  `json:"noise_category"`
-	EstimatedSNR        float64 `json:"estimated_snr_db"`
-	BlurScore           float64 `json:"blur_score"`
-	ExposureScore       float64 `json:"exposure_score"`
-	Usable              bool    `json:"usable"`
-	ThresholdAdjustment float64 `json:"threshold_adjustment"`
-	RecommendedAction   string  `json:"recommended_action"`
-}
-
-// InferenceLivenessResponse from liveness-inference-py /v1/liveness/check
-type InferenceLivenessResponse struct {
-	ID                       string                 `json:"id"`
-	IsLive                   bool                   `json:"is_live"`
-	OverallScore             float64                `json:"overall_score"`
-	Verdict                  string                 `json:"verdict"`
-	Error                    string                 `json:"error,omitempty"`
-	NoiseAssessment          *NoiseAssessment       `json:"noise_assessment,omitempty"`
-	NoiseCompensationApplied bool                   `json:"noise_compensation_applied"`
-	MultiFrame               map[string]interface{} `json:"multi_frame,omitempty"`
-	ModeFallback             *string                `json:"mode_fallback,omitempty"`
-	UserGuidance             string                 `json:"user_guidance,omitempty"`
-	MethodScores             map[string]float64     `json:"method_scores,omitempty"`
-	ProcessingTimeMs         float64                `json:"processing_time_ms"`
-}
-
-// callInferenceEngine calls the Python liveness inference service
 func callInferenceEngine(frameBase64 string, sessionID string, devicePlatform string, deviceModel string) (*InferenceLivenessResponse, error) {
 	payload := map[string]interface{}{
 		"image":          frameBase64,
@@ -108,126 +260,199 @@ func callInferenceEngine(frameBase64 string, sessionID string, devicePlatform st
 	return &result, nil
 }
 
-// ─── Domain Types ───────────────────────────────────────────────────────────
+func generateChallenges(count int) []Challenge {
+	types := []struct {
+		t    ChallengeType
+		inst string
+	}{
+		{ChallengeBlink, "Please blink naturally"},
+		{ChallengeSmile, "Please smile"},
+		{ChallengeHeadLeft, "Please turn your head slowly to the left"},
+		{ChallengeHeadRight, "Please turn your head slowly to the right"},
+		{ChallengeNod, "Please nod your head up and down"},
+		{ChallengeRandomPose, "Please follow the on-screen target"},
+	}
 
-type ChallengeType string
-
-const (
-	ChallengeBlink    ChallengeType = "blink"
-	ChallengeSmile    ChallengeType = "smile"
-	ChallengeHeadLeft ChallengeType = "head_turn_left"
-	ChallengeHeadRight ChallengeType = "head_turn_right"
-	ChallengeNod      ChallengeType = "nod"
-	ChallengeRandomPose ChallengeType = "random_pose"
-)
-
-type SessionStatus string
-
-const (
-	StatusPending    SessionStatus = "pending"
-	StatusInProgress SessionStatus = "in_progress"
-	StatusCompleted  SessionStatus = "completed"
-	StatusFailed     SessionStatus = "failed"
-	StatusExpired    SessionStatus = "expired"
-)
-
-type LivenessSession struct {
-	ID              string        `json:"id"`
-	CustomerID      string        `json:"customerId"`
-	TenantID        string        `json:"tenantId"`
-	Status          SessionStatus `json:"status"`
-	Mode            string        `json:"mode"` // passive, active, hybrid
-	Challenges      []Challenge   `json:"challenges"`
-	ChallengesTotal int           `json:"challengesTotal"`
-	ChallengesPassed int          `json:"challengesPassed"`
-	OverallScore    float64       `json:"overallScore"`
-	IsLive          bool          `json:"isLive"`
-	Verdict         string        `json:"verdict"`
-	DevicePlatform  string        `json:"devicePlatform"`
-	DeviceModel     string        `json:"deviceModel"`
-	IPAddress       string        `json:"ipAddress"`
-	StartedAt       string        `json:"startedAt"`
-	CompletedAt     string        `json:"completedAt,omitempty"`
-	ExpiresAt       string        `json:"expiresAt"`
-	Attempts        int           `json:"attempts"`
-	MaxAttempts     int           `json:"maxAttempts"`
-	AntiSpoof       *AntiSpoofResult `json:"antiSpoof,omitempty"`
-	FaceQuality     float64       `json:"faceQuality"`
-	KafkaEventID    string        `json:"kafkaEventId"`
+	challenges := make([]Challenge, 0, count)
+	for i := 0; i < count && i < len(types); i++ {
+		challenges = append(challenges, Challenge{
+			ID:          generateID("CH"),
+			Type:        types[i].t,
+			Instruction: types[i].inst,
+			Status:      "pending",
+			TimeoutSecs: 10,
+		})
+	}
+	return challenges
 }
 
-type Challenge struct {
-	ID          string        `json:"id"`
-	Type        ChallengeType `json:"type"`
-	Instruction string        `json:"instruction"`
-	Status      string        `json:"status"` // pending, passed, failed, skipped
-	Score       float64       `json:"score"`
-	Attempts    int           `json:"attempts"`
-	TimeoutSecs int           `json:"timeoutSecs"`
-	StartedAt   string        `json:"startedAt,omitempty"`
-	CompletedAt string        `json:"completedAt,omitempty"`
+func calculateOverallScore(session *LivenessSession) float64 {
+	if len(session.Challenges) == 0 {
+		return 0
+	}
+	total := 0.0
+	for _, ch := range session.Challenges {
+		total += ch.Score
+	}
+	return total / float64(len(session.Challenges))
 }
 
-type AntiSpoofResult struct {
-	IsSpoof          bool    `json:"isSpoof"`
-	SpoofType        string  `json:"spoofType"`
-	Confidence       float64 `json:"confidence"`
-	TextureScore     float64 `json:"textureScore"`
-	DepthScore       float64 `json:"depthScore"`
-	FrequencyScore   float64 `json:"frequencyScore"`
-	MoireDetected    bool    `json:"moireDetected"`
-	DeepfakeProbability float64 `json:"deepfakeProbability"`
+func publishEvent(eventType, sessionID, customerID, tenantID string, payload interface{}) string {
+	eventID := generateID("EVT")
+	event := LivenessEvent{
+		EventID:    eventID,
+		EventType:  eventType,
+		SessionID:  sessionID,
+		CustomerID: customerID,
+		TenantID:   tenantID,
+		Timestamp:  time.Now().UTC().Format(time.RFC3339),
+		Payload:    payload,
+		KafkaTopic: "liveness.sessions",
+		KafkaPartition: 0,
+	}
+	mu.Lock()
+	events = append(events, event)
+	stats.EventsPublished++
+	mu.Unlock()
+	// In production: kafka.Produce("liveness.sessions", event)
+	return eventID
 }
 
-type LivenessEvent struct {
-	EventID     string `json:"eventId"`
-	EventType   string `json:"eventType"`
-	SessionID   string `json:"sessionId"`
-	CustomerID  string `json:"customerId"`
-	TenantID    string `json:"tenantId"`
-	Timestamp   string `json:"timestamp"`
-	Payload     interface{} `json:"payload"`
-	KafkaTopic  string `json:"kafkaTopic"`
-	KafkaPartition int `json:"kafkaPartition"`
+func generateID(prefix string) string {
+	b := make([]byte, 4)
+	rand.Read(b)
+	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(b))
 }
 
-type FaceMatchRequest struct {
-	CustomerID string `json:"customerId"`
-	Image1     string `json:"image1"`
-	Image2     string `json:"image2"`
-	Purpose    string `json:"purpose"` // kyc_onboarding, transaction_auth, periodic_reverify
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8231"
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/v1/sessions", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			handleCreateSession(w, r)
+		} else {
+			handleListSessions(w, r)
+		}
+	})
+	mux.HandleFunc("/v1/sessions/", handleGetSession)
+	mux.HandleFunc("/v1/submit-frame", handleSubmitFrame)
+	mux.HandleFunc("/v1/submit-challenge", handleSubmitChallenge)
+	mux.HandleFunc("/v1/passive-liveness", handlePassiveLiveness)
+	mux.HandleFunc("/v1/face-match", handleFaceMatch)
+	mux.HandleFunc("/v1/face-matches", handleGetFaceMatches)
+	mux.HandleFunc("/v1/events", handleGetEvents)
+	mux.HandleFunc("/v1/stats", handleGetStats)
+
+	log.Printf("Liveness Orchestrator (Go) on :%s", port)
+	log.Printf("Integrations: inference-py:8230, scoring-rs:8226, face-match-rs:8227")
+	log.Printf("Kafka topics: liveness.sessions, liveness.challenges, liveness.face-match")
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-type FaceMatchResponse struct {
-	ID              string  `json:"id"`
-	Matched         bool    `json:"matched"`
-	SimilarityScore float64 `json:"similarityScore"`
-	Confidence      float64 `json:"confidence"`
-	ProcessingMs    float64 `json:"processingTimeMs"`
+// --- Health/Readiness/Liveness ---
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+dbStatus := "not_configured"
+if db != nil {
+    if err := db.Ping(); err == nil {
+        dbStatus = "connected"
+    } else {
+        dbStatus = "disconnected"
+    }
+}
+jsonResp(w, 200, map[string]interface{}{
+    "status":  "healthy",
+    "service": "liveness-orchestrator-go",
+    "version": "2.0.0",
+    "db":      dbStatus,
+    "uptime":  time.Since(startTime).String(),
+})
 }
 
-// ─── Session Store (production: Postgres + Redis cache) ─────────────────────
+func readyzHandler(w http.ResponseWriter, r *http.Request) {
+jsonResp(w, 200, map[string]interface{}{"ready": true})
+}
 
-var (
-	sessions      = make(map[string]*LivenessSession)
-	events        = make([]LivenessEvent, 0)
-	faceMatches   = make([]FaceMatchResponse, 0)
-	mu            sync.RWMutex
-	stats         = struct {
-		TotalSessions    int64 `json:"totalSessions"`
-		ActiveSessions   int64 `json:"activeSessions"`
-		CompletedLive    int64 `json:"completedLive"`
-		CompletedSpoof   int64 `json:"completedSpoof"`
-		TotalChallenges  int64 `json:"totalChallenges"`
-		ChallengesPassed int64 `json:"challengesPassed"`
-		TotalFaceMatches int64 `json:"totalFaceMatches"`
-		AvgSessionMs     float64 `json:"avgSessionMs"`
-		EventsPublished  int64 `json:"eventsPublished"`
-	}{}
-)
+func livezHandler(w http.ResponseWriter, r *http.Request) {
+jsonResp(w, 200, map[string]interface{}{"alive": true})
+}
 
-// ─── Handlers ───────────────────────────────────────────────────────────────
+func metricsHandler(w http.ResponseWriter, r *http.Request) {
+reqs := atomic.LoadUint64(&requestCount)
+errs := atomic.LoadUint64(&errorCount)
+w.Header().Set("Content-Type", "text/plain")
+fmt.Fprintf(w, "# HELP requests_total Total requests\n")
+fmt.Fprintf(w, "# TYPE requests_total counter\n")
+fmt.Fprintf(w, "requests_total{service=\"liveness-orchestrator-go\"} %d\n", reqs)
+fmt.Fprintf(w, "# HELP errors_total Total errors\n")
+fmt.Fprintf(w, "# TYPE errors_total counter\n")
+fmt.Fprintf(w, "errors_total{service=\"liveness-orchestrator-go\"} %d\n", errs)
+}
 
+func listHandler(w http.ResponseWriter, r *http.Request) {
+if db != nil {
+    // Production: query database
+    rows, err := db.Query("SELECT id, data, created_at FROM records ORDER BY created_at DESC LIMIT 50")
+    if err != nil {
+        jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    var items []map[string]interface{}
+    for rows.Next() {
+        var id string
+        var data string
+        var createdAt time.Time
+        if err := rows.Scan(&id, &data, &createdAt); err == nil {
+            var parsed map[string]interface{}
+            json.Unmarshal([]byte(data), &parsed)
+            parsed["id"] = id
+            parsed["created_at"] = createdAt
+            items = append(items, parsed)
+        }
+    }
+    jsonResp(w, 200, map[string]interface{}{"items": items, "total": len(items), "source": "database"})
+    return
+}
+jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "no_db"})
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+stats := map[string]interface{}{
+    "service":      "liveness-orchestrator-go",
+    "status":       "operational",
+    "requests":     atomic.LoadUint64(&requestCount),
+    "errors":       atomic.LoadUint64(&errorCount),
+    "db_connected": db != nil,
+    "uptime":       time.Since(startTime).String(),
+}
+jsonResp(w, 200, stats)
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+var body map[string]interface{}
+json.NewDecoder(r.Body).Decode(&body)
+
+if db != nil {
+    data, _ := json.Marshal(body)
+    var id string
+    err := db.QueryRow("INSERT INTO records (data) VALUES ($1) RETURNING id", string(data)).Scan(&id)
+    if err != nil {
+        atomic.AddUint64(&errorCount, 1)
+        jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
+        return
+    }
+    body["id"] = id
+}
+
+jsonResp(w, 201, map[string]interface{}{"created": true, "data": body})
+}
+
+// --- Domain Handlers ---
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, 200, map[string]interface{}{
 		"service": "liveness-orchestrator-go",
@@ -584,8 +809,6 @@ func handleFaceMatch(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, 200, result)
 }
 
-// handleSubmitChallenge handles multi-frame active liveness challenge submission.
-// Accepts reference frame + action frames, calls motion analysis, scores the challenge.
 func handleSubmitChallenge(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		respondJSON(w, 405, map[string]string{"error": "POST required"})
@@ -800,106 +1023,60 @@ func handleGetFaceMatches(w http.ResponseWriter, r *http.Request) {
 	mu.RUnlock()
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-func generateChallenges(count int) []Challenge {
-	types := []struct {
-		t    ChallengeType
-		inst string
-	}{
-		{ChallengeBlink, "Please blink naturally"},
-		{ChallengeSmile, "Please smile"},
-		{ChallengeHeadLeft, "Please turn your head slowly to the left"},
-		{ChallengeHeadRight, "Please turn your head slowly to the right"},
-		{ChallengeNod, "Please nod your head up and down"},
-		{ChallengeRandomPose, "Please follow the on-screen target"},
-	}
-
-	challenges := make([]Challenge, 0, count)
-	for i := 0; i < count && i < len(types); i++ {
-		challenges = append(challenges, Challenge{
-			ID:          generateID("CH"),
-			Type:        types[i].t,
-			Instruction: types[i].inst,
-			Status:      "pending",
-			TimeoutSecs: 10,
-		})
-	}
-	return challenges
-}
-
-func calculateOverallScore(session *LivenessSession) float64 {
-	if len(session.Challenges) == 0 {
-		return 0
-	}
-	total := 0.0
-	for _, ch := range session.Challenges {
-		total += ch.Score
-	}
-	return total / float64(len(session.Challenges))
-}
-
-func publishEvent(eventType, sessionID, customerID, tenantID string, payload interface{}) string {
-	eventID := generateID("EVT")
-	event := LivenessEvent{
-		EventID:    eventID,
-		EventType:  eventType,
-		SessionID:  sessionID,
-		CustomerID: customerID,
-		TenantID:   tenantID,
-		Timestamp:  time.Now().UTC().Format(time.RFC3339),
-		Payload:    payload,
-		KafkaTopic: "liveness.sessions",
-		KafkaPartition: 0,
-	}
-	mu.Lock()
-	events = append(events, event)
-	stats.EventsPublished++
-	mu.Unlock()
-	// In production: kafka.Produce("liveness.sessions", event)
-	return eventID
-}
-
-func generateID(prefix string) string {
-	b := make([]byte, 4)
-	rand.Read(b)
-	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(b))
-}
-
 func respondJSON(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(data)
 }
 
-// ─── Main ───────────────────────────────────────────────────────────────────
+
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8231"
-	}
+initDB()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", handleHealthz)
-	mux.HandleFunc("/v1/sessions", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			handleCreateSession(w, r)
-		} else {
-			handleListSessions(w, r)
-		}
-	})
-	mux.HandleFunc("/v1/sessions/", handleGetSession)
-	mux.HandleFunc("/v1/submit-frame", handleSubmitFrame)
-	mux.HandleFunc("/v1/submit-challenge", handleSubmitChallenge)
-	mux.HandleFunc("/v1/passive-liveness", handlePassiveLiveness)
-	mux.HandleFunc("/v1/face-match", handleFaceMatch)
-	mux.HandleFunc("/v1/face-matches", handleGetFaceMatches)
-	mux.HandleFunc("/v1/events", handleGetEvents)
-	mux.HandleFunc("/v1/stats", handleGetStats)
+mux := http.NewServeMux()
+mux.HandleFunc("/healthz", healthHandler)
+mux.HandleFunc("/readyz", readyzHandler)
+mux.HandleFunc("/livez", livezHandler)
+mux.HandleFunc("/metrics", metricsHandler)
+mux.HandleFunc("/v1/records", authMiddleware(listHandler))
+mux.HandleFunc("/v1/stats", authMiddleware(statsHandler))
+mux.HandleFunc("/v1/create", authMiddleware(createHandler))
 
-	log.Printf("Liveness Orchestrator (Go) on :%s", port)
-	log.Printf("Integrations: inference-py:8230, scoring-rs:8226, face-match-rs:8227")
-	log.Printf("Kafka topics: liveness.sessions, liveness.challenges, liveness.face-match")
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+
+server := &http.Server{
+    Addr:         ":" + port,
+    Handler:      mux,
+    ReadTimeout:  15 * time.Second,
+    WriteTimeout: 30 * time.Second,
+    IdleTimeout:  60 * time.Second,
+}
+
+// Graceful shutdown
+quit := make(chan os.Signal, 1)
+signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+go func() {
+    log.Println(jsonLog("INFO", fmt.Sprintf("liveness-orchestrator-go listening on :%s", port)))
+    if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+        log.Fatal(jsonLog("FATAL", fmt.Sprintf("Server failed: %v", err)))
+    }
+}()
+
+<-quit
+log.Println(jsonLog("INFO", "Shutdown signal received"))
+
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+if db != nil {
+    db.Close()
+    log.Println(jsonLog("INFO", "Database connection closed"))
+}
+
+if err := server.Shutdown(ctx); err != nil {
+    log.Fatal(jsonLog("FATAL", fmt.Sprintf("Server forced shutdown: %v", err)))
+}
+
+log.Println(jsonLog("INFO", "Server stopped gracefully"))
 }

@@ -1,3 +1,4 @@
+#![allow(unused)]
 // 54Bank SWIFT/ISO 20022 Protocol Engine — Rust
 // MT103 (Customer Credit Transfer), MT202 (Bank-to-Bank), MT760 (Guarantee)
 // pacs.008 (FI to FI Customer Credit), pacs.009 (FI to FI Institution Credit)

@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 54Bank IFRS 9 ECL Engine — Rust
 //! Computes Expected Credit Loss (PD × LGD × EAD) for loan portfolio.
 //! Posts provisions to GL codes 1351-1357, 5201-5205.

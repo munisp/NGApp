@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 54Bank AI Fraud Detection & eNaira CBDC Engine — Rust
 //! Enhancements 3, 4: eNaira/CBDC Integration, Real-Time Fraud Detection (ML)
 //! High-performance sub-100ms scoring on every transaction

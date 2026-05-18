@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! 54Bank Platform Hardening & Technical Debt — Rust
 //! Enhancements 21-28 + Quick Wins:
 //! Test Coverage, Security Scanning, DB Indexing, API Versioning,

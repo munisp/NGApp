@@ -1,3 +1,4 @@
+#![allow(unused)]
 // 54Bank TigerBeetle Protocol Engine — Rust
 // Account creation, transfer posting, two-phase commit, linked transfers,
 // balance queries, account lookup, pending transfer resolution.
