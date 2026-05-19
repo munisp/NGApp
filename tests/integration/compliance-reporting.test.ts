@@ -85,7 +85,9 @@ vi.mock("jose", () => ({
     setExpirationTime: vi.fn().mockReturnThis(),
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
-  jwtVerify: vi.fn().mockResolvedValue({ payload: { sub: "1", role: "admin" } }),
+  jwtVerify: vi
+    .fn()
+    .mockResolvedValue({ payload: { sub: "1", role: "admin" } }),
   createRemoteJWKSet: vi.fn(),
 }));
 vi.mock("../../server/termii", () => ({
@@ -141,7 +143,7 @@ describe("CBN Reporting Integration", () => {
   it("cbnReporting.list rejects unauthenticated", async () => {
     const caller = appRouter.createCaller(makeUnauthCtx());
     await expect(
-      caller.cbnReporting.list({ limit: 10, offset: 0 }),
+      caller.cbnReporting.list({ limit: 10, offset: 0 })
     ).rejects.toThrow();
   });
 });
@@ -192,7 +194,7 @@ describe("Compliance Certificate Manager Integration", () => {
   it("complianceCertManager.list rejects unauthenticated", async () => {
     const caller = appRouter.createCaller(makeUnauthCtx());
     await expect(
-      caller.complianceCertManager.list({ limit: 10, offset: 0 }),
+      caller.complianceCertManager.list({ limit: 10, offset: 0 })
     ).rejects.toThrow();
   });
 });
@@ -210,7 +212,7 @@ describe("Billing Audit Integration", () => {
   it("billingAudit.list rejects unauthenticated", async () => {
     const caller = appRouter.createCaller(makeUnauthCtx());
     await expect(
-      caller.billingAudit.list({ limit: 10, offset: 0 }),
+      caller.billingAudit.list({ limit: 10, offset: 0 })
     ).rejects.toThrow();
   });
 });

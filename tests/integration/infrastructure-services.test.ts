@@ -85,7 +85,9 @@ vi.mock("jose", () => ({
     setExpirationTime: vi.fn().mockReturnThis(),
     sign: vi.fn().mockResolvedValue("mock.jwt.token"),
   })),
-  jwtVerify: vi.fn().mockResolvedValue({ payload: { sub: "1", role: "admin" } }),
+  jwtVerify: vi
+    .fn()
+    .mockResolvedValue({ payload: { sub: "1", role: "admin" } }),
   createRemoteJWKSet: vi.fn(),
 }));
 vi.mock("../../server/termii", () => ({
@@ -141,7 +143,7 @@ describe("Workflow Engine Integration", () => {
   it("workflowEngine.list rejects unauthenticated", async () => {
     const caller = appRouter.createCaller(makeUnauthCtx());
     await expect(
-      caller.workflowEngine.list({ limit: 10, offset: 0 }),
+      caller.workflowEngine.list({ limit: 10, offset: 0 })
     ).rejects.toThrow();
   });
 });
@@ -162,7 +164,7 @@ describe("Config Management Integration", () => {
   it("configManagement.list rejects unauthenticated", async () => {
     const caller = appRouter.createCaller(makeUnauthCtx());
     await expect(
-      caller.configManagement.list({ limit: 10, offset: 0 }),
+      caller.configManagement.list({ limit: 10, offset: 0 })
     ).rejects.toThrow();
   });
 });
