@@ -390,7 +390,7 @@ export function applySecurityOrchestrator(app: Express): void {
       const amount = extractAmount(req);
       if (amount <= 0) return next();
 
-      const txId = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const txId = `tx_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
       const fraudResult = await scoreFraud(
         req,
         user.id?.toString() || "",

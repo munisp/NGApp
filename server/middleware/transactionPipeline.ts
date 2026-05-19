@@ -151,7 +151,7 @@ export async function processTransaction(
 
     return {
       approved: true,
-      transactionId: `TXN-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      transactionId: `TXN-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
       referenceNumber,
       commission,
       fee,
@@ -314,7 +314,7 @@ function calculateFeesAndCommission(ctx: PipelineContext): {
 function generateReference(type: string): string {
   const prefix = type.toUpperCase().replace(/_/g, "").slice(0, 4);
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const random = crypto.randomUUID().slice(0, 4).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 }
 

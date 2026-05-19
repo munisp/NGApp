@@ -121,7 +121,7 @@ export function csrfProtection(
   }
 
   // Clean expired tokens periodically
-  if (Math.random() < 0.01) {
+  if (parseInt(crypto.randomUUID().slice(0, 8), 16) / 0xffffffff < 0.01) {
     const now = Date.now();
     for (const [key, val] of csrfTokens) {
       if (val.expires < now) csrfTokens.delete(key);

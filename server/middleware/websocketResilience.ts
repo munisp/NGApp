@@ -261,7 +261,7 @@ export class ResilientWebSocket {
     payload: any,
     priority: "high" | "normal" | "low" = "normal"
   ): string {
-    const id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = `msg_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const message = JSON.stringify({
       id,
       type,

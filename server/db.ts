@@ -365,15 +365,16 @@ export async function createChatSession(
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const sessionRef = `CHT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+  const sessionRef = `CHT-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 3).toUpperCase()}`;
   const supportAgentNames = [
     "Amaka Okonkwo",
     "Chidi Nwosu",
     "Fatima Bello",
     "Emeka Eze",
   ];
-  const supportAgentName =
-    supportAgentNames[Math.floor(Math.random() * supportAgentNames.length)];
+  const idx =
+    parseInt(crypto.randomUUID().slice(0, 8), 16) % supportAgentNames.length;
+  const supportAgentName = supportAgentNames[idx];
   const result = await db
     .insert(chatSessions)
     .values({

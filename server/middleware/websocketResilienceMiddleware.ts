@@ -87,7 +87,10 @@ export function calculateBackoff(
   maxMs: number = 60000
 ): number {
   const exponential = Math.min(baseMs * Math.pow(2, attempt), maxMs);
-  const jitter = Math.random() * exponential * 0.3;
+  const jitter =
+    (parseInt(crypto.randomUUID().slice(0, 8), 16) / 0xffffffff) *
+    exponential *
+    0.3;
   return Math.floor(exponential + jitter);
 }
 

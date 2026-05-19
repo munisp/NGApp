@@ -205,7 +205,7 @@ export function openAppSecWAF(req: Request, res: Response, next: NextFunction) {
   // Decision: block if score >= 80
   if (score >= 80 && detectedCategory) {
     const event: ThreatEvent = {
-      id: `threat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `threat_${Date.now()}_${crypto.randomUUID().slice(0, 6)}`,
       timestamp: Date.now(),
       category: detectedCategory,
       severity: score >= 95 ? "critical" : score >= 85 ? "high" : "medium",
@@ -228,7 +228,7 @@ export function openAppSecWAF(req: Request, res: Response, next: NextFunction) {
   // Log suspicious but not blocked
   if (score >= 40 && detectedCategory) {
     logThreat({
-      id: `threat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `threat_${Date.now()}_${crypto.randomUUID().slice(0, 6)}`,
       timestamp: Date.now(),
       category: detectedCategory,
       severity: "low",
@@ -270,7 +270,7 @@ export function apiAbuseDetection(
 
   if (entry.endpoints.size > API_ABUSE_ENDPOINT_LIMIT) {
     logThreat({
-      id: `threat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `threat_${Date.now()}_${crypto.randomUUID().slice(0, 6)}`,
       timestamp: now,
       category: "api_abuse",
       severity: "high",

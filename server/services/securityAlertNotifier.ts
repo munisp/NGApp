@@ -272,7 +272,7 @@ function createDeliveryRecord(
   messagePreview: string
 ): DeliveryRecord {
   const record: DeliveryRecord = {
-    id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `del-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
     alertId,
     channel,
     recipientId,

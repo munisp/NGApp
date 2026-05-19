@@ -69,7 +69,10 @@ export function calculateBackoff(
     config.maxMs
   );
   // Add jitter (±20%)
-  const jitter = delay * 0.2 * (Math.random() * 2 - 1);
+  const jitter =
+    delay *
+    0.2 *
+    ((parseInt(crypto.randomUUID().slice(0, 8), 16) / 0xffffffff) * 2 - 1);
   return Math.round(delay + jitter);
 }
 
@@ -122,7 +125,7 @@ export function createQueueEntry(
 ): QueuedTransaction {
   const priority = TX_PRIORITY[type] || 3;
   return {
-    id: `Q-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    id: `Q-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 6)}`,
     type,
     payload,
     priority,

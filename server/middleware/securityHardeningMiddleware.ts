@@ -59,13 +59,10 @@ export function detectSqlInjection(input: string): boolean {
 }
 
 export function generateCsrfToken(): string {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let token = "";
-  for (let i = 0; i < 64; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  return (
+    crypto.randomUUID().replace(/-/g, "") +
+    crypto.randomUUID().replace(/-/g, "")
+  );
 }
 
 export function signTransaction(
