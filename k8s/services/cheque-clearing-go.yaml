@@ -48,6 +48,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+            - name: grpc
+              containerPort: 9094
+              protocol: TCP
               name: http
               protocol: TCP
           env:
@@ -146,6 +149,10 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
+    - name: grpc
+      port: 9094
+      targetPort: 9094
+      protocol: TCP
       protocol: TCP
       name: http
   selector:

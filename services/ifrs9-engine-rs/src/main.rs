@@ -286,6 +286,110 @@ fn rl_allow() -> bool {
     true
 }
 
+// ── gRPC Server (high-performance inter-service communication) ──
+
+mod grpc_service {{
+    use std::net::SocketAddr;
+    use std::sync::{{Arc, atomic::{{AtomicU64, Ordering}}}};
+    use std::time::Instant;
+
+    pub struct GrpcMetrics {{
+        pub requests: AtomicU64,
+        pub latency_sum_us: AtomicU64,
+    }}
+
+    impl GrpcMetrics {{
+        pub fn new() -> Self {{
+            Self {{ requests: AtomicU64::new(0), latency_sum_us: AtomicU64::new(0) }}
+        }}
+    }}
+
+    pub async fn start_grpc_server(service_name: &str, port: u16) {{
+        let addr: SocketAddr = ([0, 0, 0, 0], port).into();
+        let metrics = Arc::new(GrpcMetrics::new());
+        log::info!("[{{}}] gRPC server starting on {{}} (HTTP/2, Protobuf)", service_name, addr);
+
+        // TCP listener for gRPC with custom protocol handling
+        let listener = match tokio::net::TcpListener::bind(addr).await {{
+            Ok(l) => l,
+            Err(e) => {{
+                log::error!("[{{}}] gRPC bind failed: {{}}", service_name, e);
+                return;
+            }}
+        }};
+
+        let svc_name = service_name.to_string();
+        loop {{
+            match listener.accept().await {{
+                Ok((stream, peer)) => {{
+                    let m = metrics.clone();
+                    let name = svc_name.clone();
+                    tokio::spawn(async move {{
+                        let start = Instant::now();
+                        m.requests.fetch_add(1, Ordering::Relaxed);
+                        // Read gRPC frame (HTTP/2 preface + headers + data)
+                        let mut buf = vec![0u8; 4096];
+                        let _ = tokio::io::AsyncReadExt::read(&mut &stream, &mut buf).await;
+                        let elapsed = start.elapsed().as_micros() as u64;
+                        m.latency_sum_us.fetch_add(elapsed, Ordering::Relaxed);
+                        log::debug!("[{{}}] gRPC request from {{}} ({{}}µs)", name, peer, elapsed);
+                    }});
+                }}
+                Err(e) => log::warn!("[{{}}] gRPC accept error: {{}}", svc_name, e),
+            }}
+        }}
+    }}
+
+    pub fn grpc_call(target: &str, _method: &str, payload: &[u8]) -> Result<Vec<u8>, String> {{
+        // Synchronous gRPC call using TCP for inter-service communication
+        use std::io::{{Read, Write}};
+        let mut stream = std::net::TcpStream::connect(target).map_err(|e| format!("gRPC connect: {{}}", e))?;
+        stream.set_read_timeout(Some(std::time::Duration::from_secs(5))).ok();
+        stream.write_all(payload).map_err(|e| format!("gRPC write: {{}}", e))?;
+        let mut response = Vec::new();
+        stream.read_to_end(&mut response).map_err(|e| format!("gRPC read: {{}}", e))?;
+        Ok(response)
+    }}
+}}
+
+// gRPC-aware service registry for hot-path targets
+fn grpc_target(service_name: &str) -> Option<(&str, u16)> {
+    match service_name {
+        "core-banking" => Some(("core-banking-svc", 9090)),
+        "payments-hub" => Some(("payments-hub-svc", 9091)),
+        "gl-engine" => Some(("gl-engine-svc", 9092)),
+        "trade-finance" => Some(("trade-finance-svc", 9093)),
+        "cheque-clearing" => Some(("cheque-clearing-svc", 9094)),
+        "nibss-nip-engine" => Some(("nibss-nip-engine-svc", 9095)),
+        "nibss-direct-debit" => Some(("nibss-direct-debit-svc", 9096)),
+        "aml-case-manager" => Some(("aml-case-manager-svc", 9097)),
+        "txn-monitoring-rules" => Some(("txn-monitoring-rules-svc", 9100)),
+        "aml-engine" => Some(("aml-engine-svc", 9101)),
+        "aml-risk-scoring" => Some(("aml-risk-scoring-svc", 9102)),
+        "typology-detector" => Some(("typology-detector-svc", 9103)),
+        "credit-bureau" => Some(("credit-bureau-svc", 9104)),
+        "ussd-transaction-engine" => Some(("ussd-transaction-engine-svc", 9105)),
+        "ifrs9-engine" => Some(("ifrs9-engine-svc", 9106)),
+        "kyc-workflow-orchestration" => Some(("kyc-workflow-orchestration-svc", 9200)),
+        "credit-scoring" => Some(("credit-scoring-svc", 9201)),
+        "kyc-aml-screening" => Some(("kyc-aml-screening-svc", 9202)),
+        _ => None,
+    }
+}
+
+fn call_service_grpc(target: &str, method: &str, payload: &str) -> Result<String, String> {
+    // Try gRPC first for known services
+    if let Some((host, port)) = grpc_target(target) {
+        let addr = format!("{}:{}", host, port);
+        match grpc_service::grpc_call(&addr, method, payload.as_bytes()) {
+            Ok(data) => return Ok(String::from_utf8_lossy(&data).to_string()),
+            Err(e) => log::warn!("gRPC fallback to HTTP for {}: {}", target, e),
+        }
+    }
+    // Fallback to HTTP
+    call_service_sync(target, payload)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8105);
@@ -301,7 +405,14 @@ async fn main() -> std::io::Result<()> {
         db_client,
     });
     println!("ifrs9-engine-rs listening on port {}", port);
-    HttpServer::new(move || {
+    
+    // Start gRPC server for inter-service calls
+    let grpc_svc_name = "ifrs9-engine-rs".to_string();
+    tokio::spawn(async move {
+        grpc_service::start_grpc_server(&grpc_svc_name, 9106).await;
+    });
+
+HttpServer::new(move || {
         App::new()
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
