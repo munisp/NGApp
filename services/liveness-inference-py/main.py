@@ -1137,6 +1137,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
         db_insert(f"liveness_{int(time.time()*1000)}", {"path": path, "action": "inference"})
+        upstream = os.environ.get("AML_ENGINE_URL", "http://aml-engine-rs:8080")
+        call_service("POST", f"{upstream}/v1/notify", {"source": "liveness-inference-py", "action": "inference"})
 
         if path == "/v1/liveness/check":
             self._handle_liveness_check(body)

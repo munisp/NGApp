@@ -290,6 +290,16 @@ def shutdown_handler(sig, frame):
     if _server:
         threading.Thread(target=_server.shutdown).start()
 
+
+def sanitize_input(s):
+    """Sanitize user input to prevent XSS/injection."""
+    if not isinstance(s, str):
+        return s
+    s = s.replace("<", "&lt;").replace(">", "&gt;")
+    s = s.replace("'", "&#39;").replace('"', "&quot;")
+    s = s.replace("\\", "")
+    return s[:10000] if len(s) > 10000 else s
+
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)

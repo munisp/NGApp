@@ -707,6 +707,24 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func jwtMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if p == "/healthz" || p == "/readyz" || p == "/livez" || p == "/metrics" || p == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		auth := r.Header.Get("Authorization")
+		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(401)
+			fmt.Fprintf(w, `{"error":"unauthorized","service":"%s"}`, serviceName)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 
 	dbURL := os.Getenv("DATABASE_URL")
@@ -745,7 +763,7 @@ func main() {
 	log.Printf("Identity Verification v3.0 (Go, DeepFace-enhanced) on :%s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
+        Handler: jwtMiddleware(rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,
