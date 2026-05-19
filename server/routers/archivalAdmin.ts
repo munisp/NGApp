@@ -3,6 +3,9 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
+import { notifyOwner } from "../_core/notification";
+import { getConfig, setConfig } from "../lib/runtimeConfig";
+import { runArchivalJob, getArchivalStats } from "../lib/parquetArchival";
 
 export const archivalAdminRouter = router({
   list: protectedProcedure
@@ -84,6 +87,77 @@ export const archivalAdminRouter = router({
         .orderBy(desc(auditLog.id))
         .limit(input.limit);
 
+      return results;
+    }),
+
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalArchived: 0, lastRun: null, schedule: null };
+    const archivalStats = await getArchivalStats();
+    const schedule = await getConfig("archival_schedule");
+    return {
+      ...archivalStats,
+      schedule: schedule ?? "0 2 * * 0",
+    };
+  }),
+
+  triggerArchival: protectedProcedure
+    .input(
+      z.object({
+        triggeredBy: z.string().default("manual"),
+        retentionDays: z.number().optional(),
+        deleteAfterArchive: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const startTime = Date.now();
+      try {
+        const result = await runArchivalJob({
+          retentionDays: input.retentionDays,
+          deleteAfterArchive: input.deleteAfterArchive,
+        });
+        const duration = Date.now() - startTime;
+        await notifyOwner({
+          title: `Archival Job Completed`,
+          content: `Triggered by: ${input.triggeredBy}\nTotal archived: ${result.totalArchived} records\nDuration: ${duration}ms`,
+        });
+        return { ...result, duration };
+      } catch (err: any) {
+        const duration = Date.now() - startTime;
+        await notifyOwner({
+          title: `Archival Job Failed`,
+          content: `Triggered by: ${input.triggeredBy}\nError: ${err.message}\nDuration: ${duration}ms`,
+        });
+        throw err;
+      }
+    }),
+
+  updateSchedule: protectedProcedure
+    .input(
+      z.object({
+        schedule: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await setConfig("archival_schedule", input.schedule);
+      return { success: true, schedule: input.schedule };
+    }),
+
+  getHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const results = await db
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.action, "archival_job"))
+        .orderBy(desc(auditLog.id))
+        .limit(input.limit);
       return results;
     }),
 });

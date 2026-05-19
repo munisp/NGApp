@@ -1,10 +1,19 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loadTestRuns, auditLog } from "../../drizzle/schema";
+import {
+  loadTestRuns as loadTestRunsTable,
+  auditLog,
+} from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { getConfig, getConfigNumber, setConfig } from "../lib/runtimeConfig";
+import {
+  getAllEngineMetrics,
+  exportPrometheusMetrics,
+} from "../lib/observability";
+
+// -- Helper functions ---------------------------------------------------------
 
 function delta(a: number, b: number) {
   return {
@@ -25,9 +34,134 @@ function deltaHigherBetter(a: number, b: number) {
   };
 }
 
+// -- DB persistence helpers ---------------------------------------------------
+
+async function getRunsFromDb(limit: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(loadTestRunsTable)
+    .orderBy(desc(loadTestRunsTable.id))
+    .limit(limit);
+}
+
+async function persistRun(run: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [saved] = await db.insert(loadTestRunsTable).values(run).returning();
+  return saved;
+}
+
+// -- Load test engine simulation ----------------------------------------------
+
+function generateZipfDistribution(
+  merchantCount: number,
+  totalRequests: number,
+  exponent: number
+) {
+  const distribution = [];
+  let totalWeight = 0;
+  for (let i = 1; i <= merchantCount; i++) {
+    totalWeight += 1 / Math.pow(i, exponent);
+  }
+  for (let i = 1; i <= merchantCount; i++) {
+    const weight = 1 / Math.pow(i, exponent) / totalWeight;
+    distribution.push({
+      merchantId: `merchant_${i}`,
+      requestCount: Math.round(totalRequests * weight),
+      percentage: Math.round(weight * 10000) / 100,
+    });
+  }
+  return distribution;
+}
+
+function generateLatencyHistogram(avgLatencyMs: number, totalRequests: number) {
+  const buckets = [
+    { range: "0-10ms", min: 0, max: 10 },
+    { range: "10-50ms", min: 10, max: 50 },
+    { range: "50-100ms", min: 50, max: 100 },
+    { range: "100-200ms", min: 100, max: 200 },
+    { range: "200-500ms", min: 200, max: 500 },
+    { range: "500ms-1s", min: 500, max: 1000 },
+    { range: "1s+", min: 1000, max: 2000 },
+  ];
+  return buckets.map(b => ({
+    range: b.range,
+    count: Math.round(
+      totalRequests *
+        Math.exp(
+          -Math.pow(Math.log((b.min + b.max) / 2 / avgLatencyMs), 2) / 2
+        ) *
+        0.1
+    ),
+  }));
+}
+
+function generateTimeline(
+  durationSeconds: number,
+  targetRps: number,
+  avgLatencyMs: number
+) {
+  const timeline = [];
+  for (let s = 0; s < durationSeconds; s++) {
+    const rampFactor = Math.min(1, s / Math.max(1, durationSeconds * 0.1));
+    const currentRps = targetRps * rampFactor;
+    timeline.push({
+      second: s,
+      rps: Math.round(currentRps * (0.95 + Math.random() * 0.1)),
+      avgLatencyMs: Math.round(avgLatencyMs * (0.8 + Math.random() * 0.4)),
+      errorCount: Math.floor(Math.random() * currentRps * 0.01),
+    });
+  }
+  return timeline;
+}
+
+async function executeLoadTest(config: {
+  targetRps: number;
+  duration: number;
+  concurrency: number;
+  zipfExponent: number;
+  merchantCount: number;
+}) {
+  const totalRequests = config.targetRps * config.duration;
+  const successCount = Math.floor(totalRequests * 0.99);
+  const errorCount = totalRequests - successCount;
+  const avgLatencyMs = 45;
+  const p50LatencyMs = 35;
+  const p95LatencyMs = 120;
+  const p99LatencyMs = 250;
+  const maxLatencyMs = 500;
+
+  return {
+    totalRequests,
+    successCount,
+    errorCount,
+    failedRequests: errorCount,
+    actualRps: config.targetRps * 0.98,
+    errorRate: (errorCount / totalRequests) * 100,
+    avgLatencyMs,
+    p50LatencyMs,
+    p95LatencyMs,
+    p99LatencyMs,
+    maxLatencyMs,
+    zipfDistribution: generateZipfDistribution(
+      config.merchantCount,
+      totalRequests,
+      config.zipfExponent
+    ),
+    latencyHistogram: generateLatencyHistogram(avgLatencyMs, totalRequests),
+    timeline: generateTimeline(config.duration, config.targetRps, avgLatencyMs),
+  };
+}
+
+// -- P99 threshold check ------------------------------------------------------
+
 async function checkP99ThresholdAndNotify(run: any) {
-  const p99Threshold = await getConfigNumber("loadtest_p99_threshold_ms");
-  const errorThreshold = await getConfigNumber("loadtest_error_rate_threshold");
+  const p99Threshold =
+    Number(await getConfig("loadtest_p99_threshold_ms")) || 500;
+  const errorThreshold =
+    Number(await getConfig("loadtest_error_rate_threshold")) || 5;
   if (!run.results) return;
 
   const violations: string[] = [];
@@ -61,62 +195,48 @@ async function checkP99ThresholdAndNotify(run: any) {
   }
 }
 
+// -- Active test state --------------------------------------------------------
+
+let activeLoadTest: {
+  runId: string;
+  startTime: number;
+  config: any;
+} | null = null;
+
+// -- Router -------------------------------------------------------------------
+
 export const loadTestMetricsRouter = router({
-  list: protectedProcedure
+  listRuns: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(loadTestRuns)
-        .orderBy(desc(loadTestRuns.id))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(loadTestRuns);
-
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
+      const { limit } = input;
+      return getRunsFromDb(limit);
     }),
 
-  getById: protectedProcedure
+  getRunDetails: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return null;
-      const [record] = await database
+      const db = await getDb();
+      if (!db) return null;
+      const [record] = await db
         .select()
-        .from(loadTestRuns)
-        .where(eq(loadTestRuns.id, input.id))
+        .from(loadTestRunsTable)
+        .where(eq(loadTestRunsTable.id, input.id))
         .limit(1);
-
-      if (!record) {
-        throw new Error(`Record with id ${input.id} not found`);
-      }
+      if (!record) throw new Error(`Record with id ${input.id} not found`);
       return record;
     }),
 
   getSummary: protectedProcedure.query(async () => {
-    const database = await getDb();
-    if (!database)
-      return { totalRecords: 0, lastUpdated: new Date().toISOString() };
-    const [totalResult] = await database
+    const db = await getDb();
+    if (!db) return { totalRecords: 0, lastUpdated: new Date().toISOString() };
+    const [totalResult] = await db
       .select({ total: count() })
-      .from(loadTestRuns);
-
+      .from(loadTestRunsTable);
     return {
       totalRecords: totalResult?.total ?? 0,
       lastUpdated: new Date().toISOString(),
@@ -131,86 +251,109 @@ export const loadTestMetricsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return [];
+      const db = await getDb();
+      if (!db) return [];
       const since = new Date();
       since.setDate(since.getDate() - input.days);
-
-      const results = await database
+      return db
         .select()
-        .from(loadTestRuns)
-        .where(gte(loadTestRuns.startedAt, since))
-        .orderBy(desc(loadTestRuns.startedAt))
+        .from(loadTestRunsTable)
+        .where(gte(loadTestRunsTable.startedAt, since))
+        .orderBy(desc(loadTestRunsTable.startedAt))
         .limit(input.limit);
-
-      return results;
     }),
+
+  getEngineMetrics: protectedProcedure.query(async () => {
+    return getAllEngineMetrics();
+  }),
+
+  getPrometheusMetrics: protectedProcedure.query(async () => {
+    return exportPrometheusMetrics();
+  }),
+
+  getActiveTest: protectedProcedure.query(async () => {
+    if (!activeLoadTest) return null;
+    const elapsedSeconds = Math.floor(
+      (Date.now() - activeLoadTest.startTime) / 1000
+    );
+    return {
+      runId: activeLoadTest.runId,
+      elapsedSeconds,
+      config: activeLoadTest.config,
+    };
+  }),
 
   runLoadTest: protectedProcedure
     .input(
       z.object({
         targetRps: z.number().min(1).max(10000).default(100),
-        durationSeconds: z.number().min(5).max(600).default(60),
+        duration: z.number().min(5).max(600).default(60),
         concurrency: z.number().min(1).max(200).default(10),
+        zipfExponent: z.number().min(0.1).max(3).default(1.07),
+        merchantCount: z.number().min(1).max(1000).default(50),
       })
     )
     .mutation(async ({ input }) => {
-      const database = await getDb();
-      if (!database) throw new Error("Database not available");
+      if (activeLoadTest) {
+        throw new Error("A load test is already running");
+      }
+
       const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const [run] = await database
-        .insert(loadTestRuns)
-        .values({
+      activeLoadTest = { runId, startTime: Date.now(), config: input };
+
+      try {
+        const results = await executeLoadTest(input);
+        const run = {
           runId,
-          status: "completed",
+          status: "completed" as const,
           targetRps: input.targetRps,
-          durationSeconds: input.durationSeconds,
+          durationSeconds: input.duration,
           concurrency: input.concurrency,
           completedAt: new Date(),
-          results: {
-            totalRequests: input.targetRps * input.durationSeconds,
-            successCount: Math.floor(
-              input.targetRps * input.durationSeconds * 0.99
-            ),
-            errorCount: Math.floor(
-              input.targetRps * input.durationSeconds * 0.01
-            ),
-            actualRps: input.targetRps * 0.98,
-            avgLatencyMs: 45,
-            p50LatencyMs: 35,
-            p95LatencyMs: 120,
-            p99LatencyMs: 250,
-            maxLatencyMs: 500,
-            zipfDistribution: [],
-            latencyHistogram: [],
-            timeline: [],
-          },
-        } as any)
-        .returning();
-      // S60-2: Check P99 threshold and notify owner if breached
-      await checkP99ThresholdAndNotify(run);
-      return run;
+          results,
+        };
+        await persistRun(run);
+        // S60-2: Check P99 threshold and notify owner if breached
+        await checkP99ThresholdAndNotify(run);
+        return run;
+      } catch (error: any) {
+        const failedRun = {
+          runId,
+          status: "failed" as const,
+          targetRps: input.targetRps,
+          durationSeconds: input.duration,
+          concurrency: input.concurrency,
+          errorMessage: error.message,
+        };
+        await persistRun(failedRun);
+        throw error;
+      } finally {
+        activeLoadTest = null;
+      }
     }),
 
   recordRun: protectedProcedure
     .input(
       z.object({
         runId: z.string(),
+        status: z.string().default("completed"),
+        targetRps: z.number().optional(),
+        durationSeconds: z.number().optional(),
+        concurrency: z.number().optional(),
         results: z.any(),
       })
     )
     .mutation(async ({ input }) => {
-      const database = await getDb();
-      if (!database) throw new Error("Database not available");
-      const [run] = await database
-        .update(loadTestRuns)
-        .set({
-          status: "completed",
-          completedAt: new Date(),
-          results: input.results,
-        })
-        .where(eq(loadTestRuns.runId, input.runId))
-        .returning();
+      const run = {
+        runId: input.runId,
+        status: input.status,
+        targetRps: input.targetRps ?? 0,
+        durationSeconds: input.durationSeconds ?? 0,
+        concurrency: input.concurrency ?? 0,
+        completedAt: new Date(),
+        results: input.results,
+      };
+      await persistRun(run);
       // S60-2: Check P99 threshold and notify owner if breached
       await checkP99ThresholdAndNotify(run);
       return run;
@@ -224,47 +367,27 @@ export const loadTestMetricsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) throw new Error("Database not available");
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-      const [rA] = await database
+      const [runA] = await db
         .select()
-        .from(loadTestRuns)
-        .where(eq(loadTestRuns.runId, input.runIdA))
+        .from(loadTestRunsTable)
+        .where(eq(loadTestRunsTable.runId, input.runIdA))
         .limit(1);
-      const [rB] = await database
+      const [runB] = await db
         .select()
-        .from(loadTestRuns)
-        .where(eq(loadTestRuns.runId, input.runIdB))
+        .from(loadTestRunsTable)
+        .where(eq(loadTestRunsTable.runId, input.runIdB))
         .limit(1);
 
-      if (!rA || !rB) throw new Error("One or both runs not found");
+      if (!runA || !runB) throw new Error("One or both runs not found");
 
-      const resultsA = rA.results as any;
-      const resultsB = rB.results as any;
+      const rA = runA.results as any;
+      const rB = runB.results as any;
 
-      const latencyComparison = {
-        avg: delta(resultsA.avgLatencyMs, resultsB.avgLatencyMs),
-        p50: delta(resultsA.p50LatencyMs, resultsB.p50LatencyMs),
-        p95: delta(resultsA.p95LatencyMs, resultsB.p95LatencyMs),
-        p99: delta(resultsA.p99LatencyMs, resultsB.p99LatencyMs),
-      };
-
-      const throughputComparison = {
-        actualRps: deltaHigherBetter(resultsA.actualRps, resultsB.actualRps),
-        totalRequests: deltaHigherBetter(
-          resultsA.totalRequests,
-          resultsB.totalRequests
-        ),
-      };
-
-      const reliabilityComparison = {
-        errorRate: delta(resultsA.errorRate, resultsB.errorRate),
-        failedRequests: delta(resultsA.failedRequests, resultsB.failedRequests),
-      };
-
-      const zipfA = resultsA.zipfDistribution ?? [];
-      const zipfB = resultsB.zipfDistribution ?? [];
+      const zipfA = rA.zipfDistribution ?? [];
+      const zipfB = rB.zipfDistribution ?? [];
       const zipfComparison: any[] = zipfA.map((dA: any, i: number) => {
         const dB = zipfB[i];
         return {
@@ -276,8 +399,8 @@ export const loadTestMetricsRouter = router({
         };
       });
 
-      const timelineA = resultsA.timeline ?? [];
-      const timelineB = resultsB.timeline ?? [];
+      const timelineA = rA.timeline ?? [];
+      const timelineB = rB.timeline ?? [];
       const timelineOverlay: any[] = timelineA.map((tA: any, i: number) => {
         const tB = timelineB[i];
         return {
@@ -290,11 +413,22 @@ export const loadTestMetricsRouter = router({
       });
 
       return {
-        runA: rA,
-        runB: rB,
-        latency: latencyComparison,
-        throughput: throughputComparison,
-        reliability: reliabilityComparison,
+        runA,
+        runB,
+        latency: {
+          avg: delta(rA.avgLatencyMs, rB.avgLatencyMs),
+          p50: delta(rA.p50LatencyMs, rB.p50LatencyMs),
+          p95: delta(rA.p95LatencyMs, rB.p95LatencyMs),
+          p99: delta(rA.p99LatencyMs, rB.p99LatencyMs),
+        },
+        throughput: {
+          actualRps: deltaHigherBetter(rA.actualRps, rB.actualRps),
+          totalRequests: deltaHigherBetter(rA.totalRequests, rB.totalRequests),
+        },
+        reliability: {
+          errorRate: delta(rA.errorRate, rB.errorRate),
+          failedRequests: delta(rA.failedRequests, rB.failedRequests),
+        },
         zipfComparison,
         timelineOverlay,
       };
