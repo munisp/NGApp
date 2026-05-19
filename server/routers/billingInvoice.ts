@@ -9,12 +9,17 @@ import {
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import Stripe from "stripe";
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
-  {
-    apiVersion: "2025-04-30.basil" as any,
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+    _stripe = new Stripe(key, {
+      apiVersion: "2025-04-30.basil" as any,
+    });
   }
-);
+  return _stripe;
+}
 
 interface InvoiceLineItem {
   description: string;
@@ -373,14 +378,14 @@ export const billingInvoiceRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         let customer: Stripe.Customer;
-        const existingCustomers = await stripe.customers.list({
+        const existingCustomers = await getStripe().customers.list({
           email: input.customerEmail,
           limit: 1,
         });
         if (existingCustomers.data.length > 0) {
           customer = existingCustomers.data[0];
         } else {
-          customer = await stripe.customers.create({
+          customer = await getStripe().customers.create({
             email: input.customerEmail,
             name: input.customerName,
             metadata: {
@@ -390,7 +395,7 @@ export const billingInvoiceRouter = router({
             },
           });
         }
-        const invoice = await stripe.invoices.create({
+        const invoice = await getStripe().invoices.create({
           customer: customer.id,
           collection_method: input.autoCollect
             ? "charge_automatically"
@@ -407,7 +412,7 @@ export const billingInvoiceRouter = router({
           description: `54Link billing for period ${input.periodStart} to ${input.periodEnd}`,
         });
         for (const item of input.lineItems) {
-          await stripe.invoiceItems.create({
+          await getStripe().invoiceItems.create({
             customer: customer.id,
             invoice: invoice.id,
             amount: item.amount,
@@ -416,7 +421,7 @@ export const billingInvoiceRouter = router({
             quantity: item.quantity,
           });
         }
-        const finalizedInvoice = await stripe.invoices.finalizeInvoice(
+        const finalizedInvoice = await getStripe().invoices.finalizeInvoice(
           invoice.id
         );
         return {
@@ -441,7 +446,7 @@ export const billingInvoiceRouter = router({
     .input(z.object({ stripeInvoiceId: z.string() }))
     .mutation(async ({ input }) => {
       try {
-        const invoice = await stripe.invoices.pay(input.stripeInvoiceId);
+        const invoice = await getStripe().invoices.pay(input.stripeInvoiceId);
         return {
           success: true,
           status: invoice.status,
@@ -462,7 +467,7 @@ export const billingInvoiceRouter = router({
     .input(z.object({ stripeInvoiceId: z.string() }))
     .query(async ({ input }) => {
       try {
-        const invoice = await stripe.invoices.retrieve(input.stripeInvoiceId);
+        const invoice = await getStripe().invoices.retrieve(input.stripeInvoiceId);
         return {
           id: invoice.id,
           status: invoice.status,
@@ -502,7 +507,7 @@ export const billingInvoiceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const origin = ctx.req?.headers?.origin || "http://localhost:3000";
       try {
-        const session = await stripe.checkout.sessions.create({
+        const session = await getStripe().checkout.sessions.create({
           mode: "payment",
           payment_method_types: ["card"],
           customer_email: input.customerEmail,

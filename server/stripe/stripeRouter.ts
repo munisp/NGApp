@@ -12,13 +12,17 @@ import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-// Initialize Stripe with the secret key from env
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
-  {
-    apiVersion: "2025-04-30.basil" as any,
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+    _stripe = new Stripe(key, {
+      apiVersion: "2025-04-30.basil" as any,
+    });
   }
-);
+  return _stripe;
+}
 
 // ── Helper: Get or create Stripe customer for a user ──────────────────────────
 async function getOrCreateStripeCustomer(
@@ -34,7 +38,7 @@ async function getOrCreateStripeCustomer(
     .limit(1);
   if (user?.stripeCustomerId) return user.stripeCustomerId;
 
-  const customer = await stripe.customers.create({
+  const customer = await getStripe().customers.create({
     email,
     name: name || undefined,
     metadata: { userId: userId.toString(), platform: "54link-pos" },
@@ -68,7 +72,7 @@ export const stripeRouter = router({
         ctx.user.name
       );
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripe().checkout.sessions.create({
         mode: "subscription",
         customer: customerId,
         payment_method_types: ["card"],
@@ -113,7 +117,7 @@ export const stripeRouter = router({
         ctx.user.name
       );
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripe().checkout.sessions.create({
         mode: "payment",
         customer: customerId,
         payment_method_types: ["card"],
@@ -156,7 +160,7 @@ export const stripeRouter = router({
     if (!user?.stripeCustomerId) return { payments: [] };
 
     try {
-      const paymentIntents = await stripe.paymentIntents.list({
+      const paymentIntents = await getStripe().paymentIntents.list({
         customer: user.stripeCustomerId,
         limit: 50,
       });
@@ -187,7 +191,7 @@ export const stripeRouter = router({
     if (!user?.stripeCustomerId) return { subscriptions: [], activePlan: null };
 
     try {
-      const subscriptions = await stripe.subscriptions.list({
+      const subscriptions = await getStripe().subscriptions.list({
         customer: user.stripeCustomerId,
         limit: 10,
       });
@@ -227,12 +231,12 @@ export const stripeRouter = router({
         .limit(1);
       if (!user?.stripeCustomerId) throw new Error("No Stripe customer found");
 
-      const sub = await stripe.subscriptions.retrieve(input.subscriptionId);
+      const sub = await getStripe().subscriptions.retrieve(input.subscriptionId);
       if ((sub as any).customer !== user.stripeCustomerId) {
         throw new Error("Subscription does not belong to this user");
       }
 
-      const cancelled = await stripe.subscriptions.update(
+      const cancelled = await getStripe().subscriptions.update(
         input.subscriptionId,
         {
           cancel_at_period_end: true,
@@ -250,7 +254,7 @@ export const stripeRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
       try {
-        const session = await stripe.checkout.sessions.retrieve(
+        const session = await getStripe().checkout.sessions.retrieve(
           input.sessionId
         );
         return {
@@ -279,7 +283,7 @@ export const stripeRouter = router({
       );
 
     const origin = ctx.req?.headers?.origin || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
+    const portalSession = await getStripe().billingPortal.sessions.create({
       customer: user.stripeCustomerId,
       return_url: `${origin}/payments`,
     });

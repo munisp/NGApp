@@ -18,13 +18,27 @@ import {
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
-  {
-    apiVersion: "2025-04-30.basil" as any,
+function getStripeKey(): string {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+  return key;
+}
+
+function getWebhookSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
+  return secret;
+}
+
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(getStripeKey(), {
+      apiVersion: "2025-04-30.basil" as any,
+    });
   }
-);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "whsec_placeholder";
+  return _stripe;
+}
 
 // Dunning configuration
 export const DUNNING_CONFIG = {
@@ -77,7 +91,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    event = getStripe().webhooks.constructEvent(req.body, sig, getWebhookSecret());
   } catch (err: any) {
     console.error(
       "[Stripe Webhook] Signature verification failed:",

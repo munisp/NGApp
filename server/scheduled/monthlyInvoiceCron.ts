@@ -25,12 +25,17 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, gte, lt, sql } from "drizzle-orm";
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_placeholder",
-  {
-    apiVersion: "2025-04-30.basil" as any,
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+    _stripe = new Stripe(key, {
+      apiVersion: "2025-04-30.basil" as any,
+    });
   }
-);
+  return _stripe;
+}
 
 // Kafka event publisher
 async function publishBillingEvent(
@@ -160,7 +165,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         // First, find or create Stripe customer
         let customerId = (config as any).stripeCustomerId;
         if (!customerId) {
-          const customer = await stripe.customers.create({
+          const customer = await getStripe().customers.create({
             name: `Tenant ${config.tenantId}`,
             metadata: {
               tenant_id: String(config.tenantId),
@@ -175,7 +180,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         }
 
         // Create invoice item
-        await stripe.invoiceItems.create({
+        await getStripe().invoiceItems.create({
           customer: customerId,
           amount: invoiceAmount,
           currency: (config.currency || "NGN").toLowerCase(),
@@ -190,7 +195,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         });
 
         // Create and finalize invoice
-        const invoice = await stripe.invoices.create({
+        const invoice = await getStripe().invoices.create({
           customer: customerId,
           auto_advance: true, // Auto-finalize and attempt payment
           collection_method: "charge_automatically",
@@ -203,7 +208,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         });
 
         // Finalize the invoice
-        await stripe.invoices.finalizeInvoice(invoice.id);
+        await getStripe().invoices.finalizeInvoice(invoice.id);
 
         // 5. Record in audit log
         await db.insert(billingAuditLog).values({
