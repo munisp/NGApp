@@ -948,7 +948,7 @@ func main() {
 	log.Printf("GL Engine (Go) listening on :%s — 14 middleware connected", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: jwtMiddleware(traceMiddleware(countingMiddleware(mux))),
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -840,7 +840,7 @@ func main() {
 	log.Printf("[account-opening-go] Starting on :%s (KYC enforcement enabled)", port)
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      traceMiddleware(countingMiddleware(mux)),
+		Handler:      rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,

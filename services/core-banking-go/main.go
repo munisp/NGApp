@@ -553,7 +553,7 @@ func main() {
 	log.Printf("core-banking-go listening on port %s", port)
 	server := &http.Server{
         Addr:    ":" + port,
-        Handler: jwtMiddleware(traceMiddleware(countingMiddleware(mux))),
+        Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(traceMiddleware(countingMiddleware(mux))))),
         ReadTimeout:  15 * time.Second,
         WriteTimeout: 30 * time.Second,
         IdleTimeout:  60 * time.Second,

@@ -1034,6 +1034,16 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path.rstrip("/")
         params = parse_qs(urlparse(self.path).query)
 
+        if path in ("/readyz", "/livez"):
+            self._json(200, {"status": "healthy", "service": "liveness-inference-py"})
+            return
+        if path == "/metrics":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(f'requests_total{{service="liveness-inference-py"}} {getattr(self.__class__, "_req_count", 0)}\n'.encode())
+            return
+        self.__class__._req_count = getattr(self.__class__, "_req_count", 0) + 1
         if path in ("/healthz", "/health"):
             self._json(200, {
                 "service": "liveness-inference-py",

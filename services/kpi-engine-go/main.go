@@ -1111,7 +1111,7 @@ func main() {
 	log.Printf("kpi-engine-go starting on :%s (11 roles, weighted scoring, RBAC, flow-down roll-up)", port)
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      handler,
+		Handler:      rateLimitMiddleware(securityHeadersMiddleware(handler)),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
