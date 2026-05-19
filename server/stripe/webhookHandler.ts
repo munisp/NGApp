@@ -20,13 +20,15 @@ import { eq } from "drizzle-orm";
 
 function getStripeKey(): string {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+  if (!key)
+    throw new Error("STRIPE_SECRET_KEY environment variable is required");
   return key;
 }
 
 function getWebhookSecret(): string {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
+  if (!secret)
+    throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
   return secret;
 }
 
@@ -91,7 +93,11 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
   let event: Stripe.Event;
   try {
-    event = getStripe().webhooks.constructEvent(req.body, sig, getWebhookSecret());
+    event = getStripe().webhooks.constructEvent(
+      req.body,
+      sig,
+      getWebhookSecret()
+    );
   } catch (err: any) {
     console.error(
       "[Stripe Webhook] Signature verification failed:",

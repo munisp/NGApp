@@ -16,7 +16,8 @@ let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
     const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+    if (!key)
+      throw new Error("STRIPE_SECRET_KEY environment variable is required");
     _stripe = new Stripe(key, {
       apiVersion: "2025-04-30.basil" as any,
     });
@@ -231,7 +232,9 @@ export const stripeRouter = router({
         .limit(1);
       if (!user?.stripeCustomerId) throw new Error("No Stripe customer found");
 
-      const sub = await getStripe().subscriptions.retrieve(input.subscriptionId);
+      const sub = await getStripe().subscriptions.retrieve(
+        input.subscriptionId
+      );
       if ((sub as any).customer !== user.stripeCustomerId) {
         throw new Error("Subscription does not belong to this user");
       }

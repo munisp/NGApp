@@ -29,7 +29,8 @@ let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
     const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) throw new Error("STRIPE_SECRET_KEY environment variable is required");
+    if (!key)
+      throw new Error("STRIPE_SECRET_KEY environment variable is required");
     _stripe = new Stripe(key, {
       apiVersion: "2025-04-30.basil" as any,
     });

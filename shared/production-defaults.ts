@@ -53,10 +53,8 @@ export const SENDGRID_FROM_EMAIL =
 export const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
 export const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || "";
 
-export const FLUTTERWAVE_SECRET_KEY =
-  process.env.FLUTTERWAVE_SECRET_KEY || "";
-export const FLUTTERWAVE_PUBLIC_KEY =
-  process.env.FLUTTERWAVE_PUBLIC_KEY || "";
+export const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY || "";
+export const FLUTTERWAVE_PUBLIC_KEY = process.env.FLUTTERWAVE_PUBLIC_KEY || "";
 
 // ─── TigerBeetle / Ledger ───────────────────────────────────────
 export const TIGERBEETLE_CLUSTER_ID = process.env.TIGERBEETLE_CLUSTER_ID || "0";
