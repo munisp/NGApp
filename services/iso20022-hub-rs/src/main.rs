@@ -38,7 +38,7 @@ HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'
 }
 
 async fn parse_message(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     if !rl_allow() {
         return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
     }

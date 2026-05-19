@@ -36,7 +36,7 @@ async fn health() -> HttpResponse {
 }
 
 async fn check_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     if let Err(resp) = check_jwt(&req) { return resp; }
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let client_id = body.get("client_id").and_then(|v| v.as_str()).unwrap_or("unknown");

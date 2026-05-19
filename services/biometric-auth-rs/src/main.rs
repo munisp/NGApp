@@ -44,7 +44,7 @@ async fn health() -> HttpResponse {
 }
 
 async fn enroll(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     let mut enrollments = state.enrollments.lock().unwrap();
     enrollments.push(body.into_inner());
     HttpResponse::Ok().json(json!({"enrolled": true, "total_enrollments": enrollments.len()}))

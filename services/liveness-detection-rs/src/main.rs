@@ -373,7 +373,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     let start = Instant::now();
     let (overall_score, method_scores, noise_info) = compute_ensemble_score(&body, &state.config);
     let anti_spoof = classify_spoof(&body, &state.config);

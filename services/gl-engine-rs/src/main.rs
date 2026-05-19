@@ -103,7 +103,7 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 
 
 async fn post_journal(body: web::Json<Vec<JournalEntry>>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     let entries = body.into_inner();
     if let Err(e) = validate_double_entry(&entries) {
         return HttpResponse::BadRequest().json(json!({"error": e}));

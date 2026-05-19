@@ -265,7 +265,7 @@ async fn get_tiers() -> HttpResponse {
 }
 
 async fn assess_tier(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
     let docs: Vec<String> = body.get("docsPresent")
         .and_then(|v| v.as_array())

@@ -76,7 +76,7 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 
 
 async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     if let Err(resp) = check_jwt(&req) { return resp; }
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let convention = body.day_count_convention.as_deref().unwrap_or("ACT/365");

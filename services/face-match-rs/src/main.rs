@@ -115,7 +115,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn perform_match(body: web::Json<FaceMatchRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
+    let _sanitized = sanitize_input("");
     let start = Instant::now();
 
     let emb1 = body.image1_embedding.clone().unwrap_or_else(|| vec![0.0; 512]);
