@@ -91,6 +91,13 @@ paths = [
   '''server/.*\.test\.ts$''',
   '''tests/.*\.test\.ts$''',
   '''e2e/.*\.spec\.ts$''',
+  # Seed data contains generated placeholder API keys (not real secrets)
+  '''data/seed.*\.json$''',
+  '''data/.*seed.*''',
+  # Docker compose and infrastructure configs with placeholder values
+  '''docker-compose.*\.yml$''',
+  # Shared defaults with placeholder config values
+  '''shared/production-defaults\.ts$''',
 ]
 
 # Commits to skip (use sparingly — only for bootstrap commits with known-safe defaults)
