@@ -21,7 +21,6 @@ import (
 
 	"strings"
 
-	_ "github.com/lib/pq"
 )
 
 var serviceName = "trade-finance-go"
@@ -30,10 +29,6 @@ var serviceName = "trade-finance-go"
 var sanctionsURL = func() string { v := os.Getenv("SANCTIONS_URL"); if v == "" { return "http://localhost:8127" }; return v }()
 var fxEngineURL = func() string { v := os.Getenv("FX_RATES_URL"); if v == "" { return "http://localhost:8166" }; return v }()
 var amlURL = func() string { v := os.Getenv("AML_ENGINE_URL"); if v == "" { return "http://localhost:8120" }; return v }()
-
-
-
-
 type BankGuarantee struct {
 	ID               string            `json:"id"`
 	GuaranteeID      string            `json:"guarantee_id"`
@@ -73,8 +68,6 @@ type DocumentPresentation struct {
 	Documents  []string `json:"documents"`
 }
 
-
-
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -98,8 +91,6 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp(w, 200, map[string]interface{}{"service": "trade-finance-go"})
 }
-
-
 // --- Database persistence ---
 var db *sql.DB
 
@@ -163,8 +154,6 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
-
-
 func lcFee(amount float64, tenor int) float64 {
 	rate := 0.0015
 	if tenor > 180 { rate = 0.002 }
@@ -197,8 +186,6 @@ func lcStatus(issued bool, expired bool, utilized bool) string {
 	return "draft"
 }
 
-
-
 func issueLCHandler(w http.ResponseWriter, r *http.Request) {
 	var req LCRequest
 	json.NewDecoder(r.Body).Decode(&req)
@@ -222,8 +209,6 @@ func guaranteeHandler(w http.ResponseWriter, r *http.Request) {
 	fee := req.Amount * 0.02 * float64(req.Tenor) / 365.0
 	jsonResp(w, 200, map[string]interface{}{"guarantee_ref": fmt.Sprintf("BG-%d", time.Now().UnixNano()), "type": req.Type, "amount": req.Amount, "fee": math.Round(fee*100)/100})
 }
-
-
 // --- Production Hardening ---
 var (
     _reqCount  uint64
@@ -251,8 +236,6 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"trade-finance-go\"} %d\n", errs)
     fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"trade-finance-go\"} %.0f\n", time.Since(_bootTime).Seconds())
 }
-
-
 // --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
 type circuitBreaker struct {
     failures    int
@@ -369,8 +352,6 @@ func (rw *responseWriter) WriteHeader(code int) {
     rw.status = code
     rw.ResponseWriter.WriteHeader(code)
 }
-
-
 // --- Distributed Tracing ---
 func traceMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

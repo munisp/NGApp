@@ -20,7 +20,6 @@ import (
 
 	"strings"
 
-	_ "github.com/lib/pq"
 )
 
 var serviceName = "payments-hub-go"
@@ -29,10 +28,6 @@ var serviceName = "payments-hub-go"
 var amlScreenURL = func() string { v := os.Getenv("AML_ENGINE_URL"); if v == "" { return "http://localhost:8120" }; return v }()
 var coreLedgerURL = func() string { v := os.Getenv("CORE_BANKING_URL"); if v == "" { return "http://localhost:8100" }; return v }()
 var fxRatesURL = func() string { v := os.Getenv("FX_RATES_URL"); if v == "" { return "http://localhost:8166" }; return v }()
-
-
-
-
 type PaymentRequest struct {
 	FromAccount  string  `json:"from_account"`
 	ToAccount    string  `json:"to_account"`
@@ -48,8 +43,6 @@ type PaymentRoute struct {
 	CutoffTime string `json:"cutoff_time"`
 	MaxAmount  float64 `json:"max_amount"`
 }
-
-
 
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -74,8 +67,6 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp(w, 200, map[string]interface{}{"service": "payments-hub-go"})
 }
-
-
 // --- Database persistence ---
 var db *sql.DB
 
@@ -139,8 +130,6 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
-
-
 func routePayment(amount float64, channel string) PaymentRoute {
 	switch {
 	case channel == "nip" || (amount <= 5000000 && channel == ""):
@@ -172,8 +161,6 @@ func settlementBatch(amounts []float64) float64 {
 	return total
 }
 
-
-
 func routeHandler(w http.ResponseWriter, r *http.Request) {
 	var req PaymentRequest
 	json.NewDecoder(r.Body).Decode(&req)
@@ -198,8 +185,6 @@ func nipTransferHandler(w http.ResponseWriter, r *http.Request) {
 	ref := fmt.Sprintf("NIP-%d", time.Now().UnixNano())
 	jsonResp(w, 200, map[string]interface{}{"status": "processed", "reference": ref, "channel": "NIP", "amount": req.Amount, "fee": computeFee(req.Amount)})
 }
-
-
 // --- Production Hardening ---
 var (
     _reqCount  uint64
@@ -227,8 +212,6 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"payments-hub-go\"} %d\n", errs)
     fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"payments-hub-go\"} %.0f\n", time.Since(_bootTime).Seconds())
 }
-
-
 // --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
 type circuitBreaker struct {
     failures    int
@@ -350,8 +333,6 @@ func (rw *responseWriter) WriteHeader(code int) {
     rw.status = code
     rw.ResponseWriter.WriteHeader(code)
 }
-
-
 // --- Distributed Tracing ---
 func traceMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

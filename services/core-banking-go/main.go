@@ -21,7 +21,6 @@ import (
 
 	"strings"
 
-	_ "github.com/lib/pq"
 )
 
 var serviceName = "core-banking-go"
@@ -29,10 +28,6 @@ var serviceName = "core-banking-go"
 // Inter-service URLs
 var glEngineURL = func() string { v := os.Getenv("GL_ENGINE_URL"); if v == "" { return "http://localhost:8136" }; return v }()
 var interestURL = func() string { v := os.Getenv("INTEREST_ENGINE_URL"); if v == "" { return "http://localhost:8137" }; return v }()
-
-
-
-
 type AccountLifecycle struct {
 	AccountID    string  `json:"account_id"`
 	CustomerID   string  `json:"customer_id"`
@@ -59,8 +54,6 @@ type EODBatchResult struct {
 	DormantFlagged  int     `json:"dormant_flagged"`
 }
 
-
-
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -84,8 +77,6 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp(w, 200, map[string]interface{}{"service": "core-banking-go"})
 }
-
-
 // --- Database persistence ---
 var db *sql.DB
 
@@ -149,8 +140,6 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
-
-
 func computeInterest(balance float64, rate float64, days int) float64 {
 	return balance * (rate / 100.0) * float64(days) / 365.0
 }
@@ -175,8 +164,6 @@ func dormancyStatus(lastTxnDays int) string {
 	if lastTxnDays > 180 { return "inactive" }
 	return "active"
 }
-
-
 
 func postingHandler(w http.ResponseWriter, r *http.Request) {
 	var req PostingRequest
@@ -227,8 +214,6 @@ func interestCalcHandler(w http.ResponseWriter, r *http.Request) {
 	interest := computeInterest(req.Balance, req.Rate, req.Days)
 	jsonResp(w, 200, map[string]interface{}{"interest": math.Round(interest*100)/100, "balance": req.Balance, "rate": req.Rate, "days": req.Days})
 }
-
-
 // --- Production Hardening ---
 var (
     _reqCount  uint64
@@ -256,8 +241,6 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"core-banking-go\"} %d\n", errs)
     fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"core-banking-go\"} %.0f\n", time.Since(_bootTime).Seconds())
 }
-
-
 // --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
 type circuitBreaker struct {
     failures    int
@@ -375,8 +358,6 @@ func (rw *responseWriter) WriteHeader(code int) {
     rw.status = code
     rw.ResponseWriter.WriteHeader(code)
 }
-
-
 // --- Distributed Tracing ---
 func traceMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
