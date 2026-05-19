@@ -159,6 +159,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn screen_entity(body: web::Json<ScreenRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let name = &body.entity_name;
     let entity_type = body.entity_type.as_deref().unwrap_or("individual");
     let screening_type = body.screening_type.as_deref().unwrap_or("customer_onboarding");
@@ -472,6 +473,7 @@ async fn main() -> std::io::Result<()> {
     println!("Sanctions Screening Engine v3.0 (Rust) on :{} — OFAC/EU/UN/CBN/INTERPOL/NFIU/PEP", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

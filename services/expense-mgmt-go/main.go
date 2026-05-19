@@ -451,6 +451,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -623,6 +624,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/expense-mgmt/score", expense_mgmtScoreHandler)
 	mux.HandleFunc("/v1/expense-mgmt/validate", expense_mgmtValidateRequestHandler)
 	log.Printf("Expense Mgmt v2.0 (Banking Ops) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

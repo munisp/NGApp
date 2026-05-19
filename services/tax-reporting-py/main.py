@@ -358,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        body = json.loads(sanitize_input(self.rfile.read(length).decode() if isinstance(self.rfile.read(length), bytes) else str(self.rfile.read(length)))) if length > 0 else {}
 
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
@@ -375,6 +375,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             result = db_insert("tax_reporting_py", body)
             _annual_tax_summary_result = annual_tax_summary(body.get("data", {}))
+            cache_set("last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/tax-reporting/update":
             rid = body.get("id", "")

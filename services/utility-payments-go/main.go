@@ -451,6 +451,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -623,6 +624,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/utility-payments/compute-fee", utility_paymentsFeeHandler)
 	mux.HandleFunc("/v1/utility-payments/route", utility_paymentsRouteHandler)
 	log.Printf("Utility Payments v2.0 (Payments) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

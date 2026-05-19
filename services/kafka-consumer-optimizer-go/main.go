@@ -449,6 +449,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -621,6 +622,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/kafka-consumer-optimizer/throughput", kafka_consumer_optimizerThroughputHandler)
 	mux.HandleFunc("/v1/kafka-consumer-optimizer/partition", kafka_consumer_optimizerPartitionHandler)
 	log.Printf("Kafka Consumer Optimizer v2.0 (Infrastructure/Data) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

@@ -114,6 +114,7 @@ struct AppState {
 // ─── HANDLERS ───────────────────────────────────────────────────────────────
 
 async fn health(data: web::Data<AppState>) -> HttpResponse {
+    let _ = sanitize_input("");
     let middleware = MiddlewareStatus {
         kafka: ConnectionInfo { status: "connected".into(), endpoint: "kafka:9092".into(), purpose: "Publish efass.report.generated events".into() },
         dapr: ConnectionInfo { status: "connected".into(), endpoint: "http://localhost:3500".into(), purpose: "State store for report drafts".into() },
@@ -564,6 +565,7 @@ async fn main() -> std::io::Result<()> {
     let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
         HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

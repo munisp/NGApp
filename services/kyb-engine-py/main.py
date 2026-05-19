@@ -352,7 +352,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        body = json.loads(sanitize_input(self.rfile.read(length).decode() if isinstance(self.rfile.read(length), bytes) else str(self.rfile.read(length)))) if length > 0 else {}
 
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
@@ -371,6 +371,7 @@ class Handler(BaseHTTPRequestHandler):
             _validate_tin_result = validate_tin(body.get("data", {}))
             _validate_rc_result = validate_rc(body.get("data", {}))
             _calculate_business_risk_result = calculate_business_risk(body.get("data", {}))
+            cache_set("last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

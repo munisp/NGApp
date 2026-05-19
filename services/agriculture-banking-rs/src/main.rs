@@ -26,6 +26,7 @@ async fn health() -> HttpResponse {
 }
 
 async fn assess_farm(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     if !rl_allow() {
         return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
     }
@@ -36,7 +37,7 @@ async fn assess_farm(req: actix_web::HttpRequest, state: web::Data<AppState>, bo
     let result = crop_cycle_months(crop);
     // Inter-service call: credit_check
     let _upstream_url = std::env::var("CREDIT_BUREAU_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    match call_service_sync(&format!("{}/v1/query_bureau", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/query_bureau", _upstream_url), "{}") {
         Ok(_resp) => eprintln!("agriculture-banking-rs: credit_check ok"),
         Err(e) => eprintln!("agriculture-banking-rs: credit_check failed: {}", e),
     }
@@ -340,6 +341,7 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

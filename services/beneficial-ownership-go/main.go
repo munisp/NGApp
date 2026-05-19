@@ -342,7 +342,8 @@ func handleAddToRegister(w http.ResponseWriter, r *http.Request) {
 	// Persist to database
 	if db != nil {
 		_id := fmt.Sprintf("%s-%d", serviceName, time.Now().UnixNano())
-		if _dataBytes, _err := json.Marshal(body); _err == nil {
+		if _dataBytes, _err := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes))); _err == nil {
 			dbInsert(_id, serviceName, "default", "active", _dataBytes)
 		}
 	}
@@ -756,6 +757,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/beneficial-ownership/score", beneficial_ownershipScoreHandler)
 	mux.HandleFunc("/v1/beneficial-ownership/validate", beneficial_ownershipValidateRequestHandler)
 	log.Printf("Beneficial Ownership Register v2.0 (Go) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

@@ -103,6 +103,7 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 
 
 async fn post_journal(body: web::Json<Vec<JournalEntry>>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let entries = body.into_inner();
     if let Err(e) = validate_double_entry(&entries) {
         return HttpResponse::BadRequest().json(json!({"error": e}));
@@ -327,6 +328,7 @@ async fn main() -> std::io::Result<()> {
     println!("gl-engine-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

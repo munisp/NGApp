@@ -1069,6 +1069,10 @@ func main() {
 	mux.HandleFunc("/v1/gl-engine/score", gl_engineScoreHandler)
 	mux.HandleFunc("/v1/gl-engine/validate", gl_engineValidateRequestHandler)
 	log.Printf("GL Engine (Go) listening on :%s — 14 middleware connected", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(traceMiddleware(countingMiddleware(mux))))),

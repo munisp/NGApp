@@ -48,6 +48,7 @@ HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'
 }
 
 async fn screen_transaction(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     if !rl_allow() {
         return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
     }
@@ -59,7 +60,7 @@ async fn screen_transaction(req: actix_web::HttpRequest, state: web::Data<AppSta
     let result = detect_structuring(amounts, threshold);
     // Inter-service call: sanctions_check
     let _upstream_url = std::env::var("SANCTIONS_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    match call_service_sync(&format!("{}/v1/screen", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/screen", _upstream_url), "{}") {
         Ok(_resp) => eprintln!("aml-engine-rs: sanctions_check ok"),
         Err(e) => eprintln!("aml-engine-rs: sanctions_check failed: {}", e),
     }
@@ -432,6 +433,7 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

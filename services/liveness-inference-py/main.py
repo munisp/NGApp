@@ -1145,7 +1145,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
             return
-        body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
+        body = json.loads(sanitize_input(self.rfile.read(content_len).decode() if isinstance(self.rfile.read(content_len), bytes) else str(self.rfile.read(content_len)))) if content_len > 0 else {}
         db_insert(f"liveness_{int(time.time()*1000)}", {"path": path, "action": "inference"})
         upstream = os.environ.get("AML_ENGINE_URL", "http://aml-engine-rs:8080")
         call_service("POST", f"{upstream}/v1/notify", {"source": "liveness-inference-py", "action": "inference"})
@@ -1687,7 +1687,11 @@ def get_db():
         logger.warning(f"DB connect failed: {e}")
         return None
 
-def db_insert(record_id, data):
+def db_insert(data):
+    conn = get_db()
+    return db_insert_impl(data)
+
+def db_insert_impl(record_id, data):
     if db_conn:
         try:
             cur = db_conn.cursor()

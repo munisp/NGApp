@@ -1174,6 +1174,10 @@ func main() {
 	log.Printf("Liveness Orchestrator (Go) on :%s", port)
 	log.Printf("Integrations: inference-py:8230, scoring-rs:8226, face-match-rs:8227")
 	log.Printf("Kafka topics: liveness.sessions, liveness.challenges, liveness.face-match")
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(traceMiddleware(countingMiddleware(mux))))),

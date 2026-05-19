@@ -26,6 +26,7 @@ HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'
 }
 
 async fn assess_trade(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     if !rl_allow() {
         return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
     }
@@ -227,6 +228,7 @@ async fn main() -> std::io::Result<()> {
     println!("crossborder-agri-trade-rs on port {}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

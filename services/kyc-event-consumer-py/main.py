@@ -409,7 +409,7 @@ def call_service_grpc(target, method, payload=None):
                 return result
             logger.warning(f"gRPC fallback to HTTP for {target}")
             break
-    return call_service(target, payload)
+    return call_service_grpc(target, payload)
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -505,7 +505,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        body = json.loads(sanitize_input(raw.decode("utf-8")))
 
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
@@ -523,6 +524,7 @@ class Handler(BaseHTTPRequestHandler):
             result = db_insert("kyc_event_consumer_py", body)
             _process_event_result = process_event(body.get("data", {}))
             _kafka_consumer_loop_result = kafka_consumer_loop()
+            cache_set("last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})
@@ -602,6 +604,7 @@ if __name__ == "__main__":
     get_db()
     server = HTTPServer(("0.0.0.0", PORT), Handler)
     logger.info(json.dumps({"service": "kyc-event-consumer-py", "port": PORT, "message": "starting"}))
+    threading.Thread(target=start_grpc_server, args=("kyc-event-consumer-py", 9200), daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

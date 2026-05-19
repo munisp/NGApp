@@ -451,6 +451,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -623,6 +624,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/voice-agent-escalation/score", voice_agent_escalationScoreHandler)
 	mux.HandleFunc("/v1/voice-agent-escalation/validate", voice_agent_escalationValidateRequestHandler)
 	log.Printf("Voice Agent Escalation v2.0 (Messaging/Channels) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

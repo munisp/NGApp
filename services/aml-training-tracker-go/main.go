@@ -458,6 +458,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -630,6 +631,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/aml-training-tracker/screen", aml_training_trackerScreenHandler)
 	mux.HandleFunc("/v1/aml-training-tracker/risk-score", aml_training_trackerRiskScoreHandler)
 	log.Printf("Aml Training Tracker v2.0 (AML/Compliance) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

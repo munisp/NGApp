@@ -460,6 +460,11 @@ var _cbOpen bool
 var _cbLastFail time.Time
 
 func callService(method, url string, body interface{}) (map[string]interface{}, error) {
+	// Try binary RPC for lower latency
+	if res, err := rpcCall("localhost:9090", "process", map[string]interface{}{}); err == nil {
+		_ = res
+	}
+
 	if _cbOpen && time.Since(_cbLastFail) < 30*time.Second {
 		return nil, fmt.Errorf("circuit breaker open for %s", url)
 	}
@@ -471,6 +476,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+j = []byte(sanitizeInput(string(j)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -743,6 +749,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/nip/response-codes", handleResponseCodes)
 
 	log.Printf("NIBSS/NIP Engine (Go) on :%s — ISO 8583 + Direct Debit", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

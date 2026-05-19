@@ -64,7 +64,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if db == nil {
-		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "in-memory"})
+		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": dbSourceTag()})
 		return
 	}
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -112,6 +112,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "card_management_go", time.Now().UnixNano())
 	dataBytes, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 	if db != nil {
 		_, err := db.Exec(
 			"INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
@@ -598,6 +599,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/cards/pin-gen", pinGenHandler)
 
 	log.Printf("card-management-go listening on port %s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(jwtAuthMiddleware(countingMiddleware(mux))))),

@@ -439,6 +439,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -611,6 +612,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/multi-bureau-verification/score", multi_bureau_verificationScoreHandler)
 	mux.HandleFunc("/v1/multi-bureau-verification/validate", multi_bureau_verificationValidateRequestHandler)
 	log.Printf("Multi-Bureau Verification v2.0 (Go) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

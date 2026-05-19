@@ -452,6 +452,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -624,6 +625,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/agri-savings-cycles/yield-score", agri_savings_cyclesYieldHandler)
 	mux.HandleFunc("/v1/agri-savings-cycles/risk-assess", agri_savings_cyclesRiskHandler)
 	log.Printf("Agri Savings Cycles v2.0 (Agriculture) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

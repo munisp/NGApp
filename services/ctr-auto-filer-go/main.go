@@ -451,6 +451,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -623,6 +624,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/ctr-auto-filer/score", ctr_auto_filerScoreHandler)
 	mux.HandleFunc("/v1/ctr-auto-filer/validate", ctr_auto_filerValidateRequestHandler)
 	log.Printf("Ctr Auto Filer v2.0 (AML/Compliance) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

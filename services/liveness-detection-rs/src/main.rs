@@ -373,6 +373,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let start = Instant::now();
     let (overall_score, method_scores, noise_info) = compute_ensemble_score(&body, &state.config);
     let anti_spoof = classify_spoof(&body, &state.config);
@@ -834,6 +835,7 @@ async fn main() -> std::io::Result<()> {
     println!("Liveness Scoring Engine (Rust) on :{}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

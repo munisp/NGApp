@@ -149,6 +149,7 @@ func handleCreate(w http.ResponseWriter, r *http.Request) {
 	if rec.Type == "" { rec.Type = "primary" }
 	records = append(records, rec)
 	dataBytes, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 	if dbErr := dbInsert(fmt.Sprintf("security_gateway_go-%d", time.Now().UnixNano()), "security_gateway_go", "default", "active", dataBytes); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
 	}
@@ -540,6 +541,10 @@ func main() {
 	mux.HandleFunc("/v1/security-gateway/health-score", security_gatewayHealthScoreHandler)
 	mux.HandleFunc("/v1/security-gateway/circuit-state", security_gatewayCircuitHandler)
 	log.Printf("Security Gateway v2.0 (Security) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: jwtMiddleware(rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux))))),

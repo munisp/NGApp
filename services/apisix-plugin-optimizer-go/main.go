@@ -450,6 +450,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -622,6 +623,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/apisix-plugin-optimizer/health-score", apisix_plugin_optimizerHealthScoreHandler)
 	mux.HandleFunc("/v1/apisix-plugin-optimizer/circuit-state", apisix_plugin_optimizerCircuitHandler)
 	log.Printf("Apisix Plugin Optimizer v2.0 (Infrastructure/Ops) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

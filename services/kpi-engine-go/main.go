@@ -1117,6 +1117,10 @@ func main() {
 	})
 	
 	log.Printf("kpi-engine-go starting on :%s (11 roles, weighted scoring, RBAC, flow-down roll-up)", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(handler))),

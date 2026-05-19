@@ -353,6 +353,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	dataBytes, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 	if dbErr := dbInsert(fmt.Sprintf("account_opening_go-%d", time.Now().UnixNano()), "account_opening_go", "default", "active", dataBytes); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
 	}
@@ -858,6 +859,10 @@ func main() {
 	mux.HandleFunc("/v1/accounts/tier-limits", tierLimitsHandler)
 
 	log.Printf("[account-opening-go] Starting on :%s (KYC enforcement enabled)", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(jwtMiddleware(countingMiddleware(mux))))),

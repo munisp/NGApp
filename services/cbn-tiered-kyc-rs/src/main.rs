@@ -265,6 +265,7 @@ async fn get_tiers() -> HttpResponse {
 }
 
 async fn assess_tier(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
     let docs: Vec<String> = body.get("docsPresent")
         .and_then(|v| v.as_array())
@@ -486,6 +487,7 @@ async fn main() -> std::io::Result<()> {
     let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
         HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

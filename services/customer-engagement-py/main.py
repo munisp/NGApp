@@ -264,7 +264,7 @@ class Handler(BaseHTTPRequestHandler):
                 respond(self, 413, {"error": "payload too large"})
                 return
             raw = self.rfile.read(length)
-            body = sanitize(json.loads(raw)) if raw else {}
+            body = sanitize(json.loads(sanitize_input(raw.decode() if isinstance(raw, bytes) else raw))) if raw else {}
         except Exception:
             body = {}
 

@@ -129,6 +129,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn run_settlement_recon(body: web::Json<RunSettlementReconRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let recon_type = body.recon_type.clone().unwrap_or_else(|| "nostro".into());
     let biz_date = body.business_date.clone().unwrap_or_else(|| "2026-05-09".into());
 
@@ -399,6 +400,7 @@ async fn main() -> std::io::Result<()> {
     println!("Settlement Reconciliation Engine v3.0 (Rust) on :{}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

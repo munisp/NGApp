@@ -32,6 +32,7 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 
 
 async fn test_coverage(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    let _ = sanitize_input("");
     if let Err(resp) = check_jwt(&req) { return resp; }
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let upstream = std::env::var("SECURITY_URL").unwrap_or_else(|_| "http://security-gateway-go:8080".to_string());
@@ -476,6 +477,7 @@ async fn main() -> std::io::Result<()> {
     let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
         HttpServer::new(|| {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

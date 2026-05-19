@@ -241,6 +241,7 @@ async fn get_configs(req: actix_web::HttpRequest, state: web::Data<AppState>) ->
 }
 
 async fn evaluate_step_up(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
     let trigger = body.get("trigger").and_then(|v| v.as_str()).unwrap_or("high_value_transfer");
     let amount = body.get("transactionAmount").and_then(|v| v.as_u64()).unwrap_or(0);
@@ -567,6 +568,7 @@ async fn main() -> std::io::Result<()> {
     println!("Continuous Liveness + Behavioral Biometrics v2.0 (Rust) on :{}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

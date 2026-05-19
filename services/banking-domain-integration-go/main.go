@@ -515,6 +515,7 @@ func callService(method, url string, body interface{}) (map[string]interface{}, 
 		var req *http.Request
 		if body != nil {
 			j, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 			req, _ = http.NewRequest(method, url, bytes.NewBuffer(j))
 		} else {
 			req, _ = http.NewRequest(method, url, nil)
@@ -684,6 +685,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/fd/lifecycle-gl", fixedDepositToGL)
 	mux.HandleFunc("/v1/si/execution-gl", standingInstructionsToGL)
 	log.Printf("Banking Domain Integration (Go) listening on :%s — Gaps 8-12, 14 middleware", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

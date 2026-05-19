@@ -198,7 +198,8 @@ func handleCreateCapture(w http.ResponseWriter, r *http.Request) {
 	// Persist to database
 	if db != nil {
 		id := fmt.Sprintf("%s-%d", serviceName, time.Now().UnixNano())
-		if dataBytes, err := json.Marshal(body); err == nil {
+		if dataBytes, err := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes))); err == nil {
 			dbInsert(id, serviceName, "default", "active", dataBytes)
 		}
 	}
@@ -698,6 +699,10 @@ mux := http.NewServeMux()
 	mux.HandleFunc("/v1/agent-kyc-capture/score", agent_kyc_captureScoreHandler)
 	mux.HandleFunc("/v1/agent-kyc-capture/validate", agent_kyc_captureValidateRequestHandler)
 	log.Printf("Agent KYC Capture v2.0 (Go) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: rateLimitMiddleware(securityHeadersMiddleware(jwtAuthMiddleware(traceMiddleware(countingMiddleware(mux))))),

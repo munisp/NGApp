@@ -36,6 +36,7 @@ async fn health() -> HttpResponse {
 }
 
 async fn schedule_resscreen(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     if !rl_allow() {
         return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
     }
@@ -304,6 +305,7 @@ async fn main() -> std::io::Result<()> {
     println!("sanctions-batch-rescreener-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

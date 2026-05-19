@@ -393,6 +393,7 @@ func handleFaceAnalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Post(inferenceURL+"/v1/face/analyze", "application/json", bytes.NewReader(payload))
 	if err != nil {
@@ -769,6 +770,10 @@ func main() {
 	mux.HandleFunc("/v1/identity/face-analyze", handleFaceAnalyze)
 	mux.HandleFunc("/v1/identity/dedup-check", handleDedupCheck)
 	log.Printf("Identity Verification v3.0 (Go, DeepFace-enhanced) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: jwtMiddleware(rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux))))),

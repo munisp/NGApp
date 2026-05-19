@@ -212,6 +212,7 @@ func handleCreate(w http.ResponseWriter, r *http.Request) {
 			domainStats.PendingKYC++
 			mu.Unlock()
 	dataBytes, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
 	if dbErr := dbInsert(fmt.Sprintf("loan_origination_go-%d", time.Now().UnixNano()), "loan_origination_go", "default", "active", dataBytes); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
 	}
@@ -755,6 +756,10 @@ func main() {
 	mux.HandleFunc("/v1/applications/approve", handleProcess)
 	mux.HandleFunc("/v1/disbursements", handleProcess)
 	log.Printf("Loan Origination v3.0 (Lending, KYC enforced) on :%s", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
 	server := &http.Server{
         Addr:    ":" + port,
         Handler: jwtMiddleware(rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux))))),

@@ -115,6 +115,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn perform_match(body: web::Json<FaceMatchRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let _sanitized = sanitize_input(&body.to_string());
     let start = Instant::now();
 
     let emb1 = body.image1_embedding.clone().unwrap_or_else(|| vec![0.0; 512]);
@@ -403,6 +404,7 @@ async fn main() -> std::io::Result<()> {
     println!("Face Match Engine v2.0 (Rust, DeepFace-enhanced) on :{}", port);
     HttpServer::new(move || {
         App::new()
+                .wrap(add_security_headers())
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

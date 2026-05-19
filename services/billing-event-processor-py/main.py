@@ -299,7 +299,7 @@ def call_service_grpc(target, method, payload=None):
                 return result
             logger.warning(f"gRPC fallback to HTTP for {target}")
             break
-    return call_service(target, payload)
+    return call_service_grpc(target, payload)
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -372,7 +372,7 @@ class Handler(BaseHTTPRequestHandler):
                 respond(self, 413, {"error": "payload too large"})
                 return
             raw = self.rfile.read(length)
-            body = sanitize(json.loads(raw)) if raw else {}
+            body = sanitize(json.loads(sanitize_input(raw.decode() if isinstance(raw, bytes) else raw))) if raw else {}
         except Exception:
             body = {}
 
@@ -416,8 +416,9 @@ if __name__ == "__main__":
     get_db()
     _server = HTTPServer(("0.0.0.0", PORT), Handler)
     print(json.dumps({"service": SERVICE_NAME, "port": PORT, "message": "starting"}), file=sys.stderr)
+    _threading.Thread(target=start_grpc_server, args=("billing-event-processor-py", 9200), daemon=True).start()
     try:
-        _server.serve_forever()
+        server.serve_forever()
     except KeyboardInterrupt:
         pass
     print(f"[{SERVICE_NAME}] Server stopped gracefully", file=sys.stderr)

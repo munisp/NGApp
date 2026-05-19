@@ -298,7 +298,7 @@ def call_service(method, url, body=None, retries=3, timeout=15):
 
 def call_liveness_check(image_data, session_id):
     """Call liveness-inference-py for passive liveness."""
-    return call_service("POST", f"{LIVENESS_URL}/v1/liveness/check", {
+    return call_service_grpc("POST", f"{LIVENESS_URL}/v1/liveness/check", {
         "image": image_data, "session_id": session_id,
     })
 
@@ -518,7 +518,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        body = json.loads(sanitize_input(raw.decode("utf-8")))
 
         # JWT auth check (monitoring mode: warn but allow)
         claims, err = validate_jwt(dict(self.headers))
@@ -535,6 +536,7 @@ class Handler(BaseHTTPRequestHandler):
             _compute_verification_score_result = compute_verification_score(body.get("data", {}))
             _compute_risk_assessment_result = compute_risk_assessment(body.get("data", {}))
             _check_sla_breach_result = check_sla_breach(body.get("data", {}))
+            cache_set("last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})
@@ -614,6 +616,7 @@ if __name__ == "__main__":
     get_db()
     server = HTTPServer(("0.0.0.0", PORT), Handler)
     logger.info(json.dumps({"service": "kyc-workflow-orchestration-py", "port": PORT, "message": "starting"}))
+    threading.Thread(target=start_grpc_server, args=("kyc-workflow-orchestration-py", 9200), daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
