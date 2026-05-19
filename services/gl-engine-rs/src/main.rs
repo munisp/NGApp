@@ -154,7 +154,6 @@ async fn account_balance(path: web::Path<String>, state: web::Data<AppState>) ->
     let code = path.into_inner();
     let accounts = state.accounts.lock().unwrap();
     match accounts.iter().find(|a| a.account_code.as_deref() == Some(&code)) {
-    db_persist(&state, "account_balance", &json!({"action": "account_balance"})).await;
         Some(acc) => HttpResponse::Ok().json(json!({"account": acc, "classification": classify_account(&code)})),
         None => HttpResponse::NotFound().json(json!({"error": "Account not found"})),
     }

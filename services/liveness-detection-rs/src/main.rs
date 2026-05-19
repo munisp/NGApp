@@ -529,7 +529,6 @@ async fn get_check_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
     let id = path.into_inner();
     let checks = state.checks.lock().unwrap();
     match checks.iter().find(|c| c.id == id) {
-    db_persist(&state, "get_check_by_id", &json!({"action": "get_check_by_id"})).await;
         Some(c) => HttpResponse::Ok().json(c),
         None => HttpResponse::NotFound().json(json!({"error": format!("Check {} not found", id)})),
     }

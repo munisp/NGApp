@@ -192,7 +192,6 @@ async fn get_match_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
     let id = path.into_inner();
     let matches = state.matches.lock().unwrap();
     match matches.iter().find(|m| m.id == id) {
-    db_persist(&state, "get_match_by_id", &json!({"action": "get_match_by_id"})).await;
         Some(m) => HttpResponse::Ok().json(m),
         None => HttpResponse::NotFound().json(json!({"error": format!("Match {} not found", id)})),
     }
