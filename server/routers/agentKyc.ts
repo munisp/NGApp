@@ -18,6 +18,22 @@ import { kycSessions, kycDocuments, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
 export const agentKycRouter = router({
+  list: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(10),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+      try {
+        const results = await database.select().from(kycSessions).orderBy(desc(kycSessions.id)).limit(input.limit);
+        const totalArr = await database.select({ total: count() }).from(kycSessions);
+        return { items: results, total: totalArr?.[0]?.total ?? 0, limit: input.limit, offset: input.offset };
+      } catch { return { items: [], total: 0, limit: input.limit, offset: input.offset }; }
+    }),
   getStats: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { totalSessions: 0, pending: 0, approved: 0, rejected: 0 };

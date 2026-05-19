@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -266,8 +266,12 @@ export const businessRulesRouter = router({
       }
     }),
 
-  cbnLimits: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  cbnLimits: publicProcedure.query(async () => {
+    return [
+      { tier: "Tier 1", dailyLimit: 50000, singleLimit: 50000, currency: "NGN" },
+      { tier: "Tier 2", dailyLimit: 200000, singleLimit: 200000, currency: "NGN" },
+      { tier: "Tier 3", dailyLimit: 5000000, singleLimit: 5000000, currency: "NGN" },
+    ];
   }),
 
   commissionRates: protectedProcedure.query(async () => {

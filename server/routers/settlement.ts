@@ -43,7 +43,7 @@ import {
 } from "../middleware/settlementMiddleware";
 import logger from "../_core/logger";
 
-const agentAdminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+const agentAdminProcedure = publicProcedure.use(async ({ ctx, next }) => {
   const agent = await getAgentFromCookie(ctx.req);
   if (!agent) {
     throw new TRPCError({

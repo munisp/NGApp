@@ -112,6 +112,13 @@ export const fxRatesRouter = router({
       lastUpdated: new Date().toISOString(),
     };
   }),
+
+  historical: protectedProcedure
+    .input(z.object({ currency: z.string().optional(), days: z.number().default(30) }).optional())
+    .query(async () => {
+      return { timeseries: [], currency: "NGN", period: "30d" };
+    }),
+
 });
 
 // FX data sources: frankfurter.app API, ECB exchange rate feed

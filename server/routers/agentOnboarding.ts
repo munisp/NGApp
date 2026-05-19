@@ -410,6 +410,7 @@ export const agentOnboardingRouter = router({
       z.object({
         page: z.number().default(1),
         limit: z.number().default(15),
+        offset: z.number().optional(),
         search: z.string().optional(),
         status: z
           .enum(["not_started", "in_progress", "completed", "on_hold"])
@@ -420,7 +421,7 @@ export const agentOnboardingRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
-        const offset = (input.page - 1) * input.limit;
+        const offset = input.offset ?? (input.page - 1) * input.limit;
         const rows = await db
           .select({
             agentId: agentOnboardingProgress.agentId,
@@ -433,12 +434,9 @@ export const agentOnboardingRouter = router({
             trainingComplete: agentOnboardingProgress.trainingComplete,
             activatedAt: agentOnboardingProgress.activatedAt,
             createdAt: agentOnboardingProgress.createdAt,
-            agentName: agents.name,
           })
           .from(agentOnboardingProgress)
-          .leftJoin(agents, eq(agents.id, agentOnboardingProgress.agentId))
-          .limit(input.limit)
-          .offset(offset);
+          .limit(input.limit);
 
         const stepOrder = ["profile", "kyc", "float", "terminal", "training"];
         const items = rows.map((r: any) => {

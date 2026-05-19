@@ -9,7 +9,7 @@ export const agentHierarchyRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+      if (!database) return { items: [], total: 0, limit: 0, offset: 0 };
       const [record] = await database
         .select()
         .from(agents)
@@ -25,12 +25,12 @@ export const agentHierarchyRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
+    const totalArr = await database
       .select({ total: count() })
       .from(agents);
 
     return {
-      totalRecords: totalResult?.total ?? 0,
+      totalRecords: (Array.isArray(totalArr) && totalArr[0]?.total) ?? 0,
       lastUpdated: new Date().toISOString(),
     };
   }),
@@ -65,12 +65,13 @@ export const agentHierarchyRouter = router({
           role: z.string().optional(),
           territory: z.string().optional(),
           search: z.string().optional(),
+          limit: z.number().optional(),
+          offset: z.number().optional(),
         })
         .optional()
     )
     .query(async () => {
-      return {
-        agents: [
+      const data = [
           {
             id: "AGT-001",
             name: "Adebayo Okonkwo",
@@ -79,7 +80,10 @@ export const agentHierarchyRouter = router({
             status: "active",
             subAgents: 12,
           },
-        ],
+        ];
+      return {
+        items: data,
+        agents: data,
         total: 1,
       };
     }),

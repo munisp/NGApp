@@ -15,7 +15,7 @@ export const slaMonitoringDashRouter = router({
     )
     .query(async ({ input }) => {
       const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+      if (!database) return { items: [], total: 0, limit: 0, offset: 0 };
       const results = await database
         .select()
         .from(auditLog)
@@ -28,8 +28,8 @@ export const slaMonitoringDashRouter = router({
         .from(auditLog);
 
       return {
-        data: results,
-        total: totalResult?.total ?? 0,
+        items: results,
+        total: totalArr?.[0]?.total ?? 0,
         limit: input.limit,
         offset: input.offset,
       };
@@ -60,7 +60,7 @@ export const slaMonitoringDashRouter = router({
       .from(auditLog);
 
     return {
-      totalRecords: totalResult?.total ?? 0,
+      totalRecords: totalArr?.[0]?.total ?? 0,
       lastUpdated: new Date().toISOString(),
     };
   }),

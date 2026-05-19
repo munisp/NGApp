@@ -28,8 +28,8 @@ export const dynamicQrPaymentRouter = router({
         .from(transactions);
 
       return {
-        data: results,
-        total: totalResult?.total ?? 0,
+        items: results,
+        total: totalArr?.[0]?.total ?? 0,
         limit: input.limit,
         offset: input.offset,
       };
@@ -46,10 +46,10 @@ export const dynamicQrPaymentRouter = router({
         .where(eq(transactions.id, input.id))
         .limit(1);
 
-      if (!record) {
+      if (!recordArr?.[0]) {
         throw new Error(`Record with id ${input.id} not found`);
       }
-      return record;
+      return recordArr[0];
     }),
 
   getSummary: protectedProcedure.query(async () => {
@@ -60,7 +60,7 @@ export const dynamicQrPaymentRouter = router({
       .from(transactions);
 
     return {
-      totalRecords: totalResult?.total ?? 0,
+      totalRecords: totalArr?.[0]?.total ?? 0,
       lastUpdated: new Date().toISOString(),
     };
   }),

@@ -190,7 +190,7 @@ export function createNotification(params: {
   metadata?: Record<string, unknown>;
 }) {
   return {
-    id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `notif_${Date.now()}`,
     channel: params.channel,
     category: params.category,
     title: params.title,
@@ -198,7 +198,9 @@ export function createNotification(params: {
     priority: params.priority ?? "normal",
     metadata: params.metadata ?? {},
     read: false,
-    createdAt: new Date().toISOString(),
+    starred: false,
+    archived: false,
+    createdAt: new Date(),
   };
 }
 

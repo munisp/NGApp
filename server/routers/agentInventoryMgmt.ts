@@ -15,7 +15,7 @@ export const agentInventoryMgmtRouter = router({
     )
     .query(async ({ input }) => {
       const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+      if (!database) return { items: [], total: 0, limit: 0, offset: 0 };
       const results = await database
         .select()
         .from(agents)
@@ -23,13 +23,13 @@ export const agentInventoryMgmtRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      const [totalResult] = await database
+      const totalArr = await database
         .select({ total: count() })
         .from(agents);
 
       return {
-        data: results,
-        total: totalResult?.total ?? 0,
+        items: results,
+        total: (Array.isArray(totalArr) && totalArr[0]?.total) ?? 0,
         limit: input.limit,
         offset: input.offset,
       };
@@ -55,12 +55,12 @@ export const agentInventoryMgmtRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
+    const totalArr = await database
       .select({ total: count() })
       .from(agents);
 
     return {
-      totalRecords: totalResult?.total ?? 0,
+      totalRecords: (Array.isArray(totalArr) && totalArr[0]?.total) ?? 0,
       lastUpdated: new Date().toISOString(),
     };
   }),
