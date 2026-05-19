@@ -229,6 +229,7 @@ export const settlementReconciliationRouter = router({
 
   // ── Summary stats ─────────────────────────────────────────────────────────
   stats: protectedProcedure.query(async () => {
+    try {
     const db = (await getDb())!;
     if (!db)
       return { total: 0, matched: 0, discrepancy: 0, resolved: 0, pending: 0 };
@@ -240,5 +241,9 @@ export const settlementReconciliationRouter = router({
       resolved: rows.filter((r: any) => r.status === "resolved").length,
       pending: rows.filter((r: any) => r.status === "pending").length,
     };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+    }
   }),
 });
