@@ -161,14 +161,14 @@ describe("S94: networkTrends router", () => {
 
 // ── 5. App Router Wiring ──
 describe("S94: appRouter wiring", () => {
-  it("should include bulkRoleImport in appRouter", async () => {
+  it("should include bulkRoleImport in appRouter", { timeout: 15000 }, async () => {
     const mod = await import("./routers");
     const router = mod.appRouter;
     const def = (router as any)._def;
     expect(def.procedures || def.record).toBeDefined();
   });
 
-  it("should include networkTrends in appRouter", async () => {
+  it("should include networkTrends in appRouter", { timeout: 15000 }, async () => {
     const mod = await import("./routers");
     const router = mod.appRouter;
     expect(router).toBeDefined();

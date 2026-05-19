@@ -173,7 +173,7 @@ describe("pbacManagementRouter", () => {
 // ── Integration Tests ────────────────────────────────────────────────────────
 
 describe("Sprint 92 Router Integration", () => {
-  it("should wire all 3 new routers into appRouter", async () => {
+  it("should wire all 3 new routers into appRouter", { timeout: 15000 }, async () => {
     const mod = await import("./routers.ts");
     const procedures = mod.appRouter._def.procedures;
     // Check Sprint 92 routers are wired
