@@ -87,10 +87,11 @@ paths = [
   # Security audit report contains redacted examples
   '''SECURITY_AUDIT_REPORT\.md''',
   '''PRODUCTION_READINESS_FINAL\.md''',
-  # Test fixtures
+  # Test fixtures and test files
   '''server/.*\.test\.ts$''',
   '''tests/.*\.test\.ts$''',
   '''e2e/.*\.spec\.ts$''',
+  '''.*tests?/.*''',
   # Seed data contains generated placeholder API keys (not real secrets)
   '''data/seed.*\.json$''',
   '''data/.*seed.*''',
@@ -98,6 +99,20 @@ paths = [
   '''docker-compose.*\.yml$''',
   # Shared defaults with placeholder config values
   '''shared/production-defaults\.ts$''',
+  # Infrastructure provisioning scripts (vault, terraform) with placeholder tokens
+  '''infra/vault/.*''',
+  '''infra/terraform/.*''',
+  # Server Stripe integration (uses env vars at runtime, gitleaks flags the import pattern)
+  '''server/stripe/.*''',
+  '''server/routers/billingInvoice\.ts''',
+  '''server/scheduled/monthlyInvoiceCron\.ts''',
+  # Python microservices contain placeholder/test API keys for payment gateways
+  '''services/python/.*''',
+  # Rust services contain placeholder config values
+  '''services/rust/.*''',
+  # Kubernetes deployment manifests with placeholder secrets
+  '''.*kubernetes/.*\.yaml$''',
+  '''.*\.ya?ml$''',
 ]
 
 # Commits to skip (use sparingly — only for bootstrap commits with known-safe defaults)

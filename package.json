@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "license": "UNLICENSED",
-  "description": "54Link Agency Banking POS Platform \u2014 Production",
+  "description": "54Link Agency Banking POS Platform — Production",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -21,10 +21,10 @@
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@hookform/resolvers": "^5.2.2",
     "@mediapipe/tasks-vision": "^0.10.35",
-    "@opentelemetry/auto-instrumentations-node": "^0.72.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.75.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.214.0",
     "@opentelemetry/resources": "^2.6.1",
-    "@opentelemetry/sdk-node": "^0.214.0",
+    "@opentelemetry/sdk-node": "^0.217.0",
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -127,7 +127,8 @@
     "wouter": "^3.3.5",
     "yaml": "^2.9.0",
     "zod": "^4.1.12",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@opentelemetry/exporter-prometheus": "^0.217.0"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
@@ -206,14 +207,19 @@
       "follow-redirects@<=1.15.11": ">=1.16.0",
       "axios@>=1.0.0 <1.15.0": ">=1.15.0",
       "dompurify@<=3.3.3": ">=3.4.0",
-      "protobufjs@<7.5.5": ">=7.5.5",
       "path-to-regexp@<8.2.0": ">=8.2.0",
-      "fast-uri@<3.0.6": ">=3.0.6",
-      "fast-uri@>=3.0.0 <3.0.6": ">=3.0.6",
-      "protobufjs@>=7.0.0 <7.5.5": ">=7.5.5",
-      "fast-xml-parser@<5.2.0": ">=5.2.0",
-      "fast-xml-parser@>=4.0.0 <4.5.3": ">=4.5.3",
-      "axios@>=1.0.0 <=1.15.0": ">=1.15.1"
+      "axios@>=1.0.0 <=1.15.0": ">=1.15.1",
+      "fast-xml-builder@<=1.1.6": ">=1.1.7",
+      "protobufjs": ">=8.0.2",
+      "fast-xml-parser": ">=5.7.0",
+      "fast-uri": ">=3.1.2",
+      "fast-xml-builder": ">=1.1.7",
+      "postcss": ">=8.5.10",
+      "uuid": ">=11.1.1",
+      "mermaid": ">=11.15.0",
+      "ip-address": ">=10.1.1",
+      "@protobufjs/utf8": ">=1.1.1",
+      "ws": ">=8.20.1"
     }
   }
 }
