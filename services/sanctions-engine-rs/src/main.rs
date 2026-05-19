@@ -159,7 +159,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 }
 
 async fn screen_entity(body: web::Json<ScreenRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&body.to_string());
+    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
     let name = &body.entity_name;
     let entity_type = body.entity_type.as_deref().unwrap_or("individual");
     let screening_type = body.screening_type.as_deref().unwrap_or("customer_onboarding");

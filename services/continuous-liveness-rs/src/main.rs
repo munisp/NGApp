@@ -241,7 +241,7 @@ async fn get_configs(req: actix_web::HttpRequest, state: web::Data<AppState>) ->
 }
 
 async fn evaluate_step_up(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&body.to_string());
+    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
     let customer_id = body.get("customerId").and_then(|v| v.as_str()).unwrap_or("unknown");
     let trigger = body.get("trigger").and_then(|v| v.as_str()).unwrap_or("high_value_transfer");
     let amount = body.get("transactionAmount").and_then(|v| v.as_u64()).unwrap_or(0);

@@ -72,7 +72,7 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 
 
 async fn evaluate_rules(req: actix_web::HttpRequest, body: web::Json<RuleEvalRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let _sanitized = sanitize_input(&body.to_string());
+    let _sanitized = sanitize_input(&serde_json::to_string(&*body).unwrap_or_default());
     if let Err(resp) = check_jwt(&req) { return resp; }
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let rules = state.rules.lock().unwrap();
