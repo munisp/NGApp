@@ -288,69 +288,70 @@ fn rl_allow() -> bool {
 
 // ── gRPC Server (high-performance inter-service communication) ──
 
-mod grpc_service {{
+mod grpc_service {
     use std::net::SocketAddr;
-    use std::sync::{{Arc, atomic::{{AtomicU64, Ordering}}}};
+    use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
     use std::time::Instant;
 
-    pub struct GrpcMetrics {{
+    pub struct GrpcMetrics {
         pub requests: AtomicU64,
         pub latency_sum_us: AtomicU64,
-    }}
+    }
 
-    impl GrpcMetrics {{
-        pub fn new() -> Self {{
-            Self {{ requests: AtomicU64::new(0), latency_sum_us: AtomicU64::new(0) }}
-        }}
-    }}
+    impl GrpcMetrics {
+        pub fn new() -> Self {
+            Self { requests: AtomicU64::new(0), latency_sum_us: AtomicU64::new(0) }
+        }
+    }
 
-    pub async fn start_grpc_server(service_name: &str, port: u16) {{
+    pub async fn start_grpc_server(service_name: &str, port: u16) {
         let addr: SocketAddr = ([0, 0, 0, 0], port).into();
         let metrics = Arc::new(GrpcMetrics::new());
-        log::info!("[{{}}] gRPC server starting on {{}} (HTTP/2, Protobuf)", service_name, addr);
+        log::info!("[{}] gRPC server starting on {} (HTTP/2, Protobuf)", service_name, addr);
 
         // TCP listener for gRPC with custom protocol handling
-        let listener = match tokio::net::TcpListener::bind(addr).await {{
+        let listener = match tokio::net::TcpListener::bind(addr).await {
             Ok(l) => l,
-            Err(e) => {{
-                log::error!("[{{}}] gRPC bind failed: {{}}", service_name, e);
+            Err(e) => {
+                log::error!("[{}] gRPC bind failed: {}", service_name, e);
                 return;
-            }}
-        }};
+            }
+        };
 
         let svc_name = service_name.to_string();
-        loop {{
-            match listener.accept().await {{
-                Ok((stream, peer)) => {{
+        loop {
+            match listener.accept().await {
+                Ok((mut stream, peer)) => {
                     let m = metrics.clone();
                     let name = svc_name.clone();
-                    tokio::spawn(async move {{
+                    tokio::spawn(async move {
                         let start = Instant::now();
                         m.requests.fetch_add(1, Ordering::Relaxed);
                         // Read gRPC frame (HTTP/2 preface + headers + data)
                         let mut buf = vec![0u8; 4096];
-                        let _ = tokio::io::AsyncReadExt::read(&mut &stream, &mut buf).await;
+                        use tokio::io::AsyncReadExt;
+                        let _ = stream.read(&mut buf).await;
                         let elapsed = start.elapsed().as_micros() as u64;
                         m.latency_sum_us.fetch_add(elapsed, Ordering::Relaxed);
-                        log::debug!("[{{}}] gRPC request from {{}} ({{}}µs)", name, peer, elapsed);
-                    }});
-                }}
-                Err(e) => log::warn!("[{{}}] gRPC accept error: {{}}", svc_name, e),
-            }}
-        }}
-    }}
+                        log::debug!("[{}] gRPC request from {} ({}µs)", name, peer, elapsed);
+                    });
+                }
+                Err(e) => log::warn!("[{}] gRPC accept error: {}", svc_name, e),
+            }
+        }
+    }
 
-    pub fn grpc_call(target: &str, _method: &str, payload: &[u8]) -> Result<Vec<u8>, String> {{
+    pub fn grpc_call(target: &str, _method: &str, payload: &[u8]) -> Result<Vec<u8>, String> {
         // Synchronous gRPC call using TCP for inter-service communication
-        use std::io::{{Read, Write}};
-        let mut stream = std::net::TcpStream::connect(target).map_err(|e| format!("gRPC connect: {{}}", e))?;
+        use std::io::{Read, Write};
+        let mut stream = std::net::TcpStream::connect(target).map_err(|e| format!("gRPC connect: {}", e))?;
         stream.set_read_timeout(Some(std::time::Duration::from_secs(5))).ok();
-        stream.write_all(payload).map_err(|e| format!("gRPC write: {{}}", e))?;
+        stream.write_all(payload).map_err(|e| format!("gRPC write: {}", e))?;
         let mut response = Vec::new();
-        stream.read_to_end(&mut response).map_err(|e| format!("gRPC read: {{}}", e))?;
+        stream.read_to_end(&mut response).map_err(|e| format!("gRPC read: {}", e))?;
         Ok(response)
-    }}
-}}
+    }
+}
 
 // gRPC-aware service registry for hot-path targets
 fn grpc_target(service_name: &str) -> Option<(&str, u16)> {
