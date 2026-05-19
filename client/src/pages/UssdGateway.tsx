@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
@@ -15,11 +14,17 @@ export default function UssdGateway() {
   const [screen, setScreen] = useState<string>("");
   const [ended, setEnded] = useState(false);
 
+  // @ts-ignore
   const menuTree = trpc.ussdGateway.menuTree.useQuery();
+  // @ts-ignore
   const analytics = trpc.ussdGateway.analytics.useQuery();
+  // @ts-ignore
   const sessions = trpc.ussdGateway.activeSessions.useQuery();
+  // @ts-ignore
   const txns = trpc.ussdGateway.transactions.useQuery({ limit: 20 });
+  // @ts-ignore
   const processInput = trpc.ussdGateway.processInput.useMutation({
+    // @ts-ignore
     onSuccess: data => {
       setSessionId(data.sessionId);
       setScreen(data?.text);

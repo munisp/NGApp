@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * ProactiveHelp — Detects user struggle patterns and proactively offers help
  *

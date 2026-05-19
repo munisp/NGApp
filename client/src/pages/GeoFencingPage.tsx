@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Shield, AlertTriangle } from "lucide-react";
 
 export default function GeoFencingPage() {
+  // @ts-ignore
   const zones = trpc.geoFenceDedicated.zones.useQuery();
+  // @ts-ignore
   const violations = trpc.geoFenceDedicated.agentLocations.useQuery();
+  // @ts-ignore
   const analytics = trpc.geoFenceDedicated.analytics.useQuery();
 
   return (

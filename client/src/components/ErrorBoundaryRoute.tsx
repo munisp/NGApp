@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 import { Component, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";

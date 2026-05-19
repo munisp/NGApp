@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * MQTTBridgeTab — Fluvio MQTT Source Connector configuration UI
  * Allows admins to configure, test, publish synthetic events, and generate

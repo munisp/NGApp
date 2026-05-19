@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * ERPConfigTab — ERP Webhook Configuration & Sync Admin Panel Tab
  *

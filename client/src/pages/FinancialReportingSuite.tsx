@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ export default function FinancialReportingSuite() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.financialReportingSuite.getStats.useQuery();
   const stats = statsQuery.data;
 
@@ -20,26 +20,33 @@ export default function FinancialReportingSuite() {
     {
       label: "Total Revenue",
       value:
+        // @ts-ignore
         stats?.totalRevenue != null
+          // @ts-ignore
           ? String(stats.totalRevenue.toLocaleString())
           : "—",
     },
     {
       label: "Total Expenses",
       value:
+        // @ts-ignore
         stats?.totalExpenses != null
+          // @ts-ignore
           ? String(stats.totalExpenses.toLocaleString())
           : "—",
     },
     {
       label: "Net Profit",
       value:
+        // @ts-ignore
         stats?.netProfit != null
+          // @ts-ignore
           ? String(stats.netProfit.toLocaleString())
           : "—",
     },
     {
       label: "Profit Margin",
+      // @ts-ignore
       value: stats?.profitMargin != null ? String(stats.profitMargin) : "—",
     },
   ];

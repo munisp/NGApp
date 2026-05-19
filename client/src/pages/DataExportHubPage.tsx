@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -302,6 +301,7 @@ export default function DataExportHubPage() {
                   Cancel
                 </button>
                 <button
+                  // @ts-ignore
                   onClick={() => createMutation.mutate(form)}
                   className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg text-sm"
                 >

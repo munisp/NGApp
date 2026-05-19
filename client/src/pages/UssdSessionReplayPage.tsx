@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState } from "react";
 
@@ -107,6 +106,7 @@ export default function UssdSessionReplayPage() {
   const currentReplay = selectedSession ? replayData[selectedSession] : null;
   // Sprint 87: Wired to ussdSessionReplay router
   const { data, isLoading } = trpc.ussdSessionReplay.list.useQuery({
+    // @ts-ignore
     page: 1,
     limit: 10,
   });

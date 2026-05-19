@@ -31,7 +31,6 @@ export default function FloatReconciliationPage() {
             Reconcile agent float balances against transaction ledger
           </p>
         </div>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Button
           onClick={() => reconcileMut.mutate({})}
           disabled={reconcileMut.isPending}
@@ -40,7 +39,6 @@ export default function FloatReconciliationPage() {
         </Button>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
@@ -49,7 +47,6 @@ export default function FloatReconciliationPage() {
             <p className="text-sm text-muted-foreground">Agents</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-green-600">
@@ -58,7 +55,6 @@ export default function FloatReconciliationPage() {
             <p className="text-sm text-muted-foreground">Matched</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-red-600">
@@ -67,7 +63,6 @@ export default function FloatReconciliationPage() {
             <p className="text-sm text-muted-foreground">Mismatched</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-yellow-600">

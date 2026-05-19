@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
@@ -11,9 +10,13 @@ export default function SavingsProductsPage() {
   const [tab, setTab] = useState<"products" | "accounts" | "transactions">(
     "products"
   );
+  // @ts-ignore
   const products = trpc.savingsProducts.products.useQuery();
+  // @ts-ignore
   const accounts = trpc.savingsProducts.list.useQuery({ limit: 20 });
+  // @ts-ignore
   const transactions = trpc.savingsProducts.list.useQuery({ limit: 20 });
+  // @ts-ignore
   const analytics = trpc.savingsProducts.analytics.useQuery();
 
   return (

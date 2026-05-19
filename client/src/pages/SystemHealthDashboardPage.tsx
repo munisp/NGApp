@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import {
 export default function SystemHealthDashboardPage() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data, isLoading, refetch } =
+    // @ts-ignore
     trpc.systemHealthDashboard.getHealth.useQuery();
 
   const services = data?.services || [];

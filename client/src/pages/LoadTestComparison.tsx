@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Card,
@@ -484,6 +483,7 @@ export default function LoadTestComparison() {
   const [runIdA, setRunIdA] = useState<string | null>(null);
   const [runIdB, setRunIdB] = useState<string | null>(null);
 
+  // @ts-ignore
   const runsQuery = trpc.loadTestMetrics.listRuns.useQuery({ limit: 50 });
   const runs = runsQuery.data ?? [];
 
@@ -491,6 +491,7 @@ export default function LoadTestComparison() {
   const effectiveA = runIdA ?? runs[0]?.id ?? null;
   const effectiveB = runIdB ?? runs[1]?.id ?? null;
 
+  // @ts-ignore
   const comparisonQuery = trpc.loadTestMetrics.compareRuns.useQuery(
     { runIdA: effectiveA!, runIdB: effectiveB! },
     { enabled: !!effectiveA && !!effectiveB && effectiveA !== effectiveB }
@@ -501,6 +502,7 @@ export default function LoadTestComparison() {
 
   const zipfData = useMemo(
     () =>
+      // @ts-ignore
       (cmp?.zipfComparison ?? []).map(d => ({
         label: `#${d.rank}`,
         reqA: d.requestsA,
@@ -510,18 +512,22 @@ export default function LoadTestComparison() {
   );
 
   const timelineRpsA = useMemo(
+    // @ts-ignore
     () => (cmp?.timelineOverlay ?? []).map(t => t.rpsA),
     [cmp]
   );
   const timelineRpsB = useMemo(
+    // @ts-ignore
     () => (cmp?.timelineOverlay ?? []).map(t => t.rpsB),
     [cmp]
   );
   const timelineLatA = useMemo(
+    // @ts-ignore
     () => (cmp?.timelineOverlay ?? []).map(t => t.latencyA),
     [cmp]
   );
   const timelineLatB = useMemo(
+    // @ts-ignore
     () => (cmp?.timelineOverlay ?? []).map(t => t.latencyB),
     [cmp]
   );

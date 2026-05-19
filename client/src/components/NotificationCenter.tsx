@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * NotificationCenter — Floating notification panel with real-time feed,
  * filters, mark-read, clear, and sound alerts for critical events.

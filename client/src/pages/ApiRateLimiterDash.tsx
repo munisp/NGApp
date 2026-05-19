@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 export default function ApiRateLimiterDash() {
   const [tab, setTab] = useState("overview");
   // Sprint 87: Wired to rateLimitDashboard router
+  // @ts-ignore
   const { data, isLoading } = trpc.rateLimitDashboard.getStatus.useQuery({
     page: 1,
     limit: 10,

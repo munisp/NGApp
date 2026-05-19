@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function SkillCreatorIntegration() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.skillCreatorIntegration.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Skill Version",
+      // @ts-ignore
       value: stats?.skillVersion != null ? String(stats.skillVersion) : "—",
     },
     {
       label: "Total Patterns",
+      // @ts-ignore
       value: stats?.totalPatterns != null ? String(stats.totalPatterns) : "—",
     },
     {
       label: "Router Patterns",
+      // @ts-ignore
       value: stats?.routerPatterns != null ? String(stats.routerPatterns) : "—",
     },
     {
       label: "Schema Patterns",
+      // @ts-ignore
       value: stats?.schemaPatterns != null ? String(stats.schemaPatterns) : "—",
     },
   ];

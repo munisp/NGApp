@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
 
 function Collapsible({

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 import { useState, useRef, useEffect } from "react";
 import { Globe } from "lucide-react";
 import {

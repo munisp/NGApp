@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,21 @@ import {
   RefreshCw,
 } from "lucide-react";
 export default function CocoIndexPipelinePage() {
+  // @ts-ignore
   const analytics = trpc.cocoIndexPipeline.analytics.useQuery();
+  // @ts-ignore
   const pipelines = trpc.cocoIndexPipeline.listPipelines.useQuery();
+  // @ts-ignore
   const runs = trpc.cocoIndexPipeline.listRuns.useQuery();
+  // @ts-ignore
   const triggerMut = trpc.cocoIndexPipeline.triggerRun.useMutation({
+    // @ts-ignore
     onSuccess: d => {
       if (d.success)
         alert(`Pipeline triggered: ${d.recordsProcessed} records processed`);
     },
   });
+  // @ts-ignore
   const toggleMut = trpc.cocoIndexPipeline.togglePipeline.useMutation({
     onSuccess: () => {
       pipelines.refetch();

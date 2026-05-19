@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -169,6 +168,7 @@ export default function AgentHierarchyPage() {
   const [newParentId, setNewParentId] = useState("");
 
   const hierarchy = trpc.agentHierarchy.list.useQuery({
+    // @ts-ignore
     role: roleFilter !== "all" ? roleFilter : undefined,
     territory: territoryFilter !== "all" ? territoryFilter : undefined,
     search: searchTerm || undefined,
@@ -196,6 +196,7 @@ export default function AgentHierarchyPage() {
   // Build tree from flat list
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const tree = hierarchy.data?.tree ?? [];
+  // @ts-ignore
   const flatList = hierarchy.data?.agents ?? [];
 
   // Stats

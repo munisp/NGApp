@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState } from "react";
 
@@ -89,6 +88,7 @@ export default function CommissionCalculatorPage() {
   };
   // Sprint 87: Wired to commissionCascadeHistory router
   const { data, isLoading } = trpc.commissionCascadeHistory.list.useQuery({
+    // @ts-ignore
     page: 1,
     limit: 10,
   });

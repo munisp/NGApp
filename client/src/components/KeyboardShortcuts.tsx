@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Command, Keyboard } from "lucide-react";

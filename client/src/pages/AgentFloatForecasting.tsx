@@ -1,4 +1,3 @@
-// @ts-nocheck
 // SECURITY: SQL template literals in this file are for display/mock purposes only. All actual DB queries use parameterized Drizzle ORM.
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -152,11 +151,14 @@ export default function AgentFloatForecasting() {
   const [confirmStep, setConfirmStep] = useState(false);
   const [successAgent, setSuccessAgent] = useState<AgentForecast | null>(null);
 
+  // @ts-ignore
   const stats = trpc.agentFloatForecasting.getStats.useQuery();
+  // @ts-ignore
   const forecast = trpc.agentFloatForecasting.getForecast.useQuery({
     days: parseInt(selectedPeriod) || 7,
   });
   const triggerReplenishment =
+    // @ts-ignore
     trpc.agentFloatForecasting.triggerReplenishment.useMutation({
       onSuccess: () => {
         setConfirmStep(false);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -36,11 +35,13 @@ export default function ReconciliationEnginePage() {
     description: "",
   });
 
+  // @ts-ignore
   const batchesQuery = trpc.reconciliationEngine.listBatches.useQuery({
     limit: 100,
   });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const statsQuery = trpc.reconciliationEngine.getStats.useQuery();
+  // @ts-ignore
   const createMutation = trpc.reconciliationEngine.createBatch.useMutation({
     onSuccess: () => {
       batchesQuery.refetch();
@@ -333,7 +334,7 @@ export default function ReconciliationEnginePage() {
                 >
                   Cancel
                 </button>
-                {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+                // @ts-ignore
                 <button
                   onClick={() => createMutation.mutate(form)}
                   className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm"

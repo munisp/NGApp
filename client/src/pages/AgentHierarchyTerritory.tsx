@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function AgentHierarchyTerritory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.agentHierarchyTerritory.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Agents",
+      // @ts-ignore
       value: stats?.totalAgents != null ? String(stats.totalAgents) : "—",
     },
     {
       label: "Super Agents",
+      // @ts-ignore
       value: stats?.superAgents != null ? String(stats.superAgents) : "—",
     },
     {
       label: "Master Agents",
+      // @ts-ignore
       value: stats?.masterAgents != null ? String(stats.masterAgents) : "—",
     },
     {
       label: "Sub Agents",
+      // @ts-ignore
       value: stats?.subAgents != null ? String(stats.subAgents) : "—",
     },
   ];

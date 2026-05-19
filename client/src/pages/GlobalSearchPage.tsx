@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -162,6 +161,7 @@ export default function GlobalSearchPage() {
     filteredAgents.length + filteredTx.length + filteredCustomers.length;
   // Sprint 87: Wired to advancedSearchFiltering router
   const { data, isLoading } =
+    // @ts-ignore
     trpc.advancedSearchFiltering.globalSearch.useQuery({ page: 1, limit: 10 });
 
   return (

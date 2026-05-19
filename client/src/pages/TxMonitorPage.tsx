@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState } from "react";
 
@@ -129,6 +128,7 @@ export default function TxMonitorPage() {
       : alerts.filter(a => a.severity === severityFilter);
   // Sprint 87: Wired to transactionMonitoring router
   const { data, isLoading } = trpc.transactionMonitoring.list.useQuery({
+    // @ts-ignore
     page: 1,
     limit: 10,
   });

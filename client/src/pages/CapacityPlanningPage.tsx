@@ -1,10 +1,10 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Server, HardDrive } from "lucide-react";
 
 export default function CapacityPlanningPage() {
+  // @ts-ignore
   const { data } = trpc.capacityPlanning.dashboard.useQuery();
 
   return (

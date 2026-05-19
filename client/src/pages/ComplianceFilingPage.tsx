@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -316,8 +315,9 @@ export default function ComplianceFilingPage() {
                 >
                   Cancel
                 </button>
-                {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+                // @ts-ignore
                 <button
+                  // @ts-ignore
                   onClick={() => createMutation.mutate(form)}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm"
                 >

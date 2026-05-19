@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,18 +18,23 @@ import {
 export default function WebhookDeliveryMonitor() {
   const [activeTab, setActiveTab] = useState("all");
 
+  // @ts-ignore
   const deliveries = trpc.sprint23.webhookDelivery.list.useQuery(
     activeTab !== "all" && activeTab !== "dead_letter"
       ? { status: activeTab }
       : undefined
   );
   const deadLetterQueue =
+    // @ts-ignore
     trpc.sprint23.webhookDelivery.deadLetterQueue.useQuery();
   const utils = trpc.useUtils();
 
+  // @ts-ignore
   const retryDlq = trpc.sprint23.webhookDelivery.retryDeadLetter.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.webhookDelivery.list.invalidate();
+      // @ts-ignore
       utils.sprint23.webhookDelivery.deadLetterQueue.invalidate();
       toast.success("Dead letter re-queued for retry");
     },

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * SkeletonPage — Reusable skeleton loading states for data-heavy pages
  */

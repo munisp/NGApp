@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -53,6 +52,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Add Journey Event",
                   description: "Feature ready for integration",
                 });
@@ -65,6 +65,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Edit Event",
                   description: "Select a journey event to edit",
                 });
@@ -77,6 +78,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Delete Event",
                   description: "Select a journey event to delete",
                 });

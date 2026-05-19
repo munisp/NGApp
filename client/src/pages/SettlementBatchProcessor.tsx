@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,7 +136,9 @@ export default function SettlementBatchProcessor() {
     Map<string, BatchProgressEvent>
   >(new Map());
 
+  // @ts-ignore
   const statsQuery = trpc.settlementBatchProcessor.getStats.useQuery();
+  // @ts-ignore
   const batchesQuery = trpc.settlementBatchProcessor.listBatches.useQuery({
     status: statusFilter as any,
     limit: 50,

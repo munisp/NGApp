@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * FeedbackAnalytics — Dashboard for tracking guide section feedback
  *
@@ -71,8 +70,10 @@ export default function FeedbackAnalytics() {
 
   // Calculate analytics from feedback list
   const analytics = useMemo(() => {
+    // @ts-ignore
     if (!feedbackList?.items) return null;
 
+    // @ts-ignore
     const entries = feedbackList.items as unknown as FeedbackEntry[];
     const totalFeedback = entries.length;
     const helpfulCount = entries.filter(f => f.rating === "up").length;
@@ -133,7 +134,9 @@ export default function FeedbackAnalytics() {
 
   // Filter feedback entries
   const filteredFeedback = useMemo(() => {
+    // @ts-ignore
     if (!feedbackList?.items) return [];
+    // @ts-ignore
     let entries = feedbackList.items as unknown as FeedbackEntry[];
     if (filterSection !== "all")
       entries = entries.filter(f => f.sectionId === filterSection);

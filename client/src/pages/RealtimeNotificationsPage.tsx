@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +7,10 @@ import { Bell, Send, Check, Trash2, Settings } from "lucide-react";
 
 export default function RealtimeNotificationsPage() {
   const { data: dashboard, isLoading } =
+    // @ts-ignore
     trpc.realtimeNotifications.dashboard.useQuery();
   const markRead = trpc.realtimeNotifications.markRead.useMutation();
+  // @ts-ignore
   const send = trpc.realtimeNotifications.broadcast.useMutation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -118,6 +119,7 @@ export default function RealtimeNotificationsPage() {
                       size="sm"
                       variant="outline"
                       onClick={() =>
+                        // @ts-ignore
                         markRead.mutate({ notificationIds: [n.id] })
                       }
                     >

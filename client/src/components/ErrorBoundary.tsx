@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 52 — Enhanced Error Boundary Components
  * F13: React error boundaries for graceful UI failure

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -161,6 +160,7 @@ export default function PartnerOnboarding() {
       return;
     }
     registerTenant.mutate({
+      // @ts-ignore
       inviteCode,
       companyName,
       companyRegistrationNumber: regNumber,
@@ -176,6 +176,7 @@ export default function PartnerOnboarding() {
   function handleSaveBranding() {
     if (!tenantId) return;
     updateBranding.mutate({
+      // @ts-ignore
       tenantId,
       primaryColor,
       secondaryColor,
@@ -191,6 +192,7 @@ export default function PartnerOnboarding() {
   function handleAddCorridor() {
     if (!tenantId) return;
     addCorridor.mutate({
+      // @ts-ignore
       tenantId,
       sourceCountry: newCorrSrc,
       sourceCurrency: newCorrSrcCur,
@@ -211,6 +213,7 @@ export default function PartnerOnboarding() {
   function handleAddFee() {
     if (!tenantId) return;
     addFee.mutate({
+      // @ts-ignore
       tenantId,
       feeType,
       feeValue,
@@ -221,6 +224,7 @@ export default function PartnerOnboarding() {
 
   function handleGoLive() {
     if (!tenantId) return;
+    // @ts-ignore
     completeOnboarding.mutate({ tenantId });
   }
 

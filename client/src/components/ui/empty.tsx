@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";

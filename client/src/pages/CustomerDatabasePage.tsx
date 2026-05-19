@@ -77,7 +77,6 @@ export default function CustomerDatabasePage() {
               value={form.address}
               onChange={e => setForm({ ...form, address: e.target.value })}
             />
-            {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
             <Button
               onClick={() => addMut.mutate(form)}
               disabled={addMut.isPending}
@@ -88,14 +87,12 @@ export default function CustomerDatabasePage() {
         </Card>
       )}
       <div className="grid grid-cols-3 gap-4">
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">{data?.summary?.total || 0}</p>
             <p className="text-sm text-muted-foreground">Total</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-green-600">
@@ -104,7 +101,6 @@ export default function CustomerDatabasePage() {
             <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-blue-600">

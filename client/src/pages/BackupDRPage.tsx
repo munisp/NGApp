@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Database, Shield, HardDrive, RefreshCw } from "lucide-react";
 
 export default function BackupDRPage() {
+  // @ts-ignore
   const { data } = trpc.backupDr.dashboard.useQuery();
+  // @ts-ignore
   const triggerMut = trpc.backupDr.triggerBackup.useMutation();
+  // @ts-ignore
   const testMut = trpc.backupDr.testFailover.useMutation();
 
   return (

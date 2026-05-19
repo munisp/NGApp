@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +56,7 @@ export default function AuditTrailPage() {
     data: auditData,
     isLoading,
     refetch,
+  // @ts-ignore
   } = trpc.sprint27Export.auditLog.useQuery({
     format: "json",
     severity: severityFilter !== "all" ? severityFilter : undefined,
@@ -66,6 +66,7 @@ export default function AuditTrailPage() {
     offset: page * limit,
   });
 
+  // @ts-ignore
   const { data: stats } = trpc.sprint27Export.auditStats.useQuery();
   const { exportCSV } = useDataExport();
 

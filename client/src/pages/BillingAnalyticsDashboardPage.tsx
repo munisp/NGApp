@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -31,11 +30,13 @@ export default function BillingAnalyticsDashboardPage() {
   const chartsRef = useRef<Record<string, Chart>>({});
 
   // Fetch analytics data
+  // @ts-ignore
   const cohortData = trpc.billingProduction.getCohortAnalytics.useQuery(
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     { period: period === "12m" ? 12 : period === "6m" ? 6 : 3 },
     { enabled: !!user }
   );
+  // @ts-ignore
   const forecastData = trpc.billingProduction.getRevenueForecast.useQuery(
     { months: period === "12m" ? 12 : period === "6m" ? 6 : 3 },
     { enabled: !!user }

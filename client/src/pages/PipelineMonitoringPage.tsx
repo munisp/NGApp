@@ -1,11 +1,12 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 
 export default function PipelineMonitoringPage() {
+  // @ts-ignore
   const { data } = trpc.pipelineMonitoring.dashboard.useQuery();
+  // @ts-ignore
   const { data: alerts } = trpc.pipelineMonitoring.activeAlerts.useQuery({
     limit: 20,
   });

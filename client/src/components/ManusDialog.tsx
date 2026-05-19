@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";

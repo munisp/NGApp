@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 // SECURITY: dangerouslySetInnerHTML usage is from shadcn/ui chart component (trusted library, not user input).
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";

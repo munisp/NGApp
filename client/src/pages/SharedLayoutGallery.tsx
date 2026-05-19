@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SharedLayoutGallery — Browse, import, and fork team-shared dashboard layouts
  */
@@ -62,22 +61,28 @@ export default function SharedLayoutGallery() {
   }>({ open: false, token: "" });
   const [shareTokenInput, setShareTokenInput] = useState("");
 
+  // @ts-ignore
   const { data, isLoading } = trpc.sharedLayouts.gallery.useQuery({
     search: search || undefined,
     tag: selectedTag,
     sortBy,
   });
 
+  // @ts-ignore
   const importMutation = trpc.sharedLayouts.import.useMutation({
+    // @ts-ignore
     onSuccess: data => {
       toast.success(`Imported "${data.name}" layout`);
       setImportDialog({ open: false, token: "" });
     },
+    // @ts-ignore
     onError: err => toast.error(err.message),
   });
 
+  // @ts-ignore
   const forkMutation = trpc.sharedLayouts.fork.useMutation({
     onSuccess: () => toast.success("Layout forked to your collection"),
+    // @ts-ignore
     onError: err => toast.error(err.message),
   });
 

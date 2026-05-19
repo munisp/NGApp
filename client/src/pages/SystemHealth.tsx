@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SystemHealth — 54Link Agency Banking Platform
  *
@@ -115,6 +114,7 @@ export default function SystemHealth() {
     fetchHealth();
     const interval = setInterval(fetchHealth, 15_000);
     // Sprint 87: Wired to serviceHealth router
+    // @ts-ignore
     const { data, isLoading } = trpc.serviceHealth.getAll.useQuery({
       page: 1,
       limit: 10,
@@ -201,6 +201,7 @@ export default function SystemHealth() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {SERVICES.map((svc: any) => {
             const val = health
+              // @ts-ignore
               ? String(health[svc.key] ?? "unknown")
               : undefined;
             const color = statusColor(val);

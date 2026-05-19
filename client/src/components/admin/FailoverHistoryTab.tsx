@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * FailoverHistoryTab — Admin Panel sub-tab
  *

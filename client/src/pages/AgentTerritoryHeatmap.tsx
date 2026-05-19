@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { MapPin } from "lucide-react";
@@ -9,6 +8,7 @@ import { MapPin } from "lucide-react";
 export default function AgentTerritoryHeatmap() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: liveData, isLoading } =
+    // @ts-ignore
     trpc.agentTerritoryHeatmap.list.useQuery(undefined, { retry: 1 });
   const mockData =
     liveData ??

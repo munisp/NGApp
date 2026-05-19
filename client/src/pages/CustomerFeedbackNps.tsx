@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function CustomerFeedbackNps() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.customerFeedbackNps.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Feedback",
+      // @ts-ignore
       value: stats?.totalFeedback != null ? String(stats.totalFeedback) : "—",
     },
     {
       label: "Avg Rating",
+      // @ts-ignore
       value: stats?.avgRating != null ? String(stats.avgRating) : "—",
     },
     {
       label: "Nps Score",
+      // @ts-ignore
       value: stats?.npsScore != null ? String(stats.npsScore) : "—",
     },
     {
       label: "Promoters",
+      // @ts-ignore
       value: stats?.promoters != null ? String(stats.promoters) : "—",
     },
   ];

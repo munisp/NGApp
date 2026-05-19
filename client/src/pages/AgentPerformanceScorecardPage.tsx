@@ -34,7 +34,6 @@ export default function AgentPerformanceScorecardPage() {
         </p>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
@@ -43,7 +42,6 @@ export default function AgentPerformanceScorecardPage() {
             <p className="text-sm text-muted-foreground">Total Agents</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-green-600">
@@ -52,7 +50,6 @@ export default function AgentPerformanceScorecardPage() {
             <p className="text-sm text-muted-foreground">Top Performers</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-yellow-600">
@@ -61,7 +58,6 @@ export default function AgentPerformanceScorecardPage() {
             <p className="text-sm text-muted-foreground">Avg Score</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">

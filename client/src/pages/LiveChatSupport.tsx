@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * 54Link — Live Chat Support
  * Design: Bloomberg Terminal dark — near-black bg, electric blue primary
@@ -273,6 +272,7 @@ export default function LiveChatSupport({ onBack }: { onBack?: () => void }) {
   const assignedAgent = SUPPORT_AGENTS[0];
 
   // ── tRPC mutations ────────────────────────────────────────────────────────────
+  // @ts-ignore
   const startSessionMutation = trpc.chat.startSession.useMutation();
   const sendMessageMutation = trpc.chat.sendMessage.useMutation();
 
@@ -364,6 +364,7 @@ export default function LiveChatSupport({ onBack }: { onBack?: () => void }) {
     // Send via tRPC (persists to DB + triggers socket auto-reply)
     if (sessionRef) {
       sendMessageMutation.mutate(
+        // @ts-ignore
         { sessionRef, content: text },
         {
           onError: () => {
@@ -397,6 +398,7 @@ export default function LiveChatSupport({ onBack }: { onBack?: () => void }) {
     startSessionMutation.mutate(
       { category, subject },
       {
+        // @ts-ignore
         onSuccess: data => {
           setSessionRef(data.sessionRef);
           const systemMsg: Message = {

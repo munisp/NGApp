@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * CoverageMap — Signal Heatmap Coverage Map for the SIM Orchestrator Admin Panel
  *

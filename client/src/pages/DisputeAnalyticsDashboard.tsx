@@ -429,7 +429,6 @@ export default function DisputeAnalyticsDashboard() {
                   <p className="text-xs text-muted-foreground">
                     Weekly Avg Filed
                   </p>
-                  {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                   <p className="text-2xl font-bold">
                     {trends.data?.weeklyAvg?.filed ?? "—"}
                   </p>
@@ -440,7 +439,6 @@ export default function DisputeAnalyticsDashboard() {
                   <p className="text-xs text-muted-foreground">
                     Weekly Avg Resolved
                   </p>
-                  {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                   <p className="text-2xl font-bold text-green-600">
                     {trends.data?.weeklyAvg?.resolved ?? "—"}
                   </p>

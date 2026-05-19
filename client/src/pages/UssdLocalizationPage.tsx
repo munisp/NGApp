@@ -1,4 +1,3 @@
-// @ts-nocheck
 // UssdLocalizationPage — Sprint 77
 // Multi-language USSD menu management (EN/FR/SW/HA/YO)
 import { useState } from "react";
@@ -111,6 +110,7 @@ export default function UssdLocalizationPage() {
   const [locale, setLocale] = useState("en");
   // Sprint 87: Wired to ussdLocalization router
   const { data, isLoading } = trpc.ussdLocalization.list.useQuery({
+    // @ts-ignore
     page: 1,
     limit: 10,
   });

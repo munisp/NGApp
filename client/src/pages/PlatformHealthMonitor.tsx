@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function PlatformHealthMonitor() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.platformHealthMonitor.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Overall Health",
+      // @ts-ignore
       value: stats?.overallHealth != null ? String(stats.overallHealth) : "—",
     },
     {
       label: "Uptime30d",
+      // @ts-ignore
       value: stats?.uptime30d != null ? String(stats.uptime30d) : "—",
     },
     {
       label: "Avg Latency",
+      // @ts-ignore
       value: stats?.avgLatency != null ? String(stats.avgLatency) : "—",
     },
     {
       label: "P99 Latency",
+      // @ts-ignore
       value: stats?.p99Latency != null ? String(stats.p99Latency) : "—",
     },
   ];

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ export default function PaymentReconciliation() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.paymentReconciliation.getStats.useQuery();
   const stats = statsQuery.data;
 
@@ -20,21 +20,26 @@ export default function PaymentReconciliation() {
     {
       label: "Total Reconciled",
       value:
+        // @ts-ignore
         stats?.totalReconciled != null
+          // @ts-ignore
           ? String(stats.totalReconciled.toLocaleString())
           : "—",
     },
     {
       label: "Matched",
       value:
+        // @ts-ignore
         stats?.matched != null ? String(stats.matched.toLocaleString()) : "—",
     },
     {
       label: "Discrepancies",
+      // @ts-ignore
       value: stats?.discrepancies != null ? String(stats.discrepancies) : "—",
     },
     {
       label: "Resolved",
+      // @ts-ignore
       value: stats?.resolved != null ? String(stats.resolved) : "—",
     },
   ];

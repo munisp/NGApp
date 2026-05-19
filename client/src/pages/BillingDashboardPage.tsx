@@ -127,7 +127,6 @@ export default function BillingDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
             <div className="text-2xl font-bold text-green-600">
               {formatNGN(liveMetrics?.today?.netPlatformRevenue || 0)}
             </div>
@@ -256,14 +255,12 @@ export default function BillingDashboardPage() {
                   <p className="text-xs text-muted-foreground">
                     Platform Share
                   </p>
-                  {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                   <p className="text-lg font-bold">
                     {formatNGN(liveMetrics?.thisMonth?.platformShare || 0)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Client Share</p>
-                  {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
                   <p className="text-lg font-bold">
                     {formatNGN(liveMetrics?.thisMonth?.clientShare || 0)}
                   </p>

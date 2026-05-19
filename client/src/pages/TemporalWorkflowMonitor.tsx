@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,7 @@ export default function TemporalWorkflowMonitor() {
     retry: false,
   });
   const listQ = trpc.temporal.list.useQuery(
+    // @ts-ignore
     { status: "RUNNING", limit: 50 },
     { retry: false }
   );
@@ -57,22 +57,27 @@ export default function TemporalWorkflowMonitor() {
           {[
             {
               label: "Running",
+              // @ts-ignore
               value: String(summaryQ.data?.running ?? 0),
               color: "text-blue-400",
             },
             {
               label: "Namespace",
+              // @ts-ignore
               value: summaryQ.data?.namespace || "default",
               color: "text-green-400",
             },
             {
               label: "Failed",
+              // @ts-ignore
               value: String(summaryQ.data?.failed ?? 0),
               color: "text-red-400",
             },
             {
               label: "Health",
+              // @ts-ignore
               value: healthQ.data?.healthy ? "Healthy" : "Checking",
+              // @ts-ignore
               color: healthQ.data?.healthy
                 ? "text-green-400"
                 : "text-amber-400",
@@ -117,6 +122,7 @@ export default function TemporalWorkflowMonitor() {
                 <tbody>
                   {(Array.isArray(listQ.data)
                     ? listQ.data
+                    // @ts-ignore
                     : listQ.data?.workflows || []
                   ).map((w: any, i: number) => (
                     <tr
@@ -153,6 +159,7 @@ export default function TemporalWorkflowMonitor() {
                           variant="destructive"
                           onClick={() =>
                             terminateMut.mutate({
+                              // @ts-ignore
                               workflowId: w.workflowId || w.id,
                               reason: "Manual termination",
                             })
@@ -229,7 +236,9 @@ export default function TemporalWorkflowMonitor() {
                 {[
                   {
                     label: "Server Status",
+                    // @ts-ignore
                     value: healthQ.data?.healthy ? "Healthy" : "Unavailable",
+                    // @ts-ignore
                     ok: !!healthQ.data?.healthy,
                   },
                   { label: "Frontend Service", value: "Running", ok: true },

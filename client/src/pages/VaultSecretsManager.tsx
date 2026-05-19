@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,12 +10,16 @@ export default function VaultSecretsManager() {
     "paths"
   );
 
+  // @ts-ignore
   const healthQ = trpc.vault.health.useQuery(undefined, {
     retry: false,
     refetchInterval: 30000,
   });
+  // @ts-ignore
   const pathsQ = trpc.vault.listPaths.useQuery(undefined, { retry: false });
+  // @ts-ignore
   const summaryQ = trpc.vault.summary.useQuery(undefined, { retry: false });
+  // @ts-ignore
   const rotateMut = trpc.vault.rotateSecret.useMutation({
     onSuccess: () => {
       toast.success("Secret rotated");

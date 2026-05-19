@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function ComplianceReporting() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.complianceReporting.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Reports",
+      // @ts-ignore
       value: stats?.totalReports != null ? String(stats.totalReports) : "—",
     },
     {
       label: "Cbn Reports",
+      // @ts-ignore
       value: stats?.cbnReports != null ? String(stats.cbnReports) : "—",
     },
     {
       label: "Ndpr Reports",
+      // @ts-ignore
       value: stats?.ndprReports != null ? String(stats.ndprReports) : "—",
     },
     {
       label: "Pci Dss Reports",
+      // @ts-ignore
       value: stats?.pciDssReports != null ? String(stats.pciDssReports) : "—",
     },
   ];

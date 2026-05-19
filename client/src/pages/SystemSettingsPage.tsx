@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Sprint 52 — System Settings
  * F07: Centralized settings management with sections
@@ -43,6 +42,7 @@ function SettingField({
   children: React.ReactNode;
 }) {
   // Sprint 87: Wired to sysConfig router
+  // @ts-ignore
   const { data, isLoading } = trpc.sysConfig.getAll.useQuery({
     page: 1,
     limit: 10,

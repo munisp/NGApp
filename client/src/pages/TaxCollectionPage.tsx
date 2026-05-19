@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
@@ -9,9 +8,13 @@ import { Receipt, Building2, FileText, BarChart3 } from "lucide-react";
 
 export default function TaxCollectionPage() {
   const [tab, setTab] = useState<"payments" | "types" | "agents">("payments");
+  // @ts-ignore
   const payments = trpc.taxCollection.history.useQuery({ limit: 20 });
+  // @ts-ignore
   const taxTypes = trpc.taxCollection.taxTypes.useQuery();
+  // @ts-ignore
   const agentPerformance = trpc.taxCollection.history.useQuery({ limit: 20 });
+  // @ts-ignore
   const analytics = trpc.taxCollection.analytics.useQuery();
 
   return (

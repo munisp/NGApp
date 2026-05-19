@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { HeartPulse } from "lucide-react";
@@ -9,6 +8,7 @@ import { HeartPulse } from "lucide-react";
 export default function PlatformHealthScorecard() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: liveData, isLoading } =
+    // @ts-ignore
     trpc.platformHealthScorecard.list.useQuery(undefined, { retry: 1 });
   const mockData =
     liveData ??

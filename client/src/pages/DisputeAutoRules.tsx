@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,11 +73,14 @@ export default function DisputeAutoRules() {
   >("auto_refund");
   const [newMaxAmount, setNewMaxAmount] = useState("50000");
 
+  // @ts-ignore
   const rules = trpc.sprint23.disputeAutoRules.list.useQuery();
   const utils = trpc.useUtils();
 
+  // @ts-ignore
   const createMutation = trpc.sprint23.disputeAutoRules.create.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.disputeAutoRules.list.invalidate();
       toast.success("Rule created");
       setDialogOpen(false);
@@ -90,6 +92,7 @@ export default function DisputeAutoRules() {
   // Test evaluation
   const [testAmount, setTestAmount] = useState("3000");
   const [testReason, setTestReason] = useState("duplicate charge");
+  // @ts-ignore
   const testResult = trpc.sprint23.disputeAutoRules.evaluate.useQuery(
     {
       amount: parseFloat(testAmount) || 0,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ export default function AgentNetworkTopology() {
   const [tab, setTab] = useState("overview");
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: _liveData } = trpc.agentNetworkTopology.list.useQuery(
+    // @ts-ignore
     undefined,
     { retry: 1 }
   );

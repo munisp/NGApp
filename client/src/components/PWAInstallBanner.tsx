@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * PWAInstallBanner — Displays a non-intrusive banner prompting users to install
  * the 54Link POS Shell as a PWA. Automatically hides if already installed or

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {

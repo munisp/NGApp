@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
@@ -106,9 +105,11 @@ export default function NotificationPreferenceMatrix() {
     new Map()
   );
 
+  // @ts-ignore
   const matrixQuery = trpc.production.prefMatrix.getMatrix.useQuery({
     agentId,
   });
+  // @ts-ignore
   const bulkUpdate = trpc.production.prefMatrix.bulkUpdate.useMutation({
     onSuccess: () => {
       toast.success("Preferences saved");
@@ -117,6 +118,7 @@ export default function NotificationPreferenceMatrix() {
     },
     onError: () => toast.error("Failed to save preferences"),
   });
+  // @ts-ignore
   const resetMut = trpc.production.prefMatrix.resetToDefaults.useMutation({
     onSuccess: () => {
       toast.success("Reset to defaults");

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ export default function MultiCurrencyExchange() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.multiCurrencyExchange.getStats.useQuery();
   const stats = statsQuery.data;
 
@@ -20,23 +20,29 @@ export default function MultiCurrencyExchange() {
     {
       label: "Supported Currencies",
       value:
+        // @ts-ignore
         stats?.supportedCurrencies != null
+          // @ts-ignore
           ? String(stats.supportedCurrencies)
           : "—",
     },
     {
       label: "Active Pairs",
+      // @ts-ignore
       value: stats?.activePairs != null ? String(stats.activePairs) : "—",
     },
     {
       label: "Daily Volume",
       value:
+        // @ts-ignore
         stats?.dailyVolume != null
+          // @ts-ignore
           ? String(stats.dailyVolume.toLocaleString())
           : "—",
     },
     {
       label: "Avg Spread",
+      // @ts-ignore
       value: stats?.avgSpread != null ? String(stats.avgSpread) : "—",
     },
   ];

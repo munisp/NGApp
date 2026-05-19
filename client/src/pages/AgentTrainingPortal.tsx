@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,25 +12,30 @@ export default function AgentTrainingPortal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.agentTrainingPortal.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Courses",
+      // @ts-ignore
       value: stats?.totalCourses != null ? String(stats.totalCourses) : "—",
     },
     {
       label: "Total Enrollments",
       value:
+        // @ts-ignore
         stats?.totalEnrollments != null ? String(stats.totalEnrollments) : "—",
     },
     {
       label: "Completion Rate",
+      // @ts-ignore
       value: stats?.completionRate != null ? String(stats.completionRate) : "—",
     },
     {
       label: "Avg Quiz Score",
+      // @ts-ignore
       value: stats?.avgQuizScore != null ? String(stats.avgQuizScore) : "—",
     },
   ];

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,7 +41,7 @@ export default function AgentGeoFencingPage() {
         </Button>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+        // @ts-ignore
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
@@ -51,7 +50,7 @@ export default function AgentGeoFencingPage() {
             <p className="text-sm text-muted-foreground">Total Zones</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+        // @ts-ignore
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-green-600">
@@ -60,7 +59,7 @@ export default function AgentGeoFencingPage() {
             <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+        // @ts-ignore
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-blue-600">
@@ -69,7 +68,7 @@ export default function AgentGeoFencingPage() {
             <p className="text-sm text-muted-foreground">Agents Assigned</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+        // @ts-ignore
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-red-600">

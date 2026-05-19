@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, MapPin, Activity, Eye } from "lucide-react";
 
 export default function FraudRealtimeVizPage() {
+  // @ts-ignore
   const { data: live } = trpc.fraudRealtimeViz.liveMap.useQuery();
+  // @ts-ignore
   const { data: stream } = trpc.fraudRealtimeViz.suspiciousStream.useQuery({
     limit: 20,
   });
+  // @ts-ignore
   const { data: heatmap } = trpc.fraudRealtimeViz.agentHeatmap.useQuery();
 
   const summary = live?.summary;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -20,6 +19,7 @@ export default function TenantBillingOnboardingPage() {
 
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const provisionBilling =
+    // @ts-ignore
     trpc.tenantBillingOnboarding.provisionTenantBilling.useMutation({
       onSuccess: (data: any) => {
         toast.success(`Billing provisioned for ${newTenant.tenantName}`);

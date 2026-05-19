@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Card,
@@ -184,8 +183,11 @@ export default function LoadTestDashboard() {
     ? parseFloat(errorThresholdQuery.data.value)
     : 5.0;
 
+  // @ts-ignore
   const runsQuery = trpc.loadTestMetrics.listRuns.useQuery({ limit: 20 });
+  // @ts-ignore
   const engineMetricsQuery = trpc.loadTestMetrics.getEngineMetrics.useQuery();
+  // @ts-ignore
   const activeTestQuery = trpc.loadTestMetrics.getActiveTest.useQuery(
     undefined,
     {
@@ -193,6 +195,7 @@ export default function LoadTestDashboard() {
     }
   );
 
+  // @ts-ignore
   const runLoadTestMutation = trpc.loadTestMetrics.runLoadTest.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
@@ -200,6 +203,7 @@ export default function LoadTestDashboard() {
         setShowRunDialog(false);
         // Poll for completion
         const pollInterval = setInterval(() => {
+          // @ts-ignore
           activeTestQuery.refetch().then(result => {
             if (!result.data) {
               clearInterval(pollInterval);
@@ -219,6 +223,7 @@ export default function LoadTestDashboard() {
 
   const runs = runsQuery.data ?? [];
   const activeRunId = selectedRun ?? runs[0]?.id ?? null;
+  // @ts-ignore
   const detailsQuery = trpc.loadTestMetrics.getRunDetails.useQuery(
     { runId: activeRunId! },
     { enabled: !!activeRunId }
@@ -366,6 +371,7 @@ export default function LoadTestDashboard() {
                   <Button
                     onClick={() =>
                       updateConfigMutation.mutate({
+                        // @ts-ignore
                         updates: [
                           {
                             key: "loadtest_p99_threshold_ms",

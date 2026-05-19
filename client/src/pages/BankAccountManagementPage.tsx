@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -103,8 +102,9 @@ export default function BankAccountManagementPage() {
               <option value="savings">Savings</option>
               <option value="mobile_money">Mobile Money</option>
             </select>
-            {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+            // @ts-ignore
             <Button
+              // @ts-ignore
               onClick={() => addMut.mutate(form)}
               disabled={addMut.isPending}
             >

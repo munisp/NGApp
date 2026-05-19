@@ -35,14 +35,12 @@ export default function CommissionClawbackPage() {
         </p>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">{data?.summary?.total || 0}</p>
             <p className="text-sm text-muted-foreground">Total Clawbacks</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-yellow-600">
@@ -51,7 +49,6 @@ export default function CommissionClawbackPage() {
             <p className="text-sm text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-green-600">
@@ -60,7 +57,6 @@ export default function CommissionClawbackPage() {
             <p className="text-sm text-muted-foreground">Approved</p>
           </CardContent>
         </Card>
-        {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-red-600">

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -68,6 +67,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Create Payout Batch",
                   description: "Feature ready for integration",
                 });
@@ -80,6 +80,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Edit Payout",
                   description: "Select a payout to edit",
                 });
@@ -92,6 +93,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Delete Payout",
                   description: "Select a payout to delete",
                 });
@@ -250,6 +252,7 @@ export default function MerchantPayoutSettlementPage() {
                       {p.status === "pending" && (
                         // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                         <button
+                          // @ts-ignore
                           onClick={() => approveMutation.mutate({ id: p.id })}
                           className="p-1.5 hover:bg-emerald-700/30 rounded-lg"
                         >

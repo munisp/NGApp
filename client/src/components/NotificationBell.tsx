@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * NotificationBell — Header button that shows unread count and manages
  * Web Push notification permission for the 54Link POS Shell.

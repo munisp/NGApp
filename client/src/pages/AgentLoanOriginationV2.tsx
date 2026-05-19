@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Landmark } from "lucide-react";
@@ -9,6 +8,7 @@ import { Landmark } from "lucide-react";
 export default function AgentLoanOriginationV2() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: liveData, isLoading } = trpc.agentLoanOrigination.list.useQuery(
+    // @ts-ignore
     undefined,
     { retry: 1 }
   );
@@ -58,6 +58,7 @@ export default function AgentLoanOriginationV2() {
 
   const columns = ["Application ID", "Agent", "Amount", "Status", "Date"];
 
+  // @ts-ignore
   const filtered = mockData.filter(
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     r =>

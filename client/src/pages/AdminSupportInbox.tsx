@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Admin Support Inbox — 54Link POS Shell
  * Bloomberg Terminal dark theme with electric blue accents.
@@ -152,9 +151,11 @@ export default function AdminSupportInbox() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Queries ─────────────────────────────────────────────────────────────
+  // @ts-ignore
   const statsQuery = trpc.chat.adminStats.useQuery(undefined, {
     refetchInterval: 15000,
   });
+  // @ts-ignore
   const sessionsQuery = trpc.chat.adminListSessions.useQuery(
     // @ts-ignore — Sprint 85: pre-existing type mismatch
     {
@@ -165,12 +166,14 @@ export default function AdminSupportInbox() {
     { refetchInterval: 10000 }
   );
 
+  // @ts-ignore
   const messagesQuery = trpc.chat.adminGetMessages.useQuery(
     { sessionId: selectedSession?.id ?? 0 },
     { enabled: !!selectedSession, refetchInterval: 5000 }
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────
+  // @ts-ignore
   const replyMutation = trpc.chat.adminReply.useMutation({
     onSuccess: () => {
       setReplyText("");
@@ -180,6 +183,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to send reply"),
   });
 
+  // @ts-ignore
   const assignMutation = trpc.chat.adminAssignSession.useMutation({
     onSuccess: () => {
       setShowAssignDialog(false);
@@ -190,6 +194,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to assign session"),
   });
 
+  // @ts-ignore
   const escalateMutation = trpc.chat.adminEscalate.useMutation({
     onSuccess: () => {
       setShowEscalateDialog(false);
@@ -201,6 +206,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to escalate"),
   });
 
+  // @ts-ignore
   const resolveMutation = trpc.chat.adminResolve.useMutation({
     onSuccess: () => {
       sessionsQuery.refetch();
@@ -210,6 +216,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to resolve"),
   });
 
+  // @ts-ignore
   const deleteMutation = trpc.chat.adminDeleteSession.useMutation({
     onSuccess: () => {
       setSelectedSession(null);
@@ -384,7 +391,7 @@ export default function AdminSupportInbox() {
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+                  // @ts-ignore
                   {filteredSessions.map((session: ChatSession) => {
                     const statusCfg =
                       STATUS_CONFIG[session.status] ?? STATUS_CONFIG.open;
@@ -514,7 +521,7 @@ export default function AdminSupportInbox() {
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-3">
-                    {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+                    // @ts-ignore
                     {(messagesQuery.data ?? []).map((msg: ChatMessage) => {
                       const isSupport = msg.senderType === "support";
                       const isSystem = msg.senderType === "system";

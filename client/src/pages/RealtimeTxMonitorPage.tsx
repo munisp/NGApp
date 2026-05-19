@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -78,6 +77,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Create Alert Rule",
                   description: "Feature ready for integration",
                 });
@@ -90,6 +90,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Edit Alert",
                   description: "Select a alert to edit",
                 });
@@ -102,6 +103,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Delete Alert",
                   description: "Select a alert to delete",
                 });

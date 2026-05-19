@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 export default function IntegrationMarketplacePage() {
   const [search, setSearch] = useState("");
   const { data, isLoading, refetch } =
+    // @ts-ignore
     trpc.integrationMarketplace.dashboard.useQuery();
   if (isLoading)
     return (

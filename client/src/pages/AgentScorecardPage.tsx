@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 export default function AgentScorecardPage() {
   const [agentId, setAgentId] = useState("");
+  // @ts-ignore
   const { data, isLoading } = trpc.agentScorecard.dashboard.useQuery();
+  // @ts-ignore
   const agentScore = trpc.agentScorecard.getAgentScore.useQuery(
     { agentId: agentId || "AGT-001" },
     { enabled: !!agentId }

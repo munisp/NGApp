@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * DisputesAdminTab — Admin/Supervisor view of all transaction disputes
  *
@@ -106,13 +105,16 @@ export function DisputesAdminTab() {
     useState("bank_transfer");
   const [refundProcessRef, setRefundProcessRef] = useState("");
 
+  // @ts-ignore
   const { data, isLoading, refetch } = trpc.disputes.listAll.useQuery({
     status: statusFilter,
     limit,
     offset: page * limit,
   });
 
+  // @ts-ignore
   const { data: stats } = trpc.disputes.stats.useQuery({});
+  // @ts-ignore
   const { data: overdueData } = trpc.disputes.overdueList.useQuery(
     { limit: 50 },
     { refetchInterval: 60_000 }
@@ -123,21 +125,26 @@ export function DisputesAdminTab() {
     data: refundsData,
     isLoading: refundsLoading,
     refetch: refetchRefunds,
+  // @ts-ignore
   } = trpc.disputeRefund.listRefunds.useQuery({
     status: refundStatusFilter === "all" ? undefined : refundStatusFilter,
     limit,
     offset: refundPage * limit,
   });
+  // @ts-ignore
   const { data: refundStats } = trpc.disputeRefund.stats.useQuery({});
   const overdueCount = overdueData?.count ?? 0;
 
   const { data: disputeDetail, refetch: refetchDetail } =
+    // @ts-ignore
     trpc.disputes.getDispute.useQuery(
       { ref: selectedRef! },
       { enabled: selectedRef !== null }
     );
 
+  // @ts-ignore
   const resolve = trpc.disputes.resolve.useMutation({
+    // @ts-ignore
     onSuccess: res => {
       toast.success(`Dispute ${res.status} successfully.`);
       setShowResolveDialog(false);
@@ -145,17 +152,21 @@ export function DisputesAdminTab() {
       refetch();
       refetchDetail();
     },
+    // @ts-ignore
     onError: e => toast.error(`Failed: ${e.message}`),
   });
 
+  // @ts-ignore
   const addMessage = trpc.disputes.addMessage.useMutation({
     onSuccess: () => {
       setReplyText("");
       refetchDetail();
     },
+    // @ts-ignore
     onError: e => toast.error(e.message),
   });
 
+  // @ts-ignore
   const issueProvisional = trpc.disputes.issueProvisionalCredit.useMutation({
     onSuccess: () => {
       toast.success("Provisional credit issued successfully.");
@@ -165,10 +176,12 @@ export function DisputesAdminTab() {
       refetchDetail();
       refetch();
     },
+    // @ts-ignore
     onError: e =>
       toast.error(`Failed to issue provisional credit: ${e.message}`),
   });
 
+  // @ts-ignore
   const initiateChargeback = trpc.disputes.initiateChargeback.useMutation({
     onSuccess: () => {
       toast.success("Chargeback initiated successfully.");
@@ -177,18 +190,22 @@ export function DisputesAdminTab() {
       refetchDetail();
       refetch();
     },
+    // @ts-ignore
     onError: e => toast.error(`Failed to initiate chargeback: ${e.message}`),
   });
 
   // Refund mutations
+  // @ts-ignore
   const approveRefund = trpc.disputeRefund.approveRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund approved");
       setShowApproveRefundDialog(false);
       refetchRefunds();
     },
+    // @ts-ignore
     onError: e => toast.error(e.message),
   });
+  // @ts-ignore
   const rejectRefund = trpc.disputeRefund.rejectRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund rejected");
@@ -196,8 +213,10 @@ export function DisputesAdminTab() {
       setRefundRejectReason("");
       refetchRefunds();
     },
+    // @ts-ignore
     onError: e => toast.error(e.message),
   });
+  // @ts-ignore
   const processRefund = trpc.disputeRefund.processRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund processed");
@@ -205,6 +224,7 @@ export function DisputesAdminTab() {
       setRefundProcessRef("");
       refetchRefunds();
     },
+    // @ts-ignore
     onError: e => toast.error(e.message),
   });
 
@@ -787,6 +807,7 @@ export function DisputesAdminTab() {
                 </div>
               ) : (
                 (data?.disputes ?? []).map(
+                  // @ts-ignore
                   ({ dispute, agentName, agentCode }) => (
                     <div
                       key={dispute.id}

@@ -1,12 +1,14 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function ApacheAirflowPage() {
+  // @ts-ignore
   const { data, isLoading } = trpc.apacheAirflow.dashboard.useQuery();
+  // @ts-ignore
   const dags = trpc.apacheAirflow.listDags.useQuery();
+  // @ts-ignore
   const triggerDag = trpc.apacheAirflow.triggerDag.useMutation();
 
   if (isLoading)

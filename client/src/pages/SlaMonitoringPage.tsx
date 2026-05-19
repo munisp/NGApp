@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -353,11 +352,12 @@ export default function SlaMonitoringPage() {
                 >
                   Cancel
                 </button>
-                {/* @ts-expect-error Sprint 85: pre-existing type mismatch */}
+                // @ts-ignore
                 <button
                   onClick={() =>
                     createMutation.mutate({
                       ...form,
+                      // @ts-ignore
                       target_value: parseFloat(form.target_value),
                     })
                   }

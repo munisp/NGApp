@@ -1,4 +1,3 @@
-// @ts-nocheck
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Card,
@@ -75,7 +74,9 @@ function formatDuration(ms: number): string {
 
 export default function ArchivalAdmin() {
   const utils = trpc.useUtils();
+  // @ts-ignore
   const statsQuery = trpc.archivalAdmin.getStats.useQuery();
+  // @ts-ignore
   const historyQuery = trpc.archivalAdmin.getHistory.useQuery({ limit: 20 });
 
   const [triggerOpen, setTriggerOpen] = useState(false);
@@ -91,14 +92,18 @@ export default function ArchivalAdmin() {
   const [schedRetention, setSchedRetention] = useState(90);
   const [schedDelete, setSchedDelete] = useState(false);
 
+  // @ts-ignore
   const triggerMutation = trpc.archivalAdmin.triggerArchival.useMutation({
+    // @ts-ignore
     onSuccess: data => {
       if (data.success) {
         toast.success(`Archival job ${data.jobId} started`);
         setTriggerOpen(false);
         // Poll for completion
         const poll = setInterval(() => {
+          // @ts-ignore
           utils.archivalAdmin.getStats.invalidate();
+          // @ts-ignore
           utils.archivalAdmin.getHistory.invalidate();
         }, 3000);
         setTimeout(() => clearInterval(poll), 120000);
@@ -106,15 +111,19 @@ export default function ArchivalAdmin() {
         toast.error(data.error ?? "Failed to start archival job");
       }
     },
+    // @ts-ignore
     onError: err => toast.error(`Error: ${err.message}`),
   });
 
+  // @ts-ignore
   const scheduleMutation = trpc.archivalAdmin.updateSchedule.useMutation({
     onSuccess: () => {
       toast.success("Archival schedule updated");
       setScheduleOpen(false);
+      // @ts-ignore
       utils.archivalAdmin.getStats.invalidate();
     },
+    // @ts-ignore
     onError: err => toast.error(`Error: ${err.message}`),
   });
 
@@ -148,7 +157,9 @@ export default function ArchivalAdmin() {
               size="sm"
               variant="outline"
               onClick={() => {
+                // @ts-ignore
                 utils.archivalAdmin.getStats.invalidate();
+                // @ts-ignore
                 utils.archivalAdmin.getHistory.invalidate();
                 toast.success("Refreshed");
               }}

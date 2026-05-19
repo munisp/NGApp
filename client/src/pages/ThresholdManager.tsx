@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,12 +42,16 @@ export default function ThresholdManager() {
     "critical" | "warning" | "info"
   >("warning");
 
+  // @ts-ignore
   const thresholds = trpc.sprint23.thresholds.list.useQuery();
+  // @ts-ignore
   const evaluation = trpc.sprint23.thresholds.evaluate.useQuery();
   const utils = trpc.useUtils();
 
+  // @ts-ignore
   const createMutation = trpc.sprint23.thresholds.create.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.thresholds.list.invalidate();
       toast.success("Threshold created");
       setDialogOpen(false);
@@ -58,15 +61,19 @@ export default function ThresholdManager() {
     },
   });
 
+  // @ts-ignore
   const updateMutation = trpc.sprint23.thresholds.update.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.thresholds.list.invalidate();
       toast.success("Threshold updated");
     },
   });
 
+  // @ts-ignore
   const deleteMutation = trpc.sprint23.thresholds.delete.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.thresholds.list.invalidate();
       toast.success("Threshold deleted");
     },

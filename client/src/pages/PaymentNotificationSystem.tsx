@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +12,29 @@ export default function PaymentNotificationSystem() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
+  // @ts-ignore
   const statsQuery = trpc.paymentNotificationSystem.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Sent",
+      // @ts-ignore
       value: stats?.totalSent != null ? String(stats.totalSent) : "—",
     },
     {
       label: "Delivered",
+      // @ts-ignore
       value: stats?.delivered != null ? String(stats.delivered) : "—",
     },
     {
       label: "Failed",
+      // @ts-ignore
       value: stats?.failed != null ? String(stats.failed) : "—",
     },
     {
       label: "Delivery Rate",
+      // @ts-ignore
       value: stats?.deliveryRate != null ? String(stats.deliveryRate) : "—",
     },
   ];

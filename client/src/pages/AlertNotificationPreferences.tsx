@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 93: production build compatibility
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -73,27 +72,36 @@ export default function AlertNotificationPreferences() {
     data: preferences,
     isLoading: loadingPrefs,
     refetch: refetchPrefs,
+  // @ts-ignore
   } = trpc.alertNotifications.listPreferences.useQuery();
   const { data: deliveryStats, isLoading: loadingStats } =
+    // @ts-ignore
     trpc.alertNotifications.getDeliveryStats.useQuery();
   const { data: escalationRules } =
+    // @ts-ignore
     trpc.alertNotifications.listEscalationRules.useQuery();
   const { data: deliveryHistory, refetch: refetchHistory } =
+    // @ts-ignore
     trpc.alertNotifications.getDeliveryHistory.useQuery({ limit: 20 });
 
+  // @ts-ignore
   const updatePref = trpc.alertNotifications.updatePreference.useMutation({
     onSuccess: () => {
       toast("Preferences updated successfully");
       refetchPrefs();
     },
+    // @ts-ignore
     onError: err => toast.error(`Failed to update: ${err.message}`),
   });
 
+  // @ts-ignore
   const updateRule = trpc.alertNotifications.updateEscalationRule.useMutation({
     onSuccess: () => toast("Escalation rule updated"),
   });
 
+  // @ts-ignore
   const sendTest = trpc.alertNotifications.sendTestAlert.useMutation({
+    // @ts-ignore
     onSuccess: data => {
       if (data.success) {
         toast.success(`Test alert sent! ${data.deliveryCount} deliveries`);
@@ -102,6 +110,7 @@ export default function AlertNotificationPreferences() {
       }
       refetchHistory();
     },
+    // @ts-ignore
     onError: err => toast.error(`Test failed: ${err.message}`),
   });
 

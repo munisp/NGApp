@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
@@ -11,9 +10,13 @@ export default function RemittancePage() {
   const [tab, setTab] = useState<"transfers" | "corridors" | "rates">(
     "transfers"
   );
+  // @ts-ignore
   const transfers = trpc.remittanceDedicated.history.useQuery({ limit: 20 });
+  // @ts-ignore
   const corridors = trpc.remittanceDedicated.partners.useQuery();
+  // @ts-ignore
   const rates = trpc.remittanceDedicated.analytics.useQuery();
+  // @ts-ignore
   const analytics = trpc.remittanceDedicated.analytics.useQuery();
 
   return (

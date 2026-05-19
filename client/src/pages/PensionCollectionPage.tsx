@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
@@ -11,9 +10,13 @@ export default function PensionCollectionPage() {
   const [tab, setTab] = useState<"contributions" | "pfas" | "employers">(
     "contributions"
   );
+  // @ts-ignore
   const contributions = trpc.pensionCollection.history.useQuery({ limit: 20 });
+  // @ts-ignore
   const pfas = trpc.pensionCollection.pfas.useQuery();
+  // @ts-ignore
   const employers = trpc.pensionCollection.history.useQuery({ limit: 20 });
+  // @ts-ignore
   const analytics = trpc.pensionCollection.analytics.useQuery();
 
   return (

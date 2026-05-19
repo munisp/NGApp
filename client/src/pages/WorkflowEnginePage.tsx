@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -177,6 +176,7 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
+                // @ts-ignore
                 : (defsQuery.data ?? []).map((d: any) => (
                     <tr
                       key={d.id}
@@ -246,6 +246,7 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
+                // @ts-ignore
                 : (instancesQuery.data ?? []).map((inst: any) => (
                     <tr
                       key={inst.id}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -93,6 +92,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Add KYC Document",
                   description: "Feature ready for integration",
                 });
@@ -105,6 +105,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Edit Document",
                   description: "Select a kyc document to edit",
                 });
@@ -117,6 +118,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Delete Document",
                   description: "Select a kyc document to delete",
                 });

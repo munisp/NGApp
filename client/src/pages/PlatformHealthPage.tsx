@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -53,6 +52,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Add Health Check",
                   description: "Feature ready for integration",
                 });
@@ -65,6 +65,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Edit Check",
                   description: "Select a health check to edit",
                 });
@@ -77,6 +78,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
+                  // @ts-ignore
                   title: "Delete Check",
                   description: "Select a health check to delete",
                 });

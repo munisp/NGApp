@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 /**
  * Sprint 52 — Agent Performance Leaderboard
@@ -157,6 +156,7 @@ function LeaderboardContent() {
   const [search, setSearch] = useState("");
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: _liveData } = trpc.agentPerformanceLeaderboard.list.useQuery(
+    // @ts-ignore
     undefined,
     { retry: 1 }
   );

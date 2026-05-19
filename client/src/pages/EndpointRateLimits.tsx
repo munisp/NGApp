@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,11 +21,14 @@ export default function EndpointRateLimits() {
   const [newMaxReqs, setNewMaxReqs] = useState("100");
   const [newWindowMs, setNewWindowMs] = useState("60000");
 
+  // @ts-ignore
   const limits = trpc.sprint23.rateLimits.list.useQuery();
   const utils = trpc.useUtils();
 
+  // @ts-ignore
   const setMutation = trpc.sprint23.rateLimits.set.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.rateLimits.list.invalidate();
       toast.success("Rate limit configured");
       setDialogOpen(false);

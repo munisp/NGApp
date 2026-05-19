@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -98,6 +97,7 @@ export default function InvoiceManagementPage() {
           onClick={() =>
             generateInvoice.mutate({
               tenantId,
+              // @ts-ignore
               billingModel,
               periodStart: new Date(
                 new Date().getFullYear(),

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 // SECURITY: SQL template literals in this file are for display/mock purposes only. All actual DB queries use parameterized Drizzle ORM.
 /**
  * SystemConfigTab — Admin-settable key-value configuration table

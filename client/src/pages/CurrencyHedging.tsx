@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +9,11 @@ import { trpc } from "@/lib/trpc";
 
 export default function CurrencyHedging() {
   const [search, setSearch] = useState("");
+  // @ts-ignore
   const stats = trpc.currencyHedging.getStats.useQuery();
+  // @ts-ignore
   const list = trpc.currencyHedging.listPositions.useQuery();
+  // @ts-ignore
   const action = trpc.currencyHedging.createHedge.useMutation({
     onSuccess: () => toast.success("Create Hedge completed successfully"),
     onError: (e: any) => toast.error(e.message),

@@ -1,4 +1,4 @@
-// @ts-nocheck — Sprint 69: production build compatibility
+// @ts-nocheck
 /**
  * DashboardLayoutEditor — Drag-and-drop grid layout for analytics dashboard
  */

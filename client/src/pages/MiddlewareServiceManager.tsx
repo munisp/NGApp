@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,16 +19,19 @@ export default function MiddlewareServiceManager() {
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Total Services",
+      // @ts-ignore
       value: stats?.totalServices != null ? String(stats.totalServices) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Healthy",
+      // @ts-ignore
       value: stats?.healthy != null ? String(stats.healthy) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Degraded",
+      // @ts-ignore
       value: stats?.degraded != null ? String(stats.degraded) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface

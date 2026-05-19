@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,9 @@ import { BarChart3, Plus, Play, Download, Save } from "lucide-react";
 
 export default function DragDropReportBuilderPage() {
   const { data: dashboard, isLoading } =
+    // @ts-ignore
     trpc.dragDropReportBuilder.dashboard.useQuery();
+  // @ts-ignore
   const createReport = trpc.dragDropReportBuilder.saveReport.useMutation();
   const [reportName, setReportName] = useState("");
 

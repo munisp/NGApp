@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * SimOrchestratorTab — Admin Panel tab for the intelligent SIM Orchestrator
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * CustomerPortal.tsx
  *
@@ -96,10 +95,12 @@ export default function CustomerPortal() {
       retry: false,
     }
   );
+  // @ts-ignore
   const refundsQ = trpc.disputeRefund.listRefunds.useQuery(
     { limit: 20 },
     { enabled: tab === "disputes" && disputeSubTab === "refunds" }
   );
+  // @ts-ignore
   const refundStatsQ = trpc.disputeRefund.stats.useQuery(
     {},
     { enabled: tab === "disputes" }
@@ -126,10 +127,14 @@ export default function CustomerPortal() {
     },
     onError: e => toast.error("Error", { description: e.message }),
   });
+  // @ts-ignore
   const requestRefund = trpc.disputeRefund.requestRefund.useMutation({
+    // @ts-ignore
     onSuccess: res => {
       toast.success("Refund requested: " + res.refundRef);
+      // @ts-ignore
       utils.disputeRefund.listRefunds.invalidate();
+      // @ts-ignore
       utils.disputeRefund.stats.invalidate();
       setRefundOpen(false);
       setRefundForm({
@@ -139,6 +144,7 @@ export default function CustomerPortal() {
         amount: "",
       });
     },
+    // @ts-ignore
     onError: e => toast.error("Error", { description: e.message }),
   });
   const initiateKyc = trpc.customer.kyc.initiate.useMutation({
@@ -840,6 +846,7 @@ export default function CustomerPortal() {
                 </Label>
                 <Input
                   className="mt-1 h-8 text-sm"
+                  // @ts-ignore
                   value={profileForm[key]}
                   onChange={e =>
                     setProfileForm(f => ({ ...f, [key]: e.target.value }))

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,25 +58,34 @@ export default function KycVerificationWorkflow() {
   const [reviewId, setReviewId] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
+  // @ts-ignore
   const agentStatus = trpc.sprint23.kycVerification.agentStatus.useQuery({
     agentId,
   });
   const pendingReviews =
+    // @ts-ignore
     trpc.sprint23.kycVerification.pendingReviews.useQuery();
   const utils = trpc.useUtils();
 
+  // @ts-ignore
   const submitMutation = trpc.sprint23.kycVerification.submit.useMutation({
     onSuccess: () => {
+      // @ts-ignore
       utils.sprint23.kycVerification.agentStatus.invalidate();
+      // @ts-ignore
       utils.sprint23.kycVerification.pendingReviews.invalidate();
       toast.success("Document submitted for verification");
       setDocUrl("");
     },
   });
 
+  // @ts-ignore
   const reviewMutation = trpc.sprint23.kycVerification.review.useMutation({
+    // @ts-ignore
     onSuccess: (_: any, vars) => {
+      // @ts-ignore
       utils.sprint23.kycVerification.agentStatus.invalidate();
+      // @ts-ignore
       utils.sprint23.kycVerification.pendingReviews.invalidate();
       toast.success(`Document ${vars.decision}`);
       setReviewId("");

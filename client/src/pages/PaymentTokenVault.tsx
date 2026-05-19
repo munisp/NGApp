@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +9,13 @@ import { trpc } from "@/lib/trpc";
 
 export default function PaymentTokenVault() {
   const [search, setSearch] = useState("");
+  // @ts-ignore
   const stats = trpc.paymentTokenVault.getStats.useQuery();
+  // @ts-ignore
   const list = trpc.paymentTokenVault.listTokens.useQuery({
     status: undefined,
   });
+  // @ts-ignore
   const action = trpc.paymentTokenVault.createToken.useMutation({
     onSuccess: () => toast.success("Create Token completed successfully"),
     onError: (e: any) => toast.error(e.message),
