@@ -5,36 +5,6 @@ import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const cardRequestRouter = router({
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(transactions)
-        .orderBy(desc(transactions.id))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(transactions);
-
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
-    }),
-
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
@@ -87,16 +57,26 @@ export const cardRequestRouter = router({
       return results;
     }),
 
-  analytics: protectedProcedure.query(async () => {
-    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
-  }),
-
-  // ── Sprint 28 domain procedures ──
   list: publicProcedure.query(async () => {
-    return { requests: [{ id: "CR-001", agentId: "AGT-001", cardType: "debit", status: "delivered", requestedAt: "2024-06-01" }], total: 1 };
+    return {
+      requests: [
+        {
+          id: "CR-001",
+          agentId: "AGT-001",
+          cardType: "debit",
+          status: "delivered",
+          requestedAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { total: 300, byStatus: { delivered: 250, pending: 30, rejected: 20 }, byType: { debit: 200, prepaid: 100 }, avgDeliveryDays: 7 };
+    return {
+      total: 300,
+      byStatus: { delivered: 250, pending: 30, rejected: 20 },
+      byType: { debit: 200, prepaid: 100 },
+      avgDeliveryDays: 7,
+    };
   }),
-
 });

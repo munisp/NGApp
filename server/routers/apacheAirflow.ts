@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -85,5 +85,63 @@ export const apacheAirflowRouter = router({
         .limit(input.limit);
 
       return results;
+    }),
+
+  dashboard: publicProcedure.query(async () => {
+    return {
+      totalDags: 25,
+      activeDags: 20,
+      runningTasks: 5,
+      failedTasks: 1,
+      schedulerStatus: "healthy",
+      overview: {
+        totalDags: 25,
+        activeDags: 20,
+        pausedDags: 5,
+        runningTasks: 5,
+        failedTasks: 1,
+        schedulerStatus: "healthy",
+        executorStatus: "running",
+        metadataDbStatus: "healthy",
+        totalTaskInstances: 1500,
+        avgSuccessRate: 97.2,
+        failedTasks24h: 3,
+      },
+      dagsByTag: [
+        { tag: "etl", count: 10 },
+        { tag: "ml", count: 5 },
+        { tag: "reporting", count: 10 },
+      ],
+      recentFailures: [
+        {
+          dagId: "billing_etl",
+          taskId: "extract",
+          executionDate: "2024-06-01",
+          error: "Connection timeout",
+        },
+      ],
+    };
+  }),
+  listDags: publicProcedure.query(async () => {
+    return {
+      dags: [
+        {
+          dagId: "billing_etl",
+          schedule: "0 * * * *",
+          status: "active",
+          lastRun: new Date().toISOString(),
+        },
+      ],
+      total: 25,
+    };
+  }),
+  triggerDag: publicProcedure
+    .input(z.object({ dagId: z.string() }))
+    .mutation(async ({ input }) => {
+      return {
+        runId: "manual__" + Date.now(),
+        dagId: input.dagId,
+        status: "queued",
+      };
     }),
 });

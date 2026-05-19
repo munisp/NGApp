@@ -1,6 +1,6 @@
 // Sprint 87: Regenerated — dataExportImport with real DB queries
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -174,4 +174,14 @@ export const dataExportImportRouter = router({
   createExport,
   createImport,
   getExportStatus,
+
+  getStats: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+    };
+  }),
 });

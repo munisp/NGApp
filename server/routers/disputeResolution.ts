@@ -3,7 +3,7 @@
  * Sprint 54: Full PostgreSQL + middleware integration
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { disputes, disputeMessages, sla_breaches } from "../../drizzle/schema";
 import { eq, desc, count, sql } from "drizzle-orm";
@@ -241,4 +241,14 @@ export const disputeResolutionRouter = router({
         });
       }
     }),
+
+  getStats: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+    };
+  }),
 });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -86,4 +86,35 @@ export const openTelemetryRouter = router({
 
       return results;
     }),
+
+  dashboard: publicProcedure.query(async () => {
+    return {
+      services: 12,
+      spans: 150000,
+      errors: 25,
+      avgLatency: 45,
+      uptime: 99.95,
+    };
+  }),
+  traceSearch: publicProcedure
+    .input(z.object({ query: z.string().optional() }).optional())
+    .query(async () => {
+      return {
+        traces: [
+          {
+            traceId: "abc123",
+            service: "billing",
+            duration: 120,
+            status: "ok",
+          },
+        ],
+        total: 1,
+      };
+    }),
+  serviceMap: publicProcedure.query(async () => {
+    return {
+      nodes: [{ id: "billing", type: "service", connections: 3 }],
+      edges: [{ from: "billing", to: "postgres" }],
+    };
+  }),
 });

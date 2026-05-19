@@ -1254,25 +1254,4 @@ export const commissionEngineRouter = router({
   middlewareHealth: protectedProcedure.query(async () => {
     return await getCommissionMiddlewareHealth();
   }),
-
-  // ── Sprint 28 domain procedures ──
-  tiers: publicProcedure.query(async () => {
-    return { tiers: [{ name: "Bronze", minVolume: 0, rate: 0.005 }, { name: "Silver", minVolume: 500000, rate: 0.007 }, { name: "Gold", minVolume: 2000000, rate: 0.01 }] };
-  }),
-  splits: publicProcedure.query(async () => {
-    return { splits: [{ id: "SP-001", name: "Standard Split", agentShare: 70, platformShare: 30 }] };
-  }),
-  payouts: publicProcedure.query(async () => {
-    return { payouts: [{ id: "PO-001", agentId: "AGT-001", amount: 15000, status: "paid", paidAt: "2024-06-01" }], total: 1 };
-  }),
-  simulate: publicProcedure
-    .input(z.object({ transactionType: z.string(), amount: z.number(), agentCode: z.string() }))
-    .query(async ({ input }) => {
-      const rate = 0.005;
-      return { commission: input.amount * rate, tier: "Bronze", transactionType: input.transactionType };
-    }),
-  analytics: publicProcedure.query(async () => {
-    return { totalPayouts: 500, totalPaid: 7500000, totalPending: 250000, avgCommission: 15000 };
-  }),
-
 });

@@ -13,44 +13,6 @@ import { fluvioProduce } from "../fluvio";
 import { permifyCheck } from "../_core/permify";
 
 export const loanDisbursementRouter = router({
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      try {
-        const database = await getDb();
-        if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-        const results = await database
-          .select()
-          .from(transactions)
-          .orderBy(desc(transactions.id))
-          .limit(input.limit)
-          .offset(input.offset);
-
-        const [totalResult] = await database
-          .select({ total: count() })
-          .from(transactions);
-
-        return {
-          data: results,
-          total: totalResult?.total ?? 0,
-          limit: input.limit,
-          offset: input.offset,
-        };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }),
-
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
@@ -129,13 +91,39 @@ export const loanDisbursementRouter = router({
 
   // ── Sprint 28 domain procedures ──
   list: publicProcedure.query(async () => {
-    return { applications: [{ id: "LA-001", agentId: "AGT-001", amount: 500000, status: "disbursed", productId: "LP-001" }], total: 1 };
+    return {
+      applications: [
+        {
+          id: "LA-001",
+          agentId: "AGT-001",
+          amount: 500000,
+          status: "disbursed",
+          productId: "LP-001",
+        },
+      ],
+      total: 1,
+    };
   }),
   products: publicProcedure.query(async () => {
-    return { products: [{ id: "LP-001", name: "Agent Working Capital", maxAmount: 2000000, interestRate: 15, tenorMonths: 12 }] };
+    return {
+      products: [
+        {
+          id: "LP-001",
+          name: "Agent Working Capital",
+          maxAmount: 2000000,
+          interestRate: 15,
+          tenorMonths: 12,
+        },
+      ],
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalApplications: 200, totalDisbursed: 50000000, activeLoans: 120, defaultRate: 2.5, avgLoanSize: 400000 };
+    return {
+      totalApplications: 200,
+      totalDisbursed: 50000000,
+      activeLoans: 120,
+      defaultRate: 2.5,
+      avgLoanSize: 400000,
+    };
   }),
-
 });

@@ -273,45 +273,6 @@ export const offlineSyncRouter = router({
       }
     }),
 
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { totalSynced: 0, totalAmount: 0, failureRate: 0 };
-
-      const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const [stats] = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-          totalAmount: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-          failed: sql<number>`count(*) FILTER (WHERE status = 'failed')::int`,
-        })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.agentId, session.id),
-            sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`,
-            gte(transactions.createdAt, oneMonth)
-          )
-        );
-
-      return {
-        totalSynced: stats.total,
-        totalAmount: Number(stats.totalAmount),
-        failureRate: stats.total > 0 ? stats.failed / stats.total : 0,
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
   retryFailed: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -389,44 +350,21 @@ export const offlineSyncRouter = router({
     };
   }),
 
-  queue: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { pending: [] };
-
-      const pending = await db
-        .select()
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.agentId, session.id),
-            eq(transactions.status, "pending"),
-            sql`${transactions.metadata}->>'offlineSessionId' IS NOT NULL`
-          )
-        )
-        .orderBy(transactions.createdAt)
-        .limit(100);
-
-      return { pending };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Sprint 28 domain procedures ──
   queue: publicProcedure.query(async () => {
-    return { items: [{ id: "OQ-001", type: "cash_in", status: "pending", amount: 50000, createdAt: new Date().toISOString() }], total: 1 };
+    return {
+      items: [
+        {
+          id: "OQ-001",
+          type: "cash_in",
+          status: "pending",
+          amount: 50000,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
     return { total: 25, queued: 3, synced: 20, conflicts: 2, avgSyncTime: 5.2 };
   }),
-
 });

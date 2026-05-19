@@ -183,62 +183,6 @@ export const merchantPaymentsRouter = router({
       }
     }),
 
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().default(50),
-        offset: z.number().default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input, ctx }) => {
-      try {
-        const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-        const db = (await getDb())!;
-        if (!db)
-          return {
-            items: [],
-            total: 0,
-            limit: input.limit,
-            offset: input.offset,
-          };
-
-        const items = await db
-          .select()
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              sql`${transactions.metadata}->>'paymentType' = 'merchant'`
-            )
-          )
-          .orderBy(desc(transactions.createdAt))
-          .limit(input.limit)
-          .offset(input.offset);
-
-        const [{ total }] = await db
-          .select({ total: sql<number>`count(*)::int` })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              sql`${transactions.metadata}->>'paymentType' = 'merchant'`
-            )
-          );
-
-        return { items, total, limit: input.limit, offset: input.offset };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
   getStats: protectedProcedure.query(async ({ ctx }) => {
     try {
       const session = await getAgentFromCookie(ctx.req);
@@ -279,39 +223,27 @@ export const merchantPaymentsRouter = router({
     }
   }),
 
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { daily: [] };
-
-      const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const daily = await db.execute(
-        sql`SELECT DATE("createdAt") as date, count(*) as count, sum(CAST(amount AS numeric)) as total
-            FROM transactions WHERE "agentId" = ${session.id}
-            AND metadata->>'paymentType' = 'merchant'
-            AND "createdAt" > ${oneWeek} GROUP BY DATE("createdAt") ORDER BY date`
-      );
-
-      return { daily: daily.rows ?? [] };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Sprint 28 domain procedures ──
   list: publicProcedure.query(async () => {
-    return { merchants: [{ id: "MC-001", name: "Lagos Supermarket", category: "retail", status: "active", monthlyVolume: 5000000 }], total: 1 };
+    return {
+      merchants: [
+        {
+          id: "MC-001",
+          name: "Lagos Supermarket",
+          category: "retail",
+          status: "active",
+          monthlyVolume: 5000000,
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalMerchants: 500, activeMerchants: 450, totalVolume: 250000000, totalTransactions: 10000, avgTransactionSize: 25000 };
+    return {
+      totalMerchants: 500,
+      activeMerchants: 450,
+      totalVolume: 250000000,
+      totalTransactions: 10000,
+      avgTransactionSize: 25000,
+    };
   }),
-
 });

@@ -168,23 +168,39 @@ export const insuranceProductsRouter = router({
       }
     }),
 
-  analytics: protectedProcedure.query(async () => {
-    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
-  }),
-
-  policies: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
-  }),
-
-  // ── Sprint 28 domain procedures ──
   products: publicProcedure.query(async () => {
-    return { products: [{ id: "IP-001", name: "Agent Protection Plan", premium: 5000, coverage: 1000000, type: "life" }] };
+    return {
+      products: [
+        {
+          id: "IP-001",
+          name: "Agent Protection Plan",
+          premium: 5000,
+          coverage: 1000000,
+          type: "life",
+        },
+      ],
+    };
   }),
   policies: publicProcedure.query(async () => {
-    return { policies: [{ id: "POL-001", productId: "IP-001", agentId: "AGT-001", status: "active", startDate: "2024-01-01" }], total: 1 };
+    return {
+      policies: [
+        {
+          id: "POL-001",
+          productId: "IP-001",
+          agentId: "AGT-001",
+          status: "active",
+          startDate: "2024-01-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalPolicies: 500, activePolicies: 450, totalPremiumCollected: 2500000, claimsRate: 5 };
+    return {
+      totalPolicies: 500,
+      activePolicies: 450,
+      totalPremiumCollected: 2500000,
+      claimsRate: 5,
+    };
   }),
-
 });

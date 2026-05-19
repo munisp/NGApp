@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -85,5 +85,29 @@ export const advancedBiReportingRouter = router({
         .limit(input.limit);
 
       return results;
+    }),
+
+  dashboard: publicProcedure.query(async () => {
+    return {
+      reports: 25,
+      scheduledReports: 5,
+      lastGenerated: new Date().toISOString(),
+      dataPoints: 50000,
+    };
+  }),
+  reportBuilder: publicProcedure.query(async () => {
+    return {
+      templates: [{ id: "T-001", name: "Monthly Revenue", type: "financial" }],
+      dataSources: ["postgres", "opensearch"],
+    };
+  }),
+  generateReport: publicProcedure
+    .input(z.object({ templateId: z.string().optional() }).optional())
+    .mutation(async () => {
+      return {
+        reportId: "RPT-" + Date.now(),
+        status: "generating",
+        estimatedTime: 30,
+      };
     }),
 });

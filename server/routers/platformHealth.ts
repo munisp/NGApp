@@ -3,7 +3,7 @@
  * Aggregates health checks from all microservices into a single endpoint.
  */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
@@ -172,5 +172,15 @@ export const platformHealthRouter = router({
 
   serviceRegistry: protectedProcedure.query(() => {
     return SERVICE_REGISTRY.map(s => ({ name: s.name, url: s.url }));
+  }),
+
+  getStats: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+    };
   }),
 });

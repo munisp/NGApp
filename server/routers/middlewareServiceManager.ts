@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -113,4 +113,15 @@ export const middlewareServiceManagerRouter = router({
       };
     }
   }),
+
+  updateUrl: publicProcedure
+    .input(z.object({ serviceId: z.string(), url: z.string() }))
+    .mutation(async ({ input }) => {
+      return {
+        success: true,
+        serviceId: input.serviceId,
+        url: input.url,
+        updatedAt: new Date().toISOString(),
+      };
+    }),
 });

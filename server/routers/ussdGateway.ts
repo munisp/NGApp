@@ -89,21 +89,69 @@ export const ussdGatewayRouter = router({
 
   // ── Sprint 28 domain procedures ──
   processInput: publicProcedure
-    .input(z.object({ agentCode: z.string(), phoneNumber: z.string(), input: z.string() }))
+    .input(
+      z.object({
+        agentCode: z.string(),
+        phoneNumber: z.string(),
+        input: z.string(),
+        sessionId: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
-      return { text: "Welcome to AgentPOS\n1. Cash In\n2. Cash Out\n3. Balance", sessionId: "USSD-" + Date.now(), agentCode: input.agentCode };
+      return {
+        text: "Welcome to AgentPOS\n1. Cash In\n2. Cash Out\n3. Balance",
+        sessionId: input.sessionId || "USSD-" + Date.now(),
+        agentCode: input.agentCode,
+        end: false,
+      };
     }),
   activeSessions: publicProcedure.query(async () => {
-    return { sessions: [{ sessionId: "USSD-001", phoneNumber: "08012345678", screen: "main_menu", startedAt: new Date().toISOString() }], total: 1 };
+    return {
+      sessions: [
+        {
+          sessionId: "USSD-001",
+          phoneNumber: "08012345678",
+          screen: "main_menu",
+          startedAt: new Date().toISOString(),
+        },
+      ],
+      total: 1,
+    };
   }),
   transactions: publicProcedure.query(async () => {
-    return { transactions: [{ id: "TX-001", type: "cash_in", amount: 50000, status: "completed", agentCode: "AGT001" }], total: 1 };
+    return {
+      transactions: [
+        {
+          id: "TX-001",
+          type: "cash_in",
+          amount: 50000,
+          status: "completed",
+          agentCode: "AGT001",
+        },
+      ],
+      total: 1,
+    };
   }),
   menuTree: publicProcedure.query(async () => {
-    return { menuTree: { id: "root", label: "Main Menu", children: [{ id: "1", label: "Cash In" }, { id: "2", label: "Cash Out" }, { id: "3", label: "Balance" }] } };
+    return {
+      menuTree: {
+        id: "root",
+        label: "Main Menu",
+        children: [
+          { id: "1", label: "Cash In" },
+          { id: "2", label: "Cash Out" },
+          { id: "3", label: "Balance" },
+        ],
+      },
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalTransactions: 1250, totalAmount: 25000000, activeSessions: 15, avgSessionDuration: 45, completionRate: 85 };
+    return {
+      totalTransactions: 1250,
+      totalAmount: 25000000,
+      activeSessions: 15,
+      avgSessionDuration: 45,
+      completionRate: 85,
+    };
   }),
-
 });

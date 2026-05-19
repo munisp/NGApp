@@ -129,13 +129,42 @@ export const taxCollectionRouter = router({
 
   // ── Sprint 28 domain procedures ──
   taxTypes: publicProcedure.query(async () => {
-    return { taxTypes: [{ id: "TT-001", name: "VAT", rate: 7.5, description: "Value Added Tax" }, { id: "TT-002", name: "WHT", rate: 10, description: "Withholding Tax" }] };
+    return {
+      taxTypes: [
+        {
+          id: "TT-001",
+          name: "VAT",
+          rate: 7.5,
+          description: "Value Added Tax",
+        },
+        { id: "TT-002", name: "WHT", rate: 10, description: "Withholding Tax" },
+      ],
+    };
   }),
   history: publicProcedure.query(async () => {
-    return { payments: [{ id: "TC-001", taxType: "VAT", amount: 75000, status: "remitted", paidAt: "2024-06-01" }], total: 1 };
+    return {
+      payments: [
+        {
+          id: "TC-001",
+          taxType: "VAT",
+          amount: 75000,
+          status: "remitted",
+          paidAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalPayments: 15000, totalVolume: 15000000, totalCommission: 750000, totalCollected: 15000000, totalRemitted: 14500000, pending: 500000, byType: { VAT: 10000000, WHT: 5000000 } };
+    return {
+      totalPayments: 15000,
+      totalVolume: 15000000,
+      totalCommission: 750000,
+      totalCollected: 15000000,
+      totalRemitted: 14500000,
+      pending: 500000,
+      byType: { VAT: 10000000, WHT: 5000000 },
+      successRate: 97.5,
+    };
   }),
-
 });

@@ -129,13 +129,46 @@ export const remittanceRouter = router({
 
   // ── Sprint 28 domain procedures ──
   partners: publicProcedure.query(async () => {
-    return { partners: [{ id: "RP-001", name: "WorldRemit", corridor: "UK-NG", status: "active" }, { id: "RP-002", name: "Lemfi", corridor: "CA-NG", status: "active" }] };
+    return {
+      partners: [
+        {
+          id: "RP-001",
+          name: "WorldRemit",
+          corridor: "UK-NG",
+          status: "active",
+        },
+        { id: "RP-002", name: "Lemfi", corridor: "CA-NG", status: "active" },
+      ],
+    };
   }),
   history: publicProcedure.query(async () => {
-    return { transactions: [{ id: "RM-001", partnerId: "RP-001", amount: 500, currency: "GBP", localAmount: 450000, status: "completed" }], total: 1 };
+    return {
+      transactions: [
+        {
+          id: "RM-001",
+          partnerId: "RP-001",
+          amount: 500,
+          currency: "GBP",
+          localAmount: 450000,
+          status: "completed",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalTransactions: 2000, totalRemittances: 2000, totalVolume: 500000000, totalFees: 5000000, totalCommission: 2500000, avgAmount: 250000, topCorridors: [{ corridor: "UK-NG", volume: 200000000 }] };
+    return {
+      totalTransactions: 2000,
+      totalRemittances: 2000,
+      totalVolume: 500000000,
+      totalFees: 5000000,
+      totalCommission: 2500000,
+      avgAmount: 250000,
+      topCorridors: [{ corridor: "UK-NG", volume: 200000000 }],
+      byPartner: [
+        { partner: "WorldRemit", volume: 300000000, count: 1200 },
+        { partner: "Flutterwave", volume: 200000000, count: 800 },
+      ],
+    };
   }),
-
 });

@@ -362,143 +362,53 @@ export const mobileMoneyRouter = router({
       }
     }),
 
-  providers: protectedProcedure.query(async () => {
-    return { providers: MM_PROVIDERS };
-  }),
-
-  wallets: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { wallets: [] };
-
-      const [agent] = await db
-        .select({
-          floatBalance: agents.floatBalance,
-          commission: agents.commissionBalance,
-        })
-        .from(agents)
-        .where(eq(agents.id, session.id))
-        .limit(1);
-
-      return {
-        wallets: [
-          {
-            type: "agent_float",
-            balance: Number(agent?.floatBalance ?? 0),
-            currency: "NGN",
-          },
-        ],
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  transactions: protectedProcedure
-    .input(
-      z.object({ limit: z.number().default(50), offset: z.number().default(0) })
-    )
-    .query(async ({ input, ctx }) => {
-      try {
-        const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-        const db = (await getDb())!;
-        if (!db) return { items: [], total: 0 };
-
-        const items = await db
-          .select()
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`
-            )
-          )
-          .orderBy(desc(transactions.createdAt))
-          .limit(input.limit)
-          .offset(input.offset);
-
-        const [{ total }] = await db
-          .select({ total: sql<number>`count(*)::int` })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`
-            )
-          );
-
-        return { items, total };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { totalTxns: 0, totalVolume: "0", totalCommission: "0" };
-
-      const oneMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const [stats] = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-          volume: sql<string>`COALESCE(sum(CAST(amount AS numeric)), 0)`,
-          commission: sql<string>`COALESCE(sum(CAST(commission AS numeric)), 0)`,
-        })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.agentId, session.id),
-            sql`${transactions.metadata}->>'channel' LIKE 'mobile_money%'`,
-            gte(transactions.createdAt, oneMonth)
-          )
-        );
-
-      return {
-        totalTxns: stats.total,
-        totalVolume: stats.volume,
-        totalCommission: stats.commission,
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Sprint 28 domain procedures ──
   providers: publicProcedure.query(async () => {
-    return { providers: [{ id: "mtn_momo", name: "MTN MoMo", country: "NG", status: "active" }, { id: "airtel_money", name: "Airtel Money", country: "NG", status: "active" }] };
+    return {
+      providers: [
+        { id: "mtn_momo", name: "MTN MoMo", country: "NG", status: "active" },
+        {
+          id: "airtel_money",
+          name: "Airtel Money",
+          country: "NG",
+          status: "active",
+        },
+      ],
+    };
   }),
   wallets: publicProcedure.query(async () => {
-    return { wallets: [{ id: "W-001", provider: "MTN MoMo", balance: 500000, currency: "NGN", status: "active" }], total: 1 };
+    return {
+      wallets: [
+        {
+          id: "W-001",
+          provider: "MTN MoMo",
+          balance: 500000,
+          currency: "NGN",
+          status: "active",
+        },
+      ],
+      total: 1,
+    };
   }),
   transactions: publicProcedure.query(async () => {
-    return { transactions: [{ id: "MM-TX-001", type: "transfer", amount: 10000, status: "completed", provider: "MTN MoMo" }], total: 1 };
+    return {
+      transactions: [
+        {
+          id: "MM-TX-001",
+          type: "transfer",
+          amount: 10000,
+          status: "completed",
+          provider: "MTN MoMo",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalTransactions: 850, totalVolume: 42500000, activeWallets: 320, avgTransactionSize: 50000 };
+    return {
+      totalTransactions: 850,
+      totalVolume: 42500000,
+      activeWallets: 320,
+      avgTransactionSize: 50000,
+    };
   }),
-
 });

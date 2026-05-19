@@ -386,98 +386,6 @@ export const biometricAuthRouter = router({
     }),
 
   // ── List Biometric Records ──────────────────────────────────────────────
-  list: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const dbInst = await getDb();
-      if (!dbInst) throw new Error("DB unavailable");
-      const sessions = await dbInst
-        .select()
-        .from(kycSessions)
-        .where(
-          and(
-            eq(kycSessions.agentId, ctx.user.id),
-            sql`${kycSessions.livenessScore} IS NOT NULL`
-          )
-        )
-        .orderBy(desc(kycSessions.createdAt))
-        .limit(50);
-
-      return {
-        records: sessions.map((s: any) => ({
-          id: s.id,
-          sessionRef: s.sessionRef,
-          type: s.type,
-          status: s.status,
-          livenessScore: s.livenessScore ? parseFloat(s.livenessScore) : null,
-          livenessPassed: s.livenessPassed,
-          livenessMethod: s.livenessMethod,
-          matchScore: s.matchScore ? parseFloat(s.matchScore) : null,
-          createdAt: s.createdAt.toISOString(),
-        })),
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Analytics ───────────────────────────────────────────────────────────
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const dbInst = await getDb();
-      if (!dbInst) throw new Error("DB unavailable");
-
-      const [totalResult] = await dbInst
-        .select({ count: count() })
-        .from(kycSessions)
-        .where(
-          and(
-            eq(kycSessions.agentId, ctx.user.id),
-            sql`${kycSessions.livenessScore} IS NOT NULL`
-          )
-        );
-
-      const [passedResult] = await dbInst
-        .select({ count: count() })
-        .from(kycSessions)
-        .where(
-          and(
-            eq(kycSessions.agentId, ctx.user.id),
-            eq(kycSessions.livenessPassed, true)
-          )
-        );
-
-      const [failedResult] = await dbInst
-        .select({ count: count() })
-        .from(kycSessions)
-        .where(
-          and(
-            eq(kycSessions.agentId, ctx.user.id),
-            eq(kycSessions.livenessPassed, false)
-          )
-        );
-
-      return {
-        enrolled: totalResult?.count ?? 0,
-        totalVerifications: totalResult?.count ?? 0,
-        totalPassed: passedResult?.count ?? 0,
-        totalFailedAttempts: failedResult?.count ?? 0,
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Service Health ──────────────────────────────────────────────────────
   serviceHealth: protectedProcedure.query(async () => {
     const services = [
       { name: "biometric", url: `${BIOMETRIC_SERVICE_URL}/health` },
@@ -517,10 +425,26 @@ export const biometricAuthRouter = router({
 
   // ── Sprint 28 domain procedures ──
   list: publicProcedure.query(async () => {
-    return { records: [{ id: "BIO-001", agentId: "AGT-001", type: "fingerprint", status: "enrolled", enrolledAt: "2024-06-01" }], total: 1 };
+    return {
+      records: [
+        {
+          id: "BIO-001",
+          agentId: "AGT-001",
+          type: "fingerprint",
+          status: "enrolled",
+          enrolledAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { total: 150, enrolled: 120, totalVerifications: 5000, successRate: 98.5 };
+    return {
+      total: 150,
+      enrolled: 120,
+      totalVerifications: 5000,
+      successRate: 98.5,
+      totalFailedAttempts: 75,
+    };
   }),
-
 });

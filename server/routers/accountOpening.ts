@@ -144,20 +144,31 @@ export const accountOpeningRouter = router({
       }
     }),
 
-  analytics: protectedProcedure.query(async () => {
-    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
-  }),
-
-  list: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
-  }),
-
-  // ── Sprint 28 domain procedures ──
   list: publicProcedure.query(async () => {
-    return { applications: [{ id: "AO-001", customerName: "Fatima Ibrahim", accountType: "savings", status: "approved", createdAt: "2024-06-01" }], total: 1 };
+    return {
+      applications: [
+        {
+          id: "AO-001",
+          customerName: "Fatima Ibrahim",
+          accountType: "savings",
+          status: "approved",
+          createdAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { total: 1500, totalApplications: 1500, approved: 1200, pending: 200, rejected: 100, byStatus: { approved: 1200, pending: 200, rejected: 100 }, byBank: { access: 500, gtbank: 400, zenith: 300, firstbank: 300 }, conversionRate: 80, avgProcessingDays: 3 };
+    return {
+      total: 1500,
+      totalApplications: 1500,
+      approved: 1200,
+      pending: 200,
+      rejected: 100,
+      byStatus: { approved: 1200, pending: 200, rejected: 100 },
+      byBank: { access: 500, gtbank: 400, zenith: 300, firstbank: 300 },
+      conversionRate: 80,
+      avgProcessingDays: 3,
+    };
   }),
-
 });

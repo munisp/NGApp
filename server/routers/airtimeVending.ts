@@ -394,29 +394,6 @@ export const airtimeVendingRouter = router({
       }
     }),
 
-  dataBundles: protectedProcedure
-    .input(
-      z.object({
-        provider: z.enum(["MTN", "AIRTEL", "GLO", "9MOBILE"]).optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      try {
-        if (input.provider)
-          return {
-            bundles: DATA_BUNDLES.filter(b => b.provider === input.provider),
-          };
-        return { bundles: DATA_BUNDLES };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
   providers: protectedProcedure.query(async () => {
     return { providers: PROVIDERS };
   }),
@@ -427,39 +404,6 @@ export const airtimeVendingRouter = router({
       try {
         const provider = detectProvider(input.phone);
         return { phone: input.phone, provider, detected: !!provider };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
-  history: protectedProcedure
-    .input(z.object({ limit: z.number().default(20) }))
-    .query(async ({ input, ctx }) => {
-      try {
-        const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-        const db = (await getDb())!;
-        if (!db) return { items: [] };
-
-        const items = await db
-          .select()
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              eq(transactions.type, "Airtime")
-            )
-          )
-          .orderBy(desc(transactions.createdAt))
-          .limit(input.limit);
-
-        return { items };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -515,44 +459,49 @@ export const airtimeVendingRouter = router({
     }
   }),
 
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { daily: [], byProvider: [] };
-
-      const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const daily = await db.execute(
-        sql`SELECT DATE("createdAt") as date, count(*) as count, sum(CAST(amount AS numeric)) as total
-            FROM transactions WHERE "agentId" = ${session.id} AND type = 'Airtime'
-            AND "createdAt" > ${oneWeek} GROUP BY DATE("createdAt") ORDER BY date`
-      );
-
-      return { daily: daily.rows ?? [] };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Sprint 28 domain procedures ──
   networks: publicProcedure.query(async () => {
-    return { networks: [{ id: "NW-001", name: "MTN", code: "MTN", status: "active" }, { id: "NW-002", name: "Airtel", code: "AIRTEL", status: "active" }] };
+    return {
+      networks: [
+        { id: "NW-001", name: "MTN", code: "MTN", status: "active" },
+        { id: "NW-002", name: "Airtel", code: "AIRTEL", status: "active" },
+      ],
+    };
   }),
   history: publicProcedure.query(async () => {
-    return { transactions: [{ id: "AV-001", network: "MTN", phoneNumber: "08012345678", amount: 1000, status: "completed" }], total: 1 };
+    return {
+      transactions: [
+        {
+          id: "AV-001",
+          network: "MTN",
+          phoneNumber: "08012345678",
+          amount: 1000,
+          status: "completed",
+        },
+      ],
+      total: 1,
+    };
   }),
-  dataBundles: publicProcedure.input(z.object({ networkId: z.string().optional() }).optional()).query(async () => {
-    return { bundles: [{ id: "DB-001", network: "MTN", name: "1GB Daily", price: 350, validity: "24h" }] };
-  }),
+  dataBundles: publicProcedure
+    .input(z.object({ networkId: z.string().optional() }).optional())
+    .query(async () => {
+      return {
+        bundles: [
+          {
+            id: "DB-001",
+            network: "MTN",
+            name: "1GB Daily",
+            price: 350,
+            validity: "24h",
+          },
+        ],
+      };
+    }),
   analytics: publicProcedure.query(async () => {
-    return { totalTransactions: 50000, totalVolume: 25000000, totalCommission: 1250000, byNetwork: { MTN: 20000, Airtel: 15000, Glo: 10000, "9mobile": 5000 } };
+    return {
+      totalTransactions: 50000,
+      totalVolume: 25000000,
+      totalCommission: 1250000,
+      byNetwork: { MTN: 20000, Airtel: 15000, Glo: 10000, "9mobile": 5000 },
+    };
   }),
-
 });

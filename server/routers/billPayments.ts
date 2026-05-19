@@ -243,25 +243,6 @@ export const billPaymentsRouter = router({
       }
     }),
 
-  billers: protectedProcedure
-    .input(z.object({ category: z.string().optional() }))
-    .query(async ({ input }) => {
-      try {
-        if (input.category)
-          return {
-            billers: BILLER_CATALOG.filter(b => b.category === input.category),
-          };
-        return { billers: BILLER_CATALOG };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
   list: protectedProcedure
     .input(
       z.object({
@@ -318,39 +299,6 @@ export const billPaymentsRouter = router({
       }
     }),
 
-  history: protectedProcedure
-    .input(z.object({ limit: z.number().default(20) }))
-    .query(async ({ input, ctx }) => {
-      try {
-        const session = await getAgentFromCookie(ctx.req);
-        if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-        const db = (await getDb())!;
-        if (!db) return { items: [] };
-
-        const items = await db
-          .select()
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.agentId, session.id),
-              eq(transactions.type, "Bill Payment")
-            )
-          )
-          .orderBy(desc(transactions.createdAt))
-          .limit(input.limit);
-
-        return { items };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    }),
-
   getStats: protectedProcedure.query(async ({ ctx }) => {
     try {
       const session = await getAgentFromCookie(ctx.req);
@@ -390,41 +338,44 @@ export const billPaymentsRouter = router({
     }
   }),
 
-  analytics: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const session = await getAgentFromCookie(ctx.req);
-      if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      const db = (await getDb())!;
-      if (!db) return { daily: [] };
-
-      const oneWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const daily = await db.execute(
-        sql`SELECT DATE("createdAt") as date, count(*) as count, sum(CAST(amount AS numeric)) as total
-            FROM transactions WHERE "agentId" = ${session.id} AND type = 'Bill Payment'
-            AND "createdAt" > ${oneWeek} GROUP BY DATE("createdAt") ORDER BY date`
-      );
-
-      return { daily: daily.rows ?? [] };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
-    }
-  }),
-
-  // ── Sprint 28 domain procedures ──
   billers: publicProcedure.query(async () => {
-    return { billers: [{ id: "BL-001", name: "IKEDC", category: "electricity", status: "active" }, { id: "BL-002", name: "DSTV", category: "cable_tv", status: "active" }] };
+    return {
+      billers: [
+        {
+          id: "BL-001",
+          name: "IKEDC",
+          category: "electricity",
+          status: "active",
+        },
+        { id: "BL-002", name: "DSTV", category: "cable_tv", status: "active" },
+      ],
+    };
   }),
   history: publicProcedure.query(async () => {
-    return { payments: [{ id: "BP-001", billerId: "BL-001", amount: 15000, status: "completed", paidAt: "2024-06-01" }], total: 1 };
+    return {
+      payments: [
+        {
+          id: "BP-001",
+          billerId: "BL-001",
+          amount: 15000,
+          status: "completed",
+          paidAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalPayments: 8000, totalVolume: 120000000, successRate: 98.5, byCategory: { electricity: 3000, cable_tv: 2500, water: 1500, internet: 1000 } };
+    return {
+      totalPayments: 8000,
+      totalVolume: 120000000,
+      successRate: 98.5,
+      byCategory: {
+        electricity: 3000,
+        cable_tv: 2500,
+        water: 1500,
+        internet: 1000,
+      },
+    };
   }),
-
 });

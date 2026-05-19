@@ -87,27 +87,43 @@ export const whatsappChannelRouter = router({
       return results;
     }),
 
-  analytics: protectedProcedure.query(async () => {
-    return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
-  }),
-
-  messages: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
-  }),
-
-  templates: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
-  }),
-
-  // ── Sprint 28 domain procedures ──
   templates: publicProcedure.query(async () => {
-    return { templates: [{ id: "WT-001", name: "Welcome Message", category: "transactional", status: "approved", language: "en" }], total: 1 };
+    return {
+      templates: [
+        {
+          id: "WT-001",
+          name: "Welcome Message",
+          category: "transactional",
+          status: "approved",
+          language: "en",
+        },
+      ],
+      total: 1,
+    };
   }),
   messages: publicProcedure.query(async () => {
-    return { messages: [{ id: "WM-001", templateId: "WT-001", recipient: "+2348012345678", status: "delivered", sentAt: "2024-06-01" }], total: 1 };
+    return {
+      messages: [
+        {
+          id: "WM-001",
+          templateId: "WT-001",
+          recipient: "+2348012345678",
+          status: "delivered",
+          sentAt: "2024-06-01",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalSent: 5000, delivered: 4800, read: 3500, failed: 200, deliveryRate: 96, templateCount: 15, responseRate: 45 };
+    return {
+      totalSent: 5000,
+      delivered: 4800,
+      read: 3500,
+      failed: 200,
+      deliveryRate: 96,
+      templateCount: 15,
+      responseRate: 45,
+    };
   }),
-
 });
