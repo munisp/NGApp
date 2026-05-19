@@ -438,7 +438,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap_fn(|req, srv| {
-                }
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")
                     .and_then(|v| v.to_str().ok())
