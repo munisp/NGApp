@@ -43,24 +43,29 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_security_group" "rds" {
   name_prefix = "${local.name_prefix}-rds-"
   vpc_id      = var.vpc_id
-  description = "RDS PostgreSQL security group"
-
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [var.eks_security_group_id]
-    description     = "PostgreSQL from EKS"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  description = "RDS PostgreSQL security group for ${local.name_prefix}"
 
   tags = { Name = "${local.name_prefix}-rds-sg" }
+}
+
+resource "aws_security_group_rule" "rds_ingress_postgres" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = var.eks_security_group_id
+  security_group_id        = aws_security_group.rds.id
+  description              = "PostgreSQL access from EKS cluster"
+}
+
+resource "aws_security_group_rule" "rds_egress_https" {
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.rds.id
+  description       = "Allow HTTPS outbound for AWS APIs and updates"
 }
 
 # ── Parameter Group ───────────────────────────────────────────────────────────
@@ -69,7 +74,6 @@ resource "aws_db_parameter_group" "main" {
   name   = "${local.name_prefix}-pg16-params"
   family = "postgres16"
 
-  # Performance tuning (matches infra/postgres/postgresql-production.conf)
   parameter {
     name         = "shared_buffers"
     value        = "{DBInstanceClassMemory/4}"
@@ -120,8 +124,6 @@ resource "aws_db_parameter_group" "main" {
     value        = "0.9"
     apply_method = "immediate"
   }
-
-  # Logging
   parameter {
     name         = "log_min_duration_statement"
     value        = "1000"
@@ -147,8 +149,6 @@ resource "aws_db_parameter_group" "main" {
     value        = "1"
     apply_method = "immediate"
   }
-
-  # Connection management
   parameter {
     name         = "idle_in_transaction_session_timeout"
     value        = "60000"
@@ -159,17 +159,39 @@ resource "aws_db_parameter_group" "main" {
     value        = "30000"
     apply_method = "immediate"
   }
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "immediate"
+  }
 
   tags = { Name = "${local.name_prefix}-pg-params" }
 }
 
 # ── KMS Key ───────────────────────────────────────────────────────────────────
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_kms_key" "rds" {
   description             = "RDS encryption key for ${local.name_prefix}"
   deletion_window_in_days = 30
   enable_key_rotation     = true
-  tags                    = { Name = "${local.name_prefix}-rds-kms" }
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "rds-key-policy"
+    Statement = [
+      {
+        Sid       = "EnableRootAccountAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      }
+    ]
+  })
+
+  tags = { Name = "${local.name_prefix}-rds-kms" }
 }
 
 # ── RDS Instance ──────────────────────────────────────────────────────────────
@@ -204,8 +226,12 @@ resource "aws_db_instance" "main" {
   skip_final_snapshot       = var.environment != "production"
   final_snapshot_identifier = var.environment == "production" ? "${local.name_prefix}-final-snapshot" : null
 
+  iam_database_authentication_enabled = true
+  auto_minor_version_upgrade          = true
+
   performance_insights_enabled          = true
   performance_insights_retention_period = var.environment == "production" ? 731 : 7
+  performance_insights_kms_key_id       = aws_kms_key.rds.arn
   monitoring_interval                   = 60
   monitoring_role_arn                   = aws_iam_role.rds_monitoring.arn
 
@@ -224,9 +250,13 @@ resource "aws_db_instance" "read_replica" {
   storage_encrypted   = true
   kms_key_id          = aws_kms_key.rds.arn
 
-  performance_insights_enabled = true
-  monitoring_interval          = 60
-  monitoring_role_arn          = aws_iam_role.rds_monitoring.arn
+  auto_minor_version_upgrade          = true
+  performance_insights_enabled        = true
+  performance_insights_kms_key_id     = aws_kms_key.rds.arn
+  monitoring_interval                 = 60
+  monitoring_role_arn                 = aws_iam_role.rds_monitoring.arn
+  copy_tags_to_snapshot               = true
+  iam_database_authentication_enabled = true
 
   tags = { Name = "${local.name_prefix}-postgres-replica" }
 }

@@ -13,10 +13,57 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
+data "aws_caller_identity" "current" {}
+
+# ── KMS Key for SNS Encryption ────────────────────────────────────────────────
+
+resource "aws_kms_key" "sns" {
+  description             = "SNS topic encryption key for ${local.name_prefix}"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "sns-key-policy"
+    Statement = [
+      {
+        Sid       = "EnableRootAccountAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowSNSUsage"
+        Effect    = "Allow"
+        Principal = { Service = "sns.amazonaws.com" }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchAlarms"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = { Name = "${local.name_prefix}-sns-kms" }
+}
+
 # ── SNS Topic ─────────────────────────────────────────────────────────────────
 
 resource "aws_sns_topic" "alerts" {
-  name = "${local.name_prefix}-alerts"
+  name              = "${local.name_prefix}-alerts"
+  kms_master_key_id = aws_kms_key.sns.arn
 }
 
 resource "aws_sns_topic_subscription" "email" {
@@ -50,7 +97,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 10737418240 # 10 GB
+  threshold           = 10737418240
   alarm_description   = "RDS free storage < 10 GB"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   dimensions          = { DBInstanceIdentifier = var.rds_instance_id }

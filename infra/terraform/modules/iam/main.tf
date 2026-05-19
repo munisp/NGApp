@@ -102,9 +102,16 @@ resource "aws_iam_role_policy" "app_s3_access" {
         ]
       },
       {
-        Effect   = "Allow"
-        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = ["*"]
+        Effect = "Allow"
+        Action = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource = [
+          "arn:aws:kms:*:${var.account_id}:key/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "s3.us-east-1.amazonaws.com"
+          }
+        }
       }
     ]
   })
@@ -151,12 +158,27 @@ resource "aws_iam_role_policy" "cicd_eks_access" {
       {
         Effect   = "Allow"
         Action   = ["eks:DescribeCluster", "eks:ListClusters"]
+        Resource = ["arn:aws:eks:*:${var.account_id}:cluster/${local.name_prefix}-*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
         Resource = ["*"]
       },
       {
-        Effect   = "Allow"
-        Action   = ["ecr:GetAuthorizationToken", "ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage", "ecr:PutImage", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload"]
-        Resource = ["*"]
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
+        Resource = ["arn:aws:ecr:*:${var.account_id}:repository/${local.name_prefix}-*"]
       }
     ]
   })
