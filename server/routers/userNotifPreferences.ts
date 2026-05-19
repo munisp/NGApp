@@ -49,4 +49,14 @@ export const userNotifPreferencesRouter = router({
   updateDigestMode: protectedProcedure.input(z.object({ mode: z.enum(["instant", "hourly", "daily"]) })).mutation(async ({ input }) => {
     return { success: true, mode: input.mode };
   }),
+
+  categories: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getPreferences: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  updateCategory: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

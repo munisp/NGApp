@@ -86,4 +86,26 @@ export const lakehouseAiIntegrationRouter = router({
 
       return results;
     }),
+
+  analytics: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  dataLineage: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  health: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listBatchJobs: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listModels: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  promoteModel: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  submitBatchJob: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

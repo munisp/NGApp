@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { db } from "../db";
+import { getDb } from "../db";
 
 const ANNOUNCEMENT_TYPES = ["info", "warning", "critical", "maintenance", "feature"] as const;
 const TARGET_AUDIENCES = ["all", "agents", "admins", "merchants"] as const;

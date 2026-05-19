@@ -50,4 +50,14 @@ export const dataThresholdAlertsRouter = router({
   resolve: protectedProcedure.input(z.object({ ruleId: z.string() })).mutation(async ({ input }) => {
     return { success: true };
   }),
+
+  events: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  operators: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  toggleStatus: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

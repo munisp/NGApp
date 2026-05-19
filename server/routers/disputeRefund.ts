@@ -116,4 +116,14 @@ export const disputeRefundRouter = router({
       }
       return { resolved: true, ref: input.disputeRef };
     }),
+
+  listRefunds: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  requestRefund: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  stats: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

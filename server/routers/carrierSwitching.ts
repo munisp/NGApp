@@ -86,4 +86,17 @@ export const carrierSwitchingRouter = router({
 
       return results;
     }),
+
+  getRankings: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getRecommendation: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getSwitchStats: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  recordSwitch: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

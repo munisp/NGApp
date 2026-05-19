@@ -262,7 +262,4 @@ export const databaseVisualizationRouter = router({
   exportTable,
   runHealthCheck,
 
-  getStats: publicProcedure.query(async () => {
-    return { totalTables: 78, totalRows: 2450000, uptime: "99.97%", avgQueryTime: "12ms" };
-  }),
 });

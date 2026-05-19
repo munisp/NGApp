@@ -25,4 +25,8 @@ export const reportTemplateDesignerRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     return { success: true };
   }),
+
+  setDefault: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

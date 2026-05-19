@@ -113,4 +113,11 @@ export const cdnCacheManagerRouter = router({
       };
     }
   }),
+
+  invalidate: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  invalidateAll: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

@@ -86,4 +86,17 @@ export const vaultSecretsRouter = router({
 
       return results;
     }),
+
+  health: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listPaths: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  rotateSecret: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  summary: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

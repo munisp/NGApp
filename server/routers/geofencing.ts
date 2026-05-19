@@ -723,3 +723,6 @@ export const geofencingRouter = router({
     };
   }),
 });
+
+// Alias for backward compatibility
+export const geoFencingRouter = geofencingRouter;

@@ -480,7 +480,6 @@ import { transactionReversalWorkflowRouter } from "./routers/transactionReversal
 import { ussdLocalizationRouter } from "./routers/ussdLocalization";
 import { geoFenceDedicatedRouter } from "./routers/geoFenceDedicated";
 import { amlScreeningRouter } from "./routers/amlScreening";
-import { geoFencingRouter } from "./routers/geoFencing";
 import { geoFencingDedicatedRouter } from "./routers/geoFencingDedicated";
 import { receiptTemplatesRouter } from "./routers/receiptTemplates";
 
@@ -1067,7 +1066,7 @@ export const appRouter = router({
   ussdLocalization: ussdLocalizationRouter,
   webhookManagement: webhookManagementRouter,
   amlScreening: amlScreeningRouter,
-  geoFencing: geoFencingRouter,
+  geoFencing: geofencingRouter,
   geoFencingDedicated: geoFencingDedicatedRouter,
   receiptTemplates: receiptTemplatesRouter,
 })

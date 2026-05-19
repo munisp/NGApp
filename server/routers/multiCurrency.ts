@@ -110,9 +110,6 @@ export const multiCurrencyRouter = router({
   convert: protectedProcedure.input(z.object({ from: z.string(), to: z.string(), amount: z.number() })).mutation(async ({ input }) => {
     return { from: input.from, to: input.to, amount: input.amount, converted: input.amount * 1.05, rate: 1.05 };
   }),
-  dashboard: protectedProcedure.query(async () => {
-    return { supportedCurrencies: 15, activePairs: 42, last24hVolume: 5600000 };
-  }),
   historicalRates: protectedProcedure.input(z.object({ pair: z.string().optional(), days: z.number().optional() }).optional()).query(async () => {
     return { items: [{ date: "2024-01-01", rate: 1.05 }, { date: "2024-01-02", rate: 1.06 }], total: 2 };
   }),

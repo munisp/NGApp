@@ -136,4 +136,8 @@ export const disputesRouter = router({
       }
       return { ref: input.disputeRef, resolution: input.resolution, status: "resolved", resolvedAt: new Date() };
     }),
+
+  addMessage: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

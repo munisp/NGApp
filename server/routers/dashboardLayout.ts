@@ -1,20 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import {
-  eq,
-  desc,
-  and,
-  sql,
-  count,
-  sum,
-  isNull,
-  gte,
-  lte,
-  or,
-  asc,
-} from "drizzle-orm";
-import { auditLog, systemConfig } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
+import { systemConfig } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
 export const dashboardLayoutRouter = router({
@@ -42,18 +30,19 @@ export const dashboardLayoutRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-          presets: protectedProcedure.query(async () => {
+          message: error instanceof Error ? error.message : "Internal server error",
+        });
+      }
+    }),
+
+  getPresets: protectedProcedure.query(async () => {
     return [
       { id: "default", name: "Default", widgets: ["transactions", "agents", "revenue"] },
       { id: "finance", name: "Finance Focus", widgets: ["revenue", "settlement", "reconciliation"] },
       { id: "ops", name: "Operations", widgets: ["agents", "pos", "network"] },
     ];
   }),
-});
-      }
-    }),
+
   saveLayout: protectedProcedure
     .input(
       z.object({
@@ -66,89 +55,24 @@ export const dashboardLayoutRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("DB not available");
-        await db
-          .insert(systemConfig)
-          .values({
-            key: "dashboard_layout_" + input.userId,
-            value: JSON.stringify(input.layout),
-          })
-          .onConflictDoUpdate({
-            target: systemConfig.key,
-            set: { value: JSON.stringify(input.layout), updatedAt: new Date() },
-          });
-        return { success: true };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const key = "dashboard_layout_" + input.userId;
+      const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+      if (existing.length > 0) {
+        await db.update(systemConfig).set({ value: JSON.stringify(input.layout) }).where(eq(systemConfig.key, key));
+      } else {
+        await db.insert(systemConfig).values({ key, value: JSON.stringify(input.layout), description: "Dashboard layout" });
       }
+      return { success: true };
     }),
+
   resetLayout: protectedProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("DB not available");
-        await db
-          .delete(systemConfig)
-          .where(eq(systemConfig.key, "dashboard_layout_" + input.userId));
-        return { success: true };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.delete(systemConfig).where(eq(systemConfig.key, "dashboard_layout_" + input.userId));
+      return { success: true };
     }),
-  listTemplates: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return { templates: [] };
-    return {
-      templates: [
-        {
-          id: "admin",
-          name: "Admin Dashboard",
-          widgets: [
-            "transactions",
-            "agents",
-            "revenue",
-            "alerts",
-            "compliance",
-            "fraud",
-          ],
-          columns: 3,
-        },
-        {
-          id: "agent",
-          name: "Agent Dashboard",
-          widgets: [
-            "my_transactions",
-            "commissions",
-            "float_balance",
-            "notifications",
-          ],
-          columns: 2,
-        },
-        {
-          id: "ops",
-          name: "Operations Dashboard",
-          widgets: [
-            "system_health",
-            "carrier_status",
-            "queue_depth",
-            "error_rates",
-          ],
-          columns: 4,
-        },
-      ],
-    };
-  }),
 });

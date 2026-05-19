@@ -175,4 +175,8 @@ export const helpDeskRouter = router({
   searchTickets: publicProcedure.query(async () => {
     return { tickets: [], total: 0, page: 1 };
   }),
+
+  knowledgeBase: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

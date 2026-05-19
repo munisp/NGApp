@@ -166,4 +166,20 @@ export const webhookNotificationsRouter = router({
       totalDeliveries: Number(totalDeliveries.value),
     };
   }),
+
+  getDeliveryLog: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getSupportedEvents: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  ingest: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listConfigs: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  toggleWebhook: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

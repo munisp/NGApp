@@ -124,4 +124,8 @@ export const platformProxyRouter = router({
       totalChecks: Number(checks.value),
     };
   }),
+
+  fraud: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

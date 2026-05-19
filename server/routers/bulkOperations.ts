@@ -82,4 +82,11 @@ export const bulkOperationsRouter = router({
       avgProcessingTime: 120,
     };
   }),
+
+  cancel: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  retry: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

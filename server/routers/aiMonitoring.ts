@@ -86,4 +86,26 @@ export const aiMonitoringRouter = router({
 
       return results;
     }),
+
+  acknowledgeAlert: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  alerts: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  dashboard: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  driftAnalysis: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  liveFraudFeed: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  serviceHealth: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  throughputTimeSeries: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

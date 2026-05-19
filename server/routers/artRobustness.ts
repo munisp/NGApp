@@ -86,4 +86,23 @@ export const artRobustnessRouter = router({
 
       return results;
     }),
+
+  analytics: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  health: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listAttacks: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listResults: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  runAttack: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  runFullSuite: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

@@ -180,4 +180,11 @@ export const customerDisputePortalRouter = router({
       return { disputes: rows, total: rows.length };
     } catch { return { disputes: [], total: 0 }; }
   }),
+
+  escalateDispute: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  updateDispute: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

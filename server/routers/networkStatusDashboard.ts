@@ -86,4 +86,26 @@ export const networkStatusDashboardRouter = router({
 
       return results;
     }),
+
+  getAlerts: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getCarrierHeatmap: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getCarrierSummary: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getOverview: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getRegions: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getTimeSeries: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  resolveAlert: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

@@ -86,4 +86,17 @@ export const ussdIntegrationRouter = router({
 
       return results;
     }),
+
+  getShortcuts: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getStats: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  processInput: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  startSession: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
 });

@@ -259,7 +259,4 @@ export const webhookDeliverySystemRouter = router({
   updateEndpoint,
   deleteEndpoint,
 
-  getStats: publicProcedure.query(async () => {
-    return { totalEndpoints: 45, activeEndpoints: 43, successRate: 98.7, totalDeliveries: 2340000, failed: 30420 };
-  }),
 });

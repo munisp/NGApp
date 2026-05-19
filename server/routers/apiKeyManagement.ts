@@ -237,7 +237,4 @@ export const apiKeyManagementRouter = router({
   createKey,
   revokeKey,
 
-  getStats: publicProcedure.query(async () => {
-    return { totalKeys: 234, activeKeys: 189, revokedKeys: 45, totalRequests24h: 1250000, avgLatency: 23 };
-  }),
 });

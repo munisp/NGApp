@@ -86,4 +86,23 @@ export const systemHealthMonitorRouter = router({
 
       return results;
     }),
+
+  apiLatency: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  errorTracking: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  overview: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  securityEvents: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  transactionVolume: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  userActivity: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

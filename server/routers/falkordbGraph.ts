@@ -86,4 +86,20 @@ export const falkordbGraphRouter = router({
 
       return results;
     }),
+
+  analytics: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  fraudRings: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  getNeighbors: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  health: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  shortestPath: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });

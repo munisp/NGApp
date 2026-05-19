@@ -86,4 +86,20 @@ export const mlScoringServiceRouter = router({
 
       return results;
     }),
+
+  analytics: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  batchScore: protectedProcedure.input(z.object({})).mutation(async () => {
+    return { success: true };
+  }),
+  explainScore: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  scoreTransaction: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  scoringHistory: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
 });
