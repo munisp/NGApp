@@ -4,6 +4,7 @@ tenant-provisioning-py — Production-hardened service
 import os
 import sys
 import json
+import urllib.request
 import time
 import signal
 import logging
@@ -79,6 +80,7 @@ def cache_set(key, value, ttl=300):
 # --- Configuration ---
 DB_URL = os.environ.get("DATABASE_URL", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+AML_ENGINE_URL = os.environ.get("AML_ENGINE_URL", "http://localhost:8120")
 PORT = int(os.environ.get("PORT", "8109"))
 START_TIME = time.time()
 

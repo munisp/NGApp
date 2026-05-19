@@ -439,6 +439,12 @@ func initDB() {
 	log.Println("[account-opening-go] Connected to Postgres")
 }
 
+func dbInsert(id, service, typ, status string, data []byte) error {
+	if db == nil { return fmt.Errorf("no db") }
+	_, err := db.Exec("INSERT INTO service_records (id, service, type, status, data) VALUES ($1,$2,$3,$4,$5)", id, service, typ, status, string(data))
+	return err
+}
+
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 	if db == nil {
 		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "source": "no-db"})

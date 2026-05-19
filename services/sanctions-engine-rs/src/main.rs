@@ -105,9 +105,20 @@ fn fuzzy_score(name: &str, target: &str) -> f64 {
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
 async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests()
+            .insert_header(("Retry-After", "1"))
+            .json(serde_json::json!({"error": "rate_limit_exceeded"}));
+    }
     if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let watchlist = state.watchlist.lock().unwrap();
+    // Inter-service call
+    let _upstream_url = std::env::var("AML_ENGINE_URL").unwrap_or_else(|_| "http://localhost:8120".to_string());
+    match call_service_sync(&format!("{}/v1/screen", _upstream_url), "{}") {
+        Ok(_resp) => eprintln!("sanctions-engine-rs: upstream call ok"),
+        Err(e) => eprintln!("sanctions-engine-rs: upstream call failed: {}", e),
+    }
     HttpResponse::Ok().json(json!({
         "service": "sanctions-engine-rs",
         "status": "healthy",

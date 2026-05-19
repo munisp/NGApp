@@ -9,6 +9,7 @@ import (
 "syscall"
 "sync/atomic"
 
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,6 +20,8 @@ import (
 	"net"
 
 	"strings"
+
+	_ "github.com/lib/pq"
 )
 
 var serviceName = "trade-finance-go"
@@ -96,12 +99,68 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp(w, 200, map[string]interface{}{"service": "trade-finance-go"})
 }
 
+
+// --- Database persistence ---
+var db *sql.DB
+
+func initDB() {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Printf("[%s] DATABASE_URL not set — in-memory mode", serviceName)
+		return
+	}
+	var err error
+	db, err = sql.Open("postgres", dsn)
+	if err != nil {
+		log.Printf("[%s] DB open failed: %v — in-memory fallback", serviceName, err)
+		db = nil
+		return
+	}
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[%s] DB ping failed: %v — in-memory fallback", serviceName, err)
+		db = nil
+		return
+	}
+	log.Printf("[%s] Postgres connected (pool: 25/5)", serviceName)
+	db.Exec(`CREATE TABLE IF NOT EXISTS service_records (
+		id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+		status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+		created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(),
+		created_by TEXT DEFAULT '', tenant_id TEXT DEFAULT ''
+	)`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_sr_status ON service_records(service, status)`)
+}
+
+func dbInsert(id, service, typ, status string, data []byte) error {
+	if db == nil { return fmt.Errorf("no db") }
+	_, err := db.Exec("INSERT INTO service_records (id, service, type, status, data) VALUES ($1,$2,$3,$4,$5)", id, service, typ, status, string(data))
+	return err
+}
+
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "trade_finance_go", time.Now().UnixNano())
 	dataBytes, _ := json.Marshal(body)
-	_ = dataBytes
+	if err := dbInsert(id, "trade_finance_go", "default", "active", dataBytes); err != nil {
+		log.Printf("[%s] dbInsert failed: %v — in-memory fallback", serviceName, err)
+		mu.Lock()
+		records = append(records, map[string]interface{}{"id": id, "data": body, "created_at": time.Now().Format(time.RFC3339)})
+		mu.Unlock()
+	}
+	// Inter-service call
+	upstreamURL := os.Getenv("AML_ENGINE_URL")
+	if upstreamURL == "" { upstreamURL = "http://localhost:8120" }
+	result, err := callService("POST", upstreamURL+"/v1/screen", body)
+	if err != nil {
+		log.Printf("trade-finance-go: aml_screening call failed: %v", err)
+	} else {
+		log.Printf("trade-finance-go: aml_screening ok: %v", result)
+	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 

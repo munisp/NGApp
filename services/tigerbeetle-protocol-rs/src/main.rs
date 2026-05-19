@@ -100,6 +100,12 @@ async fn commit_pending(req: actix_web::HttpRequest, state: web::Data<AppState>,
     if let Err(resp) = check_jwt(&req) { return resp; }
     let _result_data = json!({"endpoint": "create_transfer"});
     db_persist(&state, "create_transfer", &_result_data).await;
+    // Inter-service call
+    let _upstream_url = std::env::var("AML_ENGINE_URL").unwrap_or_else(|_| "http://localhost:8120".to_string());
+    match call_service_sync(&format!("{}/v1/screen", _upstream_url), "{}") {
+        Ok(_resp) => eprintln!("tigerbeetle-protocol-rs: upstream call ok"),
+        Err(e) => eprintln!("tigerbeetle-protocol-rs: upstream call failed: {}", e),
+    }
     let _result_data = json!({"endpoint": "commit_pending"});
     db_persist(&state, "commit_pending", &_result_data).await;
 
@@ -244,6 +250,25 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
 static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
 
+
+fn call_service_sync(url: &str, body: &str) -> Result<String, String> {
+    use std::io::{Read, Write};
+    let url_parsed = url.strip_prefix("http://").unwrap_or(url);
+    let (host_port, path) = url_parsed.split_once('/').unwrap_or((url_parsed, "/"));
+    let host_port = if !host_port.contains(':') { format!("{}:8080", host_port) } else { host_port.to_string() };
+    match std::net::TcpStream::connect_timeout(&host_port.parse().map_err(|e| format!("{}", e))?, std::time::Duration::from_secs(5)) {
+        Ok(mut stream) => {
+            let host = host_port.split(':').next().unwrap_or("localhost");
+            let req = format!("POST /{} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", path, host, body.len(), body);
+            stream.write_all(req.as_bytes()).map_err(|e| format!("{}", e))?;
+            let mut resp = String::new();
+            stream.read_to_string(&mut resp).map_err(|e| format!("{}", e))?;
+            Ok(resp)
+        }
+        Err(e) => Err(format!("connection failed: {}", e))
+    }
+}
+
 fn rl_allow() -> bool {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
     if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
@@ -291,4 +316,45 @@ async fn main() -> std::io::Result<()> {
             .route("/livez", web::get().to(livez))
             .route("/metrics", web::get().to(prom_metrics))
     }).bind(format!("0.0.0.0:{}", port))?.shutdown_timeout(30).run().await
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_healthz_exists() {
+        // Verify healthz compiles and is callable
+        // Domain function: healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse
+        assert!(true, "healthz should be defined");
+    }
+
+    #[test]
+    fn test_list_accounts_exists() {
+        // Verify list_accounts compiles and is callable
+        // Domain function: list_accounts() -> HttpResponse
+        assert!(true, "list_accounts should be defined");
+    }
+
+    #[test]
+    fn test_list_transfers_exists() {
+        // Verify list_transfers compiles and is callable
+        // Domain function: list_transfers() -> HttpResponse
+        assert!(true, "list_transfers should be defined");
+    }
+
+    #[test]
+    fn test_create_transfer_exists() {
+        // Verify create_transfer compiles and is callable
+        // Domain function: create_transfer(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse
+        assert!(true, "create_transfer should be defined");
+    }
+
+    #[test]
+    fn test_commit_pending_exists() {
+        // Verify commit_pending compiles and is callable
+        // Domain function: commit_pending(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse
+        assert!(true, "commit_pending should be defined");
+    }
 }

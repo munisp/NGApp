@@ -4,6 +4,7 @@ regulatory-reporting-py — Production-hardened service
 import os
 import sys
 import json
+import urllib.request
 import time
 import signal
 import logging
@@ -79,6 +80,7 @@ def cache_set(key, value, ttl=300):
 # --- Configuration ---
 DB_URL = os.environ.get("DATABASE_URL", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+REGULATORY_REPORTING_URL = os.environ.get("REGULATORY_REPORTING_URL", "http://localhost:8129")
 PORT = int(os.environ.get("PORT", "8080"))
 START_TIME = time.time()
 
@@ -195,6 +197,57 @@ def generate_regulatory_report(report_type, period, data):
 
 
 # --- HTTP Handler ---
+
+class CircuitBreaker:
+    def __init__(self, threshold=5, reset_timeout=30):
+        self.failures = 0
+        self.threshold = threshold
+        self.reset_timeout = reset_timeout
+        self.last_failure = 0
+        self.state = "closed"
+    def allow(self):
+        if self.state == "open":
+            if time.time() - self.last_failure > self.reset_timeout:
+                self.state = "half-open"
+                return True
+            return False
+        return True
+    def record_success(self):
+        self.failures = 0
+        self.state = "closed"
+    def record_failure(self):
+        self.failures += 1
+        self.last_failure = time.time()
+        if self.failures >= self.threshold:
+            self.state = "open"
+
+_circuit_breaker = CircuitBreaker()
+
+def call_service(method, url, body=None, retries=3, timeout=15):
+    """Call another microservice with retries and circuit breaker."""
+    if not _circuit_breaker.allow():
+        raise Exception(f"Circuit breaker open for {url}")
+    
+    last_err = None
+    for attempt in range(retries):
+        try:
+            if attempt > 0:
+                time.sleep(0.1 * (2 ** attempt))
+            
+            data = json.dumps(body).encode() if body else None
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("Content-Type", "application/json")
+            
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                result = json.loads(resp.read().decode())
+                _circuit_breaker.record_success()
+                return result
+        except Exception as e:
+            last_err = e
+            _circuit_breaker.record_failure()
+    
+    raise last_err
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logger.info(f"{self.command} {self.path} {args[0] if args else ''}")
@@ -283,6 +336,12 @@ class Handler(BaseHTTPRequestHandler):
         claims, err = validate_jwt(dict(self.headers))
         if err:
             self.respond(401, {"error": "unauthorized", "detail": err})
+            # Inter-service call
+            try:
+                _upstream = os.environ.get("REGULATORY_REPORTING_URL", "http://localhost:8129")
+                call_service("POST", f"{_upstream}/v1/report", {"service": SERVICE_NAME, "action": "notify"})
+            except Exception as _e:
+                log_event("WARN", f"inter-service call failed: {_e}")
             return
 
         if path == "/v1/create":

@@ -9,6 +9,7 @@ Middleware: Kafka, Postgres, Redis, Temporal, OpenSearch
 """
 import os
 import json
+import urllib.request
 import time
 import uuid
 import math
@@ -22,6 +23,7 @@ from typing import Optional
 from enum import Enum
 
 logging.basicConfig(level=logging.INFO, format="[liveness-inference-py] %(levelname)s %(message)s")
+AML_ENGINE_URL = os.environ.get("AML_ENGINE_URL", "http://localhost:8120")
 PORT = int(os.environ.get("PORT", "8230"))
 
 # ─── DeepFace Integration ─────────────────────────────────────────────────────
@@ -973,6 +975,57 @@ SUPPORTED_METHODS = [
 
 
 # ─── HTTP Handler ────────────────────────────────────────────────────────────
+
+
+class CircuitBreaker:
+    def __init__(self, threshold=5, reset_timeout=30):
+        self.failures = 0
+        self.threshold = threshold
+        self.reset_timeout = reset_timeout
+        self.last_failure = 0
+        self.state = "closed"
+    def allow(self):
+        if self.state == "open":
+            if time.time() - self.last_failure > self.reset_timeout:
+                self.state = "half-open"
+                return True
+            return False
+        return True
+    def record_success(self):
+        self.failures = 0
+        self.state = "closed"
+    def record_failure(self):
+        self.failures += 1
+        self.last_failure = time.time()
+        if self.failures >= self.threshold:
+            self.state = "open"
+
+_circuit_breaker = CircuitBreaker()
+
+def call_service(method, url, body=None, retries=3, timeout=15):
+    """Call another microservice with retries and circuit breaker."""
+    if not _circuit_breaker.allow():
+        raise Exception(f"Circuit breaker open for {url}")
+    
+    last_err = None
+    for attempt in range(retries):
+        try:
+            if attempt > 0:
+                time.sleep(0.1 * (2 ** attempt))
+            
+            data = json.dumps(body).encode() if body else None
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("Content-Type", "application/json")
+            
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                result = json.loads(resp.read().decode())
+                _circuit_breaker.record_success()
+                return result
+        except Exception as e:
+            last_err = e
+            _circuit_breaker.record_failure()
+    
+    raise last_err
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):

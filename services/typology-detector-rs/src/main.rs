@@ -53,6 +53,12 @@ async fn detect_typologies(req: actix_web::HttpRequest, state: web::Data<AppStat
     let result = detect_round_tripping(sends, receives, tolerance);
     let _result_data = json!({"endpoint": "detect_typologies"});
     db_persist(&state, "detect_typologies", &_result_data).await;
+    // Inter-service call
+    let _upstream_url = std::env::var("AML_ENGINE_URL").unwrap_or_else(|_| "http://localhost:8120".to_string());
+    match call_service_sync(&format!("{}/v1/screen", _upstream_url), "{}") {
+        Ok(_resp) => eprintln!("typology-detector-rs: upstream call ok"),
+        Err(e) => eprintln!("typology-detector-rs: upstream call failed: {}", e),
+    }
 
     HttpResponse::Ok().json(json!({
         "service": "typology-detector-rs",
@@ -253,6 +259,25 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 
 static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
 static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+
+fn call_service_sync(url: &str, body: &str) -> Result<String, String> {
+    use std::io::{Read, Write};
+    let url_parsed = url.strip_prefix("http://").unwrap_or(url);
+    let (host_port, path) = url_parsed.split_once('/').unwrap_or((url_parsed, "/"));
+    let host_port = if !host_port.contains(':') { format!("{}:8080", host_port) } else { host_port.to_string() };
+    match std::net::TcpStream::connect_timeout(&host_port.parse().map_err(|e| format!("{}", e))?, std::time::Duration::from_secs(5)) {
+        Ok(mut stream) => {
+            let host = host_port.split(':').next().unwrap_or("localhost");
+            let req = format!("POST /{} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", path, host, body.len(), body);
+            stream.write_all(req.as_bytes()).map_err(|e| format!("{}", e))?;
+            let mut resp = String::new();
+            stream.read_to_string(&mut resp).map_err(|e| format!("{}", e))?;
+            Ok(resp)
+        }
+        Err(e) => Err(format!("connection failed: {}", e))
+    }
+}
 
 fn rl_allow() -> bool {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
