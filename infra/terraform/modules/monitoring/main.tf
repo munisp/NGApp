@@ -136,7 +136,10 @@ resource "aws_cloudwatch_dashboard" "main" {
     widgets = [
       {
         type   = "metric"
-        x      = 0; y = 0; width = 12; height = 6
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
         properties = {
           title   = "RDS Performance"
           metrics = [
@@ -152,7 +155,10 @@ resource "aws_cloudwatch_dashboard" "main" {
       },
       {
         type   = "metric"
-        x      = 12; y = 0; width = 12; height = 6
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
         properties = {
           title   = "Redis Performance"
           metrics = [
@@ -168,7 +174,10 @@ resource "aws_cloudwatch_dashboard" "main" {
       },
       {
         type   = "metric"
-        x      = 0; y = 6; width = 24; height = 6
+        x      = 0
+        y      = 6
+        width  = 24
+        height = 6
         properties = {
           title   = "EKS Cluster"
           metrics = [

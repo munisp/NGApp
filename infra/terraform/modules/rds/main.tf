@@ -12,9 +12,18 @@ variable "max_allocated_storage"  { type = number }
 variable "engine_version"         { type = string }
 variable "database_name"          { type = string }
 variable "master_username"        { type = string }
-variable "multi_az"               { type = bool; default = true }
-variable "backup_retention"       { type = number; default = 30 }
-variable "deletion_protection"    { type = bool; default = true }
+variable "multi_az" {
+  type    = bool
+  default = true
+}
+variable "backup_retention" {
+  type    = number
+  default = 30
+}
+variable "deletion_protection" {
+  type    = bool
+  default = true
+}
 variable "eks_security_group_id"  { type = string }
 
 locals {

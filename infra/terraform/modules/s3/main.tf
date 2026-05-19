@@ -4,8 +4,14 @@
 
 variable "project_name"      { type = string }
 variable "environment"       { type = string }
-variable "enable_versioning" { type = bool; default = true }
-variable "enable_lifecycle"  { type = bool; default = true }
+variable "enable_versioning" {
+  type    = bool
+  default = true
+}
+variable "enable_lifecycle" {
+  type    = bool
+  default = true
+}
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"

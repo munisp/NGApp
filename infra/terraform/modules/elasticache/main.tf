@@ -47,11 +47,26 @@ resource "aws_elasticache_parameter_group" "main" {
   name   = "${local.name_prefix}-redis7-params"
   family = "redis7"
 
-  parameter { name = "maxmemory-policy"  value = "allkeys-lru" }
-  parameter { name = "notify-keyspace-events" value = "Ex" }
-  parameter { name = "timeout"           value = "300" }
-  parameter { name = "tcp-keepalive"     value = "60" }
-  parameter { name = "activedefrag"      value = "yes" }
+  parameter {
+    name  = "maxmemory-policy"
+    value = "allkeys-lru"
+  }
+  parameter {
+    name  = "notify-keyspace-events"
+    value = "Ex"
+  }
+  parameter {
+    name  = "timeout"
+    value = "300"
+  }
+  parameter {
+    name  = "tcp-keepalive"
+    value = "60"
+  }
+  parameter {
+    name  = "activedefrag"
+    value = "yes"
+  }
 }
 
 resource "aws_elasticache_replication_group" "main" {
