@@ -23,28 +23,31 @@ export const fraudCaseManagementRouter = router({
     )
     .query(async ({ input }) => {
       try {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(fraudAlerts)
-        .orderBy(desc(fraudAlerts.id))
-        .limit(input.limit)
-        .offset(input.offset);
+        const database = await getDb();
+        if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+        const results = await database
+          .select()
+          .from(fraudAlerts)
+          .orderBy(desc(fraudAlerts.id))
+          .limit(input.limit)
+          .offset(input.offset);
 
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(fraudAlerts);
+        const [totalResult] = await database
+          .select({ total: count() })
+          .from(fraudAlerts);
 
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
+        return {
+          data: results,
+          total: totalResult?.total ?? 0,
+          limit: input.limit,
+          offset: input.offset,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }),
 
@@ -52,39 +55,45 @@ export const fraudCaseManagementRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [record] = await database
-        .select()
-        .from(fraudAlerts)
-        .where(eq(fraudAlerts.id, input.id))
-        .limit(1);
+        const database = await getDb();
+        if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+        const [record] = await database
+          .select()
+          .from(fraudAlerts)
+          .where(eq(fraudAlerts.id, input.id))
+          .limit(1);
 
-      if (!record) {
-        throw new Error(`Record with id ${input.id} not found`);
-      }
-      return record;
+        if (!record) {
+          throw new Error(`Record with id ${input.id} not found`);
+        }
+        return record;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }),
 
   getSummary: protectedProcedure.query(async () => {
     try {
-    const database = await getDb();
-    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
-      .select({ total: count() })
-      .from(fraudAlerts);
+      const database = await getDb();
+      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+      const [totalResult] = await database
+        .select({ total: count() })
+        .from(fraudAlerts);
 
-    return {
-      totalRecords: totalResult?.total ?? 0,
-      lastUpdated: new Date().toISOString(),
-    };
+      return {
+        totalRecords: totalResult?.total ?? 0,
+        lastUpdated: new Date().toISOString(),
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
 
@@ -97,53 +106,59 @@ export const fraudCaseManagementRouter = router({
     )
     .query(async ({ input }) => {
       try {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const since = new Date();
-      since.setDate(since.getDate() - input.days);
+        const database = await getDb();
+        if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+        const since = new Date();
+        since.setDate(since.getDate() - input.days);
 
-      const results = await database
-        .select()
-        .from(fraudAlerts)
-        .orderBy(desc(fraudAlerts.id))
-        .limit(input.limit);
+        const results = await database
+          .select()
+          .from(fraudAlerts)
+          .orderBy(desc(fraudAlerts.id))
+          .limit(input.limit);
 
-      return results;
+        return results;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }),
 
   getStats: protectedProcedure.query(async () => {
     try {
-    const database = await getDb();
-    if (!database)
-      return {
-        total: 0,
-        active: 0,
-        recent: 0,
-        lastUpdated: new Date().toISOString(),
-      };
-    try {
-      await database.execute(sql`SELECT 1 as ok`);
-      return {
-        total: 0,
-        active: 0,
-        recent: 0,
-        lastUpdated: new Date().toISOString(),
-      };
-    } catch {
-      return {
-        total: 0,
-        active: 0,
-        recent: 0,
-        lastUpdated: new Date().toISOString(),
-      };
-    }
+      const database = await getDb();
+      if (!database)
+        return {
+          total: 0,
+          active: 0,
+          recent: 0,
+          lastUpdated: new Date().toISOString(),
+        };
+      try {
+        await database.execute(sql`SELECT 1 as ok`);
+        return {
+          total: 0,
+          active: 0,
+          recent: 0,
+          lastUpdated: new Date().toISOString(),
+        };
+      } catch {
+        return {
+          total: 0,
+          active: 0,
+          recent: 0,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
 });

@@ -99,22 +99,25 @@ export const transactionFeeCalcRouter = router({
     }),
   getStats: protectedProcedure.query(async () => {
     try {
-    const db = (await getDb())!;
-    const [totalRules] = await db
-      .select({ value: count() })
-      .from(feeRules)
-      .limit(100);
-    const [totalFees] = await db
-      .select({ value: sum(feeAuditTrail.txAmount) })
-      .from(feeAuditTrail)
-      .limit(100);
-    return {
-      totalRules: Number(totalRules.value),
-      totalFeesCollected: Number(totalFees.value ?? 0),
-    };
+      const db = (await getDb())!;
+      const [totalRules] = await db
+        .select({ value: count() })
+        .from(feeRules)
+        .limit(100);
+      const [totalFees] = await db
+        .select({ value: sum(feeAuditTrail.txAmount) })
+        .from(feeAuditTrail)
+        .limit(100);
+      return {
+        totalRules: Number(totalRules.value),
+        totalFeesCollected: Number(totalFees.value ?? 0),
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
 });

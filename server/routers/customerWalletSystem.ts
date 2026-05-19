@@ -124,22 +124,25 @@ export const customerWalletSystemRouter = router({
     }),
   getStats: protectedProcedure.query(async () => {
     try {
-    const db = (await getDb())!;
-    const [totalCustomers] = await db
-      .select({ value: count() })
-      .from(customers)
-      .limit(100);
-    const [totalVolume] = await db
-      .select({ value: sum(transactions.amount) })
-      .from(transactions)
-      .limit(100);
-    return {
-      totalWallets: Number(totalCustomers.value),
-      totalVolume: Number(totalVolume.value ?? 0),
-    };
+      const db = (await getDb())!;
+      const [totalCustomers] = await db
+        .select({ value: count() })
+        .from(customers)
+        .limit(100);
+      const [totalVolume] = await db
+        .select({ value: sum(transactions.amount) })
+        .from(transactions)
+        .limit(100);
+      return {
+        totalWallets: Number(totalCustomers.value),
+        totalVolume: Number(totalVolume.value ?? 0),
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
 });

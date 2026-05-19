@@ -148,19 +148,22 @@ export const savingsProductsRouter = router({
     }),
   getStats: protectedProcedure.query(async () => {
     try {
-    const db = (await getDb())!;
-    const [totals] = await db
-      .select({ total: count(), volume: sum(transactions.amount) })
-      .from(transactions)
-      .limit(100);
-    return {
-      totalAccounts: 0,
-      totalDeposits: Number(totals.total),
-      totalVolume: Number(totals.volume ?? 0),
-    };
+      const db = (await getDb())!;
+      const [totals] = await db
+        .select({ total: count(), volume: sum(transactions.amount) })
+        .from(transactions)
+        .limit(100);
+      return {
+        totalAccounts: 0,
+        totalDeposits: Number(totals.total),
+        totalVolume: Number(totals.volume ?? 0),
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
 });

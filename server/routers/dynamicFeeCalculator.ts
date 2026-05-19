@@ -27,21 +27,24 @@ import { permifyCheck } from "../_core/permify";
 export const dynamicFeeCalculatorRouter = router({
   getStats: protectedProcedure.query(async () => {
     try {
-    const db = await getDb();
-    if (!db) return { totalRules: 0, activeRules: 0, avgFeeRate: 0 };
-    const rows = await db
-      .select()
-      .from(systemConfig)
-      .where(sql`${systemConfig.key} LIKE 'fee_rule_%'`)
-      .limit(100);
-    return {
-      totalRules: rows.length,
-      activeRules: rows.length,
-      avgFeeRate: 1.5,
-    };
+      const db = await getDb();
+      if (!db) return { totalRules: 0, activeRules: 0, avgFeeRate: 0 };
+      const rows = await db
+        .select()
+        .from(systemConfig)
+        .where(sql`${systemConfig.key} LIKE 'fee_rule_%'`)
+        .limit(100);
+      return {
+        totalRules: rows.length,
+        activeRules: rows.length,
+        avgFeeRate: 1.5,
+      };
     } catch (error) {
       if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }),
   calculate: protectedProcedure
