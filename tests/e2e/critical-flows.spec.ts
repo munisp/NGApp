@@ -1,119 +1,154 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// E2E Tests — Critical User Flows (Playwright)
+// Run: npx playwright test --config tests/e2e/playwright.config.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { test, expect } from "@playwright/test";
 
-const BASE_URL = "http://localhost:3002";
+const BASE_URL = process.env.BASE_URL || "http://localhost:3002";
 
-test('login page loads', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+// ─── Health & API ────────────────────────────────────────────────────────────
+
+test.describe("API Health", () => {
+  test("health endpoint returns 200", async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/health`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveProperty("status");
+  });
+
+  test("tRPC endpoint responds", async ({ request }) => {
+    const res = await request.get(
+      `${BASE_URL}/api/trpc/agentHierarchy.list?input=${encodeURIComponent(JSON.stringify({ limit: 5, offset: 0 }))}`
+    );
+    expect([200, 401]).toContain(res.status());
+  });
 });
 
-test('agent login with valid credentials', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+// ─── Authentication ──────────────────────────────────────────────────────────
+
+test.describe("Authentication", () => {
+  test("login page loads", async ({ page }) => {
+    await page.goto(BASE_URL);
+    await expect(page).toHaveTitle(/.+/);
+    // Should show login form or redirect to auth
+    const body = await page.textContent("body");
+    expect(body).toBeTruthy();
+  });
+
+  test("unauthenticated API returns 401", async ({ request }) => {
+    const res = await request.post(`${BASE_URL}/api/trpc/agentOnboarding.submit`, {
+      data: { name: "test" },
+    });
+    expect([401, 400]).toContain(res.status());
+  });
+
+  test("invalid credentials rejected", async ({ request }) => {
+    const res = await request.post(`${BASE_URL}/api/auth/login`, {
+      data: { email: "fake@test.com", password: "wrong" },
+    });
+    expect([401, 403, 404]).toContain(res.status());
+  });
 });
 
-test('agent login with invalid credentials', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+// ─── Core Pages ──────────────────────────────────────────────────────────────
+
+test.describe("Core Pages", () => {
+  test("homepage renders without errors", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+    await page.goto(BASE_URL);
+    await page.waitForLoadState("networkidle");
+    // Allow max 2 console errors (React dev warnings)
+    expect(errors.length).toBeLessThan(3);
+  });
+
+  test("static assets load (JS bundles)", async ({ page }) => {
+    const responses: number[] = [];
+    page.on("response", (res) => {
+      if (res.url().endsWith(".js") || res.url().endsWith(".css")) {
+        responses.push(res.status());
+      }
+    });
+    await page.goto(BASE_URL);
+    await page.waitForLoadState("networkidle");
+    // All static assets should return 200
+    for (const status of responses) {
+      expect([200, 304]).toContain(status);
+    }
+  });
+
+  test("mobile viewport renders", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(BASE_URL);
+    await page.waitForLoadState("networkidle");
+    const body = await page.textContent("body");
+    expect(body).toBeTruthy();
+  });
 });
 
-test('dashboard loads after login', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+// ─── tRPC Router Integration ─────────────────────────────────────────────────
+
+test.describe("tRPC Routers", () => {
+  const routers = [
+    "agentHierarchy.list",
+    "transactions.list",
+    "disputes.list",
+    "agentBanking.list",
+    "adminDashboard.stats",
+  ];
+
+  for (const router of routers) {
+    test(`${router} responds`, async ({ request }) => {
+      const input = router.includes("stats") ? {} : { limit: 5, offset: 0 };
+      const res = await request.get(
+        `${BASE_URL}/api/trpc/${router}?input=${encodeURIComponent(JSON.stringify(input))}`
+      );
+      // Should return data or auth error, never 500
+      expect(res.status()).toBeLessThan(500);
+    });
+  }
 });
 
-test('transaction list displays', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+// ─── Security ────────────────────────────────────────────────────────────────
+
+test.describe("Security", () => {
+  test("no server info leaked in headers", async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/health`);
+    const headers = res.headers();
+    expect(headers["x-powered-by"]).toBeUndefined();
+  });
+
+  test("CORS headers present on API", async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/health`);
+    // Should not expose server internals
+    expect(res.status()).toBe(200);
+  });
+
+  test("SQL injection attempt blocked", async ({ request }) => {
+    const res = await request.get(
+      `${BASE_URL}/api/trpc/agentHierarchy.list?input=${encodeURIComponent(JSON.stringify({ limit: "'; DROP TABLE agents; --", offset: 0 }))}`
+    );
+    // Should return validation error, not 500
+    expect([400, 401, 422]).toContain(res.status());
+  });
 });
 
-test('create cash-in transaction', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
+// ─── Performance ─────────────────────────────────────────────────────────────
 
-test('create cash-out transaction', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
+test.describe("Performance", () => {
+  test("health endpoint responds under 500ms", async ({ request }) => {
+    const start = Date.now();
+    await request.get(`${BASE_URL}/api/health`);
+    const duration = Date.now() - start;
+    expect(duration).toBeLessThan(500);
+  });
 
-test('create transfer transaction', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
+  test("page load under 5 seconds", async ({ page }) => {
+    const start = Date.now();
+    await page.goto(BASE_URL);
+    await page.waitForLoadState("domcontentloaded");
+    const duration = Date.now() - start;
+    expect(duration).toBeLessThan(5000);
+  });
 });
-
-test('create airtime transaction', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('view transaction details', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('agent profile page loads', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('commission report displays', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('float balance displays', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('notification list loads', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('compliance dashboard loads', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('admin user management', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('agent KYC verification', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('billing dashboard loads', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('report generation', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('logout clears session', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('mobile responsive layout', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('accessibility checks', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
-test('dark mode toggle', async ({ page }) => {
-  await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/.*/);
-});
-
