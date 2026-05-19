@@ -10,7 +10,7 @@ export const guideFeedbackRouter = router({
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
-        const rows = await db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
+        const rows = await db.select().from(auditLog).where(eq(auditLog.resource, "guideFeedback")).orderBy(desc(auditLog.createdAt)).limit(input?.limit ?? 50);
         return { items: rows, total: rows.length };
       } catch { return { items: [], total: 0 }; }
     }),
@@ -22,7 +22,7 @@ export const guideFeedbackRouter = router({
   summary: protectedProcedure.query(async () => {
     try {
       const db = (await getDb())!;
-      const [total] = await db.select({ value: count() }).from(auditLog);
+      const [total] = await db.select({ value: count() }).from(auditLog).where(eq(auditLog.resource, "guideFeedback"));
       return { totalFeedback: total?.value ?? 0, averageRating: 4.2, topGuides: [] };
     } catch { return { totalFeedback: 0, averageRating: 0, topGuides: [] }; }
   }),

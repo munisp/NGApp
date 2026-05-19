@@ -255,12 +255,12 @@ export const changelogRouter = router({
         const db = (await getDb())!;
         const rows = await db
           .select()
-          .from(auditLog)
+          .from(auditLog).where(eq(auditLog.resource, "sprint15Features"))
           .orderBy(desc(auditLog.id))
           .limit(input.limit ?? 20);
         const [{ total }] = await db
           .select({ total: count() })
-          .from(auditLog)
+          .from(auditLog).where(eq(auditLog.resource, "sprint15Features"))
           .limit(100);
         return {
           items: rows,
