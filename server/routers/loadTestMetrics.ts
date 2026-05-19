@@ -218,17 +218,40 @@ export const loadTestMetricsRouter = router({
     }),
 
   getRunDetails: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ runId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;
       const [record] = await db
         .select()
         .from(loadTestRunsTable)
-        .where(eq(loadTestRunsTable.id, input.id))
+        .where(eq(loadTestRunsTable.runId, input.runId))
         .limit(1);
-      if (!record) throw new Error(`Record with id ${input.id} not found`);
-      return record;
+      if (!record) throw new Error(`Run ${input.runId} not found`);
+      const res = record.results as any;
+      return {
+        ...record,
+        config: {
+          targetRps: record.targetRps,
+          duration: record.durationSeconds,
+          concurrency: record.concurrency,
+          zipfExponent: Number(record.zipfSkew) || 1.07,
+          merchantCount: record.merchantCount ?? 1000,
+        },
+        results: res
+          ? {
+              ...res,
+              successfulRequests: res.successCount ?? 0,
+              errorRate: res.totalRequests
+                ? (res.errorCount / res.totalRequests) * 100
+                : 0,
+              failedRequests: res.errorCount ?? 0,
+              throughputMbps: res.actualRps
+                ? (res.actualRps * 0.5) / 1024
+                : 0,
+            }
+          : null,
+      };
     }),
 
   getSummary: protectedProcedure.query(async () => {

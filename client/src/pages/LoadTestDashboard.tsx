@@ -222,7 +222,7 @@ export default function LoadTestDashboard() {
   });
 
   const runs = runsQuery.data ?? [];
-  const activeRunId = selectedRun ?? runs[0]?.id ?? null;
+  const activeRunId = selectedRun ?? (runs[0]?.runId ?? null);
   // @ts-ignore
   const detailsQuery = trpc.loadTestMetrics.getRunDetails.useQuery(
     { runId: activeRunId! },
@@ -231,7 +231,7 @@ export default function LoadTestDashboard() {
 
   const run = detailsQuery.data;
   const results = run?.results;
-  const engines = engineMetricsQuery.data?.engines ?? [];
+  const engines: any[] = (engineMetricsQuery.data as any)?.engines ?? [];
 
   // Prepare chart data
   const zipfData = useMemo(
@@ -561,8 +561,8 @@ export default function LoadTestDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     {runs.map((r: any) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name?.slice(0, 40) ?? r.id}
+                      <SelectItem key={r.runId} value={r.runId}>
+                        {r.runId?.slice(0, 40) ?? r.id}
                       </SelectItem>
                     ))}
                   </SelectContent>

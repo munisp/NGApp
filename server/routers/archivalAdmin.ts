@@ -92,12 +92,77 @@ export const archivalAdminRouter = router({
 
   getStats: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) return { totalArchived: 0, lastRun: null, schedule: null };
+    if (!db)
+      return {
+        totalArchived: 0,
+        lastRun: null,
+        schedule: null as {
+          enabled: boolean;
+          cronExpression: string;
+          retentionDays: number;
+          deleteAfterArchive: boolean;
+          nextRun: string | null;
+        } | null,
+        currentJob: null as {
+          id: string;
+          startedAt: string;
+          retentionDays: number;
+        } | null,
+        eligibleSettlements: 0,
+        eligibleBatches: 0,
+        cutoffDate: new Date(),
+        retentionDays: 90,
+      };
     const archivalStats = await getArchivalStats();
-    const schedule = await getConfig("archival_schedule");
+    const rawSchedule = await getConfig("archival_schedule");
+    let schedule: {
+      enabled: boolean;
+      cronExpression: string;
+      retentionDays: number;
+      deleteAfterArchive: boolean;
+      nextRun: string | null;
+    } | null = null;
+    if (rawSchedule) {
+      try {
+        const parsed =
+          typeof rawSchedule === "string" && rawSchedule.startsWith("{")
+            ? JSON.parse(rawSchedule)
+            : null;
+        if (parsed && typeof parsed === "object") {
+          schedule = {
+            enabled: parsed.enabled ?? true,
+            cronExpression: parsed.cronExpression ?? String(rawSchedule),
+            retentionDays: parsed.retentionDays ?? 90,
+            deleteAfterArchive: parsed.deleteAfterArchive ?? false,
+            nextRun: parsed.nextRun ?? null,
+          };
+        } else {
+          schedule = {
+            enabled: true,
+            cronExpression: String(rawSchedule),
+            retentionDays: 90,
+            deleteAfterArchive: false,
+            nextRun: null,
+          };
+        }
+      } catch {
+        schedule = {
+          enabled: true,
+          cronExpression: String(rawSchedule),
+          retentionDays: 90,
+          deleteAfterArchive: false,
+          nextRun: null,
+        };
+      }
+    }
     return {
       ...archivalStats,
-      schedule: schedule ?? "0 2 * * 0",
+      schedule,
+      currentJob: null as {
+        id: string;
+        startedAt: string;
+        retentionDays: number;
+      } | null,
     };
   }),
 
@@ -107,10 +172,12 @@ export const archivalAdminRouter = router({
         triggeredBy: z.string().default("manual"),
         retentionDays: z.number().optional(),
         deleteAfterArchive: z.boolean().optional(),
+        tables: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const startTime = Date.now();
+      const jobId = `archival_${Date.now()}`;
       try {
         const result = await runArchivalJob({
           retentionDays: input.retentionDays,
@@ -121,26 +188,46 @@ export const archivalAdminRouter = router({
           title: `Archival Job Completed`,
           content: `Triggered by: ${input.triggeredBy}\nTotal archived: ${result.totalArchived} records\nDuration: ${duration}ms`,
         });
-        return { ...result, duration };
+        return {
+          success: true as const,
+          jobId,
+          ...result,
+          duration,
+          error: null as string | null,
+        };
       } catch (err: any) {
         const duration = Date.now() - startTime;
         await notifyOwner({
           title: `Archival Job Failed`,
           content: `Triggered by: ${input.triggeredBy}\nError: ${err.message}\nDuration: ${duration}ms`,
         });
-        throw err;
+        return {
+          success: false as const,
+          jobId,
+          error: err.message as string | null,
+          totalArchived: 0,
+          totalDeleted: 0,
+          tables: [] as any[],
+          startedAt: new Date(),
+          completedAt: new Date(),
+          duration,
+        };
       }
     }),
 
   updateSchedule: protectedProcedure
     .input(
       z.object({
-        schedule: z.string(),
+        enabled: z.boolean().default(false),
+        cronExpression: z.string().default("0 2 * * 0"),
+        retentionDays: z.number().default(90),
+        deleteAfterArchive: z.boolean().default(false),
       })
     )
     .mutation(async ({ input }) => {
-      await setConfig("archival_schedule", input.schedule);
-      return { success: true, schedule: input.schedule };
+      const schedule = JSON.stringify(input);
+      await setConfig("archival_schedule", schedule);
+      return { success: true, schedule: input };
     }),
 
   getHistory: protectedProcedure
