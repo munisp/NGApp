@@ -70,27 +70,95 @@ resource "aws_db_parameter_group" "main" {
   family = "postgres16"
 
   # Performance tuning (matches infra/postgres/postgresql-production.conf)
-  parameter { name = "shared_buffers"           value = "{DBInstanceClassMemory/4}" apply_method = "pending-reboot" }
-  parameter { name = "effective_cache_size"      value = "{DBInstanceClassMemory*3/4}" apply_method = "pending-reboot" }
-  parameter { name = "work_mem"                  value = "65536"   apply_method = "immediate" }
-  parameter { name = "maintenance_work_mem"      value = "524288"  apply_method = "immediate" }
-  parameter { name = "random_page_cost"          value = "1.1"     apply_method = "immediate" }
-  parameter { name = "effective_io_concurrency"  value = "200"     apply_method = "immediate" }
-  parameter { name = "max_parallel_workers_per_gather" value = "4" apply_method = "immediate" }
-  parameter { name = "max_parallel_workers"      value = "8"       apply_method = "pending-reboot" }
-  parameter { name = "wal_buffers"               value = "65536"   apply_method = "pending-reboot" }
-  parameter { name = "checkpoint_completion_target" value = "0.9"  apply_method = "immediate" }
+  parameter {
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/4}"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name         = "effective_cache_size"
+    value        = "{DBInstanceClassMemory*3/4}"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name         = "work_mem"
+    value        = "65536"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "maintenance_work_mem"
+    value        = "524288"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "random_page_cost"
+    value        = "1.1"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "effective_io_concurrency"
+    value        = "200"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "max_parallel_workers_per_gather"
+    value        = "4"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "max_parallel_workers"
+    value        = "8"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name         = "wal_buffers"
+    value        = "65536"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name         = "checkpoint_completion_target"
+    value        = "0.9"
+    apply_method = "immediate"
+  }
 
   # Logging
-  parameter { name = "log_min_duration_statement" value = "1000"   apply_method = "immediate" }
-  parameter { name = "log_checkpoints"            value = "1"      apply_method = "immediate" }
-  parameter { name = "log_connections"             value = "1"      apply_method = "immediate" }
-  parameter { name = "log_disconnections"          value = "1"      apply_method = "immediate" }
-  parameter { name = "log_lock_waits"              value = "1"      apply_method = "immediate" }
+  parameter {
+    name         = "log_min_duration_statement"
+    value        = "1000"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "log_checkpoints"
+    value        = "1"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "log_connections"
+    value        = "1"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "log_disconnections"
+    value        = "1"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "log_lock_waits"
+    value        = "1"
+    apply_method = "immediate"
+  }
 
   # Connection management
-  parameter { name = "idle_in_transaction_session_timeout" value = "60000" apply_method = "immediate" }
-  parameter { name = "statement_timeout"                   value = "30000" apply_method = "immediate" }
+  parameter {
+    name         = "idle_in_transaction_session_timeout"
+    value        = "60000"
+    apply_method = "immediate"
+  }
+  parameter {
+    name         = "statement_timeout"
+    value        = "30000"
+    apply_method = "immediate"
+  }
 
   tags = { Name = "${local.name_prefix}-pg-params" }
 }
