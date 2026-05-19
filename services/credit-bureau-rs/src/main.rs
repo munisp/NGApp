@@ -23,6 +23,7 @@ fn max_dti_for_score(score: u32) -> f64 { if score >= 700 { 0.50 } else if score
 fn delinquency_flag(dpd: u32) -> bool { dpd > 30 }
 
 async fn health() -> HttpResponse {
+    let _delinquency_flag = delinquency_flag(0);
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "credit-bureau-rs"}))
 }
 

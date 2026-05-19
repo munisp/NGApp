@@ -411,6 +411,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("kyc_event_consumer_py", body)
+            _process_event_result = process_event(body.get("data", {}))
             _kafka_consumer_loop_result = kafka_consumer_loop()
             self.respond(201, {"created": True, "data": result})
         else:

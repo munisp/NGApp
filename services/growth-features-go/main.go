@@ -202,6 +202,7 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "growth_features_go", "action": "respondJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("growth_features_go-%d", time.Now().UnixNano()), "growth_features_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("growth_features_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("CORE_BANKING_URL")
 	if csURL == "" { csURL = "http://core-banking-go:8080" }

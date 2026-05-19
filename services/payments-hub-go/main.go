@@ -145,6 +145,8 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("payments-hub-go: aml_screening ok: %v", result)
 	}
+	
+	cacheSet("payments_hub_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func routePayment(amount float64, channel string) PaymentRoute {

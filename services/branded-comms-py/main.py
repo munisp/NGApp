@@ -272,6 +272,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _render_template_result = render_template(body.get("data", {}), body.get("context", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

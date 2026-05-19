@@ -264,6 +264,7 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "trade_finance_gl_go", "action": "respondJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("trade_finance_gl_go-%d", time.Now().UnixNano()), "trade_finance_gl_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("trade_finance_gl_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("GL_ENGINE_URL")
 	if csURL == "" { csURL = "http://gl-engine-go:8080" }

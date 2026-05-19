@@ -633,6 +633,7 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "gl_engine_go", "action": "writeJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("gl_engine_go-%d", time.Now().UnixNano()), "gl_engine_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("gl_engine_list", "", 1) // invalidate cache on write
 	}
 	json.NewEncoder(w).Encode(data)
 }

@@ -510,6 +510,7 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "erpnext_bridge_go", "action": "respondJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("erpnext_bridge_go-%d", time.Now().UnixNano()), "erpnext_bridge_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("erpnext_bridge_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("CORE_BANKING_URL")
 	if csURL == "" { csURL = "http://core-banking-go:8080" }

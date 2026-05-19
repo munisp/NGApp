@@ -238,6 +238,7 @@ func handleVerifyBVN(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "identity_verification_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("identity_verification_go-%d", time.Now().UnixNano()), "identity_verification_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("identity_verification_list", "", 1) // invalidate cache on write
 	}
 	respondJSON(w, 200, result)
 }

@@ -356,6 +356,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("analytics_engine_py", body)
+            _generate_report_result = generate_report(body.get("data", {}))
             _compute_metrics_result = compute_metrics(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:

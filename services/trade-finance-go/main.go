@@ -170,6 +170,8 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("trade-finance-go: aml_screening ok: %v", result)
 	}
+	
+	cacheSet("trade_finance_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func lcFee(amount float64, tenor int) float64 {

@@ -358,6 +358,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("regulatory_reporting_py", body)
+            _generate_regulatory_report_result = generate_regulatory_report(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

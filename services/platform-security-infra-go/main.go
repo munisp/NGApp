@@ -302,6 +302,7 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "platform_security_infra_go", "action": "respondJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("platform_security_infra_go-%d", time.Now().UnixNano()), "platform_security_infra_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("platform_security_infra_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("SECURITY_URL")
 	if csURL == "" { csURL = "http://security-gateway-go:8080" }

@@ -130,7 +130,9 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("whatsapp-cloud-api-go: health_check result: %v", result)
 	}
-jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+
+	cacheSet("whatsapp_cloud_api_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
 	// No DB — respond with in-memory acknowledgement

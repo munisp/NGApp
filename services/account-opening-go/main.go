@@ -356,6 +356,8 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	if dbErr := dbInsert(fmt.Sprintf("account_opening_go-%d", time.Now().UnixNano()), "account_opening_go", "default", "active", dataBytes); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
 	}
+	
+	cacheSet("account_opening_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{
 		"application": app,
 		"message":     fmt.Sprintf("Account application approved — %s KYC verified", app.KYCLevel),
@@ -858,7 +860,7 @@ func main() {
 	log.Printf("[account-opening-go] Starting on :%s (KYC enforcement enabled)", port)
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(countingMiddleware(mux)))),
+		Handler:      rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(jwtMiddleware(countingMiddleware(mux))))),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,

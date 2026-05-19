@@ -272,6 +272,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _schedule_batch_result = schedule_batch(body.get("data", {}))
             _validate_batch_window_result = validate_batch_window(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 

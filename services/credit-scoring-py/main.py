@@ -374,6 +374,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("credit_scoring_py", body)
+            _compute_credit_score_result = compute_credit_score(body.get("data", {}))
+            _call_credit_bureau_result = call_credit_bureau(body.get("data", {}))
+            _affordability_check_result = affordability_check(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

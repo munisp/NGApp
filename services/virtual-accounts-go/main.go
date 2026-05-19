@@ -118,7 +118,9 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("virtual-accounts-go: kyc_check result: %v", result)
 	}
-jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+
+	cacheSet("virtual_accounts_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
 	// No DB — respond with in-memory acknowledgement

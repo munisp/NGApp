@@ -808,6 +808,7 @@ func rollUpHandler(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "kpi_engine_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("kpi_engine_go-%d", time.Now().UnixNano()), "kpi_engine_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("kpi_engine_list", "", 1) // invalidate cache on write
 	}
 	jsonResp(w, 200, tree)
 }
@@ -1118,7 +1119,7 @@ func main() {
 	log.Printf("kpi-engine-go starting on :%s (11 roles, weighted scoring, RBAC, flow-down roll-up)", port)
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      rateLimitMiddleware(securityHeadersMiddleware(handler)),
+		Handler:      rateLimitMiddleware(securityHeadersMiddleware(jwtMiddleware(handler))),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,

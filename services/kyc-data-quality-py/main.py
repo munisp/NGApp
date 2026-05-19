@@ -423,6 +423,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("kyc_data_quality_py", body)
+            _check_dup_result = check_dup(body.get("data", {}))
             _assess_result = assess(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:

@@ -273,6 +273,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _fee_breakdown_result = fee_breakdown(body.get("data", {}))
+            _compute_revenue_metrics_result = compute_revenue_metrics(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

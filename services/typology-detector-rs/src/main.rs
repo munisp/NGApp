@@ -31,6 +31,7 @@ fn typology_risk_level(matched_patterns: u32) -> &'static str {
 }
 
 async fn health() -> HttpResponse {
+    let _typology_risk_level = typology_risk_level(0.0);
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "typology-detector-rs",

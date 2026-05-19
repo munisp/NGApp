@@ -21,6 +21,7 @@ fn payout_amount(insured_value: f64, deductible_pct: f64) -> f64 { insured_value
 fn claim_status(verified: bool, approved: bool) -> &'static str { match (verified, approved) { (true, true) => "approved", (true, false) => "denied", _ => "pending" } }
 
 async fn health() -> HttpResponse {
+    let _claim_status = claim_status("pending");
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "livestock-insurance-rs"}))
 }
 

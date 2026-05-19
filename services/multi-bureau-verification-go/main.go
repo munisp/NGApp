@@ -205,6 +205,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "multi_bureau_verification_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("multi_bureau_verification_go-%d", time.Now().UnixNano()), "multi_bureau_verification_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("multi_bureau_verification_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("KYC_ENGINE_URL")
 	if csURL == "" { csURL = "http://kyc-engine-go:8080" }

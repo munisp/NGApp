@@ -210,6 +210,7 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 	dbData, _ := json.Marshal(map[string]string{"service": "open_banking_baas_go", "action": "respondJSON"})
 	if dbErr := dbInsert(fmt.Sprintf("open_banking_baas_go-%d", time.Now().UnixNano()), "open_banking_baas_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("open_banking_baas_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("CORE_BANKING_URL")
 	if csURL == "" { csURL = "http://core-banking-go:8080" }

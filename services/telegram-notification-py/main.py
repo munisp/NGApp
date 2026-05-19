@@ -365,6 +365,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("telegram_notification_py", body)
+            _batch_send_telegram_result = batch_send_telegram(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/telegram-notification/update":
             rid = body.get("id", "")

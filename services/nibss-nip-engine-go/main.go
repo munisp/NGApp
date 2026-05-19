@@ -205,6 +205,7 @@ func handleNameEnquiry(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "nibss_nip_engine_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("nibss_nip_engine_go-%d", time.Now().UnixNano()), "nibss_nip_engine_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("nibss_nip_engine_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("PAYMENTS_URL")
 	if csURL == "" { csURL = "http://payments-hub-go:8080" }

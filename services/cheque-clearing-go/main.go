@@ -116,7 +116,9 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("cheque-clearing-go: aml_screening result: %v", result)
 	}
-jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+
+	cacheSet("cheque_clearing_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
 	// No DB — respond with in-memory acknowledgement

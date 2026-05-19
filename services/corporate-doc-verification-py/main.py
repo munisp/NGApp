@@ -361,6 +361,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("corporate_doc_verification_py", body)
+            _process_request_result = process_request(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

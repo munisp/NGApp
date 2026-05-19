@@ -212,6 +212,7 @@ func runAccrualBatch(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "interest_accrual_engine_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("interest_accrual_engine_go-%d", time.Now().UnixNano()), "interest_accrual_engine_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("interest_accrual_engine_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("CORE_BANKING_URL")
 	if csURL == "" { csURL = "http://core-banking-go:8080" }

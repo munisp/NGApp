@@ -21,6 +21,7 @@ fn movement_record(from: &str, to: &str) -> String { format!("{} -> {}", from, t
 fn quarantine_required(disease_zone: bool) -> bool { disease_zone }
 
 async fn health() -> HttpResponse {
+    let _quarantine_required = quarantine_required("default");
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "animal-id-traceability-rs"}))
 }
 

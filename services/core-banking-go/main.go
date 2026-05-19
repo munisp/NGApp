@@ -155,6 +155,8 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("core-banking-go: gl_engine ok: %v", result)
 	}
+	
+	cacheSet("core_banking_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func computeInterest(balance float64, rate float64, days int) float64 {

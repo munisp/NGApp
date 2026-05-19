@@ -118,7 +118,9 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("teller-operations-go: core_banking result: %v", result)
 	}
-jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+
+	cacheSet("teller_operations_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
 	// No DB — respond with in-memory acknowledgement

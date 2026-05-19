@@ -120,7 +120,9 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResp(w, 500, map[string]interface{}{"error": "db_insert_failed", "detail": err.Error()})
 			return
 		}
-		jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
+		
+	cacheSet("card_management_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
 	// No DB — respond with in-memory acknowledgement

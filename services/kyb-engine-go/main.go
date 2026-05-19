@@ -291,6 +291,7 @@ func handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	dbData, _ := json.Marshal(map[string]string{"service": "kyb_engine_go", "action": "create"})
 	if dbErr := dbInsert(fmt.Sprintf("kyb_engine_go-%d", time.Now().UnixNano()), "kyb_engine_go", "default", "active", dbData); dbErr != nil {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	cacheSet("kyb_engine_list", "", 1) // invalidate cache on write
 	}
 	csURL := os.Getenv("KYC_ENGINE_URL")
 	if csURL == "" { csURL = "http://kyc-engine-go:8080" }

@@ -418,6 +418,10 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("kyc_workflow_orchestration_py", body)
+            _call_sanctions_check_result = call_sanctions_check(body.get("data", {}))
+            _call_liveness_check_result = call_liveness_check(body.get("data", {}))
+            _call_document_verify_result = call_document_verify(body.get("data", {}))
+            _auto_decision_result = auto_decision(body.get("data", {}))
             _compute_verification_score_result = compute_verification_score(body.get("data", {}))
             _compute_risk_assessment_result = compute_risk_assessment(body.get("data", {}))
             _check_sla_breach_result = check_sla_breach(body.get("data", {}))

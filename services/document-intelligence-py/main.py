@@ -456,6 +456,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("document_intelligence_py", body)
+            _simulate_vlm_classification_result = simulate_vlm_classification(body.get("data", {}))
+            _simulate_paddleocr_extraction_result = simulate_paddleocr_extraction(body.get("data", {}))
+            _simulate_docling_parsing_result = simulate_docling_parsing(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

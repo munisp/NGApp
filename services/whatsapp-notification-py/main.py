@@ -365,6 +365,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("whatsapp_notification_py", body)
+            _batch_send_whatsapp_result = batch_send_whatsapp(body.get("data", {}))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/whatsapp-notification/update":
             rid = body.get("id", "")
