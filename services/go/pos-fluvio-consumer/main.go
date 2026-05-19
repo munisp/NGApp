@@ -1,23 +1,27 @@
 package main
 
 import (
-	"bytes"
 	"context"
+	"bytes"
+	"io"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
+	"sync"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"log/slog"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"golang.org/x/time/rate"
 )
 
 // ============================================================================
