@@ -42,7 +42,7 @@ function SettingField({
   children: React.ReactNode;
 }) {
   // Sprint 87: Wired to sysConfig router
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data, isLoading } = trpc.sysConfig.getAll.useQuery({
     page: 1,
     limit: 10,

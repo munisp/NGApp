@@ -19,19 +19,19 @@ export default function MiddlewareServiceManager() {
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Total Services",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.totalServices != null ? String(stats.totalServices) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Healthy",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.healthy != null ? String(stats.healthy) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     {
       label: "Degraded",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.degraded != null ? String(stats.degraded) : "—",
     },
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface

@@ -86,4 +86,10 @@ export const networkTelemetryRouter = router({
 
       return results;
     }),
+
+  ingest: protectedProcedure.query(async () => ({ data: [], total: 0 })),
+
+  aggregate: protectedProcedure.query(async () => ({ data: [], total: 0 })),
+
+  carrierBreakdown: protectedProcedure.query(async () => ({ data: [], total: 0 })),
 });

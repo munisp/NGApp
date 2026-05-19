@@ -157,4 +157,13 @@ export const rateAlertsRouter = router({
     .mutation(async () => {
       return { success: true };
     }),
+  update: protectedProcedure.input(z.object({ id: z.string(), threshold: z.number().optional() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
+  subscribe: protectedProcedure.input(z.object({ currencyPair: z.string(), threshold: z.number() })).mutation(async ({ input }) => {
+    return { id: `sub_${Date.now()}`, currencyPair: input.currencyPair, threshold: input.threshold };
+  }),
+  quickCreate: protectedProcedure.input(z.object({ currencyPair: z.string(), threshold: z.number() })).mutation(async ({ input }) => {
+    return { id: `ra_${Date.now()}`, currencyPair: input.currencyPair, threshold: input.threshold };
+  }),
 });

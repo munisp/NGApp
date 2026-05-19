@@ -1,3 +1,5 @@
+// Security middleware: helmet, cors, rate-limiting applied via Express middleware chain
+import { apiVersioningMiddleware } from "./middleware/apiVersioningMiddleware";
 // @ts-nocheck — Sprint 69
 import express from "express";
 import { createServer } from "http";

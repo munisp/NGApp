@@ -8,7 +8,7 @@ import { HeartPulse } from "lucide-react";
 export default function PlatformHealthScorecard() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: liveData, isLoading } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.platformHealthScorecard.list.useQuery(undefined, { retry: 1 });
   const mockData =
     liveData ??

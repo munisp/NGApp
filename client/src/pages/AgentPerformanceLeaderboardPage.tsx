@@ -156,7 +156,7 @@ function LeaderboardContent() {
   const [search, setSearch] = useState("");
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: _liveData } = trpc.agentPerformanceLeaderboard.list.useQuery(
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     undefined,
     { retry: 1 }
   );

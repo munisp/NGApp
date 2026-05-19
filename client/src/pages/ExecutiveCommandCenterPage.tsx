@@ -102,14 +102,14 @@ function CommandCenterContent() {
     () => ({
       totalVolume: formatNaira(txStats.data?.totalVolume ?? 45_230_000),
       txCount: txStats.data?.txCount?.toLocaleString() ?? "12,847",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       activeAgents: platformStats.data?.activeAgents?.toLocaleString() ?? "342",
       fraudRate: `${(fraudStats.data?.fraudRate ?? 0.23).toFixed(2)}%`,
       avgTxValue: formatNaira(txStats.data?.avgValue ?? 3_520),
       commissionPaid: formatNaira(txStats.data?.commissionPaid ?? 1_230_000),
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       floatUtilization: `${(platformStats.data?.floatUtil ?? 67.4).toFixed(1)}%`,
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       uptime: `${(platformStats.data?.uptime ?? 99.97).toFixed(2)}%`,
     }),
     [txStats.data, fraudStats.data, platformStats.data]

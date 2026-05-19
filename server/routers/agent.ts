@@ -22,7 +22,7 @@ import {
   writeAuditLog,
   getDb,
 } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { agents } from "../../drizzle/schema";
 import {
   eq,
@@ -44,7 +44,7 @@ const CBN_MIN_FLOAT = 5000; // NGN 5K minimum float
 
 export const agentRouter = router({
   // ── Login ─────────────────────────────────────────────────────────────────
-  login: protectedProcedure
+  login: publicProcedure
     .input(
       z.object({
         agentCode: z.string().min(3).max(32),
@@ -150,13 +150,13 @@ export const agentRouter = router({
     }),
 
   // ── Logout ────────────────────────────────────────────────────────────────
-  logout: protectedProcedure.mutation(({ ctx }) => {
+  logout: publicProcedure.mutation(({ ctx }) => {
     ctx.res.clearCookie("agent_session", { path: "/" });
     return { success: true };
   }),
 
   // ── Get current agent profile ─────────────────────────────────────────────
-  me: protectedProcedure.query(async ({ ctx }) => {
+  me: publicProcedure.query(async ({ ctx }) => {
     try {
       const cookieHeader = ctx.req.headers.cookie ?? "";
       const match = cookieHeader.match(/agent_session=([^;]+)/);

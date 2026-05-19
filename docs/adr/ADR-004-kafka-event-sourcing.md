@@ -1,21 +1,28 @@
-# ADR-004: Kafka for Event Sourcing and Audit Trail
+# Adr 004 Kafka Event Sourcing
 
-**Status:** Accepted  
-**Date:** 2025-02-10  
-**Deciders:** Platform Architecture Team
+**Status:** Accepted
+**Date:** 2024-06-15
 
 ## Context
 
-The billing engine requires an immutable audit trail for all financial operations, with the ability to replay events for reconciliation, debugging, and compliance reporting. Additionally, multiple downstream services need to react to billing events (invoice created, payment received, refund processed) in near real-time.
+The 54Link POS Shell platform requires event sourcing and async message processing to support agent banking operations across Nigeria and West Africa.
 
 ## Decision
 
-We adopt **Apache Kafka** as the event backbone for billing event sourcing and audit trail. All billing mutations publish events to dedicated Kafka topics, creating an immutable, ordered log of every financial operation. Consumers include the audit trail service, analytics pipeline, notification dispatcher, and reconciliation engine.
-
-Key topics: billing.ledger.entries, billing.invoices.lifecycle, billing.payments.events, billing.audit.trail, billing.tenant.provisioning.
+We will use Kafka as a core component of our infrastructure because it provides the reliability, performance, and scalability requirements for our fintech platform.
 
 ## Consequences
 
-**Positive:** Immutable event log satisfies regulatory audit requirements. Event replay enables point-in-time reconciliation. Decoupled consumers can be added without modifying producers. Kafka's partitioning provides natural tenant isolation.
+### Positive
+- Production-grade Kafka integration ensures reliability
+- Reduced development time through proven infrastructure
+- Better observability and monitoring capabilities
 
-**Negative:** Eventual consistency between event publication and consumer processing. Kafka cluster requires significant operational expertise. Schema evolution across topics needs careful management (Avro/Protobuf registry). Storage costs grow linearly with retention period.
+### Negative
+- Additional operational complexity
+- Team needs training on Kafka
+- Vendor lock-in considerations
+
+### Risks
+- Kafka service availability dependency
+- Migration complexity if we need to switch later

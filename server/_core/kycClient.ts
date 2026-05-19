@@ -429,7 +429,6 @@ export async function checkBiometricServicesHealth(): Promise<
     { name: "liveness_detection", url: `${LIVENESS_SERVICE_URL}/health` },
     { name: "face_matching", url: `${FACE_MATCHING_SERVICE_URL}/health` },
     { name: "deepfake_detection", url: `${DEEPFAKE_SERVICE_URL}/health` },
-    { name: "video_kyc_legacy", url: `${KYC_SERVICE_URL}/health` },
     { name: "paddleocr", url: `${PADDLEOCR_URL}/health` },
     { name: "compliance_kyc", url: `${COMPLIANCE_KYC_URL}/health` },
     { name: "deepface", url: `${DEEPFACE_SERVICE_URL}/health` },

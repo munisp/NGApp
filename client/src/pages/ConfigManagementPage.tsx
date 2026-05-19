@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 import { trpc } from "@/lib/trpc";
 
 export default function ConfigManagementPage() {

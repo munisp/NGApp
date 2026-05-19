@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Shield, AlertTriangle } from "lucide-react";
 
 export default function GeoFencingPage() {
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const zones = trpc.geoFenceDedicated.zones.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const violations = trpc.geoFenceDedicated.agentLocations.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const analytics = trpc.geoFenceDedicated.analytics.useQuery();
 
   return (

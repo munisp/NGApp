@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function EventDrivenArchPage() {
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data, isLoading } = trpc.eventDrivenArch.dashboard.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const dlq = trpc.eventDrivenArch.getDeadLetterQueue.useQuery({ limit: 20 });
 
   if (isLoading)

@@ -10,13 +10,13 @@ export default function PensionCollectionPage() {
   const [tab, setTab] = useState<"contributions" | "pfas" | "employers">(
     "contributions"
   );
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const contributions = trpc.pensionCollection.history.useQuery({ limit: 20 });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const pfas = trpc.pensionCollection.pfas.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const employers = trpc.pensionCollection.history.useQuery({ limit: 20 });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const analytics = trpc.pensionCollection.analytics.useQuery();
 
   return (

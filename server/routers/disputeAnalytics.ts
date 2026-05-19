@@ -12,7 +12,7 @@ import { TRPCError } from "@trpc/server";
 
 export const disputeAnalyticsRouter = router({
   getSummary: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
     const [total] = await db
       .select({ value: count() })
       .from(disputes)
@@ -46,7 +46,7 @@ export const disputeAnalyticsRouter = router({
     .input(z.object({ days: z.number().default(30) }).optional())
     .query(async ({ input }) => {
       try {
-        const db = (await getDb())!;
+        const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
         const rows = await db
           .select({
             date: sql<string>`DATE(${disputes.createdAt})`,
@@ -76,7 +76,7 @@ export const disputeAnalyticsRouter = router({
       }
     }),
   getTopCategories: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
     const rows = await db
       .select({ reason: disputes.reason, cnt: count() })
       .from(disputes)
@@ -88,7 +88,7 @@ export const disputeAnalyticsRouter = router({
     };
   }),
   getRefundRates: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
     const [totalRefunds] = await db
       .select({ value: count() })
       .from(refunds)
@@ -103,7 +103,7 @@ export const disputeAnalyticsRouter = router({
     };
   }),
   getResolutionMetrics: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
     const [total] = await db
       .select({ value: count() })
       .from(disputes)
@@ -121,7 +121,7 @@ export const disputeAnalyticsRouter = router({
     };
   }),
   getSlaCompliance: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return { total: 0, resolved: 0, pending: 0, avgResolutionDays: 0, categories: [], trends: [], refundRates: { monthly: [], byCategory: [] }, slaCompliance: [], topCategories: [] };
     const [total] = await db
       .select({ value: count() })
       .from(disputes)

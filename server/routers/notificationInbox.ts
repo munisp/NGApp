@@ -179,3 +179,32 @@ export const notificationInboxRouter = router({
     return { data: [], total: 0 };
   }),
 });
+
+// Notification factory for seeding and testing
+export function createNotification(params: {
+  channel: string;
+  category: string;
+  title: string;
+  body: string;
+  priority?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  return {
+    id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    channel: params.channel,
+    category: params.category,
+    title: params.title,
+    body: params.body,
+    priority: params.priority ?? "normal",
+    metadata: params.metadata ?? {},
+    read: false,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+// Seed demo notifications
+export const SEED_NOTIFICATIONS = [
+  createNotification({ channel: "in_app", category: "system", title: "Welcome", body: "Welcome to the platform" }),
+  createNotification({ channel: "sms", category: "transaction", title: "Payment received", body: "NGN 5,000 received" }),
+  createNotification({ channel: "email", category: "security", title: "Login alert", body: "New login from Lagos" }),
+];

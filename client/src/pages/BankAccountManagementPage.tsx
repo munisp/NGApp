@@ -102,9 +102,9 @@ export default function BankAccountManagementPage() {
               <option value="savings">Savings</option>
               <option value="mobile_money">Mobile Money</option>
             </select>
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             <Button
-              // @ts-ignore
+              // @ts-ignore — Sprint 85: types need migration
               onClick={() => addMut.mutate(form)}
               disabled={addMut.isPending}
             >

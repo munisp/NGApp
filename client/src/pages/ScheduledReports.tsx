@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * ScheduledReports — Manage automated report schedules
  */

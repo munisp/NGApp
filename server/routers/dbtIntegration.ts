@@ -117,4 +117,23 @@ export const dbtIntegrationRouter = router({
       edges: [{ from: "stg_transactions", to: "fct_transactions" }],
     };
   }),
+  projectInfo: protectedProcedure.query(async () => {
+    return { name: "pos-analytics", version: "1.4.0", profile: "production", models: 42 };
+  }),
+  triggerRun: protectedProcedure.input(z.object({ models: z.string().optional() })).mutation(async ({ input }) => {
+    return { runId: `run_${Date.now()}`, status: "queued" };
+  }),
+  listTests: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+  lineage: protectedProcedure.input(z.object({ model: z.string() })).query(async ({ input }) => {
+    return { model: input.model, upstream: [], downstream: [] };
+  }),
+  listSources: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+
+  platformValue: protectedProcedure.query(async () => {
+    return { value: "enterprise", tier: "production", dbtVersion: "1.7.0" };
+  }),
 });

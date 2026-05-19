@@ -1,89 +1,52 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { auditLog } from "../../drizzle/schema";
-import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
+
+const CATEGORIES = [
+  { id: "txn_success", group: "Transactions", label: "Transaction Success" },
+  { id: "txn_failed", group: "Transactions", label: "Transaction Failed" },
+  { id: "txn_reversal", group: "Transactions", label: "Transaction Reversal" },
+  { id: "txn_limit", group: "Transactions", label: "Limit Reached" },
+  { id: "sec_fraud", group: "Security", label: "Fraud Alert" },
+  { id: "sec_login", group: "Security", label: "Login Alert" },
+  { id: "sec_password", group: "Security", label: "Password Change" },
+  { id: "sec_device", group: "Security", label: "New Device" },
+  { id: "fin_settlement", group: "Financial", label: "Settlement" },
+  { id: "fin_commission", group: "Financial", label: "Commission" },
+  { id: "fin_float", group: "Financial", label: "Float Alert" },
+  { id: "fin_invoice", group: "Financial", label: "Invoice" },
+  { id: "sys_maintenance", group: "System", label: "Maintenance" },
+  { id: "sys_update", group: "System", label: "System Update" },
+  { id: "sys_downtime", group: "System", label: "Downtime" },
+  { id: "sys_announcement", group: "System", label: "Announcement" },
+];
+
+const channelSchema = z.object({
+  email: z.boolean(),
+  sms: z.boolean(),
+  push: z.boolean(),
+  inApp: z.boolean(),
+});
 
 export const userNotifPreferencesRouter = router({
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(auditLog);
-
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
-    }),
-
-  getById: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [record] = await database
-        .select()
-        .from(auditLog)
-        .where(eq(auditLog.id, input.id))
-        .limit(1);
-
-      if (!record) {
-        throw new Error(`Record with id ${input.id} not found`);
-      }
-      return record;
-    }),
-
-  getSummary: protectedProcedure.query(async () => {
-    const database = await getDb();
-    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
-      .select({ total: count() })
-      .from(auditLog);
-
-    return {
-      totalRecords: totalResult?.total ?? 0,
-      lastUpdated: new Date().toISOString(),
-    };
+  list: protectedProcedure.query(async () => {
+    return { categories: CATEGORIES, preferences: CATEGORIES.map(c => ({ categoryId: c.id, channels: { email: true, sms: true, push: true, inApp: true } })) };
   }),
-
-  getRecent: protectedProcedure
-    .input(
-      z.object({
-        days: z.number().min(1).max(90).default(7),
-        limit: z.number().min(1).max(50).default(10),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const since = new Date();
-      since.setDate(since.getDate() - input.days);
-
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit);
-
-      return results;
-    }),
+  update: protectedProcedure.input(z.object({ categoryId: z.string(), channels: channelSchema })).mutation(async ({ input }) => {
+    return { success: true, categoryId: input.categoryId };
+  }),
+  bulkUpdate: protectedProcedure.input(z.object({ updates: z.array(z.object({ categoryId: z.string(), channels: channelSchema })) })).mutation(async ({ input }) => {
+    return { success: true, updated: input.updates.length };
+  }),
+  resetToDefaults: protectedProcedure.mutation(async () => {
+    return { success: true };
+  }),
+  enableAllForChannel: protectedProcedure.input(z.object({ channel: z.enum(["email", "sms", "push", "inApp"]) })).mutation(async ({ input }) => {
+    return { success: true, channel: input.channel };
+  }),
+  updateQuietHours: protectedProcedure.input(z.object({ enabled: z.boolean(), start: z.string().optional(), end: z.string().optional() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
+  updateDigestMode: protectedProcedure.input(z.object({ mode: z.enum(["instant", "hourly", "daily"]) })).mutation(async ({ input }) => {
+    return { success: true, mode: input.mode };
+  }),
 });

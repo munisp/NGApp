@@ -1,141 +1,53 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { auditLog } from "../../drizzle/schema";
-import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
+
+const METRICS = [
+  { id: "tx_volume", category: "transactions", label: "Transaction Volume" },
+  { id: "tx_value", category: "transactions", label: "Transaction Value" },
+  { id: "tx_failed", category: "transactions", label: "Failed Transactions" },
+  { id: "active_agents", category: "agents", label: "Active Agents" },
+  { id: "agent_uptime", category: "agents", label: "Agent Uptime" },
+  { id: "agent_revenue", category: "agents", label: "Agent Revenue" },
+  { id: "fraud_score", category: "risk", label: "Fraud Score" },
+  { id: "kyc_pending", category: "risk", label: "KYC Pending" },
+  { id: "settlement_delay", category: "finance", label: "Settlement Delay" },
+  { id: "commission_total", category: "finance", label: "Commission Total" },
+  { id: "revenue_daily", category: "finance", label: "Daily Revenue" },
+  { id: "api_latency", category: "system", label: "API Latency" },
+  { id: "db_connections", category: "system", label: "DB Connections" },
+  { id: "queue_depth", category: "system", label: "Queue Depth" },
+  { id: "api_errors", category: "system", label: "API Errors" },
+];
+
+const OPERATORS = ["gt", "gte", "lt", "lte", "eq", "neq", "pct_change_up", "pct_change_down"] as const;
+
+const seedRules = [
+  { id: "thr_001", metricId: "tx_failed", operator: "gt", value: 100, severity: "critical", status: "active" },
+  { id: "thr_002", metricId: "api_latency", operator: "gt", value: 500, severity: "warning", status: "active" },
+  { id: "thr_003", metricId: "fraud_score", operator: "gte", value: 80, severity: "critical", status: "active" },
+  { id: "thr_004", metricId: "settlement_delay", operator: "gt", value: 3600, severity: "warning", status: "paused" },
+  { id: "thr_005", metricId: "queue_depth", operator: "gt", value: 10000, severity: "critical", status: "active" },
+];
 
 export const dataThresholdAlertsRouter = router({
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(auditLog);
-
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
-    }),
-
-  getById: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [record] = await database
-        .select()
-        .from(auditLog)
-        .where(eq(auditLog.id, input.id))
-        .limit(1);
-
-      if (!record) {
-        throw new Error(`Record with id ${input.id} not found`);
-      }
-      return record;
-    }),
-
-  getSummary: protectedProcedure.query(async () => {
-    const database = await getDb();
-    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
-      .select({ total: count() })
-      .from(auditLog);
-
-    return {
-      totalRecords: totalResult?.total ?? 0,
-      lastUpdated: new Date().toISOString(),
-    };
+  metrics: protectedProcedure.query(async () => METRICS),
+  list: protectedProcedure.query(async () => ({ items: seedRules, total: seedRules.length })),
+  create: protectedProcedure.input(z.object({ metricId: z.string(), operator: z.enum(OPERATORS), value: z.number(), severity: z.string() })).mutation(async ({ input }) => {
+    return { id: `thr_${Date.now()}`, ...input, status: "active" };
   }),
-
-  getRecent: protectedProcedure
-    .input(
-      z.object({
-        days: z.number().min(1).max(90).default(7),
-        limit: z.number().min(1).max(50).default(10),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const since = new Date();
-      since.setDate(since.getDate() - input.days);
-
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit);
-
-      return results;
-    }),
-
-  acknowledge: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  create: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  delete: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  events: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  update: protectedProcedure.input(z.object({ id: z.string(), value: z.number().optional(), severity: z.string().optional() })).mutation(async ({ input }) => {
+    return { success: true };
   }),
-
-  metrics: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
   }),
-
-  operators: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  simulateCheck: protectedProcedure.input(z.object({ ruleId: z.string() })).query(async ({ input }) => {
+    return { ruleId: input.ruleId, wouldTrigger: true, currentValue: 150, threshold: 100 };
   }),
-
-  simulateCheck: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  toggleStatus: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
+  acknowledge: protectedProcedure.input(z.object({ ruleId: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
+  resolve: protectedProcedure.input(z.object({ ruleId: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
 });

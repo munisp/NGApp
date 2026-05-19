@@ -1,3 +1,4 @@
+// Domain: forecast, transactions - business logic for aiCashFlowPredictor
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";

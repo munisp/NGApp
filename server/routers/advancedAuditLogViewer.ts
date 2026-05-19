@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const advancedAuditLogViewerRouter = router({
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),

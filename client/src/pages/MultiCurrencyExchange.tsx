@@ -12,7 +12,7 @@ export default function MultiCurrencyExchange() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const statsQuery = trpc.multiCurrencyExchange.getStats.useQuery();
   const stats = statsQuery.data;
 
@@ -20,29 +20,29 @@ export default function MultiCurrencyExchange() {
     {
       label: "Supported Currencies",
       value:
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         stats?.supportedCurrencies != null
-          ? // @ts-ignore
+          ? // @ts-ignore — Sprint 85: types need migration
             String(stats.supportedCurrencies)
           : "—",
     },
     {
       label: "Active Pairs",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.activePairs != null ? String(stats.activePairs) : "—",
     },
     {
       label: "Daily Volume",
       value:
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         stats?.dailyVolume != null
-          ? // @ts-ignore
+          ? // @ts-ignore — Sprint 85: types need migration
             String(stats.dailyVolume.toLocaleString())
           : "—",
     },
     {
       label: "Avg Spread",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.avgSpread != null ? String(stats.avgSpread) : "—",
     },
   ];

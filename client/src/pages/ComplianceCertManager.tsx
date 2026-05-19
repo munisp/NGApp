@@ -8,7 +8,7 @@ import { FileCheck } from "lucide-react";
 export default function ComplianceCertManager() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: liveData, isLoading } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.complianceCertManager.list.useQuery(undefined, { retry: 1 });
   const mockData =
     liveData ??

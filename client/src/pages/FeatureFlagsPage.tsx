@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleLeft, ToggleRight, FlaskConical } from "lucide-react";
 
 export default function FeatureFlagsPage() {
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data } = trpc.featureFlags.dashboard.useQuery();
   const toggleMut = trpc.featureFlags.toggleFlag.useMutation();
   const utils = trpc.useUtils();
@@ -77,11 +77,11 @@ export default function FeatureFlagsPage() {
                     variant="outline"
                     onClick={() => {
                       toggleMut.mutate(
-                        // @ts-ignore
+                        // @ts-ignore — Sprint 85: types need migration
                         { flagId: f.id, enabled: f.status !== "enabled" },
                         {
                           onSuccess: () =>
-                            // @ts-ignore
+                            // @ts-ignore — Sprint 85: types need migration
                             utils.featureFlags.dashboard.invalidate(),
                         }
                       );

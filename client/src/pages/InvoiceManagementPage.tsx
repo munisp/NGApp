@@ -97,7 +97,7 @@ export default function InvoiceManagementPage() {
           onClick={() =>
             generateInvoice.mutate({
               tenantId,
-              // @ts-ignore
+              // @ts-ignore — Sprint 85: types need migration
               billingModel,
               periodStart: new Date(
                 new Date().getFullYear(),

@@ -52,7 +52,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Add Journey Event",
                   description: "Feature ready for integration",
                 });
@@ -65,7 +65,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Event",
                   description: "Select a journey event to edit",
                 });
@@ -78,7 +78,7 @@ export default function CustomerJourneyAnalyticsPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Event",
                   description: "Select a journey event to delete",
                 });

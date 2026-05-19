@@ -176,7 +176,7 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
-                : // @ts-ignore
+                : // @ts-ignore — Sprint 85: types need migration
                   (defsQuery.data ?? []).map((d: any) => (
                     <tr
                       key={d.id}
@@ -246,7 +246,7 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
-                : // @ts-ignore
+                : // @ts-ignore — Sprint 85: types need migration
                   (instancesQuery.data ?? []).map((inst: any) => (
                     <tr
                       key={inst.id}

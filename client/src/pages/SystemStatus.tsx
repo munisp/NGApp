@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";

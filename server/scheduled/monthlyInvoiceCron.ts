@@ -301,3 +301,22 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
 
 // Export for testing
 export { publishBillingEvent as cronPublishBillingEvent };
+
+// Stripe invoice integration
+async function createMonthlyInvoice(customerId: string, items: Array<{amount: number, description: string}>) {
+  const customer = await stripe.customers.create({ email: customerId });
+  for (const item of items) {
+    await stripe.invoiceItems.create({
+      customer: customer.id,
+      amount: item.amount,
+      currency: 'ngn',
+      description: item.description,
+    });
+  }
+  const invoice = await stripe.invoices.create({
+    customer: customer.id,
+    auto_advance: true,
+  });
+  await stripe.invoices.finalizeInvoice(invoice.id);
+  return invoice;
+}

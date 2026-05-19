@@ -133,4 +133,6 @@ export const ransomwareAlertsRouter = router({
   resolve: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
+
+  getAlertDetail: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => ({ id: input.id, severity: "critical", status: "active" })),
 });

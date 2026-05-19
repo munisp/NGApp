@@ -42,7 +42,7 @@ export default function NotificationOrchestratorPage() {
   const statsQuery = trpc.notificationOrchestrator.getStats.useQuery();
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const createMutation =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.notificationOrchestrator.createTemplate.useMutation({
       onSuccess: () => {
         templatesQuery.refetch();
@@ -54,7 +54,7 @@ export default function NotificationOrchestratorPage() {
     });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const updateMutation =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.notificationOrchestrator.updateTemplate.useMutation({
       onSuccess: () => {
         templatesQuery.refetch();
@@ -66,7 +66,7 @@ export default function NotificationOrchestratorPage() {
     });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const deleteMutation =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.notificationOrchestrator.deleteTemplate.useMutation({
       onSuccess: () => {
         templatesQuery.refetch();
@@ -76,7 +76,7 @@ export default function NotificationOrchestratorPage() {
     });
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const sendMutation =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.notificationOrchestrator.sendNotification.useMutation({
       onSuccess: () => toast.success("Notification sent"),
       onError: (e: any) => toast.error(e.message),

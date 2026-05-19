@@ -268,4 +268,8 @@ export const platformHealthMonitorRouter = router({
   getIncidents,
   getUptimeReport,
   createIncident,
+
+  getStats: publicProcedure.query(async () => {
+    return { overallHealth: 99.2, uptime30d: 99.95, services: 45, healthyServices: 44, degraded: 1 };
+  }),
 });

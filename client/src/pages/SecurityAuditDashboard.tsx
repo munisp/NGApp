@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 // SecurityAuditDashboard — Sprint 76
 // PBAC evaluation, vulnerability scanning, DDoS status, file integrity, backups
 import { useState } from "react";

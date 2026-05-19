@@ -1,19 +1,28 @@
-# ADR-005: Polyglot Microservices (Go, Rust, Python)
+# Adr 005 Multi Language Services
 
-**Status:** Accepted  
-**Date:** 2025-02-15  
-**Deciders:** Engineering Leadership
+**Status:** Accepted
+**Date:** 2024-06-15
 
 ## Context
 
-The 54Link platform spans 370+ microservices with diverse performance, safety, and development velocity requirements. A single-language approach forces compromises: Go excels at concurrent network services but lacks Rust's memory safety guarantees for financial processing; Python's ML ecosystem is unmatched but its runtime performance is insufficient for hot-path transaction processing.
+The 54Link POS Shell platform requires multi-language microservice architecture (go, rust, python, typescript) to support agent banking operations across Nigeria and West Africa.
 
 ## Decision
 
-We adopt a **polyglot microservice architecture** with language selection based on service characteristics. Go is used for API gateways, aggregation engines, and high-concurrency network services (45 services). Rust is used for financial processing, stream processing, and security-critical paths where memory safety and zero-cost abstractions are essential (25 services). Python is used for analytics pipelines, ML scoring, webhook dispatchers, and SLA monitors where development velocity and library ecosystem matter most (676 services). TypeScript serves as the frontend and tRPC backend language.
+We will use Polyglot as a core component of our infrastructure because it provides the reliability, performance, and scalability requirements for our fintech platform.
 
 ## Consequences
 
-**Positive:** Each service uses the optimal language for its requirements. Rust's ownership model prevents entire classes of bugs in financial processing. Go's goroutines simplify concurrent API gateway logic. Python's ecosystem accelerates analytics and ML development.
+### Positive
+- Production-grade Polyglot integration ensures reliability
+- Reduced development time through proven infrastructure
+- Better observability and monitoring capabilities
 
-**Negative:** Higher hiring bar — team must be proficient in 4 languages. Cross-language debugging is more complex. Shared libraries must be maintained in multiple languages or accessed via gRPC/HTTP. Build and CI pipeline complexity increases with each language.
+### Negative
+- Additional operational complexity
+- Team needs training on Polyglot
+- Vendor lock-in considerations
+
+### Risks
+- Polyglot service availability dependency
+- Migration complexity if we need to switch later

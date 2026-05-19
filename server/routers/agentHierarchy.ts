@@ -110,4 +110,7 @@ export const agentHierarchyRouter = router({
       byTerritory: { Lagos: 45, Abuja: 30, Kano: 25 },
     };
   }),
+  reassignParent: protectedProcedure.input(z.object({ agentId: z.string(), newParentId: z.string() })).mutation(async ({ input }) => {
+    return { success: true, agentId: input.agentId, newParentId: input.newParentId };
+  }),
 });

@@ -1018,3 +1018,5 @@ export default function LivenessCameraCapture({
     </Card>
   );
 }
+
+// Tip: Use good lighting and hold device steady

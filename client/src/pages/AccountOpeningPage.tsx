@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";

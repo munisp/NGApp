@@ -58,34 +58,34 @@ export default function KycVerificationWorkflow() {
   const [reviewId, setReviewId] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const agentStatus = trpc.sprint23.kycVerification.agentStatus.useQuery({
     agentId,
   });
   const pendingReviews =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.sprint23.kycVerification.pendingReviews.useQuery();
   const utils = trpc.useUtils();
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const submitMutation = trpc.sprint23.kycVerification.submit.useMutation({
     onSuccess: () => {
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.kycVerification.agentStatus.invalidate();
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.kycVerification.pendingReviews.invalidate();
       toast.success("Document submitted for verification");
       setDocUrl("");
     },
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const reviewMutation = trpc.sprint23.kycVerification.review.useMutation({
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onSuccess: (_: any, vars) => {
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.kycVerification.agentStatus.invalidate();
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.kycVerification.pendingReviews.invalidate();
       toast.success(`Document ${vars.decision}`);
       setReviewId("");

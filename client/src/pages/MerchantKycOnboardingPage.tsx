@@ -92,7 +92,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Add KYC Document",
                   description: "Feature ready for integration",
                 });
@@ -105,7 +105,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Document",
                   description: "Select a kyc document to edit",
                 });
@@ -118,7 +118,7 @@ export default function MerchantKycOnboardingPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Document",
                   description: "Select a kyc document to delete",
                 });

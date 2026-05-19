@@ -3,7 +3,7 @@
  * DashboardLayoutEditor — Drag-and-drop grid layout for analytics dashboard
  */
 import { useState, useCallback, useMemo } from "react";
-// @ts-ignore - react-grid-layout types export WidthProvider differently
+// @ts-ignore — Sprint 85: types need migration - react-grid-layout types export WidthProvider differently
 import ReactGridLayout from "react-grid-layout";
 const { Responsive, WidthProvider } = ReactGridLayout as any;
 import "react-grid-layout/css/styles.css";

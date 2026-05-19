@@ -30,13 +30,13 @@ export default function BillingAnalyticsDashboardPage() {
   const chartsRef = useRef<Record<string, Chart>>({});
 
   // Fetch analytics data
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const cohortData = trpc.billingProduction.getCohortAnalytics.useQuery(
     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
     { period: period === "12m" ? 12 : period === "6m" ? 6 : 3 },
     { enabled: !!user }
   );
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const forecastData = trpc.billingProduction.getRevenueForecast.useQuery(
     { months: period === "12m" ? 12 : period === "6m" ? 6 : 3 },
     { enabled: !!user }

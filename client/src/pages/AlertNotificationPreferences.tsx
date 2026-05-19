@@ -72,36 +72,36 @@ export default function AlertNotificationPreferences() {
     data: preferences,
     isLoading: loadingPrefs,
     refetch: refetchPrefs,
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
   } = trpc.alertNotifications.listPreferences.useQuery();
   const { data: deliveryStats, isLoading: loadingStats } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.alertNotifications.getDeliveryStats.useQuery();
   const { data: escalationRules } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.alertNotifications.listEscalationRules.useQuery();
   const { data: deliveryHistory, refetch: refetchHistory } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.alertNotifications.getDeliveryHistory.useQuery({ limit: 20 });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const updatePref = trpc.alertNotifications.updatePreference.useMutation({
     onSuccess: () => {
       toast("Preferences updated successfully");
       refetchPrefs();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: err => toast.error(`Failed to update: ${err.message}`),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const updateRule = trpc.alertNotifications.updateEscalationRule.useMutation({
     onSuccess: () => toast("Escalation rule updated"),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const sendTest = trpc.alertNotifications.sendTestAlert.useMutation({
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onSuccess: data => {
       if (data.success) {
         toast.success(`Test alert sent! ${data.deliveryCount} deliveries`);
@@ -110,7 +110,7 @@ export default function AlertNotificationPreferences() {
       }
       refetchHistory();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: err => toast.error(`Test failed: ${err.message}`),
   });
 

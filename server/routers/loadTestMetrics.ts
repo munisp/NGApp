@@ -104,9 +104,9 @@ function generateTimeline(
     const currentRps = targetRps * rampFactor;
     timeline.push({
       second: s,
-      rps: Math.round(currentRps * (0.95 + Math.random() * 0.1)),
-      avgLatencyMs: Math.round(avgLatencyMs * (0.8 + Math.random() * 0.4)),
-      errorCount: Math.floor(Math.random() * currentRps * 0.01),
+      rps: Math.round(currentRps * (0.95 + 0.5 * 0.1)),
+      avgLatencyMs: Math.round(avgLatencyMs * (0.8 + 0.5 * 0.4)),
+      errorCount: Math.floor(0.5 * currentRps * 0.01),
     });
   }
   return timeline;

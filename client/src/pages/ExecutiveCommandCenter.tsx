@@ -9,7 +9,7 @@ export default function ExecutiveCommandCenter() {
     data: stats,
     isLoading,
     refetch,
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
   } = trpc.executiveCommandCenter.getStats.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
 

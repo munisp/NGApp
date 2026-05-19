@@ -1,6 +1,6 @@
 // Sprint 87: GDPR/NDPR compliance, consent expiry, withdrawal workflow
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getDb } from "../db";
 import { dataConsentRecords } from "../../drizzle/schema";
 import { eq, desc, and, count, lt } from "drizzle-orm";
@@ -16,7 +16,7 @@ const CONSENT_TYPES = [
 const CONSENT_EXPIRY_DAYS = 365;
 
 export const dataConsentRecordsRouter = router({
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({
         userId: z.number().optional(),

@@ -44,7 +44,14 @@ export const dashboardLayoutRouter = router({
           code: "INTERNAL_SERVER_ERROR",
           message:
             error instanceof Error ? error.message : "Internal server error",
-        });
+          presets: protectedProcedure.query(async () => {
+    return [
+      { id: "default", name: "Default", widgets: ["transactions", "agents", "revenue"] },
+      { id: "finance", name: "Finance Focus", widgets: ["revenue", "settlement", "reconciliation"] },
+      { id: "ops", name: "Operations", widgets: ["agents", "pos", "network"] },
+    ];
+  }),
+});
       }
     }),
   saveLayout: protectedProcedure

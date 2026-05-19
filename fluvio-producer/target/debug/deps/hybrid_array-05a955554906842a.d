@@ -1,0 +1,11 @@
+/home/ubuntu/repos/NGApp/fluvio-producer/target/debug/deps/hybrid_array-05a955554906842a.d: /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/lib.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/sizes.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/flatten.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/from_fn.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/iter.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/traits.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/../README.md
+
+/home/ubuntu/repos/NGApp/fluvio-producer/target/debug/deps/libhybrid_array-05a955554906842a.rmeta: /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/lib.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/sizes.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/flatten.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/from_fn.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/iter.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/traits.rs /home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/../README.md
+
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/lib.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/sizes.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/flatten.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/from_fn.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/iter.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/traits.rs:
+/home/ubuntu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hybrid-array-0.4.10/src/../README.md:

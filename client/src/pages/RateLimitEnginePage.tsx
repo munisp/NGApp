@@ -224,11 +224,11 @@ export default function RateLimitEnginePage() {
                       >
                         <Edit className="h-4 w-4 text-zinc-400" />
                       </button>
-                      // @ts-ignore
+                      // @ts-ignore — Sprint 85: types need migration
                       <button
                         onClick={() => {
                           if (confirm("Delete?"))
-                            // @ts-ignore
+                            // @ts-ignore — Sprint 85: types need migration
                             deleteMutation.mutate({ id: r.id });
                         }}
                         className="p-1.5 hover:bg-red-700/30 rounded-lg"
@@ -379,7 +379,7 @@ export default function RateLimitEnginePage() {
                     };
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                     if (editRule)
-                      // @ts-ignore
+                      // @ts-ignore — Sprint 85: types need migration
                       updateMutation.mutate({ id: editRule.id, ...data });
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                     else createMutation.mutate(data);

@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * BroadcastManager — Admin page to compose, schedule, and manage system-wide announcements
  */

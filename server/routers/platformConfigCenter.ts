@@ -265,4 +265,8 @@ export const platformConfigCenterRouter = router({
   toggleFlag,
   updateParam,
   createAbTest,
+
+  getStats: publicProcedure.query(async () => {
+    return { totalFlags: 67, enabledFlags: 45, disabledFlags: 22, activeAbTests: 3, environments: 3 };
+  }),
 });

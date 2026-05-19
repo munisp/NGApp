@@ -1,3 +1,4 @@
+// Domain: batch, payout - business logic for bulkDisbursementEngine
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";

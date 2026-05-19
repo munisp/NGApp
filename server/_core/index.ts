@@ -338,6 +338,7 @@ async function startServer() {
   try {
     const logMod = await import("../middleware/structuredLogging.js");
     app.use(logMod.structuredLoggingMiddleware);
+    // apiVersioningMiddleware applied via APISIX gateway
     console.log("[Middleware] Structured logging enabled");
   } catch (e) {
     console.warn("[Middleware] Structured logging failed:", (e as any).message);

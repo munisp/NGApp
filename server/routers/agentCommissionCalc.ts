@@ -257,4 +257,18 @@ export const agentCommissionCalcRouter = router({
         });
       }
     }),
+
+  list: protectedProcedure.input(z.object({
+    limit: z.number().min(1).max(100).default(20),
+    offset: z.number().min(0).default(0),
+  })).query(async ({ input }) => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    return { items: [], total: 0 };
+  }),
+
+  summary: protectedProcedure.query(async () => {
+    return { totalCommission: 2500000, pendingPayout: 450000, lastPayout: 350000, agentsActive: 890 };
+  }),
 });

@@ -77,7 +77,7 @@ export default function BackupDisasterRecoveryPage() {
           <button
             onClick={() =>
               createMutation.mutate({
-                // @ts-ignore
+                // @ts-ignore — Sprint 85: types need migration
                 type: "full",
                 description: "Manual backup",
               })
@@ -93,28 +93,28 @@ export default function BackupDisasterRecoveryPage() {
         {[
           {
             label: "Total Snapshots",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.totalSnapshots ?? 0,
             icon: Database,
             color: "text-violet-400",
           },
           {
             label: "Successful",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.successful ?? 0,
             icon: CheckCircle,
             color: "text-emerald-400",
           },
           {
             label: "Total Size",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.totalSize || "0 GB",
             icon: HardDrive,
             color: "text-blue-400",
           },
           {
             label: "Last Backup",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.lastBackup || "Never",
             icon: Clock,
             color: "text-yellow-400",
@@ -155,7 +155,7 @@ export default function BackupDisasterRecoveryPage() {
                   </td>
                 </tr>
               ))
-            ) : // @ts-ignore
+            ) : // @ts-ignore — Sprint 85: types need migration
             snapshots.length === 0 ? (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-zinc-500">
@@ -163,7 +163,7 @@ export default function BackupDisasterRecoveryPage() {
                 </td>
               </tr>
             ) : (
-              // @ts-ignore
+              // @ts-ignore — Sprint 85: types need migration
               snapshots.map((s: any) => (
                 <tr
                   key={s.id}
@@ -213,7 +213,7 @@ export default function BackupDisasterRecoveryPage() {
                                 "Restore from this backup? This will overwrite current data."
                               )
                             )
-                              // @ts-ignore
+                              // @ts-ignore — Sprint 85: types need migration
                               restoreMutation.mutate({ id: s.id });
                           }}
                           className="p-1.5 hover:bg-violet-700/30 rounded-lg"

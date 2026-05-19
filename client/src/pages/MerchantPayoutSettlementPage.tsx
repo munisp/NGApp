@@ -67,7 +67,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Create Payout Batch",
                   description: "Feature ready for integration",
                 });
@@ -80,7 +80,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Payout",
                   description: "Select a payout to edit",
                 });
@@ -93,7 +93,7 @@ export default function MerchantPayoutSettlementPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Payout",
                   description: "Select a payout to delete",
                 });
@@ -252,7 +252,7 @@ export default function MerchantPayoutSettlementPage() {
                       {p.status === "pending" && (
                         // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                         <button
-                          // @ts-ignore
+                          // @ts-ignore — Sprint 85: types need migration
                           onClick={() => approveMutation.mutate({ id: p.id })}
                           className="p-1.5 hover:bg-emerald-700/30 rounded-lg"
                         >

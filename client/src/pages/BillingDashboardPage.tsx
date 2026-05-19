@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * Billing Dashboard Page — Sprint 80
  * Real-time billing metrics, revenue splits, reconciliation status,

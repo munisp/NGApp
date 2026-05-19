@@ -266,4 +266,8 @@ export const tenantAdminRouter = router({
     .mutation(async () => {
       return { success: true };
     }),
+
+  updateUser: protectedProcedure.query(async () => ({ data: [] })),
+
+  activityLog: protectedProcedure.query(async () => ({ data: [] })),
 });

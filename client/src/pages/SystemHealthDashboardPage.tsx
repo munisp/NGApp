@@ -15,7 +15,7 @@ import {
 export default function SystemHealthDashboardPage() {
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data, isLoading, refetch } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.systemHealthDashboard.getHealth.useQuery();
 
   const services = data?.services || [];

@@ -77,7 +77,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Create Alert Rule",
                   description: "Feature ready for integration",
                 });
@@ -90,7 +90,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Alert",
                   description: "Select a alert to edit",
                 });
@@ -103,7 +103,7 @@ export default function RealtimeTxMonitorPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Alert",
                   description: "Select a alert to delete",
                 });

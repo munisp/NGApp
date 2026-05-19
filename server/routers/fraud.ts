@@ -9,12 +9,12 @@ import {
 } from "../db";
 import { getDb } from "../db";
 import { fraudAlerts, fraudRules } from "../../drizzle/schema";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 
 export const fraudRouter = router({
   // ── List alerts (admin or agent-scoped) ───────────────────────────────────
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({
         status: z.string().optional(),

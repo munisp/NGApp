@@ -132,4 +132,14 @@ export const financialReconciliationDashRouter = router({
           : 0,
     };
   }),
+
+  list: protectedProcedure.input(z.object({
+    limit: z.number().min(1).max(100).default(20),
+    offset: z.number().min(0).default(0),
+  })).query(async ({ input }) => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    return { items: [], total: 0 };
+  }),
 });

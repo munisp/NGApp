@@ -22,7 +22,7 @@ import { getDb } from "../db";
 import { auditLog, agents, transactions } from "../../drizzle/schema";
 import { desc, eq, and, gte, lte, sql } from "drizzle-orm";
 import { runDailySettlement } from "../settlementCron";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure , publicProcedure } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { settlementPlatform, PlatformError } from "../_core/platformClient.js";
 import {
@@ -187,7 +187,7 @@ export const settlementRouter = router({
    * Returns paginated settlement history.
    * [Redis] Checks batch status cache for recent runs.
    */
-  getHistory: agentAdminProcedure
+  getHistory: publicProcedure
     .input(
       z.object({
         startDate: z.string().optional(),

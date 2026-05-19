@@ -1,141 +1,41 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { auditLog } from "../../drizzle/schema";
-import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const partnerOnboardingRouter = router({
-  list: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-        search: z.string().optional(),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      const [totalResult] = await database
-        .select({ total: count() })
-        .from(auditLog);
-
-      return {
-        data: results,
-        total: totalResult?.total ?? 0,
-        limit: input.limit,
-        offset: input.offset,
-      };
-    }),
-
-  getById: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [record] = await database
-        .select()
-        .from(auditLog)
-        .where(eq(auditLog.id, input.id))
-        .limit(1);
-
-      if (!record) {
-        throw new Error(`Record with id ${input.id} not found`);
-      }
-      return record;
-    }),
-
-  getSummary: protectedProcedure.query(async () => {
-    const database = await getDb();
-    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
-      .select({ total: count() })
-      .from(auditLog);
-
-    return {
-      totalRecords: totalResult?.total ?? 0,
-      lastUpdated: new Date().toISOString(),
-    };
+  validateInvite: protectedProcedure.input(z.object({ code: z.string() })).query(async ({ input }) => {
+    return { valid: true, partnerName: "Partner Corp", tier: "premium" };
   }),
-
-  getRecent: protectedProcedure
-    .input(
-      z.object({
-        days: z.number().min(1).max(90).default(7),
-        limit: z.number().min(1).max(50).default(10),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const since = new Date();
-      since.setDate(since.getDate() - input.days);
-
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit);
-
-      return results;
-    }),
-
-  addCorridor: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  addFeeOverride: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  completeOnboarding: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  getBranding: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  registerTenant: protectedProcedure.input(z.object({ name: z.string(), inviteCode: z.string() })).mutation(async ({ input }) => {
+    return { tenantId: `tenant_${Date.now()}`, name: input.name };
   }),
-
-  listCorridors: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  updateBranding: protectedProcedure.input(z.object({ tenantId: z.string(), logo: z.string().optional(), primaryColor: z.string().optional() })).mutation(async ({ input }) => {
+    return { success: true };
   }),
-
-  listFees: protectedProcedure.query(async () => {
-    return { data: [], total: 0 };
+  addCorridor: protectedProcedure.input(z.object({ tenantId: z.string(), source: z.string(), destination: z.string() })).mutation(async ({ input }) => {
+    return { id: `cor_${Date.now()}`, source: input.source, destination: input.destination };
   }),
-
-  registerTenant: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
-
-  updateBranding: protectedProcedure
-    .input(
-      z.object({ id: z.union([z.number(), z.string()]).optional() }).optional()
-    )
-    .mutation(async () => {
-      return { success: true };
-    }),
+  addFeeOverride: protectedProcedure.input(z.object({ tenantId: z.string(), corridorId: z.string(), feePercent: z.number() })).mutation(async ({ input }) => {
+    return { id: `fee_${Date.now()}` };
+  }),
+  completeOnboarding: protectedProcedure.input(z.object({ tenantId: z.string() })).mutation(async ({ input }) => {
+    return { success: true, status: "active" };
+  }),
+  getProgress: protectedProcedure.input(z.object({ tenantId: z.string() })).query(async ({ input }) => {
+    return { step: 3, totalSteps: 5, completed: ["invite", "register", "branding"] };
+  }),
+  getBranding: protectedProcedure.input(z.object({ tenantId: z.string() })).query(async ({ input }) => {
+    return { logo: null, primaryColor: "#1a73e8", secondaryColor: "#ffffff" };
+  }),
+  listCorridors: protectedProcedure.input(z.object({ tenantId: z.string() })).query(async ({ input }) => {
+    return { items: [], total: 0 };
+  }),
+  listFees: protectedProcedure.input(z.object({ tenantId: z.string() })).query(async ({ input }) => {
+    return { items: [], total: 0 };
+  }),
+  removeCorridor: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
+  removeFee: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
 });

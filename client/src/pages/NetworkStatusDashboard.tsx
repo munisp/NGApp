@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * Network Status Dashboard — Sprint 75
  * Real-time connectivity charts per carrier and region

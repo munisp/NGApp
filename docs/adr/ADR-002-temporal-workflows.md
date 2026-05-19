@@ -1,25 +1,28 @@
-# ADR-002: Temporal for Billing Workflows
+# Adr 002 Temporal Workflows
 
-**Status:** Accepted  
-**Date:** 2025-01-20  
-**Deciders:** Platform Architecture Team
+**Status:** Accepted
+**Date:** 2024-06-15
 
 ## Context
 
-Billing provisioning, invoice lifecycle, and dunning workflows require reliable, long-running orchestration with automatic retries, compensation (saga pattern), and visibility into workflow state. Traditional cron jobs and message queue consumers lack the durability guarantees and observability needed for financial workflows that may span hours or days.
+The 54Link POS Shell platform requires workflow orchestration for long-running processes to support agent banking operations across Nigeria and West Africa.
 
 ## Decision
 
-We adopt **Temporal** as the workflow orchestration engine for all billing-related business processes. Temporal provides durable execution, automatic retries with configurable backoff, saga pattern support for multi-step provisioning, and a built-in UI for workflow visibility.
-
-Key workflows implemented:
-
-- 7-step tenant billing provisioning (validate, create accounts, configure rates, setup Stripe, provision Kafka topics, initialize ledger, activate)
-- Invoice lifecycle (generation, delivery, payment tracking, dunning escalation)
-- Settlement processing with rollback capabilities
+We will use Temporal as a core component of our infrastructure because it provides the reliability, performance, and scalability requirements for our fintech platform.
 
 ## Consequences
 
-**Positive:** Durable execution survives process crashes and restarts. Built-in saga pattern simplifies rollback logic for multi-step provisioning. Temporal UI provides real-time visibility into workflow state. Activity-level retries with exponential backoff handle transient failures gracefully.
+### Positive
+- Production-grade Temporal integration ensures reliability
+- Reduced development time through proven infrastructure
+- Better observability and monitoring capabilities
 
-**Negative:** Additional infrastructure dependency (Temporal server cluster). Learning curve for Temporal's programming model. Debugging distributed workflows requires understanding Temporal's event history model. Go SDK is most mature; TypeScript SDK used here has fewer community examples.
+### Negative
+- Additional operational complexity
+- Team needs training on Temporal
+- Vendor lock-in considerations
+
+### Risks
+- Temporal service availability dependency
+- Migration complexity if we need to switch later

@@ -5,15 +5,15 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DbtIntegrationPage() {
   const { data: projectInfo, isLoading } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.dbtIntegration.projectInfo.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const models = trpc.dbtIntegration.listModels.useQuery({
     schema: undefined as any,
   });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const runs = trpc.dbtIntegration.listRuns.useQuery({ limit: 10 });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const triggerRun = trpc.dbtIntegration.triggerRun.useMutation();
 
   if (isLoading)

@@ -10,7 +10,7 @@ export default function TransactionVelocityMonitor() {
   const [tab, setTab] = useState("overview");
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const { data: _liveData } = trpc.transactionVelocityMonitor.list.useQuery(
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     undefined,
     { retry: 1 }
   );

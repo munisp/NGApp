@@ -1,21 +1,28 @@
-# ADR-010: Offline-First Architecture for African Networks
+# Adr 010 Offline First Resilience
 
-**Status:** Accepted  
-**Date:** 2025-04-15  
-**Deciders:** Product and Engineering Teams
+**Status:** Accepted
+**Date:** 2024-06-15
 
 ## Context
 
-54Link agents operate in areas with unreliable network connectivity — 2G/3G networks, frequent outages, and high latency. A traditional online-only architecture would result in failed transactions, lost revenue, and poor agent experience. The platform must function reliably even when connectivity is intermittent or completely unavailable.
+The 54Link POS Shell platform requires offline-first architecture for unreliable networks to support agent banking operations across Nigeria and West Africa.
 
 ## Decision
 
-We implement an **offline-first architecture** with progressive enhancement based on network quality. The approach includes Service Worker-based caching for the web application, an offline transaction queue that syncs when connectivity returns, USSD fallback for feature phone agents, carrier-aware network switching, and SMS-based transaction confirmations as a last resort.
-
-Key components: Service Worker with offline caching strategy, IndexedDB-based offline transaction queue, USSD integration via Africa's Talking API, network quality telemetry collection, and automatic carrier switching based on signal strength.
+We will use Offline as a core component of our infrastructure because it provides the reliability, performance, and scalability requirements for our fintech platform.
 
 ## Consequences
 
-**Positive:** Agents can continue processing transactions during network outages. USSD fallback enables feature phone users to access core functionality. Automatic carrier switching optimizes connectivity. Offline queue ensures no transactions are lost.
+### Positive
+- Production-grade Offline integration ensures reliability
+- Reduced development time through proven infrastructure
+- Better observability and monitoring capabilities
 
-**Negative:** Conflict resolution for offline transactions adds complexity. USSD interface is limited in functionality compared to web UI. Offline queue size must be bounded to prevent memory issues. Testing offline scenarios requires specialized tooling and network simulation.
+### Negative
+- Additional operational complexity
+- Team needs training on Offline
+- Vendor lock-in considerations
+
+### Risks
+- Offline service availability dependency
+- Migration complexity if we need to switch later

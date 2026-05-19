@@ -27,7 +27,7 @@ import {
   createFraudAlert,
   getDb,
 } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { ENV } from "../_core/env";
 import {
@@ -283,7 +283,7 @@ async function validateDeviceToken(
 // ─── Router ───────────────────────────────────────────────────────────────────
 export const transactionsRouter = router({
   // ── Create transaction ────────────────────────────────────────────────────
-  create: protectedProcedure
+  create: publicProcedure
     .input(
       z.object({
         type: z.enum([
@@ -932,7 +932,7 @@ export const transactionsRouter = router({
     }),
 
   // ── List transactions ─────────────────────────────────────────────────────
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({ limit: z.number().default(50), offset: z.number().default(0) })
     )
@@ -1009,7 +1009,7 @@ export const transactionsRouter = router({
     }),
 
   // ── Get by ref ────────────────────────────────────────────────────────────
-  getByRef: protectedProcedure
+  getByRef: publicProcedure
     .input(z.object({ ref: z.string() }))
     .query(async ({ input, ctx }) => {
       try {

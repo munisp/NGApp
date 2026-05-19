@@ -10,13 +10,13 @@ export default function RemittancePage() {
   const [tab, setTab] = useState<"transfers" | "corridors" | "rates">(
     "transfers"
   );
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const transfers = trpc.remittanceDedicated.history.useQuery({ limit: 20 });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const corridors = trpc.remittanceDedicated.partners.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const rates = trpc.remittanceDedicated.analytics.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const analytics = trpc.remittanceDedicated.analytics.useQuery();
 
   return (

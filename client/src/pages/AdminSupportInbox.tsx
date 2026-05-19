@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * Admin Support Inbox — 54Link POS Shell
  * Bloomberg Terminal dark theme with electric blue accents.
@@ -152,7 +152,7 @@ export default function AdminSupportInbox() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Queries ─────────────────────────────────────────────────────────────
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const statsQuery = trpc.chat.adminStats.useQuery(undefined, {
     refetchInterval: 15000,
   });
@@ -164,14 +164,14 @@ export default function AdminSupportInbox() {
     { refetchInterval: 10000 }
   );
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const messagesQuery = trpc.chat.adminGetMessages.useQuery(
     { sessionId: selectedSession?.id ?? 0 },
     { enabled: !!selectedSession, refetchInterval: 5000 }
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const replyMutation = trpc.chat.adminReply.useMutation({
     onSuccess: () => {
       setReplyText("");
@@ -181,7 +181,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to send reply"),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const assignMutation = trpc.chat.adminAssignSession.useMutation({
     onSuccess: () => {
       setShowAssignDialog(false);
@@ -192,7 +192,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to assign session"),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const escalateMutation = trpc.chat.adminEscalate.useMutation({
     onSuccess: () => {
       setShowEscalateDialog(false);
@@ -204,7 +204,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to escalate"),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const resolveMutation = trpc.chat.adminResolve.useMutation({
     onSuccess: () => {
       sessionsQuery.refetch();
@@ -214,7 +214,7 @@ export default function AdminSupportInbox() {
     onError: () => toast.error("Failed to resolve"),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const deleteMutation = trpc.chat.adminDeleteSession.useMutation({
     onSuccess: () => {
       setSelectedSession(null);
@@ -389,7 +389,7 @@ export default function AdminSupportInbox() {
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   {filteredSessions.map((session: ChatSession) => {
                     const statusCfg =
                       STATUS_CONFIG[session.status] ?? STATUS_CONFIG.open;
@@ -519,7 +519,7 @@ export default function AdminSupportInbox() {
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-3">
-                    // @ts-ignore
+                    // @ts-ignore — Sprint 85: types need migration
                     {(messagesQuery.data ?? []).map((msg: ChatMessage) => {
                       const isSupport = msg.senderType === "support";
                       const isSystem = msg.senderType === "system";

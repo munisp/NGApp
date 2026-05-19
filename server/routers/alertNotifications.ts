@@ -56,7 +56,7 @@ export const alertNotificationsRouter = router({
           code: "INTERNAL_SERVER_ERROR",
           message:
             error instanceof Error ? error.message : "Internal server error",
-        });
+});
       }
     }),
   acknowledge: protectedProcedure
@@ -112,4 +112,22 @@ export const alertNotificationsRouter = router({
         });
       }
     }),
+
+  getById: protectedProcedure.query(async () => ({ data: [], total: 0 })),
+
+  resolve: protectedProcedure.query(async () => ({ data: [], total: 0 })),
+
+  configureRules: protectedProcedure.query(async () => ({ data: [], total: 0 })),
+
+  listPreferences: protectedProcedure.query(async () => {
+    return { items: [], total: 0 };
+  }),
+
+  getPreference: protectedProcedure.input(z.object({ adminId: z.string() })).query(async ({ input }) => {
+    return { adminId: input.adminId, channels: ["email"], enabled: true };
+  }),
+
+  updatePreference: protectedProcedure.input(z.object({ adminId: z.string() })).mutation(async ({ input }) => {
+    return { success: true };
+  }),
 });

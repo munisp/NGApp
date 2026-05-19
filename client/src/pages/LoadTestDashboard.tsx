@@ -183,11 +183,11 @@ export default function LoadTestDashboard() {
     ? parseFloat(errorThresholdQuery.data.value)
     : 5.0;
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const runsQuery = trpc.loadTestMetrics.listRuns.useQuery({ limit: 20 });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const engineMetricsQuery = trpc.loadTestMetrics.getEngineMetrics.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const activeTestQuery = trpc.loadTestMetrics.getActiveTest.useQuery(
     undefined,
     {
@@ -195,7 +195,7 @@ export default function LoadTestDashboard() {
     }
   );
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const runLoadTestMutation = trpc.loadTestMetrics.runLoadTest.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
@@ -203,7 +203,7 @@ export default function LoadTestDashboard() {
         setShowRunDialog(false);
         // Poll for completion
         const pollInterval = setInterval(() => {
-          // @ts-ignore
+          // @ts-ignore — Sprint 85: types need migration
           activeTestQuery.refetch().then(result => {
             if (!result.data) {
               clearInterval(pollInterval);
@@ -223,7 +223,7 @@ export default function LoadTestDashboard() {
 
   const runs = runsQuery.data ?? [];
   const activeRunId = selectedRun ?? runs[0]?.runId ?? null;
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const detailsQuery = trpc.loadTestMetrics.getRunDetails.useQuery(
     { runId: activeRunId! },
     { enabled: !!activeRunId }
@@ -371,7 +371,7 @@ export default function LoadTestDashboard() {
                   <Button
                     onClick={() =>
                       updateConfigMutation.mutate({
-                        // @ts-ignore
+                        // @ts-ignore — Sprint 85: types need migration
                         updates: [
                           {
                             key: "loadtest_p99_threshold_ms",

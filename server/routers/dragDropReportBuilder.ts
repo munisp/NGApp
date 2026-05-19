@@ -159,11 +159,15 @@ export const dragDropReportBuilderRouter = router({
       return { id: "RPT-001", name: input.name, saved: true };
     }),
 
-  executeReport: publicProcedure.query(async () => {
+  executeReport: protectedProcedure.query(async () => {
     return { data: [], columns: [], rowCount: 0 };
   }),
 
-  exportReport: publicProcedure.query(async () => {
+  exportReport: protectedProcedure.query(async () => {
     return { url: "/exports/report.pdf", format: "pdf" };
+  }),
+
+  dashboard: protectedProcedure.query(async () => {
+    return { totalReports: 12, recentReports: [], templates: 5 };
   }),
 });

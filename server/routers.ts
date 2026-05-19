@@ -479,6 +479,10 @@ import { transactionMonitoringRouter } from "./routers/transactionMonitoring";
 import { transactionReversalWorkflowRouter } from "./routers/transactionReversalWorkflow";
 import { ussdLocalizationRouter } from "./routers/ussdLocalization";
 import { geoFenceDedicatedRouter } from "./routers/geoFenceDedicated";
+import { amlScreeningRouter } from "./routers/amlScreening";
+import { geoFencingRouter } from "./routers/geoFencing";
+import { geoFencingDedicatedRouter } from "./routers/geoFencingDedicated";
+import { receiptTemplatesRouter } from "./routers/receiptTemplates";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -1060,7 +1064,11 @@ export const appRouter = router({
   transactionMonitoring: transactionMonitoringRouter,
   transactionReversalWorkflow: transactionReversalWorkflowRouter,
   ussdLocalization: ussdLocalizationRouter,
-  webhookManagement: webhookManagementRouter, // re-uses import from line 139
-});
+  webhookManagement: webhookManagementRouter,
+  amlScreening: amlScreeningRouter,
+  geoFencing: geoFencingRouter,
+  geoFencingDedicated: geoFencingDedicatedRouter,
+  receiptTemplates: receiptTemplatesRouter,
+})
 
 export type AppRouter = typeof appRouter;

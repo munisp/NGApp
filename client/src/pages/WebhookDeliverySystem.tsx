@@ -12,34 +12,34 @@ export default function WebhookDeliverySystem() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const statsQuery = trpc.webhookDeliverySystem.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Endpoints",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.totalEndpoints != null ? String(stats.totalEndpoints) : "—",
     },
     {
       label: "Active Endpoints",
       value:
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         stats?.activeEndpoints != null ? String(stats.activeEndpoints) : "—",
     },
     {
       label: "Total Deliveries24h",
       value:
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         stats?.totalDeliveries24h != null
-          ? // @ts-ignore
+          ? // @ts-ignore — Sprint 85: types need migration
             String(stats.totalDeliveries24h)
           : "—",
     },
     {
       label: "Success Rate",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.successRate != null ? String(stats.successRate) : "—",
     },
   ];

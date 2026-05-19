@@ -1,21 +1,28 @@
-# ADR-007: Dapr as Service Mesh Sidecar
+# Adr 007 Dapr Service Mesh
 
-**Status:** Accepted  
-**Date:** 2025-03-10  
-**Deciders:** Infrastructure Team
+**Status:** Accepted
+**Date:** 2024-06-15
 
 ## Context
 
-With 370+ microservices written in Go, Rust, Python, and TypeScript, implementing service-to-service communication, state management, pub/sub, and observability consistently across all languages is a significant challenge. Each language has different HTTP clients, serialization libraries, and retry mechanisms.
+The 54Link POS Shell platform requires service mesh for inter-service communication to support agent banking operations across Nigeria and West Africa.
 
 ## Decision
 
-We adopt **Dapr** (Distributed Application Runtime) as the sidecar for all billing microservices. Dapr provides language-agnostic building blocks for service invocation, state management, pub/sub messaging, and distributed tracing via a consistent HTTP/gRPC API.
-
-Each billing service runs with a Dapr sidecar that handles service discovery, retries, circuit breaking, and distributed tracing. This eliminates the need for language-specific client libraries and ensures consistent behavior across Go, Rust, and Python services.
+We will use Dapr as a core component of our infrastructure because it provides the reliability, performance, and scalability requirements for our fintech platform.
 
 ## Consequences
 
-**Positive:** Consistent service communication patterns across all languages. Built-in retry, circuit breaking, and timeout policies. Pluggable component model supports swapping infrastructure (e.g., Redis to Memcached) without code changes. Distributed tracing automatically propagated.
+### Positive
+- Production-grade Dapr integration ensures reliability
+- Reduced development time through proven infrastructure
+- Better observability and monitoring capabilities
 
-**Negative:** Sidecar adds memory overhead per pod (~50MB). Additional network hop for every service call. Dapr's component model can be opaque when debugging. Version upgrades require coordinated rollout across all sidecars.
+### Negative
+- Additional operational complexity
+- Team needs training on Dapr
+- Vendor lock-in considerations
+
+### Risks
+- Dapr service availability dependency
+- Migration complexity if we need to switch later

@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const dynamicQrPaymentRouter = router({
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
@@ -23,7 +23,7 @@ export const dynamicQrPaymentRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      const [totalResult] = await database
+      const totalArr = await database
         .select({ total: count() })
         .from(transactions);
 
@@ -40,7 +40,7 @@ export const dynamicQrPaymentRouter = router({
     .query(async ({ input }) => {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const [record] = await database
+      const recordArr = await database
         .select()
         .from(transactions)
         .where(eq(transactions.id, input.id))
@@ -55,7 +55,7 @@ export const dynamicQrPaymentRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
+    const totalArr = await database
       .select({ total: count() })
       .from(transactions);
 

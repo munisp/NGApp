@@ -87,7 +87,7 @@ export const apacheAirflowRouter = router({
       return results;
     }),
 
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalDags: 25,
       activeDags: 20,
@@ -122,7 +122,7 @@ export const apacheAirflowRouter = router({
       ],
     };
   }),
-  listDags: publicProcedure.query(async () => {
+  listDags: protectedProcedure.query(async () => {
     return {
       dags: [
         {
@@ -144,4 +144,26 @@ export const apacheAirflowRouter = router({
         status: "queued",
       };
     }),
+  listTaskInstances: protectedProcedure.input(z.object({ dagId: z.string() }).optional()).query(async () => {
+    return { items: [], total: 0 };
+  }),
+  listPools: protectedProcedure.query(async () => {
+    return { items: [{ name: "default_pool", slots: 128, used: 42 }], total: 1 };
+  }),
+
+  getDag: protectedProcedure
+    .input(z.object({ dagId: z.string() }))
+    .query(async ({ input }) => {
+      return { dagId: input.dagId, isPaused: false, schedule: "0 * * * *" };
+    }),
+
+  toggleDag: protectedProcedure
+    .input(z.object({ dagId: z.string(), isPaused: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { dagId: input.dagId, isPaused: input.isPaused };
+    }),
+
+  platformValue: protectedProcedure.query(async () => {
+    return { value: "enterprise", tier: "production" };
+  }),
 });

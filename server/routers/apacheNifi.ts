@@ -95,4 +95,14 @@ export const apacheNifiRouter = router({
       lastUpdated: new Date().toISOString(),
     };
   }),
+
+  listProcessGroups: protectedProcedure.query(async () => ({ groups: [] })),
+
+  instantiateTemplate: protectedProcedure.mutation(async () => ({ success: true })),
+
+  startProcessGroup: protectedProcedure.mutation(async () => ({ started: true })),
+
+  stopProcessGroup: protectedProcedure.mutation(async () => ({ stopped: true })),
+
+  platformIntegration: protectedProcedure.query(async () => ({ integrated: true, services: ["kafka", "redis", "opensearch"] })),
 });

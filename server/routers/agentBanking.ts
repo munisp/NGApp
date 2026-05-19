@@ -6,7 +6,7 @@
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router , publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   agents,

@@ -20,7 +20,7 @@ export default function AnnouncementReactions() {
   const [comment, setComment] = useState("");
 
   const reactionsQ = trpc.announcementReactions.getReactions.useQuery(
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     { announcementId },
     { retry: false, enabled: !!announcementId }
   );
@@ -81,7 +81,7 @@ export default function AnnouncementReactions() {
                   className="text-2xl border-gray-600 hover:bg-gray-700"
                   onClick={() =>
                     reactMut.mutate({
-                      // @ts-ignore
+                      // @ts-ignore — Sprint 85: types need migration
                       announcementId,
                       userId: user?.keycloakSub || "anonymous",
                       emoji: key as
@@ -135,7 +135,7 @@ export default function AnnouncementReactions() {
               <Button
                 onClick={() =>
                   commentMut.mutate({
-                    // @ts-ignore
+                    // @ts-ignore — Sprint 85: types need migration
                     announcementId,
                     userId: user?.keycloakSub || "anonymous",
                     userName: user?.name || "Anonymous",

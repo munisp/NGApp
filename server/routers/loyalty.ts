@@ -20,7 +20,7 @@ import {
   addLoyaltyHistory,
   writeAuditLog,
 } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { agents, loyaltyHistory } from "../../drizzle/schema";
 import { eq, desc, asc, sql, gte, and, ilike, isNull } from "drizzle-orm";
@@ -147,7 +147,7 @@ const REWARD_CATALOG = [
 
 export const loyaltyRouter = router({
   // ── Get loyalty profile ───────────────────────────────────────────────────
-  profile: protectedProcedure.query(async ({ ctx }) => {
+  profile: publicProcedure.query(async ({ ctx }) => {
     try {
       const session = await getAgentFromCookie(ctx.req);
       if (!session)

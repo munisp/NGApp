@@ -105,16 +105,16 @@ export function DisputesAdminTab() {
     useState("bank_transfer");
   const [refundProcessRef, setRefundProcessRef] = useState("");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data, isLoading, refetch } = trpc.disputes.listAll.useQuery({
     status: statusFilter,
     limit,
     offset: page * limit,
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data: stats } = trpc.disputes.stats.useQuery({});
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data: overdueData } = trpc.disputes.overdueList.useQuery(
     { limit: 50 },
     { refetchInterval: 60_000 }
@@ -125,26 +125,26 @@ export function DisputesAdminTab() {
     data: refundsData,
     isLoading: refundsLoading,
     refetch: refetchRefunds,
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
   } = trpc.disputeRefund.listRefunds.useQuery({
     status: refundStatusFilter === "all" ? undefined : refundStatusFilter,
     limit,
     offset: refundPage * limit,
   });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data: refundStats } = trpc.disputeRefund.stats.useQuery({});
   const overdueCount = overdueData?.count ?? 0;
 
   const { data: disputeDetail, refetch: refetchDetail } =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.disputes.getDispute.useQuery(
       { ref: selectedRef! },
       { enabled: selectedRef !== null }
     );
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const resolve = trpc.disputes.resolve.useMutation({
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onSuccess: res => {
       toast.success(`Dispute ${res.status} successfully.`);
       setShowResolveDialog(false);
@@ -152,21 +152,21 @@ export function DisputesAdminTab() {
       refetch();
       refetchDetail();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(`Failed: ${e.message}`),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const addMessage = trpc.disputes.addMessage.useMutation({
     onSuccess: () => {
       setReplyText("");
       refetchDetail();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(e.message),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const issueProvisional = trpc.disputes.issueProvisionalCredit.useMutation({
     onSuccess: () => {
       toast.success("Provisional credit issued successfully.");
@@ -176,12 +176,12 @@ export function DisputesAdminTab() {
       refetchDetail();
       refetch();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e =>
       toast.error(`Failed to issue provisional credit: ${e.message}`),
   });
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const initiateChargeback = trpc.disputes.initiateChargeback.useMutation({
     onSuccess: () => {
       toast.success("Chargeback initiated successfully.");
@@ -190,22 +190,22 @@ export function DisputesAdminTab() {
       refetchDetail();
       refetch();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(`Failed to initiate chargeback: ${e.message}`),
   });
 
   // Refund mutations
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const approveRefund = trpc.disputeRefund.approveRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund approved");
       setShowApproveRefundDialog(false);
       refetchRefunds();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(e.message),
   });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const rejectRefund = trpc.disputeRefund.rejectRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund rejected");
@@ -213,10 +213,10 @@ export function DisputesAdminTab() {
       setRefundRejectReason("");
       refetchRefunds();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(e.message),
   });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const processRefund = trpc.disputeRefund.processRefund.useMutation({
     onSuccess: () => {
       toast.success("Refund processed");
@@ -224,7 +224,7 @@ export function DisputesAdminTab() {
       setRefundProcessRef("");
       refetchRefunds();
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error(e.message),
   });
 
@@ -807,7 +807,7 @@ export function DisputesAdminTab() {
                 </div>
               ) : (
                 (data?.disputes ?? []).map(
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   ({ dispute, agentName, agentCode }) => (
                     <div
                       key={dispute.id}

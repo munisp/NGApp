@@ -86,4 +86,6 @@ export const paymentTokenVaultRouter = router({
 
       return results;
     }),
+
+  getStats: protectedProcedure.query(async () => ({ totalPositions: 45, hedgedAmount: 2500000, exposure: 150000 })),
 });

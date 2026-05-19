@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * ReportTemplateDesigner — Visual report template builder with widget catalog and grid layout
  */

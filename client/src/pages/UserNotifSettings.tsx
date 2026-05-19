@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * UserNotifSettings — End-user page to customize per-category notification delivery channels
  */

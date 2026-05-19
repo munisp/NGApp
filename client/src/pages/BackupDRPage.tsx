@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Database, Shield, HardDrive, RefreshCw } from "lucide-react";
 
 export default function BackupDRPage() {
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data } = trpc.backupDr.dashboard.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const triggerMut = trpc.backupDr.triggerBackup.useMutation();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const testMut = trpc.backupDr.testFailover.useMutation();
 
   return (

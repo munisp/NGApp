@@ -113,3 +113,5 @@ export const fxRatesRouter = router({
     };
   }),
 });
+
+// FX data sources: frankfurter.app API, ECB exchange rate feed

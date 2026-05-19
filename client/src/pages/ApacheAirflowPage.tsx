@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function ApacheAirflowPage() {
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const { data, isLoading } = trpc.apacheAirflow.dashboard.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const dags = trpc.apacheAirflow.listDags.useQuery();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const triggerDag = trpc.apacheAirflow.triggerDag.useMutation();
 
   if (isLoading)

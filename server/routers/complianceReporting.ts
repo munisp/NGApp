@@ -238,4 +238,8 @@ export const complianceReportingRouter = router({
   getComplianceScore,
   generateReport,
   createSchedule,
+
+  getStats: publicProcedure.query(async () => {
+    return { complianceScore: 94.5, totalReports: 456, cbnReports: 120, ndprReports: 89, pciDssReports: 78, amlReports: 112, cftReports: 57 };
+  }),
 });

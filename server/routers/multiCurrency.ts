@@ -96,7 +96,7 @@ export const multiCurrencyRouter = router({
     };
   }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -104,5 +104,19 @@ export const multiCurrencyRouter = router({
       uptime: 99.9,
       version: "1.0.0",
     };
+  }),
+
+  convertCurrency: protectedProcedure.query(async () => ({ rates: {} })),
+  convert: protectedProcedure.input(z.object({ from: z.string(), to: z.string(), amount: z.number() })).mutation(async ({ input }) => {
+    return { from: input.from, to: input.to, amount: input.amount, converted: input.amount * 1.05, rate: 1.05 };
+  }),
+  dashboard: protectedProcedure.query(async () => {
+    return { supportedCurrencies: 15, activePairs: 42, last24hVolume: 5600000 };
+  }),
+  historicalRates: protectedProcedure.input(z.object({ pair: z.string().optional(), days: z.number().optional() }).optional()).query(async () => {
+    return { items: [{ date: "2024-01-01", rate: 1.05 }, { date: "2024-01-02", rate: 1.06 }], total: 2 };
+  }),
+  liveRates: protectedProcedure.query(async () => {
+    return { USDNGN: 1550.00, GBPNGN: 1960.00, EURNGN: 1680.00, updatedAt: new Date().toISOString() };
   }),
 });

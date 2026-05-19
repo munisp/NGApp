@@ -52,7 +52,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Add Health Check",
                   description: "Feature ready for integration",
                 });
@@ -65,7 +65,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Check",
                   description: "Select a health check to edit",
                 });
@@ -78,7 +78,7 @@ export default function PlatformHealthPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Check",
                   description: "Select a health check to delete",
                 });

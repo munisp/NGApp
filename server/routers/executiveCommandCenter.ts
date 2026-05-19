@@ -86,4 +86,6 @@ export const executiveCommandCenterRouter = router({
 
       return results;
     }),
+
+  getStats: protectedProcedure.query(async () => ({ total: 1250, active: 980, completed: 270 })),
 });

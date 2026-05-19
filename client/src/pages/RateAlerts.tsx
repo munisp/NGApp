@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * Rate Alerts — Create, manage, and monitor exchange rate threshold alerts
  * Wired to rateAlerts tRPC router

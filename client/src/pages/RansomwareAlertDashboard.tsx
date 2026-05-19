@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error — Sprint 85: types need migration
 /**
  * Sprint 92 — Ransomware & Security Alert Dashboard
  *

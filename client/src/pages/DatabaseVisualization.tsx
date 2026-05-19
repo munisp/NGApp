@@ -12,33 +12,33 @@ export default function DatabaseVisualization() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const statsQuery = trpc.databaseVisualization.getStats.useQuery();
   const stats = statsQuery.data;
 
   const statCards = [
     {
       label: "Total Tables",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.totalTables != null ? String(stats.totalTables) : "—",
     },
     {
       label: "Total Rows",
       value:
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         stats?.totalRows != null
-          ? // @ts-ignore
+          ? // @ts-ignore — Sprint 85: types need migration
             String(stats.totalRows.toLocaleString())
           : "—",
     },
     {
       label: "Total Size",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.totalSize != null ? String(stats.totalSize) : "—",
     },
     {
       label: "Avg Query Time",
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       value: stats?.avgQueryTime != null ? String(stats.avgQueryTime) : "—",
     },
   ];

@@ -90,12 +90,12 @@ export function LiveChatWidget() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [location] = useLocation();
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const createSession = trpc.aiChat.createSession.useMutation();
   const sendMessage = trpc.aiChat.sendMessage.useMutation();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const escalate = trpc.aiChat.escalate.useMutation();
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const closeSession = trpc.aiChat.closeSession.useMutation();
 
   // Get current page context
@@ -148,15 +148,15 @@ export function LiveChatWidget() {
 
       try {
         const result = await sendMessage.mutateAsync({
-          // @ts-ignore
+          // @ts-ignore — Sprint 85: types need migration
           sessionId,
           content: text,
           context: currentContext,
         });
 
-        // @ts-ignore
+        // @ts-ignore — Sprint 85: types need migration
         if (result.error) {
-          // @ts-ignore
+          // @ts-ignore — Sprint 85: types need migration
           toast.error(result.error);
           return;
         }
@@ -165,9 +165,9 @@ export function LiveChatWidget() {
         setMessages(prev => {
           const filtered = prev.filter(m => m.id !== tempUserMsg.id);
           const updated = [...filtered];
-          // @ts-ignore
+          // @ts-ignore — Sprint 85: types need migration
           if (result.userMessage) updated.push(result.userMessage);
-          // @ts-ignore
+          // @ts-ignore — Sprint 85: types need migration
           if (result.aiMessage) updated.push(result.aiMessage);
           return updated;
         });

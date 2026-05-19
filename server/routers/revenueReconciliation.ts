@@ -47,7 +47,7 @@ export const revenueReconciliationRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const totalRecords = 500 + Math.floor(Math.random() * 100);
+      const totalRecords = 500 + Math.floor(0.5 * 100);
       const discrepantRecords = Math.floor(totalRecords * 0.003);
       const matchedRecords = totalRecords - discrepantRecords;
       const matchRatePct = (matchedRecords / totalRecords) * 100;

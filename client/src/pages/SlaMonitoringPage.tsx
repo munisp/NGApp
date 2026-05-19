@@ -352,12 +352,12 @@ export default function SlaMonitoringPage() {
                 >
                   Cancel
                 </button>
-                // @ts-ignore
+                // @ts-ignore — Sprint 85: types need migration
                 <button
                   onClick={() =>
                     createMutation.mutate({
                       ...form,
-                      // @ts-ignore
+                      // @ts-ignore — Sprint 85: types need migration
                       target_value: parseFloat(form.target_value),
                     })
                   }

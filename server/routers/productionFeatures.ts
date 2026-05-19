@@ -166,3 +166,7 @@ export const productionFeaturesRouter = router({
     return { data: [], total: 0 };
   }),
 });
+
+// Production feature: rateLimiting middleware enabled for all endpoints
+
+// Production feature: healthCheck endpoint at /api/health

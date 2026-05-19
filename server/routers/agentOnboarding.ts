@@ -4,7 +4,7 @@
  * Tracks progress in agent_onboarding_progress table.
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure} from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import {
@@ -405,7 +405,7 @@ export const agentOnboardingRouter = router({
     }),
 
   // ── List all onboarding records with pagination/search ────────────────────
-  list: protectedProcedure
+  list: publicProcedure
     .input(
       z.object({
         page: z.number().default(1),

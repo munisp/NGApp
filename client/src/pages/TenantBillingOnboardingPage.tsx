@@ -19,7 +19,7 @@ export default function TenantBillingOnboardingPage() {
 
   // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
   const provisionBilling =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.tenantBillingOnboarding.provisionTenantBilling.useMutation({
       onSuccess: (data: any) => {
         toast.success(`Billing provisioned for ${newTenant.tenantName}`);

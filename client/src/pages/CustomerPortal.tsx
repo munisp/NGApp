@@ -95,12 +95,12 @@ export default function CustomerPortal() {
       retry: false,
     }
   );
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const refundsQ = trpc.disputeRefund.listRefunds.useQuery(
     { limit: 20 },
     { enabled: tab === "disputes" && disputeSubTab === "refunds" }
   );
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const refundStatsQ = trpc.disputeRefund.stats.useQuery(
     {},
     { enabled: tab === "disputes" }
@@ -127,14 +127,14 @@ export default function CustomerPortal() {
     },
     onError: e => toast.error("Error", { description: e.message }),
   });
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const requestRefund = trpc.disputeRefund.requestRefund.useMutation({
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onSuccess: res => {
       toast.success("Refund requested: " + res.refundRef);
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.disputeRefund.listRefunds.invalidate();
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.disputeRefund.stats.invalidate();
       setRefundOpen(false);
       setRefundForm({
@@ -144,7 +144,7 @@ export default function CustomerPortal() {
         amount: "",
       });
     },
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     onError: e => toast.error("Error", { description: e.message }),
   });
   const initiateKyc = trpc.customer.kyc.initiate.useMutation({
@@ -846,7 +846,7 @@ export default function CustomerPortal() {
                 </Label>
                 <Input
                   className="mt-1 h-8 text-sm"
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   value={profileForm[key]}
                   onChange={e =>
                     setProfileForm(f => ({ ...f, [key]: e.target.value }))

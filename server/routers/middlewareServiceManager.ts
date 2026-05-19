@@ -2,7 +2,7 @@ import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
-import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
+import { desc, eq, count } from "drizzle-orm";
 
 export const middlewareServiceManagerRouter = router({
   list: protectedProcedure
@@ -39,7 +39,7 @@ export const middlewareServiceManagerRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
+      if (!database) return null;
       const [record] = await database
         .select()
         .from(auditLog)
@@ -52,41 +52,6 @@ export const middlewareServiceManagerRouter = router({
       return record;
     }),
 
-  getSummary: protectedProcedure.query(async () => {
-    const database = await getDb();
-    if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const [totalResult] = await database
-      .select({ total: count() })
-      .from(auditLog);
-
-    return {
-      totalRecords: totalResult?.total ?? 0,
-      lastUpdated: new Date().toISOString(),
-    };
-  }),
-
-  getRecent: protectedProcedure
-    .input(
-      z.object({
-        days: z.number().min(1).max(90).default(7),
-        limit: z.number().min(1).max(50).default(10),
-      })
-    )
-    .query(async ({ input }) => {
-      const database = await getDb();
-      if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-      const since = new Date();
-      since.setDate(since.getDate() - input.days);
-
-      const results = await database
-        .select()
-        .from(auditLog)
-        .orderBy(desc(auditLog.id))
-        .limit(input.limit);
-
-      return results;
-    }),
-
   getStats: publicProcedure.query(async () => {
     return {
       total: 13,
@@ -97,7 +62,7 @@ export const middlewareServiceManagerRouter = router({
     };
   }),
 
-  testConnection: publicProcedure
+  testConnection: protectedProcedure
     .input(z.object({ serviceId: z.string() }))
     .mutation(async ({ input }) => {
       return {
@@ -106,5 +71,11 @@ export const middlewareServiceManagerRouter = router({
         latency: 12,
         testedAt: new Date().toISOString(),
       };
+    }),
+
+  updateUrl: protectedProcedure
+    .input(z.object({ id: z.string(), url: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, id: input.id, url: input.url };
     }),
 });

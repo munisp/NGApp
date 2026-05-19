@@ -91,7 +91,7 @@ export default function AgentLoanFacilityPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Create Loan Application",
                   description: "Feature ready for integration",
                 });
@@ -104,7 +104,7 @@ export default function AgentLoanFacilityPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Loan",
                   description: "Select a loan to edit",
                 });
@@ -117,7 +117,7 @@ export default function AgentLoanFacilityPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Loan",
                   description: "Select a loan to delete",
                 });
@@ -369,11 +369,11 @@ export default function AgentLoanFacilityPage() {
                 >
                   Cancel
                 </button>
-                // @ts-ignore
+                // @ts-ignore — Sprint 85: types need migration
                 <button
                   onClick={() =>
                     applyMutation.mutate({
-                      // @ts-ignore
+                      // @ts-ignore — Sprint 85: types need migration
                       agent_id: parseInt(applyForm.agent_id),
                       principal_amount: parseFloat(applyForm.principal_amount),
                       tenure_months: parseInt(applyForm.tenure_months),

@@ -1,39 +1,27 @@
 /**
- * Item 15: API versioning middleware
- * Adds /api/v1/ prefix support for all external endpoints.
- * Older /api/ routes are preserved for backward compatibility.
+ * API Versioning Middleware
+ * Handles X-API-Version header for backward compatibility
  */
-import type { Request, Response, NextFunction } from "express";
 
-const CURRENT_VERSION = "v1";
-const SUPPORTED_VERSIONS = ["v1"];
+export const CURRENT_API_VERSION = "v2";
+export const SUPPORTED_VERSIONS = ["v1", "v2"];
+export const DEPRECATED_VERSIONS = ["v1"];
 
-export function apiVersionMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  const versionMatch = req.path.match(/^\/api\/(v\d+)\//);
-
-  if (versionMatch) {
-    const requestedVersion = versionMatch[1];
-    if (!SUPPORTED_VERSIONS.includes(requestedVersion)) {
-      res.status(400).json({
-        error: "unsupported_api_version",
-        message: `API version '${requestedVersion}' is not supported. Supported: ${SUPPORTED_VERSIONS.join(", ")}`,
-        current: CURRENT_VERSION,
-      });
+export function apiVersioningMiddleware() {
+  return (req: any, res: any, next: any) => {
+    const version = (req.headers["x-api-version"] as string) || CURRENT_API_VERSION;
+    if (!SUPPORTED_VERSIONS.includes(version)) {
+      res.status(400).json({ error: `Unsupported API version: ${version}` });
       return;
     }
-    (req as unknown as Record<string, unknown>).apiVersion = requestedVersion;
-  } else if (req.path.startsWith("/api/")) {
-    (req as unknown as Record<string, unknown>).apiVersion = CURRENT_VERSION;
-  }
-
-  res.setHeader("X-API-Version", CURRENT_VERSION);
-  res.setHeader("X-API-Supported-Versions", SUPPORTED_VERSIONS.join(", "));
-
-  next();
+    if (DEPRECATED_VERSIONS.includes(version)) {
+      res.setHeader("X-API-Version-Deprecated", "true");
+      res.setHeader("X-API-Version-Sunset", "2025-12-31");
+    }
+    (req as any).apiVersion = version;
+    res.setHeader("X-API-Version", version);
+    next();
+  };
 }
 
-export { CURRENT_VERSION, SUPPORTED_VERSIONS };
+export default apiVersioningMiddleware;

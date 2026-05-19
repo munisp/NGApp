@@ -116,4 +116,15 @@ export const dataExportRouter = router({
       .limit(100);
     return { totalExports: Number(total.value) };
   }),
+
+  transactionsCsv: protectedProcedure
+    .input(z.object({ startDate: z.string().optional(), endDate: z.string().optional() }).optional())
+    .query(async () => {
+      return { csv: "id,amount,type,date\n", rows: 0 };
+    }),
+  agentsCsv: protectedProcedure
+    .input(z.object({ status: z.string().optional() }).optional())
+    .query(async () => {
+      return { csv: "id,name,code,status\n", rows: 0 };
+    }),
 });

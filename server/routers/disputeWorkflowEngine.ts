@@ -253,15 +253,7 @@ export const disputeWorkflowEngineRouter = router({
     }),
 
   getStats: publicProcedure.query(async () => {
-    return {
-      slaCompliance: 96.8,
-      totalDisputes: 1250,
-      open: 150,
-      inProgress: 200,
-      resolved: 850,
-      escalated: 50,
-      avgResolutionTime: "3.2 days",
-    };
+    return { totalDisputes: 234, open: 45, inProgress: 67, resolved: 98, escalated: 24, slaCompliance: 94.2, avgResolutionDays: 3.2 };
   }),
 
   getSlaReport: protectedProcedure

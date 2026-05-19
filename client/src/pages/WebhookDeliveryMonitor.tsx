@@ -18,23 +18,23 @@ import {
 export default function WebhookDeliveryMonitor() {
   const [activeTab, setActiveTab] = useState("all");
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const deliveries = trpc.sprint23.webhookDelivery.list.useQuery(
     activeTab !== "all" && activeTab !== "dead_letter"
       ? { status: activeTab }
       : undefined
   );
   const deadLetterQueue =
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     trpc.sprint23.webhookDelivery.deadLetterQueue.useQuery();
   const utils = trpc.useUtils();
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const retryDlq = trpc.sprint23.webhookDelivery.retryDeadLetter.useMutation({
     onSuccess: () => {
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.webhookDelivery.list.invalidate();
-      // @ts-ignore
+      // @ts-ignore — Sprint 85: types need migration
       utils.sprint23.webhookDelivery.deadLetterQueue.invalidate();
       toast.success("Dead letter re-queued for retry");
     },

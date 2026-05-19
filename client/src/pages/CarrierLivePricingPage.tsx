@@ -156,7 +156,7 @@ export default function CarrierLivePricingPage() {
   const totalCost = smsCost + ussdCost + dataCost;
   // Sprint 87: Wired to carrierSwitching router
   const { data, isLoading } = trpc.carrierSwitching.list.useQuery({
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
     page: 1,
     limit: 10,
   });

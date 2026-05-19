@@ -24,7 +24,7 @@ export default function FraudMlScoringPage() {
   const statsQuery = trpc.fraudMlScoringEngine.getStats.useQuery();
   const stats = statsQuery.data;
 
-  // @ts-ignore
+  // @ts-ignore — Sprint 85: types need migration
   const scores = (scoresQuery.data ?? []).filter((s: any) => {
     if (
       search &&
@@ -63,7 +63,7 @@ export default function FraudMlScoringPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Add Manual Score",
                   description: "Feature ready for integration",
                 });
@@ -76,7 +76,7 @@ export default function FraudMlScoringPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Edit Score",
                   description: "Select a score to edit",
                 });
@@ -89,7 +89,7 @@ export default function FraudMlScoringPage() {
               // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
               onClick={() => {
                 toast?.({
-                  // @ts-ignore
+                  // @ts-ignore — Sprint 85: types need migration
                   title: "Delete Score",
                   description: "Select a score to delete",
                 });
@@ -126,21 +126,21 @@ export default function FraudMlScoringPage() {
           },
           {
             label: "High Risk",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.highRisk ?? 0,
             icon: AlertTriangle,
             color: "text-red-400",
           },
           {
             label: "Blocked",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.blocked ?? 0,
             icon: ShieldAlert,
             color: "text-orange-400",
           },
           {
             label: "False Positives",
-            // @ts-ignore
+            // @ts-ignore — Sprint 85: types need migration
             value: stats?.falsePositives ?? 0,
             icon: CheckCircle,
             color: "text-emerald-400",

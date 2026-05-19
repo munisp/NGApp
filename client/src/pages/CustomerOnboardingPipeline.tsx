@@ -9,7 +9,7 @@ export default function CustomerOnboardingPipeline() {
     data: stats,
     isLoading,
     refetch,
-    // @ts-ignore
+    // @ts-ignore — Sprint 85: types need migration
   } = trpc.customerOnboardingPipeline.getStats.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
 
