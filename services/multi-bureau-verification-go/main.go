@@ -594,7 +594,8 @@ func main() {
 	if port == "" {
 		port = "9088"
 	}
-	mux := http.NewServeMux()
+	initDB()
+mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 
 	mux.HandleFunc("/livez", livezHandler)

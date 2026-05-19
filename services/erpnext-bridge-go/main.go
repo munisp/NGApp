@@ -866,7 +866,8 @@ func main() {
 
 	initCoAMappings()
 
-	mux := http.NewServeMux()
+	initDB()
+mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 
 

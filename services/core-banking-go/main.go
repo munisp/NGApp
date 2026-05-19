@@ -551,7 +551,8 @@ func main() {
 	port := os.Getenv("PORT")
 
 	if port == "" { port = "8080" }
-	mux := http.NewServeMux()
+	initDB()
+mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 
 	mux.HandleFunc("/livez", livezHandler)

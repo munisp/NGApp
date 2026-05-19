@@ -612,7 +612,8 @@ func rateLimitMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "9425" }
-	mux := http.NewServeMux()
+	initDB()
+mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 
 	mux.HandleFunc("/livez", livezHandler)
