@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { createContext, useContext, ReactNode } from "react";
 import {
   useRealtimeNotifications,

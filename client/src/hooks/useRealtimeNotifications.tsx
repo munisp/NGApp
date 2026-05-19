@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * useRealtimeNotifications — Client-side hook for real-time notification WebSocket
  *

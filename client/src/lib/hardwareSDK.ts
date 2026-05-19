@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * 54Link Hardware SDK Simulation Layer
  *

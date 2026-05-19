@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Sprint 52 — Bulk Operations & Data Export
  * F17: Select all, batch delete, batch export

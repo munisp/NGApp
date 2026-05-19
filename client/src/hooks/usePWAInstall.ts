@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * usePWAInstall — Captures the browser's beforeinstallprompt event
  * and exposes a function to trigger the native PWA install dialog.

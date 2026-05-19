@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * useOfflineSync — Auto-sync hook for 54Link POS
  *

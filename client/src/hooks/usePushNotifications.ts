@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * usePushNotifications — Web Push API integration for 54Link POS Shell.
  *

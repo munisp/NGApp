@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * useQRCode — Offline-capable QR code hook for 54Link POS Shell
  *

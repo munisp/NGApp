@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Chart Export Utilities — PNG screenshot + CSV data export
  */

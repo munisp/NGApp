@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;

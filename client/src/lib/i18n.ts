@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Internationalization (i18n) Framework — 54Link Agency Banking Platform
  *

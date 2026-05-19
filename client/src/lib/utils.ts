@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 

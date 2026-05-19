@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Sprint 52 — Keyboard Shortcuts
  * F16: Ctrl+K search, Esc close modals, keyboard navigation

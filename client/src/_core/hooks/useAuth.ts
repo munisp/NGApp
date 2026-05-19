@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * useAuth.ts — Authentication hook for 54Link POS Shell
  *

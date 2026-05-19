@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Sprint 52 — Theme Persistence & Mobile Responsive
  * F19: Save dark/light preference to localStorage

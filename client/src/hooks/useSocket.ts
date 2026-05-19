@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { usePosStore, FraudEvent, ChatMessage } from "../store/posStore";

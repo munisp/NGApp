@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * useTransactionCreate — shared hook for all POS transaction screens.
  * Wraps trpc.transactions.create, updates the Zustand store on success,
