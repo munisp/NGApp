@@ -309,44 +309,47 @@ describe("Security Audit Modules", () => {
 
 // ── K8s & Docker Configs ──────────────────────────────────────────────────
 describe("Infrastructure Configs", () => {
+  const path = require("path");
+  const rootDir = path.resolve(__dirname, "../../..");
+
   it("should have K8s deployment manifest", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/k8s/deployment.yml")
+      fs.existsSync(path.join(rootDir, "k8s/deployment.yml"))
     ).toBe(true);
   });
 
   it("should have Docker Compose final config", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.final.yml")
+      fs.existsSync(path.join(rootDir, "docker-compose.final.yml"))
     ).toBe(true);
   });
 
   it("should have CI/CD pipeline", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/.github/workflows/ci-cd.yml")
+      fs.existsSync(path.join(rootDir, ".github/workflows/ci-cd.yml"))
     ).toBe(true);
   });
 
   it("should have security audit report", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/SECURITY_AUDIT_FINAL.md")
+      fs.existsSync(path.join(rootDir, "SECURITY_AUDIT_FINAL.md"))
     ).toBe(true);
   });
 
   it("should have Prometheus config", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")
+      fs.existsSync(path.join(rootDir, "config/prometheus.yml"))
     ).toBe(true);
   });
 
   it("should have Nginx config", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/config/nginx.conf")).toBe(
+    expect(fs.existsSync(path.join(rootDir, "config/nginx.conf"))).toBe(
       true
     );
   });

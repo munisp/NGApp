@@ -134,6 +134,15 @@ jobs:
         with:
           version: v3.14.0
 
+      - name: Build Helm dependencies
+        run: |
+          for chart in k8s/charts/*/; do
+            if [ -f "$chart/Chart.yaml" ] && grep -q "dependencies:" "$chart/Chart.yaml"; then
+              echo "Building dependencies for $chart..."
+              helm dependency build "$chart" || true
+            fi
+          done
+
       - name: Lint all Helm charts
         run: |
           for chart in k8s/charts/*/; do
