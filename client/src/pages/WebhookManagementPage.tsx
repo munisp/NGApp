@@ -163,8 +163,8 @@ export default function WebhookManagementPage() {
                 <div className="h-12 bg-zinc-700/50 rounded animate-pulse" />
               </div>
             ))
-          // @ts-ignore
-          ) : ((endpointsQuery.data ?? []) as any[]).length === 0 ? (
+          ) : // @ts-ignore
+          ((endpointsQuery.data ?? []) as any[]).length === 0 ? (
             <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-8 text-center text-zinc-500">
               No webhook endpoints configured
             </div>

@@ -22,8 +22,8 @@ export default function MultiCurrencyExchange() {
       value:
         // @ts-ignore
         stats?.supportedCurrencies != null
-          // @ts-ignore
-          ? String(stats.supportedCurrencies)
+          ? // @ts-ignore
+            String(stats.supportedCurrencies)
           : "—",
     },
     {
@@ -36,8 +36,8 @@ export default function MultiCurrencyExchange() {
       value:
         // @ts-ignore
         stats?.dailyVolume != null
-          // @ts-ignore
-          ? String(stats.dailyVolume.toLocaleString())
+          ? // @ts-ignore
+            String(stats.dailyVolume.toLocaleString())
           : "—",
     },
     {

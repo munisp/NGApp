@@ -9,7 +9,7 @@ export default function ExecutiveCommandCenter() {
     data: stats,
     isLoading,
     refetch,
-  // @ts-ignore
+    // @ts-ignore
   } = trpc.executiveCommandCenter.getStats.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
 

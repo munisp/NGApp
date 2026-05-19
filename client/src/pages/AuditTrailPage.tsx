@@ -56,7 +56,7 @@ export default function AuditTrailPage() {
     data: auditData,
     isLoading,
     refetch,
-  // @ts-ignore
+    // @ts-ignore
   } = trpc.sprint27Export.auditLog.useQuery({
     format: "json",
     severity: severityFilter !== "all" ? severityFilter : undefined,

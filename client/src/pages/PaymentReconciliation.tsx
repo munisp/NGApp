@@ -22,8 +22,8 @@ export default function PaymentReconciliation() {
       value:
         // @ts-ignore
         stats?.totalReconciled != null
-          // @ts-ignore
-          ? String(stats.totalReconciled.toLocaleString())
+          ? // @ts-ignore
+            String(stats.totalReconciled.toLocaleString())
           : "—",
     },
     {

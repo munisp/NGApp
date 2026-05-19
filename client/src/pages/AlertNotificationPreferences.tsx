@@ -72,7 +72,7 @@ export default function AlertNotificationPreferences() {
     data: preferences,
     isLoading: loadingPrefs,
     refetch: refetchPrefs,
-  // @ts-ignore
+    // @ts-ignore
   } = trpc.alertNotifications.listPreferences.useQuery();
   const { data: deliveryStats, isLoading: loadingStats } =
     // @ts-ignore

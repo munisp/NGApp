@@ -176,8 +176,8 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
-                // @ts-ignore
-                : (defsQuery.data ?? []).map((d: any) => (
+                : // @ts-ignore
+                  (defsQuery.data ?? []).map((d: any) => (
                     <tr
                       key={d.id}
                       className="border-b border-zinc-700/30 hover:bg-zinc-700/20"
@@ -246,8 +246,8 @@ export default function WorkflowEnginePage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
-                // @ts-ignore
-                : (instancesQuery.data ?? []).map((inst: any) => (
+                : // @ts-ignore
+                  (instancesQuery.data ?? []).map((inst: any) => (
                     <tr
                       key={inst.id}
                       className="border-b border-zinc-700/30 hover:bg-zinc-700/20"

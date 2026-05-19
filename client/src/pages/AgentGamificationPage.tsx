@@ -188,8 +188,8 @@ export default function AgentGamificationPage() {
                     </tr>
                     // @ts-ignore — Sprint 85: pre-existing type mismatch from router/page interface
                   ))
-                // @ts-ignore
-                : (leaderboardQuery.data ?? []).map((a: any, idx: number) => (
+                : // @ts-ignore
+                  (leaderboardQuery.data ?? []).map((a: any, idx: number) => (
                     <tr
                       key={a.agent_id || idx}
                       className="border-b border-zinc-700/30 hover:bg-zinc-700/20"

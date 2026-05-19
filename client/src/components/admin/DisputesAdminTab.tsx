@@ -125,7 +125,7 @@ export function DisputesAdminTab() {
     data: refundsData,
     isLoading: refundsLoading,
     refetch: refetchRefunds,
-  // @ts-ignore
+    // @ts-ignore
   } = trpc.disputeRefund.listRefunds.useQuery({
     status: refundStatusFilter === "all" ? undefined : refundStatusFilter,
     limit,

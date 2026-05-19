@@ -22,8 +22,8 @@ export default function FinancialReportingSuite() {
       value:
         // @ts-ignore
         stats?.totalRevenue != null
-          // @ts-ignore
-          ? String(stats.totalRevenue.toLocaleString())
+          ? // @ts-ignore
+            String(stats.totalRevenue.toLocaleString())
           : "—",
     },
     {
@@ -31,8 +31,8 @@ export default function FinancialReportingSuite() {
       value:
         // @ts-ignore
         stats?.totalExpenses != null
-          // @ts-ignore
-          ? String(stats.totalExpenses.toLocaleString())
+          ? // @ts-ignore
+            String(stats.totalExpenses.toLocaleString())
           : "—",
     },
     {
@@ -40,8 +40,8 @@ export default function FinancialReportingSuite() {
       value:
         // @ts-ignore
         stats?.netProfit != null
-          // @ts-ignore
-          ? String(stats.netProfit.toLocaleString())
+          ? // @ts-ignore
+            String(stats.netProfit.toLocaleString())
           : "—",
     },
     {

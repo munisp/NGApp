@@ -33,8 +33,8 @@ export default function WebhookDeliverySystem() {
       value:
         // @ts-ignore
         stats?.totalDeliveries24h != null
-          // @ts-ignore
-          ? String(stats.totalDeliveries24h)
+          ? // @ts-ignore
+            String(stats.totalDeliveries24h)
           : "—",
     },
     {

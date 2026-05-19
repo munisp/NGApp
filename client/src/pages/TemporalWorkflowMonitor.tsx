@@ -122,8 +122,8 @@ export default function TemporalWorkflowMonitor() {
                 <tbody>
                   {(Array.isArray(listQ.data)
                     ? listQ.data
-                    // @ts-ignore
-                    : listQ.data?.workflows || []
+                    : // @ts-ignore
+                      listQ.data?.workflows || []
                   ).map((w: any, i: number) => (
                     <tr
                       key={i}

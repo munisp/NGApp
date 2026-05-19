@@ -27,8 +27,8 @@ export default function DatabaseVisualization() {
       value:
         // @ts-ignore
         stats?.totalRows != null
-          // @ts-ignore
-          ? String(stats.totalRows.toLocaleString())
+          ? // @ts-ignore
+            String(stats.totalRows.toLocaleString())
           : "—",
     },
     {

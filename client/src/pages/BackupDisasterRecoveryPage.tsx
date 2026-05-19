@@ -155,8 +155,8 @@ export default function BackupDisasterRecoveryPage() {
                   </td>
                 </tr>
               ))
-            // @ts-ignore
-            ) : snapshots.length === 0 ? (
+            ) : // @ts-ignore
+            snapshots.length === 0 ? (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-zinc-500">
                   No backups found
