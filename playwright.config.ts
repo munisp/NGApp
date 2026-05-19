@@ -29,12 +29,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  // Start the dev server before running tests in CI
+  // In CI the server is already started by the workflow step — just reuse it
   webServer: process.env.CI
     ? {
         command: "pnpm dev",
         url: "http://localhost:3000",
-        reuseExistingServer: false,
+        reuseExistingServer: true,
         timeout: 60_000,
       }
     : undefined,

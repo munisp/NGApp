@@ -246,9 +246,7 @@ export const loadTestMetricsRouter = router({
                 ? (res.errorCount / res.totalRequests) * 100
                 : 0,
               failedRequests: res.errorCount ?? 0,
-              throughputMbps: res.actualRps
-                ? (res.actualRps * 0.5) / 1024
-                : 0,
+              throughputMbps: res.actualRps ? (res.actualRps * 0.5) / 1024 : 0,
             }
           : null,
       };

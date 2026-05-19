@@ -222,7 +222,7 @@ export default function LoadTestDashboard() {
   });
 
   const runs = runsQuery.data ?? [];
-  const activeRunId = selectedRun ?? (runs[0]?.runId ?? null);
+  const activeRunId = selectedRun ?? runs[0]?.runId ?? null;
   // @ts-ignore
   const detailsQuery = trpc.loadTestMetrics.getRunDetails.useQuery(
     { runId: activeRunId! },
