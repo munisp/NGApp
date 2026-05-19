@@ -204,8 +204,8 @@ async fn main() {
     println!("[FluvioConsumer] Batch size: {}, flush interval: {}ms", BATCH_SIZE, FLUSH_INTERVAL_MS);
 
     // Health check server
-    let health = warp::path("health").and_then(|| async { Ok::<_, warp::Rejection>(health_handler().await) });
-    let metrics = warp::path("metrics").and_then(|| async { Ok::<_, warp::Rejection>(metrics_handler().await) });
+    let health = warp::path("health").and(|| async { Ok::<_, warp::Rejection>(health_handler().await) });
+    let metrics = warp::path("metrics").and(|| async { Ok::<_, warp::Rejection>(metrics_handler().await) });
     let routes = health.or(metrics);
 
     tokio::spawn(async move {

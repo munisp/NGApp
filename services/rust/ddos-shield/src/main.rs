@@ -613,6 +613,8 @@ async fn configure_circuit_breaker(
             last_failure: 0,
             opened_at: 0,
             half_open_attempts: 0,
+            failure_count: 0,
+            failure_threshold: 5,
         },
     );
     (

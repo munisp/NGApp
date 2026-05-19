@@ -34,6 +34,7 @@ pub enum TransactionOp {
     Reversal,
 }
 type vector_clock = HLC;
+#[derive(Clone, Debug)]
 pub struct HLC {
     pub wall_ms: u64,
     pub counter: u32,
@@ -64,7 +65,7 @@ impl HLC {
         } else {
             self.counter += 1;
         }
-        self.clone()
+        self
     }
 
     pub fn merge(&mut self, other: &HLC) -> HLC {
@@ -83,7 +84,7 @@ impl HLC {
         } else {
             self.counter += 1;
         }
-        self.clone()
+        self
     }
 }
 
@@ -108,7 +109,7 @@ impl GCounter {
 
     pub fn merge(&mut self, other: &GCounter) {
         for (node, &count) in &other.counts {
-            let entry = self.counts.entry(node.clone()).or_insert(0);
+            let entry = self.counts.entry(node).or_insert(0);
             *entry = std::cmp::max(*entry, count);
         }
     }
@@ -211,14 +212,14 @@ impl OfflineLedger {
         let id = format!("{}-{}-{}", self.node_id, timestamp.wall_ms, timestamp.counter);
 
         let prev_hash = self.entries.values().last()
-            .map(|e| e.entry_hash.clone())
+            .map(|e| e.entry_hash)
             .unwrap_or_else(|| "genesis".to_string());
 
         let entry_data = format!("{}:{}:{}:{}:{}", id, tx_type, amount_cents, prev_hash, timestamp.wall_ms);
         let entry_hash = format!("{:016x}", fnv_hash(entry_data.as_bytes()));
 
         let entry = LedgerEntry {
-            id: id.clone(),
+            id: id,
             hlc: timestamp,
             tx_type: tx_type.to_string(),
             amount_cents,
@@ -241,7 +242,7 @@ impl OfflineLedger {
             self.balance.decrement(&self.node_id, (-amount_cents) as u64);
         }
 
-        self.entries.insert(id, entry.clone());
+        self.entries.insert(id, entry);
         entry
     }
 
@@ -267,22 +268,22 @@ impl OfflineLedger {
                     };
 
                     self.conflicts.push(LedgerConflict {
-                        entry_id: id.clone(),
-                        local_entry: local_entry.clone(),
-                        remote_entry: remote_entry.clone(),
+                        entry_id: id,
+                        local_entry: local_entry,
+                        remote_entry: remote_entry,
                         resolution: resolution.to_string(),
                         resolved_at: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64,
                     });
 
                     if resolution == "remote_wins" {
-                        self.entries.insert(id.clone(), remote_entry.clone());
+                        self.entries.insert(id, remote_entry);
                     }
                     conflicts += 1;
                 }
                 // Identical — no action needed
             } else {
                 // New entry from remote — add it
-                self.entries.insert(id.clone(), remote_entry.clone());
+                self.entries.insert(id, remote_entry);
                 added += 1;
             }
         }
@@ -306,7 +307,7 @@ impl OfflineLedger {
         for (i, entry) in entries.iter().enumerate() {
             if i == 0 {
                 if entry.prev_hash != "genesis" {
-                    broken_links.push(entry.id.clone());
+                    broken_links.push(entry.id);
                 } else {
                     valid_count += 1;
                 }
@@ -315,7 +316,7 @@ impl OfflineLedger {
 
             let prev_entry = entries[i - 1];
             if entry.prev_hash != prev_entry.entry_hash {
-                broken_links.push(entry.id.clone());
+                broken_links.push(entry.id);
             } else {
                 valid_count += 1;
             }
@@ -363,7 +364,7 @@ impl OfflineLedger {
             unsynced_count: unsynced,
             last_sync: self.last_sync,
             currency: self.entries.values().next()
-                .map(|e| e.currency.clone())
+                .map(|e| e.currency)
                 .unwrap_or_else(|| "NGN".to_string()),
         }
     }

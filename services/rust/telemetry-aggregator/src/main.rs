@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 // Telemetry Aggregator Service — Per-agent/region/carrier rollups & anomaly detection
 //
 // Consumes raw telemetry from the ingestion service and produces:
