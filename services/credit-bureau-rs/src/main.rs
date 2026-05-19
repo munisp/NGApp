@@ -38,7 +38,7 @@ async fn query_bureau(req: actix_web::HttpRequest, state: web::Data<AppState>, b
     let result = credit_score_band(score);
     // Inter-service call: kyc_verify
     let _upstream_url = std::env::var("KYC_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    match call_service_grpc(&format!("{}/v1/verify", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/verify", _upstream_url), "POST", "{}") {
         Ok(_resp) => eprintln!("credit-bureau-rs: kyc_verify ok"),
         Err(e) => eprintln!("credit-bureau-rs: kyc_verify failed: {}", e),
     }
@@ -342,7 +342,15 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
-                .wrap(add_security_headers())
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

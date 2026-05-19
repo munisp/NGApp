@@ -302,7 +302,15 @@ async fn main() -> std::io::Result<()> {
     println!("interbank-lending-rs listening on port {}", port);
     HttpServer::new(move || {
         App::new()
-                .wrap(add_security_headers())
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

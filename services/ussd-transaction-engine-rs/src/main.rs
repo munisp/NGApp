@@ -52,7 +52,7 @@ async fn process_ussd(req: actix_web::HttpRequest, state: web::Data<AppState>, b
     db_persist(&state, "process_ussd", &_result_data).await;
     // Inter-service call
     let _upstream_url = std::env::var("PAYMENTS_HUB_URL").unwrap_or_else(|_| "http://localhost:8126".to_string());
-    match call_service_grpc(&format!("{}/v1/process", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/process", _upstream_url), "POST", "{}") {
         Ok(_resp) => eprintln!("ussd-transaction-engine-rs: upstream call ok"),
         Err(e) => eprintln!("ussd-transaction-engine-rs: upstream call failed: {}", e),
     }
@@ -419,7 +419,15 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
-                .wrap(add_security_headers())
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

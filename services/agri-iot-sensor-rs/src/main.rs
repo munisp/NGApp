@@ -36,7 +36,7 @@ async fn process_sensor(req: actix_web::HttpRequest, state: web::Data<AppState>,
     let result = soil_moisture_status(pct);
     // Inter-service call: register_sensor
     let _upstream_url = std::env::var("AGRI_BANKING_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    match call_service_grpc(&format!("{}/v1/register", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/register", _upstream_url), "POST", "{}") {
         Ok(_resp) => eprintln!("agri-iot-sensor-rs: register_sensor ok"),
         Err(e) => eprintln!("agri-iot-sensor-rs: register_sensor failed: {}", e),
     }
@@ -340,7 +340,15 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
-                .wrap(add_security_headers())
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")

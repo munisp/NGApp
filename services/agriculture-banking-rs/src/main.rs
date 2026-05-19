@@ -37,7 +37,7 @@ async fn assess_farm(req: actix_web::HttpRequest, state: web::Data<AppState>, bo
     let result = crop_cycle_months(crop);
     // Inter-service call: credit_check
     let _upstream_url = std::env::var("CREDIT_BUREAU_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    match call_service_grpc(&format!("{}/v1/query_bureau", _upstream_url), "{}") {
+    match call_service_grpc(&format!("{}/v1/query_bureau", _upstream_url), "POST", "{}") {
         Ok(_resp) => eprintln!("agriculture-banking-rs: credit_check ok"),
         Err(e) => eprintln!("agriculture-banking-rs: credit_check failed: {}", e),
     }
@@ -341,7 +341,15 @@ async fn main() -> std::io::Result<()> {
 
 HttpServer::new(move || {
         App::new()
-                .wrap(add_security_headers())
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")
