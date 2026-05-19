@@ -37,14 +37,20 @@ describe("Sprint 25: Guide Feedback System", () => {
 describe("Sprint 25: Proactive Help System", () => {
   it("should have ProactiveHelp component file", () => {
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx"
+      require("path").resolve(
+        __dirname,
+        "../client/src/components/ProactiveHelp.tsx"
+      )
     );
     expect(exists).toBe(true);
   });
 
   it("should have page-specific help suggestions", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/components/ProactiveHelp.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("pageHelpSuggestions");
@@ -55,7 +61,10 @@ describe("Sprint 25: Proactive Help System", () => {
 
   it("should detect struggle patterns", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/components/ProactiveHelp.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/components/ProactiveHelp.tsx"
+      ),
       "utf-8"
     );
     // Should have idle detection
@@ -68,7 +77,7 @@ describe("Sprint 25: Proactive Help System", () => {
 
   it("should be wired into App.tsx", () => {
     const appContent = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+      require("path").resolve(__dirname, "../client/src/App.tsx"),
       "utf-8"
     );
     expect(appContent).toContain("ProactiveHelp");
@@ -79,14 +88,20 @@ describe("Sprint 25: Proactive Help System", () => {
 describe("Sprint 25: Video Tutorials Page", () => {
   it("should have VideoTutorials component file", () => {
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx"
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/VideoTutorials.tsx"
+      )
     );
     expect(exists).toBe(true);
   });
 
   it("should contain 5 tutorial sections for complex features", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/VideoTutorials.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/VideoTutorials.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("tutorials");
@@ -99,7 +114,7 @@ describe("Sprint 25: Video Tutorials Page", () => {
 
   it("should be routed in App.tsx", () => {
     const appContent = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+      require("path").resolve(__dirname, "../client/src/App.tsx"),
       "utf-8"
     );
     expect(appContent).toContain("VideoTutorials");
@@ -108,7 +123,10 @@ describe("Sprint 25: Video Tutorials Page", () => {
 
   it("should be in DashboardLayout navigation", () => {
     const layoutContent = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/components/DashboardLayout.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/components/DashboardLayout.tsx"
+      ),
       "utf-8"
     );
     expect(layoutContent).toContain("Video Tutorials");
@@ -120,7 +138,7 @@ describe("Sprint 25: Video Tutorials Page", () => {
 describe("Sprint 25: User Guide Feedback Integration", () => {
   it("should have feedback widget in UserGuide page", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      require("path").resolve(__dirname, "../client/src/pages/UserGuide.tsx"),
       "utf-8"
     );
     expect(content).toContain("SectionFeedback");
@@ -131,7 +149,7 @@ describe("Sprint 25: User Guide Feedback Integration", () => {
 
   it("should have sidebar rating badges", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      require("path").resolve(__dirname, "../client/src/pages/UserGuide.tsx"),
       "utf-8"
     );
     expect(content).toContain("SidebarRatingBadge");
@@ -140,7 +158,7 @@ describe("Sprint 25: User Guide Feedback Integration", () => {
 
   it("should import trpc for feedback submission", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/UserGuide.tsx",
+      require("path").resolve(__dirname, "../client/src/pages/UserGuide.tsx"),
       "utf-8"
     );
     expect(content).toContain("import { trpc }");

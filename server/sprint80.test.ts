@@ -202,7 +202,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("sprint80-billing-services.yaml exists and contains all 10 services", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 
@@ -222,7 +225,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("K8s manifest has proper namespace and RBAC", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 
@@ -236,7 +242,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("K8s manifest has HPA for high-throughput services", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 
@@ -249,7 +258,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("K8s manifest connects to all middleware", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 
@@ -272,7 +284,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("K8s manifest has Dapr annotations for all services", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 
@@ -284,7 +299,10 @@ describe("Sprint 80: Kubernetes Manifests", () => {
   it("K8s manifest has health probes for all services", async () => {
     const fs = await import("fs");
     const yaml = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
 

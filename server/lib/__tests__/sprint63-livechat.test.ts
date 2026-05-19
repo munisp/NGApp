@@ -78,8 +78,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should export a default component", async () => {
       // Verify the page module exists and exports default
       const fs = await import("fs");
-      const path =
-        "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx";
+      const path = require("path").resolve(
+        __dirname,
+        "../../../client/src/pages/AdminSupportInbox.tsx"
+      );
       const exists = fs.existsSync(path);
       expect(exists).toBe(true);
 
@@ -98,7 +100,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have canned admin responses", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/AdminSupportInbox.tsx"
+        ),
         "utf-8"
       );
       expect(content).toContain("ADMIN_CANNED");
@@ -111,7 +116,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have session status filters", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/AdminSupportInbox.tsx"
+        ),
         "utf-8"
       );
       expect(content).toContain("statusFilter");
@@ -124,7 +132,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have assign and escalate dialogs", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/pages/AdminSupportInbox.tsx",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/pages/AdminSupportInbox.tsx"
+        ),
         "utf-8"
       );
       expect(content).toContain("showAssignDialog");
@@ -139,7 +150,7 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have admin-support-inbox route in App.tsx", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+        require("path").resolve(__dirname, "../../../client/src/App.tsx"),
         "utf-8"
       );
       expect(content).toContain("/admin-support-inbox");
@@ -149,7 +160,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have Support Inbox in DashboardLayout navigation", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/components/DashboardLayout.tsx",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/components/DashboardLayout.tsx"
+        ),
         "utf-8"
       );
       expect(content).toContain("Support Inbox");
@@ -162,7 +176,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should exist with AI-powered chat capabilities", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/components/LiveChatWidget.tsx",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/components/LiveChatWidget.tsx"
+        ),
         "utf-8"
       );
       expect(content).toContain("LiveChatWidget");
@@ -176,7 +193,10 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should have useChatSocket hook", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/client/src/hooks/useSocket.ts",
+        require("path").resolve(
+          __dirname,
+          "../../../client/src/hooks/useSocket.ts"
+        ),
         "utf-8"
       );
       expect(content).toContain("useChatSocket");
@@ -190,7 +210,7 @@ describe("Sprint 63: Live Chat Support Widget & Admin Inbox", () => {
     it("should emit chat:message via Socket.IO in adminReply", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/pos-shell-demo/server/routers/chat.ts",
+        require("path").resolve(__dirname, "../../../server/routers/chat.ts"),
         "utf-8"
       );
       // adminReply should emit via Socket.IO

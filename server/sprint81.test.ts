@@ -101,7 +101,10 @@ describe("Sprint 81 — Settlement Gateway Service", () => {
   it("should have a main.go file with health endpoint", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/go/settlement-gateway/main.go",
+      require("path").resolve(
+        __dirname,
+        "../services/go/settlement-gateway/main.go"
+      ),
       "utf-8"
     );
     expect(content).toContain("handleHealth");
@@ -115,7 +118,10 @@ describe("Sprint 81 — Settlement Gateway Service", () => {
   it("should integrate with all required middleware", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/go/settlement-gateway/main.go",
+      require("path").resolve(
+        __dirname,
+        "../services/go/settlement-gateway/main.go"
+      ),
       "utf-8"
     );
     expect(content).toContain("KAFKA_BROKERS");
@@ -131,7 +137,10 @@ describe("Sprint 81 — Billing Analytics Pipeline", () => {
   it("should have a main.py file with OpenSearch and Lakehouse integration", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-analytics-pipeline/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-analytics-pipeline/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("OpenSearchWriter");
@@ -144,7 +153,10 @@ describe("Sprint 81 — Billing Analytics Pipeline", () => {
   it("should implement flush and compaction endpoints", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-analytics-pipeline/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-analytics-pipeline/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("/api/v1/flush");
@@ -157,7 +169,10 @@ describe("Sprint 81 — Invoice Generator Service", () => {
   it("should have a main.py with revenue_share and subscription invoice generation", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/invoice-generator/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/invoice-generator/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("generate_revenue_share_invoice");
@@ -168,7 +183,10 @@ describe("Sprint 81 — Invoice Generator Service", () => {
   it("should publish events to Kafka on invoice generation", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/invoice-generator/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/invoice-generator/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("billing.invoice.generated");
@@ -180,7 +198,10 @@ describe("Sprint 81 — Billing Webhook Dispatcher", () => {
   it("should implement HMAC signature verification and retry logic", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-webhook-dispatcher/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-webhook-dispatcher/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("_sign_payload");
@@ -193,7 +214,10 @@ describe("Sprint 81 — Billing Webhook Dispatcher", () => {
   it("should integrate with Kafka, Redis, and Temporal", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-webhook-dispatcher/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-webhook-dispatcher/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("KAFKA_BROKERS");
@@ -206,7 +230,10 @@ describe("Sprint 81 — Billing SLA Monitor", () => {
   it("should implement SLA rule checking with severity levels", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-sla-monitor/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-sla-monitor/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("SLARule");
@@ -219,7 +246,10 @@ describe("Sprint 81 — Billing SLA Monitor", () => {
   it("should trigger alerts via multiple channels", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/python/billing-sla-monitor/main.py",
+      require("path").resolve(
+        __dirname,
+        "../services/python/billing-sla-monitor/main.py"
+      ),
       "utf-8"
     );
     expect(content).toContain("_trigger_alert");
@@ -234,7 +264,10 @@ describe("Sprint 81 — Kubernetes Manifests", () => {
   it("should have K8s manifests for billing services", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
     expect(content).toContain("Deployment");
@@ -246,7 +279,10 @@ describe("Sprint 81 — Kubernetes Manifests", () => {
   it("should include Dapr annotations and health probes", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
     expect(content).toContain("dapr.io");
@@ -259,7 +295,7 @@ describe("Sprint 81 — Local PostgreSQL Integration", () => {
   it("should have all billing tables in schema", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/drizzle/schema.ts",
+      require("path").resolve(__dirname, "../drizzle/schema.ts"),
       "utf-8"
     );
     expect(schema).toContain("billingRoleAssignments");

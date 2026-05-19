@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 
-const PROJECT = "/home/ubuntu/pos-shell-demo";
+const PROJECT = require("path").resolve(__dirname, "..");
 
 // ─── 1. Go Service Adapter Framework ──────────────────────────
 describe("Go Service Adapter Framework", () => {

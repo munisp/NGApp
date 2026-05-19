@@ -131,7 +131,9 @@ describe("Ransomware Mitigation", () => {
     const { computeFileHash } = await import(
       "./middleware/ransomwareMitigation"
     );
-    const hash = computeFileHash("/home/ubuntu/pos-shell-demo/package.json");
+    const hash = computeFileHash(
+      require("path").resolve(__dirname, "../package.json")
+    );
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
 });

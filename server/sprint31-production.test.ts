@@ -162,13 +162,15 @@ describe("Security Hardening Router", () => {
 describe("Docker & Infrastructure Files", () => {
   it("should have Dockerfile", async () => {
     const fs = await import("fs");
-    expect(fs.existsSync("/home/ubuntu/pos-shell-demo/Dockerfile")).toBe(true);
+    expect(
+      fs.existsSync(require("path").resolve(__dirname, "../Dockerfile"))
+    ).toBe(true);
   });
 
   it("should have docker-compose.yml", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.yml")
+      fs.existsSync(require("path").resolve(__dirname, "../docker-compose.yml"))
     ).toBe(true);
   });
 
@@ -176,7 +178,10 @@ describe("Docker & Infrastructure Files", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/infrastructure/k8s/deployment.yaml"
+        require("path").resolve(
+          __dirname,
+          "../infrastructure/k8s/deployment.yaml"
+        )
       )
     ).toBe(true);
   });
@@ -185,7 +190,10 @@ describe("Docker & Infrastructure Files", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/infrastructure/dbt/dbt_project.yml"
+        require("path").resolve(
+          __dirname,
+          "../infrastructure/dbt/dbt_project.yml"
+        )
       )
     ).toBe(true);
   });
@@ -194,7 +202,10 @@ describe("Docker & Infrastructure Files", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/infrastructure/airflow/dags/posshell_daily_pipeline.py"
+        require("path").resolve(
+          __dirname,
+          "../infrastructure/airflow/dags/posshell_daily_pipeline.py"
+        )
       )
     ).toBe(true);
   });
@@ -203,7 +214,10 @@ describe("Docker & Infrastructure Files", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/infrastructure/nifi/posshell-flow-template.json"
+        require("path").resolve(
+          __dirname,
+          "../infrastructure/nifi/posshell-flow-template.json"
+        )
       )
     ).toBe(true);
   });
@@ -211,14 +225,18 @@ describe("Docker & Infrastructure Files", () => {
   it("should have seed data script", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/seed-data.mjs")
+      fs.existsSync(
+        require("path").resolve(__dirname, "../scripts/seed-data.mjs")
+      )
     ).toBe(true);
   });
 
   it("should have smoke test script", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs")
+      fs.existsSync(
+        require("path").resolve(__dirname, "../scripts/smoke-test.mjs")
+      )
     ).toBe(true);
   });
 });

@@ -95,7 +95,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
     // Verify Kafka is referenced in billing-event-processor
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/rust/billing-event-processor/src/main.rs",
+      require("path").resolve(
+        __dirname,
+        "../services/rust/billing-event-processor/src/main.rs"
+      ),
       "utf-8"
     );
     expect(content).toContain("kafka");
@@ -105,7 +108,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
   it("should have TigerBeetle integration in fee-splitter", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/rust/fee-splitter-realtime/src/main.rs",
+      require("path").resolve(
+        __dirname,
+        "../services/rust/fee-splitter-realtime/src/main.rs"
+      ),
       "utf-8"
     );
     expect(content).toContain("tigerbeetle");
@@ -115,7 +121,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
   it("should have OpenSearch integration in telemetry-api-gateway", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/go/telemetry-api-gateway/main.go",
+      require("path").resolve(
+        __dirname,
+        "../services/go/telemetry-api-gateway/main.go"
+      ),
       "utf-8"
     );
     expect(content).toContain("opensearch");
@@ -125,7 +134,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
   it("should have Dapr integration in telemetry-api-gateway", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/go/telemetry-api-gateway/main.go",
+      require("path").resolve(
+        __dirname,
+        "../services/go/telemetry-api-gateway/main.go"
+      ),
       "utf-8"
     );
     expect(content).toContain("dapr");
@@ -135,7 +147,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
   it("should have Mojaloop integration in fee-splitter", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/rust/fee-splitter-realtime/src/main.rs",
+      require("path").resolve(
+        __dirname,
+        "../services/rust/fee-splitter-realtime/src/main.rs"
+      ),
       "utf-8"
     );
     expect(content).toContain("mojaloop");
@@ -145,7 +160,10 @@ describe("Sprint 83: Middleware Integration Verification", () => {
   it("should have Fluvio integration in billing-event-processor", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/services/rust/billing-event-processor/src/main.rs",
+      require("path").resolve(
+        __dirname,
+        "../services/rust/billing-event-processor/src/main.rs"
+      ),
       "utf-8"
     );
     expect(content).toContain("fluvio");
@@ -157,7 +175,10 @@ describe("Sprint 83: K8s Manifests", () => {
   it("should have Sprint 80 billing services K8s manifest", () => {
     const fs = require("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/k8s/sprint80-billing-services.yaml",
+      require("path").resolve(
+        __dirname,
+        "../k8s/sprint80-billing-services.yaml"
+      ),
       "utf-8"
     );
     expect(content).toContain("Deployment");
@@ -170,7 +191,7 @@ describe("Sprint 83: Service Completeness", () => {
   it("should have all Go services with main.go", () => {
     const fs = require("fs");
     const path = require("path");
-    const goDir = "/home/ubuntu/pos-shell-demo/services/go";
+    const goDir = require("path").resolve(__dirname, "../services/go");
     const dirs = fs.readdirSync(goDir).filter((d: string) => {
       const stat = fs.statSync(path.join(goDir, d));
       return stat.isDirectory() && d !== "shared";
@@ -185,7 +206,7 @@ describe("Sprint 83: Service Completeness", () => {
   it("should have all Rust services with src/main.rs", () => {
     const fs = require("fs");
     const path = require("path");
-    const rustDir = "/home/ubuntu/pos-shell-demo/services/rust";
+    const rustDir = require("path").resolve(__dirname, "../services/rust");
     const dirs = fs.readdirSync(rustDir).filter((d: string) => {
       const stat = fs.statSync(path.join(rustDir, d));
       return stat.isDirectory();

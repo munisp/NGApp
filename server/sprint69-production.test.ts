@@ -396,14 +396,18 @@ describe("Sprint 69: Production Infrastructure", () => {
   it("should have unified seed script", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/scripts/seed-all.mjs")
+      fs.existsSync(
+        require("path").resolve(__dirname, "../scripts/seed-all.mjs")
+      )
     ).toBe(true);
   });
 
   it("should have unified docker-compose", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/docker-compose.unified.yml")
+      fs.existsSync(
+        require("path").resolve(__dirname, "../docker-compose.unified.yml")
+      )
     ).toBe(true);
   });
 
@@ -411,7 +415,10 @@ describe("Sprint 69: Production Infrastructure", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/server/middleware/securityHardening.ts"
+        require("path").resolve(
+          __dirname,
+          "../server/middleware/securityHardening.ts"
+        )
       )
     ).toBe(true);
   });

@@ -171,7 +171,10 @@ describe("Sprint 82: Billing Portal Integration", () => {
   it("TenantBillingPortalPage file should exist", async () => {
     const fs = await import("fs");
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/TenantBillingPortalPage.tsx"
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/TenantBillingPortalPage.tsx"
+      )
     );
     expect(exists).toBe(true);
   });
@@ -179,7 +182,10 @@ describe("Sprint 82: Billing Portal Integration", () => {
   it("Go billing-provisioning-workflow service should exist", async () => {
     const fs = await import("fs");
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/services/go/billing-provisioning-workflow/main.go"
+      require("path").resolve(
+        __dirname,
+        "../services/go/billing-provisioning-workflow/main.go"
+      )
     );
     expect(exists).toBe(true);
   });
@@ -187,7 +193,7 @@ describe("Sprint 82: Billing Portal Integration", () => {
   it("Temporal activities file should contain billing provisioning activities", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/temporal-activities.ts",
+      require("path").resolve(__dirname, "../server/temporal-activities.ts"),
       "utf-8"
     );
     expect(content).toContain("validateTenantForBilling");
@@ -202,7 +208,7 @@ describe("Sprint 82: Billing Portal Integration", () => {
   it("Temporal workflow file should contain BillingProvisioningWorkflow", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/temporal-workflows.ts",
+      require("path").resolve(__dirname, "../server/temporal-workflows.ts"),
       "utf-8"
     );
     expect(content).toContain("BillingProvisioningWorkflow");

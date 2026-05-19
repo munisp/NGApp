@@ -103,15 +103,20 @@ describe("Sprint 84 — Stripe Invoice Webhook Handler", () => {
 describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("should have BillingAnalyticsDashboardPage component file", async () => {
     const fs = await import("fs");
-    const path =
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx";
+    const path = require("path").resolve(
+      __dirname,
+      "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+    );
     expect(fs.existsSync(path)).toBe(true);
   });
 
   it("dashboard page should include Chart.js integration", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("chart.js/auto");
@@ -122,7 +127,10 @@ describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("dashboard should include all 6 chart types", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+      ),
       "utf-8"
     );
     // Revenue, MRR, Churn, LTV, Cohort, Forecast
@@ -137,7 +145,10 @@ describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("dashboard should include KPI cards for MRR, ARR, Churn, LTV", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("Monthly Recurring Revenue");
@@ -149,7 +160,10 @@ describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("dashboard should include period filter (3m, 6m, 12m)", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("3 Months");
@@ -160,7 +174,10 @@ describe("Sprint 84 — Billing Analytics Dashboard", () => {
   it("dashboard should reference data sources", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/pages/BillingAnalyticsDashboardPage.tsx",
+      require("path").resolve(
+        __dirname,
+        "../client/src/pages/BillingAnalyticsDashboardPage.tsx"
+      ),
       "utf-8"
     );
     expect(content).toContain("Platform Billing Ledger");
@@ -174,7 +191,7 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should be mounted at /api/scheduled/monthly-invoices", async () => {
     const fs = await import("fs");
     const indexContent = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/_core/index.ts",
+      require("path").resolve(__dirname, "../server/_core/index.ts"),
       "utf-8"
     );
     expect(indexContent).toContain("/api/scheduled/monthly-invoices");
@@ -184,7 +201,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should support all billing models", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("revenue_share");
@@ -195,7 +215,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should integrate with Stripe invoice creation", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("stripe.invoices.create");
@@ -207,7 +230,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should publish Kafka events", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("billing.invoice.generated");
@@ -218,7 +244,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should record audit log entries", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("billingAuditLog");
@@ -228,7 +257,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should skip tenants with no transactions", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("No transactions, skipping");
@@ -237,7 +269,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should enforce minimum invoice amount", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("Amount too low");
@@ -247,7 +282,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should return structured summary response", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("tenantsProcessed");
@@ -259,7 +297,10 @@ describe("Sprint 84 — Monthly Invoice Cron", () => {
   it("cron handler should have proper error handling with context", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/server/scheduled/monthlyInvoiceCron.ts",
+      require("path").resolve(
+        __dirname,
+        "../server/scheduled/monthlyInvoiceCron.ts"
+      ),
       "utf-8"
     );
     expect(content).toContain("x-manus-cron-task-uid");
@@ -273,7 +314,7 @@ describe("Sprint 84 — Route Registration", () => {
   it("BillingAnalyticsDashboardPage should be registered in App.tsx", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/client/src/App.tsx",
+      require("path").resolve(__dirname, "../client/src/App.tsx"),
       "utf-8"
     );
     expect(content).toContain("BillingAnalyticsDashboardPage");

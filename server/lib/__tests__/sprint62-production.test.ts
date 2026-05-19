@@ -199,7 +199,10 @@ describe("F11: Docker Configuration", () => {
   it("docker-compose.production-final.yml should exist", async () => {
     const fs = await import("fs");
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml"
+      require("path").resolve(
+        __dirname,
+        "../../../docker-compose.production-final.yml"
+      )
     );
     expect(exists).toBe(true);
   });
@@ -207,7 +210,10 @@ describe("F11: Docker Configuration", () => {
   it("should define all required services", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml",
+      require("path").resolve(
+        __dirname,
+        "../../../docker-compose.production-final.yml"
+      ),
       "utf-8"
     );
     expect(content).toContain("web:");
@@ -223,7 +229,10 @@ describe("F11: Docker Configuration", () => {
   it("should have health checks on critical services", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/docker-compose.production-final.yml",
+      require("path").resolve(
+        __dirname,
+        "../../../docker-compose.production-final.yml"
+      ),
       "utf-8"
     );
     const healthCheckCount = (content.match(/healthcheck:/g) || []).length;
@@ -236,7 +245,10 @@ describe("F12: Production Seed Script", () => {
   it("seed script should exist", async () => {
     const fs = await import("fs");
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs"
+      require("path").resolve(
+        __dirname,
+        "../../../scripts/seed-production-final.mjs"
+      )
     );
     expect(exists).toBe(true);
   });
@@ -244,7 +256,10 @@ describe("F12: Production Seed Script", () => {
   it("should seed agents, transactions, disputes, KYC", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/scripts/seed-production-final.mjs",
+      require("path").resolve(
+        __dirname,
+        "../../../scripts/seed-production-final.mjs"
+      ),
       "utf-8"
     );
     expect(content).toContain("agent");
@@ -435,7 +450,7 @@ describe("F19: Smoke Test Script", () => {
   it("smoke test script should exist", async () => {
     const fs = await import("fs");
     const exists = fs.existsSync(
-      "/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs"
+      require("path").resolve(__dirname, "../../../scripts/smoke-test.mjs")
     );
     expect(exists).toBe(true);
   });
@@ -443,7 +458,7 @@ describe("F19: Smoke Test Script", () => {
   it("should test critical paths", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/scripts/smoke-test.mjs",
+      require("path").resolve(__dirname, "../../../scripts/smoke-test.mjs"),
       "utf-8"
     );
     expect(content).toContain("health");
@@ -527,7 +542,9 @@ describe("YAML Configuration Files", () => {
   it("prometheus.yml should exist", async () => {
     const fs = await import("fs");
     expect(
-      fs.existsSync("/home/ubuntu/pos-shell-demo/config/prometheus.yml")
+      fs.existsSync(
+        require("path").resolve(__dirname, "../../../config/prometheus.yml")
+      )
     ).toBe(true);
   });
 
@@ -535,7 +552,10 @@ describe("YAML Configuration Files", () => {
     const fs = await import("fs");
     expect(
       fs.existsSync(
-        "/home/ubuntu/pos-shell-demo/config/grafana-datasources.yml"
+        require("path").resolve(
+          __dirname,
+          "../../../config/grafana-datasources.yml"
+        )
       )
     ).toBe(true);
   });
@@ -543,7 +563,7 @@ describe("YAML Configuration Files", () => {
   it("nginx.conf should exist with security headers", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/pos-shell-demo/config/nginx.conf",
+      require("path").resolve(__dirname, "../../../config/nginx.conf"),
       "utf-8"
     );
     expect(content).toContain("X-Frame-Options");
