@@ -117,12 +117,14 @@ async fn post_journal(body: web::Json<Vec<JournalEntry>>, state: web::Data<AppSt
             *acc.balance.get_or_insert(0.0) -= entry.amount;
         }
     }
+    db_persist(&state, "post_journal", &json!({"action": "post_journal"})).await;
     HttpResponse::Ok().json(json!({"entry_id": entry_id, "status": "posted", "entries": entries.len()}))
 }
 
 async fn trial_balance(body: web::Json<TrialBalanceRequest>, state: web::Data<AppState>) -> HttpResponse {
     let accounts = state.accounts.lock().unwrap();
     let tb = compute_trial_balance(&accounts);
+    db_persist(&state, "trial_balance", &json!({"action": "trial_balance"})).await;
     HttpResponse::Ok().json(tb)
 }
 
@@ -144,6 +146,7 @@ async fn chart_of_accounts(req: actix_web::HttpRequest, state: web::Data<AppStat
         Ok(_resp) => eprintln!("gl-engine-rs: upstream call ok"),
         Err(e) => eprintln!("gl-engine-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "chart_of_accounts", &json!({"action": "chart_of_accounts"})).await;
     HttpResponse::Ok().json(json!({"chart": grouped, "total_accounts": accounts.len()}))
 }
 
@@ -151,6 +154,7 @@ async fn account_balance(path: web::Path<String>, state: web::Data<AppState>) ->
     let code = path.into_inner();
     let accounts = state.accounts.lock().unwrap();
     match accounts.iter().find(|a| a.account_code.as_deref() == Some(&code)) {
+    db_persist(&state, "account_balance", &json!({"action": "account_balance"})).await;
         Some(acc) => HttpResponse::Ok().json(json!({"account": acc, "classification": classify_account(&code)})),
         None => HttpResponse::NotFound().json(json!({"error": "Account not found"})),
     }

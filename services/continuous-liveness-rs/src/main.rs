@@ -205,6 +205,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("continuous-liveness-rs: upstream call ok"),
         Err(e) => eprintln!("continuous-liveness-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "continuous-liveness-rs",
         "status": "healthy",
@@ -235,6 +236,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
 async fn get_configs(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let configs = state.configs.lock().unwrap();
+    db_persist(&state, "get_configs", &json!({"action": "get_configs"})).await;
     HttpResponse::Ok().json(json!({"configs": *configs, "total": configs.len()}))
 }
 
@@ -266,6 +268,7 @@ async fn evaluate_step_up(body: web::Json<serde_json::Value>, state: web::Data<A
             let mut checks = state.checks.lock().unwrap();
             checks.push(check.clone());
 
+    db_persist(&state, "evaluate_step_up", &json!({"action": "evaluate_step_up"})).await;
             HttpResponse::Ok().json(json!({
                 "step_up_required": true,
                 "config": config,
@@ -330,6 +333,7 @@ async fn analyze_behavioral(body: web::Json<serde_json::Value>, state: web::Data
     let mut beh_checks = state.behavioral_checks.lock().unwrap();
     beh_checks.push(check.clone());
 
+    db_persist(&state, "analyze_behavioral", &json!({"action": "analyze_behavioral"})).await;
     HttpResponse::Ok().json(json!({
         "behavioral_check": check,
         "decision": if passed { "normal" } else { "step_up_required" },
@@ -340,18 +344,21 @@ async fn analyze_behavioral(body: web::Json<serde_json::Value>, state: web::Data
 async fn get_profiles(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let profiles = state.profiles.lock().unwrap();
+    db_persist(&state, "get_profiles", &json!({"action": "get_profiles"})).await;
     HttpResponse::Ok().json(json!({"profiles": *profiles, "total": profiles.len()}))
 }
 
 async fn get_checks(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let checks = state.checks.lock().unwrap();
+    db_persist(&state, "get_checks", &json!({"action": "get_checks"})).await;
     HttpResponse::Ok().json(json!({"checks": *checks, "total": checks.len()}))
 }
 
 async fn get_behavioral_checks(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let checks = state.behavioral_checks.lock().unwrap();
+    db_persist(&state, "get_behavioral_checks", &json!({"action": "get_behavioral_checks"})).await;
     HttpResponse::Ok().json(json!({"behavioral_checks": *checks, "total": checks.len()}))
 }
 
@@ -362,6 +369,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
     let total = checks.len() as f64;
     let passed = checks.iter().filter(|c| c.passed).count() as f64;
     let beh_passed = beh.iter().filter(|c| c.passed).count();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "step_up_evaluations": checks.len(),
         "step_up_passed": passed as u64,

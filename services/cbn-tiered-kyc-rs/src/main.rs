@@ -231,6 +231,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("cbn-tiered-kyc-rs: upstream call ok"),
         Err(e) => eprintln!("cbn-tiered-kyc-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "cbn-tiered-kyc-rs",
         "status": "healthy",
@@ -278,6 +279,7 @@ async fn assess_tier(body: web::Json<serde_json::Value>, state: web::Data<AppSta
     let mut assessments = state.assessments.lock().unwrap();
     assessments.push(assessment.clone());
 
+    db_persist(&state, "assess_tier", &json!({"action": "assess_tier"})).await;
     HttpResponse::Ok().json(json!({"assessment": assessment}))
 }
 
@@ -294,12 +296,14 @@ async fn check_transaction_limit(body: web::Json<serde_json::Value>, state: web:
     let mut checks = state.limit_checks.lock().unwrap();
     checks.push(check.clone());
 
+    db_persist(&state, "check_transaction_limit", &json!({"action": "check_transaction_limit"})).await;
     HttpResponse::Ok().json(json!({"limitCheck": check}))
 }
 
 async fn get_assessments(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let assessments = state.assessments.lock().unwrap();
+    db_persist(&state, "get_assessments", &json!({"action": "get_assessments"})).await;
     HttpResponse::Ok().json(json!({"assessments": *assessments, "total": assessments.len()}))
 }
 
@@ -312,6 +316,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
         *tier_counts.entry(a.eligible_tier.clone()).or_insert(0) += 1;
     }
     let denied = checks.iter().filter(|c| !c.allowed).count();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "totalAssessments": assessments.len(),
         "totalLimitChecks": checks.len(),

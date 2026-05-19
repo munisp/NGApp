@@ -5,6 +5,7 @@
 package main
 
 import (
+	_ "github.com/lib/pq"
 "context"
 "os/signal"
 "syscall"

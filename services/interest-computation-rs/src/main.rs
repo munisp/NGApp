@@ -75,7 +75,8 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 }
 
 
-async fn calculate_interest(body: web::Json<InterestCalcRequest>) -> HttpResponse {
+async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let convention = body.day_count_convention.as_deref().unwrap_or("ACT/365");
     let day_basis = get_day_basis(convention);
     let compounding = body.compounding.as_deref().unwrap_or("simple");
@@ -92,12 +93,14 @@ async fn calculate_interest(body: web::Json<InterestCalcRequest>) -> HttpRespons
         "maturity_amount": (maturity * 100.0).round() / 100.0}))
 }
 
-async fn accrual_schedule(body: web::Json<AccrualSchedule>) -> HttpResponse {
+async fn accrual_schedule(req: actix_web::HttpRequest, body: web::Json<AccrualSchedule>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let schedule = generate_accrual_schedule(body.principal, body.rate, 365, &body.frequency);
     HttpResponse::Ok().json(json!({"account_id": body.account_id, "schedule": schedule}))
 }
 
-async fn effective_rate(body: web::Json<InterestCalcRequest>) -> HttpResponse {
+async fn effective_rate(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let nominal = body.rate_percent / 100.0;
     let n = match body.compounding.as_deref().unwrap_or("monthly") {
         "daily" => 365.0, "monthly" => 12.0, "quarterly" => 4.0, "semi-annual" => 2.0, _ => 12.0,

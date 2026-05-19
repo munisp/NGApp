@@ -342,6 +342,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("liveness-detection-rs: upstream call ok"),
         Err(e) => eprintln!("liveness-detection-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "liveness-scoring-engine-rs",
         "status": "healthy",
@@ -458,6 +459,7 @@ async fn score_liveness(body: web::Json<LivenessScoreRequest>, state: web::Data<
         response["adaptive_threshold"] = serde_json::json!(adjusted_threshold);
         response["noise_compensation_applied"] = serde_json::json!(ni.noise_level > 0.15);
     }
+    db_persist(&state, "score_liveness", &json!({"action": "score_liveness"})).await;
     HttpResponse::Ok().json(response)
 }
 
@@ -498,6 +500,7 @@ async fn score_face_match(body: web::Json<FaceMatchScoreRequest>, state: web::Da
         st.face_match_rate = matched_count / n;
     }
 
+    db_persist(&state, "score_face_match", &json!({"action": "score_face_match"})).await;
     HttpResponse::Ok().json(match_result)
 }
 
@@ -518,6 +521,7 @@ async fn get_checks(state: web::Data<AppState>, req: HttpRequest) -> HttpRespons
     let checks = state.checks.lock().unwrap();
     let start = (page - 1) * limit;
     let items: Vec<_> = checks.iter().skip(start).take(limit).cloned().collect();
+    db_persist(&state, "get_checks", &json!({"action": "get_checks"})).await;
     HttpResponse::Ok().json(json!({"checks": items, "total": checks.len(), "page": page, "limit": limit}))
 }
 
@@ -525,6 +529,7 @@ async fn get_check_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
     let id = path.into_inner();
     let checks = state.checks.lock().unwrap();
     match checks.iter().find(|c| c.id == id) {
+    db_persist(&state, "get_check_by_id", &json!({"action": "get_check_by_id"})).await;
         Some(c) => HttpResponse::Ok().json(c),
         None => HttpResponse::NotFound().json(json!({"error": format!("Check {} not found", id)})),
     }
@@ -533,12 +538,14 @@ async fn get_check_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
 async fn get_matches(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let matches = state.matches.lock().unwrap();
+    db_persist(&state, "get_matches", &json!({"action": "get_matches"})).await;
     HttpResponse::Ok().json(json!({"matches": *matches, "total": matches.len()}))
 }
 
 async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let st = state.stats.lock().unwrap();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "total_checks": st.total_checks,
         "passed": st.passed,
@@ -556,6 +563,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
 
 async fn get_methods(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    db_persist(&state, "get_methods", &json!({"action": "get_methods"})).await;
     HttpResponse::Ok().json(json!({
         "methods": [
             {"method": "passive_3d", "weight": state.config.passive_3d_weight, "threshold": state.config.liveness_threshold, "description": "Passive 3D depth analysis from single image"},
@@ -617,6 +625,7 @@ async fn score_motion(body: web::Json<MotionScoreRequest>, state: web::Data<AppS
         && deepfake_prob < state.config.deepfake_threshold
         && body.motion_detected.unwrap_or(false);
 
+    db_persist(&state, "score_motion", &json!({"action": "score_motion"})).await;
     HttpResponse::Ok().json(json!({
         "combined_score": combined,
         "motion_score": motion,
@@ -634,6 +643,7 @@ async fn score_motion(body: web::Json<MotionScoreRequest>, state: web::Data<AppS
 
 async fn get_config(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    db_persist(&state, "get_config", &json!({"action": "get_config"})).await;
     HttpResponse::Ok().json(json!({
         "scoring": state.config,
         "thresholds": {

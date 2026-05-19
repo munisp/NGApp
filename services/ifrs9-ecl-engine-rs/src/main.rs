@@ -173,12 +173,14 @@ fn compute_ecl_portfolio() -> ECLPortfolioResult {
     }
 }
 
-async fn compute_ecl(web::Query(_params): web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+async fn compute_ecl(req: actix_web::HttpRequest, web::Query(_params): web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = compute_ecl_portfolio();
     HttpResponse::Ok().json(result)
 }
 
-async fn healthz() -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "ifrs9-ecl-engine-rs",

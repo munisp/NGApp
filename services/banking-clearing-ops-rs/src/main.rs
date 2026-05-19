@@ -33,7 +33,8 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn cheque_clearing_gl() -> HttpResponse {
+async fn cheque_clearing_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "CHQ-CLR-2026-05-09",
         "businessDate": "2026-05-09",
@@ -83,7 +84,8 @@ async fn cheque_clearing_gl() -> HttpResponse {
 // GAP 14: COLLATERAL → GL (lien, release, revaluation)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn collateral_gl() -> HttpResponse {
+async fn collateral_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "COLL-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -140,7 +142,8 @@ async fn collateral_gl() -> HttpResponse {
 // GAP 15: CASH MANAGEMENT → GL (vault, CRR, ATM replenishment)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn cash_management_gl() -> HttpResponse {
+async fn cash_management_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "CASH-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -197,7 +200,8 @@ async fn cash_management_gl() -> HttpResponse {
 // GAP 16: SWIFT/CORRESPONDENT → GL (nostro reconciliation, message processing)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn swift_correspondent_gl() -> HttpResponse {
+async fn swift_correspondent_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "SWIFT-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -270,7 +274,8 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
     })
 }
 
-async fn healthz() -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "banking-clearing-ops-rs",

@@ -35,7 +35,8 @@ async fn health() -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "healthy", "service": "adaptive-rate-limiter-rs", "version": "1.0.0"}))
 }
 
-async fn check_rate(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+async fn check_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let client_id = body.get("client_id").and_then(|v| v.as_str()).unwrap_or("unknown");
     let base_rate = body.get("base_rate").and_then(|v| v.as_u64()).unwrap_or(100);
     let error_rate = body.get("error_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -49,7 +50,8 @@ async fn check_rate(body: web::Json<serde_json::Value>, state: web::Data<AppStat
     HttpResponse::Ok().json(json!({"client_id": client_id, "allowed": allowed, "remaining": tokens, "limit": limit, "adaptive_factor": limit as f64 / base_rate as f64}))
 }
 
-async fn stats(state: web::Data<AppState>) -> HttpResponse {
+async fn stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let buckets = state.buckets.lock().unwrap();
     HttpResponse::Ok().json(json!({"active_clients": buckets.len(), "service": "adaptive-rate-limiter-rs"}))
 }

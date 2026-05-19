@@ -100,6 +100,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("recon-engine-rs: upstream call ok"),
         Err(e) => eprintln!("recon-engine-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "recon-engine-rs",
         "status": "healthy",
@@ -193,6 +194,7 @@ async fn run_recon(body: web::Json<RunReconRequest>, state: web::Data<AppState>)
     let mut excs = state.exceptions.lock().unwrap();
     excs.extend(new_exceptions);
 
+    db_persist(&state, "run_recon", &json!({"action": "run_recon"})).await;
     HttpResponse::Ok().json(json!({
         "job": job,
         "summary": {
@@ -208,6 +210,7 @@ async fn run_recon(body: web::Json<RunReconRequest>, state: web::Data<AppState>)
 async fn list_jobs(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let jobs = state.jobs.lock().unwrap();
+    db_persist(&state, "list_jobs", &json!({"action": "list_jobs"})).await;
     HttpResponse::Ok().json(json!({"jobs": *jobs, "total": jobs.len()}))
 }
 
@@ -216,6 +219,7 @@ async fn list_exceptions(req: actix_web::HttpRequest, state: web::Data<AppState>
     let excs = state.exceptions.lock().unwrap();
     let open = excs.iter().filter(|e| e.status == "open").count();
     let resolved = excs.iter().filter(|e| e.status == "resolved").count();
+    db_persist(&state, "list_exceptions", &json!({"action": "list_exceptions"})).await;
     HttpResponse::Ok().json(json!({
         "exceptions": *excs, "total": excs.len(),
         "open": open, "resolved": resolved,
@@ -229,6 +233,7 @@ async fn resolve_exception(body: web::Json<ResolveRequest>, state: web::Data<App
             exc.status = "resolved".into();
             exc.resolution = Some(body.resolution.clone());
             exc.assigned_to = Some(body.resolved_by.clone());
+    db_persist(&state, "resolve_exception", &json!({"action": "resolve_exception"})).await;
             return HttpResponse::Ok().json(json!({"resolved": true, "exception": exc.clone()}));
         }
     }
@@ -242,6 +247,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
     let total_matched: u64 = jobs.iter().map(|j| j.matched).sum();
     let total_source: u64 = jobs.iter().map(|j| j.source_count).sum();
     let avg_match_rate = if total_source > 0 { total_matched as f64 / total_source as f64 * 100.0 } else { 0.0 };
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "total_jobs": jobs.len(),
         "total_transactions_reconciled": total_source,
@@ -259,6 +265,7 @@ async fn recon_dashboard(req: actix_web::HttpRequest, state: web::Data<AppState>
     if let Err(resp) = check_jwt(&req) { return resp; }
     let jobs = state.jobs.lock().unwrap();
     let excs = state.exceptions.lock().unwrap();
+    db_persist(&state, "recon_dashboard", &json!({"action": "recon_dashboard"})).await;
     HttpResponse::Ok().json(json!({
         "today": {
             "jobs_run": jobs.len(),

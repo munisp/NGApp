@@ -71,7 +71,8 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 }
 
 
-async fn evaluate_rules(body: web::Json<RuleEvalRequest>, state: web::Data<AppState>) -> HttpResponse {
+async fn evaluate_rules(req: actix_web::HttpRequest, body: web::Json<RuleEvalRequest>, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let rules = state.rules.lock().unwrap();
     let matching: Vec<serde_json::Value> = rules.iter()
         .filter(|r| r.event_type == body.event_type && r.active.unwrap_or(true))
@@ -79,18 +80,22 @@ async fn evaluate_rules(body: web::Json<RuleEvalRequest>, state: web::Data<AppSt
             let computed = evaluate_formula(&r.amount_formula, body.amount);
             json!({"rule_id": r.rule_id, "debit": r.debit_account, "credit": r.credit_account, "amount": computed, "formula": r.amount_formula})
         }).collect();
+    db_persist(&state, "evaluate_rules", &json!({"action": "evaluate_rules"})).await;
     HttpResponse::Ok().json(json!({"event": body.event_type, "entries": matching, "total_rules_matched": matching.len()}))
 }
 
-async fn validate_rule_handler(body: web::Json<AccountingRule>) -> HttpResponse {
+async fn validate_rule_handler(req: actix_web::HttpRequest, body: web::Json<AccountingRule>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let errors = validate_rule(&body);
     HttpResponse::Ok().json(json!({"valid": errors.is_empty(), "errors": errors}))
 }
 
-async fn rules_by_event(path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
+async fn rules_by_event(req: actix_web::HttpRequest, path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let event_type = path.into_inner();
     let rules = state.rules.lock().unwrap();
     let matching: Vec<&AccountingRule> = rules.iter().filter(|r| r.event_type == event_type).collect();
+    db_persist(&state, "rules_by_event", &json!({"action": "rules_by_event"})).await;
     HttpResponse::Ok().json(json!({"event_type": event_type, "rules": matching, "count": matching.len()}))
 }
 

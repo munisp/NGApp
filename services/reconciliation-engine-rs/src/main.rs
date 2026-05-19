@@ -99,6 +99,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("reconciliation-engine-rs: upstream call ok"),
         Err(e) => eprintln!("reconciliation-engine-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "reconciliation-engine-rs",
         "status": "healthy",
@@ -157,6 +158,7 @@ async fn run_settlement_recon(body: web::Json<RunSettlementReconRequest>, state:
     let mut recons = state.recons.lock().unwrap();
     recons.push(recon.clone());
 
+    db_persist(&state, "run_settlement_recon", &json!({"action": "run_settlement_recon"})).await;
     HttpResponse::Ok().json(json!({
         "recon": recon,
         "nostro_positions": nostro_positions,
@@ -177,6 +179,7 @@ async fn get_suspense(req: actix_web::HttpRequest, state: web::Data<AppState>) -
     let aging_0_7: usize = items.iter().filter(|i| i.aging_days <= 7).count();
     let aging_8_30: usize = items.iter().filter(|i| i.aging_days > 7 && i.aging_days <= 30).count();
     let aging_over_30: usize = items.iter().filter(|i| i.aging_days > 30).count();
+    db_persist(&state, "get_suspense", &json!({"action": "get_suspense"})).await;
     HttpResponse::Ok().json(json!({
         "suspense_items": *items,
         "total": items.len(),
@@ -189,6 +192,7 @@ async fn get_suspense(req: actix_web::HttpRequest, state: web::Data<AppState>) -
 async fn list_recons(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
+    db_persist(&state, "list_recons", &json!({"action": "list_recons"})).await;
     HttpResponse::Ok().json(json!({"recons": *recons, "total": recons.len()}))
 }
 
@@ -196,6 +200,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
     if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
     let items = state.suspense_items.lock().unwrap();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "total_recons_run": recons.len(),
         "total_items_reconciled": recons.iter().map(|r| r.items_reconciled).sum::<u64>(),
@@ -211,6 +216,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
 async fn eod_report(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let recons = state.recons.lock().unwrap();
+    db_persist(&state, "eod_report", &json!({"action": "eod_report"})).await;
     HttpResponse::Ok().json(json!({
         "report_type": "end_of_day_reconciliation",
         "business_date": "2026-05-09",

@@ -119,6 +119,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("sanctions-engine-rs: upstream call ok"),
         Err(e) => eprintln!("sanctions-engine-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "sanctions-engine-rs",
         "status": "healthy",
@@ -203,6 +204,7 @@ async fn screen_entity(body: web::Json<ScreenRequest>, state: web::Data<AppState
     let mut screenings = state.screenings.lock().unwrap();
     screenings.push(screening.clone());
 
+    db_persist(&state, "screen_entity", &json!({"action": "screen_entity"})).await;
     HttpResponse::Ok().json(json!({
         "screening": screening,
         "match_details": best_match.map(|m| json!({
@@ -226,6 +228,7 @@ async fn record_decision(body: web::Json<DecisionRequest>, state: web::Data<AppS
             if body.decision == "false_positive" { s.status = "false_positive".into(); }
             else if body.decision == "block" { s.status = "confirmed_match".into(); }
             else if body.decision == "release" { s.status = "cleared".into(); }
+    db_persist(&state, "record_decision", &json!({"action": "record_decision"})).await;
             return HttpResponse::Ok().json(json!({"decided": true, "screening": s.clone()}));
         }
     }
@@ -251,6 +254,7 @@ async fn list_screenings(req: actix_web::HttpRequest, state: web::Data<AppState>
     if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let pending = screenings.iter().filter(|s| s.decision_by.is_none()).count();
+    db_persist(&state, "list_screenings", &json!({"action": "list_screenings"})).await;
     HttpResponse::Ok().json(json!({
         "screenings": *screenings,
         "total": screenings.len(),
@@ -265,6 +269,7 @@ async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> H
     let matches = screenings.iter().filter(|s| s.match_score >= 0.7).count();
     let false_positives = screenings.iter().filter(|s| s.status == "false_positive").count();
     let blocked = screenings.iter().filter(|s| s.decision == "block" || s.decision == "auto_block").count();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(json!({
         "total_screenings": total,
         "potential_matches": matches,
@@ -285,6 +290,7 @@ async fn get_false_positives(req: actix_web::HttpRequest, state: web::Data<AppSt
     if let Err(resp) = check_jwt(&req) { return resp; }
     let screenings = state.screenings.lock().unwrap();
     let fps: Vec<&Screening> = screenings.iter().filter(|s| s.status == "false_positive").collect();
+    db_persist(&state, "get_false_positives", &json!({"action": "get_false_positives"})).await;
     HttpResponse::Ok().json(json!({
         "false_positives": fps,
         "total": fps.len(),

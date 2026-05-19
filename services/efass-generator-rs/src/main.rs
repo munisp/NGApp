@@ -149,9 +149,11 @@ async fn health(data: web::Data<AppState>) -> HttpResponse {
 }
 
 async fn generate_efass(
+    req: actix_web::HttpRequest,
     data: web::Data<AppState>,
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let period = query.get("period").cloned().unwrap_or_else(|| "2026-04".to_string());
     let bank_code = "54BANK";
     let bank_name = "54Bank Nigeria Ltd";
@@ -176,6 +178,7 @@ async fn generate_efass(
     // Store report
     let mut reports = data.reports.lock().unwrap();
     reports.push(report.clone());
+    db_persist(&data, "generate_efass", &json!({"report_id": report.report_id, "period": report.period})).await;
 
     HttpResponse::Ok().json(json!({
         "report": report,
@@ -197,7 +200,8 @@ async fn generate_efass(
     }))
 }
 
-async fn list_cbn_returns() -> HttpResponse {
+async fn list_cbn_returns(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let returns = get_all_cbn_returns();
     HttpResponse::Ok().json(json!({
         "items": returns,
@@ -212,8 +216,10 @@ async fn list_cbn_returns() -> HttpResponse {
 }
 
 async fn validate_report_endpoint(
+    req: actix_web::HttpRequest,
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let period = query.get("period").cloned().unwrap_or_else(|| "2026-04".to_string());
     let forms = generate_form_lines(&period);
     let totals = compute_totals(&forms);
@@ -523,6 +529,20 @@ fn rl_allow() -> bool {
 }
 
 #[actix_web::main]
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}-{}", endpoint, chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0));
+        match client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5::jsonb)",
+            &[&id, &"efass-generator-rs".to_string(), &"default".to_string(), &"active".to_string(), &data.to_string()]
+        ).await {
+            Ok(_) => {},
+            Err(e) => eprintln!("[efass-generator-rs] db_persist failed: {}", e),
+        }
+    }
+}
+
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").unwrap_or_else(|_| "8091".to_string()).parse().unwrap_or(8091);
     let db_url = env::var("DATABASE_URL").ok();

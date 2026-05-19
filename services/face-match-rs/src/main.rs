@@ -82,6 +82,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("face-match-rs: upstream call ok"),
         Err(e) => eprintln!("face-match-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": "face-match-engine-rs",
         "status": "healthy",
@@ -176,12 +177,14 @@ async fn perform_match(body: web::Json<FaceMatchRequest>, state: web::Data<AppSt
         }
     }
 
+    db_persist(&state, "perform_match", &json!({"action": "perform_match"})).await;
     HttpResponse::Ok().json(result)
 }
 
 async fn get_matches(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let matches = state.matches.lock().unwrap();
+    db_persist(&state, "get_matches", &json!({"action": "get_matches"})).await;
     HttpResponse::Ok().json(json!({"matches": *matches, "total": matches.len()}))
 }
 
@@ -189,6 +192,7 @@ async fn get_match_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
     let id = path.into_inner();
     let matches = state.matches.lock().unwrap();
     match matches.iter().find(|m| m.id == id) {
+    db_persist(&state, "get_match_by_id", &json!({"action": "get_match_by_id"})).await;
         Some(m) => HttpResponse::Ok().json(m),
         None => HttpResponse::NotFound().json(json!({"error": format!("Match {} not found", id)})),
     }
@@ -197,6 +201,7 @@ async fn get_match_by_id(path: web::Path<String>, state: web::Data<AppState>) ->
 async fn get_stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
     let st = state.stats.lock().unwrap();
+    db_persist(&state, "get_stats", &json!({"action": "get_stats"})).await;
     HttpResponse::Ok().json(&*st)
 }
 

@@ -31,7 +31,8 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn test_coverage() -> HttpResponse {
+async fn test_coverage(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 21,
         "name": "Test Coverage Enhancement",
@@ -56,7 +57,8 @@ async fn test_coverage() -> HttpResponse {
 }
 
 // Enhancement 22: Security Scanning
-async fn security_scanning() -> HttpResponse {
+async fn security_scanning(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 22,
         "name": "Security Scanning in CI/CD",
@@ -80,7 +82,8 @@ async fn security_scanning() -> HttpResponse {
 }
 
 // Enhancement 23: Database Indexing
-async fn db_indexing() -> HttpResponse {
+async fn db_indexing(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 23,
         "name": "Database Indexing Audit & Optimization",
@@ -109,7 +112,8 @@ async fn db_indexing() -> HttpResponse {
 }
 
 // Enhancement 24: API Versioning
-async fn api_versioning() -> HttpResponse {
+async fn api_versioning(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 24,
         "name": "API Versioning Strategy",
@@ -138,7 +142,8 @@ async fn api_versioning() -> HttpResponse {
 }
 
 // Enhancement 25: Feature Flags
-async fn feature_flags() -> HttpResponse {
+async fn feature_flags(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 25,
         "name": "Feature Flag System",
@@ -166,7 +171,8 @@ async fn feature_flags() -> HttpResponse {
 }
 
 // Enhancement 26: Secrets Management
-async fn secrets_management() -> HttpResponse {
+async fn secrets_management(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 26,
         "name": "Secrets Management (HashiCorp Vault)",
@@ -191,7 +197,8 @@ async fn secrets_management() -> HttpResponse {
 }
 
 // Enhancement 27: GraphQL
-async fn graphql_layer() -> HttpResponse {
+async fn graphql_layer(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 27,
         "name": "GraphQL API Gateway",
@@ -224,7 +231,8 @@ async fn graphql_layer() -> HttpResponse {
 }
 
 // Enhancement 28: Event Sourcing
-async fn event_sourcing() -> HttpResponse {
+async fn event_sourcing(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "enhancementId": 28,
         "name": "Event Sourcing & Audit Reconstruction",
@@ -258,7 +266,8 @@ async fn event_sourcing() -> HttpResponse {
 }
 
 // Quick Wins (5 items)
-async fn quick_wins() -> HttpResponse {
+async fn quick_wins(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "name": "Quick Wins (< 1 week each)",
         "items": [
@@ -311,7 +320,8 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
     })
 }
 
-async fn healthz() -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "status": "healthy", "service": "platform-hardening-rs", "version": "1.0.0",
         "enhancements": ["21: Test Coverage", "22: Security Scanning", "23: DB Indexing", "24: API Versioning", "25: Feature Flags", "26: Secrets Mgmt", "27: GraphQL", "28: Event Sourcing", "Quick Wins 1-5"]

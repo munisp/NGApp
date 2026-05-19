@@ -77,6 +77,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Ok(_resp) => eprintln!("kpi-threshold-monitor-rs: upstream call ok"),
         Err(e) => eprintln!("kpi-threshold-monitor-rs: upstream call failed: {}", e),
     }
+    db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
     HttpResponse::Ok().json(json!({
         "service": state.service_name,
         "status": "healthy",
@@ -111,6 +112,7 @@ async fn list_thresholds(state: web::Data<AppState>, query: web::Query<ListParam
     let start = (page - 1) * limit;
     let items: Vec<&ThresholdRule> = filtered.into_iter().skip(start).take(limit).collect();
     
+    db_persist(&state, "list_thresholds", &json!({"action": "list_thresholds"})).await;
     HttpResponse::Ok().json(json!({
         "items": items,
         "total": total,
@@ -140,6 +142,7 @@ async fn list_alerts(state: web::Data<AppState>, query: web::Query<ListParams>) 
     let start = (page - 1) * limit;
     let items: Vec<&KpiAlert> = filtered.into_iter().skip(start).take(limit).collect();
     
+    db_persist(&state, "list_alerts", &json!({"action": "list_alerts"})).await;
     HttpResponse::Ok().json(json!({
         "items": items,
         "total": total,
@@ -203,6 +206,7 @@ async fn evaluate_thresholds(req: actix_web::HttpRequest, state: web::Data<AppSt
         alerts.extend(new_alerts.clone());
     }
     
+    db_persist(&state, "evaluate_thresholds", &json!({"action": "evaluate_thresholds"})).await;
     HttpResponse::Ok().json(json!({
         "evaluated": evaluated,
         "breached": breached,
@@ -218,6 +222,7 @@ async fn acknowledge_alert(state: web::Data<AppState>, path: web::Path<String>) 
     if let Some(alert) = alerts.iter_mut().find(|a| a.id == alert_id) {
         alert.status = "acknowledged".to_string();
         alert.acknowledged_at = Some(chrono_now());
+    db_persist(&state, "acknowledge_alert", &json!({"action": "acknowledge_alert"})).await;
         HttpResponse::Ok().json(json!({"status": "acknowledged", "alert_id": alert_id}))
     } else {
         HttpResponse::NotFound().json(json!({"error": "alert not found"}))
@@ -230,6 +235,7 @@ async fn resolve_alert(state: web::Data<AppState>, path: web::Path<String>) -> H
     if let Some(alert) = alerts.iter_mut().find(|a| a.id == alert_id) {
         alert.status = "resolved".to_string();
         alert.resolved_at = Some(chrono_now());
+    db_persist(&state, "resolve_alert", &json!({"action": "resolve_alert"})).await;
         HttpResponse::Ok().json(json!({"status": "resolved", "alert_id": alert_id}))
     } else {
         HttpResponse::NotFound().json(json!({"error": "alert not found"}))
@@ -255,6 +261,7 @@ async fn dashboard_summary(req: actix_web::HttpRequest, state: web::Data<AppStat
             acc
         });
     
+    db_persist(&state, "dashboard_summary", &json!({"action": "dashboard_summary"})).await;
     HttpResponse::Ok().json(json!({
         "total_active_alerts": alerts.iter().filter(|a| a.status == "active").count(),
         "total_acknowledged": alerts.iter().filter(|a| a.status == "acknowledged").count(),

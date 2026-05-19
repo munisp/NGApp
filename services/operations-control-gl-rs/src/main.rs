@@ -33,7 +33,8 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn maker_checker_gl() -> HttpResponse {
+async fn maker_checker_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "MC-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -103,7 +104,8 @@ async fn maker_checker_gl() -> HttpResponse {
 // Credit limits, exposure tracking, contingent commitments
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn limit_management_gl() -> HttpResponse {
+async fn limit_management_gl(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "LIMIT-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -165,7 +167,8 @@ async fn limit_management_gl() -> HttpResponse {
 // Links every banking product to its income/expense/asset/liability GL codes
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn product_gl_mapping() -> HttpResponse {
+async fn product_gl_mapping(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "batchId": "PROD-GL-MAP-2026-05-09",
         "productGLMappings": [
@@ -292,7 +295,8 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
     })
 }
 
-async fn healthz() -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "operations-control-gl-rs",

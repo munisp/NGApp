@@ -34,7 +34,8 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn enaira_cbdc() -> HttpResponse {
+async fn enaira_cbdc(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "enhancementId": 3,
         "name": "eNaira / CBDC Integration",
@@ -84,7 +85,8 @@ async fn enaira_cbdc() -> HttpResponse {
 // Sub-100ms scoring on every transaction
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async fn fraud_detection_ml() -> HttpResponse {
+async fn fraud_detection_ml(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     let result = json!({
         "enhancementId": 4,
         "name": "Real-Time Fraud Detection (ML Engine)",
@@ -171,7 +173,8 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
     })
 }
 
-async fn healthz() -> HttpResponse {
+async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
     HttpResponse::Ok().json(json!({
         "status": "healthy", "service": "ai-fraud-scoring-rs", "version": "1.0.0",
         "enhancements": ["3: eNaira/CBDC", "4: Real-Time Fraud ML"]
