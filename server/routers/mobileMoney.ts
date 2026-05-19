@@ -14,6 +14,13 @@ import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
+
 const MM_PROVIDERS = [
   { code: "OPAY", name: "OPay", active: true },
   { code: "PALMPAY", name: "PalmPay", active: true },

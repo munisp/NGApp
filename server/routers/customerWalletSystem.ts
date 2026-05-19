@@ -5,6 +5,13 @@ import { eq, desc, and, sql, count, sum } from "drizzle-orm";
 import { customers, transactions, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
+
 export const customerWalletSystemRouter = router({
   getBalance: protectedProcedure
     .input(z.object({ customerId: z.number() }))
@@ -116,6 +123,7 @@ export const customerWalletSystemRouter = router({
       }
     }),
   getStats: protectedProcedure.query(async () => {
+    try {
     const db = (await getDb())!;
     const [totalCustomers] = await db
       .select({ value: count() })
@@ -129,5 +137,9 @@ export const customerWalletSystemRouter = router({
       totalWallets: Number(totalCustomers.value),
       totalVolume: Number(totalVolume.value ?? 0),
     };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+    }
   }),
 });

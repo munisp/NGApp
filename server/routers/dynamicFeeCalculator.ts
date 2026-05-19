@@ -17,8 +17,16 @@ import {
 import { systemConfig, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
+
 export const dynamicFeeCalculatorRouter = router({
   getStats: protectedProcedure.query(async () => {
+    try {
     const db = await getDb();
     if (!db) return { totalRules: 0, activeRules: 0, avgFeeRate: 0 };
     const rows = await db
@@ -31,6 +39,10 @@ export const dynamicFeeCalculatorRouter = router({
       activeRules: rows.length,
       avgFeeRate: 1.5,
     };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+    }
   }),
   calculate: protectedProcedure
     .input(

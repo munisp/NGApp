@@ -4,6 +4,13 @@ import { getDb } from "../db";
 import { disputes } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
+
 export const disputeRefundRouter = router({
   list: protectedProcedure
     .input(

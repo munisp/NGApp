@@ -5,6 +5,13 @@ import { eq, desc, sql, count } from "drizzle-orm";
 import { feeRules, feeAuditTrail, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
+
 export const dynamicPricingEngineRouter = router({
   listRules: protectedProcedure
     .input(z.object({ limit: z.number().default(50) }).optional())
@@ -124,6 +131,7 @@ export const dynamicPricingEngineRouter = router({
       }
     }),
   getStats: protectedProcedure.query(async () => {
+    try {
     const db = (await getDb())!;
     const [total] = await db
       .select({ value: count() })
@@ -137,5 +145,9 @@ export const dynamicPricingEngineRouter = router({
       totalRules: Number(total.value),
       totalFeeCalculations: Number(totalAudit.value),
     };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+    }
   }),
 });

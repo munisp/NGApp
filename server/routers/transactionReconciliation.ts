@@ -1,8 +1,16 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
+
+// ── Middleware Integration (Sprint 44) ──────────────────────────────
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
+import { cacheSet, cacheGet } from "../redisClient";
+import { tbCreateTransfer } from "../tbClient";
+import { fluvioProduce } from "../fluvio";
+import { permifyCheck } from "../_core/permify";
 
 export const transactionReconciliationRouter = router({
   list: protectedProcedure
@@ -14,6 +22,7 @@ export const transactionReconciliationRouter = router({
       })
     )
     .query(async ({ input }) => {
+      try {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const results = await database
@@ -33,11 +42,16 @@ export const transactionReconciliationRouter = router({
         limit: input.limit,
         offset: input.offset,
       };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      }
     }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
+      try {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const [record] = await database
@@ -50,9 +64,14 @@ export const transactionReconciliationRouter = router({
         throw new Error(`Record with id ${input.id} not found`);
       }
       return record;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      }
     }),
 
   getSummary: protectedProcedure.query(async () => {
+    try {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
     const [totalResult] = await database
@@ -63,6 +82,10 @@ export const transactionReconciliationRouter = router({
       totalRecords: totalResult?.total ?? 0,
       lastUpdated: new Date().toISOString(),
     };
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+    }
   }),
 
   getRecent: protectedProcedure
@@ -73,6 +96,7 @@ export const transactionReconciliationRouter = router({
       })
     )
     .query(async ({ input }) => {
+      try {
       const database = await getDb();
       if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
       const since = new Date();
@@ -85,9 +109,14 @@ export const transactionReconciliationRouter = router({
         .limit(input.limit);
 
       return results;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
+      }
     }),
 
   getStats: protectedProcedure.query(async () => {
+    try {
     const database = await getDb();
     if (!database)
       return {
@@ -111,6 +140,10 @@ export const transactionReconciliationRouter = router({
         recent: 0,
         lastUpdated: new Date().toISOString(),
       };
+    }
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
     }
   }),
 });
