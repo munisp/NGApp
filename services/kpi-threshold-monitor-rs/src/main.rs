@@ -406,6 +406,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -502,7 +503,9 @@ async fn main() -> std::io::Result<()> {
     
     println!("kpi-threshold-monitor-rs starting on :{} (8 threshold rules, Kafka alert publishing)", port);
     
-    HttpServer::new(move || {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_default();
+    let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
+        HttpServer::new(move || {
         App::new()
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
@@ -521,6 +524,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(web::Data::new(state.clone()))
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(healthz))
             .route("/api/kpi/thresholds", web::get().to(list_thresholds))
             .route("/api/kpi/alerts", web::get().to(list_alerts))

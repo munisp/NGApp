@@ -55,6 +55,14 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "card_management_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	if db == nil {
 		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "in-memory"})
 		return
@@ -86,6 +94,16 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/card-management/") }
+	cacheKey := "card_management_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	jsonResp(w, 200, map[string]interface{}{"service": "card-management-go"})
 }
 

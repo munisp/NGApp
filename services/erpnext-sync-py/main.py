@@ -275,6 +275,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _validate_erpnext_sync_input_result = validate_erpnext_sync_input(body.get("data", {}))
+            _process_erpnext_sync_result = process_erpnext_sync(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

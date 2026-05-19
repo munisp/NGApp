@@ -106,6 +106,14 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleList(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "security_gateway_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	status := r.URL.Query().Get("status")
@@ -119,6 +127,7 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCreate(w http.ResponseWriter, r *http.Request) {
+	cacheSet("security_gateway_list", "", 1) // invalidate list cache on write
 	if r.Method != "POST" { respondJSON(w, 405, map[string]string{"error": "POST required"}); return }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)

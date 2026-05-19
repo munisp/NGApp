@@ -467,6 +467,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -559,7 +560,9 @@ async fn main() -> std::io::Result<()> {
         reports: Mutex::new(Vec::new()),
     });
 
-    HttpServer::new(move || {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_default();
+    let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
+        HttpServer::new(move || {
         App::new()
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
@@ -578,6 +581,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(data.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(health))
             .route("/v1/efass/generate", web::get().to(generate_efass))
             .route("/v1/efass/validate", web::get().to(validate_report_endpoint))

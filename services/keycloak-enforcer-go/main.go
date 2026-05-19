@@ -107,6 +107,14 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleList(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "keycloak_enforcer_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	// DB-first query with in-memory fallback
 	if db != nil {
 		rows, err := db.Query("SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT 100", "keycloak_enforcer_go")
@@ -132,6 +140,7 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCreate(w http.ResponseWriter, r *http.Request) {
+	cacheSet("keycloak_enforcer_list", "", 1) // invalidate list cache on write
 	if r.Method != "POST" { respondJSON(w, 405, map[string]string{"error": "POST required"}); return }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)

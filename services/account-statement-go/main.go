@@ -42,6 +42,14 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "account_statement_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	if db == nil {
 		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "in-memory"})
 		return
@@ -73,10 +81,21 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/account-statement/") }
+	cacheKey := "account_statement_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	jsonResp(w, 200, map[string]interface{}{"service": "account-statement-go"})
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	_ = transactionLine("2026-01-01", 0.0, "CR", "system")
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "account_statement_go", time.Now().UnixNano())
@@ -499,6 +518,7 @@ func sanitizeInput(s string) string {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8080" }
+	initDB()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 

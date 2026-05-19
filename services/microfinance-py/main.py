@@ -275,6 +275,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _validate_microfinance_input_result = validate_microfinance_input(body.get("data", {}))
+            _process_microfinance_result = process_microfinance(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

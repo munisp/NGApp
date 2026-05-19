@@ -350,6 +350,13 @@ func initDB() {
 }
 
 func dbList(service string, limit int) ([]map[string]interface{}, error) {
+	cacheKey := fmt.Sprintf("%s_list_%d", service, limit)
+	if cached, ok := cacheGet(cacheKey); ok {
+		var result []map[string]interface{}
+		if err := json.Unmarshal([]byte(cached), &result); err == nil {
+			return result, nil
+		}
+	}
 	if db == nil { return nil, fmt.Errorf("no db") }
 	rows, err := db.Query("SELECT id, type, status, data, created_at FROM service_records WHERE service=$1 ORDER BY created_at DESC LIMIT $2", service, limit)
 	if err != nil { return nil, err }

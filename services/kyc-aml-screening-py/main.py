@@ -275,6 +275,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _validate_kyc_aml_screening_input_result = validate_kyc_aml_screening_input(body.get("data", {}))
+            _process_kyc_aml_screening_result = process_kyc_aml_screening(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

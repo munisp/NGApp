@@ -58,6 +58,14 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "payments_hub_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": dbSourceTag()})
 }
 
@@ -66,6 +74,16 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/payments-hub/") }
+	cacheKey := "payments_hub_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	jsonResp(w, 200, map[string]interface{}{"service": "payments-hub-go"})
 }
 // --- Database persistence ---
@@ -110,6 +128,7 @@ func dbInsert(id, service, typ, status string, data []byte) error {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	_ = settlementBatch([]float64{})
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "payments_hub_go", time.Now().UnixNano())

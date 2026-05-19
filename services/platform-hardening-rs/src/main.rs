@@ -401,6 +401,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -471,7 +472,9 @@ fn rl_allow() -> bool {
 async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8106".into());
     println!("Platform Hardening (Rust) on :{} — Enhancements 21-28 + Quick Wins", port);
-    HttpServer::new(|| {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_default();
+    let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
+        HttpServer::new(|| {
         App::new()
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
@@ -489,6 +492,13 @@ async fn main() -> std::io::Result<()> {
                     Ok(res)
                 }
             })
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(healthz))
             .route("/v1/enhancement/21-test-coverage", web::get().to(test_coverage))
             .route("/v1/enhancement/22-security-scanning", web::get().to(security_scanning))

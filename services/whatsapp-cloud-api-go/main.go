@@ -56,6 +56,14 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "whatsapp_cloud_api_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	if db == nil {
 		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "total": 0, "source": "in-memory"})
 		return
@@ -87,6 +95,16 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/whatsapp-cloud-api/") }
+	cacheKey := "whatsapp_cloud_api_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	jsonResp(w, 200, map[string]interface{}{"service": "whatsapp-cloud-api-go"})
 }
 
@@ -488,6 +506,7 @@ func sanitizeInput(s string) string {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" { port = "8080" }
+	initDB()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/readyz", readyzHandler)
 

@@ -21,7 +21,8 @@ fn otp_expiry_seconds() -> u64 { 300 }
 fn validate_phone_ng(phone: &str) -> bool { (phone.starts_with("+234") && phone.len() == 14) || (phone.starts_with("0") && phone.len() == 11) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "sms-otp-service-rs"}))
+        let _otp_expiry_seconds = otp_expiry_seconds();
+HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "sms-otp-service-rs"}))
 }
 
 async fn send_otp(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
@@ -127,6 +128,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -241,6 +243,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(state.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(health))
             .route("/v1/send_otp", web::post().to(send_otp))
             .route("/v1/records", web::get().to(list_records))

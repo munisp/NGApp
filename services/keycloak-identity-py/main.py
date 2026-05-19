@@ -275,6 +275,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             record_id = f"{SERVICE_NAME}-{int(time.time()*1e6)}"
             persisted = db_insert(record_id, body)
+            _validate_keycloak_identity_input_result = validate_keycloak_identity_input(body.get("data", {}))
+            _process_keycloak_identity_result = process_keycloak_identity(body.get("data", {}))
             source = "database" if persisted else "in-memory"
 
             _upstream = os.environ.get("UPSTREAM_URL", "")

@@ -305,6 +305,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -419,6 +420,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(state.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(healthz))
             .route("/v1/match", web::post().to(perform_match))
             .route("/v1/matches", web::get().to(get_matches))

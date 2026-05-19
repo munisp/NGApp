@@ -254,6 +254,8 @@ class Handler(BaseHTTPRequestHandler):
         logger.info(f"{self.command} {self.path} {args[0] if args else ''}")
 
     def respond(self, code, data):
+        if code >= 400:
+            inc_errors()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
@@ -262,6 +264,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data, default=str).encode())
 
     def do_GET(self):
+        _cache_key = f"voice_asr_nigerian_{self.path}"
+        _cached = cache_get(_cache_key)
+        if _cached and self.path not in ("/healthz", "/readyz", "/livez", "/metrics", "/health"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("X-Cache", "HIT")
+            add_security_headers(self)
+            self.end_headers()
+            self.wfile.write(_cached.encode() if isinstance(_cached, str) else _cached)
+            return
         trace_id = self.headers.get("X-Trace-Id") or self.headers.get("traceparent") or f"{int(__import__('time').time()*1000)}-{os.getpid()}"
         logger.info(f"[voice-asr-nigerian-py] {self.command} {self.path} trace={trace_id}")
         inc_requests()
@@ -395,6 +407,7 @@ shutdown_event = threading.Event()
 
 def shutdown_handler(signum, frame):
     logger.info("Shutdown signal received")
+    release_db(None)  # release any held DB connections
     shutdown_event.set()
     if server:
         threading.Thread(target=server.shutdown).start()

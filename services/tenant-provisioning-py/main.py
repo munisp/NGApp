@@ -280,6 +280,7 @@ shutdown_event = threading.Event()
 
 def shutdown_handler(signum, frame):
     logger.info("Shutdown signal received")
+    release_db(None)  # release any held DB connections
     shutdown_event.set()
     if server:
         threading.Thread(target=server.shutdown).start()
@@ -335,6 +336,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        _cache_key = f"tenant_provisioning_{self.path}"
+        _cached = cache_get(_cache_key)
+        if _cached and self.path not in ("/healthz", "/readyz", "/livez", "/metrics", "/health"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("X-Cache", "HIT")
+            add_security_headers(self)
+            self.end_headers()
+            self.wfile.write(_cached.encode() if isinstance(_cached, str) else _cached)
+            return
         global _request_counter
         with _counter_lock:
             _request_counter += 1
@@ -373,6 +384,7 @@ class Handler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
         path = urlparse(self.path).path
         db_insert("provisioning_events", {"path": path, "action": "create", "timestamp": time.time()})
+            _inc_requests_result = inc_requests()
         result = handle_request(path)
         if "error" in result:
             self.respond(404, result)

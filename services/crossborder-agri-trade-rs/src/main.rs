@@ -21,7 +21,8 @@ fn export_duty_rate(commodity: &str) -> f64 { match commodity { "raw_cocoa" => 0
 fn compute_fob_value(quantity_mt: f64, price_per_mt: f64, logistics: f64) -> f64 { quantity_mt * price_per_mt + logistics }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "crossborder-agri-trade-rs"}))
+        let _export_duty_rate = export_duty_rate("default");
+HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "crossborder-agri-trade-rs"}))
 }
 
 async fn assess_trade(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
@@ -128,6 +129,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -242,6 +244,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(state.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(health))
             .route("/v1/assess_trade", web::post().to(assess_trade))
             .route("/v1/records", web::get().to(list_records))

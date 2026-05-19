@@ -221,6 +221,14 @@ func (app *App) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) listGLAccounts(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "gl_engine_listGLAccounts"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	category := r.URL.Query().Get("category")
 	tenantID := r.URL.Query().Get("tenantId")
 	if tenantID == "" {
@@ -506,6 +514,14 @@ func (app *App) generateEFASS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) listTrialBalance(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "gl_engine_listTrialBalance"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	period := r.URL.Query().Get("period")
 	tenantID := r.URL.Query().Get("tenantId")
 	if tenantID == "" {
@@ -858,6 +874,13 @@ func dbInsert(id, service, typ, status string, data []byte) error {
 }
 
 func dbList(service string, limit int) ([]map[string]interface{}, error) {
+	cacheKey := fmt.Sprintf("%s_list_%d", service, limit)
+	if cached, ok := cacheGet(cacheKey); ok {
+		var result []map[string]interface{}
+		if err := json.Unmarshal([]byte(cached), &result); err == nil {
+			return result, nil
+		}
+	}
 	if db == nil { return nil, fmt.Errorf("no db") }
 	rows, err := db.Query("SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT $2", service, limit)
 	if err != nil { return nil, err }

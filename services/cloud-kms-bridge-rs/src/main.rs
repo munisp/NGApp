@@ -20,7 +20,8 @@ fn key_rotation_due(last_rotation_days: u32, max_days: u32) -> bool { last_rotat
 fn key_usage_type(purpose: &str) -> &str { match purpose { "encrypt" => "ENCRYPT_DECRYPT", "sign" => "ASYMMETRIC_SIGN", "wrap" => "KEY_WRAP", _ => "ENCRYPT_DECRYPT" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "cloud-kms-bridge-rs"}))
+        let _key_usage_type = key_usage_type("default");
+HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "cloud-kms-bridge-rs"}))
 }
 
 async fn manage_key(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
@@ -127,6 +128,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -241,6 +243,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(state.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(health))
             .route("/v1/manage_key", web::post().to(manage_key))
             .route("/v1/records", web::get().to(list_records))

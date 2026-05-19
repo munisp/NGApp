@@ -183,6 +183,14 @@ func getEnvStatus(key string) string {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "account_opening_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	status := r.URL.Query().Get("status")
@@ -220,6 +228,16 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/account-opening/") }
+	cacheKey := "account_opening_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
 	id := strings.TrimPrefix(r.URL.Path, "/v1/account-opening/")
 	if id == "" || id == "list" || id == "stats" || id == "products" || id == "tier-limits" {
 		listHandler(w, r)

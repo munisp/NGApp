@@ -202,6 +202,7 @@ fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
 
 
 // --- Security Headers Middleware ---
+#[allow(dead_code)]
 fn add_security_headers(resp: &mut actix_web::HttpResponse) {
     let hdrs = resp.headers_mut();
     hdrs.insert(
@@ -287,7 +288,9 @@ async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8116".to_string());
     let state = AppState { start_time: Instant::now() };
     println!("TigerBeetle Protocol Engine (Rust) on :{} — accounts + transfers + 2PC", port);
-    HttpServer::new(move || {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_default();
+    let _db_client = if !db_url.is_empty() { init_db(&db_url).await } else { None };
+        HttpServer::new(move || {
         App::new()
             .wrap_fn(|req, srv| {
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
@@ -306,6 +309,13 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(web::Data::new(state.clone()))
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
             .route("/healthz", web::get().to(healthz))
             .route("/v1/tigerbeetle/accounts", web::get().to(list_accounts))
             .route("/v1/tigerbeetle/transfers", web::get().to(list_transfers))
