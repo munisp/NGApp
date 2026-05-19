@@ -1,17 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +41,7 @@ type TigerBeetleIntegratedAPIGateway struct {
 	// Metrics
 	requestsTotal     *prometheus.CounterVec
 	requestDuration   *prometheus.HistogramVec
-	serviceHealth     *prometheus.GaugeVec
+	serviceHealthGauge     *prometheus.GaugeVec
 	circuitBreakerState *prometheus.GaugeVec
 	cacheHits         prometheus.Counter
 	cacheMisses       prometheus.Counter
@@ -123,7 +118,7 @@ func NewTigerBeetleIntegratedAPIGateway(config GatewayConfig) (*TigerBeetleInteg
 	)
 	
 	serviceHealthGauge := prometheus.NewGaugeVec(
-		prometheus.GaugeVec{
+		prometheus.GaugeOpts{
 			Name: "api_gateway_service_health",
 			Help: "Service health status (1=healthy, 0=unhealthy)",
 		},
@@ -131,7 +126,7 @@ func NewTigerBeetleIntegratedAPIGateway(config GatewayConfig) (*TigerBeetleInteg
 	)
 	
 	circuitBreakerGauge := prometheus.NewGaugeVec(
-		prometheus.GaugeVec{
+		prometheus.GaugeOpts{
 			Name: "api_gateway_circuit_breaker_state",
 			Help: "Circuit breaker state (0=closed, 1=open, 2=half-open)",
 		},
@@ -164,7 +159,7 @@ func NewTigerBeetleIntegratedAPIGateway(config GatewayConfig) (*TigerBeetleInteg
 		slowClient:                 &http.Client{Timeout: 120 * time.Second},
 		requestsTotal:              requestsTotal,
 		requestDuration:            requestDuration,
-		serviceHealth:              serviceHealthGauge,
+		serviceHealthGauge:              serviceHealthGauge,
 		circuitBreakerState:        circuitBreakerGauge,
 		cacheHits:                  cacheHits,
 		cacheMisses:                cacheMisses,
@@ -600,7 +595,7 @@ func (gw *TigerBeetleIntegratedAPIGateway) updateServiceHealth(serviceName strin
 	if healthy {
 		value = 1
 	}
-	gw.serviceHealth.WithLabelValues(serviceName).Set(value)
+	gw.serviceHealthGauge.WithLabelValues(serviceName).Set(value)
 }
 
 func (gw *TigerBeetleIntegratedAPIGateway) isServiceHealthy(serviceName string) bool {
@@ -726,7 +721,7 @@ func (gw *TigerBeetleIntegratedAPIGateway) legacyRedirectHandler(c *gin.Context)
 	})
 }
 
-func main() {
+func api_gateway_integratedMain() {
 	config := GatewayConfig{
 		TigerBeetleZigEndpoint:     "http://localhost:3000",
 		TigerBeetleEdgeEndpoint:    "http://localhost:3001",

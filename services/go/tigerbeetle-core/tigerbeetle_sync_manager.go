@@ -1038,7 +1038,7 @@ func (sm *TigerBeetleSyncManager) GetSyncStats() map[string]interface{} {
 	}
 }
 
-func main() {
+func tigerbeetle_sync_managerMain() {
 	zigEndpoint := os.Getenv("ZIG_ENDPOINT")
 	if zigEndpoint == "" {
 		zigEndpoint = "http://localhost:8094"

@@ -19,6 +19,30 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Transfer codes
+const (
+	TRANSFER_CODE_P2P        = 1001
+	TRANSFER_CODE_P2M        = 1002
+	TRANSFER_CODE_DEPOSIT    = 1003
+	TRANSFER_CODE_WITHDRAWAL = 1004
+	TRANSFER_CODE_PAYMENT    = 1005
+	TRANSFER_CODE_REVERSAL   = 1006
+	TRANSFER_CODE_FEE        = 1007
+	TRANSFER_CODE_COMMISSION = 1008
+)
+
+// Account flags
+const (
+	FLAG_LINKED    = 0x0001
+	FLAG_PENDING   = 0x0002
+	FLAG_VOID      = 0x0004
+)
+
+// Additional ledger codes
+const (
+	COMMISSION_LEDGER = 3500
+)
+
 // TigerBeetleIntegratedTransactionService handles transactions using TigerBeetle double-entry bookkeeping
 type TigerBeetleIntegratedTransactionService struct {
 	// TigerBeetle endpoints
@@ -101,20 +125,6 @@ type Transaction struct {
 }
 
 // TigerBeetleTransfer represents a TigerBeetle transfer for double-entry bookkeeping
-type TigerBeetleTransfer struct {
-	ID              uint64 `json:"id"`
-	DebitAccountID  uint64 `json:"debit_account_id"`
-	CreditAccountID uint64 `json:"credit_account_id"`
-	UserData        uint64 `json:"user_data"`        // Link to business transaction
-	PendingID       uint64 `json:"pending_id"`       // For two-phase commits
-	Timeout         uint64 `json:"timeout"`          // Timeout for pending transfers
-	Ledger          uint32 `json:"ledger"`
-	Code            uint16 `json:"code"`
-	Flags           uint16 `json:"flags"`
-	Amount          uint64 `json:"amount"`
-	Timestamp       int64  `json:"timestamp"`
-}
-
 // TransactionBatch represents a batch of related transactions
 type TransactionBatch struct {
 	ID           string        `json:"id"`
@@ -130,36 +140,6 @@ type TransactionBatch struct {
 	Description  string        `json:"description"`
 }
 
-// Nigerian banking constants
-const (
-	// Ledger codes
-	CUSTOMER_DEPOSITS_LEDGER = 1000
-	AGENT_ACCOUNTS_LEDGER    = 2000
-	MERCHANT_ACCOUNTS_LEDGER = 2500
-	FEE_INCOME_LEDGER        = 3000
-	COMMISSION_LEDGER        = 3500
-	BANK_RESERVES_LEDGER     = 4000
-	SUSPENSE_LEDGER          = 5000
-	
-	// Transaction codes
-	TRANSFER_CODE_P2P        = 1001  // Person to Person
-	TRANSFER_CODE_P2M        = 1002  // Person to Merchant
-	TRANSFER_CODE_DEPOSIT    = 1003  // Cash Deposit
-	TRANSFER_CODE_WITHDRAWAL = 1004  // Cash Withdrawal
-	TRANSFER_CODE_PAYMENT    = 1005  // Bill Payment
-	TRANSFER_CODE_FEE        = 1006  // Fee Collection
-	TRANSFER_CODE_COMMISSION = 1007  // Agent Commission
-	TRANSFER_CODE_REVERSAL   = 1008  // Transaction Reversal
-	TRANSFER_CODE_SETTLEMENT = 1009  // Settlement
-	
-	// Transfer flags
-	FLAG_LINKED              = 1 << 0  // Part of a linked chain
-	FLAG_PENDING             = 1 << 1  // Pending transfer (two-phase)
-	FLAG_POST_PENDING        = 1 << 2  // Post a pending transfer
-	FLAG_VOID_PENDING        = 1 << 3  // Void a pending transfer
-	FLAG_BALANCING_DEBIT     = 1 << 4  // Balancing debit
-	FLAG_BALANCING_CREDIT    = 1 << 5  // Balancing credit
-)
 
 // NewTigerBeetleIntegratedTransactionService creates a new integrated transaction service
 func NewTigerBeetleIntegratedTransactionService(zigEndpoint, edgeEndpoint, dbURL, redisURL string) (*TigerBeetleIntegratedTransactionService, error) {
@@ -1089,7 +1069,7 @@ func (ts *TigerBeetleIntegratedTransactionService) resolveReconciliationHandler(
 	})
 }
 
-func main() {
+func transaction_processing_integratedMain() {
 	// Initialize service
 	service, err := NewTigerBeetleIntegratedTransactionService(
 		"http://localhost:3000",  // Zig endpoint

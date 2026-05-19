@@ -162,7 +162,7 @@ func (m *MFAService) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(health)
 }
 
-func main() {
+func mfa_serviceMain() {
 	mfaService := NewMFAService()
 
 	r := mux.NewRouter()

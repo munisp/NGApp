@@ -1,159 +1,180 @@
 package main
 
 import (
-"context"
-"encoding/json"
-"fmt"
-"log"
-"net/http"
-"os"
-"os/signal"
-"sync"
-"syscall"
-"time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 )
 
 // SettlementGateway handles settlement routing between TigerBeetle, Mojaloop, and bank rails
 // Middleware: Kafka, Dapr, Redis, TigerBeetle, Mojaloop, Temporal, APISIX, Permify
 
 type Config struct {
-Port            string
-KafkaBrokers    string
-RedisURL        string
-TigerBeetleAddr string
-MojaLoopURL     string
-DaprHTTPPort    string
-TemporalAddr    string
-PermifyAddr     string
+	Port            string
+	KafkaBrokers    string
+	RedisURL        string
+	TigerBeetleAddr string
+	MojaLoopURL     string
+	DaprHTTPPort    string
+	TemporalAddr    string
+	PermifyAddr     string
 }
 
 type SettlementRequest struct {
-TransactionID   string string `json:"transaction_id"`
-SourceAccountID string string `json:"source_account_id"`
-DestAccountID   string string `json:"dest_account_id"`
-Amount          float64 string `json:"amount"`
-Currency        string string `json:"currency"`
-SettlementType  string string `json:"settlement_type"`
-TenantID        int string `json:"tenant_id"`
-Region          string string `json:"region"`
+	TransactionID   string  `json:"transaction_id"`
+	SourceAccountID string  `json:"source_account_id"`
+	DestAccountID   string  `json:"dest_account_id"`
+	Amount          float64 `json:"amount"`
+	Currency        string  `json:"currency"`
+	SettlementType  string  `json:"settlement_type"`
+	TenantID        int     `json:"tenant_id"`
+	Region          string  `json:"region"`
 }
 
 type SettlementResult struct {
-TransactionID  string string `json:"transaction_id"`
-Status         string string `json:"status"`
-TigerBeetleRef string string `json:"tigerbeetle_ref"`
-MojaLoopRef    string    `json:"mojaloop_ref,omitempty"`
-SettledAt      time.Time string `json:"settled_at"`
-NetAmount      float64 string `json:"net_amount"`
-Fees           float64 string `json:"fees"`
+	TransactionID  string    `json:"transaction_id"`
+	Status         string    `json:"status"`
+	TigerBeetleRef string    `json:"tigerbeetle_ref"`
+	MojaLoopRef    string    `json:"mojaloop_ref,omitempty"`
+	SettledAt      time.Time `json:"settled_at"`
+	NetAmount      float64   `json:"net_amount"`
+	Fees           float64   `json:"fees"`
+}
+
+type Metrics struct {
+	sync.Mutex
+	Total   int64   `json:"total"`
+	Success int64   `json:"success"`
+	Failed  int64   `json:"failed"`
+	Volume  float64 `json:"volume"`
 }
 
 type Gateway struct {
-config      Config
-mu          sync.RWMutex
-settlements map[string]*SettlementResult
-metrics     struct {
-c.Mutex
-int64 string `json:"total"`
-t64 string `json:"success"`
-t64 string `json:"failed"`
-`json:"volume"`
-}
+	config      Config
+	mu          sync.RWMutex
+	settlements map[string]*SettlementResult
+	metrics     Metrics
 }
 
 func NewGateway(cfg Config) *Gateway {
-return &Gateway{config: cfg, settlements: make(map[string]*SettlementResult)}
+	return &Gateway{config: cfg, settlements: make(map[string]*SettlementResult)}
 }
 
 func (g *Gateway) handleSettle(w http.ResponseWriter, r *http.Request) {
-if r.Method != http.MethodPost {
-ot allowed", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req SettlementRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
 
-}
-var req SettlementRequest
-if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-valid request", http.StatusBadRequest)
+	tbRef := fmt.Sprintf("tb_%s_%d", req.TransactionID, time.Now().UnixNano())
+	log.Printf("[TigerBeetle] Transfer %s: %.2f %s", tbRef, req.Amount, req.Currency)
 
-}
-tbRef := fmt.Sprintf("tb_%s_%d", req.TransactionID, time.Now().UnixNano())
-log.Printf("[TigerBeetle] Transfer %s: %.2f %s", tbRef, req.Amount, req.Currency)
+	var mojaRef string
+	if req.SettlementType == "instant" {
+		mojaRef = fmt.Sprintf("moja_%s", req.TransactionID)
+		log.Printf("[Mojaloop] Instant transfer %s", mojaRef)
+	}
 
-var mojaRef string
-if req.SettlementType == "instant" {
-tf("moja_%s", req.TransactionID)
-tf("[Mojaloop] Instant transfer %s", mojaRef)
-}
+	result := &SettlementResult{
+		TransactionID:  req.TransactionID,
+		Status:         "completed",
+		TigerBeetleRef: tbRef,
+		MojaLoopRef:    mojaRef,
+		SettledAt:      time.Now(),
+		NetAmount:      req.Amount * 0.985,
+		Fees:           req.Amount * 0.015,
+	}
+	g.mu.Lock()
+	g.settlements[req.TransactionID] = result
+	g.mu.Unlock()
 
-result := &SettlementResult{
-sactionID: req.TransactionID, Status: "completed",
-mojaRef,
-ow(), NetAmount: req.Amount * 0.985, Fees: req.Amount * 0.015,
-}
-g.mu.Lock()
-g.settlements[req.TransactionID] = result
-g.mu.Unlock()
+	g.metrics.Lock()
+	g.metrics.Total++
+	g.metrics.Success++
+	g.metrics.Volume += req.Amount
+	g.metrics.Unlock()
 
-g.metrics.Lock()
-g.metrics.Total++
-g.metrics.Success++
-g.metrics.Volume += req.Amount
-g.metrics.Unlock()
+	log.Printf("[Kafka] Published billing.settlement.completed: %s", req.TransactionID)
+	log.Printf("[Dapr] Published settlement-events: %s", req.TransactionID)
 
-log.Printf("[Kafka] Published billing.settlement.completed: %s", req.TransactionID)
-log.Printf("[Dapr] Published settlement-events: %s", req.TransactionID)
-
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(result)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(map[string]interface{}{
-"service": "settlement-gateway", "version": "1.0.0",
-g]string{
-fig.KafkaBrokers, "redis": g.config.RedisURL,
-fig.TigerBeetleAddr, "mojaloop": g.config.MojaLoopURL,
-fig.TemporalAddr, "dapr": g.config.DaprHTTPPort,
-c (g *Gateway) handleMetrics(w http.ResponseWriter, r *http.Request) {
-g.metrics.Lock()
-defer g.metrics.Unlock()
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(g.metrics)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "healthy",
+		"service": "settlement-gateway",
+		"version": "1.0.0",
+		"connections": map[string]string{
+			"kafka":       g.config.KafkaBrokers,
+			"redis":       g.config.RedisURL,
+			"tigerbeetle": g.config.TigerBeetleAddr,
+			"mojaloop":    g.config.MojaLoopURL,
+			"temporal":    g.config.TemporalAddr,
+			"dapr":        g.config.DaprHTTPPort,
+		},
+	})
+}
+
+func (g *Gateway) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	g.metrics.Lock()
+	defer g.metrics.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(g.metrics)
 }
 
 func getEnv(key, fallback string) string {
-if v := os.Getenv(key); v != "" {
- v
-}
-return fallback
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func main() {
-cfg := Config{
-v("PORT", "8080"), KafkaBrokers: getEnv("KAFKA_BROKERS", "localhost:9092"),
-v("REDIS_URL", "redis://localhost:6379"),
-v("TIGERBEETLE_ADDR", "localhost:3000"),
-v("MOJALOOP_URL", "http://localhost:4000"),
-v("DAPR_HTTP_PORT", "3500"),
-v("TEMPORAL_ADDR", "localhost:7233"),
-v("PERMIFY_ADDR", "localhost:3478"),
-}
-gw := NewGateway(cfg)
+	cfg := Config{
+		Port:            getEnv("PORT", "8080"),
+		KafkaBrokers:    getEnv("KAFKA_BROKERS", "localhost:9092"),
+		RedisURL:        getEnv("REDIS_URL", "redis://localhost:6379"),
+		TigerBeetleAddr: getEnv("TIGERBEETLE_ADDR", "localhost:3000"),
+		MojaLoopURL:     getEnv("MOJALOOP_URL", "http://localhost:4000"),
+		DaprHTTPPort:    getEnv("DAPR_HTTP_PORT", "3500"),
+		TemporalAddr:    getEnv("TEMPORAL_ADDR", "localhost:7233"),
+		PermifyAddr:     getEnv("PERMIFY_ADDR", "localhost:3478"),
+	}
+	gw := NewGateway(cfg)
 
-mux := http.NewServeMux()
-mux.HandleFunc("/api/v1/settle", gw.handleSettle)
-mux.HandleFunc("/health", gw.handleHealth)
-mux.HandleFunc("/metrics", gw.handleMetrics)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/settle", gw.handleSettle)
+	mux.HandleFunc("/health", gw.handleHealth)
+	mux.HandleFunc("/metrics", gw.handleMetrics)
 
-srv := &http.Server{Addr: ":" + cfg.Port, Handler: mux, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second}
-go func() {
-tf("[SettlementGateway] Starting on :%s", cfg.Port)
-srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-err)
- os.Signal, 1)
-signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-<-quit
-ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-defer cancel()
-srv.Shutdown(ctx)
+	srv := &http.Server{Addr: ":" + cfg.Port, Handler: mux, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second}
+	go func() {
+		log.Printf("[SettlementGateway] Starting on :%s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("[SettlementGateway] Shutting down...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	srv.Shutdown(ctx)
 }

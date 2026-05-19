@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -329,7 +328,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func main() {
+func rbac_serviceMain() {
 	rbacService := NewRBACService()
 
 	r := mux.NewRouter()

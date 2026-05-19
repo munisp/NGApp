@@ -74,59 +74,12 @@ type Payment struct {
 }
 
 // TigerBeetleTransfer represents a TigerBeetle transfer
-type TigerBeetleTransfer struct {
-	ID              uint64 `json:"id"`
-	DebitAccountID  uint64 `json:"debit_account_id"`
-	CreditAccountID uint64 `json:"credit_account_id"`
-	UserData        uint64 `json:"user_data"`
-	PendingID       uint64 `json:"pending_id"`
-	Timeout         uint64 `json:"timeout"`
-	Ledger          uint32 `json:"ledger"`
-	Code            uint16 `json:"code"`
-	Flags           uint16 `json:"flags"`
-	Amount          uint64 `json:"amount"`
-	Timestamp       int64  `json:"timestamp"`
-}
-
 // TigerBeetleAccount represents a TigerBeetle account
-type TigerBeetleAccount struct {
-	ID             uint64 `json:"id"`
-	UserData       uint64 `json:"user_data"`
-	Ledger         uint32 `json:"ledger"`
-	Code           uint16 `json:"code"`
-	Flags          uint16 `json:"flags"`
-	DebitsPending  uint64 `json:"debits_pending"`
-	DebitsPosted   uint64 `json:"debits_posted"`
-	CreditsPending uint64 `json:"credits_pending"`
-	CreditsPosted  uint64 `json:"credits_posted"`
-	Timestamp      int64  `json:"timestamp"`
-}
-
 // Nigerian banking ledger codes
-const (
-	CUSTOMER_DEPOSITS_LEDGER = 1000
-	AGENT_ACCOUNTS_LEDGER    = 2000
-	FEE_INCOME_LEDGER        = 3000
-	BANK_RESERVES_LEDGER     = 4000
-)
 
 // Nigerian banking account codes
-const (
-	SAVINGS_ACCOUNT_CODE    = 100
-	CURRENT_ACCOUNT_CODE    = 200
-	AGENT_FLOAT_CODE        = 300
-	FEE_INCOME_CODE         = 400
-	BANK_RESERVE_CODE       = 500
-)
 
 // Transfer codes for different payment types
-const (
-	TRANSFER_CODE_PAYMENT     = 1001
-	TRANSFER_CODE_FEE         = 1002
-	TRANSFER_CODE_WITHDRAWAL  = 1003
-	TRANSFER_CODE_DEPOSIT     = 1004
-	TRANSFER_CODE_AGENT_FLOAT = 1005
-)
 
 // NewTigerBeetleIntegratedPaymentService creates a new integrated payment service
 func NewTigerBeetleIntegratedPaymentService(zigEndpoint, edgeEndpoint, dbURL, redisURL string) (*TigerBeetleIntegratedPaymentService, error) {
@@ -361,7 +314,7 @@ func (ps *TigerBeetleIntegratedPaymentService) GetAccountBalance(accountID uint6
 func (ps *TigerBeetleIntegratedPaymentService) ProcessAgentPayment(payment Payment) (*Payment, error) {
 	// Set agent-specific ledger and codes
 	payment.Ledger = AGENT_ACCOUNTS_LEDGER
-	payment.Code = TRANSFER_CODE_AGENT_FLOAT
+	payment.Code = 1009
 	
 	// Add agent commission calculation
 	agentCommission := ps.calculateAgentCommission(payment.Amount, payment.AgentID)
@@ -706,7 +659,7 @@ func (ps *TigerBeetleIntegratedPaymentService) createAgentPaymentHandler(c *gin.
 	c.JSON(http.StatusCreated, processedPayment)
 }
 
-func main() {
+func payment_processing_integratedMain() {
 	// Initialize service
 	service, err := NewTigerBeetleIntegratedPaymentService(
 		"http://localhost:3000",  // Zig endpoint

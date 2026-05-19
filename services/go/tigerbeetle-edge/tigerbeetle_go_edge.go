@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -766,7 +767,7 @@ func (tbe *TigerBeetleGoEdge) getMetrics(c *gin.Context) {
 	})
 }
 
-func main() {
+func tigerbeetle_go_edgeMain() {
 	// Configuration from environment variables
 	dbPath := getEnv("SQLITE_DB_PATH", "/data/tigerbeetle_edge.db")
 	redisURL := getEnv("REDIS_URL", "redis://:redis_secure_password@redis:6379")

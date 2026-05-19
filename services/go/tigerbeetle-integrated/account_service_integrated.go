@@ -95,6 +95,21 @@ type TigerBeetleAccount struct {
 	CreditsPosted  uint64 `json:"credits_posted"`
 	Timestamp      int64  `json:"timestamp"`
 }
+// TigerBeetleTransfer represents a TigerBeetle transfer
+type TigerBeetleTransfer struct {
+	ID              uint64 `json:"id"`
+	DebitAccountID  uint64 `json:"debit_account_id"`
+	CreditAccountID uint64 `json:"credit_account_id"`
+	Amount          uint64 `json:"amount"`
+	Ledger          uint32 `json:"ledger"`
+	Code            uint16 `json:"code"`
+	Flags           uint16 `json:"flags"`
+	PendingID       uint64 `json:"pending_id"`
+	UserData        uint64 `json:"user_data"`
+	Timeout         uint32 `json:"timeout"`
+	Timestamp       int64  `json:"timestamp"`
+}
+
 
 // AccountTransaction represents account transaction history
 type AccountTransaction struct {
@@ -1087,7 +1102,7 @@ func (as *TigerBeetleIntegratedAccountService) searchAccountsHandler(c *gin.Cont
 	})
 }
 
-func main() {
+func account_service_integratedMain() {
 	// Initialize service
 	service, err := NewTigerBeetleIntegratedAccountService(
 		"http://localhost:3000",  // Zig endpoint
