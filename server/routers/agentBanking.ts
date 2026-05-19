@@ -6,7 +6,7 @@
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router , publicProcedure } from "../_core/trpc";
+import { protectedProcedure, router , protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   agents,
@@ -32,7 +32,7 @@ const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 });
 
 export const agentBankingRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ limit: z.number().default(10), offset: z.number().default(0) }))
     .query(async ({ input }) => {
       try {

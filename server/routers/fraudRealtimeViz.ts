@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { fraudAlerts } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -87,7 +87,7 @@ export const fraudRealtimeVizRouter = router({
       return results;
     }),
 
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -97,7 +97,7 @@ export const fraudRealtimeVizRouter = router({
     };
   }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -107,7 +107,7 @@ export const fraudRealtimeVizRouter = router({
     };
   }),
 
-  liveMap: publicProcedure.query(async () => {
+  liveMap: protectedProcedure.query(async () => {
     return {
       agents: [],
       alerts: [],
@@ -124,11 +124,11 @@ export const fraudRealtimeVizRouter = router({
     };
   }),
 
-  suspiciousStream: publicProcedure.query(async () => {
+  suspiciousStream: protectedProcedure.query(async () => {
     return { events: [], total: 0, items: [] };
   }),
 
-  agentHeatmap: publicProcedure.query(async () => {
+  agentHeatmap: protectedProcedure.query(async () => {
     return { regions: [], maxDensity: 0, zones: [] };
   }),
 });

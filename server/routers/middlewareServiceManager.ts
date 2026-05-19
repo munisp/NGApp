@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, count } from "drizzle-orm";
@@ -52,7 +52,7 @@ export const middlewareServiceManagerRouter = router({
       return record;
     }),
 
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     return {
       total: 13,
       connected: 12,

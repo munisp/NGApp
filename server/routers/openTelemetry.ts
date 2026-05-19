@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -87,7 +87,7 @@ export const openTelemetryRouter = router({
       return results;
     }),
 
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       services: 12,
       spans: 150000,
@@ -96,7 +96,7 @@ export const openTelemetryRouter = router({
       uptime: 99.95,
     };
   }),
-  traceSearch: publicProcedure
+  traceSearch: protectedProcedure
     .input(z.object({ query: z.string().optional() }).optional())
     .query(async () => {
       return {
@@ -111,18 +111,18 @@ export const openTelemetryRouter = router({
         total: 1,
       };
     }),
-  serviceMap: publicProcedure.query(async () => {
+  serviceMap: protectedProcedure.query(async () => {
     return {
       nodes: [{ id: "billing", type: "service", connections: 3 }],
       edges: [{ from: "billing", to: "postgres" }],
     };
   }),
 
-  searchTraces: publicProcedure.query(async () => {
+  searchTraces: protectedProcedure.query(async () => {
     return { traces: [], total: 0 };
   }),
 
-  serviceHealth: publicProcedure.query(async () => {
+  serviceHealth: protectedProcedure.query(async () => {
     return { services: [], healthy: 0, degraded: 0 };
   }),
 });

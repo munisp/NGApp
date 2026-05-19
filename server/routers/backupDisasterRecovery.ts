@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { backupSnapshots, auditLog } from "../../drizzle/schema";
@@ -121,7 +121,7 @@ export const backupDisasterRecoveryRouter = router({
         });
       }
     }),
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -269,7 +269,7 @@ export const backupDisasterRecoveryRouter = router({
       }
     }),
 
-  triggerBackup: publicProcedure
+  triggerBackup: protectedProcedure
     .input(z.object({ type: z.string().optional() }))
     .mutation(async ({ input }) => {
       return {

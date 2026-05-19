@@ -6,7 +6,7 @@
  * Uses adminProcedure (role=admin + Permify check).
  */
 import { z } from "zod";
-import { router, adminProcedure, protectedProcedure , publicProcedure } from "../_core/trpc";
+import { router, adminProcedure, protectedProcedure , protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   users,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -88,7 +88,7 @@ export const ussdGatewayRouter = router({
     }),
 
   // ── Sprint 28 domain procedures ──
-  processInput: publicProcedure
+  processInput: protectedProcedure
     .input(
       z.object({
         agentCode: z.string(),
@@ -105,7 +105,7 @@ export const ussdGatewayRouter = router({
         end: false,
       };
     }),
-  activeSessions: publicProcedure.query(async () => {
+  activeSessions: protectedProcedure.query(async () => {
     return {
       sessions: [
         {
@@ -118,7 +118,7 @@ export const ussdGatewayRouter = router({
       total: 1,
     };
   }),
-  transactions: publicProcedure.query(async () => {
+  transactions: protectedProcedure.query(async () => {
     return {
       transactions: [
         {
@@ -132,7 +132,7 @@ export const ussdGatewayRouter = router({
       total: 1,
     };
   }),
-  menuTree: publicProcedure.query(async () => {
+  menuTree: protectedProcedure.query(async () => {
     return {
       menuTree: {
         id: "root",
@@ -145,7 +145,7 @@ export const ussdGatewayRouter = router({
       },
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalTransactions: 1250,
       totalAmount: 25000000,

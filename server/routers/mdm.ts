@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getDb } from "../db";
@@ -344,7 +344,7 @@ export const mdmRouter = router({
   // ── Called by mdm-agent on POS terminal ──────────────────────────────────
 
   // Heartbeat: device reports health, gets back pending commands
-  heartbeat: publicProcedure
+  heartbeat: protectedProcedure
     .input(
       z.object({
         serialNumber: z.string().min(1),
@@ -783,7 +783,7 @@ export const mdmRouter = router({
     }),
 
   // Called by installer --enroll-token flag to complete device enrollment
-  enrollWithToken: publicProcedure
+  enrollWithToken: protectedProcedure
     .input(
       z.object({
         token: z.string().min(1),
@@ -1312,7 +1312,7 @@ export const mdmRouter = router({
       }
     }),
 
-  recordOtaUpdate: publicProcedure
+  recordOtaUpdate: protectedProcedure
     .input(
       z.object({
         deviceId: z.number(),

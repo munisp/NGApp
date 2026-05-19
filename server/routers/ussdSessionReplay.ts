@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -89,7 +89,7 @@ export const ussdSessionReplayRouter = router({
     }),
 
   // ── Sprint 78 domain-specific procedures ──────────────────────────────────
-  listSessions: publicProcedure
+  listSessions: protectedProcedure
     .input(
       z
         .object({
@@ -194,7 +194,7 @@ export const ussdSessionReplayRouter = router({
       return { sessions: filtered, total: filtered.length };
     }),
 
-  getSession: publicProcedure
+  getSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
       const sessions: Record<
@@ -273,7 +273,7 @@ export const ussdSessionReplayRouter = router({
       return session;
     }),
 
-  replaySession: publicProcedure
+  replaySession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
       const sessions: Record<
@@ -323,7 +323,7 @@ export const ussdSessionReplayRouter = router({
       };
     }),
 
-  getAnalytics: publicProcedure.query(async () => {
+  getAnalytics: protectedProcedure.query(async () => {
     return {
       totalSessions: 4,
       completionRate: 75,

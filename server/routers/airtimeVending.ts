@@ -6,7 +6,7 @@
  * PostgreSQL (transaction persistence), TigerBeetle (double-entry ledger)
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents, commissionRules } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
@@ -459,7 +459,7 @@ export const airtimeVendingRouter = router({
     }
   }),
 
-  networks: publicProcedure.query(async () => {
+  networks: protectedProcedure.query(async () => {
     return {
       networks: [
         { id: "NW-001", name: "MTN", code: "MTN", status: "active" },
@@ -467,7 +467,7 @@ export const airtimeVendingRouter = router({
       ],
     };
   }),
-  history: publicProcedure.query(async () => {
+  history: protectedProcedure.query(async () => {
     return {
       transactions: [
         {
@@ -481,7 +481,7 @@ export const airtimeVendingRouter = router({
       total: 1,
     };
   }),
-  dataBundles: publicProcedure
+  dataBundles: protectedProcedure
     .input(z.object({ networkId: z.string().optional() }).optional())
     .query(async () => {
       return {
@@ -496,7 +496,7 @@ export const airtimeVendingRouter = router({
         ],
       };
     }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalTransactions: 50000,
       totalVolume: 25000000,

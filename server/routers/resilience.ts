@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
 import { notifyOwner } from "../_core/notification";
 import { ENV } from "../_core/env";
 import { getFluvioStatus } from "../lib/fluvioClient";
@@ -159,7 +159,7 @@ export const resilienceRouter = router({
     }),
 
   // ── Rust: offline queue count ─────────────────────────────────────────────
-  queueCount: publicProcedure.query(async () => {
+  queueCount: protectedProcedure.query(async () => {
     const result = await safeFetch<{ pending: number }>(
       `${OFFLINE_URL}/queue/count`
     );
@@ -256,7 +256,7 @@ export const resilienceRouter = router({
     }),
 
   // ── Python: bulk per-agent success rates ────────────────────────────────────────────
-  agentSuccessRates: publicProcedure
+  agentSuccessRates: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(90).default(7) }))
     .query(async ({ input }) => {
       try {
@@ -294,7 +294,7 @@ export const resilienceRouter = router({
     }),
 
   // ── Python: 7-day success rate ────────────────────────────────────────────
-  successRate: publicProcedure
+  successRate: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(90).default(7) }))
     .query(async ({ input }) => {
       try {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure } from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -96,11 +96,11 @@ export const serviceMeshRouter = router({
     };
   }),
 
-  toggleCircuitBreaker: publicProcedure.mutation(async () => {
+  toggleCircuitBreaker: protectedProcedure.mutation(async () => {
     return { service: "default", enabled: true, state: "closed" };
   }),
 
-  healthCheck: publicProcedure.query(async () => {
+  healthCheck: protectedProcedure.query(async () => {
     return { services: [], healthy: 0, total: 0 };
   }),
 });

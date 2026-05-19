@@ -1,4 +1,4 @@
-import { publicProcedure } from "../_core/trpc";
+import { protectedProcedure } from "../_core/trpc";
 /**
  * KYC Router — tRPC procedures bridging POS Shell to the open-source KYC/KYB engines
  *
@@ -277,7 +277,7 @@ export const kycRouter = router({
    * Create a new KYC session and return a liveness challenge.
    * The POS Shell camera will display the challenge instruction to the agent.
    */
-  startLiveness: publicProcedure
+  startLiveness: protectedProcedure
     .input(
       z.object({
         method: z
@@ -358,7 +358,7 @@ export const kycRouter = router({
    * Submit a base64-encoded video frame to verify the liveness challenge.
    * Updates the KYC session with the liveness result.
    */
-  submitLivenessFrame: publicProcedure
+  submitLivenessFrame: protectedProcedure
     .input(
       z.object({
         sessionId: z.number().int().positive(),
@@ -451,7 +451,7 @@ export const kycRouter = router({
    * Submit a base64-encoded document image for OCR extraction.
    * Stores extracted fields in the KYC session and (optionally) in the compliance-kyc service.
    */
-  verifyDocument: publicProcedure
+  verifyDocument: protectedProcedure
     .input(
       z.object({
         sessionId: z.number().int().positive(),
@@ -569,7 +569,7 @@ export const kycRouter = router({
    * Get the current KYC session status for the logged-in agent.
    * Returns the most recent session.
    */
-  getStatus: publicProcedure.query(async ({ ctx }) => {
+  getStatus: protectedProcedure.query(async ({ ctx }) => {
     try {
       const agent = await requireAgent(ctx.req);
       const db = (await getDb())!;

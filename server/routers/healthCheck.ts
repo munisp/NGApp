@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { TRPCError } from "@trpc/server";
 
 export const healthCheckRouter = router({
-  status: publicProcedure.query(async () => {
+  status: protectedProcedure.query(async () => {
     const checks: Record<
       string,
       { status: string; latencyMs?: number; error?: string }
@@ -150,7 +150,7 @@ export const healthCheckRouter = router({
     };
   }),
 
-  microservices: publicProcedure.query(async () => {
+  microservices: protectedProcedure.query(async () => {
     const services: Array<{
       name: string;
       type: string;

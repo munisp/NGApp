@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -164,7 +164,7 @@ export const txMonitorRouter = router({
     }),
 
   // ── Sprint 78 domain-specific procedures ──────────────────────────────────
-  getRules: publicProcedure.query(async () => {
+  getRules: protectedProcedure.query(async () => {
     const rules = [
       {
         id: "RULE-001",
@@ -234,7 +234,7 @@ export const txMonitorRouter = router({
     return { rules, activeCount: rules.filter(r => r.enabled).length };
   }),
 
-  getAlerts: publicProcedure
+  getAlerts: protectedProcedure
     .input(z.object({ severity: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const alerts = [
@@ -285,7 +285,7 @@ export const txMonitorRouter = router({
       return { alerts: filtered, total: filtered.length };
     }),
 
-  acknowledgeAlert: publicProcedure
+  acknowledgeAlert: protectedProcedure
     .input(z.object({ alertId: z.string() }))
     .mutation(async ({ input }) => {
       return {
@@ -296,7 +296,7 @@ export const txMonitorRouter = router({
       };
     }),
 
-  resolveAlert: publicProcedure
+  resolveAlert: protectedProcedure
     .input(z.object({ alertId: z.string(), resolution: z.string() }))
     .mutation(async ({ input }) => {
       return {
@@ -308,7 +308,7 @@ export const txMonitorRouter = router({
       };
     }),
 
-  getDashboard: publicProcedure.query(async () => {
+  getDashboard: protectedProcedure.query(async () => {
     return {
       totalAlerts: 4,
       openAlerts: 2,

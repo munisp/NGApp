@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -87,7 +87,7 @@ export const whatsappChannelRouter = router({
       return results;
     }),
 
-  templates: publicProcedure.query(async () => {
+  templates: protectedProcedure.query(async () => {
     return {
       templates: [
         {
@@ -101,7 +101,7 @@ export const whatsappChannelRouter = router({
       total: 1,
     };
   }),
-  messages: publicProcedure.query(async () => {
+  messages: protectedProcedure.query(async () => {
     return {
       messages: [
         {
@@ -115,7 +115,7 @@ export const whatsappChannelRouter = router({
       total: 1,
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalSent: 5000,
       delivered: 4800,

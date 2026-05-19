@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure } from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { customers } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const customer360Router = router({
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -97,11 +97,11 @@ export const customer360Router = router({
       return results;
     }),
 
-  getProfile: publicProcedure.query(async () => {
+  getProfile: protectedProcedure.query(async () => {
     return { id: "C-001", name: "Default Customer", segments: [], ltv: 0 };
   }),
 
-  analyzeSentiment: publicProcedure.query(async () => {
+  analyzeSentiment: protectedProcedure.query(async () => {
     return { score: 0.75, label: "positive", confidence: 0.85 };
   }),
 });

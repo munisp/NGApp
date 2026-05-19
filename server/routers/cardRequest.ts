@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -57,7 +57,7 @@ export const cardRequestRouter = router({
       return results;
     }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return {
       requests: [
         {
@@ -71,7 +71,7 @@ export const cardRequestRouter = router({
       total: 1,
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       total: 300,
       byStatus: { delivered: 250, pending: 30, rejected: 20 },

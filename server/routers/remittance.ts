@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -128,7 +128,7 @@ export const remittanceRouter = router({
     }),
 
   // ── Sprint 28 domain procedures ──
-  partners: publicProcedure.query(async () => {
+  partners: protectedProcedure.query(async () => {
     return {
       partners: [
         {
@@ -141,7 +141,7 @@ export const remittanceRouter = router({
       ],
     };
   }),
-  history: publicProcedure.query(async () => {
+  history: protectedProcedure.query(async () => {
     return {
       transactions: [
         {
@@ -156,7 +156,7 @@ export const remittanceRouter = router({
       total: 1,
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalTransactions: 2000,
       totalRemittances: 2000,

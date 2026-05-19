@@ -1,6 +1,6 @@
 // Sprint 87: Upgraded from mock data to real DB queries — agentHierarchyTerritory
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure } from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { agents } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -105,7 +105,7 @@ const getCommissionCascade = protectedProcedure
       });
     }
   });
-const getStats = publicProcedure
+const getStats = protectedProcedure
   .input(
     z.object({
       page: z.number().optional(),

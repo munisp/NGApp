@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure} from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
 import { getDb } from "../db";
 import { agents } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 
 export const agentInventoryMgmtRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),

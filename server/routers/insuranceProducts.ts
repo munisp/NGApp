@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -168,7 +168,7 @@ export const insuranceProductsRouter = router({
       }
     }),
 
-  products: publicProcedure.query(async () => {
+  products: protectedProcedure.query(async () => {
     return {
       products: [
         {
@@ -181,7 +181,7 @@ export const insuranceProductsRouter = router({
       ],
     };
   }),
-  policies: publicProcedure.query(async () => {
+  policies: protectedProcedure.query(async () => {
     return {
       policies: [
         {
@@ -195,7 +195,7 @@ export const insuranceProductsRouter = router({
       total: 1,
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalPolicies: 500,
       activePolicies: 450,

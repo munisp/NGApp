@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -18,7 +18,7 @@ import { kycSessions, kycDocuments, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
 export const agentKycRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(10),
@@ -155,7 +155,7 @@ export const agentKycRouter = router({
     }),
 
   // ── Sprint 78 domain-specific procedures ──────────────────────────────────
-  listProfiles: publicProcedure
+  listProfiles: protectedProcedure
     .input(z.object({ status: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const profiles = [
@@ -206,7 +206,7 @@ export const agentKycRouter = router({
       return { profiles: filtered, total: filtered.length };
     }),
 
-  getProfile: publicProcedure
+  getProfile: protectedProcedure
     .input(z.object({ agentId: z.string() }))
     .query(async ({ input }) => {
       const profiles: Record<
@@ -246,7 +246,7 @@ export const agentKycRouter = router({
       return profile;
     }),
 
-  getDocument: publicProcedure
+  getDocument: protectedProcedure
     .input(z.object({ docId: z.string() }))
     .query(async ({ input }) => {
       const docs: Record<
@@ -289,7 +289,7 @@ export const agentKycRouter = router({
       return doc;
     }),
 
-  submitDocument: publicProcedure
+  submitDocument: protectedProcedure
     .input(
       z.object({
         agentId: z.string(),
@@ -321,7 +321,7 @@ export const agentKycRouter = router({
       };
     }),
 
-  getDashboard: publicProcedure.query(async () => {
+  getDashboard: protectedProcedure.query(async () => {
     return {
       totalAgents: 4,
       verificationRate: 50,

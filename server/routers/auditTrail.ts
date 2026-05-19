@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { auditLog } from "../../drizzle/schema";
@@ -109,7 +109,7 @@ export const auditTrailRouter = router({
       })),
     };
   }),
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     return {
       totalRecords: 0,
       activeRecords: 0,
@@ -142,7 +142,7 @@ export const auditTrailRouter = router({
     };
   }),
 
-  search: publicProcedure.query(async () => {
+  search: protectedProcedure.query(async () => {
     return { entries: [], total: 0, page: 1 };
   }),
 });

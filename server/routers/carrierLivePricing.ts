@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -173,7 +173,7 @@ export const carrierLivePricingRouter = router({
     }),
 
   // ── Sprint 78 domain-specific procedures ──────────────────────────────────
-  getAllRates: publicProcedure
+  getAllRates: protectedProcedure
     .input(z.object({ country: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const carriers = [
@@ -304,7 +304,7 @@ export const carrierLivePricingRouter = router({
       return { carriers: filtered, count: filtered.length };
     }),
 
-  getCarrierRate: publicProcedure
+  getCarrierRate: protectedProcedure
     .input(z.object({ carrierId: z.string() }))
     .query(async ({ input }) => {
       const rates: Record<
@@ -352,7 +352,7 @@ export const carrierLivePricingRouter = router({
       return { carrierId: input.carrierId, ...rate };
     }),
 
-  compareCarriers: publicProcedure
+  compareCarriers: protectedProcedure
     .input(z.object({ carrierIds: z.array(z.string()) }))
     .query(async ({ input }) => {
       const rates: Record<
@@ -400,7 +400,7 @@ export const carrierLivePricingRouter = router({
       return { comparison };
     }),
 
-  estimateCost: publicProcedure
+  estimateCost: protectedProcedure
     .input(
       z.object({
         carrierId: z.string(),
@@ -456,7 +456,7 @@ export const carrierLivePricingRouter = router({
       };
     }),
 
-  getCountries: publicProcedure.query(async () => {
+  getCountries: protectedProcedure.query(async () => {
     return [
       { code: "NG", name: "Nigeria", carrierCount: 4, currency: "NGN" },
       { code: "KE", name: "Kenya", carrierCount: 2, currency: "KES" },

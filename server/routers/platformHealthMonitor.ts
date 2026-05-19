@@ -1,6 +1,6 @@
 // Sprint 87: Upgraded from mock data to real DB queries — platformHealthMonitor
 import { z } from "zod";
-import { protectedProcedure, router, publicProcedure } from "../_core/trpc";
+import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { platformSettings } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -111,7 +111,7 @@ const getMetrics = protectedProcedure
       });
     }
   });
-const getStats = publicProcedure
+const getStats = protectedProcedure
   .input(
     z.object({
       page: z.number().optional(),

@@ -6,7 +6,7 @@
  * Dapr (service invocation), OpenSearch (fleet search)
  */
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import {
   posTerminals,
@@ -243,7 +243,7 @@ export const posTerminalFleetRouter = router({
       }
     }),
 
-  heartbeat: publicProcedure
+  heartbeat: protectedProcedure
     .input(
       z.object({
         terminalId: z.number(),

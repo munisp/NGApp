@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { agents } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -58,7 +58,7 @@ export const agentHierarchyRouter = router({
     }),
 
   // ── Sprint 28 domain procedures ──
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z
         .object({
@@ -87,7 +87,7 @@ export const agentHierarchyRouter = router({
         total: 1,
       };
     }),
-  getTree: publicProcedure.query(async () => {
+  getTree: protectedProcedure.query(async () => {
     return {
       tree: {
         id: "AGT-001",
@@ -99,7 +99,7 @@ export const agentHierarchyRouter = router({
       },
     };
   }),
-  territories: publicProcedure.query(async () => {
+  territories: protectedProcedure.query(async () => {
     return {
       territories: [
         { id: "T-001", name: "Lagos", agentCount: 45, status: "active" },
@@ -107,7 +107,7 @@ export const agentHierarchyRouter = router({
       ],
     };
   }),
-  analytics: publicProcedure.query(async () => {
+  analytics: protectedProcedure.query(async () => {
     return {
       totalAgents: 150,
       byRole: { super_agent: 10, agent: 80, sub_agent: 60 },

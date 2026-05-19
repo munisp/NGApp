@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure , publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure , protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 import {
@@ -157,7 +157,7 @@ export const customerDisputePortalRouter = router({
         });
       }
     }),
-  getStats: publicProcedure
+  getStats: protectedProcedure
     .input(z.object({ customerId: z.number() }).optional())
     .query(async () => {
       return {
@@ -173,7 +173,7 @@ export const customerDisputePortalRouter = router({
       };
     }),
 
-  listDisputes: publicProcedure.query(async () => {
+  listDisputes: protectedProcedure.query(async () => {
     try {
       const db = (await getDb())!;
       const rows = await db.select().from(disputes).limit(50);

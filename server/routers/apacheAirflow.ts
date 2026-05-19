@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -135,7 +135,7 @@ export const apacheAirflowRouter = router({
       total: 25,
     };
   }),
-  triggerDag: publicProcedure
+  triggerDag: protectedProcedure
     .input(z.object({ dagId: z.string() }))
     .mutation(async ({ input }) => {
       return {

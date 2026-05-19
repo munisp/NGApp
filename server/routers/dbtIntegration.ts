@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -87,7 +87,7 @@ export const dbtIntegrationRouter = router({
       return results;
     }),
 
-  getProjectInfo: publicProcedure.query(async () => {
+  getProjectInfo: protectedProcedure.query(async () => {
     return {
       name: "ngapp_analytics",
       version: "1.0.0",
@@ -96,7 +96,7 @@ export const dbtIntegrationRouter = router({
       sources: 8,
     };
   }),
-  listModels: publicProcedure.query(async () => {
+  listModels: protectedProcedure.query(async () => {
     return {
       models: [
         {
@@ -108,10 +108,10 @@ export const dbtIntegrationRouter = router({
       total: 45,
     };
   }),
-  runTests: publicProcedure.mutation(async () => {
+  runTests: protectedProcedure.mutation(async () => {
     return { passed: 118, failed: 2, total: 120, duration: 45 };
   }),
-  getLineage: publicProcedure.query(async () => {
+  getLineage: protectedProcedure.query(async () => {
     return {
       nodes: [{ name: "fct_transactions", type: "model" }],
       edges: [{ from: "stg_transactions", to: "fct_transactions" }],

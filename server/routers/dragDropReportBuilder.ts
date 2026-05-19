@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { biReportDefinitions, auditLog } from "../../drizzle/schema";
@@ -151,7 +151,7 @@ export const dragDropReportBuilderRouter = router({
     return { totalReports: Number(total.value) };
   }),
 
-  saveReport: publicProcedure
+  saveReport: protectedProcedure
     .input(
       z.object({ name: z.string(), config: z.record(z.string(), z.unknown()) })
     )
